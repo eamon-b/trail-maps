@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate Data - {{TRAIL_NAME}} - Trail Maps</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    .climate-header {
+      margin-bottom: 2rem;
+    }
+    .climate-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary, #666);
+    }
+    .climate-meta-item {
+      background: var(--bg-secondary, #f5f5f5);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+    }
+    .location-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0;
+      border-bottom: 2px solid var(--border-color, #ddd);
+      padding-bottom: 0.5rem;
+    }
+    .location-tab {
+      padding: 0.5rem 1rem;
+      background: none;
+      border: none;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-secondary, #666);
+      transition: all 0.2s;
+    }
+    .location-tab:hover {
+      background: var(--bg-secondary, #f5f5f5);
+    }
+    .location-tab.active {
+      background: var(--accent-color, #2196F3);
+      color: white;
+    }
+    .location-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 1rem 0;
+      padding: 1rem;
+      background: var(--bg-secondary, #f5f5f5);
+      border-radius: 8px;
+    }
+    .location-info-item {
+      flex: 1;
+      min-width: 120px;
+    }
+    .location-info-item strong {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+    .climate-table-wrapper {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    .climate-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .climate-table th,
+    .climate-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color, #ddd);
+    }
+    .climate-table th {
+      background: var(--bg-secondary, #f5f5f5);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .climate-table td.month-name {
+      text-align: left;
+      font-weight: 500;
+    }
+    .climate-table tr:hover {
+      background: var(--bg-secondary, #f5f5f5);
+    }
+    .climate-table .highlight-best {
+      background: #e8f5e9;
+    }
+    .climate-table .highlight-worst {
+      background: #ffebee;
+    }
+    .temp-cell {
+      font-variant-numeric: tabular-nums;
+    }
+    .temp-max {
+      color: #d32f2f;
+    }
+    .temp-min {
+      color: #1976d2;
+    }
+    .precip-cell {
+      font-variant-numeric: tabular-nums;
+    }
+    .charts-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    .chart-wrapper {
+      background: var(--bg-secondary, #f5f5f5);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .chart-wrapper h4 {
+      margin: 0 0 1rem 0;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .chart-wrapper canvas {
+      max-height: 250px;
+    }
+    @media (max-width: 768px) {
+      .charts-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .nav-links {
+      margin-top: 1rem;
+    }
+    .nav-links a {
+      color: var(--accent-color, #2196F3);
+      text-decoration: none;
+      margin-right: 1rem;
+    }
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+    .no-data {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-secondary, #666);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <nav class="breadcrumb">
+        <a href="../../">Home</a> / <a href="../">Trails</a> / <a href="./">{{TRAIL_SHORT_NAME}}</a> / <span>Climate</span>
+      </nav>
+    </header>
+
+    <section class="panel active">
+      <div class="climate-header">
+        <h1>{{TRAIL_NAME}}</h1>
+        <h2>Historical Climate Data</h2>
+        <div class="climate-meta">
+          <div class="climate-meta-item" id="data-years">
+            Loading...
+          </div>
+        </div>
+      </div>
+
+      <div id="climate-content">
+        <p>Loading climate data...</p>
+      </div>
+
+      <div class="nav-links">
+        <a href="./">Back to Trail Overview</a>
+      </div>
+    </section>
+
+    <footer>
+      <p><a href="../">Back to Trail List</a></p>
+    </footer>
+  </div>
+
+  <script type="module">
+    const TRAIL_ID = '{{TRAIL_ID}}';
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+    const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    let currentLocationIndex = 0;
+    let climateData = null;
+    let tempChart = null;
+    let precipChart = null;
+
+    async function loadTrailData() {
+      try {
+        const response = await fetch(`/data/generated/${TRAIL_ID}.json`);
+        if (!response.ok) throw new Error('Trail data not found');
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to load trail data:', error);
+        return null;
+      }
+    }
+
+    function renderNoData() {
+      document.getElementById('climate-content').innerHTML = `
+        <div class="no-data">
+          <h3>No Climate Data Available</h3>
+          <p>Climate data has not been configured for this trail yet.</p>
+        </div>
+      `;
+    }
+
+    function renderLocationTabs(locations) {
+      if (locations.length <= 1) return '';
+
+      return `
+        <div class="location-tabs">
+          ${locations.map((loc, i) => `
+            <button class="location-tab ${i === currentLocationIndex ? 'active' : ''}"
+                    data-index="${i}">
+              ${escapeHtml(loc.name)}
+            </button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderLocationInfo(location) {
+      return `
+        <div class="location-info">
+          <div class="location-info-item">
+            <strong>Location</strong>
+            ${escapeHtml(location.name)}
+          </div>
+          <div class="location-info-item">
+            <strong>Coordinates</strong>
+            ${location.lat.toFixed(3)}, ${location.lon.toFixed(3)}
+          </div>
+          ${location.elevation ? `
+            <div class="location-info-item">
+              <strong>Elevation</strong>
+              ${Math.round(location.elevation)}m
+            </div>
+          ` : ''}
+          ${location.distanceAlongTrail != null ? `
+            <div class="location-info-item">
+              <strong>Distance Along Trail</strong>
+              ${location.distanceAlongTrail.toFixed(1)} km
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function renderClimateTable(monthly) {
+      // Find best/worst months for hiking (low precipitation, moderate temps)
+      const sortedByPrecip = [...monthly].sort((a, b) => a.avgPrecipitation - b.avgPrecipitation);
+      const bestMonths = sortedByPrecip.slice(0, 3).map(m => m.month);
+      const worstMonths = sortedByPrecip.slice(-2).map(m => m.month);
+
+      return `
+        <div class="climate-table-wrapper">
+          <table class="climate-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Avg Min (&deg;C)</th>
+                <th>Avg Max (&deg;C)</th>
+                <th>Precipitation (mm)</th>
+                <th>Rainy Days</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monthly.map(m => {
+                const rowClass = bestMonths.includes(m.month) ? 'highlight-best' :
+                                 worstMonths.includes(m.month) ? 'highlight-worst' : '';
+                return `
+                  <tr class="${rowClass}">
+                    <td class="month-name">${MONTH_NAMES[m.month - 1]}</td>
+                    <td class="temp-cell temp-min">${m.avgTempMin.toFixed(1)}</td>
+                    <td class="temp-cell temp-max">${m.avgTempMax.toFixed(1)}</td>
+                    <td class="precip-cell">${m.avgPrecipitation.toFixed(0)}</td>
+                    <td class="precip-cell">${m.avgRainyDays.toFixed(1)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderCharts() {
+      return `
+        <div class="charts-container">
+          <div class="chart-wrapper">
+            <h4>Temperature (&deg;C)</h4>
+            <canvas id="temp-chart"></canvas>
+          </div>
+          <div class="chart-wrapper">
+            <h4>Precipitation</h4>
+            <canvas id="precip-chart"></canvas>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateCharts(monthly) {
+      const ctx1 = document.getElementById('temp-chart');
+      const ctx2 = document.getElementById('precip-chart');
+
+      if (!ctx1 || !ctx2) return;
+
+      // Destroy existing charts
+      if (tempChart) tempChart.destroy();
+      if (precipChart) precipChart.destroy();
+
+      const labels = monthly.map(m => MONTH_SHORT[m.month - 1]);
+
+      // Temperature chart
+      tempChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Max Temp',
+              data: monthly.map(m => m.avgTempMax),
+              borderColor: '#d32f2f',
+              backgroundColor: 'rgba(211, 47, 47, 0.1)',
+              fill: false,
+              tension: 0.3,
+            },
+            {
+              label: 'Min Temp',
+              data: monthly.map(m => m.avgTempMin),
+              borderColor: '#1976d2',
+              backgroundColor: 'rgba(25, 118, 210, 0.1)',
+              fill: false,
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+            },
+          },
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'Temperature (\u00B0C)',
+              },
+            },
+          },
+        },
+      });
+
+      // Precipitation chart
+      precipChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Precipitation (mm)',
+              data: monthly.map(m => m.avgPrecipitation),
+              backgroundColor: 'rgba(33, 150, 243, 0.7)',
+              borderColor: '#2196F3',
+              borderWidth: 1,
+              yAxisID: 'y',
+            },
+            {
+              label: 'Rainy Days',
+              data: monthly.map(m => m.avgRainyDays),
+              type: 'line',
+              borderColor: '#4caf50',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              pointRadius: 3,
+              yAxisID: 'y1',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+            },
+          },
+          scales: {
+            y: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Precipitation (mm)',
+              },
+              beginAtZero: true,
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Rainy Days',
+              },
+              beginAtZero: true,
+              grid: {
+                drawOnChartArea: false,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function escapeHtml(text) {
+      if (text == null) return '';
+      const div = document.createElement('div');
+      div.textContent = String(text);
+      return div.innerHTML;
+    }
+
+    function renderClimateContent(climate) {
+      const location = climate.locations[currentLocationIndex];
+
+      document.getElementById('data-years').textContent =
+        `Data: ${climate.dataYears.start}-${climate.dataYears.end} (${climate.dataYears.end - climate.dataYears.start + 1} years)`;
+
+      document.getElementById('climate-content').innerHTML = `
+        ${renderLocationTabs(climate.locations)}
+        ${renderLocationInfo(location)}
+        ${renderClimateTable(location.monthly)}
+        ${renderCharts()}
+      `;
+
+      // Setup tab handlers
+      document.querySelectorAll('.location-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          currentLocationIndex = parseInt(tab.dataset.index);
+          renderClimateContent(climate);
+        });
+      });
+
+      // Render charts after DOM update
+      requestAnimationFrame(() => {
+        updateCharts(location.monthly);
+      });
+    }
+
+    async function init() {
+      const trail = await loadTrailData();
+
+      if (!trail) {
+        document.getElementById('climate-content').innerHTML =
+          '<p>Failed to load trail data.</p>';
+        return;
+      }
+
+      if (!trail.climate || !trail.climate.locations || trail.climate.locations.length === 0) {
+        renderNoData();
+        return;
+      }
+
+      climateData = trail.climate;
+      renderClimateContent(climateData);
+    }
+
+    init();
+  </script>
+</body>
+</html>

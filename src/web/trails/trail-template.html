@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TRAIL_NAME}} - Trail Maps</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    .trail-header {
+      margin-bottom: 2rem;
+    }
+    .trail-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .trail-meta-item {
+      background: var(--bg-secondary, #f5f5f5);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+    }
+    .trail-meta-item strong {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+    .trail-nav-link {
+      color: var(--accent-color, #2196F3);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .trail-nav-link:hover {
+      text-decoration: underline;
+    }
+    .trail-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .stat-card {
+      background: var(--bg-secondary, #f5f5f5);
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-card .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .stat-card .label {
+      font-size: 0.875rem;
+      opacity: 0.7;
+    }
+    .elevation-profile {
+      width: 100%;
+      height: 200px;
+      background: var(--bg-secondary, #f5f5f5);
+      border-radius: 8px;
+      margin: 2rem 0;
+      position: relative;
+    }
+    .elevation-profile canvas {
+      width: 100%;
+      height: 100%;
+    }
+    .waypoints-table-wrapper {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    .waypoints-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .waypoints-table th,
+    .waypoints-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color, #ddd);
+    }
+    .waypoints-table th {
+      background: var(--bg-secondary, #f5f5f5);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .waypoints-table td.numeric {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .waypoints-table tr:hover {
+      background: var(--bg-secondary, #f5f5f5);
+    }
+    .waypoints-table tr.highlight-town {
+      background: #fff3e0;
+    }
+    .waypoints-table tr.highlight-town:hover {
+      background: #ffe0b2;
+    }
+    .waypoints-table tr.highlight-resupply {
+      background: #e8f5e9;
+    }
+    .waypoints-table tr.highlight-resupply:hover {
+      background: #c8e6c9;
+    }
+    /* Only waypoint rows are clickable, not variant rows */
+    .waypoints-table tbody tr[data-waypoint-index] {
+      cursor: pointer;
+    }
+    .waypoints-table tbody tr {
+      transition: background 0.3s;
+    }
+    .waypoints-table tr.highlight-selected {
+      background: #bbdefb !important;
+    }
+    .popup-show-in-table {
+      display: inline-block;
+      margin-top: 6px;
+      color: #1976D2;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .waypoint-type {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      background: var(--accent-light, #e3f2fd);
+      white-space: nowrap;
+    }
+    .waypoint-type.type-town {
+      background: #ffcc80;
+    }
+    .waypoint-type.type-hut {
+      background: #b39ddb;
+    }
+    .waypoint-type.type-campsite {
+      background: #a5d6a7;
+    }
+    .waypoint-type.type-water {
+      background: #81d4fa;
+    }
+    .waypoint-type.type-water-tank {
+      background: #80cbc4;
+    }
+    .waypoint-type.type-mountain {
+      background: #bcaaa4;
+    }
+    .waypoint-type.type-side-trip {
+      background: #f8bbd0;
+    }
+    .waypoint-type.type-accommodation {
+      background: #ce93d8;
+    }
+    .waypoint-type.type-caravan-park {
+      background: #c5e1a5;
+    }
+    .waypoint-type.type-trail-head {
+      background: #ffe082;
+    }
+    .waypoint-type.type-food {
+      background: #ffab91;
+    }
+    .waypoint-type.type-road-crossing {
+      background: #b0bec5;
+    }
+    .waypoints-list {
+      list-style: none;
+      padding: 0;
+    }
+    .waypoints-list li {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color, #ddd);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .waypoints-list li:last-child {
+      border-bottom: none;
+    }
+    /* Inline variant rows in waypoints table */
+    .variant-row {
+      background: var(--bg-secondary, #f8f9fa);
+    }
+    .variant-row.type-alternate {
+      background: #fff8e1;
+      border-left: 3px solid #ff9800;
+    }
+    .variant-row.type-side-trip {
+      background: #fce4ec;
+      border-left: 3px solid #9c27b0;
+    }
+    .variant-marker {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .variant-icon {
+      font-size: 1.1rem;
+    }
+    .variant-action {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-left: 0.25rem;
+    }
+    .variant-inline-stats {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+    }
+    .variant-stats-cell {
+      text-align: left !important;
+    }
+    .variant-type-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .variant-type-badge.type-alternate {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    .variant-type-badge.type-side-trip {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .section-header h3 {
+      margin: 0;
+    }
+    /* Trail map styles */
+    .trail-map {
+      width: 100%;
+      height: 400px;
+      background: var(--bg-secondary, #f5f5f5);
+      border-radius: 8px;
+      margin: 1rem 0 2rem 0;
+      position: relative;
+      z-index: 0;
+    }
+    .elevation-hover-marker {
+      width: 12px;
+      height: 12px;
+      background: #ff5722;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .elevation-profile .hover-line {
+      position: absolute;
+      top: 0;
+      bottom: 30px;
+      width: 2px;
+      background: #ff5722;
+      pointer-events: none;
+      display: none;
+    }
+    .elevation-profile .hover-tooltip {
+      position: absolute;
+      top: 5px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      display: none;
+      white-space: nowrap;
+    }
+    /* Waypoint marker styles */
+    .waypoint-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      border: 2px solid white;
+    }
+    .waypoint-marker.town { background: #ffcc80; }
+    .waypoint-marker.hut { background: #b39ddb; }
+    .waypoint-marker.campsite { background: #a5d6a7; }
+    .waypoint-marker.water { background: #81d4fa; }
+    .waypoint-marker.water-tank { background: #80cbc4; }
+    .waypoint-marker.mountain { background: #bcaaa4; }
+    .waypoint-marker.side-trip { background: #f8bbd0; }
+    .waypoint-marker.caravan-park { background: #c5e1a5; }
+    .waypoint-marker.trail-head { background: #ffe082; }
+    .waypoint-marker.food { background: #ffab91; }
+    .waypoint-marker.road-crossing { background: #b0bec5; }
+    .waypoint-marker.waypoint { background: #e0e0e0; }
+    @media (max-width: 768px) {
+      .trail-map {
+        height: 300px;
+      }
+    }
+    @media (max-width: 480px) {
+      .trail-map {
+        height: 250px;
+      }
+    }
+    .export-btn {
+      padding: 0.5rem 1rem;
+      background: var(--accent-color, #2196F3);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background 0.2s;
+    }
+    .export-btn:hover:not(:disabled) {
+      background: var(--accent-hover, #1976D2);
+    }
+    .export-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .export-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+    /* Direction controls in trail-meta */
+    .direction-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .direction-controls strong {
+      display: block;
+      margin-right: 0.25rem;
+    }
+    #direction-label {
+      font-weight: 600;
+      min-width: 4em;
+    }
+    .direction-btn {
+      padding: 0.5rem 1rem;
+      background: var(--accent-color, #2196F3);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .direction-btn:hover {
+      background: var(--accent-hover, #1976D2);
+    }
+    .direction-btn[aria-pressed="true"] {
+      background: #ff9800;
+    }
+    .direction-btn[aria-pressed="true"]:hover {
+      background: #f57c00;
+    }
+    .direction-loading {
+      font-size: 0.75rem;
+      color: var(--text-secondary, #666);
+      font-style: italic;
+    }
+    /* Expandable waypoint rows */
+    .expand-chevron {
+      display: inline-block;
+      width: 0.7rem;
+      margin-right: 0.25rem;
+      transition: transform 150ms ease;
+      font-size: 0.6rem;
+      color: var(--text-secondary, #666);
+    }
+    .expand-chevron.expanded {
+      transform: rotate(90deg);
+    }
+    .has-description-indicator {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #2196F3;
+      border-radius: 50%;
+      margin-left: 0.4rem;
+      opacity: 0.7;
+      vertical-align: middle;
+    }
+    .waypoint-expanded {
+      background: #e3f2fd !important;
+    }
+    .waypoint-detail-row td {
+      padding: 0 !important;
+      border-bottom: 1px solid var(--border-color, #ddd);
+    }
+    .waypoint-detail-panel {
+      padding: 0.75rem 1rem;
+      background: #fafafa;
+      border-left: 3px solid #2196F3;
+      animation: fadeIn 150ms ease;
+    }
+    .waypoint-detail-panel.no-description .waypoint-detail-description {
+      display: none;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .waypoint-detail-description {
+      white-space: pre-line;
+      color: var(--text-secondary, #555);
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+    .waypoint-detail-description a {
+      color: #1976D2;
+      word-break: break-all;
+    }
+    .waypoint-detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+    .waypoint-show-on-map {
+      color: #1976D2;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .waypoint-show-on-map:hover {
+      color: #1565C0;
+    }
+    .waypoint-detail-coords {
+      font-size: 0.8rem;
+      color: var(--text-secondary, #888);
+    }
+    .waypoint-detail-coords a {
+      color: #1976D2;
+      margin-left: 0.25rem;
+    }
+    /* Variant expandable state */
+    .variant-row.variant-expandable { cursor: pointer; }
+    .variant-row .expand-chevron {
+      display: inline-block;
+      width: 0.7rem;
+      margin-right: 0.25rem;
+      transition: transform 150ms ease;
+      font-size: 0.6rem;
+    }
+    .variant-row .expand-chevron.expanded { transform: rotate(90deg); }
+    .variant-row.variant-expanded { background: #fff8e1 !important; }
+    .variant-row.type-side-trip.variant-expanded { background: #fce4ec !important; }
+    /* Waypoints indicator on variant rows */
+    .has-waypoints-indicator {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #9c27b0;
+      border-radius: 50%;
+      margin-left: 0.4rem;
+    }
+    .variant-row.type-alternate .has-waypoints-indicator { background: #ff9800; }
+    /* Variant detail panel */
+    .variant-detail-panel {
+      padding: 1rem;
+      background: #fffaf0;
+      border-left: 3px solid #ff9800;
+      animation: fadeIn 150ms ease;
+    }
+    .variant-detail-panel.type-side-trip {
+      background: #fdf2f8;
+      border-left-color: #9c27b0;
+    }
+    .variant-detail-row td {
+      padding: 0 !important;
+      border-bottom: 1px solid var(--border-color, #ddd);
+    }
+    /* Header stats */
+    .variant-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+    .variant-headline-stats { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+    .variant-stat { font-size: 0.85rem; }
+    .variant-show-on-map {
+      color: #1976D2;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    /* Nested waypoints table */
+    .variant-waypoints h4 { margin: 0 0 0.5rem 0; font-size: 0.9rem; }
+    .variant-waypoints-table { width: 100%; background: white; border-radius: 4px; border-collapse: collapse; }
+    .variant-waypoints-table th {
+      background: #f5f5f5;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .variant-waypoints-table td {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #eee;
+    }
+    .variant-waypoints-table td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+    .variant-waypoint-row { cursor: pointer; }
+    .variant-waypoint-row:hover { background: #f5f5f5; }
+    .variant-wp-detail-row td {
+      padding: 0 !important;
+      border-bottom: 1px solid #eee;
+    }
+    /* No waypoints message */
+    .variant-no-waypoints { font-size: 0.85rem; color: #888; font-style: italic; margin: 0; }
+    /* Off-trail waypoints section */
+    .off-trail-header-row td {
+      background: #f5f5f5;
+      padding: 0.75rem !important;
+      border-top: 2px solid #ddd;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #666);
+    }
+    .off-trail-count {
+      font-weight: normal;
+      color: var(--text-secondary, #888);
+    }
+    .off-trail-row {
+      opacity: 0.7;
+      cursor: pointer;
+    }
+    .off-trail-row:hover {
+      opacity: 1;
+      background: var(--bg-secondary, #f5f5f5);
+    }
+    .off-trail-row.waypoint-expanded {
+      opacity: 1;
+    }
+    .off-trail-distance {
+      font-size: 0.8rem;
+      color: var(--text-secondary, #888);
+      text-align: left !important;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container trail-data">
+    <header>
+      <nav class="breadcrumb">
+        <a href="../../">Home</a> / <a href="../">Trails</a> / <span>{{TRAIL_SHORT_NAME}}</span>
+      </nav>
+    </header>
+
+    <section class="panel active">
+      <div class="trail-header">
+        <h1>{{TRAIL_NAME}}</h1>
+        <div class="trail-meta">
+          <div class="trail-meta-item">
+            <strong>Region</strong>
+            {{TRAIL_REGION}}
+          </div>
+          <div class="trail-meta-item">
+            <a href="climate.html" class="trail-nav-link">Climate Data</a>
+          </div>
+          <div class="trail-meta-item direction-controls">
+            <strong>Direction</strong>
+            <span id="direction-label">Start → End</span>
+            <button id="reverse-direction-btn" class="direction-btn" aria-pressed="false" title="Reverse trail direction">
+              ↔ Reverse Direction
+            </button>
+            <span id="direction-loading" class="direction-loading" hidden>...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trail-stats">
+        <div class="stat-card">
+          <div class="value" id="distance">--</div>
+          <div class="label">Distance (km)</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="ascent">--</div>
+          <div class="label">Total Ascent (m)</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="descent">--</div>
+          <div class="label">Total Descent (m)</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="points">--</div>
+          <div class="label">Track Points</div>
+        </div>
+      </div>
+
+      <h3>Trail Map</h3>
+      <div id="trail-map" class="trail-map"></div>
+
+      <h3>Elevation Profile</h3>
+      <div class="elevation-profile">
+        <canvas id="elevation-canvas"></canvas>
+      </div>
+
+      <div class="section-header">
+        <h3>Waypoints</h3>
+        <div class="export-buttons">
+          <button id="export-csv-btn" class="export-btn" disabled>Download CSV</button>
+          <button id="export-gpx-btn" class="export-btn" disabled>Download GPX</button>
+        </div>
+      </div>
+      <div class="waypoints-table-wrapper" id="waypoints-container">
+        <p>Loading waypoints...</p>
+      </div>
+    </section>
+
+    <footer>
+      <p><a href="../">Back to Trail List</a></p>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { initTrailViewer } from '../trail-viewer.ts';
+    initTrailViewer('{{TRAIL_ID}}');
+  </script>
+</body>
+</html>

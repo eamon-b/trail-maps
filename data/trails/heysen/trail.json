@@ -1,0 +1,52 @@
+{
+  "id": "heysen",
+  "name": "Heysen Trail",
+  "shortName": "Heysen",
+  "region": "South Australia",
+  "lengthKm": 39.6,
+  "gpxFile": "Heysen.gpx",
+  "description": "Trail data auto-generated from Heysen.gpx.",
+  "trackClassification": {
+    "mainRoutePatterns": ["^Map \\d+[A-D]$"],
+    "alternatePatterns": ["Alternative", "Alternatve", "\\bAlt\\b"],
+    "sideTripPatterns": ["Spur", "spur trail"],
+    "ignorePatterns": ["^Section \\d+$"]
+  },
+  "direction": {
+    "default": "NOBO",
+    "reversed": "SOBO"
+  },
+  "climateLocations": [
+    {
+      "name": "Cape Jervis",
+      "lat": -35.6,
+      "lon": 138.1
+    },
+    {
+      "name": "Mount Barker",
+      "lat": -35.07,
+      "lon": 138.86
+    },
+    {
+      "name": "Tanunda",
+      "lat": -34.52,
+      "lon": 138.96
+    },
+    {
+      "name": "Burra",
+      "lat": -33.68,
+      "lon": 138.93
+    },
+    {
+      "name": "Quorn",
+      "lat": -32.35,
+      "lon": 138.04
+    },
+    {
+      "name": "Parachilna",
+      "lat": -31.13,
+      "lon": 138.4
+    }
+  ],
+  "climateFile": "climate.json"
+}

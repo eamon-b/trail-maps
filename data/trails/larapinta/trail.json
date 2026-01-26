@@ -1,0 +1,37 @@
+{
+  "id": "larapinta",
+  "name": "Larapinta Trail",
+  "shortName": "larapinta",
+  "region": "West MacDonnell Ranges",
+  "lengthKm": 230.6,
+  "gpxFile": "Larapinta_Trail.gpx",
+  "geojsonFile": "Larapinta_Trail.json",
+  "description": "Trail data auto-generated from Larapinta_Trail.gpx. Edit trail.json to customize.",
+  "direction": {
+    "default": "Westbound",
+    "reversed": "Eastbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Alice Springs",
+      "lat": -23.7,
+      "lon": 133.88
+    },
+    {
+      "name": "Standley Chasm",
+      "lat": -23.73,
+      "lon": 133.43
+    },
+    {
+      "name": "Ormiston Gorge",
+      "lat": -23.63,
+      "lon": 132.73
+    },
+    {
+      "name": "Glen Helen",
+      "lat": -23.68,
+      "lon": 132.68
+    }
+  ],
+  "climateFile": "climate.json"
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trail Maps - Australian Long Distance Trails</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="container landing">
+    <header class="hero">
+      <h1>Trail Maps</h1>
+      <p class="tagline">Interactive maps and data for Australian long distance hiking trails</p>
+    </header>
+
+    <section class="feature-section">
+      <h2>Trails</h2>
+      <p>Browse trail information including interactive maps, elevation profiles, waypoints, and downloadable datasheets.</p>
+
+      <div id="trail-list" class="trail-grid">
+        <p class="loading">Loading trails...</p>
+      </div>
+
+      <div id="no-trails" class="no-results" hidden>
+        <p>No trail data available yet.</p>
+        <p>Trail data will appear here once it's been added to the data/trails directory.</p>
+      </div>
+    </section>
+
+    <footer>
+      <p>Trail data is sourced from open mapping projects and trail organizations.</p>
+      <p><a href="https://github.com/eamon-b/trail-maps" target="_blank">View on GitHub</a></p>
+    </footer>
+  </div>
+
+  <script type="module">
+    async function loadTrails() {
+      const trailList = document.getElementById('trail-list');
+      const noTrails = document.getElementById('no-trails');
+
+      try {
+        const response = await fetch('./data/generated/index.json');
+        if (!response.ok) {
+          throw new Error('Trail index not found');
+        }
+
+        const trails = await response.json();
+
+        if (trails.length === 0) {
+          trailList.setAttribute('hidden', '');
+          noTrails.removeAttribute('hidden');
+          return;
+        }
+
+        trailList.innerHTML = trails.map(trail => `
+          <a href="./trails/${trail.id}/" class="trail-card">
+            <h2>${trail.name}</h2>
+            <p class="trail-meta">
+              <span class="trail-short-name">${trail.shortName}</span>
+              <span class="trail-length">${trail.lengthKm} km</span>
+            </p>
+          </a>
+        `).join('');
+
+      } catch (error) {
+        trailList.innerHTML = '';
+        noTrails.removeAttribute('hidden');
+      }
+    }
+
+    loadTrails();
+  </script>
+</body>
+</html>

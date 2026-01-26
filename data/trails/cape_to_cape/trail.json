@@ -1,0 +1,32 @@
+{
+  "id": "cape_to_cape",
+  "name": "Cape to Cape Track",
+  "shortName": "Cape to Cape",
+  "region": "South West WA",
+  "lengthKm": 126.9,
+  "gpxFile": "Cape_to_Cape_Track.gpx",
+  "geojsonFile": "Cape_to_Cape_Track.json",
+  "description": "Trail data auto-generated from Cape_to_Cape_Track.gpx. Edit trail.json to customize.",
+  "direction": {
+    "default": "NOBO",
+    "reversed": "SOBO"
+  },
+  "climateLocations": [
+    {
+      "name": "Cape Naturaliste",
+      "lat": -33.53,
+      "lon": 115.02
+    },
+    {
+      "name": "Margaret River",
+      "lat": -33.95,
+      "lon": 115.08
+    },
+    {
+      "name": "Augusta",
+      "lat": -34.32,
+      "lon": 115.16
+    }
+  ],
+  "climateFile": "climate.json"
+}

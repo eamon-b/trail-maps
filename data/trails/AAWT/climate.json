@@ -1,0 +1,377 @@
+{
+  "generatedAt": "2026-01-25T01:03:06.556Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Walhalla",
+      "lat": -37.94,
+      "lon": 146.45,
+      "elevation": 377,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 12.9,
+          "avgTempMax": 24.7,
+          "avgPrecipitation": 62.8,
+          "avgRainyDays": 8.7
+        },
+        {
+          "month": 2,
+          "avgTempMin": 12.9,
+          "avgTempMax": 23.8,
+          "avgPrecipitation": 63.4,
+          "avgRainyDays": 8.1
+        },
+        {
+          "month": 3,
+          "avgTempMin": 11.4,
+          "avgTempMax": 21.3,
+          "avgPrecipitation": 53.8,
+          "avgRainyDays": 8.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 8.8,
+          "avgTempMax": 17.5,
+          "avgPrecipitation": 59.8,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 5,
+          "avgTempMin": 6.9,
+          "avgTempMax": 14.1,
+          "avgPrecipitation": 47.4,
+          "avgRainyDays": 8.8
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.2,
+          "avgTempMax": 11.5,
+          "avgPrecipitation": 60.3,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 4.5,
+          "avgTempMax": 10.9,
+          "avgPrecipitation": 49.2,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 8,
+          "avgTempMin": 4.6,
+          "avgTempMax": 12,
+          "avgPrecipitation": 65.1,
+          "avgRainyDays": 11.9
+        },
+        {
+          "month": 9,
+          "avgTempMin": 5.8,
+          "avgTempMax": 14.8,
+          "avgPrecipitation": 73.4,
+          "avgRainyDays": 12
+        },
+        {
+          "month": 10,
+          "avgTempMin": 7.2,
+          "avgTempMax": 17.4,
+          "avgPrecipitation": 89.7,
+          "avgRainyDays": 12.3
+        },
+        {
+          "month": 11,
+          "avgTempMin": 9.2,
+          "avgTempMax": 20,
+          "avgPrecipitation": 99.4,
+          "avgRainyDays": 11.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 10.7,
+          "avgTempMax": 22.2,
+          "avgPrecipitation": 76.6,
+          "avgRainyDays": 10.1
+        }
+      ]
+    },
+    {
+      "name": "Mt Hotham",
+      "lat": -36.98,
+      "lon": 147.13,
+      "elevation": 1752,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 7.5,
+          "avgTempMax": 18.9,
+          "avgPrecipitation": 90.4,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 2,
+          "avgTempMin": 7,
+          "avgTempMax": 18,
+          "avgPrecipitation": 87.5,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 3,
+          "avgTempMin": 5,
+          "avgTempMax": 15.1,
+          "avgPrecipitation": 69.7,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 4,
+          "avgTempMin": 2,
+          "avgTempMax": 10.6,
+          "avgPrecipitation": 66.5,
+          "avgRainyDays": 8.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": -0.5,
+          "avgTempMax": 6.4,
+          "avgPrecipitation": 73.7,
+          "avgRainyDays": 9.6
+        },
+        {
+          "month": 6,
+          "avgTempMin": -2.4,
+          "avgTempMax": 3.3,
+          "avgPrecipitation": 101.6,
+          "avgRainyDays": 12.3
+        },
+        {
+          "month": 7,
+          "avgTempMin": -3.3,
+          "avgTempMax": 2.2,
+          "avgPrecipitation": 93.7,
+          "avgRainyDays": 12.6
+        },
+        {
+          "month": 8,
+          "avgTempMin": -3.3,
+          "avgTempMax": 3.3,
+          "avgPrecipitation": 114.5,
+          "avgRainyDays": 13.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": -1.6,
+          "avgTempMax": 6.8,
+          "avgPrecipitation": 104.8,
+          "avgRainyDays": 12.2
+        },
+        {
+          "month": 10,
+          "avgTempMin": 0.4,
+          "avgTempMax": 10.4,
+          "avgPrecipitation": 112.5,
+          "avgRainyDays": 12.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": 3,
+          "avgTempMax": 13.7,
+          "avgPrecipitation": 118.8,
+          "avgRainyDays": 12.1
+        },
+        {
+          "month": 12,
+          "avgTempMin": 4.9,
+          "avgTempMax": 16.3,
+          "avgPrecipitation": 95.1,
+          "avgRainyDays": 10.6
+        }
+      ]
+    },
+    {
+      "name": "Thredbo",
+      "lat": -36.5,
+      "lon": 148.3,
+      "elevation": 1545,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 9.8,
+          "avgTempMax": 20.8,
+          "avgPrecipitation": 86.4,
+          "avgRainyDays": 10.8
+        },
+        {
+          "month": 2,
+          "avgTempMin": 9.2,
+          "avgTempMax": 19.8,
+          "avgPrecipitation": 86.1,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 7,
+          "avgTempMax": 17,
+          "avgPrecipitation": 72.3,
+          "avgRainyDays": 8.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 3.7,
+          "avgTempMax": 12.7,
+          "avgPrecipitation": 70.8,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 0.9,
+          "avgTempMax": 8.4,
+          "avgPrecipitation": 82.6,
+          "avgRainyDays": 9.8
+        },
+        {
+          "month": 6,
+          "avgTempMin": -1.1,
+          "avgTempMax": 5.1,
+          "avgPrecipitation": 110.4,
+          "avgRainyDays": 11.8
+        },
+        {
+          "month": 7,
+          "avgTempMin": -2.5,
+          "avgTempMax": 3.9,
+          "avgPrecipitation": 106.3,
+          "avgRainyDays": 12.7
+        },
+        {
+          "month": 8,
+          "avgTempMin": -2.3,
+          "avgTempMax": 5.1,
+          "avgPrecipitation": 122.7,
+          "avgRainyDays": 13.3
+        },
+        {
+          "month": 9,
+          "avgTempMin": -0.2,
+          "avgTempMax": 8.8,
+          "avgPrecipitation": 114.4,
+          "avgRainyDays": 12.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 2,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 117.3,
+          "avgRainyDays": 12.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": 5,
+          "avgTempMax": 15.5,
+          "avgPrecipitation": 130.2,
+          "avgRainyDays": 13.4
+        },
+        {
+          "month": 12,
+          "avgTempMin": 7.2,
+          "avgTempMax": 18.2,
+          "avgPrecipitation": 103,
+          "avgRainyDays": 11.3
+        }
+      ]
+    },
+    {
+      "name": "Namadgi",
+      "lat": -35.75,
+      "lon": 148.95,
+      "elevation": 1143,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 11.8,
+          "avgTempMax": 23.9,
+          "avgPrecipitation": 71.4,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 11.3,
+          "avgTempMax": 22.5,
+          "avgPrecipitation": 75.6,
+          "avgRainyDays": 9.1
+        },
+        {
+          "month": 3,
+          "avgTempMin": 9.2,
+          "avgTempMax": 19.8,
+          "avgPrecipitation": 61,
+          "avgRainyDays": 8.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": 5.8,
+          "avgTempMax": 15.8,
+          "avgPrecipitation": 38.7,
+          "avgRainyDays": 5.7
+        },
+        {
+          "month": 5,
+          "avgTempMin": 2.6,
+          "avgTempMax": 11.6,
+          "avgPrecipitation": 35.1,
+          "avgRainyDays": 5.1
+        },
+        {
+          "month": 6,
+          "avgTempMin": 1,
+          "avgTempMax": 8.3,
+          "avgPrecipitation": 54.2,
+          "avgRainyDays": 6.9
+        },
+        {
+          "month": 7,
+          "avgTempMin": -0.2,
+          "avgTempMax": 7.6,
+          "avgPrecipitation": 37.9,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 8,
+          "avgTempMin": 0,
+          "avgTempMax": 9,
+          "avgPrecipitation": 53.9,
+          "avgRainyDays": 8.3
+        },
+        {
+          "month": 9,
+          "avgTempMin": 2.2,
+          "avgTempMax": 12.8,
+          "avgPrecipitation": 58.1,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 4.6,
+          "avgTempMax": 16,
+          "avgPrecipitation": 71.5,
+          "avgRainyDays": 9.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 7.4,
+          "avgTempMax": 19,
+          "avgPrecipitation": 89,
+          "avgRainyDays": 11.4
+        },
+        {
+          "month": 12,
+          "avgTempMin": 9.6,
+          "avgTempMax": 21.8,
+          "avgPrecipitation": 78.5,
+          "avgRainyDays": 9.8
+        }
+      ]
+    }
+  ]
+}

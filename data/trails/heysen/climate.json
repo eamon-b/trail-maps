@@ -1,0 +1,561 @@
+{
+  "generatedAt": "2026-01-25T01:08:55.707Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Cape Jervis",
+      "lat": -35.6,
+      "lon": 138.1,
+      "elevation": 34,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 16.6,
+          "avgTempMax": 22.7,
+          "avgPrecipitation": 22.1,
+          "avgRainyDays": 3.5
+        },
+        {
+          "month": 2,
+          "avgTempMin": 16.9,
+          "avgTempMax": 22.5,
+          "avgPrecipitation": 21.7,
+          "avgRainyDays": 3.4
+        },
+        {
+          "month": 3,
+          "avgTempMin": 16,
+          "avgTempMax": 21.2,
+          "avgPrecipitation": 20,
+          "avgRainyDays": 4.1
+        },
+        {
+          "month": 4,
+          "avgTempMin": 14.5,
+          "avgTempMax": 19.1,
+          "avgPrecipitation": 32.1,
+          "avgRainyDays": 5.8
+        },
+        {
+          "month": 5,
+          "avgTempMin": 12.8,
+          "avgTempMax": 16.4,
+          "avgPrecipitation": 54.3,
+          "avgRainyDays": 8.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 11.3,
+          "avgTempMax": 14.3,
+          "avgPrecipitation": 64.7,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 7,
+          "avgTempMin": 10.4,
+          "avgTempMax": 13.4,
+          "avgPrecipitation": 68.4,
+          "avgRainyDays": 11
+        },
+        {
+          "month": 8,
+          "avgTempMin": 10.3,
+          "avgTempMax": 13.9,
+          "avgPrecipitation": 61.3,
+          "avgRainyDays": 10.9
+        },
+        {
+          "month": 9,
+          "avgTempMin": 11,
+          "avgTempMax": 15.5,
+          "avgPrecipitation": 51.8,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 10,
+          "avgTempMin": 12,
+          "avgTempMax": 17.3,
+          "avgPrecipitation": 39.8,
+          "avgRainyDays": 7.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 13.6,
+          "avgTempMax": 19.3,
+          "avgPrecipitation": 29,
+          "avgRainyDays": 5.8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 15,
+          "avgTempMax": 21,
+          "avgPrecipitation": 27.4,
+          "avgRainyDays": 5.1
+        }
+      ]
+    },
+    {
+      "name": "Mount Barker",
+      "lat": -35.07,
+      "lon": 138.86,
+      "elevation": 319,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 14,
+          "avgTempMax": 26.7,
+          "avgPrecipitation": 23.3,
+          "avgRainyDays": 3.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 14,
+          "avgTempMax": 26.1,
+          "avgPrecipitation": 22.2,
+          "avgRainyDays": 3.1
+        },
+        {
+          "month": 3,
+          "avgTempMin": 12.5,
+          "avgTempMax": 23.5,
+          "avgPrecipitation": 19.2,
+          "avgRainyDays": 3.8
+        },
+        {
+          "month": 4,
+          "avgTempMin": 10.6,
+          "avgTempMax": 19.9,
+          "avgPrecipitation": 32.4,
+          "avgRainyDays": 5
+        },
+        {
+          "month": 5,
+          "avgTempMin": 8.6,
+          "avgTempMax": 16,
+          "avgPrecipitation": 45.9,
+          "avgRainyDays": 8.4
+        },
+        {
+          "month": 6,
+          "avgTempMin": 6.9,
+          "avgTempMax": 13.1,
+          "avgPrecipitation": 53.9,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 6.1,
+          "avgTempMax": 12.5,
+          "avgPrecipitation": 56.5,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 8,
+          "avgTempMin": 6.2,
+          "avgTempMax": 13.5,
+          "avgPrecipitation": 55,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 7.5,
+          "avgTempMax": 16.2,
+          "avgPrecipitation": 51.6,
+          "avgRainyDays": 8.9
+        },
+        {
+          "month": 10,
+          "avgTempMin": 8.8,
+          "avgTempMax": 19.1,
+          "avgPrecipitation": 38.7,
+          "avgRainyDays": 7.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 10.7,
+          "avgTempMax": 22,
+          "avgPrecipitation": 37.3,
+          "avgRainyDays": 5.9
+        },
+        {
+          "month": 12,
+          "avgTempMin": 12.3,
+          "avgTempMax": 24.5,
+          "avgPrecipitation": 29.6,
+          "avgRainyDays": 4.8
+        }
+      ]
+    },
+    {
+      "name": "Tanunda",
+      "lat": -34.52,
+      "lon": 138.96,
+      "elevation": 252,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 15.6,
+          "avgTempMax": 29.2,
+          "avgPrecipitation": 22.5,
+          "avgRainyDays": 3.4
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15.6,
+          "avgTempMax": 28.4,
+          "avgPrecipitation": 23.3,
+          "avgRainyDays": 2.8
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.6,
+          "avgTempMax": 25.2,
+          "avgPrecipitation": 18,
+          "avgRainyDays": 3.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": 11.2,
+          "avgTempMax": 21.1,
+          "avgPrecipitation": 34.1,
+          "avgRainyDays": 5
+        },
+        {
+          "month": 5,
+          "avgTempMin": 8.8,
+          "avgTempMax": 16.8,
+          "avgPrecipitation": 42.4,
+          "avgRainyDays": 7.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 6.8,
+          "avgTempMax": 13.8,
+          "avgPrecipitation": 51.4,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 7,
+          "avgTempMin": 6,
+          "avgTempMax": 13.1,
+          "avgPrecipitation": 52.6,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 8,
+          "avgTempMin": 6.2,
+          "avgTempMax": 14.1,
+          "avgPrecipitation": 56.3,
+          "avgRainyDays": 9.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 7.8,
+          "avgTempMax": 17,
+          "avgPrecipitation": 53.2,
+          "avgRainyDays": 8.4
+        },
+        {
+          "month": 10,
+          "avgTempMin": 9.4,
+          "avgTempMax": 20.4,
+          "avgPrecipitation": 39.6,
+          "avgRainyDays": 6.4
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11.7,
+          "avgTempMax": 24,
+          "avgPrecipitation": 36.1,
+          "avgRainyDays": 5.8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 13.6,
+          "avgTempMax": 26.7,
+          "avgPrecipitation": 32.2,
+          "avgRainyDays": 4.4
+        }
+      ]
+    },
+    {
+      "name": "Burra",
+      "lat": -33.68,
+      "lon": 138.93,
+      "elevation": 514,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 15.2,
+          "avgTempMax": 29,
+          "avgPrecipitation": 22.2,
+          "avgRainyDays": 3.2
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15.1,
+          "avgTempMax": 28,
+          "avgPrecipitation": 22.2,
+          "avgRainyDays": 2.6
+        },
+        {
+          "month": 3,
+          "avgTempMin": 12.8,
+          "avgTempMax": 24.7,
+          "avgPrecipitation": 14.1,
+          "avgRainyDays": 2.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 10.2,
+          "avgTempMax": 20.4,
+          "avgPrecipitation": 26.7,
+          "avgRainyDays": 3.9
+        },
+        {
+          "month": 5,
+          "avgTempMin": 7.6,
+          "avgTempMax": 16,
+          "avgPrecipitation": 24.4,
+          "avgRainyDays": 5.5
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.6,
+          "avgTempMax": 12.7,
+          "avgPrecipitation": 30,
+          "avgRainyDays": 6.2
+        },
+        {
+          "month": 7,
+          "avgTempMin": 4.8,
+          "avgTempMax": 12.1,
+          "avgPrecipitation": 28.5,
+          "avgRainyDays": 6.7
+        },
+        {
+          "month": 8,
+          "avgTempMin": 5,
+          "avgTempMax": 13.2,
+          "avgPrecipitation": 32.3,
+          "avgRainyDays": 7.5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 6.7,
+          "avgTempMax": 16.7,
+          "avgPrecipitation": 37.1,
+          "avgRainyDays": 6.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 8.5,
+          "avgTempMax": 20.3,
+          "avgPrecipitation": 34.5,
+          "avgRainyDays": 5.3
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11,
+          "avgTempMax": 23.9,
+          "avgPrecipitation": 32,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 12,
+          "avgTempMin": 13,
+          "avgTempMax": 26.6,
+          "avgPrecipitation": 32.5,
+          "avgRainyDays": 4
+        }
+      ]
+    },
+    {
+      "name": "Quorn",
+      "lat": -32.35,
+      "lon": 138.04,
+      "elevation": 296,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 17.9,
+          "avgTempMax": 32.1,
+          "avgPrecipitation": 22.2,
+          "avgRainyDays": 3
+        },
+        {
+          "month": 2,
+          "avgTempMin": 17.4,
+          "avgTempMax": 31,
+          "avgPrecipitation": 25.7,
+          "avgRainyDays": 1.9
+        },
+        {
+          "month": 3,
+          "avgTempMin": 14.7,
+          "avgTempMax": 27.8,
+          "avgPrecipitation": 12.3,
+          "avgRainyDays": 1.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 11.3,
+          "avgTempMax": 23.5,
+          "avgPrecipitation": 21.1,
+          "avgRainyDays": 2.7
+        },
+        {
+          "month": 5,
+          "avgTempMin": 8.1,
+          "avgTempMax": 18.5,
+          "avgPrecipitation": 19.3,
+          "avgRainyDays": 3.1
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.7,
+          "avgTempMax": 14.9,
+          "avgPrecipitation": 26.4,
+          "avgRainyDays": 4.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 4.7,
+          "avgTempMax": 14.4,
+          "avgPrecipitation": 20.5,
+          "avgRainyDays": 4.2
+        },
+        {
+          "month": 8,
+          "avgTempMin": 5.4,
+          "avgTempMax": 16.1,
+          "avgPrecipitation": 22.3,
+          "avgRainyDays": 4.6
+        },
+        {
+          "month": 9,
+          "avgTempMin": 8,
+          "avgTempMax": 20.5,
+          "avgPrecipitation": 27.1,
+          "avgRainyDays": 4
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.4,
+          "avgTempMax": 24,
+          "avgPrecipitation": 25.7,
+          "avgRainyDays": 3.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": 13.3,
+          "avgTempMax": 27.2,
+          "avgPrecipitation": 27.3,
+          "avgRainyDays": 3.9
+        },
+        {
+          "month": 12,
+          "avgTempMin": 15.6,
+          "avgTempMax": 29.9,
+          "avgPrecipitation": 27.7,
+          "avgRainyDays": 3.3
+        }
+      ]
+    },
+    {
+      "name": "Parachilna",
+      "lat": -31.13,
+      "lon": 138.4,
+      "elevation": 142,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 22.5,
+          "avgTempMax": 35.1,
+          "avgPrecipitation": 19.8,
+          "avgRainyDays": 2.5
+        },
+        {
+          "month": 2,
+          "avgTempMin": 21.6,
+          "avgTempMax": 33.8,
+          "avgPrecipitation": 28.3,
+          "avgRainyDays": 2.4
+        },
+        {
+          "month": 3,
+          "avgTempMin": 18.6,
+          "avgTempMax": 30.3,
+          "avgPrecipitation": 10.1,
+          "avgRainyDays": 1.8
+        },
+        {
+          "month": 4,
+          "avgTempMin": 14.8,
+          "avgTempMax": 25.5,
+          "avgPrecipitation": 17.1,
+          "avgRainyDays": 2.3
+        },
+        {
+          "month": 5,
+          "avgTempMin": 10.6,
+          "avgTempMax": 20.2,
+          "avgPrecipitation": 14.2,
+          "avgRainyDays": 3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 7.8,
+          "avgTempMax": 16.2,
+          "avgPrecipitation": 20,
+          "avgRainyDays": 3.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 6.9,
+          "avgTempMax": 16,
+          "avgPrecipitation": 14.2,
+          "avgRainyDays": 3.3
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 17.1,
+          "avgRainyDays": 3.5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 11.1,
+          "avgTempMax": 23,
+          "avgPrecipitation": 20.2,
+          "avgRainyDays": 3.2
+        },
+        {
+          "month": 10,
+          "avgTempMin": 14,
+          "avgTempMax": 26.5,
+          "avgPrecipitation": 22.2,
+          "avgRainyDays": 3.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 17.3,
+          "avgTempMax": 29.8,
+          "avgPrecipitation": 24.8,
+          "avgRainyDays": 3.1
+        },
+        {
+          "month": 12,
+          "avgTempMin": 19.8,
+          "avgTempMax": 32.7,
+          "avgPrecipitation": 18.9,
+          "avgRainyDays": 2.5
+        }
+      ]
+    }
+  ]
+}

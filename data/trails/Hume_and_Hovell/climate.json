@@ -1,0 +1,469 @@
+{
+  "generatedAt": "2026-01-25T02:25:21.587Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Yass",
+      "lat": -34.84,
+      "lon": 148.91,
+      "elevation": 482,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 15.7,
+          "avgTempMax": 28.4,
+          "avgPrecipitation": 50.2,
+          "avgRainyDays": 6.3
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15.2,
+          "avgTempMax": 27,
+          "avgPrecipitation": 54.9,
+          "avgRainyDays": 5.8
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13,
+          "avgTempMax": 24,
+          "avgPrecipitation": 46.8,
+          "avgRainyDays": 5.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 9.3,
+          "avgTempMax": 19.8,
+          "avgPrecipitation": 35,
+          "avgRainyDays": 4.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 5.9,
+          "avgTempMax": 15.2,
+          "avgPrecipitation": 37.7,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 6,
+          "avgTempMin": 3.8,
+          "avgTempMax": 11.9,
+          "avgPrecipitation": 59.1,
+          "avgRainyDays": 7.8
+        },
+        {
+          "month": 7,
+          "avgTempMin": 2.6,
+          "avgTempMax": 10.9,
+          "avgPrecipitation": 51.5,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 8,
+          "avgTempMin": 2.9,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 58.6,
+          "avgRainyDays": 8.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 5.2,
+          "avgTempMax": 15.7,
+          "avgPrecipitation": 59.8,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 10,
+          "avgTempMin": 7.9,
+          "avgTempMax": 19.2,
+          "avgPrecipitation": 66.4,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": 10.9,
+          "avgTempMax": 22.6,
+          "avgPrecipitation": 78.8,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 12,
+          "avgTempMin": 13.3,
+          "avgTempMax": 25.8,
+          "avgPrecipitation": 65.4,
+          "avgRainyDays": 7
+        }
+      ]
+    },
+    {
+      "name": "Wee Jasper",
+      "lat": -35.14,
+      "lon": 148.69,
+      "elevation": 368,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 16.2,
+          "avgTempMax": 28.4,
+          "avgPrecipitation": 65.3,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15.8,
+          "avgTempMax": 27.2,
+          "avgPrecipitation": 69.1,
+          "avgRainyDays": 7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.5,
+          "avgTempMax": 24.3,
+          "avgPrecipitation": 61,
+          "avgRainyDays": 6.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": 9.8,
+          "avgTempMax": 20.1,
+          "avgPrecipitation": 46.3,
+          "avgRainyDays": 5.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": 6.3,
+          "avgTempMax": 15.6,
+          "avgPrecipitation": 56.9,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 6,
+          "avgTempMin": 4.4,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 81.3,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 3.1,
+          "avgTempMax": 11.4,
+          "avgPrecipitation": 70.6,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 8,
+          "avgTempMin": 3.4,
+          "avgTempMax": 12.8,
+          "avgPrecipitation": 81.6,
+          "avgRainyDays": 9.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 5.8,
+          "avgTempMax": 16.2,
+          "avgPrecipitation": 89.4,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 8.5,
+          "avgTempMax": 19.6,
+          "avgPrecipitation": 88.1,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11.5,
+          "avgTempMax": 22.9,
+          "avgPrecipitation": 104.1,
+          "avgRainyDays": 9.8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 13.9,
+          "avgTempMax": 25.9,
+          "avgPrecipitation": 79.4,
+          "avgRainyDays": 8.4
+        }
+      ]
+    },
+    {
+      "name": "Tumut",
+      "lat": -35.3,
+      "lon": 148.22,
+      "elevation": 272,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 16.3,
+          "avgTempMax": 29.2,
+          "avgPrecipitation": 54.6,
+          "avgRainyDays": 5.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15.8,
+          "avgTempMax": 28.1,
+          "avgPrecipitation": 53.4,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.1,
+          "avgTempMax": 25,
+          "avgPrecipitation": 53.9,
+          "avgRainyDays": 5
+        },
+        {
+          "month": 4,
+          "avgTempMin": 8.9,
+          "avgTempMax": 20.4,
+          "avgPrecipitation": 47,
+          "avgRainyDays": 5.1
+        },
+        {
+          "month": 5,
+          "avgTempMin": 5.4,
+          "avgTempMax": 15.5,
+          "avgPrecipitation": 63.3,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 6,
+          "avgTempMin": 3.4,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 94.1,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 2.2,
+          "avgTempMax": 11.2,
+          "avgPrecipitation": 80.5,
+          "avgRainyDays": 10.5
+        },
+        {
+          "month": 8,
+          "avgTempMin": 2.7,
+          "avgTempMax": 12.6,
+          "avgPrecipitation": 88,
+          "avgRainyDays": 10.6
+        },
+        {
+          "month": 9,
+          "avgTempMin": 4.9,
+          "avgTempMax": 16,
+          "avgPrecipitation": 90.8,
+          "avgRainyDays": 9.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 7.7,
+          "avgTempMax": 19.6,
+          "avgPrecipitation": 81,
+          "avgRainyDays": 8.7
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11.1,
+          "avgTempMax": 23.2,
+          "avgPrecipitation": 93.3,
+          "avgRainyDays": 8.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 13.7,
+          "avgTempMax": 26.4,
+          "avgPrecipitation": 69.3,
+          "avgRainyDays": 6.8
+        }
+      ]
+    },
+    {
+      "name": "Tumbarumba",
+      "lat": -35.78,
+      "lon": 148.01,
+      "elevation": 632,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 14.5,
+          "avgTempMax": 27.2,
+          "avgPrecipitation": 65.6,
+          "avgRainyDays": 6.7
+        },
+        {
+          "month": 2,
+          "avgTempMin": 13.9,
+          "avgTempMax": 26.1,
+          "avgPrecipitation": 70.2,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 3,
+          "avgTempMin": 11.3,
+          "avgTempMax": 22.9,
+          "avgPrecipitation": 60.5,
+          "avgRainyDays": 6.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": 7.4,
+          "avgTempMax": 18.1,
+          "avgPrecipitation": 59.2,
+          "avgRainyDays": 6.8
+        },
+        {
+          "month": 5,
+          "avgTempMin": 4.3,
+          "avgTempMax": 13.4,
+          "avgPrecipitation": 74.5,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 6,
+          "avgTempMin": 2.3,
+          "avgTempMax": 10.2,
+          "avgPrecipitation": 102.3,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 7,
+          "avgTempMin": 1.5,
+          "avgTempMax": 9.2,
+          "avgPrecipitation": 100,
+          "avgRainyDays": 12.6
+        },
+        {
+          "month": 8,
+          "avgTempMin": 1.8,
+          "avgTempMax": 10.7,
+          "avgPrecipitation": 106.9,
+          "avgRainyDays": 12.5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 4,
+          "avgTempMax": 14.2,
+          "avgPrecipitation": 105.8,
+          "avgRainyDays": 10.8
+        },
+        {
+          "month": 10,
+          "avgTempMin": 6.4,
+          "avgTempMax": 17.7,
+          "avgPrecipitation": 98.7,
+          "avgRainyDays": 10.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": 9.5,
+          "avgTempMax": 21.2,
+          "avgPrecipitation": 115.1,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 12,
+          "avgTempMin": 11.8,
+          "avgTempMax": 24.3,
+          "avgPrecipitation": 82,
+          "avgRainyDays": 7.9
+        }
+      ]
+    },
+    {
+      "name": "Albury",
+      "lat": -36.08,
+      "lon": 146.92,
+      "elevation": 163,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 17.8,
+          "avgTempMax": 30.3,
+          "avgPrecipitation": 49.5,
+          "avgRainyDays": 5.5
+        },
+        {
+          "month": 2,
+          "avgTempMin": 17.3,
+          "avgTempMax": 29.1,
+          "avgPrecipitation": 48.1,
+          "avgRainyDays": 4.9
+        },
+        {
+          "month": 3,
+          "avgTempMin": 14.7,
+          "avgTempMax": 25.8,
+          "avgPrecipitation": 48.3,
+          "avgRainyDays": 4.4
+        },
+        {
+          "month": 4,
+          "avgTempMin": 10.6,
+          "avgTempMax": 20.9,
+          "avgPrecipitation": 42.1,
+          "avgRainyDays": 5
+        },
+        {
+          "month": 5,
+          "avgTempMin": 7.4,
+          "avgTempMax": 16.1,
+          "avgPrecipitation": 53.2,
+          "avgRainyDays": 6.5
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.2,
+          "avgTempMax": 12.9,
+          "avgPrecipitation": 73.2,
+          "avgRainyDays": 9.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 4.2,
+          "avgTempMax": 12,
+          "avgPrecipitation": 65.3,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 8,
+          "avgTempMin": 4.5,
+          "avgTempMax": 13.4,
+          "avgPrecipitation": 73,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 6.3,
+          "avgTempMax": 16.5,
+          "avgPrecipitation": 68.2,
+          "avgRainyDays": 8.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 9,
+          "avgTempMax": 20.2,
+          "avgPrecipitation": 67.9,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": 12.5,
+          "avgTempMax": 24,
+          "avgPrecipitation": 74.4,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 12,
+          "avgTempMin": 15,
+          "avgTempMax": 27.3,
+          "avgPrecipitation": 59.8,
+          "avgRainyDays": 5.6
+        }
+      ]
+    }
+  ]
+}

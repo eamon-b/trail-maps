@@ -1,0 +1,52 @@
+{
+  "id": "bibbulmum",
+  "name": "Bibbulmum Track",
+  "shortName": "bibb",
+  "region": "South West WA",
+  "lengthKm": 981.6,
+  "gpxFile": "Bibbulmum_Track.gpx",
+  "geojsonFile": "Bibbulmum_Track.json",
+  "description": "Trail data auto-generated from Bibbulmum_Track.gpx. Edit trail.json to customize.",
+  "direction": {
+    "default": "SOBO",
+    "reversed": "NOBO"
+  },
+  "climateLocations": [
+    {
+      "name": "Kalamunda",
+      "lat": -31.97,
+      "lon": 116.06
+    },
+    {
+      "name": "Dwellingup",
+      "lat": -32.71,
+      "lon": 116.06
+    },
+    {
+      "name": "Collie",
+      "lat": -33.36,
+      "lon": 116.16
+    },
+    {
+      "name": "Pemberton",
+      "lat": -34.45,
+      "lon": 116.04
+    },
+    {
+      "name": "Walpole",
+      "lat": -34.98,
+      "lon": 116.73
+    },
+    {
+      "name": "Denmark",
+      "lat": -34.96,
+      "lon": 117.35
+    },
+    {
+      "name": "Albany",
+      "lat": -35.03,
+      "lon": 117.88
+    }
+  ],
+  "climateFile": "climate.json"
+}

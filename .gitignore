@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.log
 .DS_Store
+plans/
 
 # Generated trail data (built from source)
 public/data/generated/
@@ -11,3 +12,4 @@ src/web/trails/*/
 .env
 .env.local
 .env.*.local
+.vercel

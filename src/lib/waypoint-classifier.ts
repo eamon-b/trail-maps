@@ -53,11 +53,16 @@ export const FOLDER_TYPE_MAP: Record<string, string> = {
   // Food
   'extra food': 'food',
   'kiosks': 'food',
+  // Crossings
+  'inlets': 'inlet-crossing',
+  'inlet crossings': 'inlet-crossing',
   // Points of Interest
   'places of interest': 'poi',
   'sights': 'poi',
-  'inlets': 'poi',
   'other': 'poi',
+  // Endpoints
+  'endpoints': 'endpoint',
+  'start/end': 'endpoint',
 };
 
 /**
@@ -77,6 +82,8 @@ export const DEFAULT_PREFIX_RULES: WaypointPrefixRule[] = [
   { prefix: 'TH ', type: 'trailhead' },
   { prefix: 'CP:', type: 'caravan-park' },
   { prefix: 'CP ', type: 'caravan-park' },
+  { prefix: 'IC:', type: 'inlet-crossing' },
+  { prefix: 'IC ', type: 'inlet-crossing' },
   // Single-char prefixes - MUST have delimiter
   { prefix: 'C:', type: 'campsite' },
   { prefix: 'C ', type: 'campsite' },
@@ -91,6 +98,10 @@ export const DEFAULT_PREFIX_RULES: WaypointPrefixRule[] = [
   { prefix: 'M ', type: 'mountain' },
   { prefix: 'F:', type: 'food' },
   { prefix: 'F ', type: 'food' },
+  { prefix: 'S:', type: 'endpoint' },
+  { prefix: 'S ', type: 'endpoint' },
+  { prefix: 'E:', type: 'endpoint' },
+  { prefix: 'E ', type: 'endpoint' },
 ];
 
 /**

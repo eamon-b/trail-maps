@@ -126,6 +126,7 @@ const WAYPOINT_ICONS: Record<string, { icon: string }> = {
   'trail-head': { icon: '\u{1F697}' },
   food: { icon: '\u{1F374}' },
   'road-crossing': { icon: '\u{1F6E3}\u{FE0F}' },
+  endpoint: { icon: '\u{1F6A9}' },
   waypoint: { icon: '\u{1F4CD}' }
 };
 
@@ -338,7 +339,7 @@ function drawOffTrailWaypointMarkers(waypoints: OffTrailWaypoint[]): void {
   waypoints.forEach(wp => {
     const marker = L.marker([wp.lat, wp.lon], {
       icon: createWaypointIcon(wp.type),
-      opacity: 0.5
+      opacity: 1
     }).addTo(map!).bindPopup(`
       <strong>${escapeHtml(wp.name || 'Waypoint')}</strong><br>
       ${escapeHtml(wp.type || 'waypoint')}<br>
@@ -843,6 +844,7 @@ function handleVariantShowOnMap(variantKey: string): void {
   const variant = findVariantByKey(variantKey, trail);
   if (!variant?.points || variant.points.length === 0) return;
 
+  document.getElementById('trail-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const bounds = L.latLngBounds(variant.points.map(p => [p.lat, p.lon] as [number, number]));
   map.fitBounds(bounds, { padding: [40, 40] });
 }
@@ -855,6 +857,7 @@ function handleVariantWaypointShowOnMap(variantKey: string, wpIndex: number): vo
   const wp = variant?.waypoints?.[wpIndex];
   if (!wp) return;
 
+  document.getElementById('trail-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const targetZoom = Math.max(map.getZoom(), 14);
   map.setView([wp.lat, wp.lon], targetZoom);
 }

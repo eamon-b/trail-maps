@@ -2,7 +2,7 @@
  * Pre-fetch elevation data for trail GPX files at build time.
  *
  * This script fills in missing elevation data for trail points by querying
- * the Open Elevation API. Results are saved back to the processed trail JSON files.
+ * the Open Elevation API. Results are saved back to the source GPX files.
  *
  * Usage: tsx scripts/fetch-elevation.ts [trail-id]
  *   - With no arguments: processes all trails
@@ -12,33 +12,38 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface TrailPoint {
-  lat: number;
-  lon: number;
-  ele: number;
-  dist: number;
-}
-
-interface ProcessedTrail {
-  config: {
-    id: string;
-    name: string;
-    [key: string]: unknown;
-  };
-  track: {
-    points: TrailPoint[];
-    totalDistance: number;
-    totalAscent: number;
-    totalDescent: number;
-  };
-  waypoints: Record<string, unknown>[];
-  climate: Record<string, unknown> | null;
+interface TrailConfig {
+  id: string;
+  name: string;
+  gpxFile: string;
+  [key: string]: unknown;
 }
 
 interface ElevationResult {
   latitude: number;
   longitude: number;
   elevation: number;
+}
+
+interface PointLocation {
+  index: number;
+  lat: number;
+  lon: number;
+  startPos: number;
+  endPos: number;
+  currentEle: number | null;
+  routeIndex: number;
+}
+
+interface GpxRoute {
+  name: string;
+  startPos: number;
+  endPos: number;
+}
+
+interface ParsedGpx {
+  routes: GpxRoute[];
+  points: PointLocation[];
 }
 
 // Handle both Windows and Unix paths from import.meta.url
@@ -48,7 +53,7 @@ const SCRIPTS_DIR = path.dirname(
     : new URL(import.meta.url).pathname
 );
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '..');
-const GENERATED_DIR = path.join(PROJECT_ROOT, 'public/data/generated');
+const TRAILS_DIR = path.join(PROJECT_ROOT, 'data/trails');
 
 const OPEN_ELEVATION_URL = 'https://api.open-elevation.com/api/v1/lookup';
 const BATCH_SIZE = 100; // Open Elevation recommends max 100 points per request
@@ -80,50 +85,100 @@ async function fetchElevationBatch(
   return data.results;
 }
 
-function recalculateElevationStats(points: TrailPoint[]): {
-  totalAscent: number;
-  totalDescent: number;
-} {
-  let totalAscent = 0;
-  let totalDescent = 0;
+function parseGpx(gpxContent: string): ParsedGpx {
+  // Parse all <trk> elements to get route names and positions
+  const routes: GpxRoute[] = [];
+  const trkRegex = /<trk>(.*?)<\/trk>/gs;
+  let trkMatch;
 
-  for (let i = 1; i < points.length; i++) {
-    const elevDiff = points[i].ele - points[i - 1].ele;
-    if (elevDiff > 0) {
-      totalAscent += elevDiff;
-    } else {
-      totalDescent += Math.abs(elevDiff);
-    }
+  while ((trkMatch = trkRegex.exec(gpxContent)) !== null) {
+    const trkContent = trkMatch[1];
+    const nameMatch = trkContent.match(/<name>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/name>/);
+    const name = nameMatch ? nameMatch[1] : `Route ${routes.length + 1}`;
+    routes.push({
+      name,
+      startPos: trkMatch.index,
+      endPos: trkMatch.index + trkMatch[0].length,
+    });
   }
 
-  return { totalAscent, totalDescent };
+  // Parse all <trkpt> elements and assign each to its route
+  const points: PointLocation[] = [];
+  const trkptRegex = /<trkpt\s+lat="([^"]+)"\s+lon="([^"]+)">(.*?)<\/trkpt>/gs;
+  let match;
+  let index = 0;
+
+  while ((match = trkptRegex.exec(gpxContent)) !== null) {
+    const lat = parseFloat(match[1]);
+    const lon = parseFloat(match[2]);
+    const innerContent = match[3];
+    const startPos = match.index;
+    const endPos = match.index + match[0].length;
+
+    // Determine which route this point belongs to
+    const routeIndex = routes.findIndex(r => startPos >= r.startPos && endPos <= r.endPos);
+
+    // Check for existing elevation
+    const eleMatch = innerContent.match(/<ele>([^<]*)<\/ele>/);
+    const currentEle = eleMatch ? parseFloat(eleMatch[1]) : null;
+
+    points.push({
+      index,
+      lat,
+      lon,
+      startPos,
+      endPos,
+      currentEle,
+      routeIndex,
+    });
+    index++;
+  }
+
+  return { routes, points };
 }
 
-async function processTrail(trailPath: string): Promise<boolean> {
-  const trailId = path.basename(trailPath, '.json');
-  console.log(`\nProcessing: ${trailId}`);
+function updateGpxWithElevations(
+  gpxContent: string,
+  points: PointLocation[],
+  elevations: Map<number, number>
+): string {
+  // Sort points by position in reverse order so we can replace from end to start
+  // without affecting earlier positions
+  const pointsToUpdate = points
+    .filter(p => elevations.has(p.index))
+    .sort((a, b) => b.startPos - a.startPos);
 
-  const content = fs.readFileSync(trailPath, 'utf-8');
-  const trail: ProcessedTrail = JSON.parse(content);
+  let result = gpxContent;
 
-  // Find points with missing or zero elevation
-  const pointsNeedingElevation: { index: number; lat: number; lon: number }[] = [];
+  for (const point of pointsToUpdate) {
+    const newEle = elevations.get(point.index)!;
+    const originalText = gpxContent.slice(point.startPos, point.endPos);
 
-  for (let i = 0; i < trail.track.points.length; i++) {
-    const point = trail.track.points[i];
-    if (point.ele === 0 || point.ele === null || point.ele === undefined) {
-      pointsNeedingElevation.push({ index: i, lat: point.lat, lon: point.lon });
+    // Check if there's already an <ele> tag
+    const eleMatch = originalText.match(/<ele>[^<]*<\/ele>/);
+    let newText: string;
+
+    if (eleMatch) {
+      // Replace existing elevation
+      newText = originalText.replace(/<ele>[^<]*<\/ele>/, `<ele>${newEle}</ele>`);
+    } else {
+      // Add elevation tag after the opening trkpt tag
+      newText = originalText.replace(
+        /(<trkpt[^>]*>)/,
+        `$1<ele>${newEle}</ele>`
+      );
     }
+
+    result = result.slice(0, point.startPos) + newText + result.slice(point.endPos);
   }
 
-  if (pointsNeedingElevation.length === 0) {
-    console.log(`  All ${trail.track.points.length} points already have elevation data.`);
-    return false;
-  }
+  return result;
+}
 
-  console.log(`  Found ${pointsNeedingElevation.length} points needing elevation data.`);
-
-  // Process in batches
+async function fetchElevationsForPoints(
+  pointsNeedingElevation: PointLocation[]
+): Promise<Map<number, number>> {
+  const elevations = new Map<number, number>();
   let successCount = 0;
   let failCount = 0;
 
@@ -138,11 +193,10 @@ async function processTrail(trailPath: string): Promise<boolean> {
       const results = await fetchElevationBatch(batch.map(p => ({ lat: p.lat, lon: p.lon })));
 
       for (let j = 0; j < batch.length; j++) {
-        const pointIndex = batch[j].index;
         const elevation = results[j]?.elevation;
 
         if (elevation !== null && elevation !== undefined) {
-          trail.track.points[pointIndex].ele = elevation;
+          elevations.set(batch[j].index, elevation);
           successCount++;
         } else {
           failCount++;
@@ -162,17 +216,55 @@ async function processTrail(trailPath: string): Promise<boolean> {
   }
 
   console.log(`  Results: ${successCount} succeeded, ${failCount} failed`);
+  return elevations;
+}
 
-  if (successCount > 0) {
-    // Recalculate elevation statistics
-    const { totalAscent, totalDescent } = recalculateElevationStats(trail.track.points);
-    trail.track.totalAscent = totalAscent;
-    trail.track.totalDescent = totalDescent;
+function needsElevation(p: PointLocation): boolean {
+  return p.currentEle === null || p.currentEle === 0 || (typeof p.currentEle === 'number' && isNaN(p.currentEle));
+}
 
-    // Save updated trail data
-    fs.writeFileSync(trailPath, JSON.stringify(trail, null, 2));
-    console.log(`  Updated ${trailPath}`);
-    console.log(`  New stats: ${Math.round(totalAscent)}m ascent, ${Math.round(totalDescent)}m descent`);
+async function processGpxFile(gpxPath: string): Promise<boolean> {
+  const gpxName = path.basename(gpxPath);
+  console.log(`\nProcessing: ${gpxName}`);
+
+  const gpxContent = fs.readFileSync(gpxPath, 'utf-8');
+  const { routes, points } = parseGpx(gpxContent);
+
+  console.log(`  Found ${routes.length} route(s):`);
+  for (let i = 0; i < routes.length; i++) {
+    const routePoints = points.filter(p => p.routeIndex === i);
+    const routeNeedsEle = routePoints.filter(needsElevation);
+    const status = routeNeedsEle.length > 0
+      ? `${routeNeedsEle.length}/${routePoints.length} need elevation`
+      : `${routePoints.length} points OK`;
+    console.log(`    - ${routes[i].name} (${status})`);
+  }
+
+  // Check for points not matched to any route
+  const unmatched = points.filter(p => p.routeIndex === -1);
+  if (unmatched.length > 0) {
+    console.log(`    - (unmatched points: ${unmatched.length})`);
+  }
+
+  const pointsNeedingElevation = points.filter(needsElevation);
+
+  if (pointsNeedingElevation.length === 0) {
+    console.log(`  All ${points.length} track points already have elevation data.`);
+    return false;
+  }
+
+  console.log(`  Total: ${pointsNeedingElevation.length}/${points.length} points needing elevation data.`);
+
+  // Fetch elevations
+  const elevations = await fetchElevationsForPoints(pointsNeedingElevation);
+
+  if (elevations.size > 0) {
+    // Update GPX content with new elevations
+    const updatedGpx = updateGpxWithElevations(gpxContent, points, elevations);
+
+    // Save updated GPX file
+    fs.writeFileSync(gpxPath, updatedGpx);
+    console.log(`  Saved: ${gpxPath}`);
     return true;
   }
 
@@ -180,54 +272,65 @@ async function processTrail(trailPath: string): Promise<boolean> {
 }
 
 async function main() {
-  console.log('Elevation Data Fetch Script');
-  console.log('===========================');
+  console.log('Elevation Data Fetch Script (GPX)');
+  console.log('==================================');
 
   const args = process.argv.slice(2);
   const specificTrail = args[0];
 
-  if (!fs.existsSync(GENERATED_DIR)) {
-    console.error(`\nError: Generated data directory not found: ${GENERATED_DIR}`);
-    console.error('Run "npm run build:trails" first to generate trail data.');
+  if (!fs.existsSync(TRAILS_DIR)) {
+    console.error(`\nError: Trails directory not found: ${TRAILS_DIR}`);
     process.exit(1);
   }
 
-  // Find trail files to process
-  let trailFiles: string[];
+  // Find trail directories to process
+  const trailDirs = fs.readdirSync(TRAILS_DIR)
+    .filter(f => {
+      const trailPath = path.join(TRAILS_DIR, f);
+      return fs.statSync(trailPath).isDirectory() &&
+        fs.existsSync(path.join(trailPath, 'trail.json'));
+    });
 
-  if (specificTrail) {
-    const trailPath = path.join(GENERATED_DIR, `${specificTrail}.json`);
-    if (!fs.existsSync(trailPath)) {
-      console.error(`\nError: Trail not found: ${specificTrail}`);
-      console.error(`Expected file: ${trailPath}`);
-      process.exit(1);
-    }
-    trailFiles = [trailPath];
-  } else {
-    trailFiles = fs.readdirSync(GENERATED_DIR)
-      .filter(f => f.endsWith('.json') && f !== 'index.json')
-      .map(f => path.join(GENERATED_DIR, f));
-  }
-
-  if (trailFiles.length === 0) {
-    console.log('\nNo trail files found to process.');
+  if (trailDirs.length === 0) {
+    console.log('\nNo trail directories found.');
     return;
   }
 
-  console.log(`\nFound ${trailFiles.length} trail(s) to process.`);
+  // Filter to specific trail if provided
+  const dirsToProcess = specificTrail
+    ? trailDirs.filter(d => d === specificTrail || d.toLowerCase() === specificTrail.toLowerCase())
+    : trailDirs;
+
+  if (specificTrail && dirsToProcess.length === 0) {
+    console.error(`\nError: Trail not found: ${specificTrail}`);
+    console.error('Available trails:', trailDirs.join(', '));
+    process.exit(1);
+  }
+
+  console.log(`\nFound ${dirsToProcess.length} trail(s) to process.`);
 
   let updatedCount = 0;
 
-  for (const trailFile of trailFiles) {
+  for (const trailDir of dirsToProcess) {
     try {
-      const updated = await processTrail(trailFile);
+      const trailJsonPath = path.join(TRAILS_DIR, trailDir, 'trail.json');
+      const trailConfig: TrailConfig = JSON.parse(fs.readFileSync(trailJsonPath, 'utf-8'));
+
+      const gpxPath = path.join(TRAILS_DIR, trailDir, trailConfig.gpxFile);
+
+      if (!fs.existsSync(gpxPath)) {
+        console.log(`\nSkipping ${trailDir}: GPX file not found (${trailConfig.gpxFile})`);
+        continue;
+      }
+
+      const updated = await processGpxFile(gpxPath);
       if (updated) updatedCount++;
     } catch (error) {
-      console.error(`  Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`  Error processing ${trailDir}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  console.log(`\n===========================`);
+  console.log(`\n==================================`);
   console.log(`Done. Updated ${updatedCount} trail(s).`);
 }
 

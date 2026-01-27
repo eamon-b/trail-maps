@@ -8,6 +8,7 @@
     "build": "npm run fetch:climate && npm run build:trails && tsc && vite build",
     "build:trails": "tsx scripts/build-trails.ts",
     "fetch:climate": "tsx scripts/fetch-climate.ts",
+    "fetch:elevation": "tsx scripts/fetch-elevation.ts",
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint src --ext .ts"

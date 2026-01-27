@@ -20,6 +20,7 @@ describe('waypoint-classifier', () => {
       expect(FOLDER_TYPE_MAP['trailheads']).toBe('trailhead');
       expect(FOLDER_TYPE_MAP['caravan parks']).toBe('caravan-park');
       expect(FOLDER_TYPE_MAP['other']).toBe('poi');
+      expect(FOLDER_TYPE_MAP['endpoints']).toBe('endpoint');
     });
   });
 
@@ -73,6 +74,8 @@ describe('waypoint-classifier', () => {
         expect(classifyWaypoint('X', { folderName: 'Caravan Parks' }).type).toBe('caravan-park');
         expect(classifyWaypoint('X', { folderName: 'Accommodation' }).type).toBe('accommodation');
         expect(classifyWaypoint('X', { folderName: 'Other' }).type).toBe('poi');
+        expect(classifyWaypoint('X', { folderName: 'Inlets' }).type).toBe('inlet-crossing');
+        expect(classifyWaypoint('X', { folderName: 'Inlet Crossings' }).type).toBe('inlet-crossing');
       });
 
       it('should clean prefix from name even when folder determines type', () => {
@@ -167,6 +170,24 @@ describe('waypoint-classifier', () => {
         expect(result.cleanedName).toBe('Federation Hut');
       });
 
+      it('should match "S Albury" as endpoint (start)', () => {
+        const result = classifyWaypoint('S Albury');
+        expect(result.type).toBe('endpoint');
+        expect(result.cleanedName).toBe('Albury');
+      });
+
+      it('should match "E Yass" as endpoint (end)', () => {
+        const result = classifyWaypoint('E Yass');
+        expect(result.type).toBe('endpoint');
+        expect(result.cleanedName).toBe('Yass');
+      });
+
+      it('should match "IC: Wilson Inlet" as inlet-crossing', () => {
+        const result = classifyWaypoint('IC: Wilson Inlet');
+        expect(result.type).toBe('inlet-crossing');
+        expect(result.cleanedName).toBe('Wilson Inlet');
+      });
+
       it('should NOT match bare first letter without delimiter', () => {
         // These must NOT strip the first letter
         expect(classifyWaypoint('Redbank').cleanedName).toBe('Redbank');
@@ -192,6 +213,10 @@ describe('waypoint-classifier', () => {
         'Trailhead Access',
         'Food Store',
         'Road Crossing Point',
+        'Start of Trail',
+        'End Point',
+        'Southern Terminus',
+        'Eastern Access',
       ];
 
       for (const name of preservedNames) {
@@ -292,7 +317,18 @@ describe('waypoint-classifier', () => {
         { name: 'Rest area', folder: 'Other', expectedType: 'poi', expectedCleanName: 'Rest area' },
       ];
 
-      for (const t of [...larapintaTests, ...aawtTests, ...heysenTests]) {
+      // Bibbulmun examples
+      const bibbulmunTests: Array<{
+        name: string;
+        folder: string | undefined;
+        expectedType: string;
+        expectedCleanName: string;
+      }> = [
+        { name: 'Wilson Inlet', folder: 'Inlets', expectedType: 'inlet-crossing', expectedCleanName: 'Wilson Inlet' },
+        { name: 'Irwin Inlet', folder: 'Inlets', expectedType: 'inlet-crossing', expectedCleanName: 'Irwin Inlet' },
+      ];
+
+      for (const t of [...larapintaTests, ...aawtTests, ...heysenTests, ...bibbulmunTests]) {
         it(`"${t.name}" with folder "${t.folder}" -> type: ${t.expectedType}, name: "${t.expectedCleanName}"`, () => {
           const result = classifyWaypoint(t.name, { folderName: t.folder });
           expect(result.type).toBe(t.expectedType);

@@ -166,8 +166,6 @@ interface ProcessedTrail {
 interface CaltopoData {
   waypointCategories: Map<string, string>;
   waypointDescriptions: Map<string, string>;
-  alternates: RouteVariant[];
-  sideTrips: RouteVariant[];
 }
 
 
@@ -620,8 +618,6 @@ function parseCaltopoGeojson(jsonPath: string): CaltopoData {
   const result: CaltopoData = {
     waypointCategories: new Map<string, string>(),
     waypointDescriptions: new Map<string, string>(),
-    alternates: [],
-    sideTrips: [],
   };
 
   try {
@@ -656,51 +652,6 @@ function parseCaltopoGeojson(jsonPath: string): CaltopoData {
       }
     }
 
-    // Process shapes (lines) for alternates and side trips
-    for (const feature of geojson.features || []) {
-      if (feature.properties?.class === 'Shape' &&
-          feature.geometry?.type === 'LineString' &&
-          feature.geometry?.coordinates?.length > 0) {
-
-        const title = feature.properties.title || 'Unnamed';
-        const titleLower = title.toLowerCase();
-        const folderId = feature.properties.folderId;
-        const folderName = folderId ? folderNames.get(folderId) || '' : '';
-
-        // Determine if this is an alternate or side trip
-        const isAlternate = titleLower.includes('alt') || folderName.includes('alternate');
-        const isSideTrip = titleLower.startsWith('st ') || titleLower.startsWith('st:') ||
-                          folderName.includes('side trip');
-
-        if (isAlternate || isSideTrip) {
-          // Convert coordinates [lon, lat, ele, ?] to points
-          const points = feature.geometry.coordinates.map((coord: number[]) => ({
-            lat: coord[1],
-            lon: coord[0],
-            ele: coord[2] || 0,
-          }));
-
-          const stats = calculateRouteStats(points);
-
-          const variant: RouteVariant = {
-            name: title,
-            type: isAlternate ? 'alternate' : 'side-trip',
-            points,
-            distance: Math.round(stats.distance * 10) / 10,
-            elevation: {
-              ascent: Math.round(stats.ascent),
-              descent: Math.round(stats.descent),
-            },
-          };
-
-          if (isAlternate) {
-            result.alternates.push(variant);
-          } else {
-            result.sideTrips.push(variant);
-          }
-        }
-      }
-    }
   } catch (e) {
     // GeoJSON parsing failed, fall back to GPX-only
     console.log(`  Warning: Could not parse GeoJSON: ${e instanceof Error ? e.message : 'unknown error'}`);
@@ -979,62 +930,42 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
       });
     }
 
-    // Add alternates and side trips from GeoJSON
-    if (caltopoData.alternates.length > 0) {
-      alternates = caltopoData.alternates;
-      console.log(`  ✓ Found ${alternates.length} alternate routes from GeoJSON`);
-    }
-    if (caltopoData.sideTrips.length > 0) {
-      sideTrips = caltopoData.sideTrips;
-      console.log(`  ✓ Found ${sideTrips.length} side trips from GeoJSON`);
-    }
   }
 
-  // Convert classified GPX alternate tracks to RouteVariant[], merging with GeoJSON variants
-  // GeoJSON takes precedence if names overlap
-  const geojsonAlternateNames = new Set(alternates.map(a => a.name.toLowerCase()));
+  // Convert classified GPX alternate tracks to RouteVariant[]
   for (const track of alternateTracks) {
-    if (!geojsonAlternateNames.has(track.name.toLowerCase())) {
-      const trackPoints3d = track.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele }));
-      const stats = calculateRouteStats(trackPoints3d);
-      alternates.push({
-        name: track.name,
-        type: 'alternate',
-        points: trackPoints3d,
-        distance: Math.round(stats.distance * 10) / 10,
-        elevation: {
-          ascent: Math.round(stats.ascent),
-          descent: Math.round(stats.descent),
-        },
-      });
-    }
+    const trackPoints3d = track.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele }));
+    const stats = calculateRouteStats(trackPoints3d);
+    alternates.push({
+      name: track.name,
+      type: 'alternate',
+      points: trackPoints3d,
+      distance: Math.round(stats.distance * 10) / 10,
+      elevation: {
+        ascent: Math.round(stats.ascent),
+        descent: Math.round(stats.descent),
+      },
+    });
   }
 
   // Convert classified GPX side-trip tracks to RouteVariant[]
-  const geojsonSideTripNames = new Set(sideTrips.map(s => s.name.toLowerCase()));
   for (const track of classifiedSideTrips) {
-    if (!geojsonSideTripNames.has(track.name.toLowerCase())) {
-      const trackPoints3d = track.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele }));
-      const stats = calculateRouteStats(trackPoints3d);
-      sideTrips.push({
-        name: track.name,
-        type: 'side-trip',
-        points: trackPoints3d,
-        distance: Math.round(stats.distance * 10) / 10,
-        elevation: {
-          ascent: Math.round(stats.ascent),
-          descent: Math.round(stats.descent),
-        },
-      });
-    }
+    const trackPoints3d = track.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele }));
+    const stats = calculateRouteStats(trackPoints3d);
+    sideTrips.push({
+      name: track.name,
+      type: 'side-trip',
+      points: trackPoints3d,
+      distance: Math.round(stats.distance * 10) / 10,
+      elevation: {
+        ascent: Math.round(stats.ascent),
+        descent: Math.round(stats.descent),
+      },
+    });
   }
 
-  if (alternateTracks.length > 0 || classifiedSideTrips.length > 0) {
-    const gpxAlts = alternates.length - (geojsonAlternateNames.size);
-    const gpxSides = sideTrips.length - (geojsonSideTripNames.size);
-    if (gpxAlts > 0) console.log(`  ✓ Added ${gpxAlts} alternate routes from GPX tracks`);
-    if (gpxSides > 0) console.log(`  ✓ Added ${gpxSides} side trips from GPX tracks`);
-  }
+  if (alternates.length > 0) console.log(`  ✓ Found ${alternates.length} alternate routes from GPX`);
+  if (sideTrips.length > 0) console.log(`  ✓ Found ${sideTrips.length} side trips from GPX`);
 
   // Fall back to CSV waypoints if no GPX waypoints and CSV exists
   if (waypoints.length === 0 && config.waypointsFile) {

@@ -46,7 +46,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/web/index.html'),
-        trails: resolve(__dirname, 'src/web/trails/index.html'),
         // Dynamically include all generated trail pages
         ...getTrailInputs(),
       },

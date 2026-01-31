@@ -161,7 +161,7 @@
     .waypoint-type.type-caravan-park {
       background: #c5e1a5;
     }
-    .waypoint-type.type-trail-head {
+    .waypoint-type.type-trailhead {
       background: #ffe082;
     }
     .waypoint-type.type-food {
@@ -169,6 +169,21 @@
     }
     .waypoint-type.type-road-crossing {
       background: #b0bec5;
+    }
+    .waypoint-type.type-inlet-crossing {
+      background: #80deea;
+    }
+    .waypoint-type.type-beach {
+      background: #fff9c4;
+    }
+    .waypoint-type.type-poi {
+      background: #ffe0b2;
+    }
+    .waypoint-type.type-resupply {
+      background: #d1c4e9;
+    }
+    .waypoint-type.type-endpoint {
+      background: #ef9a9a;
     }
     .waypoints-list {
       list-style: none;
@@ -300,9 +315,15 @@
     .waypoint-marker.mountain { background: #bcaaa4; }
     .waypoint-marker.side-trip { background: #f8bbd0; }
     .waypoint-marker.caravan-park { background: #c5e1a5; }
-    .waypoint-marker.trail-head { background: #ffe082; }
+    .waypoint-marker.trailhead { background: #ffe082; }
     .waypoint-marker.food { background: #ffab91; }
     .waypoint-marker.road-crossing { background: #b0bec5; }
+    .waypoint-marker.inlet-crossing { background: #80deea; }
+    .waypoint-marker.beach { background: #fff9c4; }
+    .waypoint-marker.poi { background: #ffe0b2; }
+    .waypoint-marker.resupply { background: #d1c4e9; }
+    .waypoint-marker.endpoint { background: #ef9a9a; }
+    .waypoint-marker.accommodation { background: #ce93d8; }
     .waypoint-marker.waypoint { background: #e0e0e0; }
     @media (max-width: 768px) {
       .trail-map {
@@ -510,6 +531,7 @@
       text-align: left;
       border-bottom: 1px solid #ddd;
     }
+    .variant-waypoints-table th.numeric { text-align: right; }
     .variant-waypoints-table th:first-child {
       padding-left: calc(0.6rem + 0.7rem + 0.25rem); /* match expand-chevron offset */
     }
@@ -562,7 +584,7 @@
   <div class="container trail-data">
     <header>
       <nav class="breadcrumb">
-        <a href="../../">Home</a> / <a href="../">Trails</a> / <span>{{TRAIL_SHORT_NAME}}</span>
+        <a href="../../">Home</a> / <span>{{TRAIL_SHORT_NAME}}</span>
       </nav>
     </header>
 

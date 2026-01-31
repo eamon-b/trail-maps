@@ -6,6 +6,11 @@
   "lengthKm": 688.3,
   "gpxFile": "AAWT_2025.gpx",
   "geojsonFile": "AAWT_2025.json",
+  "trackClassification": {
+    "mainRoutePatterns": ["^AAWT Main$"],
+    "sideTripPatterns": ["^ST "],
+    "ignorePatterns": ["^C "]
+  },
   "description": "Trail data auto-generated from AAWT_2025.gpx",
   "direction": {
     "default": "NOBO",

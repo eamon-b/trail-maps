@@ -123,9 +123,13 @@ const WAYPOINT_ICONS: Record<string, { icon: string }> = {
   'side-trip': { icon: '\u{1F97E}' },
   accommodation: { icon: '\u{1F3E8}' },
   'caravan-park': { icon: '\u{1F3D5}\u{FE0F}' },
-  'trail-head': { icon: '\u{1F697}' },
+  trailhead: { icon: '\u{1F697}' },
   food: { icon: '\u{1F374}' },
   'road-crossing': { icon: '\u{1F6E3}\u{FE0F}' },
+  'inlet-crossing': { icon: '\u{1F30A}' },
+  beach: { icon: '\u{1F3D6}\u{FE0F}' },
+  poi: { icon: '\u{2B50}' },
+  resupply: { icon: '\u{1F4E6}' },
   endpoint: { icon: '\u{1F6A9}' },
   waypoint: { icon: '\u{1F4CD}' }
 };
@@ -633,11 +637,11 @@ function expandVariantDetail(variantKey: string, variant: RouteVariant): void {
             <tr>
               <th>Location</th>
               <th>Type</th>
-              <th>Elev (m)</th>
-              <th>Dist (km)</th>
-              <th>Total (km)</th>
-              <th>Gain</th>
-              <th>Loss</th>
+              <th class="numeric">Elev (m)</th>
+              <th class="numeric">Dist (km)</th>
+              <th class="numeric">Total (km)</th>
+              <th class="numeric">Gain</th>
+              <th class="numeric">Loss</th>
             </tr>
           </thead>
           <tbody>${wpRows}</tbody>
@@ -1080,9 +1084,14 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
       'side-trip': 'type-side-trip',
       'accommodation': 'type-accommodation',
       'caravan-park': 'type-caravan-park',
-      'trail-head': 'type-trail-head',
+      'trailhead': 'type-trailhead',
       'food': 'type-food',
-      'road-crossing': 'type-road-crossing'
+      'road-crossing': 'type-road-crossing',
+      'inlet-crossing': 'type-inlet-crossing',
+      'beach': 'type-beach',
+      'poi': 'type-poi',
+      'resupply': 'type-resupply',
+      'endpoint': 'type-endpoint'
     };
     return typeMap[type || ''] || '';
   }

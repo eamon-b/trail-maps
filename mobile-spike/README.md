@@ -1,0 +1,363 @@
+# MapLibre Offline Spike
+
+This spike validates that MapLibre GL works with React Native for offline vector tile caching - a critical requirement for the Trail Companion mobile app.
+
+## Purpose
+
+This is a **decision gate** for the mobile app project. Before committing to the React Native approach, we need to verify:
+
+1. MapLibre React Native works with Expo development builds
+2. Offline tile packs can be downloaded and stored
+3. Storage sizes are acceptable for trail corridors
+4. Performance is adequate for offline map rendering
+
+## Prerequisites
+
+### Required Software
+
+- **Node.js**: v18+ (tested with v24.13.0)
+- **npm**: v9+ (tested with v11.6.2)
+
+### For iOS Testing
+
+- **macOS** (required for iOS development)
+- **Xcode**: 15.0+ with iOS 17 SDK
+- **iOS Simulator** or physical iOS device
+
+### For Android Testing
+
+- **Android Studio**: Latest stable (Electric Eel or newer)
+- **Android SDK**: API level 24+ (Android 7.0+)
+- **Android Emulator** or physical Android device
+
+## Setup
+
+### Step 1: Install Dependencies
+
+```bash
+cd mobile-spike/MapLibreSpike
+npm install
+```
+
+### Step 2: Build the Development Client
+
+MapLibre uses native code, so you **cannot use Expo Go**. You need to build a custom development client that includes the native MapLibre libraries. There are two options:
+
+#### Option A: Local Build (Recommended for Spike)
+
+This builds directly on your machine - faster iteration, no cloud account needed.
+
+**For iOS (requires macOS with Xcode):**
+```bash
+# Generate native iOS project
+npx expo prebuild --platform ios
+
+# Open in Xcode and build
+open ios/MapLibreSpike.xcworkspace
+
+# Or build from command line
+cd ios && xcodebuild -workspace MapLibreSpike.xcworkspace \
+  -scheme MapLibreSpike \
+  -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 15' \
+  build
+```
+
+**For Android (requires Android Studio):**
+```bash
+# Generate native Android project
+npx expo prebuild --platform android
+
+# Build debug APK
+cd android && ./gradlew assembleDebug
+
+# Install on connected device/emulator
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+#### Option B: EAS Cloud Build
+
+Uses Expo's cloud build service. Good for CI/CD but requires account setup.
+
+```bash
+# Install EAS CLI globally
+npm install -g eas-cli
+
+# Login to Expo account (create one at expo.dev if needed)
+eas login
+
+# Configure EAS for this project
+eas build:configure
+
+# Build for iOS simulator (cloud build)
+eas build --profile development --platform ios
+
+# Build for Android (cloud build)
+eas build --profile development --platform android
+```
+
+After the cloud build completes, download and install the app:
+- iOS: Drag .app to simulator
+- Android: `adb install <downloaded.apk>`
+
+### Step 3: Run the Development Server
+
+```bash
+# Start Metro bundler with dev-client flag
+npm start
+# or
+npx expo start --dev-client
+```
+
+### Step 4: Connect the App
+
+1. Open the installed development client app on your device/emulator
+2. It will automatically connect to the Metro bundler
+3. The app should load and show the MapLibre map
+
+## Troubleshooting Build Issues
+
+### iOS Build Fails
+
+1. **CocoaPods issues**: Run `cd ios && pod install --repo-update`
+2. **Xcode version**: Ensure Xcode 15+ is installed
+3. **Signing**: For simulator builds, no signing is needed
+
+### Android Build Fails
+
+1. **SDK not found**: Set `ANDROID_HOME` environment variable
+2. **Gradle issues**: Run `cd android && ./gradlew clean`
+3. **NDK issues**: MapLibre may require specific NDK version - check error logs
+
+### Metro Bundler Issues
+
+1. **Cache issues**: Run `npx expo start --clear`
+2. **Port conflicts**: Use `npx expo start --port 8082`
+
+## Running the Spike
+
+### Phase 1: Verify Map Loads
+
+1. Launch the app on your device/emulator
+2. Wait for the map to load - you should see:
+   - Blue header with "MapLibre Offline Spike"
+   - Map centered on Western Australia
+   - Red dashed rectangle showing Bibbulmun Track bounds
+   - Log showing "Map loaded successfully"
+3. **Record**: Does the map load? Any errors in the log?
+
+### Phase 2: Download Offline Tiles
+
+1. Tap "Run Zoom Level Tests (10-16)"
+2. Monitor the log output - you'll see:
+   - Progress percentage for each zoom level
+   - Tile count and size when each level completes
+3. Wait for all tests to complete (may take several minutes)
+4. View results in the table showing tiles/size/time per zoom level
+5. Tap "Export Results" to save detailed findings
+
+### Phase 3: Test Offline Rendering
+
+**Critical test - this validates the core requirement:**
+
+1. After downloading tiles, enable Airplane Mode on device
+2. Close and reopen the app
+3. Verify the map still renders for the downloaded area
+4. Pan/zoom within the Bibbulmun Track bounds
+5. **Record**: Does offline rendering work? Any tiles missing?
+
+### Phase 4: Measure Storage
+
+1. Check device storage usage:
+   - **iOS**: Settings > General > iPhone Storage > MapLibreSpike
+   - **Android**: Settings > Apps > MapLibreSpike > Storage
+2. Compare with reported tile sizes in the app
+3. **Record**: Actual storage used vs reported
+
+### Phase 5: Performance Testing
+
+1. With tiles downloaded, zoom in/out rapidly
+2. Pan across the trail corridor
+3. **Record**:
+   - Is rendering smooth (60fps)?
+   - Any lag or stuttering?
+   - Memory warnings?
+
+## What the Spike Tests
+
+### Bibbulmun Track Corridor
+
+The spike downloads offline tiles for the Bibbulmun Track in Western Australia:
+- **Start**: Kalamunda (-31.97, 116.06)
+- **End**: Albany (-35.03, 117.88)
+- **Length**: ~982 km
+- **Bounds**: ~3.4° latitude x ~2.2° longitude (with buffer)
+
+### Zoom Levels
+
+Tests each zoom level individually (10-16), plus a cumulative test:
+
+| Zoom | Purpose | Expected Resolution |
+|------|---------|---------------------|
+| 10 | Regional overview | ~150m per pixel |
+| 11 | Area view | ~75m per pixel |
+| 12 | Local area | ~38m per pixel |
+| 13 | Detailed area | ~19m per pixel |
+| 14 | Trail detail | ~9m per pixel |
+| 15 | High detail | ~5m per pixel |
+| 16 | Maximum detail | ~2m per pixel |
+
+### Metrics Collected
+
+- **Tile count**: Number of tiles downloaded per zoom level
+- **Storage size**: Bytes required for each zoom level
+- **Download time**: Time to download each pack
+- **Total storage**: Combined size for zoom 10-16
+
+## Expected Results
+
+Based on similar trail corridors, rough estimates:
+
+| Zoom | Est. Tiles | Est. Size |
+|------|------------|-----------|
+| 10 | ~4 | ~50 KB |
+| 11 | ~12 | ~150 KB |
+| 12 | ~48 | ~600 KB |
+| 13 | ~192 | ~2.5 MB |
+| 14 | ~768 | ~10 MB |
+| 15 | ~3,072 | ~40 MB |
+| 16 | ~12,288 | ~150 MB |
+| **Total** | **~16,000** | **~200 MB** |
+
+Note: Vector tiles are significantly smaller than raster tiles. Actual results may vary based on tile content and encoding.
+
+## Decision Criteria
+
+### Proceed with React Native if:
+
+- [ ] MapLibre loads and renders correctly on both platforms
+- [ ] Offline packs download successfully
+- [ ] Total storage for Bibbulmun (z10-16) is under 500 MB
+- [ ] Offline map renders without internet connection
+- [ ] No significant performance issues observed
+
+### Consider PWA approach if:
+
+- [ ] MapLibre fails to initialize on either platform
+- [ ] Offline pack downloads fail consistently
+- [ ] Storage requirements exceed 1 GB
+- [ ] Severe performance issues make the app unusable
+
+## Known Issues & Limitations
+
+### MapLibre React Native
+
+- Requires development builds (not Expo Go)
+- iOS requires minimum deployment target of iOS 13
+- Android requires minSdkVersion 24
+- The offline API may have slightly different behavior between iOS and Android
+
+### Offline Tiles
+
+- OpenFreeMap tiles used for testing (no API key required)
+- Tile availability depends on tile server
+- Very large downloads may timeout
+- Vector tile size varies based on feature density (urban areas larger)
+
+### Potential Blockers to Watch For
+
+1. **Offline API not working**: If `offlineManager.createPack()` fails, check:
+   - Is the style URL accessible?
+   - Are bounds in correct format `[[sw_lon, sw_lat], [ne_lon, ne_lat]]`?
+   - Is there sufficient device storage?
+
+2. **Tiles not rendering offline**: MapLibre caches style resources separately from tiles. Both must be available for offline rendering.
+
+3. **Memory issues**: Large tile downloads may cause memory pressure. Monitor for crashes.
+
+## Alternative Tile Sources
+
+If OpenFreeMap has issues, try these alternatives:
+
+```typescript
+// MapTiler (requires free API key from maptiler.com)
+const MAPTILER_STYLE = 'https://api.maptiler.com/maps/outdoor-v2/style.json?key=YOUR_KEY';
+
+// Protomaps (self-hosted option)
+const PROTOMAPS_STYLE = 'https://api.protomaps.com/styles/v2/light.json?key=YOUR_KEY';
+
+// Stadia Maps (requires free API key)
+const STADIA_STYLE = 'https://tiles.stadiamaps.com/styles/outdoors.json?api_key=YOUR_KEY';
+```
+
+Update `STYLE_URL` in `App.tsx` to test different providers.
+
+## Calculating Expected Tile Counts
+
+For planning purposes, tile count at zoom level z for a bounding box:
+
+```
+tiles_x = ceil((lon_max - lon_min) / (360 / 2^z))
+tiles_y = ceil((lat_max - lat_min) / (180 / 2^z))  // approximate
+total_tiles = tiles_x * tiles_y
+```
+
+For Bibbulmun Track (3.4° lat x 2.2° lon):
+- Zoom 10: ~2 x 2 = 4 tiles
+- Zoom 12: ~6 x 8 = 48 tiles
+- Zoom 14: ~23 x 35 = 805 tiles
+- Zoom 16: ~90 x 140 = 12,600 tiles
+
+## Files
+
+```
+MapLibreSpike/
+├── App.tsx           # Main spike app with offline testing
+├── app.json          # Expo configuration
+├── package.json      # Dependencies
+└── assets/           # Default Expo assets
+```
+
+## Next Steps
+
+After completing the spike:
+
+1. Fill in actual results in this README
+2. Document any issues encountered
+3. Make go/no-go decision for React Native
+4. If proceeding, continue with Part 0 tasks
+
+## Results (To Be Filled)
+
+### Test Environment
+
+- **Device**:
+- **OS Version**:
+- **Date**:
+
+### Actual Results
+
+| Zoom | Tiles | Size | Time | Status |
+|------|-------|------|------|--------|
+| 10 | | | | |
+| 11 | | | | |
+| 12 | | | | |
+| 13 | | | | |
+| 14 | | | | |
+| 15 | | | | |
+| 16 | | | | |
+| 10-16 | | | | |
+
+### Observations
+
+-
+-
+-
+
+### Decision
+
+- [ ] **PROCEED** with React Native
+- [ ] **RECONSIDER** - explore PWA approach
+
+### Notes
+

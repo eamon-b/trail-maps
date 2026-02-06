@@ -2,11 +2,56 @@
 
 ## Goal
 
-Establish a comprehensive testing strategy that ensures reliability across all parts of the Trail Companion app. This document defines test infrastructure, integration test scenarios, performance benchmarks, and field testing protocols.
+Define a testing strategy with **concrete, verifiable acceptance criteria** for every part of the Trail Companion app. Each part has specific test files to create, commands to run, and pass/fail criteria — so that both automated CI and Claude Code sessions can verify correctness.
 
 ## Why This Matters
 
-The TODO.md emphasizes "very strong reliability. No gaps or missing points, considerations overlooked." A hiking app used in remote areas with no connectivity cannot fail silently. Users depend on accurate distance calculations, working offline maps, and reliable GPS tracking. Testing is not optional—it's a safety concern.
+A hiking app used in remote areas with no connectivity cannot fail silently. Users depend on accurate distance calculations, working offline maps, and reliable GPS tracking. The TODO.md emphasizes "very strong reliability. No gaps or missing points, considerations overlooked." Testing is not optional — it's a safety concern.
+
+## Principles
+
+1. **Tests are written alongside feature code**, not after
+2. **Every task has a verification command** that proves it's done
+3. **Pure logic is tested exhaustively**; UI is tested for critical flows
+4. **Golden files catch regressions** in data processing
+5. **Field testing validates** what automated tests cannot
+
+---
+
+## Current State
+
+### What Exists Today
+
+**Web app (`trail-maps/`):**
+- Vitest with jsdom environment (`vitest.config.ts`)
+- 4 unit test files colocated in `src/lib/`:
+  - `distance.test.ts` — 5 test suites, ~15 assertions
+  - `gpx-optimizer.test.ts` — 8 test suites, ~40 assertions
+  - `track-classification.test.ts` — classification tests
+  - `waypoint-classifier.test.ts` — type detection tests
+- Run with: `npm test` (from repo root)
+
+**Mobile app (`mobile-spike/MapLibreSpike/`):**
+- Zero test files
+- No test runner configured
+- No test dependencies installed
+- Has `typecheck` and `lint` scripts only
+
+**CI/CD:**
+- None configured
+
+### What's Missing
+
+| Gap | Impact | When to Fix |
+|-----|--------|-------------|
+| No mobile test runner | Can't verify any mobile logic | Part 0 |
+| No CI pipeline | Tests only run manually | Part 0 |
+| No integration tests | Build pipeline regressions go unnoticed | Part 0 |
+| No golden files | Data processing changes are invisible | Part 0 |
+| No E2E tests (web) | User-facing regressions possible | Part 2 |
+| No E2E tests (mobile) | Critical flows unverified | Part 2+ |
+| No performance benchmarks | Degradation unnoticed | Part 2 |
+| No field testing protocol | Real-world failures not caught | Part 5a |
 
 ---
 
@@ -18,13 +63,13 @@ The TODO.md emphasizes "very strong reliability. No gaps or missing points, cons
 │  Real devices, real trails, multi-hour sessions         │
 │  Validates: battery, GPS accuracy, offline resilience   │
 ├─────────────────────────────────────────────────────────┤
-│              E2E / Integration Tests                    │
-│  Full workflows across multiple components              │
-│  Validates: data flows correctly through system         │
+│              E2E Tests (Maestro / Playwright)           │
+│  Full user workflows on real app                        │
+│  Validates: screens render, navigation works, data flows│
 ├─────────────────────────────────────────────────────────┤
-│                  Component Tests                        │
-│  UI components with mock data                           │
-│  Validates: rendering, interactions, state management   │
+│              Component / Integration Tests              │
+│  Multi-module workflows, UI components with mock data   │
+│  Validates: data pipeline, rendering, state management  │
 ├─────────────────────────────────────────────────────────┤
 │                    Unit Tests                           │
 │  Pure functions in isolation                            │
@@ -32,32 +77,31 @@ The TODO.md emphasizes "very strong reliability. No gaps or missing points, cons
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Layer Responsibilities
-
-| Layer | Speed | Scope | When to Run |
-|-------|-------|-------|-------------|
-| Unit | <1s each | Single function | Every commit, pre-push hook |
-| Component | <5s each | Single component with mocks | Every commit |
-| Integration | <30s each | Multi-component workflows | Pre-merge, CI pipeline |
-| E2E | <5min total | Full app workflows | Nightly, pre-release |
-| Field | Hours | Real-world scenarios | Pre-release milestone |
+| Layer | Speed | Runner | When to Run | Who Can Run |
+|-------|-------|--------|-------------|-------------|
+| Unit | <1s each | Vitest (web), Jest (mobile) | Every commit, CI | Claude Code, CI |
+| Component | <5s each | Jest + React Native Testing Library | Every commit, CI | Claude Code, CI |
+| Integration | <30s each | Vitest / Jest | Pre-merge, CI | Claude Code, CI |
+| E2E (web) | <5min total | Playwright | Pre-merge, CI | Claude Code, CI |
+| E2E (mobile) | <10min total | Maestro | Pre-release | **Human only** (needs device/simulator) |
+| Field | Hours | Manual | Pre-release milestone | **Human only** |
 
 ---
 
-## Test Infrastructure Setup (Part 0 Addition)
+## Test Infrastructure Setup
 
-### Web App (Existing trail-maps)
+### Web App (Existing — Extend)
 
-Current state:
-- Vitest with jsdom for unit tests
-- 4 test files covering core library functions
+**Current:** Vitest + jsdom, 4 test files in `src/lib/`.
 
-Add:
+**Add for integration/E2E:**
+
 ```bash
-npm install -D @testing-library/dom playwright
+# From repo root (trail-maps/)
+npm install -D @testing-library/dom playwright @playwright/test
 ```
 
-New scripts in package.json:
+**New scripts in `package.json`:**
 ```json
 {
   "test": "vitest",
@@ -68,786 +112,1064 @@ New scripts in package.json:
 }
 ```
 
-Directory structure:
+**New directories:**
 ```
 src/
   lib/
     *.ts
-    *.test.ts          # Unit tests (existing)
+    *.test.ts              # Unit tests (existing)
   integration/
-    build-pipeline.test.ts
-    trail-viewer.test.ts
+    build-pipeline.test.ts # GPX → JSON pipeline tests
+    golden-files.test.ts   # Regression tests against known-good output
 tests/
   e2e/
     trail-browsing.spec.ts
     trail-viewing.spec.ts
   fixtures/
-    gpx/               # Test GPX files
-    expected/          # Golden file outputs
+    gpx/                   # Test GPX files (see Fixtures section)
+    expected/              # Golden file outputs
 ```
 
-### React Native App (New)
+### Mobile App (New — Set Up in Part 0)
 
+**Install test dependencies:**
 ```bash
-# Testing libraries
-npm install -D jest @testing-library/react-native detox
-
-# For component testing
-npm install -D @storybook/react-native
+# From mobile app directory
+npx expo install jest-expo @testing-library/react-native
+npx expo install -- --save-dev @types/jest
 ```
 
-Directory structure:
-```
-packages/
-  trail-core/
-    src/
-      *.ts
-      *.test.ts        # Unit tests (shared library)
-  app/
-    src/
-      components/
-        *.tsx
-        *.test.tsx     # Component tests
-      screens/
-        *.tsx
-        *.test.tsx
-    e2e/
-      *.e2e.ts         # Detox E2E tests
+**Create `jest.config.js`:**
+```js
+module.exports = {
+  preset: 'jest-expo',
+  transformIgnorePatterns: [
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@maplibre/.*)'
+  ],
+  setupFilesAfterSetup: ['./jest.setup.js'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  testMatch: ['**/__tests__/**/*.(ts|tsx)', '**/*.(test|spec).(ts|tsx)'],
+};
 ```
 
-### CI Pipeline
+**Create `jest.setup.js`:**
+```js
+// Mock native modules that don't work in test environment
+jest.mock('@maplibre/maplibre-react-native', () => ({
+  MapView: 'MapView',
+  Camera: 'Camera',
+  ShapeSource: 'ShapeSource',
+  LineLayer: 'LineLayer',
+  SymbolLayer: 'SymbolLayer',
+  OfflineManager: {
+    createPack: jest.fn(),
+    getPacks: jest.fn(),
+    deletePack: jest.fn(),
+  },
+}));
+```
+
+**Add scripts to mobile `package.json`:**
+```json
+{
+  "test": "jest",
+  "test:watch": "jest --watch",
+  "test:coverage": "jest --coverage"
+}
+```
+
+**Mobile test directory structure:**
+```
+app/                          # Expo Router screens
+  __tests__/                  # Screen-level tests
+    trail-list.test.tsx
+    trail-viewer.test.tsx
+src/
+  services/
+    __tests__/                # Service unit tests
+      location-service.test.ts
+      trail-data-service.test.ts
+      plan-service.test.ts
+  components/
+    __tests__/                # Component tests
+      DayCard.test.tsx
+      WaypointList.test.tsx
+      HikeDashboard.test.tsx
+e2e/                          # Maestro E2E flows
+  trail-browsing.yaml
+  offline-mode.yaml
+  campsite-planning.yaml
+```
+
+### Maestro E2E Setup (Mobile)
+
+[Maestro](https://maestro.mobile.dev/) is used for mobile E2E testing. It runs against a real app on a simulator/device.
+
+**Install:**
+```bash
+# macOS
+curl -fsSL "https://get.maestro.mobile.dev" | bash
+
+# Verify
+maestro --version
+```
+
+**Example flow file (`e2e/trail-browsing.yaml`):**
+```yaml
+appId: com.trailcompanion.app
+---
+- launchApp
+- assertVisible: "Bibbulmun Track"
+- tapOn: "Bibbulmun Track"
+- assertVisible:
+    id: "map-view"
+- assertVisible:
+    id: "dashboard"
+```
+
+**Run:**
+```bash
+# Human only — requires running simulator/device
+maestro test e2e/trail-browsing.yaml
+maestro test e2e/  # Run all flows
+```
+
+### Shared Library (trail-core)
+
+When shared code is extracted to `packages/trail-core/` (Part 0 task), tests must run in **both** environments:
+
+```
+packages/trail-core/
+  src/
+    distance.ts
+    distance.test.ts           # Same tests as today
+    gpx-optimizer.ts
+    gpx-optimizer.test.ts
+    track-classification.ts
+    track-classification.test.ts
+    waypoint-classifier.ts
+    waypoint-classifier.test.ts
+    types.ts
+  vitest.config.ts             # For running in Node (web context)
+  jest.config.js               # For running via Jest (RN context)
+  package.json
+```
+
+Both test runners consume the same `.test.ts` files. The Vitest config includes jsdom; Jest config uses the jest-expo preset. This ensures the pure TypeScript logic works identically in both runtimes.
+
+---
+
+## CI Pipeline (GitHub Actions)
+
+### `.github/workflows/test.yml`
 
 ```yaml
-# .github/workflows/test.yml
 name: Tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+    branches: [main]
 
 jobs:
-  unit-tests:
+  web-unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
       - run: npm ci
-      - run: npm run test:unit
+      - run: npm run test:unit -- --run
+      - run: npm run lint
 
-  integration-tests:
+  web-integration-tests:
     runs-on: ubuntu-latest
+    needs: web-unit-tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
       - run: npm ci
-      - run: npm run test:integration
+      - run: npm run test:integration -- --run
 
-  e2e-tests:
+  web-e2e-tests:
     runs-on: ubuntu-latest
+    needs: web-integration-tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
       - run: npm ci
-      - run: npx playwright install
+      - run: npm run build
+      - run: npx playwright install --with-deps
       - run: npm run test:e2e
 
-  mobile-tests:
-    runs-on: macos-latest  # Required for iOS simulator
+  mobile-unit-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-spike/MapLibreSpike  # Update when app moves
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile-spike/MapLibreSpike/package-lock.json
       - run: npm ci
-      - run: npm run test:mobile:ios
+      - run: npm test -- --ci --passWithNoTests
+      - run: npm run typecheck
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: tsc --noEmit
+```
+
+### What CI Does NOT Cover (Needs Human)
+
+- Maestro E2E tests (need simulator — run manually pre-release)
+- Field testing (need physical device on a trail)
+- Visual regression (need screenshot comparison setup — defer to Part 1)
+- Performance profiling on device (need React Native profiler)
+
+---
+
+## Test Data & Fixtures
+
+### Fixture Management Strategy
+
+Fixtures live in `tests/fixtures/` at the repo root (shared between web and mobile).
+
+**Creating golden files:**
+```bash
+# Generate golden files from current build output
+npm run build:trails
+# Copy generated JSON to fixtures
+cp public/data/generated/bibbulmun.json tests/fixtures/expected/bibbulmun.json
+```
+
+**When golden files should change:**
+- Only when you intentionally change the processing pipeline
+- Always review diffs in golden files during code review
+- CI fails if golden file output doesn't match — this is intentional
+
+### Required GPX Test Files
+
+These must be collected manually (you need to export from each app):
+
+```
+tests/fixtures/gpx/
+  # Real exports — collect these by hand from each app
+  gaia-export.gpx            # Export from Gaia GPS
+  alltrails-export.gpx       # Export from AllTrails
+  strava-export.gpx          # Export from Strava
+  garmin-export.gpx          # Export from Garmin Connect
+  caltopo-export.gpx         # Export from CalTopo
+
+  # Synthetic edge cases — generate or hand-craft these
+  no-elevation.gpx           # Track without <ele> elements
+  no-waypoints.gpx           # Track only, no <wpt> elements
+  multi-track.gpx            # Multiple <trk> elements
+  track-with-gaps.gpx        # Non-continuous track segments
+  single-point.gpx           # Degenerate: one track point
+  empty-track.gpx            # <trk> with empty <trkseg>
+  huge-file.gpx              # 10MB+ for performance testing
+  malformed.gpx              # Invalid XML structure
+
+  # Reference trails (copy from data/trails/)
+  bibbulmun-sample.gpx       # Subset of Bibbulmun for fast tests
+  simple-trail.gpx           # ~50 points, known distances
+  trail-with-variants.gpx    # Main + alternate tracks
+```
+
+### Expected Output Files
+
+```
+tests/fixtures/expected/
+  bibbulmun.json             # Golden file: full Bibbulmun build output
+  larapinta.json             # Golden file: Larapinta
+  simple-trail.json          # Golden file: simple trail
+```
+
+**Action item for you (human):** Export GPX files from Gaia, AllTrails, Strava, and Garmin for the same short trail section. These can't be auto-generated — they test each app's specific GPX dialect.
+
+---
+
+## Per-Part Test Checklists
+
+Each section below defines the **specific tests required** before that part is considered complete. Tests marked with `[auto]` can be run by Claude Code or CI. Tests marked with `[human]` need a person.
+
+---
+
+### Part 0: Foundation
+
+**Scope:** Project setup, shared library extraction, data architecture, navigation shell.
+
+#### Unit Tests
+
+| File | What It Tests | Status |
+|------|---------------|--------|
+| `distance.test.ts` | Haversine, waypoint distance, edge cases | Exists — extend |
+| `gpx-optimizer.test.ts` | Douglas-Peucker, elevation smoothing, truncation | Exists — extend |
+| `track-classification.test.ts` | Main/alternate/side-trip classification | Exists — extend |
+| `waypoint-classifier.test.ts` | 14 waypoint types, prefix rules, known towns | Exists — extend |
+
+**New unit tests to add:**
+
+```
+distance.test.ts additions:
+  - antipodal points (max distance ~20,000 km)
+  - points on the date line (lon 180/-180)
+  - points at poles (lat 90/-90)
+  - zero-length segment (same point twice)
+
+gpx-optimizer.test.ts additions:
+  - single point input to douglasPeucker
+  - empty array input to all functions
+  - very large tolerance (should reduce to 2 points)
+  - zero tolerance (should keep all points)
+
+track-classification.test.ts additions:
+  - GPX with 10+ tracks (complex multi-track)
+  - all tracks matching "alternate" pattern (no main)
+  - track names with unicode characters
+
+waypoint-classifier.test.ts additions:
+  - all 14 types explicitly tested with canonical examples
+  - waypoint with empty name
+  - waypoint with no matching pattern (should default to 'poi')
+  - case insensitivity in prefix matching
+```
+
+#### Mobile Test Infrastructure
+
+| Task | Verification Command | Pass Criteria |
+|------|---------------------|---------------|
+| Install Jest + RNTL | `cd mobile-spike/MapLibreSpike && npm test -- --passWithNoTests` | Exits 0 |
+| Create jest.config.js | `cat jest.config.js` | File exists with jest-expo preset |
+| Create smoke test | `npm test` | At least 1 test passes |
+| TypeScript compiles | `npm run typecheck` | Exits 0, no errors |
+
+**Smoke test (`__tests__/smoke.test.tsx`):**
+```typescript
+import React from 'react';
+import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
+
+describe('Test infrastructure', () => {
+  it('renders a component', () => {
+    render(<Text>Hello</Text>);
+    expect(screen.getByText('Hello')).toBeTruthy();
+  });
+});
+```
+
+#### Data Architecture Tests
+
+When SQLite data layer is built:
+
+```typescript
+// src/services/__tests__/trail-data-service.test.ts
+
+describe('TrailDataService', () => {
+  it('stores and retrieves a trail');
+  it('stores and retrieves waypoints for a trail');
+  it('returns empty array for unknown trail');
+  it('handles concurrent reads');
+  it('updates existing trail data');
+  it('deletes trail and associated waypoints');
+});
+
+// src/services/__tests__/plan-service.test.ts
+
+describe('PlanService', () => {
+  it('creates a new plan for a trail');
+  it('loads a saved plan');
+  it('lists all plans for a trail');
+  it('deletes a plan');
+  it('handles plan with no stops');
+});
+```
+
+#### Part 0 Verification Checklist
+
+```bash
+# [auto] Run all these from repo root — all must exit 0
+npm test -- --run                                          # Web unit tests
+cd mobile-spike/MapLibreSpike && npm test -- --ci          # Mobile unit tests
+cd mobile-spike/MapLibreSpike && npm run typecheck         # Mobile typecheck
+cd mobile-spike/MapLibreSpike && npx expo config --json    # App config valid
+
+# [human] Visual verification
+# - App launches on iOS simulator
+# - App launches on Android emulator
+# - Three-mode navigation (Plan/Hike/Contribute) tabs visible
+# - Tapping each mode switches the active tab
 ```
 
 ---
 
-## Unit Tests
+### Part 1: Design System
 
-### Existing Coverage (Keep and Extend)
+**Scope:** Color system, core components, dashboard layout, dark mode.
 
-| Module | Current Tests | Additional Tests Needed |
-|--------|--------------|------------------------|
-| `distance.ts` | Haversine, waypoint distance | Edge cases: antipodal points, poles, date line crossing |
-| `gpx-optimizer.ts` | Douglas-Peucker | Tolerance edge cases, empty input, single point |
-| `track-classification.ts` | Basic classification | Multi-track files, ambiguous cases |
-| `waypoint-classifier.ts` | Type detection | All 14 types, unknown types, edge names |
+#### Component Tests
 
-### New Unit Tests Required
-
-**gpx-parser.ts** (currently untested):
 ```typescript
-describe('parseGpx', () => {
+// src/components/__tests__/ModeSelector.test.tsx
+describe('ModeSelector', () => {
+  it('renders three mode buttons (Plan, Hike, Contribute)');
+  it('highlights the active mode');
+  it('calls onModeChange when tapped');
+  it('applies correct color for each mode');
+});
+
+// src/components/__tests__/DayCard.test.tsx
+describe('DayCard', () => {
+  it('renders day number, date, and destination');
+  it('shows distance, ascent, and descent');
+  it('shows water source count');
+  it('shows warning icon when day exceeds threshold');
+  it('renders without crashing when data is minimal');
+});
+
+// src/components/__tests__/BottomSheet.test.tsx
+describe('BottomSheet', () => {
+  it('renders children content');
+  it('renders in collapsed state by default');
+  // Gesture tests need Maestro (human)
+});
+
+// src/components/__tests__/WaypointList.test.tsx
+describe('WaypointList', () => {
+  it('renders list of waypoints with emoji icons');
+  it('renders waypoint type correctly for all 14 types');
+  it('highlights selected waypoint');
+  it('calls onSelect when waypoint tapped');
+  it('shows distance from current position');
+});
+
+// src/components/__tests__/HikeDashboard.test.tsx
+describe('HikeDashboard', () => {
+  it('renders trail name and progress bar');
+  it('shows next campsite, water, town, shelter cards');
+  it('shows "No data" state when trail has no waypoints');
+  it('renders today section with plan data');
+  it('renders today section without plan (flexible hiker mode)');
+});
+```
+
+#### Accessibility Tests
+
+```typescript
+// src/components/__tests__/accessibility.test.tsx
+describe('Accessibility', () => {
+  it('all interactive elements have accessibilityLabel');
+  it('all buttons meet 44x44pt minimum touch target');
+  it('high contrast mode increases text contrast ratio');
+  // Screen reader testing needs a human with VoiceOver/TalkBack
+});
+```
+
+#### Part 1 Verification Checklist
+
+```bash
+# [auto]
+cd mobile-spike/MapLibreSpike && npm test -- --ci
+cd mobile-spike/MapLibreSpike && npm run typecheck
+
+# [human] Visual verification on device/simulator
+# - Mode selector switches color scheme (Plan=blue, Hike=green, Contribute=orange)
+# - Dark mode toggle works, all components readable
+# - Dashboard layout matches wireframe with mock data
+# - Bottom sheet slides up/down, mode selector visible underneath
+# - Day cards render with realistic trail data
+# - All text readable in bright light (take phone outside)
+```
+
+---
+
+### Part 2: Offline Viewer
+
+**Scope:** MapLibre integration, offline tiles, GPS, distance calculations, elevation profile.
+
+#### Unit Tests (Location Logic)
+
+These test the **pure logic** of location services, not the native GPS integration:
+
+```typescript
+// src/services/__tests__/track-snapping.test.ts
+describe('snapToTrack', () => {
+  // Use a known track segment for all tests
+  const trackPoints = [/* predefined points with known distances */];
+
+  it('snaps to nearest point when close to track');
+  it('returns correct km position for snapped point');
+  it('prefers forward direction when equidistant from two segments');
+  it('uses recent movement direction to resolve ambiguity');
+  it('returns low confidence when GPS accuracy > 100m');
+  it('handles position exactly on a track point');
+  it('handles position between two track points (interpolation)');
+  it('handles position beyond end of track');
+  it('handles position before start of track');
+});
+
+// src/services/__tests__/distance-to-waypoint.test.ts
+describe('distanceToNextWaypoint', () => {
+  it('calculates trail distance (not straight line) to next campsite');
+  it('calculates elevation gain/loss to next waypoint');
+  it('returns null when no waypoint of type exists ahead');
+  it('handles direction reversal (SOBO)');
+  it('returns correct waypoint when multiple of same type exist');
+  it('updates correctly as position advances');
+});
+```
+
+#### Integration Tests (Offline Data)
+
+```typescript
+// src/services/__tests__/offline-trail-loading.test.ts
+describe('Offline Trail Loading', () => {
+  // Uses mocked SQLite with pre-loaded test data
+  it('loads trail metadata from local storage');
+  it('loads waypoints for a trail');
+  it('loads track points for rendering');
+  it('returns error for non-downloaded trail');
+  it('handles corrupted local data gracefully');
+});
+```
+
+#### E2E Tests (Maestro — Human Only)
+
+```yaml
+# e2e/trail-browsing.yaml
+appId: com.trailcompanion.app
+---
+- launchApp
+- assertVisible: "Bibbulmun Track"
+- tapOn: "Bibbulmun Track"
+- assertVisible:
+    id: "map-view"
+- assertVisible:
+    id: "elevation-profile"
+
+# e2e/offline-mode.yaml
+appId: com.trailcompanion.app
+---
+- launchApp
+- tapOn: "Bibbulmun Track"
+- tapOn:
+    id: "download-offline"
+- assertVisible: "Download complete"
+# Toggle airplane mode manually, then:
+- assertVisible:
+    id: "map-view"
+
+# e2e/direction-reversal.yaml
+appId: com.trailcompanion.app
+---
+- launchApp
+- tapOn: "Bibbulmun Track"
+- tapOn:
+    id: "direction-toggle"
+- assertVisible: "SOBO"
+```
+
+#### Part 2 Verification Checklist
+
+```bash
+# [auto]
+cd mobile-spike/MapLibreSpike && npm test -- --ci
+cd mobile-spike/MapLibreSpike && npm run typecheck
+npm test -- --run  # Web tests still pass (no regressions)
+
+# [human] Maestro E2E
+maestro test e2e/trail-browsing.yaml
+maestro test e2e/offline-mode.yaml
+maestro test e2e/direction-reversal.yaml
+
+# [human] Manual verification
+# - Map displays trail polyline on real device
+# - Blue dot shows current GPS position
+# - Accuracy circle visible when GPS accuracy > 20m
+# - Offline: toggle airplane mode, map still renders cached tiles
+# - Elevation profile syncs with map pan
+# - Tapping waypoint on map opens bottom sheet with details
+# - Distance to next campsite updates as you walk
+```
+
+---
+
+### Part 3: Planning Tools
+
+**Scope:** Campsite planner, section hiking, resupply/water distances, measure tool.
+
+#### Unit Tests (Planning Logic)
+
+These are the **core differentiating feature** — test exhaustively:
+
+```typescript
+// src/services/__tests__/campsite-planner.test.ts
+describe('CampsitePlanner', () => {
+  // Setup: load Bibbulmun trail data fixture
+
+  describe('Day Statistics', () => {
+    it('calculates distance for single-day plan (start to first stop)');
+    it('calculates distance for multi-day plan');
+    it('calculates ascent and descent per day');
+    it('calculates estimated hiking time per day');
+    it('recalculates all stats when stop added');
+    it('recalculates all stats when stop removed');
+    it('recalculates all stats when stop reordered');
+    it('handles zero-distance day (rest day at same campsite)');
+    it('total of all day distances equals total trail distance (for thru-hike)');
+  });
+
+  describe('Water Sources', () => {
+    it('counts water sources between each pair of stops');
+    it('flags days with no water sources as warnings');
+    it('calculates max water carry distance per day');
+  });
+
+  describe('Section Hiking', () => {
+    it('restricts waypoints to selected section');
+    it('restricts campsites to selected section');
+    it('calculates correct distances within section');
+    it('handles section that starts/ends mid-segment');
+  });
+
+  describe('Direction', () => {
+    it('reverses all km positions when direction changes');
+    it('preserves stop selections after direction change');
+    it('day stats are correct after reversal');
+  });
+
+  describe('Persistence', () => {
+    it('saves plan to storage and loads it back identically');
+    it('handles loading a plan for a trail that has been updated');
+    it('lists all saved plans for a trail');
+    it('deletes a plan');
+  });
+});
+
+// src/services/__tests__/resupply-calculator.test.ts
+describe('ResupplyCalculator', () => {
+  it('identifies resupply points (towns) along trail');
+  it('calculates distance between resupply points');
+  it('calculates days of food needed between resupply points');
+  it('handles custom daily distance for food calculations');
+});
+
+// src/services/__tests__/measure-tool.test.ts
+describe('MeasureTool', () => {
+  it('calculates trail distance between two selected points');
+  it('calculates elevation gain/loss between two points');
+  it('handles points selected in reverse order');
+  it('handles points on different track segments');
+});
+```
+
+#### Component Tests
+
+```typescript
+// src/components/__tests__/DayPlanList.test.tsx
+describe('DayPlanList', () => {
+  it('renders list of day cards from plan data');
+  it('shows add-campsite button');
+  it('shows warning badges on days exceeding distance threshold');
+  it('shows total trip summary');
+});
+```
+
+#### Part 3 Verification Checklist
+
+```bash
+# [auto]
+cd mobile-spike/MapLibreSpike && npm test -- --ci
+cd mobile-spike/MapLibreSpike && npm run typecheck
+
+# [human] Maestro E2E
+maestro test e2e/campsite-planning.yaml
+
+# [human] Manual verification
+# - Add 3+ campsites to a plan, verify day distances sum to total
+# - Remove middle campsite, verify adjacent days recalculate
+# - Drag to reorder campsites, verify all stats update
+# - Switch direction (NOBO→SOBO), verify distances recalculate
+# - Set section (e.g. km 100-200), verify only relevant campsites shown
+# - Save plan, close app, reopen, load plan — verify identical
+# - Measure tool: tap two points, verify trail distance (not straight line)
+```
+
+---
+
+### Part 4: Custom Trails
+
+**Scope:** GPX upload, client-side processing, auto-datasheet, custom trail storage.
+
+#### Unit Tests (GPX Parsing for React Native)
+
+When `gpx-parser.ts` is adapted for React Native (using `fast-xml-parser` instead of DOMParser):
+
+```typescript
+// src/services/__tests__/gpx-parser-rn.test.ts
+describe('parseGpx (React Native)', () => {
   it('parses valid GPX with tracks and waypoints');
   it('handles GPX with no elevation data');
   it('handles GPX with no waypoints');
   it('handles GPX with multiple track segments');
+  it('handles GPX with routes (<rte>) instead of tracks');
+  it('extracts waypoint names and descriptions');
+  it('preserves coordinate precision');
   it('throws descriptive error for invalid XML');
   it('throws descriptive error for non-GPX XML');
-  it('handles empty file');
-  it('handles very large files (10MB+) without memory issues');
+  it('throws descriptive error for empty file');
+  it('throws descriptive error for file > 50MB');
+  it('handles GPX from Gaia GPS format');
+  it('handles GPX from AllTrails format');
+  it('handles GPX from Strava format');
+  it('handles GPX from Garmin Connect format');
 });
 ```
 
-**Shared library (trail-core) for React Native:**
+#### Integration Tests (Processing Pipeline)
+
 ```typescript
-// All pure functions must have unit tests before extraction
-// Tests should run identically in Node and React Native environments
-describe('distance calculations', () => {
-  // Same tests, different runtime
+// src/services/__tests__/gpx-processing-pipeline.test.ts
+describe('GPX Processing Pipeline', () => {
+  it('processes simple GPX to trail data structure');
+  it('produces same output as web build pipeline for same input');
+  it('generates correct waypoint km positions');
+  it('generates correct cumulative distances');
+  it('generates correct elevation statistics');
+  it('handles GPX with no elevation (skips elevation stats)');
+  it('completes in < 30s for 10MB file', { timeout: 60000 });
+  it('produces deterministic output');
 });
 ```
 
----
-
-## Integration Tests
-
-### Build Pipeline Integration
-
-Test the complete flow: GPX file → processed trail JSON
-
-```typescript
-// src/integration/build-pipeline.test.ts
-
-describe('Build Pipeline', () => {
-  describe('GPX to Trail JSON', () => {
-    it('processes Bibbulmun GPX to expected output', async () => {
-      const input = await readFile('fixtures/gpx/bibbulmun.gpx');
-      const result = await processTrail(input);
-      const expected = await readFile('fixtures/expected/bibbulmun.json');
-
-      expect(result.waypoints.length).toBe(expected.waypoints.length);
-      expect(result.tracks[0].points.length).toBeGreaterThan(0);
-      // Check specific waypoints match
-      expect(result.waypoints[0]).toMatchObject(expected.waypoints[0]);
-    });
-
-    it('handles multi-track GPX with variants', async () => {
-      const input = await readFile('fixtures/gpx/trail-with-variants.gpx');
-      const result = await processTrail(input);
-
-      expect(result.tracks.filter(t => t.type === 'main')).toHaveLength(1);
-      expect(result.tracks.filter(t => t.type === 'alternate')).toHaveLength(2);
-    });
-
-    it('produces deterministic output (no timestamp drift)', async () => {
-      const input = await readFile('fixtures/gpx/simple-trail.gpx');
-      const result1 = await processTrail(input);
-      const result2 = await processTrail(input);
-
-      expect(result1).toEqual(result2);
-    });
-  });
-
-  describe('Waypoint Matching', () => {
-    it('matches waypoints to nearest track points', async () => {
-      const result = await processTrail(simpleGpx);
-
-      for (const waypoint of result.waypoints) {
-        expect(waypoint.kmPosition).toBeDefined();
-        expect(waypoint.kmPosition).toBeGreaterThanOrEqual(0);
-      }
-    });
-
-    it('assigns correct km positions in both directions', async () => {
-      const result = await processTrail(simpleGpx);
-      const reversed = reverseDirection(result);
-
-      const totalDistance = result.totalDistance;
-      expect(reversed.waypoints[0].kmPosition)
-        .toBeCloseTo(totalDistance - result.waypoints[0].kmPosition, 1);
-    });
-  });
-
-  describe('Distance Calculations', () => {
-    it('cumulative distances match total trail length', async () => {
-      const result = await processTrail(simpleGpx);
-      const lastPoint = result.tracks[0].points.at(-1);
-
-      expect(lastPoint.cumulativeDistance).toBeCloseTo(result.totalDistance, 0);
-    });
-
-    it('elevation gain/loss sum correctly', async () => {
-      const result = await processTrail(simpleGpx);
-
-      // Net elevation change should equal end elevation - start elevation
-      const netChange = result.totalAscent - result.totalDescent;
-      const actualChange = result.endElevation - result.startElevation;
-      expect(netChange).toBeCloseTo(actualChange, 0);
-    });
-  });
-});
-```
-
-### Trail Viewer Integration (Web)
-
-```typescript
-// src/integration/trail-viewer.test.ts
-
-describe('Trail Viewer', () => {
-  let viewer: TrailViewer;
-
-  beforeEach(async () => {
-    document.body.innerHTML = '<div id="map"></div><div id="profile"></div>';
-    viewer = await createTrailViewer('bibbulmun');
-  });
-
-  describe('Map-Profile Sync', () => {
-    it('clicking map updates elevation profile marker', () => {
-      const point = { lat: -34.05, lon: 115.85, km: 50 };
-      viewer.handleMapClick(point);
-
-      expect(viewer.getProfileMarkerPosition()).toBe(50);
-    });
-
-    it('clicking profile pans map to location', () => {
-      viewer.handleProfileClick(100); // km 100
-
-      const center = viewer.getMapCenter();
-      expect(center.lat).toBeCloseTo(-34.2, 1);
-    });
-
-    it('sync works after direction reversal', () => {
-      viewer.reverseDirection();
-      viewer.handleProfileClick(50);
-
-      // Should now be at (total - 50) km from original start
-      expect(viewer.getCurrentKm()).toBeCloseTo(viewer.totalDistance - 50, 1);
-    });
-  });
-
-  describe('Waypoint Selection', () => {
-    it('selecting waypoint in table highlights on map', () => {
-      viewer.selectWaypoint('waypoint-123');
-
-      expect(viewer.getHighlightedMapMarker()).toBe('waypoint-123');
-    });
-
-    it('selecting waypoint scrolls table to row', () => {
-      viewer.selectWaypointOnMap('waypoint-456');
-
-      expect(viewer.getSelectedTableRow()).toBe('waypoint-456');
-    });
-  });
-
-  describe('Offline Data Loading', () => {
-    it('loads trail from cached JSON', async () => {
-      // Simulate offline by blocking network
-      await viewer.loadTrail('bibbulmun');
-
-      expect(viewer.waypoints.length).toBeGreaterThan(0);
-      expect(viewer.tracks.length).toBeGreaterThan(0);
-    });
-  });
-});
-```
-
-### Planning Tools Integration (Part 3)
-
-```typescript
-// packages/app/src/integration/planning.test.ts
-
-describe('Campsite Planner', () => {
-  let planner: CampsitePlanner;
-  let trail: Trail;
-
-  beforeEach(async () => {
-    trail = await loadTrail('bibbulmun');
-    planner = new CampsitePlanner(trail);
-  });
-
-  describe('Day Plan Calculations', () => {
-    it('calculates correct stats for each day', () => {
-      planner.addStop('campsite-1', 0);  // Night 1
-      planner.addStop('campsite-2', 1);  // Night 2
-
-      const days = planner.getDayStats();
-
-      expect(days[0].distance).toBeCloseTo(
-        trail.getDistanceBetween('start', 'campsite-1'),
-        0.1
-      );
-      expect(days[0].ascent).toBeGreaterThanOrEqual(0);
-    });
-
-    it('recalculates when stops are reordered', () => {
-      planner.addStop('campsite-1', 0);
-      planner.addStop('campsite-2', 1);
-      const originalDay1 = planner.getDayStats()[0].distance;
-
-      planner.moveStop('campsite-2', 0);  // Swap order
-
-      expect(planner.getDayStats()[0].distance).not.toBe(originalDay1);
-    });
-
-    it('handles custom stops (non-campsite locations)', () => {
-      planner.addCustomStop({ lat: -34.1, lon: 115.9, name: 'Wild camp' }, 0);
-
-      const days = planner.getDayStats();
-      expect(days[0]).toBeDefined();
-      expect(days[0].destination).toBe('Wild camp');
-    });
-  });
-
-  describe('Section Hiking', () => {
-    it('scopes all calculations to selected section', () => {
-      planner.setSection(100, 200);  // km 100 to 200
-
-      const waypoints = planner.getWaypoints();
-      expect(waypoints.every(w => w.km >= 100 && w.km <= 200)).toBe(true);
-    });
-
-    it('water sources only count within section', () => {
-      planner.setSection(100, 200);
-
-      const waterSources = planner.getWaterSources();
-      expect(waterSources.every(w => w.km >= 100 && w.km <= 200)).toBe(true);
-    });
-  });
-
-  describe('Data Persistence', () => {
-    it('saves plan to local storage', async () => {
-      planner.addStop('campsite-1', 0);
-      await planner.save('My Trip');
-
-      const loaded = await CampsitePlanner.load('My Trip');
-      expect(loaded.getStops()).toHaveLength(1);
-    });
-
-    it('handles multiple plans per trail', async () => {
-      await planner.save('Plan A');
-      planner.addStop('campsite-1', 0);
-      await planner.save('Plan B');
-
-      const plans = await CampsitePlanner.listPlans('bibbulmun');
-      expect(plans).toHaveLength(2);
-    });
-  });
-});
-```
-
-### GPS and Location Integration (Part 2 & 5)
-
-```typescript
-// packages/app/src/integration/location.test.ts
-
-describe('GPS Location', () => {
-  let locationService: LocationService;
-  let trail: Trail;
-
-  beforeEach(async () => {
-    trail = await loadTrail('bibbulmun');
-    locationService = new LocationService(trail);
-  });
-
-  describe('Track Snapping', () => {
-    it('snaps GPS position to nearest track point', () => {
-      const gpsPosition = { lat: -34.051, lon: 115.852, accuracy: 10 };
-      const snapped = locationService.snapToTrack(gpsPosition);
-
-      expect(snapped.km).toBeDefined();
-      expect(snapped.distanceFromTrack).toBeLessThan(50);
-    });
-
-    it('prefers forward direction when equidistant', () => {
-      // Trail doubles back, user is between two segments
-      locationService.setLastKnownDirection('forward');
-      const position = { lat: -34.1, lon: 115.9, accuracy: 10 };
-
-      const snapped = locationService.snapToTrack(position);
-      expect(snapped.km).toBeGreaterThan(locationService.lastKm);
-    });
-
-    it('handles low GPS accuracy gracefully', () => {
-      const position = { lat: -34.05, lon: 115.85, accuracy: 150 };
-      const snapped = locationService.snapToTrack(position);
-
-      expect(snapped.confidence).toBe('low');
-      expect(snapped.km).toBeDefined();  // Still provides best guess
-    });
-  });
-
-  describe('Off-Trail Detection', () => {
-    it('returns on-trail for positions within 50m', () => {
-      const position = { lat: -34.0501, lon: 115.8501, accuracy: 10 };
-      const status = locationService.getTrailStatus(position);
-
-      expect(status.state).toBe('on-trail');
-    });
-
-    it('returns warning for positions 200-500m from trail', () => {
-      const position = { lat: -34.055, lon: 115.855, accuracy: 10 };  // ~400m off
-      const status = locationService.getTrailStatus(position);
-
-      expect(status.state).toBe('warning');
-      expect(status.distanceFromTrail).toBeGreaterThan(200);
-    });
-
-    it('returns off-trail with bearing for positions >500m', () => {
-      const position = { lat: -34.06, lon: 115.86, accuracy: 10 };  // >500m off
-      const status = locationService.getTrailStatus(position);
-
-      expect(status.state).toBe('off-trail');
-      expect(status.bearingToTrail).toBeDefined();
-    });
-
-    it('suppresses alerts when GPS accuracy is poor', () => {
-      const position = { lat: -34.06, lon: 115.86, accuracy: 500 };
-      const status = locationService.getTrailStatus(position);
-
-      expect(status.state).toBe('unknown');
-      expect(status.message).toContain('GPS accuracy');
-    });
-
-    it('debounces to prevent false positives', () => {
-      // Momentary spike shouldn't trigger alert
-      locationService.updatePosition({ lat: -34.05, lon: 115.85, accuracy: 10 });
-      locationService.updatePosition({ lat: -34.08, lon: 115.88, accuracy: 10 });  // Far
-      locationService.updatePosition({ lat: -34.05, lon: 115.85, accuracy: 10 });
-
-      expect(locationService.shouldShowAlert()).toBe(false);
-    });
-  });
-
-  describe('Distance to Waypoints', () => {
-    it('calculates distance to next campsite', () => {
-      locationService.setCurrentPosition({ km: 50 });
-
-      const next = locationService.getNextWaypoint('campsite');
-      expect(next.distance).toBeGreaterThan(0);
-      expect(next.name).toBeDefined();
-    });
-
-    it('updates in real-time as position changes', () => {
-      locationService.setCurrentPosition({ km: 50 });
-      const distance1 = locationService.getNextWaypoint('campsite').distance;
-
-      locationService.setCurrentPosition({ km: 55 });
-      const distance2 = locationService.getNextWaypoint('campsite').distance;
-
-      expect(distance2).toBe(distance1 - 5);
-    });
-  });
-});
+#### Part 4 Verification Checklist
+
+```bash
+# [auto]
+cd mobile-spike/MapLibreSpike && npm test -- --ci
+cd mobile-spike/MapLibreSpike && npm run typecheck
+
+# [human] Manual verification
+# - Upload GPX from each supported app (Gaia, AllTrails, Strava, Garmin)
+# - Verify trail appears in list alongside built-in trails
+# - Verify waypoints display on map
+# - Verify auto-generated datasheet has correct distances
+# - Verify campsite planner works on custom trail
+# - Upload malformed GPX → verify helpful error message (not crash)
+# - Upload GPX with no waypoints → verify trail still usable
+# - Upload GPX with no elevation → verify distance-only datasheet
+# - Close app, reopen → verify custom trail persists
 ```
 
 ---
 
-## E2E Tests
+### Part 5a: On-Trail Safety
 
-### Web App (Playwright)
+**Scope:** Off-trail alerts, sunrise/sunset, today's progress.
+
+#### Unit Tests (Safety Logic)
 
 ```typescript
-// tests/e2e/trail-browsing.spec.ts
+// src/services/__tests__/off-trail-detection.test.ts
+describe('OffTrailDetection', () => {
+  // Use a known trail segment
 
-import { test, expect } from '@playwright/test';
-
-test.describe('Trail Browsing', () => {
-  test('homepage shows trail list', async ({ page }) => {
-    await page.goto('/');
-
-    await expect(page.getByRole('heading', { name: 'Trail Maps' })).toBeVisible();
-    await expect(page.getByText('Bibbulmun Track')).toBeVisible();
+  describe('Trail Status Classification', () => {
+    it('returns "on-trail" for positions within 50m');
+    it('returns "drifting" for positions 50-200m from trail');
+    it('returns "warning" for positions 200-500m from trail');
+    it('returns "off-trail" for positions > 500m from trail');
+    it('returns "unknown" when GPS accuracy > threshold');
   });
 
-  test('clicking trail opens viewer', async ({ page }) => {
-    await page.goto('/');
-    await page.click('text=Bibbulmun Track');
-
-    await expect(page).toHaveURL(/\/trails\/bibbulmun/);
-    await expect(page.locator('#map')).toBeVisible();
-    await expect(page.locator('#elevation-profile')).toBeVisible();
+  describe('Off-Trail Bearing', () => {
+    it('calculates correct bearing to nearest trail point');
+    it('bearing points toward trail (not away)');
   });
 
-  test('waypoint table loads with data', async ({ page }) => {
-    await page.goto('/trails/bibbulmun');
+  describe('False Positive Prevention', () => {
+    it('debounces: single off-trail reading does not trigger alert');
+    it('sustained off-trail readings trigger alert after N consecutive');
+    it('returns to on-trail state immediately when back on trail');
+    it('suppresses alerts when GPS accuracy is poor (> 100m)');
+    it('does not alert when on known alternate/variant track');
+  });
 
-    const rows = page.locator('.waypoint-row');
-    await expect(rows).toHaveCount({ greaterThan: 10 });
+  describe('User Configuration', () => {
+    it('respects custom distance thresholds');
+    it('alerts disabled when user turns off');
+    it('snooze suppresses alerts for specified duration');
   });
 });
 
-test.describe('Trail Viewer Interactions', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/trails/bibbulmun');
-    await page.waitForSelector('#map .leaflet-container');
-  });
+// src/services/__tests__/sunrise-sunset.test.ts
+describe('SunriseSunset', () => {
+  it('calculates sunrise for Perth in winter (known value)');
+  it('calculates sunset for Perth in summer (known value)');
+  it('handles southern hemisphere correctly');
+  it('accounts for daylight saving time');
+  it('calculates civil twilight times');
+  it('updates as trail position changes (different longitude)');
+  it('returns "sunset in Xh Xm" countdown format');
+});
 
-  test('clicking waypoint in table highlights on map', async ({ page }) => {
-    await page.click('.waypoint-row:first-child');
-
-    await expect(page.locator('.leaflet-marker-icon.highlighted')).toBeVisible();
-  });
-
-  test('direction reversal updates distances', async ({ page }) => {
-    const firstDistance = await page.textContent('.waypoint-row:first-child .distance');
-
-    await page.click('button:has-text("Reverse")');
-
-    const newDistance = await page.textContent('.waypoint-row:first-child .distance');
-    expect(newDistance).not.toBe(firstDistance);
-  });
-
-  test('expand/collapse variant works', async ({ page }) => {
-    const variantRow = page.locator('.waypoint-row.variant');
-    if (await variantRow.count() > 0) {
-      await variantRow.first().click();
-      await expect(page.locator('.variant-details')).toBeVisible();
-    }
-  });
+// src/services/__tests__/todays-progress.test.ts
+describe('TodaysProgress', () => {
+  it('calculates distance hiked today from start position');
+  it('calculates distance remaining to today destination');
+  it('calculates percentage complete');
+  it('estimates arrival time based on average speed');
+  it('handles "no plan" mode (shows total trail progress instead)');
+  it('resets at midnight or when plan changes');
 });
 ```
 
-### Mobile App (Detox)
+#### Part 5a Verification Checklist
 
-```typescript
-// packages/app/e2e/trail-viewing.e2e.ts
+```bash
+# [auto]
+cd mobile-spike/MapLibreSpike && npm test -- --ci
+cd mobile-spike/MapLibreSpike && npm run typecheck
 
-describe('Trail Viewing', () => {
-  beforeAll(async () => {
-    await device.launchApp();
-  });
+# [human] Maestro E2E (basic)
+maestro test e2e/off-trail-alert.yaml
 
-  beforeEach(async () => {
-    await device.reloadReactNative();
-  });
-
-  it('shows trail list on launch', async () => {
-    await expect(element(by.text('Bibbulmun Track'))).toBeVisible();
-  });
-
-  it('opens trail viewer when trail is tapped', async () => {
-    await element(by.text('Bibbulmun Track')).tap();
-
-    await expect(element(by.id('map-view'))).toBeVisible();
-    await expect(element(by.id('dashboard'))).toBeVisible();
-  });
-
-  it('shows distance to next campsite', async () => {
-    await element(by.text('Bibbulmun Track')).tap();
-
-    await expect(element(by.id('next-campsite-distance'))).toBeVisible();
-    await expect(element(by.id('next-campsite-distance'))).toHaveText(/\d+\.?\d* km/);
-  });
-});
-
-describe('Offline Mode', () => {
-  beforeAll(async () => {
-    await device.launchApp();
-    // Download trail for offline
-    await element(by.text('Bibbulmun Track')).tap();
-    await element(by.id('download-offline')).tap();
-    await waitFor(element(by.text('Download complete'))).toBeVisible().withTimeout(60000);
-  });
-
-  it('trail loads without network', async () => {
-    await device.setNetworkConditions({ offline: true });
-    await device.reloadReactNative();
-
-    await element(by.text('Bibbulmun Track')).tap();
-    await expect(element(by.id('map-view'))).toBeVisible();
-  });
-
-  afterAll(async () => {
-    await device.setNetworkConditions({ offline: false });
-  });
-});
-
-describe('Campsite Planning', () => {
-  beforeEach(async () => {
-    await device.reloadReactNative();
-    await element(by.text('Bibbulmun Track')).tap();
-    await element(by.id('mode-plan')).tap();
-    await element(by.id('tab-day-plan')).tap();
-  });
-
-  it('can add campsite stops', async () => {
-    await element(by.id('add-campsite')).tap();
-    await element(by.text('Helena Campsite')).tap();
-
-    await expect(element(by.id('day-card-1'))).toBeVisible();
-  });
-
-  it('shows correct distance for day', async () => {
-    await element(by.id('add-campsite')).tap();
-    await element(by.text('Helena Campsite')).tap();
-
-    const distanceText = await element(by.id('day-card-1-distance')).getText();
-    expect(parseFloat(distanceText)).toBeGreaterThan(0);
-  });
-
-  it('updates stats when campsite removed', async () => {
-    await element(by.id('add-campsite')).tap();
-    await element(by.text('Helena Campsite')).tap();
-    await element(by.id('add-campsite')).tap();
-    await element(by.text('Chadoora Campsite')).tap();
-
-    const originalDistance = await element(by.id('day-card-1-distance')).getText();
-
-    await element(by.id('day-card-1')).swipe('left');
-    await element(by.text('Remove')).tap();
-
-    const newDistance = await element(by.id('day-card-1-distance')).getText();
-    expect(newDistance).not.toBe(originalDistance);
-  });
-});
+# [human] Field testing (CRITICAL for this part)
+# See Field Testing Protocol below — this is where off-trail
+# detection is validated against real GPS behavior
 ```
 
 ---
 
 ## Performance Benchmarks
 
-### Defined Thresholds
+### Thresholds
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| GPX processing (10MB file) | < 30s | Timer in test |
-| App cold start (empty cache) | < 3s | Detox measurement |
-| App cold start (500MB cache) | < 3s | Detox measurement |
-| Map pan/zoom frame rate | 60 fps | React Native profiler |
-| Trail data load | < 500ms | Performance API |
-| Distance calculation | < 10ms | Benchmark suite |
-| Memory usage (idle) | < 150MB | Device profiler |
-| Memory usage (with map) | < 300MB | Device profiler |
-| Tile cache read | < 50ms | SQLite benchmark |
+| Metric | Target | Maximum | How to Measure |
+|--------|--------|---------|----------------|
+| App cold start (empty cache) | < 2s | < 3s | Maestro timing / stopwatch |
+| App cold start (500MB cache) | < 2s | < 3s | Maestro timing / stopwatch |
+| Trail data load from SQLite | < 200ms | < 500ms | `console.time()` in service |
+| Distance calculation (single) | < 1ms | < 5ms | Vitest bench |
+| Douglas-Peucker on 10k points | < 100ms | < 500ms | Vitest bench |
+| GPX processing (1MB file) | < 5s | < 10s | Jest timer |
+| GPX processing (10MB file) | < 15s | < 30s | Jest timer |
+| Memory usage (idle, no trail) | < 100MB | < 150MB | Xcode/Android Studio profiler |
+| Memory usage (with map + trail) | < 200MB | < 300MB | Xcode/Android Studio profiler |
+| Map pan/zoom frame rate | 60 fps | > 30 fps | React Native profiler |
+| Tile cache read | < 20ms | < 50ms | SQLite benchmark |
 
-### Performance Test Suite
+### Benchmark Test Suite
+
+Run benchmarks using Vitest's `bench` feature (for pure logic) and manual timing (for device metrics):
 
 ```typescript
-// packages/app/src/benchmarks/performance.bench.ts
-
+// packages/trail-core/src/benchmarks/performance.bench.ts
 import { bench, describe } from 'vitest';
 
 describe('Distance Calculations', () => {
-  const trail = loadTrailSync('bibbulmun');
-
-  bench('calculate distance between two points', () => {
-    haversineDistance3D(
-      trail.waypoints[0].lat, trail.waypoints[0].lon, trail.waypoints[0].ele,
-      trail.waypoints[50].lat, trail.waypoints[50].lon, trail.waypoints[50].ele
-    );
+  bench('haversineDistance3D single call', () => {
+    haversineDistance3D(-37.8136, 144.9631, 100, -33.8688, 151.2093, 50);
   });
 
-  bench('find next waypoint by type', () => {
-    findNextWaypoint(trail, 100, 'campsite');
-  });
-
-  bench('calculate all day stats for 30-day plan', () => {
-    const planner = new CampsitePlanner(trail);
-    for (let i = 0; i < 30; i++) {
-      planner.addStop(trail.campsites[i].id, i);
-    }
-    planner.getDayStats();
+  bench('findCloseWaypoints with 200 waypoints', () => {
+    findCloseWaypoints(trackWith1000Points, waypointSet200, 5);
   });
 });
 
 describe('GPX Processing', () => {
-  bench('parse 1MB GPX file', async () => {
-    const gpx = await readFile('fixtures/gpx/1mb-trail.gpx');
-    await parseGpx(gpx);
-  });
-
-  bench('parse 10MB GPX file', async () => {
-    const gpx = await readFile('fixtures/gpx/10mb-trail.gpx');
-    await parseGpx(gpx);
-  }, { timeout: 60000 });
-
   bench('Douglas-Peucker on 10k points', () => {
-    const points = generatePoints(10000);
-    simplifyTrack(points, 0.0001);
-  });
-});
-
-describe('Data Loading', () => {
-  bench('load trail JSON from disk', async () => {
-    await loadTrail('bibbulmun');
+    douglasPeucker(generatedPoints10k, 10);
   });
 
-  bench('query waypoints in range', async () => {
-    const trail = await loadTrail('bibbulmun');
-    trail.getWaypointsInRange(100, 200);
+  bench('Douglas-Peucker on 50k points', () => {
+    douglasPeucker(generatedPoints50k, 10);
   });
 });
 ```
 
-### Memory Profiling
+**Run:** `npx vitest bench` (from trail-core package)
 
-```typescript
-// packages/app/src/benchmarks/memory.test.ts
+### Device Performance (Human Only)
 
-describe('Memory Usage', () => {
-  it('does not leak memory on repeated trail loads', async () => {
-    const initialMemory = await getMemoryUsage();
+Device-level benchmarks require a human with a profiler:
 
-    for (let i = 0; i < 10; i++) {
-      await loadTrail('bibbulmun');
-      await unloadTrail();
-    }
-
-    // Force GC if available
-    if (global.gc) global.gc();
-
-    const finalMemory = await getMemoryUsage();
-    expect(finalMemory - initialMemory).toBeLessThan(10 * 1024 * 1024); // <10MB growth
-  });
-
-  it('handles 500MB tile cache without crash', async () => {
-    await populateTileCache(500); // 500MB of tiles
-
-    await loadTrail('bibbulmun');
-    await navigateToMap();
-
-    expect(await isAppResponsive()).toBe(true);
-  });
-});
-```
+| What | Tool | How |
+|------|------|-----|
+| Cold start time | Stopwatch / Maestro `timeTaken` | Launch app, time until interactive |
+| Memory usage | Xcode Instruments / Android Studio Profiler | Monitor during typical session |
+| Frame rate during map pan | React Native Perf Monitor | Enable in dev menu, pan map |
+| Battery drain | Device battery stats | 1-hour controlled test |
 
 ---
 
-## Data Validation Tests
+## Field Testing Protocol
 
-### Golden File Testing
+Field testing validates what automated tests cannot: real GPS behavior, battery life, usability with tired minds and dirty hands, and edge cases that only appear in nature.
 
-Ensure build output doesn't regress unexpectedly.
+### When to Field Test
+
+- Before every release that touches GPS, maps, or offline functionality
+- Before the first App Store / Play Store submission
+- After any change to off-trail detection thresholds
+
+### Pre-Release Field Test Checklist
+
+**Equipment:**
+- [ ] Primary test device (target iPhone model)
+- [ ] Secondary test device (Android, different manufacturer)
+- [ ] External battery pack
+- [ ] Notepad and pen (for observations when hands are dirty)
+- [ ] Known trail section, 2-4 hours, with good and poor GPS sections
+
+**Test Scenarios (v1.0):**
+
+| # | Scenario | Duration | What to Validate | Version |
+|---|----------|----------|------------------|---------|
+| 1 | Basic hike with GPS | 2-4 hrs | Battery drain, GPS accuracy, position tracking | Part 2+ |
+| 2 | Airplane mode hike | 2-4 hrs | Offline tiles, cached trail data, all features work | Part 2+ |
+| 3 | Off-trail detection | 30 min | Walk deliberately off trail, verify alerts | Part 5a |
+| 4 | Dense canopy section | 1 hr | GPS behavior, false positive rate | Part 5a |
+| 5 | Plan modification mid-hike | 30 min | Add/remove campsites, stats recalculate | Part 3+ |
+| 6 | Custom trail upload | 30 min | Upload GPX, verify it works like built-in trail | Part 4 |
+
+**Measurements to Record:**
+
+```
+Trail: ___________________
+Date: ___________________
+Device: _________________ (model, OS version)
+App Version: _____________
+
+BATTERY
+  Start Time: _____ Battery: _____%
+  End Time: _____   Battery: _____%
+  GPS Active Time: _____ hours
+  Screen On Time: _____ hours
+  Drain Rate: _____% / hour
+
+GPS ACCURACY
+  [ ] Consistent lock throughout
+  [ ] Occasional dropouts (count: _____, duration: _____)
+  [ ] Long time to first fix (> 30s)
+  [ ] Poor accuracy under canopy (estimated: ____m)
+  [ ] Position jumped unexpectedly (count: _____)
+
+OFF-TRAIL ALERTS (Part 5a)
+  [ ] No false positives
+  [ ] False positives (count: _____, describe: _______________)
+  [ ] Correctly alerted when deliberately off trail (Y/N)
+  [ ] Alert dismissed correctly with snooze (Y/N)
+  [ ] GPS accuracy suppression worked (Y/N)
+
+OFFLINE FUNCTIONALITY
+  [ ] Map tiles loaded correctly in airplane mode
+  [ ] Trail data loaded correctly
+  [ ] Distance calculations updated
+  [ ] No crashes or blank screens
+
+USABILITY
+  Text readable in bright sunlight?  [ ] Yes  [ ] No (which screens: ___)
+  Touch targets easy to hit?         [ ] Yes  [ ] No (which buttons: ___)
+  App responsive after 2+ hours?     [ ] Yes  [ ] No (describe: ___)
+
+BUGS FOUND
+  1. _______________________________________________
+  2. _______________________________________________
+  3. _______________________________________________
+```
+
+### Battery Drain Targets
+
+| Scenario | Target | Maximum | Notes |
+|----------|--------|---------|-------|
+| GPS active, screen on | 12%/hour | 18%/hour | Typical hiking usage |
+| GPS active, screen off | 4%/hour | 7%/hour | Phone in pocket |
+| Planning mode (no GPS) | 2%/hour | 4%/hour | Evening in tent |
+| Overnight, backgrounded | < 2% total | < 5% total | App not killed |
+
+---
+
+## Golden File Testing
+
+Golden files are the **primary regression defense** for the data processing pipeline. When a test fails, it means the build output changed — which could be intentional (pipeline improvement) or a bug.
 
 ```typescript
 // src/integration/golden-files.test.ts
 
 describe('Golden File Validation', () => {
-  const trails = ['bibbulmun', 'larapinta', 'overland'];
+  const trails = ['bibbulmun', 'larapinta'];  // Add as trails are built
 
   for (const trailId of trails) {
     describe(trailId, () => {
-      it('waypoint count matches expected', async () => {
+      it('waypoint count matches snapshot', async () => {
         const result = await buildTrail(trailId);
         const golden = await readGolden(`${trailId}.json`);
-
         expect(result.waypoints.length).toBe(golden.waypoints.length);
       });
 
-      it('total distance within 1% of expected', async () => {
+      it('total distance within 0.5% of snapshot', async () => {
         const result = await buildTrail(trailId);
         const golden = await readGolden(`${trailId}.json`);
-
-        const diff = Math.abs(result.totalDistance - golden.totalDistance);
-        const tolerance = golden.totalDistance * 0.01;
-        expect(diff).toBeLessThan(tolerance);
+        const tolerance = golden.totalDistance * 0.005;
+        expect(Math.abs(result.totalDistance - golden.totalDistance))
+          .toBeLessThan(tolerance);
       });
 
-      it('waypoint positions match expected', async () => {
+      it('waypoint km positions within 0.1 km of snapshot', async () => {
         const result = await buildTrail(trailId);
         const golden = await readGolden(`${trailId}.json`);
-
         for (let i = 0; i < result.waypoints.length; i++) {
           expect(result.waypoints[i].kmPosition)
             .toBeCloseTo(golden.waypoints[i].kmPosition, 1);
         }
+      });
+
+      it('track point count within 5% of snapshot', async () => {
+        const result = await buildTrail(trailId);
+        const golden = await readGolden(`${trailId}.json`);
+        const tolerance = golden.trackPointCount * 0.05;
+        expect(Math.abs(result.trackPointCount - golden.trackPointCount))
+          .toBeLessThan(tolerance);
       });
     });
   }
 });
 ```
 
-### GPX Source Compatibility
+**Updating golden files (intentional changes only):**
+```bash
+# Rebuild trails and update golden files
+npm run build:trails
+cp public/data/generated/bibbulmun.json tests/fixtures/expected/bibbulmun.json
+# Review the diff carefully before committing
+git diff tests/fixtures/expected/
+```
 
-Test with real GPX exports from popular apps.
+---
+
+## GPX Source Compatibility Tests
+
+Test with real GPX exports from popular apps (fixture files must be collected by hand):
 
 ```typescript
 // src/integration/gpx-compatibility.test.ts
@@ -858,327 +1180,95 @@ describe('GPX Source Compatibility', () => {
     { name: 'AllTrails', file: 'fixtures/gpx/alltrails-export.gpx' },
     { name: 'Strava', file: 'fixtures/gpx/strava-export.gpx' },
     { name: 'Garmin Connect', file: 'fixtures/gpx/garmin-export.gpx' },
-    { name: 'CalTopo', file: 'fixtures/gpx/caltopo-export.gpx' },
   ];
 
   for (const source of sources) {
     describe(source.name, () => {
-      it('parses without error', async () => {
-        const gpx = await readFile(source.file);
-        await expect(parseGpx(gpx)).resolves.toBeDefined();
-      });
-
-      it('extracts track points', async () => {
-        const gpx = await readFile(source.file);
-        const result = await parseGpx(gpx);
-
-        expect(result.tracks.length).toBeGreaterThan(0);
-        expect(result.tracks[0].points.length).toBeGreaterThan(0);
-      });
-
-      it('extracts elevation if present', async () => {
-        const gpx = await readFile(source.file);
-        const result = await parseGpx(gpx);
-
-        // Some exports don't have elevation
-        if (result.hasElevation) {
-          expect(result.tracks[0].points[0].ele).toBeDefined();
-        }
-      });
+      it('parses without error');
+      it('extracts at least one track with points');
+      it('extracts elevation data if present');
+      it('produces valid trail data after full processing');
     });
   }
 });
 
 describe('Malformed GPX Handling', () => {
-  it('handles missing elevation gracefully', async () => {
-    const gpx = await readFile('fixtures/gpx/no-elevation.gpx');
-    const result = await parseGpx(gpx);
-
-    expect(result.hasElevation).toBe(false);
-    expect(result.tracks[0].points[0].ele).toBeNull();
-  });
-
-  it('handles empty waypoints array', async () => {
-    const gpx = await readFile('fixtures/gpx/no-waypoints.gpx');
-    const result = await parseGpx(gpx);
-
-    expect(result.waypoints).toEqual([]);
-    expect(result.tracks.length).toBeGreaterThan(0);
-  });
-
-  it('rejects invalid XML with clear error', async () => {
-    const invalidXml = '<gpx><trk><incomplete>';
-
-    await expect(parseGpx(invalidXml)).rejects.toThrow(/invalid xml/i);
-  });
-
-  it('rejects non-GPX XML with clear error', async () => {
-    const notGpx = '<html><body>Not a GPX file</body></html>';
-
-    await expect(parseGpx(notGpx)).rejects.toThrow(/not a valid gpx/i);
-  });
-
-  it('handles file size limit', async () => {
-    const hugeGpx = generateLargeGpx(100); // 100MB
-
-    await expect(parseGpx(hugeGpx)).rejects.toThrow(/file too large/i);
-  });
+  it('missing elevation → continues without elevation stats');
+  it('empty waypoints → trail usable, no POI markers');
+  it('invalid XML → descriptive error message');
+  it('non-GPX XML → descriptive error message');
+  it('file > 50MB → rejects with size error');
+  it('empty file → descriptive error message');
+  it('single track point → handles gracefully');
 });
 ```
 
 ---
 
-## Field Testing Protocol
+## Summary: Verification Commands by Part
 
-Field testing validates what automated tests cannot: real-world conditions, battery life, GPS behavior under canopy, and usability with tired minds and dirty hands.
+Quick reference for what to run after completing each part:
 
-### Pre-Release Field Test Checklist
-
-**Equipment:**
-- [ ] Primary test device (target phone model)
-- [ ] Secondary test device (different OS/manufacturer)
-- [ ] External battery pack
-- [ ] Notepad for observations
-- [ ] Known trail section (2-4 hours)
-
-**Test Scenarios:**
-
-| Scenario | Duration | What to Validate |
-|----------|----------|-----------------|
-| Basic hike with GPS tracking | 2-4 hours | Battery drain, GPS accuracy, off-trail alerts |
-| Airplane mode hike | 2-4 hours | Offline functionality, cached tiles work |
-| Plan modification mid-hike | 30 min | Can adjust plan, stats recalculate correctly |
-| Photo and journal entries | 30 min | Photos geo-tagged correctly, notes save |
-| Dense canopy section | 1 hour | GPS behavior, false off-trail alerts |
-| Town stop with connectivity | 30 min | Sync behavior, weather update, plan save |
-
-**Measurements to Record:**
-
-```
-Trail: ___________________
-Date: ___________________
-Device: _________________
-OS Version: ______________
-App Version: _____________
-
-Start Time: _____ Battery: _____%
-End Time: _____   Battery: _____%
-GPS Active Time: _____ hours
-Screen On Time: _____ hours
-
-GPS Issues:
-[ ] Consistent lock
-[ ] Occasional dropouts (describe: _____________)
-[ ] Long time to first fix
-[ ] Poor accuracy under canopy
-
-Off-Trail Alerts:
-[ ] No false positives
-[ ] False positives (count: _____, describe: _____________)
-[ ] Missed alerts when actually off trail
-
-Usability Notes:
-_______________________________________________
-_______________________________________________
-
-Bugs Found:
-_______________________________________________
-_______________________________________________
-```
-
-### Battery Drain Targets
-
-| Scenario | Target | Maximum |
-|----------|--------|---------|
-| GPS active, screen on | 15%/hour | 20%/hour |
-| GPS active, screen off | 5%/hour | 8%/hour |
-| GPS inactive (planning mode) | 3%/hour | 5%/hour |
-| Overnight (app backgrounded) | <2% | 5% |
-
----
-
-## Platform-Specific Testing
-
-### iOS Considerations
-
-```typescript
-// e2e/ios-specific.e2e.ts
-
-describe('iOS-Specific', () => {
-  it('requests location permission correctly', async () => {
-    await device.launchApp({ permissions: { location: 'unset' } });
-    await element(by.text('Bibbulmun Track')).tap();
-    await element(by.id('mode-hike')).tap();
-
-    // Should see permission dialog
-    await expect(element(by.text('Allow While Using App'))).toBeVisible();
-  });
-
-  it('handles location permission denial gracefully', async () => {
-    await device.launchApp({ permissions: { location: 'never' } });
-    await element(by.text('Bibbulmun Track')).tap();
-    await element(by.id('mode-hike')).tap();
-
-    // Should show helpful message, not crash
-    await expect(element(by.text('Location access required'))).toBeVisible();
-    await expect(element(by.id('open-settings-button'))).toBeVisible();
-  });
-
-  it('background location works with Always permission', async () => {
-    await device.launchApp({ permissions: { location: 'always' } });
-    // Start recording
-    await element(by.id('start-recording')).tap();
-
-    // Background the app
-    await device.sendToHome();
-    await sleep(60000); // 1 minute
-
-    // Return to app
-    await device.launchApp();
-
-    // Should have recorded points while backgrounded
-    const pointCount = await element(by.id('recorded-points-count')).getText();
-    expect(parseInt(pointCount)).toBeGreaterThan(0);
-  });
-});
-```
-
-### Android Considerations
-
-```typescript
-// e2e/android-specific.e2e.ts
-
-describe('Android-Specific', () => {
-  it('handles Doze mode correctly', async () => {
-    await device.launchApp();
-    await element(by.id('start-recording')).tap();
-
-    // Simulate Doze mode
-    await device.executeShellCommand('dumpsys deviceidle force-idle');
-    await sleep(120000); // 2 minutes
-    await device.executeShellCommand('dumpsys deviceidle unforce');
-
-    await device.launchApp();
-
-    // Recording should have reasonable continuity
-    const gaps = await element(by.id('recording-gaps')).getText();
-    expect(parseInt(gaps)).toBeLessThan(3);
-  });
-
-  it('handles low storage gracefully', async () => {
-    // Fill storage to near capacity
-    await device.executeShellCommand('dd if=/dev/zero of=/sdcard/filler bs=1M count=100');
-
-    await device.launchApp();
-    await element(by.text('Bibbulmun Track')).tap();
-    await element(by.id('download-offline')).tap();
-
-    // Should warn, not crash
-    await expect(element(by.text('Not enough storage'))).toBeVisible();
-
-    // Cleanup
-    await device.executeShellCommand('rm /sdcard/filler');
-  });
-});
-```
-
----
-
-## Test Fixtures
-
-### Required GPX Test Files
-
-Create or obtain these fixtures:
-
-```
-tests/fixtures/gpx/
-  # Real exports from popular apps
-  gaia-export.gpx          # Export from Gaia GPS
-  alltrails-export.gpx     # Export from AllTrails
-  strava-export.gpx        # Export from Strava
-  garmin-export.gpx        # Export from Garmin Connect
-  caltopo-export.gpx       # Export from CalTopo
-
-  # Edge cases
-  no-elevation.gpx         # Track without elevation data
-  no-waypoints.gpx         # Track only, no waypoints
-  multi-track.gpx          # Multiple track segments
-  track-with-gaps.gpx      # Non-continuous track
-  huge-file.gpx            # 10MB+ for performance testing
-  malformed.gpx            # Invalid XML structure
-
-  # Reference trails
-  bibbulmun.gpx            # Known good trail data
-  simple-trail.gpx         # Small trail for unit tests
-  trail-with-variants.gpx  # Main + alternate tracks
-```
-
-### Expected Output Files
-
-```
-tests/fixtures/expected/
-  bibbulmun.json           # Golden file for Bibbulmun build
-  simple-trail.json        # Golden file for simple trail
-```
-
----
-
-## Success Criteria
-
-### Part 0 Complete When:
-- [ ] Test infrastructure set up (Vitest, Playwright, Detox)
-- [ ] CI pipeline runs all test levels
-- [ ] Fixture files collected
-- [ ] Performance benchmark baseline established
-
-### Each Part Complete When:
-- [ ] All unit tests pass
-- [ ] Integration tests for new features pass
-- [ ] E2E tests updated if UI changed
-- [ ] Performance benchmarks still meet targets
-- [ ] No regression in golden file tests
-
-### Pre-Release Checklist:
-- [ ] All automated tests pass
-- [ ] Field testing completed on at least 2 devices
-- [ ] Battery drain within targets
-- [ ] No false positive off-trail alerts during field test
-- [ ] Memory usage stable over multi-hour session
-- [ ] Performance benchmarks pass
+| Part | Auto-Verifiable Commands | Human Verification |
+|------|--------------------------|-------------------|
+| **0** | `npm test -- --run` (web), `cd mobile && npm test -- --ci`, `npm run typecheck` | App launches on both platforms |
+| **1** | `cd mobile && npm test -- --ci` | Visual: mode colors, dark mode, dashboard layout |
+| **2** | All Part 0 commands + `npm run test:integration -- --run` | Maestro E2E, map renders, GPS works, offline tiles load |
+| **3** | All Part 2 commands | Maestro E2E, campsite planner manual testing |
+| **4** | All Part 3 commands | Upload GPX from 4 apps, verify processing |
+| **5a** | All Part 4 commands | Field testing protocol (2-4 hours on trail) |
+| **Pre-release** | All commands from all parts | Field test on 2 devices, battery drain measurement |
 
 ---
 
 ## Implementation Priority
 
 1. **Immediate (Part 0)**
-   - Set up integration test infrastructure
-   - Create golden files for existing trails
-   - Add unit tests for `gpx-parser.ts`
+   - Set up Jest for mobile app (smoke test passes)
+   - Set up GitHub Actions CI pipeline
+   - Extend existing unit tests with edge cases
+   - Create test fixture directory structure
+   - Generate golden files from current build output
 
-2. **Part 2 (Offline Viewer)**
-   - GPS accuracy handling tests
-   - Track snapping tests
-   - Offline tile caching tests
+2. **Part 1 (Design System)**
+   - Component tests for each new UI component
+   - Accessibility test helpers
 
-3. **Part 3 (Planning)**
-   - Day calculation tests
+3. **Part 2 (Offline Viewer)**
+   - Track snapping and distance calculation unit tests
+   - Offline data loading integration tests
+   - Maestro E2E flows for core navigation
+   - Initial performance benchmarks
+
+4. **Part 3 (Planning Tools)**
+   - Campsite planner test suite (the most critical test suite in the app)
    - Plan persistence tests
    - Section hiking tests
 
-4. **Part 5 (On-Trail)**
-   - Off-trail detection tests
-   - Field testing protocol execution
+5. **Part 4 (Custom Trails)**
+   - GPX parser tests (React Native variant)
+   - Processing pipeline integration tests
+   - GPX compatibility test suite (requires fixture files from you)
+
+6. **Part 5a (On-Trail Safety)**
+   - Off-trail detection unit tests
+   - Sunrise/sunset calculation tests
+   - **First field testing session**
 
 ---
 
 ## Dependencies
 
-- Part 0: Foundation (test infrastructure is part of foundation)
-- All other parts: This testing strategy
+- **Part 0**: Foundation (test infrastructure is part of foundation)
+- **All other parts**: This testing strategy
+- **GPX compatibility tests**: Require manually exported GPX fixture files
+- **Field testing**: Requires physical trail access, real devices, 2-4 hours
+- **Maestro E2E**: Requires macOS with Xcode or Android Studio
 
 ## Notes
 
-- Tests should be written alongside feature code, not after
-- Field testing should happen before each major release
+- Tests are written alongside feature code, not after
+- Golden files should be updated intentionally, with careful diff review
 - Performance benchmarks should be re-run after major changes
-- Golden files should be updated intentionally, with review
+- Field testing should happen before each milestone release
+- The campsite planner (Part 3) is the most algorithmically complex feature and deserves the most thorough test coverage

@@ -136,11 +136,13 @@ npx expo start --dev-client
 
 ## Running the Spike
 
+The app has a tabbed interface for each test phase. Use the phase tabs below the map to switch between phases.
+
 ### Phase 1: Verify Map Loads
 
 1. Launch the app on your device/emulator
 2. Wait for the map to load - you should see:
-   - Blue header with "MapLibre Offline Spike"
+   - Blue header with "MapLibre Offline Spike" and a network status badge
    - Map centered on Western Australia
    - Red dashed rectangle showing Bibbulmun Track bounds
    - Log showing "Map loaded successfully"
@@ -148,38 +150,51 @@ npx expo start --dev-client
 
 ### Phase 2: Download Offline Tiles
 
-1. Tap "Run Zoom Level Tests (10-16)"
-2. Monitor the log output - you'll see:
+1. Select the **"2: Download"** tab
+2. Tap "Run Zoom Level Tests (10-16)"
+3. Monitor the log output - you'll see:
    - Progress percentage for each zoom level
    - Tile count and size when each level completes
-3. Wait for all tests to complete (may take several minutes)
-4. View results in the table showing tiles/size/time per zoom level
-5. Tap "Export Results" to save detailed findings
+4. Wait for all tests to complete (may take several minutes)
+5. View results in the table showing tiles/size/time per zoom level
+6. Tap "Export Results" to save detailed findings
 
 ### Phase 3: Test Offline Rendering
 
 **Critical test - this validates the core requirement:**
 
-1. After downloading tiles, enable Airplane Mode on device
-2. Close and reopen the app
-3. Verify the map still renders for the downloaded area
-4. Pan/zoom within the Bibbulmun Track bounds
-5. **Record**: Does offline rendering work? Any tiles missing?
+1. Select the **"3: Offline"** tab
+2. Enable Airplane Mode on your device
+3. Wait for the network badge in the header to turn red and show "offline"
+4. Tap "Test Offline Rendering" - this will programmatically fly the camera to several trail locations while offline
+5. Verify the map renders correctly at each location (Kalamunda, Walpole, overview)
+6. Manually pan/zoom within the red bounding box to further verify
+7. Tap "Works" or "Broken" to record your finding
+8. **Record**: Does offline rendering work? Any tiles missing?
 
 ### Phase 4: Measure Storage
 
-1. Check device storage usage:
+1. Select the **"4: Storage"** tab
+2. Tap "Measure Storage" to query MapLibre's offline pack sizes
+3. View the total storage and per-pack breakdown
+4. Also check device storage usage:
    - **iOS**: Settings > General > iPhone Storage > MapLibreSpike
    - **Android**: Settings > Apps > MapLibreSpike > Storage
-2. Compare with reported tile sizes in the app
-3. **Record**: Actual storage used vs reported
+5. Compare MapLibre-reported sizes with actual device storage
+6. **Record**: Actual storage used vs reported
 
 ### Phase 5: Performance Testing
 
-1. With tiles downloaded, zoom in/out rapidly
-2. Pan across the trail corridor
-3. **Record**:
-   - Is rendering smooth (60fps)?
+1. Select the **"5: Perf"** tab
+2. Toggle "FPS" to ON - an FPS counter appears on the map
+3. Manually pan/zoom the map to observe interactive framerate
+4. Tap "Run Performance Test" to run the automated test:
+   - Flies to 10 trail waypoints with varying zoom levels
+   - Measures FPS at each location (avg, min, max)
+   - Includes zoom-in, zoom-out, and rapid navigation tests
+5. Review the results table and overall summary
+6. **Record**:
+   - Is rendering smooth (>= 30fps)?
    - Any lag or stuttering?
    - Memory warnings?
 
@@ -369,8 +384,13 @@ After completing the spike:
 
 - [x] **PROCEED** with React Native — MapLibre offline tiles work, storage is reasonable, and the core requirement (offline map rendering) is validated.
 
-### Remaining Spike Items
+### Next Spike Items
 
-- [ ] Phase 3: Test offline rendering (airplane mode test)
-- [ ] Phase 4: Measure actual device storage usage
-- [ ] Phase 5: Performance testing (pan/zoom smoothness)
+These require interactive device testing (use the phase tabs in the app):
+
+- [x] Phase 3: Test offline rendering — enable Airplane Mode, use "3: Offline" tab, verify map renders from cache
+  - Correctly works. Tiles are rendered as expected.
+- [x] Phase 4: Measure storage — use "4: Storage" tab + check device settings, compare reported vs actual
+  - 48MB used as expected. The code did not show this but under settings -> apps -> MapLibre Offile Spike showed 97MB of user data
+- [x] Phase 5: Performance testing — use "5: Perf" tab, run automated test + manual pan/zoom, record FPS results
+  - very performant, stayed above 100FPS for the whole test

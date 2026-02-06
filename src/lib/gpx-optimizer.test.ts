@@ -792,3 +792,70 @@ describe('GPX_OPTIMIZER_DEFAULTS', () => {
     expect(GPX_OPTIMIZER_DEFAULTS.maxFileSize).toBe(50 * 1024 * 1024);
   });
 });
+
+describe('edge cases', () => {
+  it('douglasPeucker with single point returns that point', () => {
+    const points: GpxPoint[] = [
+      { lat: -37.8136, lon: 144.9631, ele: 50, time: null },
+    ];
+    const result = douglasPeucker(points, 10);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual(points[0]);
+  });
+
+  it('douglasPeucker with empty array returns empty array', () => {
+    const result = douglasPeucker([], 10);
+    expect(result).toHaveLength(0);
+  });
+
+  it('douglasPeucker with very large tolerance reduces to endpoints', () => {
+    const points: GpxPoint[] = [];
+    for (let i = 0; i < 100; i++) {
+      points.push({
+        lat: -37 + i * 0.001 + Math.sin(i) * 0.0001,
+        lon: 144 + i * 0.001 + Math.cos(i) * 0.0001,
+        ele: 50,
+        time: null,
+      });
+    }
+    const result = douglasPeucker(points, 1_000_000);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual(points[0]);
+    expect(result[result.length - 1]).toEqual(points[points.length - 1]);
+  });
+
+  it('douglasPeucker with zero tolerance keeps all points', () => {
+    const points: GpxPoint[] = [
+      { lat: -37.8136, lon: 144.9631, ele: 50, time: null },
+      { lat: -37.8140, lon: 144.9640, ele: 55, time: null },
+      { lat: -37.8150, lon: 144.9650, ele: 60, time: null },
+    ];
+    const result = douglasPeucker(points, 0);
+    expect(result).toHaveLength(3);
+  });
+
+  it('calculateTrackDistance with empty array returns 0', () => {
+    expect(calculateTrackDistance([])).toBe(0);
+  });
+
+  it('calculateTrackDistance with single point returns 0', () => {
+    const points: GpxPoint[] = [
+      { lat: -37.8136, lon: 144.9631, ele: 50, time: null },
+    ];
+    expect(calculateTrackDistance(points)).toBe(0);
+  });
+
+  it('calculateElevationStats with empty array returns zeros', () => {
+    const stats = calculateElevationStats([]);
+    expect(stats.gain).toBe(0);
+    expect(stats.loss).toBe(0);
+  });
+
+  it('removeElevationSpikes with empty array returns empty', () => {
+    expect(removeElevationSpikes([], 50)).toHaveLength(0);
+  });
+
+  it('smoothElevation with empty array returns empty', () => {
+    expect(smoothElevation([], 5)).toHaveLength(0);
+  });
+});

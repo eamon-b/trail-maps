@@ -31,11 +31,11 @@ A hiking app used in remote areas with no connectivity cannot fail silently. Use
   - `waypoint-classifier.test.ts` — type detection tests
 - Run with: `npm test` (from repo root)
 
-**Mobile app (`mobile-spike/MapLibreSpike/`):**
-- Zero test files
-- No test runner configured
-- No test dependencies installed
-- Has `typecheck` and `lint` scripts only
+**Mobile app (`mobile/`):**
+- Jest with jest-expo preset configured
+- 16 unit tests across services (trail-data-service, plan-service, etc.)
+- React Native Testing Library installed
+- Has `test`, `typecheck`, and `lint` scripts
 
 **CI/CD:**
 - None configured
@@ -314,14 +314,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile-spike/MapLibreSpike  # Update when app moves
+        working-directory: mobile  # Update when app moves
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: mobile-spike/MapLibreSpike/package-lock.json
+          cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - run: npm test -- --ci --passWithNoTests
       - run: npm run typecheck
@@ -458,7 +458,7 @@ waypoint-classifier.test.ts additions:
 
 | Task | Verification Command | Pass Criteria |
 |------|---------------------|---------------|
-| Install Jest + RNTL | `cd mobile-spike/MapLibreSpike && npm test -- --passWithNoTests` | Exits 0 |
+| Install Jest + RNTL | `cd mobile && npm test -- --passWithNoTests` | Exits 0 |
 | Create jest.config.js | `cat jest.config.js` | File exists with jest-expo preset |
 | Create smoke test | `npm test` | At least 1 test passes |
 | TypeScript compiles | `npm run typecheck` | Exits 0, no errors |
@@ -509,9 +509,9 @@ describe('PlanService', () => {
 ```bash
 # [auto] Run all these from repo root — all must exit 0
 npm test -- --run                                          # Web unit tests
-cd mobile-spike/MapLibreSpike && npm test -- --ci          # Mobile unit tests
-cd mobile-spike/MapLibreSpike && npm run typecheck         # Mobile typecheck
-cd mobile-spike/MapLibreSpike && npx expo config --json    # App config valid
+cd mobile && npm test -- --ci          # Mobile unit tests
+cd mobile && npm run typecheck         # Mobile typecheck
+cd mobile && npx expo config --json    # App config valid
 
 # [human] Visual verification
 # - App launches on iOS simulator
@@ -588,8 +588,8 @@ describe('Accessibility', () => {
 
 ```bash
 # [auto]
-cd mobile-spike/MapLibreSpike && npm test -- --ci
-cd mobile-spike/MapLibreSpike && npm run typecheck
+cd mobile && npm test -- --ci
+cd mobile && npm run typecheck
 
 # [human] Visual verification on device/simulator
 # - Mode selector switches color scheme (Plan=blue, Hike=green, Contribute=orange)
@@ -692,8 +692,8 @@ appId: com.trailcompanion.app
 
 ```bash
 # [auto]
-cd mobile-spike/MapLibreSpike && npm test -- --ci
-cd mobile-spike/MapLibreSpike && npm run typecheck
+cd mobile && npm test -- --ci
+cd mobile && npm run typecheck
 npm test -- --run  # Web tests still pass (no regressions)
 
 # [human] Maestro E2E
@@ -798,8 +798,8 @@ describe('DayPlanList', () => {
 
 ```bash
 # [auto]
-cd mobile-spike/MapLibreSpike && npm test -- --ci
-cd mobile-spike/MapLibreSpike && npm run typecheck
+cd mobile && npm test -- --ci
+cd mobile && npm run typecheck
 
 # [human] Maestro E2E
 maestro test e2e/campsite-planning.yaml
@@ -865,8 +865,8 @@ describe('GPX Processing Pipeline', () => {
 
 ```bash
 # [auto]
-cd mobile-spike/MapLibreSpike && npm test -- --ci
-cd mobile-spike/MapLibreSpike && npm run typecheck
+cd mobile && npm test -- --ci
+cd mobile && npm run typecheck
 
 # [human] Manual verification
 # - Upload GPX from each supported app (Gaia, AllTrails, Strava, Garmin)
@@ -947,8 +947,8 @@ describe('TodaysProgress', () => {
 
 ```bash
 # [auto]
-cd mobile-spike/MapLibreSpike && npm test -- --ci
-cd mobile-spike/MapLibreSpike && npm run typecheck
+cd mobile && npm test -- --ci
+cd mobile && npm run typecheck
 
 # [human] Maestro E2E (basic)
 maestro test e2e/off-trail-alert.yaml

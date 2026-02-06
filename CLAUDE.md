@@ -71,12 +71,12 @@ Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` i
 
 ## Mobile App (Expo / React Native)
 
-The mobile app lives in `mobile-spike/MapLibreSpike/` (will move to a dedicated directory for the full app). It uses **Expo SDK 54** with React Native 0.81, the New Architecture, and development builds (not Expo Go) since MapLibre requires custom native code.
+The mobile app lives in `mobile/`. It uses **Expo SDK 54** with React Native 0.81, the New Architecture, and development builds (not Expo Go) since MapLibre requires custom native code.
 
 ### Mobile Commands
 
 ```bash
-# From the mobile app directory (e.g. mobile-spike/MapLibreSpike/)
+# From the mobile app directory (mobile/)
 
 # Dependencies — ALWAYS use expo install, not npm install, for Expo packages
 npx expo install <package>       # Install SDK-compatible package
@@ -86,7 +86,7 @@ npx expo install --fix           # Fix version mismatches
 # Project health
 npx expo-doctor                  # Diagnose project issues
 npx expo config --json           # Print resolved app config (verify it parses)
-tsc --noEmit                     # TypeScript check
+npx tsc --noEmit                 # TypeScript check
 npx expo lint                    # ESLint
 
 # Native project generation (Continuous Native Generation)
@@ -110,7 +110,7 @@ npx expo start --dev-client      # Start Metro + connect to dev client
 **Claude Code can run** (non-interactive):
 - `npx expo install`, `npx expo prebuild`, `npx expo export`
 - `npx expo lint`, `npx expo-doctor`, `npx expo config --json`
-- `tsc --noEmit`, `jest`
+- `npx tsc --noEmit`, `npx jest`
 - `eas build --non-interactive`, `eas update`
 
 **Needs a human** (interactive or requires device):
@@ -141,5 +141,6 @@ npx expo start --dev-client      # Start Metro + connect to dev client
 
 - **Map**: MapLibre React Native with OpenFreeMap vector tiles (offline capable)
 - **Storage**: `expo-sqlite` for trail data, `expo-file-system` for tile files
-- **Shared code**: `src/lib/` modules (distance, gpx-optimizer, track-classification, waypoint-classifier) are pure TypeScript and can be shared between web and mobile
-- **Navigation**: Planned three-mode structure (Plan / Hike / Contribute) via Expo Router bottom tabs
+- **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
+- **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
+- **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.

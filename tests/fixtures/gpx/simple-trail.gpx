@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Simple Test Trail</name></metadata>
+  <wpt lat="-33.8688" lon="151.2093"><ele>10</ele><name>Start</name></wpt>
+  <wpt lat="-33.9000" lon="151.2500"><ele>50</ele><name>C: Campsite One</name></wpt>
+  <wpt lat="-33.9500" lon="151.3000"><ele>30</ele><name>End</name></wpt>
+  <trk>
+    <name>Main Track</name>
+    <trkseg>
+      <trkpt lat="-33.8688" lon="151.2093"><ele>10</ele></trkpt>
+      <trkpt lat="-33.8700" lon="151.2100"><ele>12</ele></trkpt>
+      <trkpt lat="-33.8750" lon="151.2150"><ele>20</ele></trkpt>
+      <trkpt lat="-33.8800" lon="151.2200"><ele>25</ele></trkpt>
+      <trkpt lat="-33.8850" lon="151.2250"><ele>30</ele></trkpt>
+      <trkpt lat="-33.8900" lon="151.2300"><ele>35</ele></trkpt>
+      <trkpt lat="-33.8950" lon="151.2350"><ele>40</ele></trkpt>
+      <trkpt lat="-33.9000" lon="151.2400"><ele>45</ele></trkpt>
+      <trkpt lat="-33.9000" lon="151.2500"><ele>50</ele></trkpt>
+      <trkpt lat="-33.9050" lon="151.2550"><ele>48</ele></trkpt>
+      <trkpt lat="-33.9100" lon="151.2600"><ele>45</ele></trkpt>
+      <trkpt lat="-33.9150" lon="151.2650"><ele>42</ele></trkpt>
+      <trkpt lat="-33.9200" lon="151.2700"><ele>40</ele></trkpt>
+      <trkpt lat="-33.9250" lon="151.2750"><ele>38</ele></trkpt>
+      <trkpt lat="-33.9300" lon="151.2800"><ele>35</ele></trkpt>
+      <trkpt lat="-33.9350" lon="151.2850"><ele>33</ele></trkpt>
+      <trkpt lat="-33.9400" lon="151.2900"><ele>31</ele></trkpt>
+      <trkpt lat="-33.9450" lon="151.2950"><ele>30</ele></trkpt>
+      <trkpt lat="-33.9500" lon="151.3000"><ele>30</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

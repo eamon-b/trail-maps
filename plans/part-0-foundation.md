@@ -44,14 +44,14 @@ Establish the technical foundation for the Trail Companion app, including React 
 ### 4. Core Data Architecture
 - Set up offline-first data layer using SQLite:
   - Use `react-native-sqlite-storage` (or `expo-sqlite` if using Expo)
-  - Data models for trails, waypoints, user plans, cached tiles
+  - Data models for trails, waypoints, user plans
+  - Note: tile caching is handled by MapLibre's OfflineManager, not a custom table
 - Define sync strategy for when connectivity is available
 - Plan storage schema:
   ```
   trails: id, name, metadata_json, created_at, updated_at
   waypoints: id, trail_id, name, type, lat, lon, ele, km_position
   plans: id, trail_id, name, direction, start_date, section_json, stops_json
-  cached_tiles: id, trail_id, zoom, x, y, data_blob, cached_at
   ```
 
 ### 5. App Shell & Navigation

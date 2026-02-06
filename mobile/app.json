@@ -1,20 +1,21 @@
 {
   "expo": {
-    "name": "MapLibre Offline Spike",
-    "slug": "MapLibreSpike",
-    "version": "1.0.0",
+    "name": "Trail Companion",
+    "slug": "trail-maps",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "trail-companion",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#007AFF"
+      "backgroundColor": "#4CAF50"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.trailmaps.maplibre.spike",
+      "bundleIdentifier": "com.trailcompanion.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses your location to show your position on the trail map."
       }
@@ -22,9 +23,9 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#007AFF"
+        "backgroundColor": "#4CAF50"
       },
-      "package": "com.trailmaps.maplibre.spike",
+      "package": "com.trailcompanion.app",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -32,17 +33,20 @@
       ]
     },
     "plugins": [
+      "expo-router",
       [
         "@maplibre/maplibre-react-native",
         {
           "locationWhenInUsePermission": "Show current location on the map."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "extra": {
       "eas": {
-        "projectId": "fa2276df-edf1-4fae-a23b-d4bf7828fbb1"
-      }
+        "projectId": "b498c5fd-080e-45cb-9ad2-5619b4b85cfc"
+      },
+      "router": {}
     },
     "owner": "eamonb123"
   }

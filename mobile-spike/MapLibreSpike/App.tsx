@@ -110,52 +110,67 @@ export default function App() {
     const packName = `bibbulmun-z${minZoom}-${maxZoom}-${Date.now()}`;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pack = await (MapLibreGL.offlineManager as any).createPack(
-        {
-          name: packName,
-          styleURL: STYLE_URL,
-          bounds,
-          minZoom,
-          maxZoom,
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (progress: any) => {
-          // Progress callback
-          if (progress?.percentage !== undefined) {
-            addLog(`Progress: ${progress.percentage.toFixed(1)}%`);
-            setOfflinePacks((prev) => {
-              const existing = prev.find((p) => p.name === packName);
-              if (existing) {
-                return prev.map((p) =>
-                  p.name === packName
-                    ? { ...p, progress: progress.percentage || 0 }
-                    : p
-                );
+      // createPack resolves immediately - the actual download happens
+      // asynchronously via callbacks. We wrap it in a Promise that resolves
+      // when the progress callback reports completion.
+      const result = await new Promise<{ tileCount: number; sizeBytes: number }>(
+        (resolve, reject) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (MapLibreGL.offlineManager as any).createPack(
+            {
+              name: packName,
+              styleURL: STYLE_URL,
+              bounds,
+              minZoom,
+              maxZoom,
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (_offlineRegion: any, status: any) => {
+              const percentage = status?.percentage ?? 0;
+              const tileCount = status?.completedTileCount ?? 0;
+              const sizeBytes = status?.completedTileSize ?? 0;
+
+              if (percentage % 10 < 1) {
+                addLog(`Progress: ${percentage.toFixed(1)}% (${tileCount} tiles, ${formatBytes(sizeBytes)})`);
               }
-              return [
-                ...prev,
-                {
-                  name: packName,
-                  status: 'downloading',
-                  progress: progress.percentage || 0,
-                },
-              ];
-            });
-          }
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (error: any) => {
-          // Error callback
-          addLog(`Download error: ${error?.message || 'Unknown error'}`);
+
+              setOfflinePacks((prev) => {
+                const existing = prev.find((p) => p.name === packName);
+                if (existing) {
+                  return prev.map((p) =>
+                    p.name === packName
+                      ? { ...p, progress: percentage, completedTileCount: tileCount, completedTileSize: sizeBytes }
+                      : p
+                  );
+                }
+                return [
+                  ...prev,
+                  {
+                    name: packName,
+                    status: 'downloading',
+                    progress: percentage,
+                    completedTileCount: tileCount,
+                    completedTileSize: sizeBytes,
+                  },
+                ];
+              });
+
+              if (percentage >= 100) {
+                resolve({ tileCount, sizeBytes });
+              }
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (_offlineRegion: any, error: any) => {
+              addLog(`Download error: ${error?.message || 'Unknown error'}`);
+              reject(new Error(error?.message || 'Download failed'));
+            }
+          );
         }
       );
 
       const downloadTime = Date.now() - startTime;
-      const tileCount = pack?.pack?.completedTileCount || 0;
-      const sizeBytes = pack?.pack?.completedTileSize || 0;
 
-      addLog(`Download complete: ${tileCount} tiles, ${formatBytes(sizeBytes)}`);
+      addLog(`Download complete: ${result.tileCount} tiles, ${formatBytes(result.sizeBytes)}`);
       addLog(`Download time: ${(downloadTime / 1000).toFixed(1)}s`);
 
       setOfflinePacks((prev) =>
@@ -165,8 +180,8 @@ export default function App() {
                 ...p,
                 status: 'complete',
                 progress: 100,
-                completedTileCount: tileCount,
-                completedTileSize: sizeBytes,
+                completedTileCount: result.tileCount,
+                completedTileSize: result.sizeBytes,
               }
             : p
         )
@@ -174,8 +189,8 @@ export default function App() {
 
       return {
         zoomLevel: maxZoom,
-        tileCount,
-        sizeBytes,
+        tileCount: result.tileCount,
+        sizeBytes: result.sizeBytes,
         downloadTimeMs: downloadTime,
         status: 'complete',
       };

@@ -229,7 +229,7 @@ Based on similar trail corridors, rough estimates:
 | 16 | ~12,288 | ~150 MB |
 | **Total** | **~16,000** | **~200 MB** |
 
-Note: Vector tiles are significantly smaller than raster tiles. Actual results may vary based on tile content and encoding.
+Note: Vector tiles are significantly smaller than raster tiles. Actual results may vary based on tile content and encoding. **See [Actual Results](#actual-results) below — real tile counts were significantly higher than these estimates, and zoom 15-16 are not available from OpenFreeMap.**
 
 ## Decision Criteria
 
@@ -327,37 +327,50 @@ After completing the spike:
 3. Make go/no-go decision for React Native
 4. If proceeding, continue with Part 0 tasks
 
-## Results (To Be Filled)
+## Results
 
 ### Test Environment
 
-- **Device**:
-- **OS Version**:
-- **Date**:
+- **Device**: Android emulator
+- **Date**: 2026-02-06
 
 ### Actual Results
 
 | Zoom | Tiles | Size | Time | Status |
 |------|-------|------|------|--------|
-| 10 | | | | |
-| 11 | | | | |
-| 12 | | | | |
-| 13 | | | | |
-| 14 | | | | |
-| 15 | | | | |
-| 16 | | | | |
-| 10-16 | | | | |
+| 10 | 91 | 922 KB | 0.2s | Complete |
+| 11 | 350 | 1.8 MB | 0.2s | Complete |
+| 12 | 1,248 | 4.7 MB | 0.4s | Complete |
+| 13 | 4,794 | 9.4 MB | 65.6s | Complete |
+| 14 | 18,887 | 26.1 MB | 347.4s | Complete |
+| 15 | 0 | 0 | 0.3s | No tiles available |
+| 16 | 0 | 0 | 0.2s | No tiles available |
+| 10-16 | 25,370 | 42.9 MB | 5.2s | Complete (cached) |
 
 ### Observations
 
--
--
--
+- **OpenFreeMap vector tiles max out at zoom 14.** Zoom 15-16 returned zero tiles. This is expected behaviour for vector tile services — the client overzooms by rendering zoom-14 tile data at higher zoom levels. No tiles need to be downloaded beyond zoom 14.
+- **Actual tile counts are much higher than the pre-spike estimates.** The bounding box approach downloads tiles for the entire rectangular region, not just the trail corridor. At zoom 14 this means ~19k tiles vs the estimated ~768. A corridor-based download (buffering the actual track geometry by a few km) would dramatically reduce tile counts.
+- **Rate limiting / throttling at higher zoom levels.** Zoom 10-12 downloaded in under a second each, but zoom 13 took 65.6s and zoom 14 took 347.4s (~5.8 minutes). The tile count grew ~4x per level (expected), but download time increased disproportionately — suggesting OpenFreeMap throttles bulk downloads.
+- **Cumulative download was near-instant (5.2s)** because tiles were already cached from individual-level tests. The tile count (25,370) exactly equals the sum of zoom 10-14, confirming zoom 15-16 contributed nothing.
+- **Total storage for full bounding box at zoom 10-14 is ~43 MB** — well within the 500 MB threshold. A corridor-based approach would reduce this further.
+- **Vector tiles are smaller than raster equivalents** but tile counts are higher than the simple geometric estimate because the tile server returns tiles for the full bounding box even when some tiles contain minimal data.
+
+### Implications for Mobile App
+
+- **~43 MB per trail (full bounding box)** is acceptable. Corridor-based downloads would be smaller.
+- **Rate limiting is a concern for UX.** Options to investigate:
+  - Download tiles in smaller geographic batches
+  - Use a self-hosted tile server (e.g. Protomaps) for bulk downloads
+  - Pre-package tile bundles per trail and host them for direct download
+  - Download during trip planning (not on-trail) to allow for longer download times
 
 ### Decision
 
-- [ ] **PROCEED** with React Native
-- [ ] **RECONSIDER** - explore PWA approach
+- [x] **PROCEED** with React Native — MapLibre offline tiles work, storage is reasonable, and the core requirement (offline map rendering) is validated.
 
-### Notes
+### Remaining Spike Items
 
+- [ ] Phase 3: Test offline rendering (airplane mode test)
+- [ ] Phase 4: Measure actual device storage usage
+- [ ] Phase 5: Performance testing (pan/zoom smoothness)

@@ -68,3 +68,78 @@ Built at build time:
 ## Testing
 
 Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` in `src/lib/`).
+
+## Mobile App (Expo / React Native)
+
+The mobile app lives in `mobile-spike/MapLibreSpike/` (will move to a dedicated directory for the full app). It uses **Expo SDK 54** with React Native 0.81, the New Architecture, and development builds (not Expo Go) since MapLibre requires custom native code.
+
+### Mobile Commands
+
+```bash
+# From the mobile app directory (e.g. mobile-spike/MapLibreSpike/)
+
+# Dependencies — ALWAYS use expo install, not npm install, for Expo packages
+npx expo install <package>       # Install SDK-compatible package
+npx expo install --check         # Check for version mismatches
+npx expo install --fix           # Fix version mismatches
+
+# Project health
+npx expo-doctor                  # Diagnose project issues
+npx expo config --json           # Print resolved app config (verify it parses)
+tsc --noEmit                     # TypeScript check
+npx expo lint                    # ESLint
+
+# Native project generation (Continuous Native Generation)
+npx expo prebuild                # Generate ios/ and android/ from config
+npx expo prebuild --clean        # Regenerate from scratch (use after plugin changes)
+
+# Building
+npx expo export                              # Bundle JS/assets for production
+eas build --non-interactive --platform ios    # Cloud build (non-interactive)
+eas build --non-interactive --platform android
+
+# OTA updates (JS-only changes, no app store review needed)
+eas update --branch production --message "description"
+
+# Dev server (INTERACTIVE — requires human at terminal)
+npx expo start --dev-client      # Start Metro + connect to dev client
+```
+
+### What Claude Code Can Run vs. What Needs a Human
+
+**Claude Code can run** (non-interactive):
+- `npx expo install`, `npx expo prebuild`, `npx expo export`
+- `npx expo lint`, `npx expo-doctor`, `npx expo config --json`
+- `tsc --noEmit`, `jest`
+- `eas build --non-interactive`, `eas update`
+
+**Needs a human** (interactive or requires device):
+- `npx expo start` — interactive terminal UI with hotkeys
+- Testing on device/simulator — visual verification
+- `eas login` — credential prompts
+- First-time iOS cloud build — Apple credential/2FA setup
+
+### Key Expo Concepts
+
+- **Continuous Native Generation (CNG)**: `ios/` and `android/` are generated from `app.json` + config plugins via `npx expo prebuild`. They are build artifacts, not source files. Regenerate with `--clean` after config changes.
+- **Config plugins**: Declared in `app.json` `"plugins"` array. They modify native project files during prebuild (e.g. MapLibre adds location permissions automatically).
+- **Development builds**: Custom debug apps built via EAS that include your native dependencies. Rebuild only when native deps change; JS changes hot-reload.
+- **EAS Build profiles** (`eas.json`): `development` (dev client), `preview` (internal testers), `production` (app store).
+- **EAS Update**: OTA JavaScript updates. Only works for JS/styling/image changes — native changes need a new binary build.
+- **Expo Router**: File-based routing where files in `app/` become navigation routes. `_layout.tsx` defines navigators, `(groups)/` organize without adding URL segments, `[param].tsx` for dynamic routes.
+
+### Common Gotchas
+
+- Always `npx expo install` for Expo packages — ensures SDK-compatible versions
+- Run `npx expo prebuild --clean` after changing `app.json` plugins — stale native config is the #1 debugging time-sink
+- Clear Metro cache when things are weird: `npx expo start --clear`
+- Only env vars prefixed with `EXPO_PUBLIC_` are available in client code
+- Expo Router: `_layout.tsx` naming must be exact (not `Layout.tsx` or `layout.tsx`)
+- Don't have both `app/foo.tsx` and `app/foo/index.tsx` — they conflict
+
+### Mobile App Architecture
+
+- **Map**: MapLibre React Native with OpenFreeMap vector tiles (offline capable)
+- **Storage**: `expo-sqlite` for trail data, `expo-file-system` for tile files
+- **Shared code**: `src/lib/` modules (distance, gpx-optimizer, track-classification, waypoint-classifier) are pure TypeScript and can be shared between web and mobile
+- **Navigation**: Planned three-mode structure (Plan / Hike / Contribute) via Expo Router bottom tabs

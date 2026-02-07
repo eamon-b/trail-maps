@@ -1,5 +1,3 @@
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
 import { TrailDataService, type Trail } from './trail-data-service';
 
 interface TrailIndex {
@@ -39,31 +37,21 @@ interface TrailJson {
   [key: string]: unknown;
 }
 
-const TRAIL_ASSETS: Record<string, number> = {
-  index: require('../../assets/trails/index.json'),
-  bibbulmum: require('../../assets/trails/bibbulmum.json'),
+// Metro resolves require() for JSON files to the parsed object at build time
+const trailIndex: TrailIndex[] = require('../../assets/trails/index.json');
+const TRAIL_DATA: Record<string, TrailJson> = {
+  bibbulmun: require('../../assets/trails/bibbulmun.json'),
 };
 
-async function loadJsonAsset<T>(assetModule: number): Promise<T> {
-  const [asset] = await Asset.loadAsync(assetModule);
-  if (!asset.localUri) {
-    throw new Error('Failed to load asset');
-  }
-  const content = await FileSystem.readAsStringAsync(asset.localUri);
-  return JSON.parse(content) as T;
-}
-
 export async function loadBundledTrails(service: TrailDataService): Promise<void> {
-  const index = await loadJsonAsset<TrailIndex[]>(TRAIL_ASSETS.index);
+  const index = trailIndex;
 
   for (const entry of index) {
-    const assetModule = TRAIL_ASSETS[entry.id];
-    if (!assetModule) continue;
+    const trailJson = TRAIL_DATA[entry.id];
+    if (!trailJson) continue;
 
     const existing = await service.getTrail(entry.id);
     if (existing) continue;
-
-    const trailJson = await loadJsonAsset<TrailJson>(assetModule);
     const config = trailJson.config;
 
     const trail: Omit<Trail, 'createdAt' | 'updatedAt'> = {

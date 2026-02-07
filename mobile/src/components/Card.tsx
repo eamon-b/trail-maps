@@ -88,17 +88,20 @@ export function Card({
 export function StatDisplay({
   primary,
   secondary,
+  compact = false,
   accessibilityLabel,
 }: {
   primary: string;
   secondary?: string;
+  /** Stack secondary below primary instead of beside it */
+  compact?: boolean;
   accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
 
   return (
     <View
-      style={styles.statContainer}
+      style={compact ? styles.statContainerCompact : styles.statContainer}
       accessibilityLabel={accessibilityLabel}
     >
       <Text style={[styles.primaryStat, { color: colors.textPrimary }]}>
@@ -138,6 +141,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: spacing.sm,
+  },
+  statContainerCompact: {
+    flexDirection: 'column',
+    gap: spacing.xs,
   },
   primaryStat: {
     ...typography.displayLarge,

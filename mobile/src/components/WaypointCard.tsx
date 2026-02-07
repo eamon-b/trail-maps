@@ -57,8 +57,8 @@ export function WaypointCard({
       accessibilityLabel={accessibilityLabel}
     >
       <View style={styles.content}>
-        {icon && (
-          <Text style={compact ? styles.iconCompact : styles.icon}>{icon}</Text>
+        {icon && !compact && (
+          <Text style={styles.icon}>{icon}</Text>
         )}
         <View style={styles.info}>
           <Text
@@ -73,6 +73,7 @@ export function WaypointCard({
           <StatDisplay
             primary={distance ?? '--'}
             secondary={elevation}
+            compact={compact}
           />
         </View>
       </View>
@@ -88,9 +89,6 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 24,
-  },
-  iconCompact: {
-    fontSize: 18,
   },
   info: {
     flex: 1,

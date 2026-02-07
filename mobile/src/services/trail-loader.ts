@@ -5,9 +5,10 @@ interface TrailIndex {
   name: string;
   shortName: string;
   lengthKm: number;
+  dataVersion?: string;
 }
 
-interface TrailJson {
+export interface TrailJson {
   config: {
     id: string;
     name: string;
@@ -39,7 +40,7 @@ interface TrailJson {
 
 // Metro resolves require() for JSON files to the parsed object at build time
 const trailIndex: TrailIndex[] = require('../../assets/trails/index.json');
-const TRAIL_DATA: Record<string, TrailJson> = {
+export const TRAIL_DATA: Record<string, TrailJson> = {
   bibbulmun: require('../../assets/trails/bibbulmun.json'),
 };
 
@@ -51,7 +52,11 @@ export async function loadBundledTrails(service: TrailDataService): Promise<void
     if (!trailJson) continue;
 
     const existing = await service.getTrail(entry.id);
-    if (existing) continue;
+    const bundledVersion = entry.dataVersion ?? null;
+
+    // Skip if already imported and version hasn't changed
+    if (existing && existing.dataVersion === bundledVersion) continue;
+
     const config = trailJson.config;
 
     const trail: Omit<Trail, 'createdAt' | 'updatedAt'> = {
@@ -60,6 +65,7 @@ export async function loadBundledTrails(service: TrailDataService): Promise<void
       shortName: config.shortName,
       region: config.region,
       lengthKm: config.lengthKm,
+      dataVersion: bundledVersion,
       metadataJson: JSON.stringify({
         direction: config.direction,
         track: {

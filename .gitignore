@@ -13,6 +13,9 @@ data/protomaps/
 data/tiles/
 public/data/tiles/
 
+# Override global gitignore `lib/` rule for mobile source code
+!mobile/src/lib/
+
 # Environment files
 .env
 .env.local

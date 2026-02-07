@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const MIGRATIONS: Record<number, string> = {
   1: `
@@ -48,7 +48,11 @@ const MIGRATIONS: Record<number, string> = {
       version INTEGER NOT NULL
     );
 
-    INSERT INTO schema_version (version) VALUES (${SCHEMA_VERSION});
+    INSERT INTO schema_version (version) VALUES (1);
+  `,
+  2: `
+    ALTER TABLE trails ADD COLUMN data_version TEXT;
+    UPDATE schema_version SET version = 2;
   `,
 };
 

@@ -27,6 +27,7 @@ describe('TrailDataService', () => {
       region: 'South West WA',
       lengthKm: 981.6,
       metadataJson: null,
+      dataVersion: null,
     });
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(

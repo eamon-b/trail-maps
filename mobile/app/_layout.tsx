@@ -50,6 +50,7 @@ export default function RootLayout() {
             <ThemedStatusBar />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="trail" />
               {__DEV__ && <Stack.Screen name="(dev)" />}
             </Stack>
           </FocusedWaypointProvider>

@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase } from '../db/database';
+import { TRAIL_DATA, type TrailJson } from './trail-loader';
 
 export interface Trail {
   id: string;
@@ -8,6 +9,7 @@ export interface Trail {
   region: string | null;
   lengthKm: number | null;
   metadataJson: string | null;
+  dataVersion: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +33,7 @@ interface TrailRow {
   region: string | null;
   length_km: number | null;
   metadata_json: string | null;
+  data_version: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +58,7 @@ function rowToTrail(row: TrailRow): Trail {
     region: row.region,
     lengthKm: row.length_km,
     metadataJson: row.metadata_json,
+    dataVersion: row.data_version,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -84,9 +88,9 @@ export class TrailDataService {
 
   async storeTrail(trail: Omit<Trail, 'createdAt' | 'updatedAt'>): Promise<void> {
     await this.db.runAsync(
-      `INSERT OR REPLACE INTO trails (id, name, short_name, region, length_km, metadata_json, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-      [trail.id, trail.name, trail.shortName, trail.region, trail.lengthKm, trail.metadataJson]
+      `INSERT OR REPLACE INTO trails (id, name, short_name, region, length_km, metadata_json, data_version, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      [trail.id, trail.name, trail.shortName, trail.region, trail.lengthKm, trail.metadataJson, trail.dataVersion]
     );
   }
 
@@ -127,5 +131,10 @@ export class TrailDataService {
       [trailId]
     );
     return rows.map(rowToWaypoint);
+  }
+
+  /** Get full trail track data (config, track points, waypoints) from bundled JSON */
+  getTrailTrackData(trailId: string): TrailJson | null {
+    return TRAIL_DATA[trailId] ?? null;
   }
 }

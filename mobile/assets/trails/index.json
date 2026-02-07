@@ -3,36 +3,42 @@
     "id": "aawt",
     "name": "Australian Alps Walking Track",
     "shortName": "AAWT",
-    "lengthKm": 688.3
+    "lengthKm": 688.3,
+    "dataVersion": "2026-02-10"
   },
   {
     "id": "hume-and-hovell",
     "name": "Hume and Hovell Track",
     "shortName": "H&H",
-    "lengthKm": 426
+    "lengthKm": 426,
+    "dataVersion": "2026-02-10"
   },
   {
     "id": "bibbulmun",
     "name": "bibbulmun Track",
     "shortName": "bibb",
-    "lengthKm": 981.6
+    "lengthKm": 981.6,
+    "dataVersion": "2026-02-10"
   },
   {
     "id": "cape_to_cape",
     "name": "Cape to Cape Track",
     "shortName": "Cape to Cape",
-    "lengthKm": 126.9
+    "lengthKm": 126.9,
+    "dataVersion": "2026-02-10"
   },
   {
     "id": "heysen",
     "name": "Heysen Trail",
     "shortName": "Heysen",
-    "lengthKm": 1098.9
+    "lengthKm": 1098.9,
+    "dataVersion": "2026-02-10"
   },
   {
     "id": "larapinta",
     "name": "Larapinta Trail",
     "shortName": "larapinta",
-    "lengthKm": 230.6
+    "lengthKm": 230.6,
+    "dataVersion": "2026-02-10"
   }
 ]

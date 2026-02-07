@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.trailcompanion.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your position on the trail map."
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your position on the trail map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location keeps tracking your hike when the screen is locked.",
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {
@@ -29,7 +31,10 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
@@ -38,6 +43,15 @@
         "@maplibre/maplibre-react-native",
         {
           "locationWhenInUsePermission": "Show current location on the map."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Show your position on the trail map and calculate distances to waypoints.",
+          "locationAlwaysAndWhenInUsePermission": "Background location keeps tracking your hike when the screen is locked.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
       ],
       "expo-sqlite"

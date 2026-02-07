@@ -59,6 +59,7 @@ describe('loadBundledTrails', () => {
       shortName: 'bibb',
       region: 'South West WA',
       lengthKm: 981.6,
+      dataVersion: null,
       metadataJson: expect.stringContaining('"totalDistance":981600'),
     });
 
@@ -88,7 +89,7 @@ describe('loadBundledTrails', () => {
     });
   });
 
-  it('skips trails that already exist in the database', async () => {
+  it('skips trails that already exist with matching version', async () => {
     service.getTrail.mockResolvedValueOnce({
       id: 'bibbulmun',
       name: 'bibbulmun Track',
@@ -96,6 +97,7 @@ describe('loadBundledTrails', () => {
       region: 'South West WA',
       lengthKm: 981.6,
       metadataJson: null,
+      dataVersion: null,
       createdAt: '2026-01-01',
       updatedAt: '2026-01-01',
     });

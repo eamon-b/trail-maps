@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { TrailDataService, type Trail } from '../../src/services/trail-data-service';
 import {
@@ -15,7 +16,10 @@ import {
   downloadTrailTiles,
   deleteTrailTiles,
   type TrailTileStatus,
+  type DownloadProgress,
 } from '../../src/services/tile-service';
+import { tileManager } from '../../src/services/tile-manager';
+import { ProgressBar } from '../../src/components';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -28,14 +32,23 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatDataVersion(version: string): string {
+  const d = new Date(version + 'T00:00:00');
+  if (isNaN(d.getTime())) return version;
+  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 interface TrailWithTiles extends Trail {
   tileStatus: TrailTileStatus;
 }
 
 export default function PlanScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const [trails, setTrails] = useState<TrailWithTiles[]>([]);
   const [downloadingTrailId, setDownloadingTrailId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<{ fileName: string; fileIndex: number; totalFiles: number } | null>(null);
+  const [storageInfo, setStorageInfo] = useState<{ usedBytes: number; availableBytes: number } | null>(null);
 
   const loadTrails = useCallback(async () => {
     const service = await TrailDataService.create();
@@ -45,6 +58,11 @@ export default function PlanScreen() {
       tileStatus: getTrailTileStatus(trail.id),
     }));
     setTrails(withTiles);
+
+    // Load storage info
+    const usedBytes = tileManager.getTotalStorageUsed();
+    const availableBytes = await tileManager.getAvailableSpace();
+    setStorageInfo({ usedBytes, availableBytes });
   }, []);
 
   useEffect(() => {
@@ -57,6 +75,13 @@ export default function PlanScreen() {
         t.id === trailId ? { ...t, tileStatus: getTrailTileStatus(trailId) } : t,
       ),
     );
+    // Refresh storage info
+    tileManager.getAvailableSpace().then((availableBytes) => {
+      setStorageInfo({
+        usedBytes: tileManager.getTotalStorageUsed(),
+        availableBytes,
+      });
+    }).catch(() => {});
   }
 
   async function handleDownload(trailId: string) {
@@ -69,8 +94,15 @@ export default function PlanScreen() {
     }
 
     setDownloadingTrailId(trailId);
+    let filesDone = 0;
     try {
-      await downloadTrailTiles(trailId, TILE_BASE_URL, () => {
+      await downloadTrailTiles(trailId, TILE_BASE_URL, (progress: DownloadProgress) => {
+        filesDone++;
+        setDownloadProgress({
+          fileName: progress.fileName,
+          fileIndex: filesDone,
+          totalFiles: 2, // base.mbtiles + contours.mbtiles
+        });
         refreshTileStatus(trailId);
       });
     } catch (err) {
@@ -78,6 +110,7 @@ export default function PlanScreen() {
       Alert.alert('Download Failed', msg);
     }
     setDownloadingTrailId(null);
+    setDownloadProgress(null);
     refreshTileStatus(trailId);
   }
 
@@ -104,12 +137,21 @@ export default function PlanScreen() {
     const isDownloading = downloadingTrailId === item.id;
 
     if (isDownloading) {
+      const progressFraction = downloadProgress
+        ? downloadProgress.fileIndex / downloadProgress.totalFiles
+        : 0;
+      const progressLabel = downloadProgress
+        ? `Downloading ${downloadProgress.fileName} (${downloadProgress.fileIndex}/${downloadProgress.totalFiles})`
+        : 'Starting download...';
       return (
-        <View style={styles.tileRow}>
-          <ActivityIndicator size="small" color={colors.accent} />
-          <Text style={[styles.tileText, { color: colors.textSecondary }]}>
-            Downloading...
-          </Text>
+        <View style={styles.tileDownloadProgress}>
+          <View style={styles.tileRow}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={[styles.tileText, { color: colors.textSecondary }]}>
+              {progressLabel}
+            </Text>
+          </View>
+          <ProgressBar progress={progressFraction} height={4} style={styles.downloadProgressBar} />
         </View>
       );
     }
@@ -161,17 +203,34 @@ export default function PlanScreen() {
             style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
             accessibilityRole="button"
             accessibilityLabel={`${item.name}${item.region ? `, ${item.region}` : ''}${item.lengthKm ? `, ${item.lengthKm} kilometers` : ''}`}
+            onPress={() => router.push({ pathname: '/trail/overview', params: { id: item.id } })}
           >
             <Text style={[styles.trailName, { color: colors.textPrimary }]}>{item.name}</Text>
             <View style={styles.meta}>
               {item.region && <Text style={[styles.region, { color: colors.textSecondary }]}>{item.region}</Text>}
               {item.lengthKm && <Text style={[styles.length, { color: colors.accent }]}>{item.lengthKm} km</Text>}
             </View>
+            {item.dataVersion && (
+              <Text style={[styles.dataUpdated, { color: colors.textSecondary }]}>
+                Data updated: {formatDataVersion(item.dataVersion)}
+              </Text>
+            )}
             {renderTileStatus(item)}
+            <Text style={[styles.viewTrail, { color: colors.accent }]}>View trail →</Text>
           </Pressable>
         )}
         ListEmptyComponent={
           <Text style={[styles.empty, { color: colors.textSecondary }]}>No trails loaded</Text>
+        }
+        ListFooterComponent={
+          storageInfo && storageInfo.usedBytes > 0 ? (
+            <View style={[styles.storageFooter, { borderTopColor: colors.border }]}>
+              <Text style={[styles.storageTitle, { color: colors.textPrimary }]}>Offline Storage</Text>
+              <Text style={[styles.storageDetail, { color: colors.textSecondary }]}>
+                Maps: {formatBytes(storageInfo.usedBytes)} used  |  {formatBytes(storageInfo.availableBytes)} available
+              </Text>
+            </View>
+          ) : null
         }
       />
     </View>
@@ -212,12 +271,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
+  dataUpdated: {
+    ...typography.caption,
+    marginTop: spacing.xs,
+  },
   region: {
     ...typography.caption,
   },
   length: {
     ...typography.caption,
     fontWeight: '500',
+  },
+  tileDownloadProgress: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.08)',
+  },
+  downloadProgressBar: {
+    marginTop: spacing.xs,
   },
   tileRow: {
     flexDirection: 'row',
@@ -236,9 +308,28 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
   },
+  viewTrail: {
+    ...typography.caption,
+    fontWeight: '600',
+    marginTop: spacing.sm,
+  },
   empty: {
     ...typography.body,
     textAlign: 'center',
     marginTop: 40,
+  },
+  storageFooter: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  storageTitle: {
+    ...typography.caption,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  storageDetail: {
+    ...typography.caption,
+    fontVariant: ['tabular-nums'],
   },
 });

@@ -17,4 +17,8 @@ config.resolver.extraNodeModules = {
   '@lib': sharedLib,
 };
 
+// Register .pbf as a recognized asset extension so bundled font glyphs
+// (mobile/assets/fonts/**/*.pbf) can be loaded via require() / expo-asset.
+config.resolver.assetExts.push('pbf');
+
 module.exports = config;

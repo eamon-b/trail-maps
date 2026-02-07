@@ -237,3 +237,25 @@ export interface CombineTracksResult {
   orderedNames: string[];
   warnings: CombineTracksWarning[];
 }
+
+// Tile Pipeline Types
+
+export interface TileManifestFile {
+  name: string;
+  size: number;
+  sha256: string;
+}
+
+export interface TileManifest {
+  trailId: string;
+  version: string;
+  files: TileManifestFile[];
+  totalSize: number;
+  bounds: [number, number, number, number]; // [west, south, east, north]
+  zoomRange: [number, number]; // [minZoom, maxZoom]
+}
+
+export interface TrailTileConfig {
+  mgaZone: number;  // MGA zone number (50-56)
+  epsg: number;     // Full EPSG code (28350-28356)
+}

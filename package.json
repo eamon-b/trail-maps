@@ -9,6 +9,10 @@
     "build:trails": "tsx scripts/build-trails.ts",
     "fetch:climate": "tsx scripts/fetch-climate.ts",
     "fetch:elevation": "tsx scripts/fetch-elevation.ts",
+    "build:tiles": "tsx scripts/build-tiles.ts",
+    "build:tiles:bibbulmun": "tsx scripts/build-tiles.ts --trail bibbulmun",
+    "fetch:fonts": "tsx scripts/fetch-font-glyphs.ts",
+    "upload:tiles": "bash scripts/upload-tiles.sh",
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint src --ext .ts"

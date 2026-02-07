@@ -12,6 +12,7 @@ const CATALOG_ITEMS = [
   { route: '/(dev)/day-plan-card', title: 'Day Plan Card', description: 'Gestures, swipe, drag' },
   { route: '/(dev)/typography', title: 'Typography', description: 'Full type scale at various sizes' },
   { route: '/(dev)/colors', title: 'Colors', description: 'All tokens across all four themes' },
+  { route: '/(dev)/map-tiles', title: 'Map Tiles', description: 'Test MBTiles loading in MapLibre' },
 ] as const;
 
 export default function DevCatalogIndex() {

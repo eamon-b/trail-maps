@@ -7,6 +7,12 @@ dist/
 public/data/generated/
 src/web/trails/*/
 
+# Tile pipeline data (large files, built from source)
+data/dem/
+data/protomaps/
+data/tiles/
+public/data/tiles/
+
 # Environment files
 .env
 .env.local

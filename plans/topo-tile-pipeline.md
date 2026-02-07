@@ -18,13 +18,14 @@ No free, ready-to-use, offline-capable topographic vector tile solution exists. 
 
 ### What we're building
 
-A build-time pipeline that generates three MBTiles files per trail from open data:
+A build-time pipeline that generates two MBTiles files per trail from open data:
 
 1. **Base map** (vector) — OSM roads, water, land use, POIs from Protomaps
 2. **Contour lines** (vector) — elevation isolines from Geoscience Australia SRTM DEM
-3. **Hillshade** (raster) — terrain shading from the same SRTM DEM
 
 These are composited via a custom MapLibre style into a topographic map comparable to OpenTopoMap.
+
+> **Note**: Hillshade raster tiles were prototyped but removed — they added minimal visual value on mobile screens while nearly doubling tile package size and introducing rendering bugs. The contour lines alone provide sufficient terrain perception.
 
 ---
 
@@ -40,25 +41,28 @@ For each trail in data/trails/:
   ogr2ogr (buffer 20km corridor)
         |
   corridor.geojson
-   /         |          \
-  v          v           v
-pmtiles    gdalwarp     gdalwarp
-extract    (clip DEM)   (clip DEM)
-  |          |              |
-  v          v              v
-base     gdal_contour   gdaldem hillshade
-tiles       |              |
-  |         v              v
-  |    tippecanoe     gdal_translate
-  |         |              |
-  v         v              v
-base.    contours.     hillshade.
-mbtiles  mbtiles       mbtiles
-  \         |          /
-   \        |         /
+   /              \
+  v                v
+pmtiles          gdalwarp
+extract          (clip DEM)
+  |                |
+  v                v
+base           gdal_contour
+tiles              |
+  |                v
+  |           ogr2ogr (classify)
+  |                |
+  |                v
+  |           tippecanoe
+  |                |
+  v                v
+base.          contours.
+mbtiles        mbtiles
+  \              /
+   \            /
     MapLibre style.json
-    (composites 3 sources)
-           |
+    (composites 2 sources)
+         |
     Mobile app loads via
     mbtiles:// protocol
 ```
@@ -71,7 +75,6 @@ mobile/assets/tiles/
   {trail-id}/
     base.mbtiles                # OSM vector tiles for corridor
     contours.mbtiles            # Contour line vector tiles
-    hillshade.mbtiles           # Pre-rendered hillshade raster tiles
 ```
 
 Tiles are **not** bundled in the app binary. They are downloaded on-demand when the user taps "Download trail for offline use". The app binary includes only the style.json and a manifest of available tile packages with sizes.
@@ -109,7 +112,7 @@ Use MapTiler Cloud free tier to unblock Part 2 development immediately while the
 ### Prerequisites (system dependencies)
 
 ```bash
-# GDAL (contour generation, hillshade, raster processing)
+# GDAL (contour generation, DEM processing)
 # macOS:
 brew install gdal
 
@@ -299,38 +302,7 @@ tippecanoe \
 - z9 provides regional overview context
 - The filtering ensures low zoom levels aren't overwhelmed with contour lines
 
-#### Step 5: Generate Hillshade
-
-```bash
-# Generate multidirectional hillshade (blends light from multiple angles)
-gdaldem hillshade \
-  -multidirectional \
-  -s 111120 \
-  -compute_edges \
-  -of GTiff \
-  -co COMPRESS=LZW \
-  dem_corridor.tif \
-  hillshade.tif
-
-# Convert hillshade to MBTiles raster tiles (z14 native, z8 minimum via overviews)
-gdal_translate \
-  -of MBTILES \
-  -co TILE_FORMAT=PNG \
-  -co ZOOM_LEVEL_STRATEGY=UPPER \
-  hillshade.tif \
-  hillshade_raw.mbtiles
-
-# Add overview zoom levels down to z8
-gdaladdo -r average --config ZOOM_LEVEL_AUTO YES hillshade_raw.mbtiles 2 4 8 16 32 64
-```
-
-**Parameter notes**:
-- `-multidirectional`: Blends light from 225/270/315/360 degrees — avoids the "one side lit, other side dark" problem of single-direction hillshade
-- `-s 111120`: Scale factor required when DEM is in degrees (lat/lon) but elevation is in metres. 111120 = approximate metres per degree.
-- `-compute_edges`: Prevents black border artifacts at tile boundaries
-- Zoom levels: z8-z14 (SRTM resolution doesn't justify higher)
-
-#### Step 6: Extract Base Map Tiles
+#### Step 5: Extract Base Map Tiles
 
 ```bash
 # Download Protomaps global basemap (or use a cached copy)
@@ -362,16 +334,15 @@ pmtiles extract \
 
 This downloads only the tiles within the corridor polygon — much faster and no 120GB download needed.
 
-#### Step 7: Create MapLibre Style
+#### Step 6: Create MapLibre Style
 
-The style.json composites all three sources into a topographic map. See [Appendix A](#appendix-a-maplibre-style) for the complete style definition.
+The style.json composites both sources into a topographic map. See [Appendix A](#appendix-a-maplibre-style) for the complete style definition.
 
 Key design decisions:
-- **Hillshade at 30% opacity** under the base map — subtle terrain shading
 - **Contour lines in warm brown** (`rgb(179, 134, 89)`) — standard topo map convention
 - **Index contours (50m) bold** with elevation labels along the line
 - **Regular contours (10m) thin** and semi-transparent
-- **Layer order**: background → hillshade → land cover → contours → water → roads → labels → trail overlay
+- **Layer order**: background → earth → land cover → water → contours → roads → buildings → labels → trail overlay
 
 ---
 
@@ -385,15 +356,14 @@ Each trail's tiles are packaged as a downloadable bundle:
 Trail tile manifest (served from CDN / bundled in app):
 {
   "trailId": "bibbulmun",
-  "version": "2026-02-01",
+  "version": "2026-02-08",
   "files": [
-    { "name": "base.mbtiles", "size": 89000000, "sha256": "abc..." },
-    { "name": "contours.mbtiles", "size": 45000000, "sha256": "def..." },
-    { "name": "hillshade.mbtiles", "size": 72000000, "sha256": "ghi..." }
+    { "name": "base.mbtiles", "size": 29208576, "sha256": "66eb70eb..." },
+    { "name": "contours.mbtiles", "size": 49364992, "sha256": "30a81621..." }
   ],
-  "totalSize": 206000000,
-  "bounds": [115.5, -35.2, 118.0, -31.8],
-  "zoomRange": [0, 14]
+  "totalSize": 78573568,
+  "bounds": [115.83, -35.11, 117.88, -31.95],
+  "zoomRange": [8, 15]
 }
 ```
 
@@ -418,11 +388,6 @@ const styleJSON = {
       type: 'vector',
       url: `mbtiles://${tilesDir}/contours.mbtiles`,
     },
-    hillshade: {
-      type: 'raster',
-      url: `mbtiles://${tilesDir}/hillshade.mbtiles`,
-      tileSize: 256,
-    },
   },
   layers: [/* ... style layers ... */],
 };
@@ -433,8 +398,8 @@ const styleJSON = {
 
 ### Download Flow
 
-1. User selects trail → sees tile package size (e.g., "206 MB")
-2. Downloads three MBTiles files to `FileSystem.documentDirectory`
+1. User selects trail → sees tile package size (e.g., "75 MB")
+2. Downloads two MBTiles files to `FileSystem.documentDirectory`
 3. Files persist across app restarts (not subject to iOS cache eviction)
 4. User can delete downloaded tiles via storage management UI
 
@@ -459,9 +424,8 @@ Follows the same pattern as `build-trails.ts` — a TypeScript script that orche
 //   1. Creates corridor polygon from GPX track
 //   2. Downloads/clips SRTM DEM to corridor
 //   3. Generates contour line vector tiles
-//   4. Generates hillshade raster tiles
-//   5. Extracts base map vector tiles from Protomaps
-//   6. Writes tile manifest JSON
+//   4. Extracts base map vector tiles from Protomaps
+//   5. Writes tile manifest JSON
 //
 // Prerequisites: gdal, tippecanoe, pmtiles CLI
 //
@@ -489,8 +453,8 @@ Follows the same pattern as `build-trails.ts` — a TypeScript script that orche
 ```
 data/
   dem/                          # Cached SRTM DEM tiles (1x1 degree GeoTIFFs)
-    dem_s32_e116.tif            # Shared across trails
-    dem_s33_e116.tif
+    S32E116.hgt                 # Shared across trails
+    S33E116.hgt
     ...
   protomaps/
     planet.pmtiles              # Global basemap (or downloaded per-corridor)
@@ -498,13 +462,11 @@ data/
     bibbulmun/
       corridor.geojson
       dem_corridor.tif
+      contours_raw.fgb
       contours.fgb
       contours.mbtiles
-      hillshade.tif
-      hillshade.mbtiles
       base.pmtiles
       base.mbtiles
-      manifest.json
     heysen/
       ...
 ```
@@ -516,7 +478,6 @@ public/data/tiles/              # Served by CDN / hosted for download
   bibbulmun/
     base.mbtiles
     contours.mbtiles
-    hillshade.mbtiles
     manifest.json
   heysen/
     ...
@@ -527,20 +488,20 @@ public/data/tiles/              # Served by CDN / hosted for download
 
 ## Size Estimates
 
-Based on research and corridor area calculations:
+Based on bibbulmun actual output (28 MB base + 47 MB contours = 75 MB) and corridor area ratios:
 
-| Trail | Length | Corridor Area (20km buffer) | Base | Contours | Hillshade | Total |
-|-------|--------|----------------------------|------|----------|-----------|-------|
-| Cape to Cape | 123 km | ~5,000 km2 | 15 MB | 8 MB | 12 MB | **~35 MB** |
-| Larapinta | 223 km | ~9,000 km2 | 20 MB | 12 MB | 18 MB | **~50 MB** |
-| Hume and Hovell | 440 km | ~18,000 km2 | 40 MB | 25 MB | 35 MB | **~100 MB** |
-| bibbulmun | 982 km | ~40,000 km2 | 80 MB | 45 MB | 65 MB | **~190 MB** |
-| AAWT | 655 km | ~26,000 km2 | 55 MB | 35 MB | 45 MB | **~135 MB** |
-| Heysen | 1099 km | ~44,000 km2 | 90 MB | 50 MB | 70 MB | **~210 MB** |
+| Trail | Length | Corridor Area (20km buffer) | Base | Contours | Total |
+|-------|--------|----------------------------|------|----------|-------|
+| Cape to Cape | 123 km | ~5,000 km2 | 4 MB | 5 MB | **~9 MB** |
+| Larapinta | 223 km | ~9,000 km2 | 6 MB | 8 MB | **~14 MB** |
+| Hume and Hovell | 440 km | ~18,000 km2 | 13 MB | 20 MB | **~33 MB** |
+| bibbulmun | 982 km | ~40,000 km2 | 28 MB | 47 MB | **~75 MB** (actual) |
+| AAWT | 655 km | ~26,000 km2 | 18 MB | 30 MB | **~48 MB** |
+| Heysen | 1099 km | ~44,000 km2 | 31 MB | 50 MB | **~81 MB** |
 
-These are estimates — actual sizes depend on terrain complexity (more mountainous = more contour lines) and urban area density (more features = larger base tiles). The Heysen estimate may be lower because much of South Australia is flat.
+Estimates for non-bibbulmun trails are extrapolated from actual bibbulmun output scaled by corridor area. Actual sizes will vary with terrain complexity and urban density. The Heysen estimate may be lower because much of South Australia is flat.
 
-**Target**: <300 MB per trail, <500 MB for the largest (Heysen).
+**Target**: <150 MB per trail.
 
 ---
 
@@ -552,30 +513,38 @@ These are estimates — actual sizes depend on terrain complexity (more mountain
 3. Implement basic offline region caching via `OfflineManager` for testing
 4. Continue Part 2 development with working topo maps
 
-### Phase 2: Custom Pipeline (Build Script)
-5. Install system dependencies (GDAL, tippecanoe, pmtiles CLI)
-6. Validate `mbtiles://` protocol: create a small test MBTiles, load it in MapLibre on both iOS and Android to confirm local tile loading works before investing in the full pipeline
-7. Download SRTM DEM tiles for first trail (bibbulmun) via ELVIS portal
-8. Implement corridor polygon generation from GPX (with dynamic MGA zone selection per trail)
-9. Implement contour generation pipeline (gdal_contour → ogr2ogr classify → tippecanoe)
-10. Implement hillshade generation pipeline (gdaldem → gdal_translate)
-11. Implement base map extraction (pmtiles extract → tile-join)
-12. Create MapLibre topo style.json
-13. Generate and bundle PBF font glyphs from Open Sans for offline text rendering (see Appendix B)
-14. Validate output: load all three MBTiles in MapLibre on device
-15. Wrap pipeline in `scripts/build-tiles.ts`
-16. Add `.gitignore` entries for `data/dem/`, `data/protomaps/`, `data/tiles/`, `public/data/tiles/`
+### Phase 2: Custom Pipeline (Build Script) — COMPLETE
+
+5. ~~Install system dependencies (GDAL, tippecanoe, pmtiles CLI)~~ ✅
+6. ~~Validate `mbtiles://` protocol on Android emulator~~ ✅
+7. ~~Download SRTM DEM tiles for first trail (bibbulmun) via ELVIS portal~~ ✅ (20 tiles in `data/dem/`)
+8. ~~Implement corridor polygon generation from GPX (with dynamic MGA zone selection per trail)~~ ✅
+9. ~~Implement contour generation pipeline (gdal_contour → ogr2ogr classify → tippecanoe)~~ ✅
+10. ~~Implement base map extraction (pmtiles extract → tile-join)~~ ✅
+11. ~~Create MapLibre topo style.json (Protomaps Basemap schema)~~ ✅
+12. ~~Generate and bundle PBF font glyphs from Open Sans for offline text rendering~~ ✅
+13. ~~Validate output: load MBTiles in MapLibre on device~~ ✅
+14. ~~Wrap pipeline in `scripts/build-tiles.ts`~~ ✅
+15. ~~Add `.gitignore` entries for `data/dem/`, `data/protomaps/`, `data/tiles/`, `public/data/tiles/`~~ ✅
+
+**Decision**: Hillshade raster tiles (originally step 10) were prototyped and removed — they added minimal terrain perception on mobile while nearly doubling package size and causing rendering bugs.
 
 ### Phase 3: Polish & Remaining Trails
+16. Download SRTM DEM tiles for remaining trails via ELVIS portal
 17. Run pipeline for all 6 trails
-18. Tune contour styling (intervals, colors, opacity, label density)
-19. Tune hillshade opacity and blending
-20. Measure actual tile sizes, optimize if needed
-21. Choose tile hosting strategy (S3 + CloudFront or similar — tiles are too large for static hosting like Vercel)
-22. Implement tile download UI in the mobile app
-23. Implement storage management (view/delete downloaded tiles)
-24. Design tile versioning/update mechanism (how app detects newer tiles, incremental vs full re-download)
-25. Test offline operation end-to-end on device
+18. ~~Tune contour styling (intervals, colors, opacity, label density)~~ ✅
+19. Measure actual tile sizes, optimize if needed
+20. ~~Choose tile hosting strategy (S3 + CloudFront or similar — tiles are too large for static hosting like Vercel)~~ ✅ → **Cloudflare R2** (see Appendix D)
+21. ~~Implement tile download UI in the mobile app~~ ✅
+22. ~~Implement storage management (view/delete downloaded tiles)~~ ✅
+23. Design tile versioning/update mechanism (how app detects newer tiles, incremental vs full re-download)
+24. Test offline operation end-to-end on device
+
+**Additional Phase 3 work completed:**
+- ~~Create `tile-service.ts` — reusable tile download/management service~~ ✅
+- ~~Fix offline font loading — bundled PBF glyphs provisioned to document directory~~ ✅
+- ~~Add `.pbf` to Metro asset extensions for bundled font loading~~ ✅
+- ~~Update dev screen to use tile service instead of inline logic~~ ✅
 
 ---
 
@@ -597,9 +566,7 @@ These are estimates — actual sizes depend on terrain complexity (more mountain
 - [ ] Contour lines are smooth (not jagged from low-res DEM)
 - [ ] Index contours (50m) are visibly bolder than regular (10m)
 - [ ] Elevation labels are readable and not overlapping
-- [ ] Hillshade provides clear terrain perception
-- [ ] Hillshade doesn't obscure other map features
-- [ ] Base map roads/water/POIs are visible through contours/hillshade
+- [ ] Base map roads/water/POIs are visible through contour overlay
 - [ ] Zoom transitions between contour densities are smooth (no pop-in)
 - [ ] No visual artifacts at tile boundaries
 
@@ -610,19 +577,19 @@ These are estimates — actual sizes depend on terrain complexity (more mountain
 | Risk | Mitigation |
 |------|-----------|
 | GDAL/tippecanoe not available in CI | Pipeline runs locally or in a Docker container; output MBTiles are committed or uploaded to CDN |
-| MBTiles not loading in MapLibre React Native | Tested in Part 0 spike; fallback to OfflineManager with MapTiler Cloud |
-| Tile sizes too large | Reduce buffer from 20km to 10km; reduce max zoom from z14 to z13; use WebP for hillshade |
-| Contour quality poor from 30m SRTM | SRTM at 30m is sufficient for 10m contour intervals; if needed, use DEM-S (smoothed) variant |
+| MBTiles not loading in MapLibre React Native | Validated on Android emulator; fallback to OfflineManager with MapTiler Cloud |
+| Tile sizes too large | Reduce buffer from 20km to 10km; reduce max zoom from z15 to z13 |
+| Contour quality poor from 30m SRTM | SRTM at 30m is sufficient for 10m contour intervals; using DEM-S (smoothed) variant |
 | Geoscience Australia WCS service down | Cache downloaded DEM tiles locally; use OpenTopography API as fallback |
 | Protomaps planet file too large to download | Use HTTP range request extraction (no full download needed) |
-| Tile files too large for static hosting (Vercel 250MB limit) | Host tiles on S3 + CloudFront or similar object storage; keep tile builds separate from web deployment |
+| Tile files too large for static hosting (Vercel 250MB limit) | Host tiles on Cloudflare R2 (zero egress, built-in CDN, S3-compatible API); keep tile builds separate from web deployment |
 | Contour GeoJSON too large for memory on big trails | Use FlatGeobuf format for intermediate contour files — compact, streamed, and natively supported by tippecanoe |
 
 ---
 
 ## Appendix A: MapLibre Style
 
-Complete `style.json` for the three-source topographic map:
+Complete `style.json` for the two-source topographic map. This is the actual implemented style from `scripts/topo-style.json`, using Protomaps Basemap schema layer names:
 
 ```json
 {
@@ -636,70 +603,70 @@ Complete `style.json` for the three-source topographic map:
     "contour": {
       "type": "vector",
       "url": "mbtiles://{basePath}/contours.mbtiles"
-    },
-    "hillshade": {
-      "type": "raster",
-      "url": "mbtiles://{basePath}/hillshade.mbtiles",
-      "tileSize": 256
     }
   },
-  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "glyphs": "{glyphsPath}/{fontstack}/{range}.pbf",
   "layers": [
     {
       "id": "background",
       "type": "background",
-      "paint": {
-        "background-color": "#f8f4f0"
-      }
+      "paint": { "background-color": "#f8f4f0" }
     },
     {
-      "id": "hillshade-overlay",
-      "type": "raster",
-      "source": "hillshade",
-      "paint": {
-        "raster-opacity": 0.3,
-        "raster-resampling": "linear"
-      }
+      "id": "earth",
+      "type": "fill",
+      "source": "basemap",
+      "source-layer": "earth",
+      "paint": { "fill-color": "#f8f4f0" }
     },
     {
-      "id": "landcover-grass",
+      "id": "landcover-grassland",
       "type": "fill",
       "source": "basemap",
       "source-layer": "landcover",
-      "filter": ["==", "class", "grass"],
-      "paint": {
-        "fill-color": "#d8e8c8",
-        "fill-opacity": 0.6
-      }
+      "filter": ["==", "kind", "grassland"],
+      "paint": { "fill-color": "#d8e8c8", "fill-opacity": 0.6 }
     },
     {
-      "id": "landcover-wood",
+      "id": "landcover-forest",
       "type": "fill",
       "source": "basemap",
       "source-layer": "landcover",
-      "filter": ["==", "class", "wood"],
-      "paint": {
-        "fill-color": "#aed1a0",
-        "fill-opacity": 0.5
-      }
+      "filter": ["==", "kind", "forest"],
+      "paint": { "fill-color": "#aed1a0", "fill-opacity": 0.5 }
+    },
+    {
+      "id": "landcover-scrub",
+      "type": "fill",
+      "source": "basemap",
+      "source-layer": "landcover",
+      "filter": ["==", "kind", "scrub"],
+      "paint": { "fill-color": "#c8d7ab", "fill-opacity": 0.4 }
+    },
+    {
+      "id": "landuse-park",
+      "type": "fill",
+      "source": "basemap",
+      "source-layer": "landuse",
+      "filter": ["in", "kind", "park", "national_park", "nature_reserve", "protected_area"],
+      "paint": { "fill-color": "#c8dfab", "fill-opacity": 0.3 }
     },
     {
       "id": "water",
       "type": "fill",
       "source": "basemap",
       "source-layer": "water",
-      "paint": {
-        "fill-color": "#aad3df"
-      }
+      "paint": { "fill-color": "#aad3df" }
     },
     {
       "id": "waterway",
       "type": "line",
       "source": "basemap",
-      "source-layer": "waterway",
+      "source-layer": "water",
+      "filter": ["in", "kind_detail", "river", "stream", "canal"],
       "paint": {
         "line-color": "#aad3df",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 14, 2]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 15, 2]
       }
     },
     {
@@ -707,6 +674,7 @@ Complete `style.json` for the three-source topographic map:
       "type": "line",
       "source": "contour",
       "source-layer": "contour",
+      "minzoom": 11,
       "filter": ["!=", ["get", "is_index"], 1],
       "paint": {
         "line-color": "rgb(179, 134, 89)",
@@ -719,97 +687,85 @@ Complete `style.json` for the three-source topographic map:
       "type": "line",
       "source": "contour",
       "source-layer": "contour",
+      "minzoom": 9,
       "filter": ["==", ["get", "is_index"], 1],
       "paint": {
         "line-color": "rgb(166, 116, 66)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.7, 14, 1.2],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.2, 14, 0.4]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.4, 11, 0.8, 14, 1.4],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.1, 11, 0.25, 14, 0.5]
+      }
+    },
+    {
+      "id": "road-path",
+      "type": "line",
+      "source": "basemap",
+      "source-layer": "roads",
+      "filter": ["==", "kind", "path"],
+      "paint": {
+        "line-color": "#b0a090",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.5, 15, 1.5],
+        "line-dasharray": [3, 2]
       }
     },
     {
       "id": "road-minor",
       "type": "line",
       "source": "basemap",
-      "source-layer": "transportation",
-      "filter": ["all", ["==", "class", "minor"]],
+      "source-layer": "roads",
+      "filter": ["==", "kind", "minor_road"],
       "paint": {
         "line-color": "#ffffff",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 14, 2]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 15, 2.5]
       }
     },
     {
-      "id": "road-secondary",
+      "id": "road-major",
       "type": "line",
       "source": "basemap",
-      "source-layer": "transportation",
-      "filter": ["all", ["in", "class", "secondary", "tertiary"]],
+      "source-layer": "roads",
+      "filter": ["==", "kind", "major_road"],
       "paint": {
         "line-color": "#fefeb3",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 14, 3]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 15, 4]
       }
     },
     {
-      "id": "road-primary",
+      "id": "road-highway",
       "type": "line",
       "source": "basemap",
-      "source-layer": "transportation",
-      "filter": ["==", "class", "primary"],
-      "paint": {
-        "line-color": "#fcd6a4",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.5, 14, 4]
-      }
-    },
-    {
-      "id": "road-trunk-motorway",
-      "type": "line",
-      "source": "basemap",
-      "source-layer": "transportation",
-      "filter": ["in", "class", "trunk", "motorway"],
+      "source-layer": "roads",
+      "filter": ["==", "kind", "highway"],
       "paint": {
         "line-color": "#e9ac77",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.5, 14, 5]
-      }
-    },
-    {
-      "id": "path-track",
-      "type": "line",
-      "source": "basemap",
-      "source-layer": "transportation",
-      "filter": ["in", "class", "path", "track"],
-      "paint": {
-        "line-color": "#b0a090",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.5, 14, 1.5],
-        "line-dasharray": [3, 2]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.5, 15, 6]
       }
     },
     {
       "id": "building",
       "type": "fill",
       "source": "basemap",
-      "source-layer": "building",
+      "source-layer": "buildings",
       "minzoom": 13,
-      "paint": {
-        "fill-color": "#d9d0c9",
-        "fill-opacity": 0.7
-      }
+      "paint": { "fill-color": "#d9d0c9", "fill-opacity": 0.7 }
     },
     {
       "id": "contour-label",
       "type": "symbol",
       "source": "contour",
       "source-layer": "contour",
+      "minzoom": 11,
       "filter": ["==", ["get", "is_index"], 1],
       "layout": {
         "symbol-placement": "line",
         "text-field": ["concat", ["to-string", ["get", "elevation"]], "m"],
-        "text-size": ["interpolate", ["linear"], ["zoom"], 11, 9, 14, 12],
-        "text-max-angle": 30,
-        "text-padding": 100,
+        "text-size": ["interpolate", ["linear"], ["zoom"], 11, 9, 14, 11],
+        "text-max-angle": 25,
+        "text-padding": 150,
         "text-font": ["Open Sans Regular"]
       },
       "paint": {
         "text-color": "rgb(131, 66, 37)",
-        "text-halo-color": "rgba(255, 255, 255, 0.8)",
+        "text-halo-color": "rgba(255, 255, 255, 0.85)",
         "text-halo-width": 1.5
       }
     },
@@ -817,10 +773,10 @@ Complete `style.json` for the three-source topographic map:
       "id": "place-village",
       "type": "symbol",
       "source": "basemap",
-      "source-layer": "place",
-      "filter": ["==", "class", "village"],
+      "source-layer": "places",
+      "filter": ["==", "kind_detail", "village"],
       "layout": {
-        "text-field": "{name}",
+        "text-field": ["get", "name"],
         "text-size": 12,
         "text-font": ["Open Sans Regular"]
       },
@@ -834,10 +790,10 @@ Complete `style.json` for the three-source topographic map:
       "id": "place-town",
       "type": "symbol",
       "source": "basemap",
-      "source-layer": "place",
-      "filter": ["==", "class", "town"],
+      "source-layer": "places",
+      "filter": ["==", "kind_detail", "town"],
       "layout": {
-        "text-field": "{name}",
+        "text-field": ["get", "name"],
         "text-size": 14,
         "text-font": ["Open Sans Regular"]
       },
@@ -851,10 +807,10 @@ Complete `style.json` for the three-source topographic map:
       "id": "place-city",
       "type": "symbol",
       "source": "basemap",
-      "source-layer": "place",
-      "filter": ["in", "class", "city", "metropolis"],
+      "source-layer": "places",
+      "filter": ["in", "kind_detail", "city", "metropolis"],
       "layout": {
-        "text-field": "{name}",
+        "text-field": ["get", "name"],
         "text-size": 16,
         "text-font": ["Open Sans Regular"]
       },
@@ -868,9 +824,10 @@ Complete `style.json` for the three-source topographic map:
       "id": "peak",
       "type": "symbol",
       "source": "basemap",
-      "source-layer": "mountain_peak",
+      "source-layer": "pois",
+      "filter": ["==", "kind", "peak"],
       "layout": {
-        "text-field": ["concat", ["get", "name"], "\n", ["to-string", ["get", "ele"]], "m"],
+        "text-field": ["concat", ["get", "name"], "\n", ["get", "elevation"]],
         "text-size": 11,
         "text-anchor": "center",
         "text-font": ["Open Sans Regular"]
@@ -887,22 +844,21 @@ Complete `style.json` for the three-source topographic map:
 
 **Notes**:
 - `{basePath}` is replaced at runtime with the actual tile directory path
-- The style references OpenMapTiles schema layer names. Protomaps uses its own "Basemap" schema which is similar but not identical — verify exact layer and property names against the [Protomaps Basemap docs](https://docs.protomaps.com/basemaps) before finalizing. In particular, `mountain_peak` may be named differently.
+- `{glyphsPath}` is replaced at runtime with the path to bundled PBF font glyphs
+- The style uses **Protomaps Basemap** schema layer names (`earth`, `roads` with `kind`, `places` with `kind_detail`, `pois`, `buildings`) — not OpenMapTiles schema
 - Trail overlay layers (polyline, waypoints) are added dynamically by the app on top of this style
-- Font glyphs need to be either bundled or downloaded; the demotiles URL is a placeholder for development — replace with bundled local glyphs for offline operation (see Appendix B)
-- This is a starting point — visual tuning will happen in Phase 3
+- Font glyphs are bundled in `mobile/assets/fonts/Open Sans Regular/` for offline operation
+- Contour styling tuned in Phase 3: added minzoom to regular contours (z11), index contours (z9), and labels (z11); increased label padding to 150 for reduced density on mobile; reduced text-max-angle to 25 for smoother label placement
 
 ---
 
-## Appendix B: Font Glyphs
+## Appendix B: Font Glyphs — DONE
 
-MapLibre needs PBF font glyphs for text rendering. Options:
+MapLibre needs PBF font glyphs for text rendering. Glyphs are downloaded via `scripts/fetch-font-glyphs.ts` from the OpenMapTiles CDN and bundled in `mobile/assets/fonts/Open Sans Regular/`.
 
-1. **Bundle fonts with the app**: Generate PBF glyphs from Open Sans using [font-maker](https://github.com/maplibre/font-maker), bundle in `mobile/assets/fonts/`
-2. **Use a CDN**: Point `glyphs` URL to a hosted glyph set (requires network for first load)
-3. **Use MapTiler fonts** (Phase 1 only): `https://api.maptiler.com/fonts/{fontstack}/{range}.pbf?key=KEY`
+Bundled glyph ranges: 0-255, 256-511, 512-767, 768-1023, 8192-8447, 8448-8703 (covers Latin, extended Latin, and common symbols).
 
-For offline operation, fonts must be bundled. This is a small asset (~2-5 MB for Open Sans Regular + Bold).
+To regenerate: `npm run fetch:fonts`
 
 ---
 
@@ -935,6 +891,131 @@ This is optional — the pipeline can run on any machine with the prerequisites 
 
 ---
 
+## Appendix D: Tile Hosting — Cloudflare R2
+
+**Decision: 2026-02-08**
+
+### Why R2 over S3 + CloudFront
+
+The plan originally suggested S3 + CloudFront. After evaluating options, **Cloudflare R2** is the better fit:
+
+| Factor | S3 + CloudFront | Cloudflare R2 |
+|--------|----------------|---------------|
+| Storage cost | $0.023/GB/mo | $0.015/GB/mo (10 GB free) |
+| Egress cost | $0.085/GB | **Free** |
+| CDN | Separate service (CloudFront) | Built-in (Cloudflare network) |
+| API | S3 native | S3-compatible |
+| Setup | 2 services (S3 bucket + CF distribution) | 1 service (R2 bucket + public access) |
+
+For a download-heavy workload (~260 MB total, individual files up to 50 MB), zero egress is the decisive factor. Even modest usage (100 users × 260 MB) would cost ~$2/month on CloudFront but $0 on R2.
+
+### R2 Bucket Structure
+
+```
+trail-companion-tiles/               # R2 bucket name
+  bibbulmun/
+    base.mbtiles                     # 28 MB
+    contours.mbtiles                 # 47 MB
+    manifest.json
+  cape-to-cape/
+    base.mbtiles
+    contours.mbtiles
+    manifest.json
+  heysen/
+    ...
+  manifest.json                      # Root manifest listing all trails + versions
+```
+
+### Public Access URL
+
+With R2 public access enabled on a custom domain:
+
+```
+https://tiles.trailcompanion.app/bibbulmun/base.mbtiles
+https://tiles.trailcompanion.app/bibbulmun/contours.mbtiles
+https://tiles.trailcompanion.app/bibbulmun/manifest.json
+https://tiles.trailcompanion.app/manifest.json
+```
+
+Alternatively, use the default R2.dev subdomain for development:
+```
+https://trail-companion-tiles.<account-id>.r2.dev/bibbulmun/base.mbtiles
+```
+
+### Upload Workflow
+
+Upload tiles after running `build:tiles` for a trail:
+
+```bash
+# Using wrangler (Cloudflare CLI)
+npx wrangler r2 object put trail-companion-tiles/bibbulmun/base.mbtiles \
+  --file public/data/tiles/bibbulmun/base.mbtiles \
+  --content-type application/octet-stream
+
+npx wrangler r2 object put trail-companion-tiles/bibbulmun/contours.mbtiles \
+  --file public/data/tiles/bibbulmun/contours.mbtiles \
+  --content-type application/octet-stream
+
+npx wrangler r2 object put trail-companion-tiles/bibbulmun/manifest.json \
+  --file public/data/tiles/bibbulmun/manifest.json \
+  --content-type application/json
+
+# Or using AWS CLI with R2 endpoint
+aws s3 sync public/data/tiles/ s3://trail-companion-tiles/ \
+  --endpoint-url https://<account-id>.r2.cloudflarestorage.com
+```
+
+### Setup Steps
+
+1. **Create Cloudflare account** (free tier is sufficient)
+2. **Create R2 bucket** named `trail-companion-tiles`
+3. **Enable public access** on the bucket (Settings → Public access → Enable)
+4. **Optional: Add custom domain** (`tiles.trailcompanion.app`) via Cloudflare DNS
+5. **Install wrangler**: `npm install -g wrangler` and `wrangler login`
+6. **Upload tiles** using the commands above
+7. **Set `EXPO_PUBLIC_TILE_BASE_URL`** in the mobile app to the public URL
+
+### CORS Configuration
+
+R2 public buckets allow cross-origin requests by default. If needed, configure via:
+
+```json
+[
+  {
+    "AllowedOrigins": ["*"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "MaxAgeSeconds": 86400
+  }
+]
+```
+
+### Cache Headers
+
+Set `Cache-Control` on upload for efficient client-side caching:
+
+```bash
+# MBTiles change rarely — cache for 30 days
+--cache-control "public, max-age=2592000"
+
+# Manifests should be checked more frequently
+--cache-control "public, max-age=3600"
+```
+
+### Cost Estimate
+
+| Component | Amount | Cost |
+|-----------|--------|------|
+| Storage | ~260 MB | **Free** (10 GB free tier) |
+| Class A ops (writes) | ~12 uploads | **Free** (1M free/month) |
+| Class B ops (reads) | ~1,000 downloads/month | **Free** (10M free/month) |
+| Egress | ~260 GB/month (1,000 full downloads) | **Free** |
+| **Total** | | **$0/month** |
+
+Even at 10× the estimated traffic, the cost remains $0 within R2's free tier.
+
+---
+
 ## Review Notes
 
 **Reviewed: 2026-02-08**
@@ -951,17 +1032,16 @@ This is a thorough, well-researched plan. The architecture is sound, the tool ch
 
 All gaps below have been fixed in the plan above:
 
-2. **`.gitignore` updates** — added as implementation step 16
-3. **Font glyph bundling** — added as implementation step 13
+2. **`.gitignore` updates** — added as implementation step 15
+3. **Font glyph bundling** — added as implementation step 12
 4. **`mbtiles://` protocol validation** — added as implementation step 6 (early gate before full pipeline)
-5. **Hillshade zoom range** — added `ZOOM_LEVEL_STRATEGY` to gdal_translate command in Step 5
-6. **CDN/hosting strategy** — added as implementation step 21 and risk table entry
-7. **Tile versioning** — added as implementation step 24 (Phase 3 design question)
-8. **Dynamic MGA zone** — updated Step 1 to note dynamic EPSG selection per trail
-9. **Contour memory** — switched Steps 3-4 from GeoJSON to FlatGeobuf format
-10. **Protomaps schema** — added verification note in Appendix A
-11. **Peak icon without sprite** — removed `icon-image` reference, switched to text-only symbol
-12. **Build script isolation** — removed `build:tiles` from main `build` command, added explanatory note
+5. **CDN/hosting strategy** — added as implementation step 20 and risk table entry
+6. **Tile versioning** — added as implementation step 23 (Phase 3 design question)
+7. **Dynamic MGA zone** — updated Step 1 to note dynamic EPSG selection per trail
+8. **Contour memory** — switched Steps 3-4 from GeoJSON to FlatGeobuf format
+9. **Protomaps schema** — Appendix A updated to use actual Protomaps Basemap schema layer names
+10. **Peak icon without sprite** — removed `icon-image` reference, switched to text-only symbol
+11. **Build script isolation** — removed `build:tiles` from main `build` command, added explanatory note
 
 ### Checklist Results
 
@@ -972,3 +1052,34 @@ All gaps below have been fixed in the plan above:
 - [x] Testing strategy sufficient (includes mbtiles:// protocol validation step)
 - [x] No simpler alternatives exist for the core problem
 - [x] No risk of breaking existing build (build:tiles kept separate)
+
+---
+
+## Phase 2 Completion Notes
+
+**Completed: 2026-02-08**
+
+### What was built
+
+- `scripts/build-tiles.ts` — Complete pipeline orchestrator (728 lines)
+- `scripts/fetch-font-glyphs.ts` — PBF font glyph downloader (115 lines)
+- `scripts/topo-style.json` — MapLibre style with Protomaps Basemap schema (266 lines)
+- `mobile/app/(dev)/map-tiles.tsx` — Dev test screen for tile loading verification
+- `mobile/assets/fonts/Open Sans Regular/*.pbf` — Bundled font glyphs for offline text
+- npm scripts: `build:tiles`, `build:tiles:bibbulmun`, `fetch:fonts`
+- `.gitignore` entries for `data/dem/`, `data/protomaps/`, `data/tiles/`, `public/data/tiles/`
+
+### Bibbulmun output (first trail)
+
+- `base.mbtiles`: 28 MB (vector, Protomaps Basemap schema)
+- `contours.mbtiles`: 47 MB (vector, 10m intervals with 50m index)
+- Total: **75 MB** (significantly under the 150 MB target)
+
+### Decision: Hillshade removed
+
+Hillshade raster tiles were prototyped and tested on device. They were removed because:
+- Minimal visual benefit on mobile screens — contour lines alone provide sufficient terrain perception
+- Nearly doubled tile package size (added ~60 MB for bibbulmun)
+- Caused rendering bugs on Android (raster layer compositing issues)
+
+The build script, style.json, and mobile code have all been updated to remove hillshade. The plan has been updated to reflect this decision.

@@ -15,18 +15,18 @@ Sections 1-3 and 7-8 (map, tiles, waypoints, elevation profile) can be developed
 
 ### 1. MapLibre GL Integration
 - Configure MapLibre React Native with the topographic style from the tile pipeline
-- Load custom topo style.json compositing base map, contour, and hillshade sources
+- Load custom topo style.json compositing base map and contour sources
 - Implement smooth pan/zoom interactions
 - Trail polyline rendering with direction indicators
 - Online fallback to MapTiler Cloud when tiles are not downloaded (see tile pipeline Phase 1)
 
 ### 2. Offline Map Tiles (App-Side)
 
-The tile generation pipeline (corridor extraction, contour generation, hillshade, base map extraction) is handled by the **Topo Tile Pipeline** plan. This section covers the app-side download, caching, and management of the generated MBTiles packages.
+The tile generation pipeline (corridor extraction, contour generation, base map extraction) is handled by the **Topo Tile Pipeline** plan. This section covers the app-side download, caching, and management of the generated MBTiles packages.
 
-- Download MBTiles packages (base + contours + hillshade) to `FileSystem.documentDirectory`
+- Download MBTiles packages (base + contours) to `FileSystem.documentDirectory`
   - Uses persistent storage, not cache directory (avoids iOS cache eviction)
-  - Three files per trail, sizes per tile pipeline estimates (35-210 MB per trail)
+  - Two files per trail, sizes per tile pipeline estimates (9-81 MB per trail)
 - Download progress UI with size estimates from tile manifest
 - Resume interrupted downloads (track per-file completion)
 - Handle full storage gracefully (check available space before download, warn user)
@@ -132,4 +132,4 @@ Note: These functions use Leaflet and DOM APIs. The logic (calculations, data tr
 - Start with a single trail (Bibbulmun) for all testing
 - Battery life testing on actual devices is critical
 - The map ↔ elevation sync logic from `trail-viewer.ts` is a key asset to port (see Section 8 table)
-- Tile hosting strategy (CDN, S3 + CloudFront, etc.) needs a decision before the download UI can be finalized — tiles are too large for typical static hosting
+- Tile hosting strategy decided: **Cloudflare R2** — zero egress, built-in CDN, S3-compatible API. See `plans/topo-tile-pipeline.md` Appendix D for details. App reads `EXPO_PUBLIC_TILE_BASE_URL` env var.

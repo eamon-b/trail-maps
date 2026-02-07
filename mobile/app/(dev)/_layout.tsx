@@ -20,6 +20,7 @@ export default function DevLayout() {
       <Stack.Screen name="day-plan-card" options={{ title: 'Day Plan Card' }} />
       <Stack.Screen name="typography" options={{ title: 'Typography' }} />
       <Stack.Screen name="colors" options={{ title: 'Colors' }} />
+      <Stack.Screen name="map-tiles" options={{ title: 'Map Tiles' }} />
     </Stack>
   );
 }

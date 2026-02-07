@@ -3,32 +3,39 @@
 ## Goal
 Build the core trail viewing experience with offline-capable maps, GPS location tracking, and distance/elevation calculations to waypoints. This is the foundation of the "Hike" mode functionality.
 
+## Development Tracks
+
+Sections 1-3 and 7-8 (map, tiles, waypoints, elevation profile) can be developed in parallel with Sections 4-6 (GPS, auto-follow, distance calculations). This allows faster iteration on each track.
+
+**Track A (Map & Profile):** Sections 1, 2, 3, 7, 8
+**Track B (GPS & Location):** Sections 4, 5, 6
+**Integration:** Section 9 (Trail Browsing) ties both tracks together.
+
 ## Deliverables
 
 ### 1. MapLibre GL Integration
-- Replace Leaflet with MapLibre GL JS for React Native
-- Configure topographic map style (similar to OpenTopoMap aesthetic)
+- Configure MapLibre React Native with the topographic style from the tile pipeline
+- Load custom topo style.json compositing base map, contour, and hillshade sources
 - Implement smooth pan/zoom interactions
 - Trail polyline rendering with direction indicators
+- Online fallback to MapTiler Cloud when tiles are not downloaded (see tile pipeline Phase 1)
 
-### 2. Offline Map Tiles
-- **Tile provider decision** (choose one):
-  - **Protomaps (Recommended)**: PMTiles format, self-hostable, free, good for offline
-  - MapTiler: Commercial, excellent quality, costs at scale
-  - OpenMapTiles: Self-host, requires infrastructure setup
-- Vector tile downloading and caching system
-- Trail corridor bounding box calculation for tile selection
-- **Tile size estimation per trail:**
-  - Calculate tile count at zoom levels 10-16 for trail corridor
-  - Target: <500MB per major trail (1000km)
-  - Measure actual storage on device after caching
-- Download progress UI with size estimates
-- Storage management (view cached trails, delete old data)
-- Resume interrupted downloads
-- Handle full storage gracefully (warn before download starts)
+### 2. Offline Map Tiles (App-Side)
+
+The tile generation pipeline (corridor extraction, contour generation, hillshade, base map extraction) is handled by the **Topo Tile Pipeline** plan. This section covers the app-side download, caching, and management of the generated MBTiles packages.
+
+- Download MBTiles packages (base + contours + hillshade) to `FileSystem.documentDirectory`
+  - Uses persistent storage, not cache directory (avoids iOS cache eviction)
+  - Three files per trail, sizes per tile pipeline estimates (35-210 MB per trail)
+- Download progress UI with size estimates from tile manifest
+- Resume interrupted downloads (track per-file completion)
+- Handle full storage gracefully (check available space before download, warn user)
+- Storage management UI (view downloaded trails with sizes, delete old data)
+- Load local MBTiles via `mbtiles://` protocol in MapLibre style
 
 ### 3. Offline Asset Management
 - Bundle static assets (icons, fonts, base styles) with app binary
+- Bundle PBF font glyphs (Open Sans Regular + Bold, ~2-5 MB) for offline text rendering
 - Trail data versioning for update checking
 - "Last updated" timestamps for cached trail data
 - Background download option for large tile sets
@@ -79,11 +86,24 @@ Build the core trail viewing experience with offline-capable maps, GPS location 
 ### 8. Elevation Profile Integration
 - Pull-up drawer from bottom of map view
 - Contextual profile showing currently visible map section
-- Bidirectional sync (port logic from `trail-viewer.ts`):
-  - Pan map → profile updates
+- Bidirectional sync:
+  - Pan map → profile updates visible range
   - Tap profile → map pans to location
 - Current position marker on profile
 - Waypoint markers on profile
+
+**Functions to port from `src/web/trails/trail-viewer.ts`:**
+
+| Function group | Source functions | What to port |
+|---------------|----------------|-------------|
+| Elevation profile rendering | `drawElevationProfile` (line 963) | Chart drawing logic, axis scaling (`getMinMax`, `niceAxisTicks`) |
+| Map ↔ profile sync | `setupElevationHover` (line 869), `showElevationHover`, `hideElevationHover` | Bidirectional hover/tap coordination between map and profile |
+| Waypoint interaction | `handleTableRowClick` (line 429), `drawWaypointMarkers` (line 319) | Tap-to-highlight, marker placement logic |
+| Direction reversal | `createReversedTrail` (line 1502), `reverseTrackPoints`, `reverseWaypoints`, `reverseAlternates`, `transformSideTrips` | Full trail direction reversal with waypoint distance recalculation |
+| Variant tracks | `drawAlternates` (line 282), `drawSideTrips` (line 295), `findVariantByKey` (line 547) | Alternate route and side trip rendering and selection |
+| Nearest point lookup | `findNearestByDistance` (line 196) | Binary search for nearest track point by distance |
+
+Note: These functions use Leaflet and DOM APIs. The logic (calculations, data transformations) ports directly; the rendering must be reimplemented for React Native / MapLibre.
 
 ### 9. Trail Browsing
 - Trail list/index view
@@ -97,7 +117,7 @@ Build the core trail viewing experience with offline-capable maps, GPS location 
 - Distance to next campsite/water/town updates in real-time
 - Elevation profile syncs with map view
 - Battery-conscious GPS sampling works
-- 500MB+ of map tiles can be downloaded and managed
+- Tile packages can be downloaded and managed (35-210 MB per trail)
 - App remains responsive with 500MB cached tiles
 - GPS battery usage measured and documented
 - Works gracefully with GPS accuracy up to 100m
@@ -106,97 +126,10 @@ Build the core trail viewing experience with offline-capable maps, GPS location 
 ## Dependencies
 - Part 0: Foundation & Project Setup
 - Part 1: Design System & UX Foundation
+- **Topo Tile Pipeline** (`plans/topo-tile-pipeline.md`): At minimum Phase 1 (MapTiler Cloud) must be complete to begin Track A. Phase 2 (custom pipeline) must produce tiles for at least one trail (bibbulmun) before Section 2 (app-side tile management) can be fully implemented.
 
 ## Notes
-- This is the single hardest technical challenge (offline maps)
-- Consider starting with a single trail (e.g., Bibbulmun) for testing
+- Start with a single trail (Bibbulmun) for all testing
 - Battery life testing on actual devices is critical
-- The map ↔ elevation sync logic from `trail-viewer.ts` is a key asset to port
-
----
-
-## Review Notes
-
-**Reviewed: 2026-02-05**
-
-### Checklist Assessment
-- [x] All affected files identified
-- [ ] Steps in the right order (reorder suggested)
-- [x] Dependencies identified
-- [ ] Edge cases considered (see below)
-- [ ] Testing strategy sufficient
-
-### Critical Issues
-
-1. **Service Worker section (Section 3) doesn't apply to React Native**
-   Service Workers are a web technology. React Native apps don't use them.
-
-   **Remove or replace with:**
-   ```
-   ### 3. Offline Asset Management
-   - Bundle static assets with app binary
-   - Implement app update mechanism
-   - Version trail data for update checking
-   - "Last updated" timestamps for cached data
-   ```
-
-2. **Vector tile provider decision is missing**
-   The plan mentions MapTiler/Protomaps but doesn't specify which to use. This needs a decision:
-   - **MapTiler**: Commercial, excellent quality, has costs at scale
-   - **Protomaps**: Self-hostable PMTiles format, free, smaller ecosystem
-   - **OpenMapTiles**: Self-host, requires setup
-
-   **Add decision criteria and recommendation to Section 2.**
-
-3. **Tile download size estimates**
-   Success criteria mentions "500MB+ of map tiles" but no estimation methodology.
-
-   **Add to Section 2:**
-   - Calculate tile count for Bibbulmun corridor at zoom levels 10-16
-   - Measure actual storage after caching
-   - Define acceptable size limits per trail
-
-### Suggested Reordering
-
-Current order has GPS (Section 4) after offline maps (Section 2), but GPS can be developed independently. Suggest parallel development:
-
-**Track A (Map):** Sections 1, 2, 7, 8
-**Track B (GPS/Location):** Sections 4, 5, 6
-
-This allows faster iteration on each track.
-
-### Missing Edge Cases
-
-1. **GPS accuracy handling**
-   - What happens when GPS accuracy is poor (>50m)?
-   - Display accuracy circle on map?
-   - Degrade "km position" confidence indicator?
-
-2. **Track snapping ambiguity**
-   - What if user is equidistant from two track sections (e.g., trail doubles back)?
-   - Need algorithm to prefer "forward" direction based on recent movement
-
-3. **Map tile download failures**
-   - Partial download recovery
-   - Resume interrupted downloads
-   - Handle full storage gracefully
-
-4. **No GPS permission**
-   - App should still be useful for planning without location access
-   - Clear messaging about limited functionality
-
-### Existing Code Assets
-
-The plan correctly identifies `trail-viewer.ts` (1781 lines) as a key asset. Specific functions to port:
-- Map ↔ elevation profile synchronization
-- Waypoint highlighting/selection
-- Direction reversal logic
-- Variant track handling
-
-**Recommendation:** Document specific functions to port before starting this part.
-
-### Suggested Success Criteria Additions
-- App remains responsive with 500MB cached tiles
-- GPS battery usage measured and documented
-- Works with GPS accuracy up to 100m
-- Graceful degradation without GPS permissions
+- The map ↔ elevation sync logic from `trail-viewer.ts` is a key asset to port (see Section 8 table)
+- Tile hosting strategy (CDN, S3 + CloudFront, etc.) needs a decision before the download UI can be finalized — tiles are too large for typical static hosting

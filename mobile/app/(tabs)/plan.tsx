@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { useTheme } from '../../src/theme';
 import { TrailDataService, type Trail } from '../../src/services/trail-data-service';
+import { spacing, radii } from '../../src/tokens/spacing';
+import { typography } from '../../src/tokens/typography';
 
 export default function PlanScreen() {
+  const { colors } = useTheme();
   const [trails, setTrails] = useState<Trail[]>([]);
 
   useEffect(() => {
@@ -15,23 +19,27 @@ export default function PlanScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Select a Trail</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.header, { color: colors.accent }]}>Select a Trail</Text>
       <FlatList
         data={trails}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <Pressable style={styles.card}>
-            <Text style={styles.trailName}>{item.name}</Text>
+          <Pressable
+            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.name}${item.region ? `, ${item.region}` : ''}${item.lengthKm ? `, ${item.lengthKm} kilometers` : ''}`}
+          >
+            <Text style={[styles.trailName, { color: colors.textPrimary }]}>{item.name}</Text>
             <View style={styles.meta}>
-              {item.region && <Text style={styles.region}>{item.region}</Text>}
-              {item.lengthKm && <Text style={styles.length}>{item.lengthKm} km</Text>}
+              {item.region && <Text style={[styles.region, { color: colors.textSecondary }]}>{item.region}</Text>}
+              {item.lengthKm && <Text style={[styles.length, { color: colors.accent }]}>{item.lengthKm} km</Text>}
             </View>
           </Pressable>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>No trails loaded</Text>
+          <Text style={[styles.empty, { color: colors.textSecondary }]}>No trails loaded</Text>
         }
       />
     </View>
@@ -41,24 +49,22 @@ export default function PlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
+    ...typography.titleLarge,
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2196F3',
-    padding: 16,
-    paddingBottom: 8,
+    padding: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   list: {
-    padding: 16,
+    padding: spacing.lg,
     paddingTop: 0,
-    gap: 12,
+    gap: spacing.md,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -66,27 +72,23 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   trailName: {
-    fontSize: 17,
+    ...typography.body,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   meta: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   region: {
-    fontSize: 14,
-    color: '#666',
+    ...typography.caption,
   },
   length: {
-    fontSize: 14,
-    color: '#2196F3',
+    ...typography.caption,
     fontWeight: '500',
   },
   empty: {
-    fontSize: 16,
-    color: '#999',
+    ...typography.body,
     textAlign: 'center',
     marginTop: 40,
   },

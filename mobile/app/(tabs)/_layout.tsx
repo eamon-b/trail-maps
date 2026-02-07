@@ -1,56 +1,97 @@
+import { useCallback } from 'react';
+import { BackHandler, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
-
-const COLORS = {
-  plan: '#2196F3',
-  hike: '#4CAF50',
-  contribute: '#FF9800',
-  inactive: '#888',
-} as const;
+import { useFocusEffect } from '@react-navigation/native';
+import { useTheme, useBottomSheetDismiss } from '../../src/theme';
+import { resolveTheme, type AppMode } from '../../src/tokens/themes';
+import { ModeSelector } from '../../src/components/ModeSelector';
 
 export default function TabLayout() {
+  const { mode, setMode, colors, themeVariant } = useTheme();
+  const { dismissSheet } = useBottomSheetDismiss();
+
+  // Android back button: dismiss bottom sheet if open → otherwise no-op (don't exit app)
+  useFocusEffect(
+    useCallback(() => {
+      const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+        return dismissSheet() || true;
+      });
+      return () => handler.remove();
+    }, [dismissSheet]),
+  );
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: undefined,
-        tabBarInactiveTintColor: COLORS.inactive,
-        headerShown: true,
-      }}
-    >
-      <Tabs.Screen
-        name="plan"
-        options={{
-          title: 'Plan',
-          tabBarActiveTintColor: COLORS.plan,
-          headerTintColor: COLORS.plan,
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon label="P" color={color} size={size} />
-          ),
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ModeSelector />
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+          },
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.accent,
+          headerTitleStyle: { color: colors.textPrimary },
         }}
-      />
-      <Tabs.Screen
-        name="hike"
-        options={{
-          title: 'Hike',
-          tabBarActiveTintColor: COLORS.hike,
-          headerTintColor: COLORS.hike,
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon label="H" color={color} size={size} />
-          ),
+        screenListeners={{
+          tabPress: (e) => {
+            // Sync mode when tab is pressed
+            const routeName = e.target?.split('-')[0] as AppMode | undefined;
+            if (routeName && routeName !== mode && ['plan', 'hike', 'contribute'].includes(routeName)) {
+              setMode(routeName);
+            }
+          },
         }}
-      />
-      <Tabs.Screen
-        name="contribute"
-        options={{
-          title: 'Contribute',
-          tabBarActiveTintColor: COLORS.contribute,
-          headerTintColor: COLORS.contribute,
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon label="C" color={color} size={size} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="plan"
+          options={{
+            title: 'Plan',
+            tabBarActiveTintColor: resolveTheme(themeVariant, 'plan').accent,
+            headerTintColor: resolveTheme(themeVariant, 'plan').accent,
+            tabBarIcon: ({ color, size }) => (
+              <TabIcon label="P" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="hike"
+          options={{
+            title: 'Hike',
+            tabBarActiveTintColor: resolveTheme(themeVariant, 'hike').accent,
+            headerTintColor: resolveTheme(themeVariant, 'hike').accent,
+            tabBarIcon: ({ color, size }) => (
+              <TabIcon label="H" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="contribute"
+          options={{
+            title: 'Contribute',
+            tabBarActiveTintColor: resolveTheme(themeVariant, 'contribute').accent,
+            headerTintColor: resolveTheme(themeVariant, 'contribute').accent,
+            tabBarIcon: ({ color, size }) => (
+              <TabIcon label="C" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="dev"
+          options={{
+            title: 'Dev',
+            href: __DEV__ ? '/(tabs)/dev' : null,
+            tabBarIcon: ({ color, size }) => (
+              <TabIcon label="D" color={color} size={size} />
+            ),
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }
 

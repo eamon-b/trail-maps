@@ -128,6 +128,12 @@ npx expo start --dev-client      # Start Metro + connect to dev client
 - **EAS Update**: OTA JavaScript updates. Only works for JS/styling/image changes — native changes need a new binary build.
 - **Expo Router**: File-based routing where files in `app/` become navigation routes. `_layout.tsx` defines navigators, `(groups)/` organize without adding URL segments, `[param].tsx` for dynamic routes.
 
+### Verification After Dependency Changes
+
+When changes affect native dependencies (adding/removing/updating packages, modifying `app.json` plugins), verify with:
+1. `npx expo prebuild` — ensures config plugins resolve and native projects generate correctly
+2. `eas build --profile development --platform android` — ensures the development build compiles with the updated dependencies
+
 ### Common Gotchas
 
 - Always `npx expo install` for Expo packages — ensures SDK-compatible versions

@@ -22,7 +22,7 @@ describe('PlanService', () => {
   it('creates a new plan', async () => {
     await service.createPlan({
       id: 'plan-1',
-      trailId: 'bibbulmum',
+      trailId: 'bibbulmun',
       name: 'April Thru-hike',
       direction: 'NOBO',
       startDate: '2026-04-01',
@@ -32,14 +32,14 @@ describe('PlanService', () => {
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO plans'),
-      expect.arrayContaining(['plan-1', 'bibbulmum', 'April Thru-hike']),
+      expect.arrayContaining(['plan-1', 'bibbulmun', 'April Thru-hike']),
     );
   });
 
   it('retrieves a plan by id', async () => {
     mockDb.getFirstAsync.mockResolvedValueOnce({
       id: 'plan-1',
-      trail_id: 'bibbulmum',
+      trail_id: 'bibbulmun',
       name: 'April Thru-hike',
       direction: 'NOBO',
       start_date: '2026-04-01',
@@ -52,7 +52,7 @@ describe('PlanService', () => {
     const plan = await service.getPlan('plan-1');
     expect(plan).not.toBeNull();
     expect(plan!.name).toBe('April Thru-hike');
-    expect(plan!.trailId).toBe('bibbulmum');
+    expect(plan!.trailId).toBe('bibbulmun');
     expect(plan!.direction).toBe('NOBO');
   });
 
@@ -63,11 +63,11 @@ describe('PlanService', () => {
 
   it('lists plans for a trail', async () => {
     mockDb.getAllAsync.mockResolvedValueOnce([
-      { id: 'plan-1', trail_id: 'bibbulmum', name: 'Plan A', direction: 'NOBO', start_date: null, section_json: null, stops_json: null, created_at: '2026-01-01', updated_at: '2026-01-02' },
-      { id: 'plan-2', trail_id: 'bibbulmum', name: 'Plan B', direction: 'SOBO', start_date: null, section_json: null, stops_json: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 'plan-1', trail_id: 'bibbulmun', name: 'Plan A', direction: 'NOBO', start_date: null, section_json: null, stops_json: null, created_at: '2026-01-01', updated_at: '2026-01-02' },
+      { id: 'plan-2', trail_id: 'bibbulmun', name: 'Plan B', direction: 'SOBO', start_date: null, section_json: null, stops_json: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
 
-    const plans = await service.listPlansForTrail('bibbulmum');
+    const plans = await service.listPlansForTrail('bibbulmun');
     expect(plans).toHaveLength(2);
     expect(plans[0].name).toBe('Plan A');
   });

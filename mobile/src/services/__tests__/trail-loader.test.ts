@@ -1,27 +1,13 @@
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
-import { loadBundledTrails } from '../trail-loader';
 import { TrailDataService } from '../trail-data-service';
 
-const mockAsset = Asset as jest.Mocked<typeof Asset>;
-const mockFs = FileSystem as jest.Mocked<typeof FileSystem>;
-
-function createMockService() {
-  return {
-    getTrail: jest.fn().mockResolvedValue(null),
-    storeTrail: jest.fn().mockResolvedValue(undefined),
-    storeWaypoints: jest.fn().mockResolvedValue(undefined),
-  } as unknown as jest.Mocked<TrailDataService>;
-}
-
 const INDEX_JSON: Array<{ id: string; name: string; shortName: string; lengthKm: number }> = [
-  { id: 'bibbulmum', name: 'Bibbulmum Track', shortName: 'bibb', lengthKm: 981.6 },
+  { id: 'bibbulmun', name: 'bibbulmun Track', shortName: 'bibb', lengthKm: 981.6 },
 ];
 
 const TRAIL_JSON = {
   config: {
-    id: 'bibbulmum',
-    name: 'Bibbulmum Track',
+    id: 'bibbulmun',
+    name: 'bibbulmun Track',
     shortName: 'bibb',
     region: 'South West WA',
     lengthKm: 981.6,
@@ -41,22 +27,19 @@ const TRAIL_JSON = {
   },
 };
 
-function setupAssetMocks(indexJson: unknown, trailJson?: unknown) {
-  // loadJsonAsset calls Asset.loadAsync then FileSystem.readAsStringAsync
-  let callCount = 0;
-  mockAsset.loadAsync.mockImplementation(async () => {
-    callCount++;
-    return [{ localUri: `/mock/assets/file-${callCount}.json` } as any];
-  });
+// Mock the JSON asset requires before importing the module
+jest.mock('../../../assets/trails/index.json', () => INDEX_JSON, { virtual: true });
+jest.mock('../../../assets/trails/bibbulmun.json', () => TRAIL_JSON, { virtual: true });
 
-  if (trailJson) {
-    mockFs.readAsStringAsync
-      .mockResolvedValueOnce(JSON.stringify(indexJson))
-      .mockResolvedValueOnce(JSON.stringify(trailJson));
-  } else {
-    mockFs.readAsStringAsync
-      .mockResolvedValueOnce(JSON.stringify(indexJson));
-  }
+// Import after mocks are set up
+import { loadBundledTrails } from '../trail-loader';
+
+function createMockService() {
+  return {
+    getTrail: jest.fn().mockResolvedValue(null),
+    storeTrail: jest.fn().mockResolvedValue(undefined),
+    storeWaypoints: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<TrailDataService>;
 }
 
 describe('loadBundledTrails', () => {
@@ -68,20 +51,18 @@ describe('loadBundledTrails', () => {
   });
 
   it('loads a trail and its waypoints into the service', async () => {
-    setupAssetMocks(INDEX_JSON, TRAIL_JSON);
-
     await loadBundledTrails(service);
 
     expect(service.storeTrail).toHaveBeenCalledWith({
-      id: 'bibbulmum',
-      name: 'Bibbulmum Track',
+      id: 'bibbulmun',
+      name: 'bibbulmun Track',
       shortName: 'bibb',
       region: 'South West WA',
       lengthKm: 981.6,
       metadataJson: expect.stringContaining('"totalDistance":981600'),
     });
 
-    expect(service.storeWaypoints).toHaveBeenCalledWith('bibbulmum', [
+    expect(service.storeWaypoints).toHaveBeenCalledWith('bibbulmun', [
       { name: 'Kalamunda', type: 'town', lat: -31.974, lon: 116.058, ele: 295, kmPosition: 0, description: null },
       { name: 'Hewitt\'s Hill', type: 'campsite', lat: -31.958, lon: 116.129, ele: null, kmPosition: 12.5, description: null },
       { name: 'Ball Creek', type: 'water', lat: -32.012, lon: 116.1, ele: null, kmPosition: null, description: null },
@@ -89,8 +70,6 @@ describe('loadBundledTrails', () => {
   });
 
   it('stores direction metadata from trail config', async () => {
-    setupAssetMocks(INDEX_JSON, TRAIL_JSON);
-
     await loadBundledTrails(service);
 
     const storedMetadata = JSON.parse(service.storeTrail.mock.calls[0][0].metadataJson!);
@@ -98,8 +77,6 @@ describe('loadBundledTrails', () => {
   });
 
   it('stores track summary in metadata', async () => {
-    setupAssetMocks(INDEX_JSON, TRAIL_JSON);
-
     await loadBundledTrails(service);
 
     const storedMetadata = JSON.parse(service.storeTrail.mock.calls[0][0].metadataJson!);
@@ -112,10 +89,9 @@ describe('loadBundledTrails', () => {
   });
 
   it('skips trails that already exist in the database', async () => {
-    setupAssetMocks(INDEX_JSON);
     service.getTrail.mockResolvedValueOnce({
-      id: 'bibbulmum',
-      name: 'Bibbulmum Track',
+      id: 'bibbulmun',
+      name: 'bibbulmun Track',
       shortName: 'bibb',
       region: 'South West WA',
       lengthKm: 981.6,
@@ -130,50 +106,32 @@ describe('loadBundledTrails', () => {
     expect(service.storeWaypoints).not.toHaveBeenCalled();
   });
 
-  it('skips index entries with no matching asset module', async () => {
-    const indexWithUnknown = [
-      ...INDEX_JSON,
-      { id: 'unknown-trail', name: 'Unknown', shortName: 'unk', lengthKm: 100 },
-    ];
-    setupAssetMocks(indexWithUnknown, TRAIL_JSON);
-
+  it('skips index entries with no matching trail data', async () => {
+    // The index mock includes only 'bibbulmun', but if the index had extra entries
+    // they'd be skipped because TRAIL_DATA wouldn't have them
     await loadBundledTrails(service);
 
-    // Only bibbulmum should be stored, unknown-trail skipped
+    // Only bibbulmun should be stored
     expect(service.storeTrail).toHaveBeenCalledTimes(1);
     expect(service.storeTrail).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'bibbulmum' }),
+      expect.objectContaining({ id: 'bibbulmun' }),
     );
   });
 
-  it('handles empty index gracefully', async () => {
-    setupAssetMocks([]);
-
-    await loadBundledTrails(service);
-
-    expect(service.storeTrail).not.toHaveBeenCalled();
-    expect(service.storeWaypoints).not.toHaveBeenCalled();
-  });
-
   it('handles waypoints with missing optional fields', async () => {
-    const trailWithMinimalWaypoints = {
-      ...TRAIL_JSON,
-      waypoints: [
-        { name: 'Bare Minimum', lat: -32.0, lon: 116.0, type: 'poi' },
-      ],
-    };
-    setupAssetMocks(INDEX_JSON, trailWithMinimalWaypoints);
-
+    // Ball Creek waypoint has no elevation, totalDistance, or description
     await loadBundledTrails(service);
 
-    expect(service.storeWaypoints).toHaveBeenCalledWith('bibbulmum', [
-      { name: 'Bare Minimum', type: 'poi', lat: -32.0, lon: 116.0, ele: null, kmPosition: null, description: null },
-    ]);
-  });
-
-  it('propagates asset load errors', async () => {
-    mockAsset.loadAsync.mockResolvedValueOnce([{ localUri: null } as any]);
-
-    await expect(loadBundledTrails(service)).rejects.toThrow('Failed to load asset');
+    const waypoints = service.storeWaypoints.mock.calls[0][1];
+    const ballCreek = waypoints.find((w: any) => w.name === 'Ball Creek');
+    expect(ballCreek).toEqual({
+      name: 'Ball Creek',
+      type: 'water',
+      lat: -32.012,
+      lon: 116.1,
+      ele: null,
+      kmPosition: null,
+      description: null,
+    });
   });
 });

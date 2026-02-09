@@ -361,39 +361,88 @@ function classifyAndTileContours(
 ): void {
   console.log('  Step 4: Classifying and tiling contours...');
 
-  // Add is_index field (need SQLite dialect for CAST support)
+  // 4a: Add is_index field (need SQLite dialect for CAST support).
+  // Use -nln to set a predictable layer name for the split queries below.
   if (fs.existsSync(contoursClassifiedPath)) fs.unlinkSync(contoursClassifiedPath);
   // gdal_contour names the layer "contour" by default in FlatGeobuf output
-  const layerName = 'contour';
+  const rawLayerName = 'contour';
+  const classifiedLayerName = 'contour';
   run([
     'ogr2ogr',
     '-f FlatGeobuf',
     `"${contoursClassifiedPath}"`,
     `"${contoursRawPath}"`,
+    `-nln ${classifiedLayerName}`,
     '-dialect sqlite',
     '-sql',
-    `"SELECT geometry, elevation, CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS is_index FROM '${layerName}'"`,
+    `"SELECT geometry, elevation, CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS is_index FROM '${rawLayerName}'"`,
   ].join(' '), { verbose });
 
-  // Convert contours to vector tiles
-  // Include all contours — zoom-dependent density is handled by the MapLibre style
-  // using minzoom and filters on the is_index and elevation properties.
-  // tippecanoe's --drop-densest-as-needed handles tile size limits automatically.
+  // 4b: Split classified contours into zoom-tier files for density control.
+  // tippecanoe's -j filter doesn't support expression operators (%, get), so we
+  // split by elevation interval at the ogr2ogr level and use tippecanoe -L with
+  // per-file minzoom instead. This produces the same result:
+  //   z9-10:  100m contours only (regional overview)
+  //   z11:    + 50m contours (valleys/ridges visible)
+  //   z12:    + 20m contours (moderate detail)
+  //   z13+:   + all 10m contours (full hiking detail)
+  const workDir = path.dirname(contoursMbtilesPath);
+  const tiers = [
+    { suffix: 'z9',  minZoom: 9,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
+    { suffix: 'z11', minZoom: 11, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
+    { suffix: 'z12', minZoom: 12, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
+    { suffix: 'z13', minZoom: 13, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) != 0` },
+  ];
+
+  const tierFiles: { path: string; minZoom: number; suffix: string }[] = [];
+  for (const tier of tiers) {
+    const tierPath = path.join(workDir, `contours_${tier.suffix}.fgb`);
+    if (fs.existsSync(tierPath)) fs.unlinkSync(tierPath);
+    run([
+      'ogr2ogr',
+      '-f FlatGeobuf',
+      `"${tierPath}"`,
+      `"${contoursClassifiedPath}"`,
+      '-dialect sqlite',
+      '-sql',
+      `"${tier.sql}"`,
+    ].join(' '), { verbose });
+
+    // Only include non-empty tier files in the tippecanoe command
+    if (fs.existsSync(tierPath) && fileSizeBytes(tierPath) > 0) {
+      tierFiles.push({ path: tierPath, minZoom: tier.minZoom, suffix: tier.suffix });
+      console.log(`    ${tier.suffix}: ${formatBytes(fileSizeBytes(tierPath))}`);
+    }
+  }
+
+  // 4c: Generate vector tiles with per-tier zoom ranges.
+  // Each -L entry assigns features from one tier file into the shared "contour"
+  // layer, starting at that tier's minimum zoom. At z9 only 100m contours are
+  // present; by z13 all intervals are included.
+  const layerArgs = tierFiles.map(({ path: filePath, minZoom }) => {
+    const config = JSON.stringify({ file: filePath, layer: 'contour', minzoom: minZoom });
+    return `-L '${config}'`;
+  });
+
   run([
     'tippecanoe',
     `-o "${contoursMbtilesPath}"`,
-    `-Z9 -z${MAX_ZOOM}`,
+    `-z${MAX_ZOOM}`,
     '-P',                       // Read input in parallel
     '-y elevation',
     '-y is_index',
-    '-l contour',
     '--no-feature-limit',
     '--no-tile-size-limit',
     '--simplification=10',
-    '--drop-densest-as-needed', // Auto-drop dense contours at low zoom
     '--force',                  // Overwrite existing output
-    `"${contoursClassifiedPath}"`,
+    ...layerArgs,
   ].join(' '), { verbose });
+
+  // Clean up intermediate tier files
+  for (const tier of tiers) {
+    const tierPath = path.join(workDir, `contours_${tier.suffix}.fgb`);
+    if (fs.existsSync(tierPath)) fs.unlinkSync(tierPath);
+  }
 
   console.log(`    ✓ Contour tiles: ${contoursMbtilesPath} (${formatBytes(fileSizeBytes(contoursMbtilesPath))})`);
 }

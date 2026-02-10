@@ -1,6 +1,7 @@
 import { TrailDataService } from '../trail-data-service';
+import { loadBundledTrails } from '../trail-loader';
 
-const INDEX_JSON: Array<{ id: string; name: string; shortName: string; lengthKm: number }> = [
+const INDEX_JSON: { id: string; name: string; shortName: string; lengthKm: number }[] = [
   { id: 'bibbulmun', name: 'bibbulmun Track', shortName: 'bibb', lengthKm: 981.6 },
 ];
 
@@ -30,9 +31,6 @@ const TRAIL_JSON = {
 // Mock the JSON asset requires before importing the module
 jest.mock('../../../assets/trails/index.json', () => INDEX_JSON, { virtual: true });
 jest.mock('../../../assets/trails/bibbulmun.json', () => TRAIL_JSON, { virtual: true });
-
-// Import after mocks are set up
-import { loadBundledTrails } from '../trail-loader';
 
 function createMockService() {
   return {

@@ -18,7 +18,7 @@ export interface TrailJson {
     direction: { default: string; reversed: string };
     [key: string]: unknown;
   };
-  waypoints: Array<{
+  waypoints: {
     name: string;
     lat: number;
     lon: number;
@@ -27,10 +27,10 @@ export interface TrailJson {
     elevation?: number;
     distance?: number;
     totalDistance?: number;
-  }>;
+  }[];
   track: {
-    points: Array<{ lat: number; lon: number; ele: number; dist: number }>;
-    displayPoints: Array<{ lat: number; lon: number; ele: number; dist: number }>;
+    points: { lat: number; lon: number; ele: number; dist: number }[];
+    displayPoints: { lat: number; lon: number; ele: number; dist: number }[];
     totalDistance: number;
     totalAscent: number;
     totalDescent: number;

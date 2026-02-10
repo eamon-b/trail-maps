@@ -102,7 +102,7 @@ export function ElevationProfile({
 
   const fillPath = useMemo(() => {
     if (!elevationPath || !chartMetrics) return null;
-    const { maxDist, chartWidth, chartHeight } = chartMetrics;
+    const { chartWidth, chartHeight } = chartMetrics;
     const fill = elevationPath.copy();
     fill.lineTo(PADDING.left + chartWidth, PADDING.top + chartHeight);
     fill.lineTo(PADDING.left, PADDING.top + chartHeight);
@@ -113,7 +113,7 @@ export function ElevationProfile({
   const gridLines = useMemo(() => {
     if (!chartMetrics) return [];
     const { eleMin, eleRange, eleTicks, maxDist, distTicks, chartWidth, chartHeight } = chartMetrics;
-    const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
     for (const tick of eleTicks) {
       const y = PADDING.top + chartHeight - ((tick - eleMin) / eleRange) * chartHeight;

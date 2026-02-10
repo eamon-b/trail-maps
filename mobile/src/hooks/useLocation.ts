@@ -11,7 +11,7 @@ import {
   type LocationUpdate,
   type PermissionStatus,
 } from '../services/location-service';
-import { findNearestByDistance, type TrackPoint } from '../lib/trail-utils';
+import { type TrackPoint } from '../lib/trail-utils';
 import { haversineDistance } from '@lib/distance';
 
 export interface SnappedLocation {
@@ -62,8 +62,6 @@ export function useLocation(
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('undetermined');
   const trackPointsRef = useRef(trackPoints);
   trackPointsRef.current = trackPoints;
-  const lastSnappedKmRef = useRef<number | null>(null);
-
   // Check permission on mount
   useEffect(() => {
     getLocationPermissionStatus().then(setPermissionStatus);

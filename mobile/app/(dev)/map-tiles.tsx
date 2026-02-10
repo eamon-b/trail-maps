@@ -168,7 +168,7 @@ export default function MapTilesDevScreen() {
       {/* Server IP input */}
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>
-          Dev server IP (your machine's LAN IP)
+          Dev server IP (your machine&apos;s LAN IP)
         </Text>
         <TextInput
           style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}

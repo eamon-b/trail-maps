@@ -259,3 +259,18 @@ export interface TrailTileConfig {
   mgaZone: number;  // MGA zone number (50-56)
   epsg: number;     // Full EPSG code (28350-28356)
 }
+
+// Grid Tile Types
+
+export interface GridCell {
+  id: string;                                     // e.g. "E114_S34"
+  bounds: [number, number, number, number];        // [west, south, east, north]
+  totalSize: number;                               // bytes (base + contours)
+}
+
+export interface GridIndex {
+  version: string;                                 // ISO date
+  cellSizeDeg: [number, number];                   // [lonDeg, latDeg] e.g. [2, 2]
+  bounds: [number, number, number, number];        // [west, south, east, north] of full grid
+  cells: GridCell[];
+}

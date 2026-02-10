@@ -53,7 +53,7 @@ export interface RouteVariant {
   endDistance?: number;
   elevation?: { ascent?: number; descent?: number };
   points?: TrackPoint[];
-  waypoints?: Array<{
+  waypoints?: {
     name: string;
     type: string;
     lat: number;
@@ -67,7 +67,7 @@ export interface RouteVariant {
     totalDescent: number;
     variantTrackIndex: number;
     description?: string;
-  }>;
+  }[];
 }
 
 export interface Trail {

@@ -112,10 +112,11 @@ npx expo start --dev-client      # Start Metro + connect to dev client
 - `npx expo lint`, `npx expo-doctor`, `npx expo config --json`
 - `npx tsc --noEmit`, `npx jest`
 - `eas build --non-interactive`, `eas update`
+- Android emulator interaction via ADB (see below)
+- Maestro UI test flows (see below)
 
 **Needs a human** (interactive or requires device):
-- `npx expo start` — interactive terminal UI with hotkeys
-- Testing on device/simulator — visual verification
+- `npx expo start` — interactive terminal UI with hotkeys (user runs this in a separate terminal)
 - `eas login` — credential prompts
 - First-time iOS cloud build — Apple credential/2FA setup
 
@@ -150,3 +151,74 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 - **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
 - **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
 - **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.
+
+### Android Emulator (ADB)
+
+An Android emulator (Pixel 7) is available for testing. The user runs Metro dev server (`npx expo start --dev-client`) in a separate terminal. Claude can interact with the emulator via ADB commands.
+
+**Prerequisites**: User must have the emulator running and Metro dev server started before Claude uses these commands.
+
+```bash
+# Screenshots — capture and view with Read tool
+adb exec-out screencap -p > /tmp/screenshot.png
+
+# Launch the app
+adb shell am start -n com.trailcompanion.app/.MainActivity
+
+# Force stop the app
+adb shell am force-stop com.trailcompanion.app
+
+# Clear app data (reset to fresh state)
+adb shell pm clear com.trailcompanion.app
+
+# Tap at coordinates (x, y)
+adb shell input tap 540 1200
+
+# Swipe (x1 y1 x2 y2 duration_ms)
+adb shell input swipe 540 1500 540 500 300
+
+# Press back button
+adb shell input keyevent KEYCODE_BACK
+
+# Type text
+adb shell input text "hello"
+
+# View recent logs (React Native / app errors)
+adb logcat -d -t 50 ReactNativeJS:* *:E | grep -v chatty
+
+# Install APK
+adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+# Check if app is installed
+adb shell pm list packages | grep trailcompanion
+
+# Get current activity (useful for knowing which screen is shown)
+adb shell dumpsys activity activities | grep mResumedActivity
+```
+
+**Workflow for verifying changes visually**:
+1. Make code changes (Metro will hot-reload)
+2. `adb exec-out screencap -p > /tmp/screenshot.png` — capture screen
+3. Read `/tmp/screenshot.png` — visually inspect the result
+4. `adb logcat -d -t 50 ReactNativeJS:* *:E` — check for errors
+
+### Maestro UI Tests
+
+Maestro test flows live in `mobile/maestro/`. Run them to verify UI behavior end-to-end.
+
+```bash
+# Run a single test flow
+~/.maestro/bin/maestro test mobile/maestro/smoke-test.yaml
+
+# Run all test flows
+~/.maestro/bin/maestro test mobile/maestro/
+
+# Record a test (writes a flow YAML from manual interaction)
+~/.maestro/bin/maestro record mobile/maestro/new-flow.yaml
+```
+
+**Available flows**:
+- `smoke-test.yaml` — Full smoke: launch, verify data, navigate tabs, open trail, go back
+- `app-launch.yaml` — Verify app launches and data loads
+- `navigate-tabs.yaml` — Verify all tabs are reachable
+- `view-trail.yaml` — Verify trail card opens trail overview

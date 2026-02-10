@@ -1,4 +1,4 @@
-import { resolveTheme, themeVariants, appModes, themeLabels, modeLabels, type ThemeColors, type ThemeVariant, type AppMode } from '../themes';
+import { resolveTheme, themeVariants, appModes, themeLabels, modeLabels, type ThemeColors } from '../themes';
 
 /**
  * Parse a hex color string to linear RGB components (0–1).

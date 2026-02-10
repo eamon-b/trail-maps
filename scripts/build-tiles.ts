@@ -19,21 +19,24 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as crypto from 'crypto';
-import { execSync, type ExecSyncOptions } from 'child_process';
 import { JSDOM } from 'jsdom';
-import type { TileManifest, TileManifestFile, TrailTileConfig } from '../src/lib/types.js';
+import type { TrailTileConfig } from '../src/lib/types.js';
+import {
+  PROJECT_ROOT,
+  run,
+  ensureDir,
+  formatBytes,
+  checkDependencies,
+  clipDem,
+  generateContours,
+  classifyAndTileContours,
+  extractBaseTiles,
+  writeManifest,
+} from './tile-pipeline.js';
 
-// --- Path setup (matches build-trails.ts pattern) ---
+// --- Path setup ---
 
-const SCRIPTS_DIR = path.dirname(
-  process.platform === 'win32'
-    ? new URL(import.meta.url).pathname.slice(1).replace(/\//g, '\\')
-    : new URL(import.meta.url).pathname
-);
-const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '..');
 const TRAILS_DATA_DIR = path.join(PROJECT_ROOT, 'data/trails');
-const DEM_CACHE_DIR = path.join(PROJECT_ROOT, 'data/dem');
 const TILES_WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles');
 const TILES_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles');
 
@@ -51,10 +54,6 @@ const TRAIL_TILE_CONFIGS: Record<string, TrailTileConfig> = {
 };
 
 const BUFFER_DISTANCE_METERS = 20_000; // 20km corridor buffer
-const MIN_ZOOM = 8;
-const MAX_ZOOM = 15;
-const CONTOUR_INTERVAL = 10; // metres
-const INDEX_CONTOUR_INTERVAL = 50; // metres (bold lines)
 
 // --- CLI argument parsing ---
 
@@ -107,92 +106,7 @@ function parseArgs(): CliArgs {
   return result;
 }
 
-// --- Utility functions ---
-
-function run(cmd: string, options?: { cwd?: string; verbose?: boolean }): string {
-  const execOptions: ExecSyncOptions = {
-    encoding: 'utf-8',
-    cwd: options?.cwd ?? PROJECT_ROOT,
-    stdio: options?.verbose ? 'inherit' : 'pipe',
-    maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large outputs
-  };
-
-  try {
-    const result = execSync(cmd, execOptions);
-    return typeof result === 'string' ? result.trim() : '';
-  } catch (error) {
-    const execError = error as { stderr?: string; status?: number };
-    console.error(`Command failed: ${cmd}`);
-    if (execError.stderr) {
-      console.error(execError.stderr);
-    }
-    throw error;
-  }
-}
-
-function ensureDir(dir: string): void {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-}
-
-function fileSha256(filePath: string): string {
-  const data = fs.readFileSync(filePath);
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-function fileSizeBytes(filePath: string): number {
-  return fs.statSync(filePath).size;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// --- Dependency checking ---
-
-interface DependencyCheck {
-  name: string;
-  command: string;
-  minVersion?: string;
-}
-
-function checkDependencies(args: CliArgs): void {
-  const deps: DependencyCheck[] = [];
-
-  // Always need ogr2ogr for corridor generation
-  deps.push({ name: 'GDAL (ogr2ogr)', command: 'ogr2ogr --version' });
-
-  if (!args.skipContours) {
-    deps.push({ name: 'GDAL (gdalwarp)', command: 'gdalwarp --version' });
-    deps.push({ name: 'GDAL (gdal_contour)', command: 'gdal_contour --version' });
-    deps.push({ name: 'tippecanoe', command: 'tippecanoe --version' });
-  }
-
-  if (!args.skipBase) {
-    deps.push({ name: 'pmtiles', command: 'pmtiles version' });
-    // tile-join exits non-zero for all flags; just check it exists
-    deps.push({ name: 'tile-join', command: 'which tile-join' });
-  }
-
-  const missing: string[] = [];
-  for (const dep of deps) {
-    try {
-      run(dep.command);
-    } catch {
-      missing.push(dep.name);
-    }
-  }
-
-  if (missing.length > 0) {
-    console.error('\nMissing required dependencies:');
-    missing.forEach(d => console.error(`  - ${d}`));
-    console.error('\nInstall them before running this script. See plans/topo-tile-pipeline.md for instructions.');
-    process.exit(1);
-  }
-}
+// --- Utility functions (local helpers not shared) ---
 
 // --- GPX track reading ---
 
@@ -257,7 +171,6 @@ function generateCorridor(
 ): void {
   console.log('  Step 1: Generating corridor polygon...');
 
-  // ogr2ogr with SQLite dialect for ST_Buffer in projected CRS
   const cmd = [
     'ogr2ogr',
     '-f', 'GeoJSON',
@@ -270,249 +183,6 @@ function generateCorridor(
 
   run(cmd, { verbose });
   console.log(`    ✓ Corridor: ${corridorPath}`);
-}
-
-/**
- * Step 2: Build a VRT mosaic of cached DEM tiles, then clip to corridor.
- */
-function clipDem(
-  corridorPath: string,
-  demOutputPath: string,
-  verbose: boolean
-): void {
-  console.log('  Step 2: Clipping DEM to corridor...');
-
-  // Check for cached DEM tiles
-  if (!fs.existsSync(DEM_CACHE_DIR)) {
-    console.error(`    ✗ DEM cache directory not found: ${DEM_CACHE_DIR}`);
-    console.error('    Download SRTM DEM tiles via the ELVIS portal (https://elevation.fsdf.org.au/)');
-    console.error('    and place GeoTIFF files in data/dem/');
-    throw new Error('DEM tiles not found');
-  }
-
-  const demExtensions = ['.tif', '.tiff', '.hgt'];
-  const demFiles = fs.readdirSync(DEM_CACHE_DIR).filter(f =>
-    demExtensions.some(ext => f.toLowerCase().endsWith(ext))
-  );
-  if (demFiles.length === 0) {
-    throw new Error(`No DEM files (.tif, .hgt) found in ${DEM_CACHE_DIR}`);
-  }
-
-  // Build VRT mosaic from all DEM tiles
-  const vrtPath = path.join(path.dirname(demOutputPath), 'dem_mosaic.vrt');
-  const demPaths = demFiles.map(f => `"${path.join(DEM_CACHE_DIR, f)}"`).join(' ');
-  run(`gdalbuildvrt -vrtnodata -9999 "${vrtPath}" ${demPaths}`, { verbose });
-
-  // Clip to corridor polygon (overwrite if re-running)
-  run([
-    'gdalwarp',
-    '-overwrite',
-    `-cutline "${corridorPath}"`,
-    '-crop_to_cutline',
-    '-dstnodata -9999',
-    '-co COMPRESS=LZW',
-    '-co TILED=YES',
-    `"${vrtPath}"`,
-    `"${demOutputPath}"`,
-  ].join(' '), { verbose });
-
-  // Clean up VRT
-  if (fs.existsSync(vrtPath)) fs.unlinkSync(vrtPath);
-
-  console.log(`    ✓ DEM clipped: ${demOutputPath} (${formatBytes(fileSizeBytes(demOutputPath))})`);
-}
-
-/**
- * Step 3: Generate contour lines from DEM.
- */
-function generateContours(
-  demPath: string,
-  contoursRawPath: string,
-  verbose: boolean
-): void {
-  console.log('  Step 3: Generating contour lines...');
-
-  // Remove existing output (gdal_contour won't overwrite)
-  if (fs.existsSync(contoursRawPath)) fs.unlinkSync(contoursRawPath);
-
-  run([
-    'gdal_contour',
-    '-a elevation',
-    `-i ${CONTOUR_INTERVAL}`,
-    '-snodata -9999',
-    '-f FlatGeobuf',
-    `"${demPath}"`,
-    `"${contoursRawPath}"`,
-  ].join(' '), { verbose });
-
-  console.log(`    ✓ Raw contours: ${contoursRawPath} (${formatBytes(fileSizeBytes(contoursRawPath))})`);
-}
-
-/**
- * Step 4: Classify contours and convert to MBTiles vector tiles.
- * Adds is_index field (1 for every 50m contour, 0 otherwise).
- * Uses zoom-dependent filtering for contour density.
- */
-function classifyAndTileContours(
-  contoursRawPath: string,
-  contoursClassifiedPath: string,
-  contoursMbtilesPath: string,
-  verbose: boolean
-): void {
-  console.log('  Step 4: Classifying and tiling contours...');
-
-  // 4a: Add is_index field (need SQLite dialect for CAST support).
-  // Use -nln to set a predictable layer name for the split queries below.
-  if (fs.existsSync(contoursClassifiedPath)) fs.unlinkSync(contoursClassifiedPath);
-  // gdal_contour names the layer "contour" by default in FlatGeobuf output
-  const rawLayerName = 'contour';
-  const classifiedLayerName = 'contour';
-  run([
-    'ogr2ogr',
-    '-f FlatGeobuf',
-    `"${contoursClassifiedPath}"`,
-    `"${contoursRawPath}"`,
-    `-nln ${classifiedLayerName}`,
-    '-dialect sqlite',
-    '-sql',
-    `"SELECT geometry, elevation, CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS is_index FROM '${rawLayerName}'"`,
-  ].join(' '), { verbose });
-
-  // 4b: Split classified contours into zoom-tier files for density control.
-  // tippecanoe's -j filter doesn't support expression operators (%, get), so we
-  // split by elevation interval at the ogr2ogr level and use tippecanoe -L with
-  // per-file minzoom instead. This produces the same result:
-  //   z9-10:  100m contours only (regional overview)
-  //   z11:    + 50m contours (valleys/ridges visible)
-  //   z12:    + 20m contours (moderate detail)
-  //   z13+:   + all 10m contours (full hiking detail)
-  const workDir = path.dirname(contoursMbtilesPath);
-  const tiers = [
-    { suffix: 'z9',  minZoom: 9,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
-    { suffix: 'z11', minZoom: 11, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
-    { suffix: 'z12', minZoom: 12, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
-    { suffix: 'z13', minZoom: 13, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) != 0` },
-  ];
-
-  const tierFiles: { path: string; minZoom: number; suffix: string }[] = [];
-  for (const tier of tiers) {
-    const tierPath = path.join(workDir, `contours_${tier.suffix}.fgb`);
-    if (fs.existsSync(tierPath)) fs.unlinkSync(tierPath);
-    run([
-      'ogr2ogr',
-      '-f FlatGeobuf',
-      `"${tierPath}"`,
-      `"${contoursClassifiedPath}"`,
-      '-dialect sqlite',
-      '-sql',
-      `"${tier.sql}"`,
-    ].join(' '), { verbose });
-
-    // Only include non-empty tier files in the tippecanoe command
-    if (fs.existsSync(tierPath) && fileSizeBytes(tierPath) > 0) {
-      tierFiles.push({ path: tierPath, minZoom: tier.minZoom, suffix: tier.suffix });
-      console.log(`    ${tier.suffix}: ${formatBytes(fileSizeBytes(tierPath))}`);
-    }
-  }
-
-  // 4c: Generate vector tiles with per-tier zoom ranges.
-  // Each -L entry assigns features from one tier file into the shared "contour"
-  // layer, starting at that tier's minimum zoom. At z9 only 100m contours are
-  // present; by z13 all intervals are included.
-  const layerArgs = tierFiles.map(({ path: filePath, minZoom }) => {
-    const config = JSON.stringify({ file: filePath, layer: 'contour', minzoom: minZoom });
-    return `-L '${config}'`;
-  });
-
-  run([
-    'tippecanoe',
-    `-o "${contoursMbtilesPath}"`,
-    `-z${MAX_ZOOM}`,
-    '-P',                       // Read input in parallel
-    '-y elevation',
-    '-y is_index',
-    '--no-feature-limit',
-    '--no-tile-size-limit',
-    '--simplification=10',
-    '--force',                  // Overwrite existing output
-    ...layerArgs,
-  ].join(' '), { verbose });
-
-  // Clean up intermediate tier files
-  for (const tier of tiers) {
-    const tierPath = path.join(workDir, `contours_${tier.suffix}.fgb`);
-    if (fs.existsSync(tierPath)) fs.unlinkSync(tierPath);
-  }
-
-  console.log(`    ✓ Contour tiles: ${contoursMbtilesPath} (${formatBytes(fileSizeBytes(contoursMbtilesPath))})`);
-}
-
-/**
- * Step 5: Extract base map vector tiles from Protomaps.
- * Supports both remote HTTP extraction and local file extraction.
- */
-function extractBaseTiles(
-  corridorPath: string,
-  basePmtilesPath: string,
-  baseMbtilesPath: string,
-  protomapsSource: string, // URL or local file path
-  verbose: boolean
-): void {
-  console.log('  Step 5: Extracting base map tiles...');
-
-  // Extract corridor region from Protomaps
-  run([
-    'pmtiles', 'extract',
-    `"${protomapsSource}"`,
-    `"${basePmtilesPath}"`,
-    `--region="${corridorPath}"`,
-    `--maxzoom=${MAX_ZOOM}`,
-  ].join(' '), { verbose });
-
-  // Convert PMTiles to MBTiles for React Native compatibility
-  run([
-    'tile-join',
-    `-o "${baseMbtilesPath}"`,
-    '--force',
-    `"${basePmtilesPath}"`,
-  ].join(' '), { verbose });
-
-  console.log(`    ✓ Base tiles: ${baseMbtilesPath} (${formatBytes(fileSizeBytes(baseMbtilesPath))})`);
-}
-
-/**
- * Write tile manifest JSON for a trail.
- */
-function writeManifest(
-  trailId: string,
-  outputDir: string,
-  bounds: { west: number; south: number; east: number; north: number },
-  files: { name: string; path: string }[]
-): TileManifest {
-  const manifestFiles: TileManifestFile[] = [];
-
-  for (const file of files) {
-    if (fs.existsSync(file.path)) {
-      manifestFiles.push({
-        name: file.name,
-        size: fileSizeBytes(file.path),
-        sha256: fileSha256(file.path),
-      });
-    }
-  }
-
-  const manifest: TileManifest = {
-    trailId,
-    version: new Date().toISOString().split('T')[0],
-    files: manifestFiles,
-    totalSize: manifestFiles.reduce((sum, f) => sum + f.size, 0),
-    bounds: [bounds.west, bounds.south, bounds.east, bounds.north],
-    zoomRange: [MIN_ZOOM, MAX_ZOOM],
-  };
-
-  const manifestPath = path.join(outputDir, 'manifest.json');
-  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-  return manifest;
 }
 
 // --- Main pipeline ---
@@ -651,7 +321,7 @@ async function main(): Promise<void> {
 
   // Check dependencies
   console.log('Checking dependencies...');
-  checkDependencies(args);
+  checkDependencies({ skipContours: args.skipContours, skipBase: args.skipBase });
   console.log('  ✓ All dependencies found\n');
 
   // Ensure output directories exist

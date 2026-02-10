@@ -9,14 +9,17 @@
 # Usage:
 #   ./scripts/upload-tiles.sh                  # Upload all trails
 #   ./scripts/upload-tiles.sh bibbulmun        # Upload one trail
+#   ./scripts/upload-tiles.sh --grid           # Upload all grid tiles
+#   ./scripts/upload-tiles.sh --grid E114_S34  # Upload one grid cell
 #
 # The script reads from public/data/tiles/ (the build output directory)
-# and uploads to the trail-companion-tiles R2 bucket.
+# and uploads to the aus-map-data R2 bucket.
 
 set -euo pipefail
 
-BUCKET="trail-companion-tiles"
+BUCKET="aus-map-data"
 TILES_DIR="public/data/tiles"
+GRID_DIR="$TILES_DIR/grid"
 
 if ! command -v wrangler &> /dev/null; then
   echo "Error: wrangler CLI not found. Install with: npm install -g wrangler"
@@ -36,6 +39,7 @@ upload_file() {
 
   echo "  Uploading $dest ($content_type)"
   wrangler r2 object put "$BUCKET/$dest" \
+    --remote \
     --file "$src" \
     --content-type "$content_type" \
     --cache-control "$cache_control"
@@ -80,7 +84,73 @@ upload_root_manifest() {
   fi
 }
 
-if [ $# -ge 1 ]; then
+# --- Grid tile upload functions ---
+
+upload_grid_cell() {
+  local cell_id="$1"
+  local cell_dir="$GRID_DIR/$cell_id"
+
+  if [ ! -d "$cell_dir" ]; then
+    echo "Error: No tiles found for grid cell '$cell_id' at $cell_dir"
+    exit 1
+  fi
+
+  echo "Uploading grid cell $cell_id..."
+
+  for mbtiles in "$cell_dir"/*.mbtiles; do
+    [ -f "$mbtiles" ] || continue
+    local filename
+    filename=$(basename "$mbtiles")
+    upload_file "$mbtiles" "grid/$cell_id/$filename" \
+      "application/octet-stream" \
+      "public, max-age=2592000"
+  done
+
+  if [ -f "$cell_dir/manifest.json" ]; then
+    upload_file "$cell_dir/manifest.json" "grid/$cell_id/manifest.json" \
+      "application/json" \
+      "public, max-age=3600"
+  fi
+
+  echo "Done: grid/$cell_id"
+}
+
+upload_grid() {
+  local specific_cell="${1:-}"
+
+  if [ ! -d "$GRID_DIR" ]; then
+    echo "Error: $GRID_DIR does not exist. Run build-grid-tiles first."
+    exit 1
+  fi
+
+  if [ -n "$specific_cell" ]; then
+    # Upload a specific grid cell
+    upload_grid_cell "$specific_cell"
+  else
+    # Upload all grid cells
+    for cell_dir in "$GRID_DIR"/E*_S*/; do
+      [ -d "$cell_dir" ] || continue
+      cell_id=$(basename "$cell_dir")
+      upload_grid_cell "$cell_id"
+    done
+
+    # Upload grid index
+    if [ -f "$GRID_DIR/index.json" ]; then
+      echo "Uploading grid index..."
+      upload_file "$GRID_DIR/index.json" "grid/index.json" \
+        "application/json" \
+        "public, max-age=3600"
+    fi
+  fi
+}
+
+# --- Main dispatch ---
+
+if [ $# -ge 1 ] && [ "$1" = "--grid" ]; then
+  # Grid mode
+  shift
+  upload_grid "${1:-}"
+elif [ $# -ge 1 ]; then
   # Upload specific trail(s)
   for trail_id in "$@"; do
     upload_trail "$trail_id"
@@ -90,6 +160,8 @@ else
   for trail_dir in "$TILES_DIR"/*/; do
     [ -d "$trail_dir" ] || continue
     trail_id=$(basename "$trail_dir")
+    # Skip the grid directory (not a trail)
+    [ "$trail_id" = "grid" ] && continue
     upload_trail "$trail_id"
   done
   upload_root_manifest

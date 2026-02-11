@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const MIGRATIONS: Record<number, string> = {
   1: `
@@ -53,6 +53,20 @@ const MIGRATIONS: Record<number, string> = {
   2: `
     ALTER TABLE trails ADD COLUMN data_version TEXT;
     UPDATE schema_version SET version = 2;
+  `,
+  3: `
+    CREATE TABLE IF NOT EXISTS plan_versions (
+      id TEXT PRIMARY KEY NOT NULL,
+      plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+      name TEXT,
+      stops_json TEXT,
+      section_json TEXT,
+      direction TEXT,
+      start_date TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_plan_versions_plan_id ON plan_versions(plan_id);
+    UPDATE schema_version SET version = 3;
   `,
 };
 

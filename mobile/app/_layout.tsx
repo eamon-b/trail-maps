@@ -51,7 +51,7 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="trail" />
-              {__DEV__ && <Stack.Screen name="(dev)" />}
+              <Stack.Screen name="plan" />
             </Stack>
           </FocusedWaypointProvider>
         </BottomSheetProvider>

@@ -1,4 +1,5 @@
 import { TrailDataService, type Trail } from './trail-data-service';
+import { registerClimateData, type ClimateData } from './climate-service';
 
 interface TrailIndex {
   id: string;
@@ -90,5 +91,11 @@ export async function loadBundledTrails(service: TrailDataService): Promise<void
     }));
 
     await service.storeWaypoints(config.id, waypoints);
+
+    // Register climate data if available
+    const climate = (trailJson as Record<string, unknown>).climate as ClimateData | undefined;
+    if (climate?.locations && climate.dataYears) {
+      registerClimateData(entry.id, climate);
+    }
   }
 }

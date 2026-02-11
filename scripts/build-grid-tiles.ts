@@ -18,7 +18,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execSync, execFile } from 'child_process';
 import type { GridIndex, GridCell } from '../src/lib/types.js';
 import {
   PROJECT_ROOT,
@@ -493,9 +493,8 @@ async function processInParallel(
   // Each child runs this same script with --cell <id>
   const scriptPath = new URL(import.meta.url).pathname;
   const queue = [...cells];
-  const running = new Map<string, ReturnType<typeof execSync>>();
 
-  const baseArgs = [];
+  const baseArgs: string[] = [];
   if (args.skipExisting) baseArgs.push('--skip-existing');
   if (args.skipBase) baseArgs.push('--skip-base');
   if (args.skipContours) baseArgs.push('--skip-contours');
@@ -508,18 +507,21 @@ async function processInParallel(
     const batch = queue.splice(0, maxParallel);
     const promises = batch.map(cell => {
       return new Promise<{ cellId: string; success: boolean; error?: string }>((resolve) => {
-        try {
-          const cmd = `npx tsx "${scriptPath}" --cell ${cell.id} ${baseArgs.join(' ')}`;
-          execSync(cmd, {
-            cwd: PROJECT_ROOT,
-            stdio: args.verbose ? 'inherit' : 'pipe',
-            maxBuffer: 50 * 1024 * 1024,
-          });
-          resolve({ cellId: cell.id, success: true });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          resolve({ cellId: cell.id, success: false, error: message });
-        }
+        const childArgs = ['tsx', scriptPath, '--cell', cell.id, ...baseArgs];
+        execFile('npx', childArgs, {
+          cwd: PROJECT_ROOT,
+          maxBuffer: 50 * 1024 * 1024,
+        }, (error, stdout, stderr) => {
+          if (args.verbose) {
+            if (stdout) process.stdout.write(stdout);
+            if (stderr) process.stderr.write(stderr);
+          }
+          if (error) {
+            resolve({ cellId: cell.id, success: false, error: error.message });
+          } else {
+            resolve({ cellId: cell.id, success: true });
+          }
+        });
       });
     });
 

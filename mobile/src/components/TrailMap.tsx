@@ -76,6 +76,12 @@ export interface TrailMapProps {
   onVisibleBoundsChange?: (minKm: number, maxKm: number) => void;
   /** Full-resolution track points for viewport km calculation */
   trackPoints?: TrackPoint[];
+  /** Highlighted segment to show on the trail (e.g., a day's hike) */
+  highlightedSegment?: { startKm: number; endKm: number } | null;
+  /** Called on long press with the nearest trail coordinate */
+  onLongPress?: (coordinate: { latitude: number; longitude: number; nearestKm: number }) => void;
+  /** Custom marker pins (for stop locations, measure points, etc.) */
+  customPins?: { latitude: number; longitude: number; label: string; color?: string }[];
 }
 
 function buildTrailGeoJSON(points: TrackPoint[]) {
@@ -117,6 +123,31 @@ function buildWaypointsGeoJSON(waypoints: TrailWaypoint[]) {
       color: getWaypointColor(wp.type),
       totalDistance: wp.totalDistance ?? 0,
     },
+  }));
+  return { type: 'FeatureCollection' as const, features };
+}
+
+function buildSegmentGeoJSON(points: TrackPoint[], startKm: number, endKm: number) {
+  const segmentPoints = points.filter(p => p.dist >= startKm && p.dist <= endKm);
+  if (segmentPoints.length < 2) return null;
+  return {
+    type: 'Feature' as const,
+    geometry: {
+      type: 'LineString' as const,
+      coordinates: segmentPoints.map(p => [p.lon, p.lat]),
+    },
+    properties: {},
+  };
+}
+
+function buildCustomPinsGeoJSON(pins: { latitude: number; longitude: number; label: string; color?: string }[]) {
+  const features = pins.map((pin, i) => ({
+    type: 'Feature' as const,
+    geometry: {
+      type: 'Point' as const,
+      coordinates: [pin.longitude, pin.latitude],
+    },
+    properties: { id: i, label: pin.label, color: pin.color ?? '#FF5722' },
   }));
   return { type: 'FeatureCollection' as const, features };
 }
@@ -190,6 +221,9 @@ export function TrailMap({
   mapStyleOverride,
   onVisibleBoundsChange,
   trackPoints,
+  highlightedSegment,
+  onLongPress,
+  customPins,
 }: TrailMapProps) {
   const { colors } = useTheme();
   const cameraRef = useRef<CameraRef>(null);
@@ -219,6 +253,16 @@ export function TrailMap({
   const userLocationGeoJSON = useMemo(
     () => (userLocation ? buildUserLocationGeoJSON(userLocation) : null),
     [userLocation],
+  );
+
+  const highlightGeoJSON = useMemo(() => {
+    if (!highlightedSegment || displayPoints.length === 0) return null;
+    return buildSegmentGeoJSON(displayPoints, highlightedSegment.startKm, highlightedSegment.endKm);
+  }, [highlightedSegment, displayPoints]);
+
+  const customPinsGeoJSON = useMemo(
+    () => (customPins && customPins.length > 0 ? buildCustomPinsGeoJSON(customPins) : null),
+    [customPins],
   );
 
   const accuracyRadius = useMemo(
@@ -273,6 +317,49 @@ export function TrailMap({
       });
     }
   }, [panTarget]);
+
+  // Fit camera to highlighted segment
+  useEffect(() => {
+    if (highlightedSegment && cameraRef.current && displayPoints.length > 0) {
+      const segmentPoints = displayPoints.filter(
+        p => p.dist >= highlightedSegment.startKm && p.dist <= highlightedSegment.endKm,
+      );
+      if (segmentPoints.length >= 2) {
+        const segBounds = computeBounds(segmentPoints);
+        cameraRef.current.fitBounds(segBounds.ne, segBounds.sw, 50, 500);
+      }
+    }
+  }, [highlightedSegment, displayPoints]);
+
+  const handleLongPress = useCallback(
+    (feature: GeoJSON.Feature) => {
+      if (!onLongPress || displayPoints.length === 0) return;
+      const coords = feature.geometry?.type === 'Point'
+        ? (feature.geometry as GeoJSON.Point).coordinates
+        : null;
+      if (!coords || coords.length < 2) return;
+      const [lon, lat] = coords;
+
+      // Find nearest track point
+      let nearestIdx = 0;
+      let nearestDist = Infinity;
+      for (let i = 0; i < displayPoints.length; i++) {
+        const p = displayPoints[i];
+        const d = (p.lat - lat) ** 2 + (p.lon - lon) ** 2;
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearestIdx = i;
+        }
+      }
+      const nearest = displayPoints[nearestIdx];
+      onLongPress({
+        latitude: nearest.lat,
+        longitude: nearest.lon,
+        nearestKm: nearest.dist,
+      });
+    },
+    [onLongPress, displayPoints],
+  );
 
   const handleWaypointPress = useCallback(
     (event: OnPressEvent) => {
@@ -332,6 +419,7 @@ export function TrailMap({
           }
         }}
         onRegionDidChange={handleRegionDidChange}
+        onLongPress={onLongPress ? handleLongPress : undefined}
       >
         <MapLibreGL.Camera
           ref={cameraRef}
@@ -353,6 +441,62 @@ export function TrailMap({
                 lineOpacity: 0.9,
                 lineCap: 'round',
                 lineJoin: 'round',
+              }}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
+
+        {/* Highlighted segment (day segment, measure selection) */}
+        {highlightGeoJSON && (
+          <MapLibreGL.ShapeSource id="highlight-segment" shape={highlightGeoJSON}>
+            <MapLibreGL.LineLayer
+              id="highlight-glow"
+              style={{
+                lineColor: colors.accent,
+                lineWidth: 8,
+                lineOpacity: 0.3,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+            <MapLibreGL.LineLayer
+              id="highlight-solid"
+              style={{
+                lineColor: colors.accent,
+                lineWidth: 4,
+                lineOpacity: 1,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
+
+        {/* Custom pins */}
+        {customPinsGeoJSON && (
+          <MapLibreGL.ShapeSource id="custom-pins" shape={customPinsGeoJSON}>
+            <MapLibreGL.CircleLayer
+              id="custom-pins-circles"
+              style={{
+                circleRadius: 7,
+                circleColor: ['get', 'color'],
+                circleStrokeColor: '#ffffff',
+                circleStrokeWidth: 2,
+              }}
+            />
+            <MapLibreGL.SymbolLayer
+              id="custom-pins-labels"
+              minZoomLevel={10}
+              style={{
+                textField: ['get', 'label'],
+                textSize: 11,
+                textColor: colors.textPrimary,
+                textHaloColor: '#ffffff',
+                textHaloWidth: 1.5,
+                textOffset: [0, 1.4],
+                textAnchor: 'top',
+                textMaxWidth: 8,
+                textAllowOverlap: false,
               }}
             />
           </MapLibreGL.ShapeSource>

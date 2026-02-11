@@ -10,6 +10,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../theme';
 import { useReduceMotion } from '../theme/useReduceMotion';
+import { ClimateCard } from './ClimateCard';
 import { springConfigs, timingConfigs } from '../tokens/motion';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -27,7 +28,13 @@ export interface DayPlanData {
   descentM: number;
   estimatedHours?: number;
   waterSources?: number;
-  warnings?: string[];
+}
+
+interface DayClimate {
+  tempMin: number;
+  tempMax: number;
+  precipitation: number;
+  rainyDays: number;
 }
 
 interface DayPlanCardProps {
@@ -38,10 +45,12 @@ interface DayPlanCardProps {
   onMergeUp?: () => void;
   /** Called when split button is tapped */
   onSplit?: () => void;
-  /** Called when drag handle is held (for parent to initiate reorder) */
-  onDragStart?: () => void;
-  /** Whether this card is currently being dragged */
-  isDragging?: boolean;
+  /** Called when map pin button is tapped to show on map */
+  onShowOnMap?: () => void;
+  /** Called on long press to relocate stop */
+  onLongPress?: () => void;
+  /** Climate data for this day */
+  climate?: DayClimate | null;
   style?: ViewStyle;
 }
 
@@ -56,8 +65,9 @@ export function DayPlanCard({
   onRemove,
   onMergeUp,
   onSplit,
-  onDragStart,
-  isDragging = false,
+  onShowOnMap,
+  onLongPress,
+  climate,
   style,
 }: DayPlanCardProps) {
   const { colors, highContrast } = useTheme();
@@ -67,6 +77,19 @@ export function DayPlanCard({
   const handleRemove = useCallback(() => {
     onRemove?.();
   }, [onRemove]);
+
+  const handleLongPress = useCallback(() => {
+    onLongPress?.();
+  }, [onLongPress]);
+
+  // Long press gesture
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(500)
+    .onEnd((_event, success) => {
+      if (success) {
+        runOnJS(handleLongPress)();
+      }
+    });
 
   // Swipe-to-remove gesture
   const swipeGesture = Gesture.Pan()
@@ -81,13 +104,16 @@ export function DayPlanCard({
     .onEnd((event) => {
       if (event.translationX < -SWIPE_THRESHOLD) {
         // Past threshold — animate out and remove
-        translateX.value = reduceMotion
-          ? -SCREEN_WIDTH
-          : withTiming(-SCREEN_WIDTH, timingConfigs.slideIn, (finished) => {
-              if (finished) {
-                runOnJS(handleRemove)();
-              }
-            });
+        if (reduceMotion) {
+          translateX.value = -SCREEN_WIDTH;
+          runOnJS(handleRemove)();
+        } else {
+          translateX.value = withTiming(-SCREEN_WIDTH, timingConfigs.slideIn, (finished) => {
+            if (finished) {
+              runOnJS(handleRemove)();
+            }
+          });
+        }
       } else {
         // Snap back
         translateX.value = reduceMotion
@@ -103,27 +129,28 @@ export function DayPlanCard({
   const {
     dayNumber, date, startName, endName,
     distanceKm, ascentM, descentM, estimatedHours,
-    waterSources, warnings,
+    waterSources,
   } = data;
 
-  const hasWarnings = warnings && warnings.length > 0;
+  const composedGesture = onLongPress
+    ? Gesture.Race(swipeGesture, longPressGesture)
+    : swipeGesture;
 
   return (
-    <GestureDetector gesture={swipeGesture}>
+    <GestureDetector gesture={composedGesture}>
       <Animated.View
         style={[
           styles.card,
           {
             backgroundColor: highContrast ? colors.background : colors.surface,
-            borderColor: hasWarnings ? colors.alertAmber : colors.border,
-            borderWidth: hasWarnings ? 2 : (highContrast ? 1.5 : StyleSheet.hairlineWidth),
-            opacity: isDragging ? 0.8 : 1,
-            elevation: isDragging ? 8 : 2,
+            borderColor: colors.border,
+            borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth,
+            elevation: 2,
           },
           swipeStyle,
           style,
         ]}
-        accessibilityLabel={`Day ${dayNumber}${date ? `, ${date}` : ''}. ${startName} to ${endName}. ${distanceKm} kilometers, ${ascentM} meters ascent, ${descentM} meters descent.${estimatedHours ? ` About ${estimatedHours} hours.` : ''}${waterSources ? ` ${waterSources} water sources.` : ''}${hasWarnings ? ` Warnings: ${warnings.join(', ')}` : ''}`}
+        accessibilityLabel={`Day ${dayNumber}${date ? `, ${date}` : ''}. ${startName} to ${endName}. ${distanceKm} kilometers, ${ascentM} meters ascent, ${descentM} meters descent.${estimatedHours ? ` About ${estimatedHours} hours.` : ''}${waterSources ? ` ${waterSources} water sources.` : ''}`}
         accessibilityRole="summary"
       >
         {/* Header row */}
@@ -150,44 +177,50 @@ export function DayPlanCard({
           </Text>
         )}
 
-        {/* Warnings */}
-        {hasWarnings && (
-          <View style={styles.warningsContainer}>
-            {warnings.map((warning, i) => (
-              <Text key={i} style={[styles.warningText, { color: colors.alertAmber }]}>
-                ⚠️ {warning}
-              </Text>
-            ))}
-          </View>
+        {/* Climate data */}
+        {climate && (
+          <ClimateCard
+            tempMin={climate.tempMin}
+            tempMax={climate.tempMax}
+            precipitation={climate.precipitation}
+            rainyDays={climate.rainyDays}
+            style={styles.climateCard}
+          />
         )}
 
         {/* Action buttons row */}
         <View style={styles.actionsRow}>
+          {onShowOnMap && (
+            <Pressable
+              onPress={onShowOnMap}
+              style={styles.actionButton}
+              accessibilityLabel="Show on map"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.actionIcon, { color: colors.accent }]}>📍</Text>
+            </Pressable>
+          )}
           <View style={{ flex: 1 }} />
-          <Pressable
-            onPress={onDragStart}
-            style={styles.actionButton}
-            accessibilityLabel="Drag to reorder"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>≡</Text>
-          </Pressable>
-          <Pressable
-            onPress={onMergeUp}
-            style={styles.actionButton}
-            accessibilityLabel="Merge with previous day"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>↑</Text>
-          </Pressable>
-          <Pressable
-            onPress={onSplit}
-            style={styles.actionButton}
-            accessibilityLabel="Split this day"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>↓</Text>
-          </Pressable>
+          {onMergeUp && (
+            <Pressable
+              onPress={onMergeUp}
+              style={styles.actionButton}
+              accessibilityLabel="Merge with previous day"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>↑</Text>
+            </Pressable>
+          )}
+          {onSplit && (
+            <Pressable
+              onPress={onSplit}
+              style={styles.actionButton}
+              accessibilityLabel="Split this day"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>↓</Text>
+            </Pressable>
+          )}
         </View>
       </Animated.View>
     </GestureDetector>
@@ -229,14 +262,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginBottom: spacing.xs,
   },
-  warningsContainer: {
-    marginTop: spacing.xs,
+  climateCard: {
     marginBottom: spacing.xs,
-  },
-  warningText: {
-    ...typography.caption,
-    fontWeight: '600',
-    marginBottom: 2,
   },
   actionsRow: {
     flexDirection: 'row',

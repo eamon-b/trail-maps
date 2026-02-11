@@ -53,6 +53,7 @@ Enhanced today view in Hike mode:
 - Estimated arrival time
 - Waypoints remaining today
 - "No plan" mode for flexible hikers
+- **WaterCountdown component** (already built in `mobile/src/components/WaterCountdown.tsx`) — integrate as "Next water: X.X km" indicator with color-coded urgency
 
 ---
 

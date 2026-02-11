@@ -18,6 +18,30 @@ export interface NextWaypointsByType {
 }
 
 /**
+ * Calculate elevation gain and loss between two km positions on the trail.
+ */
+export function calculateElevationBetween(
+  startKm: number,
+  endKm: number,
+  trackPoints: TrackPoint[],
+): { gain: number; loss: number } {
+  const startIdx = findNearestByDistance(trackPoints, startKm);
+  const endIdx = findNearestByDistance(trackPoints, endKm);
+
+  let gain = 0;
+  let loss = 0;
+  const lo = Math.min(startIdx, endIdx);
+  const hi = Math.max(startIdx, endIdx);
+  for (let i = lo + 1; i <= hi && i < trackPoints.length; i++) {
+    const diff = trackPoints[i].ele - trackPoints[i - 1].ele;
+    if (diff > 0) gain += diff;
+    else loss += Math.abs(diff);
+  }
+
+  return { gain: Math.round(gain), loss: Math.round(loss) };
+}
+
+/**
  * Calculate trail distances and elevation changes from current position to upcoming waypoints.
  */
 export function calculateDistancesToWaypoints(
@@ -27,27 +51,15 @@ export function calculateDistancesToWaypoints(
 ): WaypointDistance[] {
   const upcoming = waypoints.filter(wp => (wp.totalDistance ?? 0) > currentKm);
 
-  const currentIdx = findNearestByDistance(trackPoints, currentKm);
-
   return upcoming.map(wp => {
     const wpKm = wp.totalDistance ?? 0;
-    const wpIdx = findNearestByDistance(trackPoints, wpKm);
-
-    let gain = 0;
-    let loss = 0;
-    const startIdx = Math.min(currentIdx, wpIdx);
-    const endIdx = Math.max(currentIdx, wpIdx);
-    for (let i = startIdx + 1; i <= endIdx && i < trackPoints.length; i++) {
-      const diff = trackPoints[i].ele - trackPoints[i - 1].ele;
-      if (diff > 0) gain += diff;
-      else loss += Math.abs(diff);
-    }
+    const { gain, loss } = calculateElevationBetween(currentKm, wpKm, trackPoints);
 
     return {
       waypoint: wp,
       trailDistanceKm: wpKm - currentKm,
-      elevationGain: Math.round(gain),
-      elevationLoss: Math.round(loss),
+      elevationGain: gain,
+      elevationLoss: loss,
     };
   });
 }

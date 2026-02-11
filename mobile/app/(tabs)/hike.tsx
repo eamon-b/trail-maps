@@ -7,6 +7,7 @@ import { HikeDashboard, type DashboardData } from '../../src/components';
 import type { WaypointListItem } from '../../src/components/WaypointList';
 import { useLocation } from '../../src/hooks/useLocation';
 import { TrailDataService } from '../../src/services/trail-data-service';
+import { PlanService, type Plan } from '../../src/services/plan-service';
 import {
   trailJsonToTrail,
   createReversedTrail,
@@ -17,6 +18,8 @@ import {
   calculateDistancesToWaypoints,
   type WaypointDistance,
 } from '../../src/services/distance-calculator';
+import { computeDays } from '../../src/services/day-calculator';
+import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY } from '../trail/[id]';
 import { spacing } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
@@ -47,6 +50,7 @@ export default function HikeScreen() {
 
   const [trail, setTrail] = useState<Trail | null>(null);
   const [activeTrailId, setActiveTrailId] = useState<string | null>(null);
+  const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
 
   const trackPoints = useMemo(() => trail?.track.points ?? [], [trail]);
@@ -82,6 +86,16 @@ export default function HikeScreen() {
         }
 
         setTrail(parsed);
+
+        // Load active plan for this trail
+        try {
+          const planService = await PlanService.create();
+          const plan = await planService.getActivePlanForTrail(trailId);
+          setActivePlan(plan);
+        } catch {
+          // No plan — that's fine
+        }
+
         setLoading(false);
       } catch {
         setLoading(false);
@@ -89,6 +103,16 @@ export default function HikeScreen() {
     }
     load();
   }, []);
+
+  // Compute plan days for the "today" section
+  const planDays = useMemo((): ComputedDay[] => {
+    if (!trail || !activePlan) return [];
+    const stops: StopData[] = activePlan.stopsJson
+      ? JSON.parse(activePlan.stopsJson)
+      : [];
+    if (stops.length === 0) return [];
+    return computeDays(trail, stops, activePlan.startDate);
+  }, [trail, activePlan]);
 
   // Build dashboard data from real trail + GPS
   const dashboardData = useMemo((): DashboardData | null => {
@@ -101,6 +125,26 @@ export default function HikeScreen() {
 
     const next = getNextWaypointsByType(km, waypoints, trail.track.points);
     const allDistances = calculateDistancesToWaypoints(km, waypoints, trail.track.points);
+
+    // Find current day from plan
+    let today: DashboardData['today'] | undefined;
+    if (planDays.length > 0) {
+      const currentDay = planDays.find(d => km >= d.startKm && km < d.endKm)
+        ?? planDays[planDays.length - 1];
+      if (currentDay) {
+        today = {
+          dayNumber: currentDay.dayNumber,
+          totalDays: planDays.length,
+          startName: currentDay.startName,
+          endName: currentDay.endName,
+          distanceKm: currentDay.distanceKm,
+          ascentM: currentDay.ascentM,
+          descentM: currentDay.descentM,
+          estimatedHours: currentDay.estimatedHours,
+          completedKm: Math.max(0, km - currentDay.startKm),
+        };
+      }
+    }
 
     return {
       trailName: trail.config.name.toUpperCase(),
@@ -119,9 +163,10 @@ export default function HikeScreen() {
       nextShelter: next.shelter
         ? { name: next.shelter.waypoint.name, distance: formatDistance(next.shelter.trailDistanceKm) }
         : undefined,
+      today,
       upcoming: toUpcomingList(allDistances, 8),
     };
-  }, [trail, currentKm]);
+  }, [trail, currentKm, planDays]);
 
   const dashboardState = loading ? 'loading' : trail ? 'normal' : 'empty';
   const gpsState = (accuracy ?? 0) > 100 ? 'degraded' as const : 'normal' as const;

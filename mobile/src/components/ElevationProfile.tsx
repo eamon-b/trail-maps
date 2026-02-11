@@ -21,6 +21,12 @@ interface ElevationProfileProps {
   onDistanceTap?: (km: number) => void;
   /** Visible km range from the map viewport [minKm, maxKm] */
   visibleRange?: [number, number] | null;
+  /** Highlighted km range (e.g., a day's segment) — shown with accent fill */
+  highlightedRange?: { startKm: number; endKm: number } | null;
+  /** Water source km positions — shown as blue dots on the profile */
+  waterSourceKms?: number[];
+  /** Compact mode — reduced height, no gestures, no axis labels */
+  compact?: boolean;
 }
 
 /** Color mapping for waypoint types on the profile */
@@ -51,6 +57,9 @@ export function ElevationProfile({
   focusedWaypointId,
   onDistanceTap,
   visibleRange,
+  highlightedRange,
+  waterSourceKms,
+  compact = false,
 }: ElevationProfileProps) {
   const { colors } = useTheme();
   const [size, setSize] = useState({ width: 300, height: 200 });
@@ -154,6 +163,31 @@ export function ElevationProfile({
     };
   }, [chartMetrics, visibleRange]);
 
+  const highlightedRect = useMemo(() => {
+    if (!chartMetrics || !highlightedRange) return null;
+    const x1 = PADDING.left + (highlightedRange.startKm / chartMetrics.maxDist) * chartMetrics.chartWidth;
+    const x2 = PADDING.left + (highlightedRange.endKm / chartMetrics.maxDist) * chartMetrics.chartWidth;
+    return {
+      x: Math.max(x1, PADDING.left),
+      width: Math.min(x2, PADDING.left + chartMetrics.chartWidth) - Math.max(x1, PADDING.left),
+    };
+  }, [chartMetrics, highlightedRange]);
+
+  const waterDots = useMemo(() => {
+    if (!chartMetrics || !waterSourceKms || waterSourceKms.length === 0) return [];
+    const { eleMin, eleRange, maxDist, chartWidth, chartHeight } = chartMetrics;
+    return waterSourceKms
+      .filter(km => km >= 0 && km <= maxDist)
+      .map(km => {
+        const x = PADDING.left + (km / maxDist) * chartWidth;
+        // Find nearest elevation
+        const idx = findNearestByDistance(sampledPoints, km);
+        const ele = sampledPoints[idx]?.ele ?? 0;
+        const y = PADDING.top + chartHeight - ((ele - eleMin) / eleRange) * chartHeight;
+        return { x, y, km };
+      });
+  }, [chartMetrics, waterSourceKms, sampledPoints]);
+
   const panGesture = useMemo(() => {
     return Gesture.Pan()
       .onUpdate((e) => {
@@ -195,120 +229,162 @@ export function ElevationProfile({
     );
   }
 
+  const canvasElement = (
+    <Canvas style={{ width: size.width, height: compact ? 100 : size.height }}>
+      {/* Grid lines */}
+      <Group>
+        {gridLines.map((line, i) => (
+          <Line
+            key={i}
+            p1={vec(line.x1, line.y1)}
+            p2={vec(line.x2, line.y2)}
+            color="#e0e0e0"
+            strokeWidth={0.5}
+          />
+        ))}
+      </Group>
+
+      {/* Visible map range highlight */}
+      {visibleRangeRect && visibleRangeRect.width > 0 && (
+        <Rect
+          x={visibleRangeRect.x}
+          y={PADDING.top}
+          width={visibleRangeRect.width}
+          height={chartMetrics.chartHeight}
+          color="rgba(33, 150, 243, 0.08)"
+        />
+      )}
+
+      {/* Highlighted range (day segment) */}
+      {highlightedRect && highlightedRect.width > 0 && (
+        <>
+          <Rect
+            x={highlightedRect.x}
+            y={PADDING.top}
+            width={highlightedRect.width}
+            height={chartMetrics.chartHeight}
+            color="rgba(103, 80, 164, 0.15)"
+          />
+          <Line
+            p1={vec(highlightedRect.x, PADDING.top)}
+            p2={vec(highlightedRect.x, PADDING.top + chartMetrics.chartHeight)}
+            color="rgba(103, 80, 164, 0.6)"
+            strokeWidth={1}
+          />
+          <Line
+            p1={vec(highlightedRect.x + highlightedRect.width, PADDING.top)}
+            p2={vec(highlightedRect.x + highlightedRect.width, PADDING.top + chartMetrics.chartHeight)}
+            color="rgba(103, 80, 164, 0.6)"
+            strokeWidth={1}
+          />
+        </>
+      )}
+
+      {/* Fill under curve */}
+      {fillPath && (
+        <Path path={fillPath}>
+          <LinearGradient
+            start={vec(0, PADDING.top)}
+            end={vec(0, PADDING.top + chartMetrics.chartHeight)}
+            colors={['rgba(76, 175, 80, 0.3)', 'rgba(76, 175, 80, 0.02)']}
+          />
+        </Path>
+      )}
+
+      {/* Elevation line */}
+      {elevationPath && (
+        <Path
+          path={elevationPath}
+          color="#4CAF50"
+          style="stroke"
+          strokeWidth={2}
+          strokeCap="round"
+          strokeJoin="round"
+        />
+      )}
+
+      {/* Waypoint dots */}
+      {waypointDots.map((dot) => (
+        <Circle
+          key={dot.index}
+          cx={dot.x}
+          cy={dot.y}
+          r={focusedWaypointId === dot.index ? 5 : 3}
+          color={dot.color}
+        />
+      ))}
+
+      {/* Water source dots */}
+      {waterDots.map((dot, i) => (
+        <Circle key={`water-${i}`} cx={dot.x} cy={dot.y} r={3} color="#2196F3" />
+      ))}
+
+      {/* Current position vertical line */}
+      {currentPositionX != null && (
+        <Line
+          p1={vec(currentPositionX, PADDING.top)}
+          p2={vec(currentPositionX, PADDING.top + chartMetrics.chartHeight)}
+          color="#2196F3"
+          strokeWidth={2}
+        />
+      )}
+
+      {/* Crosshair */}
+      {crosshair && (
+        <Line
+          p1={vec(crosshair.x, PADDING.top)}
+          p2={vec(crosshair.x, PADDING.top + chartMetrics.chartHeight)}
+          color="rgba(0,0,0,0.4)"
+          strokeWidth={1}
+        />
+      )}
+    </Canvas>
+  );
+
   return (
-    <View style={styles.container} onLayout={onLayout}>
-      <GestureDetector gesture={composed}>
-        <Canvas style={{ width: size.width, height: size.height }}>
-          {/* Grid lines */}
-          <Group>
-            {gridLines.map((line, i) => (
-              <Line
-                key={i}
-                p1={vec(line.x1, line.y1)}
-                p2={vec(line.x2, line.y2)}
-                color="#e0e0e0"
-                strokeWidth={0.5}
-              />
-            ))}
-          </Group>
-
-          {/* Visible map range highlight */}
-          {visibleRangeRect && visibleRangeRect.width > 0 && (
-            <Rect
-              x={visibleRangeRect.x}
-              y={PADDING.top}
-              width={visibleRangeRect.width}
-              height={chartMetrics.chartHeight}
-              color="rgba(33, 150, 243, 0.08)"
-            />
-          )}
-
-          {/* Fill under curve */}
-          {fillPath && (
-            <Path path={fillPath}>
-              <LinearGradient
-                start={vec(0, PADDING.top)}
-                end={vec(0, PADDING.top + chartMetrics.chartHeight)}
-                colors={['rgba(76, 175, 80, 0.3)', 'rgba(76, 175, 80, 0.02)']}
-              />
-            </Path>
-          )}
-
-          {/* Elevation line */}
-          {elevationPath && (
-            <Path
-              path={elevationPath}
-              color="#4CAF50"
-              style="stroke"
-              strokeWidth={2}
-              strokeCap="round"
-              strokeJoin="round"
-            />
-          )}
-
-          {/* Waypoint dots */}
-          {waypointDots.map((dot) => (
-            <Circle
-              key={dot.index}
-              cx={dot.x}
-              cy={dot.y}
-              r={focusedWaypointId === dot.index ? 5 : 3}
-              color={dot.color}
-            />
-          ))}
-
-          {/* Current position vertical line */}
-          {currentPositionX != null && (
-            <Line
-              p1={vec(currentPositionX, PADDING.top)}
-              p2={vec(currentPositionX, PADDING.top + chartMetrics.chartHeight)}
-              color="#2196F3"
-              strokeWidth={2}
-            />
-          )}
-
-          {/* Crosshair */}
-          {crosshair && (
-            <Line
-              p1={vec(crosshair.x, PADDING.top)}
-              p2={vec(crosshair.x, PADDING.top + chartMetrics.chartHeight)}
-              color="rgba(0,0,0,0.4)"
-              strokeWidth={1}
-            />
-          )}
-        </Canvas>
-      </GestureDetector>
+    <View style={compact ? styles.compactContainer : styles.container} onLayout={onLayout}>
+      {compact ? (
+        canvasElement
+      ) : (
+        <GestureDetector gesture={composed}>
+          {canvasElement}
+        </GestureDetector>
+      )}
 
       {/* Axis labels (rendered as RN Text for readability) */}
-      <View style={styles.yLabels}>
-        {chartMetrics.eleTicks.map((tick) => {
-          const y = PADDING.top + chartMetrics.chartHeight - ((tick - chartMetrics.eleMin) / chartMetrics.eleRange) * chartMetrics.chartHeight;
-          return (
-            <Text
-              key={tick}
-              style={[styles.axisLabel, { color: colors.textSecondary, top: y - 6, left: 0 }]}
-            >
-              {Math.round(tick)}m
-            </Text>
-          );
-        })}
-      </View>
-      <View style={styles.xLabels}>
-        {chartMetrics.distTicks.map((tick) => {
-          const x = PADDING.left + (tick / chartMetrics.maxDist) * chartMetrics.chartWidth;
-          return (
-            <Text
-              key={tick}
-              style={[styles.axisLabel, { color: colors.textSecondary, left: x - 12, bottom: 0 }]}
-            >
-              {Math.round(tick)}
-            </Text>
-          );
-        })}
-      </View>
+      {!compact && (
+        <>
+          <View style={styles.yLabels}>
+            {chartMetrics.eleTicks.map((tick) => {
+              const y = PADDING.top + chartMetrics.chartHeight - ((tick - chartMetrics.eleMin) / chartMetrics.eleRange) * chartMetrics.chartHeight;
+              return (
+                <Text
+                  key={tick}
+                  style={[styles.axisLabel, { color: colors.textSecondary, top: y - 6, left: 0 }]}
+                >
+                  {Math.round(tick)}m
+                </Text>
+              );
+            })}
+          </View>
+          <View style={styles.xLabels}>
+            {chartMetrics.distTicks.map((tick) => {
+              const x = PADDING.left + (tick / chartMetrics.maxDist) * chartMetrics.chartWidth;
+              return (
+                <Text
+                  key={tick}
+                  style={[styles.axisLabel, { color: colors.textSecondary, left: x - 12, bottom: 0 }]}
+                >
+                  {Math.round(tick)}
+                </Text>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {/* Crosshair tooltip */}
-      {crosshair && (
+      {!compact && crosshair && (
         <View
           style={[
             styles.tooltip,
@@ -332,6 +408,10 @@ export function ElevationProfile({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
+  },
+  compactContainer: {
+    height: 100,
     position: 'relative',
   },
   empty: {

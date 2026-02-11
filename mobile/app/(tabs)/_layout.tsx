@@ -80,16 +80,6 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="dev"
-          options={{
-            title: 'Dev',
-            href: __DEV__ ? '/(tabs)/dev' : null,
-            tabBarIcon: ({ color, size }) => (
-              <TabIcon label="D" color={color} size={size} />
-            ),
-          }}
-        />
       </Tabs>
     </View>
   );

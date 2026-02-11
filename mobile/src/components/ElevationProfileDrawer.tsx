@@ -17,6 +17,10 @@ interface ElevationProfileDrawerProps {
   onDistanceTap?: (km: number) => void;
   /** Visible km range from the map viewport */
   visibleRange?: [number, number] | null;
+  /** Highlighted km range (e.g., a day's segment) */
+  highlightedRange?: { startKm: number; endKm: number } | null;
+  /** Water source km positions */
+  waterSourceKms?: number[];
 }
 
 export function ElevationProfileDrawer({
@@ -27,6 +31,8 @@ export function ElevationProfileDrawer({
   focusedWaypointId,
   onDistanceTap,
   visibleRange,
+  highlightedRange,
+  waterSourceKms,
 }: ElevationProfileDrawerProps) {
   const { colors } = useTheme();
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -66,6 +72,8 @@ export function ElevationProfileDrawer({
           focusedWaypointId={focusedWaypointId}
           onDistanceTap={onDistanceTap}
           visibleRange={visibleRange}
+          highlightedRange={highlightedRange}
+          waterSourceKms={waterSourceKms}
         />
       </View>
     </BottomSheet>

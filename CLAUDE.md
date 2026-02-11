@@ -5,14 +5,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build and Development Commands
 
 ```bash
-npm install          # Install dependencies
-npm run dev          # Start Vite dev server (port 5173)
-npm run build        # Full production build (climate + trails + TS compile + Vite)
-npm run build:trails # Build trail pages from data/trails/
-npm run fetch:climate # Fetch climate data for trail locations
-npm test             # Run all tests with Vitest
-npm test -- --watch  # Watch mode
-npm run lint         # Run ESLint
+npm install            # Install dependencies
+npm run dev            # Start Vite dev server (port 5173)
+npm run build          # Full production build (climate + trails + TS compile + Vite)
+npm run build:trails   # Build trail pages from data/trails/
+npm run fetch:climate  # Fetch climate data for trail locations
+npm run fetch:elevation # Fetch elevation data
+npm run build:tiles    # Build map tiles
+npm run fetch:fonts    # Fetch font glyphs for map labels
+npm test               # Run all tests with Vitest
+npm test -- --watch    # Watch mode
+npm run lint           # Run ESLint
+npm run preview        # Preview production build locally
 ```
 
 ## Architecture Overview
@@ -23,7 +27,8 @@ npm run lint         # Run ESLint
 
 Shared processing modules:
 - `distance.ts` - Haversine distance calculations
-- `gpx-optimizer.ts` - Track simplification (Douglas-Peucker)
+- `gpx-parser.ts` - Parse GPX XML into structured data (browser APIs — NOT safe for mobile)
+- `gpx-optimizer.ts` - Track simplification (Douglas-Peucker, browser APIs — NOT safe for mobile)
 - `track-classification.ts` - Classify main/alternate/side-trip tracks
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.)
 - `types.ts` - TypeScript interfaces
@@ -32,6 +37,13 @@ Shared processing modules:
 
 - `build-trails.ts` - Generates static trail pages from GPX/JSON data
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
+- `fetch-elevation.ts` - Fetches elevation data
+- `fetch-pois.ts` - Fetches points of interest
+- `fetch-font-glyphs.ts` - Fetches font glyphs for map label rendering
+- `build-tiles.ts` - Builds map tiles for offline use
+- `build-grid-tiles.ts` - Builds grid-based map tiles
+- `tile-pipeline.ts` - Orchestrates the full tile generation pipeline
+- `process-heysen-waypoints.ts` - Trail-specific waypoint data processing
 
 ### Web UI (`src/web/`)
 
@@ -67,7 +79,7 @@ Built at build time:
 
 ## Testing
 
-Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` in `src/lib/`).
+Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` in `src/lib/`). Mobile tests use `__tests__/` subdirectories within `components/`, `services/`, `tokens/`, and `lib/`.
 
 ## Mobile App (Expo / React Native)
 
@@ -152,6 +164,16 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 - **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
 - **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.
 
+### Mobile Source Structure (`mobile/src/`)
+
+- `components/` - React components (DayPlanCard, StopSelector, ResupplyList, etc.)
+- `services/` - Business logic (plan-service, day-calculator, resupply-calculator, water-carry-calculator, tile-service, tile-manager, etc.)
+- `db/` - Database layer (database.ts, schema.ts)
+- `hooks/` - React hooks
+- `theme/` - Theme context and utilities
+- `tokens/` - Design tokens (colors, typography, spacing, motion)
+- `lib/` - Mobile-specific utilities (trail-utils.ts)
+
 ### Android Emulator (ADB)
 
 An Android emulator (Pixel 7) is available for testing. The user runs Metro dev server (`npx expo start --dev-client`) in a separate terminal. Claude can interact with the emulator via ADB commands.
@@ -222,3 +244,9 @@ Maestro test flows live in `mobile/maestro/`. Run them to verify UI behavior end
 - `app-launch.yaml` — Verify app launches and data loads
 - `navigate-tabs.yaml` — Verify all tabs are reachable
 - `view-trail.yaml` — Verify trail card opens trail overview
+- `trail-overview-details.yaml` — Verify trail overview details display
+- `trail-overview-to-map.yaml` — Verify navigation from overview to map
+- `hike-empty-state.yaml` — Verify hike tab empty state
+- `contribute-placeholder.yaml` — Verify contribute tab placeholder
+- `scroll-trail-list.yaml` — Verify trail list scrolling
+- `deep-back-navigation.yaml` — Verify deep back navigation works

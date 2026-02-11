@@ -33,11 +33,11 @@ Build the comprehensive planning suite that makes this app invaluable for trip p
 - Store multiple plans per trail (plans often change on-trail)
 
 **Edge Case Handling**
-- Long day warning: configurable threshold, default 30km
+- ~~Long day warning: configurable threshold, default 30km~~ (Removed: see above)
 - "No campsite available" scenarios: allow custom stops
 - Custom stops: long-press on map to create ad-hoc overnight location
 - First/last day handling: clear UI for start point selection
-- Impossibly long days: suggest splitting with available waypoints
+- ~~Impossibly long days: suggest splitting with available waypoints~~ (Removed: the app should not tell users a day is too long — that is their decision)
 
 ### 2. Section Hiking Support
 - Define start/end points for section hikes (not just thru-hikes)

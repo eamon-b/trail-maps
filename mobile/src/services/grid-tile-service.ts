@@ -7,7 +7,7 @@
  * existing MapLibre tile infrastructure can render unchanged.
  */
 import { File, Directory, Paths } from 'expo-file-system';
-import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { openDatabaseAsync } from 'expo-sqlite';
 import type { GridIndex, GridCell } from '@lib/types';
 
 // ---------------------------------------------------------------------------

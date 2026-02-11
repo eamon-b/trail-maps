@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { TrailDataService, type Trail } from '../../src/services/trail-data-service';
+import { PlanService, type Plan } from '../../src/services/plan-service';
 import {
   getTrailTileStatus,
   downloadTrailTiles,
@@ -46,6 +47,7 @@ export default function PlanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [trails, setTrails] = useState<TrailWithTiles[]>([]);
+  const [plans, setPlans] = useState<Record<string, Plan[]>>({});
   const [downloadingTrailId, setDownloadingTrailId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ fileName: string; fileIndex: number; totalFiles: number } | null>(null);
   const [storageInfo, setStorageInfo] = useState<{ usedBytes: number; availableBytes: number } | null>(null);
@@ -59,6 +61,17 @@ export default function PlanScreen() {
     }));
     setTrails(withTiles);
 
+    // Load plans for each trail
+    const planService = await PlanService.create();
+    const plansByTrail: Record<string, Plan[]> = {};
+    for (const trail of list) {
+      const trailPlans = await planService.listPlansForTrail(trail.id);
+      if (trailPlans.length > 0) {
+        plansByTrail[trail.id] = trailPlans;
+      }
+    }
+    setPlans(plansByTrail);
+
     // Load storage info
     const usedBytes = tileManager.getTotalStorageUsed();
     const availableBytes = await tileManager.getAvailableSpace();
@@ -68,6 +81,28 @@ export default function PlanScreen() {
   useEffect(() => {
     loadTrails();
   }, [loadTrails]);
+
+  // Reload plans when screen comes back into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadTrails();
+    }, [loadTrails]),
+  );
+
+  function handleDeletePlan(planId: string, planName: string) {
+    Alert.alert('Delete Plan', `Delete "${planName}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const service = await PlanService.create();
+          await service.deletePlan(planId);
+          loadTrails();
+        },
+      },
+    ]);
+  }
 
   function refreshTileStatus(trailId: string) {
     setTrails((prev) =>
@@ -193,7 +228,32 @@ export default function PlanScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.header, { color: colors.accent }]}>Select a Trail</Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.header, { color: colors.accent }]}>Select a Trail</Text>
+        {trails.length > 0 && (
+          <Pressable
+            onPress={() => {
+              if (trails.length === 1) {
+                router.push({ pathname: '/plan/measure', params: { trailId: trails[0].id } });
+              } else {
+                Alert.alert(
+                  'Measure Tool',
+                  'Select a trail to measure on',
+                  trails.map(t => ({
+                    text: t.name,
+                    onPress: () => router.push({ pathname: '/plan/measure', params: { trailId: t.id } }),
+                  })).concat([{ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any]),
+                );
+              }
+            }}
+            style={styles.measureButton}
+            accessibilityRole="button"
+            accessibilityLabel="Measure distance between two points"
+          >
+            <Text style={[styles.measureText, { color: colors.accent }]}>Measure</Text>
+          </Pressable>
+        )}
+      </View>
       <FlatList
         data={trails}
         keyExtractor={(item) => item.id}
@@ -216,6 +276,47 @@ export default function PlanScreen() {
               </Text>
             )}
             {renderTileStatus(item)}
+
+            {/* Plans for this trail */}
+            {plans[item.id] && plans[item.id].length > 0 && (
+              <View style={styles.plansSection}>
+                <Text style={[styles.plansLabel, { color: colors.textSecondary }]}>Plans</Text>
+                {plans[item.id].map((p) => (
+                  <View key={p.id} style={styles.planRow}>
+                    <Pressable
+                      onPress={() => router.push({ pathname: '/plan/[planId]', params: { planId: p.id, trailId: item.id } })}
+                      style={styles.planInfo}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open plan ${p.name}`}
+                    >
+                      <Text style={[styles.planName, { color: colors.textPrimary }]} numberOfLines={1}>
+                        {p.name}
+                      </Text>
+                      <Text style={[styles.planMeta, { color: colors.textSecondary }]}>
+                        {p.direction}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDeletePlan(p.id, p.name)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete plan ${p.name}`}
+                    >
+                      <Text style={[styles.tileAction, { color: '#c00' }]}>Delete</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <Pressable
+              onPress={() => router.push({ pathname: '/plan/create', params: { trailId: item.id, trailName: item.name } })}
+              style={styles.newPlanButton}
+              accessibilityRole="button"
+              accessibilityLabel={`Create new plan for ${item.name}`}
+            >
+              <Text style={[styles.newPlanText, { color: colors.accent }]}>+ New Plan</Text>
+            </Pressable>
             <Text style={[styles.viewTrail, { color: colors.accent }]}>View trail →</Text>
           </Pressable>
         )}
@@ -241,11 +342,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
   header: {
     ...typography.titleLarge,
     fontSize: 18,
-    padding: spacing.lg,
-    paddingBottom: spacing.sm,
+  },
+  measureButton: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  measureText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   list: {
     padding: spacing.lg,
@@ -331,5 +447,46 @@ const styles = StyleSheet.create({
   storageDetail: {
     ...typography.caption,
     fontVariant: ['tabular-nums'],
+  },
+  plansSection: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.08)',
+  },
+  plansLabel: {
+    ...typography.caption,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: touchTarget.min / 2,
+    marginBottom: spacing.xs,
+  },
+  planInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: touchTarget.min,
+  },
+  planName: {
+    ...typography.body,
+    flex: 1,
+  },
+  planMeta: {
+    ...typography.caption,
+  },
+  newPlanButton: {
+    marginTop: spacing.xs,
+    minHeight: touchTarget.min / 2,
+    justifyContent: 'center',
+  },
+  newPlanText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
 });

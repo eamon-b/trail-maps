@@ -1,0 +1,10 @@
+appId: com.trailcompanion.app
+---
+# Verify the app launches and data loads successfully
+- launchApp
+- assertVisible: "Loading trail data..."
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+- assertVisible: "Plan"
+- assertVisible: "Hike"
+- assertVisible: "Contribute"

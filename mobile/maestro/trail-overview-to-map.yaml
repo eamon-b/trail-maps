@@ -1,0 +1,25 @@
+appId: com.trailcompanion.app
+---
+# Full navigation flow: trail list → overview → map → back → back
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Open first trail overview
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+- assertVisible: "Open Map"
+
+# Tap Open Map to navigate to map screen
+- tapOn: "Open Map"
+- waitForAnimationToEnd
+
+# Press back to return to overview
+- pressKey: back
+- waitForAnimationToEnd
+- assertVisible: "Open Map"
+
+# Press back to return to trail list
+- pressKey: back
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

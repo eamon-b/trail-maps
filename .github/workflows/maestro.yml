@@ -1,0 +1,87 @@
+name: Maestro E2E Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [mobile/**]
+  pull_request:
+    branches: [main]
+    paths: [mobile/**]
+
+jobs:
+  maestro-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Enable KVM for hardware-accelerated emulator
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install mobile dependencies
+        run: npm ci
+        working-directory: mobile
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: sdkmanager "system-images;android-34;google_apis;x86_64" "emulator"
+
+      - name: Generate native project
+        run: npx expo prebuild --platform android
+        working-directory: mobile
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+        working-directory: mobile/android
+
+      - name: Install Maestro CLI
+        run: curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Run Maestro tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            sleep 5
+            ~/.maestro/bin/maestro test mobile/maestro/
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-results
+          path: |
+            ~/.maestro/tests/
+            /tmp/maestro-screenshots/

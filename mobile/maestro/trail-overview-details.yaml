@@ -1,0 +1,36 @@
+appId: com.trailcompanion.app
+---
+# Verify trail overview screen renders all content sections
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Open first trail
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Verify trail name visible
+- assertVisible: "Australian Alps Walking Track"
+
+# Verify stats labels
+- assertVisible: "km"
+- assertVisible: "m ascent"
+- assertVisible: "m descent"
+- assertVisible: "waypoints"
+
+# Verify elevation range section
+- assertVisible: "ELEVATION RANGE"
+
+# Verify waypoints section with type labels
+- assertVisible: "WAYPOINTS"
+- assertVisible: "Campsites"
+- assertVisible: "Water sources"
+
+# Verify offline maps section
+- assertVisible: "OFFLINE MAPS"
+
+# Verify Open Map button
+- assertVisible: "Open Map"
+
+# Verify back navigation link
+- assertVisible: "Back"

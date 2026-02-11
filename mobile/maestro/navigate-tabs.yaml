@@ -1,0 +1,19 @@
+appId: com.trailcompanion.app
+---
+# Verify all tabs are reachable
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Navigate to Hike tab
+- tapOn: "Hike"
+- waitForAnimationToEnd
+
+# Navigate to Contribute tab
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+
+# Navigate back to Plan tab
+- tapOn: "Plan"
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

@@ -1,0 +1,27 @@
+appId: com.trailcompanion.app
+---
+# Quick smoke test: launch → verify data loaded → navigate tabs → open trail
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Verify trail list rendered (at least one trail with a km value)
+- assertVisible:
+    text: "km"
+
+# Navigate through tabs
+- tapOn: "Hike"
+- waitForAnimationToEnd
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+- tapOn: "Plan"
+- waitForAnimationToEnd
+
+# Open first trail
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

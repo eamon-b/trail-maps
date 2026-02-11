@@ -1,0 +1,13 @@
+appId: com.trailcompanion.app
+---
+# Verify the Contribute tab content
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Contribute tab
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+
+# Verify placeholder content
+- assertVisible: "Contribute Mode"
+- assertVisible: "Report trail conditions"

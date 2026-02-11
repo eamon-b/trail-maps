@@ -1,0 +1,13 @@
+appId: com.trailcompanion.app
+---
+# Verify the Hike tab empty state when no trail is active
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Hike tab
+- tapOn: "Hike"
+- waitForAnimationToEnd
+
+# Verify empty state text
+- assertVisible: "No active trail"
+- assertVisible: "Open a trail from the Plan tab"

@@ -1,0 +1,10 @@
+appId: com.trailcompanion.app
+---
+# Verify tapping a trail card navigates to the trail overview
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Tap the first trail card's "View trail" link
+- tapOn: "View trail →"
+- waitForAnimationToEnd

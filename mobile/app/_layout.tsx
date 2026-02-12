@@ -49,6 +49,7 @@ export default function RootLayout() {
           <FocusedWaypointProvider>
             <ThemedStatusBar />
             <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="trail" />
               <Stack.Screen name="plan" />

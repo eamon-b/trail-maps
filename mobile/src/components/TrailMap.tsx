@@ -8,8 +8,7 @@ import { typography } from '../tokens/typography';
 
 MapLibreGL.setAccessToken(null);
 
-const MAPTILER_KEY = process.env.EXPO_PUBLIC_MAPTILER_KEY ?? '';
-const STYLE_URL = `https://api.maptiler.com/maps/outdoor-v2/style.json?key=${MAPTILER_KEY}`;
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 /** Color mapping for waypoint types on the map */
 const WAYPOINT_COLORS: Record<string, string> = {

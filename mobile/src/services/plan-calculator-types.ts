@@ -40,6 +40,5 @@ export interface ComputedDay {
   descentM: number;
   estimatedHours: number;
   waterSources: number;
-  warnings: string[];
 }
 

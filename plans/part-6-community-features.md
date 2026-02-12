@@ -47,6 +47,23 @@ This part should be implemented in phases to manage complexity:
 ### Phase 6c: Full Community (Based on user demand)
 - Full deliverables below
 
+### Phase-to-Deliverable Mapping
+
+When splitting into subpart files, deliverables map to phases as follows:
+
+| Deliverable | 6a | 6b | 6c |
+|---|---|---|---|
+| 1. Backend Infrastructure | | Foundation (auth, DB, API) | Storage, realtime |
+| 2. User Accounts | | Sign up/in, basic profile | Contribution stats, privacy settings |
+| 3. Trail Condition Reports | | Basic reports (text only, moderated) | Photos, map overlays, severity levels |
+| 4. Waypoint Updates | | | Full scope |
+| 5. Comments on Waypoints | | Basic comments | Helpfulness sorting, flagging |
+| 6. Photo Contributions | | | Full scope |
+| 7. Campsite Ratings | | | Full scope |
+| 8. Moderation System | | Basic approve/reject queue | Trusted users, audit trail, appeals |
+| 9. Offline Sync | | | Full scope |
+| 10. Contribute Mode UI | Feedback form only | Basic submission UI | Full two-tab UI with map overlays |
+
 ---
 
 ## Deliverables (Full Phase 6c)

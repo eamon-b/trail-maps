@@ -75,7 +75,7 @@ When implementing Part 5b, be aware of:
 
 ---
 
-### 4. Track Recording (v2.0)
+### 1. Track Recording (v2.0)
 - Record actual hiking track as GPX
 - **iOS considerations:**
   - Requires "Always" location permission for true background recording
@@ -90,14 +90,14 @@ When implementing Part 5b, be aware of:
 - Export recorded track as GPX
 - Share with others
 
-### 5. Navigation Bearing (v2.0)
+### 2. Navigation Bearing (v2.0)
 - Show bearing to next waypoint or selected point
 - Format: "Next waypoint is 2.3km at bearing 247° (WSW)"
 - Compass visualization (optional)
 - Useful when trail is unclear or markers missing
 - Helps confirm you're heading the right direction
 
-### 6. Photo Waypoints (v2.0)
+### 3. Photo Waypoints (v2.0)
 - Take photo from within app
 - Auto geo-tag with current GPS position
 - Associate with trail position (km marker)
@@ -110,7 +110,7 @@ When implementing Part 5b, be aware of:
   - Local storage only (no cloud sync in v1)
 - Optionally contribute to community (Part 6)
 
-### 7. Journal/Notes (v2.0)
+### 4. Journal/Notes (v2.0)
 - Per-day or per-position notes
 - Quick entry interface (one tap to start typing)
 - Notes tied to trail position and/or date
@@ -118,7 +118,7 @@ When implementing Part 5b, be aware of:
 - Search notes
 - Export notes
 
-### 8. Real-Time Weather (v2.0)
+### 5. Real-Time Weather (v2.0)
 Integrate weather API for current conditions and forecasts:
 - **Open-Meteo as primary** (free, no API key required, works internationally)
 - *Note: BOM has no public API; do not rely on it*
@@ -161,107 +161,3 @@ Caching:
 - Off-trail alert thresholds may need tuning based on real-world testing
 - Weather API may have rate limits to consider
 
----
-
-## Review Notes
-
-**Reviewed: 2026-02-05**
-
-### Checklist Assessment
-- [x] All affected files identified
-- [ ] Steps in the right order
-- [x] Dependencies identified
-- [ ] Edge cases considered
-- [ ] Testing strategy
-
-### Priority Assessment
-
-Not all features in this part are equal. Suggest prioritization:
-
-**High priority (core on-trail value):**
-1. Off-trail alerts (Section 1) - safety feature
-2. Sunrise/sunset timer (Section 3) - existing code in gpx-tools
-3. Today's progress view (Section 8)
-
-**Medium priority:**
-4. Track recording (Section 2)
-5. Navigation bearing (Section 7)
-
-**Lower priority (nice-to-have):**
-6. Photo waypoints (Section 4)
-7. Journal/notes (Section 5)
-8. Real-time weather (Section 6)
-
-Consider splitting this part into 5a (high/medium priority) and 5b (lower priority).
-
-### Issues Found
-
-1. **Off-trail alert thresholds need iteration**
-   The fixed thresholds (50m/200m/500m) may not work for all trails:
-   - Urban trails with accurate GPS: tighter thresholds
-   - Remote trails with poor GPS: looser thresholds
-   - Trails with legitimate detours (water sources, viewpoints)
-
-   **Add:**
-   - User-configurable thresholds
-   - Trail-specific defaults where appropriate
-   - "Snooze" option to temporarily disable for known detours
-
-2. **Track recording - iOS background limitations**
-   iOS heavily restricts background location access:
-   - Requires "Always" location permission
-   - Apple scrutinizes apps requesting this
-   - May affect App Store approval
-
-   **Add consideration:**
-   - Document iOS background location requirements
-   - Consider "Record while app open" as simpler initial implementation
-   - Plan for App Store review justification
-
-3. **Weather API selection**
-   BOM doesn't have a public API; it's notoriously difficult to access programmatically.
-
-   **Replace Section 6:**
-   ```
-   - Open-Meteo as primary (free, no API key required)
-   - Cache aggressively (weather doesn't change by the minute)
-   - Fallback to "weather unavailable" gracefully
-   ```
-
-4. **Photo waypoints - storage concerns**
-   Photos are large. Considerations:
-   - Store locally vs cloud
-   - Compression settings
-   - Storage quota management
-   - Photo sync strategy
-
-5. **Navigation bearing - question from original doc**
-   The original feature doc questioned bearing usefulness. The plan should address this:
-   - Useful when trail is unclear or markers missing
-   - Helps confirm you're heading the right direction
-   - Less useful on well-marked trails
-
-### Missing Edge Cases
-
-1. **Track recording**
-   - What happens if phone restarts mid-hike?
-   - How to resume recording after crash?
-   - Battery died mid-recording?
-
-2. **Off-trail alerts**
-   - What about trail variants? Alert shouldn't fire on known alternates
-   - What about trails that legitimately run parallel (fire trails)?
-
-3. **Sunrise/sunset**
-   - Handle southern hemisphere (Australia) correctly
-   - Account for daylight saving time changes during hike
-
-### Testing Strategy Needed
-
-This part requires extensive real-world testing:
-- Multi-hour background tracking tests
-- Battery consumption measurements
-- GPS accuracy in various terrain (forest canopy, valleys)
-- Off-trail detection with real hiking patterns
-
-**Recommendation:** Plan a field testing phase before release.

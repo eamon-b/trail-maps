@@ -230,11 +230,6 @@ describe('computeDays', () => {
     expect(days[0].date).toBeUndefined();
   });
 
-  it('returns empty warnings array', () => {
-    const days = computeDays(trail, []);
-    expect(days[0].warnings).toEqual([]);
-  });
-
   it('computes elevation gain and loss', () => {
     const stops: StopData[] = [
       { id: 'ca', waypointName: 'Camp A', waypointType: 'campsite', km: 15 },

@@ -12,10 +12,22 @@ on:
 jobs:
   maestro-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
+
+      # Free disk space — the Gradle build + Android emulator need ~15GB+
+      # and GitHub runners only have ~17-22GB free after preinstalled tools.
+      # Remove large preinstalled components we don't need.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
 
       # Enable KVM for hardware-accelerated emulator
       - name: Enable KVM
@@ -72,6 +84,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          emulator-boot-timeout: 300
           script: |
             adb install mobile/android/app/build/outputs/apk/debug/app-debug.apk
             sleep 5

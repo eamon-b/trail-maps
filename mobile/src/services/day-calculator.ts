@@ -2,7 +2,7 @@
  * Day calculator engine for the multi-day campsite planner.
  *
  * Pure functions: trail + stops → computed days with distance, elevation,
- * water sources, hiking time estimates, and warnings.
+ * water sources, and hiking time estimates.
  */
 
 import type { Trail, TrailWaypoint } from '../lib/trail-utils';
@@ -143,7 +143,6 @@ export function computeDays(
       descentM: loss,
       estimatedHours: hours,
       waterSources: water,
-      warnings: [],
     });
   }
 

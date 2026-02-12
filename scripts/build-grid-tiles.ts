@@ -18,13 +18,11 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, execFile } from 'child_process';
+import { execFile } from 'child_process';
 import type { GridIndex, GridCell } from '../src/lib/types.js';
 import {
   PROJECT_ROOT,
   DEM_CACHE_DIR,
-  MIN_ZOOM,
-  MAX_ZOOM,
   run,
   ensureDir,
   formatBytes,

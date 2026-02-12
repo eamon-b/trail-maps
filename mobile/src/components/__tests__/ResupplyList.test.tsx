@@ -90,7 +90,6 @@ const daysData: ComputedDay[] = [
     descentM: 300,
     estimatedHours: 7,
     waterSources: 2,
-    warnings: [],
   },
   {
     dayNumber: 2,
@@ -103,7 +102,6 @@ const daysData: ComputedDay[] = [
     descentM: 400,
     estimatedHours: 8,
     waterSources: 1,
-    warnings: [],
   },
   {
     dayNumber: 3,
@@ -116,7 +114,6 @@ const daysData: ComputedDay[] = [
     descentM: 500,
     estimatedHours: 7,
     waterSources: 3,
-    warnings: [],
   },
 ];
 

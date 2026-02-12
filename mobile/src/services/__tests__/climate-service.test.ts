@@ -49,7 +49,6 @@ function makeDay(overrides: Partial<ComputedDay> = {}): ComputedDay {
     descentM: 250,
     estimatedHours: 6,
     waterSources: 2,
-    warnings: [],
     ...overrides,
   };
 }

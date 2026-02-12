@@ -261,7 +261,6 @@ function makeDay(dayNumber: number, startKm: number, endKm: number): ComputedDay
     descentM: 0,
     estimatedHours: 5,
     waterSources: 1,
-    warnings: [],
   };
 }
 

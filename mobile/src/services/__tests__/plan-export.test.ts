@@ -41,7 +41,6 @@ function makeDay(overrides?: Partial<ComputedDay>): ComputedDay {
     descentM: 900,
     estimatedHours: 8,
     waterSources: 2,
-    warnings: [],
     ...overrides,
   };
 }
@@ -68,7 +67,6 @@ function makeDays(count: number, withDates?: boolean): ComputedDay[] {
         descentM: 900 + i * 50,
         estimatedHours: 8 - i,
         waterSources: 2 + i,
-        warnings: [],
       }),
     );
   }

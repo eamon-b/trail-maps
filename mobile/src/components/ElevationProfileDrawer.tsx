@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useImperativeHandle, useMemo, useRef, forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { ElevationProfile } from './ElevationProfile';
@@ -6,6 +6,11 @@ import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import type { TrackPoint, TrailWaypoint } from '../lib/trail-utils';
+
+export interface ElevationProfileDrawerHandle {
+  /** Expand the drawer to show the elevation profile chart */
+  expand: () => void;
+}
 
 interface ElevationProfileDrawerProps {
   trackPoints: TrackPoint[];
@@ -23,7 +28,7 @@ interface ElevationProfileDrawerProps {
   waterSourceKms?: number[];
 }
 
-export function ElevationProfileDrawer({
+export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, ElevationProfileDrawerProps>(function ElevationProfileDrawer({
   trackPoints,
   waypoints,
   currentKm,
@@ -33,9 +38,15 @@ export function ElevationProfileDrawer({
   visibleRange,
   highlightedRange,
   waterSourceKms,
-}: ElevationProfileDrawerProps) {
+}, ref) {
   const { colors } = useTheme();
   const bottomSheetRef = useRef<BottomSheet>(null);
+
+  useImperativeHandle(ref, () => ({
+    expand() {
+      bottomSheetRef.current?.snapToIndex(1);
+    },
+  }), []);
 
   const snapPoints = useMemo(() => [80, '40%', '70%'], []);
 
@@ -78,7 +89,7 @@ export function ElevationProfileDrawer({
       </View>
     </BottomSheet>
   );
-}
+});
 
 const styles = StyleSheet.create({
   background: {

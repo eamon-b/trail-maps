@@ -53,6 +53,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="trail" />
               <Stack.Screen name="plan" />
+              <Stack.Screen name="import" options={{ presentation: 'modal' }} />
             </Stack>
           </FocusedWaypointProvider>
         </BottomSheetProvider>

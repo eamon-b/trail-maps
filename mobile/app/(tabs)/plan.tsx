@@ -12,6 +12,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { TrailDataService, type Trail } from '../../src/services/trail-data-service';
 import { PlanService, type Plan } from '../../src/services/plan-service';
+import { deleteCustomTrail } from '../../src/services/custom-trail-service';
 import {
   getTrailTileStatus,
   downloadTrailTiles,
@@ -88,6 +89,24 @@ export default function PlanScreen() {
       loadTrails();
     }, [loadTrails]),
   );
+
+  function handleDeleteCustomTrail(trailId: string, trailName: string) {
+    Alert.alert(
+      'Delete Custom Trail',
+      `Delete "${trailName}" and all associated data? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteCustomTrail(trailId);
+            loadTrails();
+          },
+        },
+      ],
+    );
+  }
 
   function handleDeletePlan(planId: string, planName: string) {
     Alert.alert('Delete Plan', `Delete "${planName}"?`, [
@@ -230,29 +249,39 @@ export default function PlanScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerRow}>
         <Text style={[styles.header, { color: colors.accent }]}>Select a Trail</Text>
-        {trails.length > 0 && (
+        <View style={styles.headerActions}>
           <Pressable
-            onPress={() => {
-              if (trails.length === 1) {
-                router.push({ pathname: '/plan/measure', params: { trailId: trails[0].id } });
-              } else {
-                Alert.alert(
-                  'Measure Tool',
-                  'Select a trail to measure on',
-                  trails.map(t => ({
-                    text: t.name,
-                    onPress: () => router.push({ pathname: '/plan/measure', params: { trailId: t.id } }),
-                  })).concat([{ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any]),
-                );
-              }
-            }}
+            onPress={() => router.push('/import')}
             style={styles.measureButton}
             accessibilityRole="button"
-            accessibilityLabel="Measure distance between two points"
+            accessibilityLabel="Import a GPX trail"
           >
-            <Text style={[styles.measureText, { color: colors.accent }]}>Measure</Text>
+            <Text style={[styles.measureText, { color: colors.accent }]}>Import</Text>
           </Pressable>
-        )}
+          {trails.length > 0 && (
+            <Pressable
+              onPress={() => {
+                if (trails.length === 1) {
+                  router.push({ pathname: '/plan/measure', params: { trailId: trails[0].id } });
+                } else {
+                  Alert.alert(
+                    'Measure Tool',
+                    'Select a trail to measure on',
+                    trails.map(t => ({
+                      text: t.name,
+                      onPress: () => router.push({ pathname: '/plan/measure', params: { trailId: t.id } }),
+                    })).concat([{ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any]),
+                  );
+                }
+              }}
+              style={styles.measureButton}
+              accessibilityRole="button"
+              accessibilityLabel="Measure distance between two points"
+            >
+              <Text style={[styles.measureText, { color: colors.accent }]}>Measure</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
       <FlatList
         data={trails}
@@ -265,17 +294,27 @@ export default function PlanScreen() {
             accessibilityLabel={`${item.name}${item.region ? `, ${item.region}` : ''}${item.lengthKm ? `, ${item.lengthKm} kilometers` : ''}`}
             onPress={() => router.push({ pathname: '/trail/overview', params: { id: item.id } })}
           >
-            <Text style={[styles.trailName, { color: colors.textPrimary }]}>{item.name}</Text>
+            <View style={styles.trailNameRow}>
+              <Text style={[styles.trailName, { color: colors.textPrimary }]}>{item.name}</Text>
+              {item.isCustom && (
+                <View style={[styles.customBadge, { backgroundColor: colors.accentSubtle }]}>
+                  <Text style={[styles.customBadgeText, { color: colors.accent }]}>Custom</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.meta}>
-              {item.region && <Text style={[styles.region, { color: colors.textSecondary }]}>{item.region}</Text>}
+              {item.region && !item.isCustom && <Text style={[styles.region, { color: colors.textSecondary }]}>{item.region}</Text>}
               {item.lengthKm && <Text style={[styles.length, { color: colors.accent }]}>{item.lengthKm} km</Text>}
+              {item.isCustom && item.sourceFilename && (
+                <Text style={[styles.region, { color: colors.textSecondary }]} numberOfLines={1}>{item.sourceFilename}</Text>
+              )}
             </View>
             {item.dataVersion && (
               <Text style={[styles.dataUpdated, { color: colors.textSecondary }]}>
                 Data updated: {formatDataVersion(item.dataVersion)}
               </Text>
             )}
-            {renderTileStatus(item)}
+            {!item.isCustom && renderTileStatus(item)}
 
             {/* Plans for this trail */}
             {plans[item.id] && plans[item.id].length > 0 && (
@@ -317,7 +356,19 @@ export default function PlanScreen() {
             >
               <Text style={[styles.newPlanText, { color: colors.accent }]}>+ New Plan</Text>
             </Pressable>
-            <Text style={[styles.viewTrail, { color: colors.accent }]}>View trail →</Text>
+            <View style={styles.cardFooter}>
+              <Text style={[styles.viewTrail, { color: colors.accent }]}>View trail →</Text>
+              {item.isCustom && (
+                <Pressable
+                  onPress={() => handleDeleteCustomTrail(item.id, item.name)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete custom trail ${item.name}`}
+                >
+                  <Text style={[styles.tileAction, { color: '#c00' }]}>Delete trail</Text>
+                </Pressable>
+              )}
+            </View>
           </Pressable>
         )}
         ListEmptyComponent={
@@ -350,6 +401,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   header: {
     ...typography.titleLarge,
     fontSize: 18,
@@ -378,10 +433,26 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  trailNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
   trailName: {
     ...typography.body,
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    flex: 1,
+  },
+  customBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+  },
+  customBadgeText: {
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '600',
   },
   meta: {
     flexDirection: 'row',
@@ -424,10 +495,15 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
   },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
   viewTrail: {
     ...typography.caption,
     fontWeight: '600',
-    marginTop: spacing.sm,
   },
   empty: {
     ...typography.body,

@@ -138,14 +138,15 @@ export function ElevationProfile({
   const waypointDots = useMemo(() => {
     if (!chartMetrics || !waypoints) return [];
     const { eleMin, eleRange, maxDist, chartWidth, chartHeight } = chartMetrics;
-    return waypoints
-      .filter(wp => wp.totalDistance != null && wp.elevation != null)
-      .map((wp, i) => {
+    return waypoints.reduce<{ x: number; y: number; color: string; index: number }[]>((acc, wp, originalIndex) => {
+      if (wp.totalDistance != null && wp.elevation != null) {
         const x = PADDING.left + ((wp.totalDistance ?? 0) / maxDist) * chartWidth;
         const y = PADDING.top + chartHeight - (((wp.elevation ?? 0) - eleMin) / eleRange) * chartHeight;
         const color = WAYPOINT_PROFILE_COLORS[wp.type] ?? '#757575';
-        return { x, y, color, index: i };
-      });
+        acc.push({ x, y, color, index: originalIndex });
+      }
+      return acc;
+    }, []);
   }, [chartMetrics, waypoints]);
 
   const currentPositionX = useMemo(() => {

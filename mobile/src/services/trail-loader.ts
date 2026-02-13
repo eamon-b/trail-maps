@@ -67,6 +67,8 @@ export async function loadBundledTrails(service: TrailDataService): Promise<void
       region: config.region,
       lengthKm: config.lengthKm,
       dataVersion: bundledVersion,
+      isCustom: false,
+      sourceFilename: null,
       metadataJson: JSON.stringify({
         direction: config.direction,
         track: {

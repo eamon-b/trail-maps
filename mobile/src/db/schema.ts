@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const MIGRATIONS: Record<number, string> = {
   1: `
@@ -67,6 +67,12 @@ const MIGRATIONS: Record<number, string> = {
     );
     CREATE INDEX IF NOT EXISTS idx_plan_versions_plan_id ON plan_versions(plan_id);
     UPDATE schema_version SET version = 3;
+  `,
+  4: `
+    ALTER TABLE trails ADD COLUMN is_custom INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE trails ADD COLUMN source_filename TEXT;
+    ALTER TABLE trails ADD COLUMN track_data_json TEXT;
+    UPDATE schema_version SET version = 4;
   `,
 };
 

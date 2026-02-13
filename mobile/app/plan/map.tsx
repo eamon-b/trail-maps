@@ -103,7 +103,7 @@ export default function PlanMapScreen() {
         }
 
         const trailService = await TrailDataService.create();
-        const json = trailService.getTrailTrackData(trailId);
+        const json = await trailService.getTrailTrackData(trailId);
         if (!json) {
           Alert.alert('Error', 'Trail data not found');
           router.back();

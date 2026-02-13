@@ -6,15 +6,17 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
-import { TrailDataService } from '../../src/services/trail-data-service';
-import { TRAIL_DATA } from '../../src/services/trail-loader';
+import { TrailDataService, type Trail as DbTrail } from '../../src/services/trail-data-service';
+import { deleteCustomTrail } from '../../src/services/custom-trail-service';
 import { trailJsonToTrail, getMinMax, type Trail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
-import { spacing, radii } from '../../src/tokens/spacing';
+import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
 const WAYPOINT_TYPE_LABELS: Record<string, string> = {
@@ -40,17 +42,20 @@ export default function TrailOverviewScreen() {
   const insets = useSafeAreaInsets();
 
   const [trail, setTrail] = useState<Trail | null>(null);
+  const [dbTrail, setDbTrail] = useState<DbTrail | null>(null);
   const [dataVersion, setDataVersion] = useState<string | null>(null);
   const [tilesDownloaded, setTilesDownloaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     async function load() {
       if (!id) return;
       try {
         const service = await TrailDataService.create();
-        const json = TRAIL_DATA[id];
+        const json = await service.getTrailTrackData(id);
         if (!json) {
           setError('Trail not found');
           setLoading(false);
@@ -59,8 +64,9 @@ export default function TrailOverviewScreen() {
         const parsed = trailJsonToTrail(json);
         setTrail(parsed);
 
-        const dbTrail = await service.getTrail(id);
-        if (dbTrail?.dataVersion) setDataVersion(dbTrail.dataVersion);
+        const dbTrailRow = await service.getTrail(id);
+        setDbTrail(dbTrailRow);
+        if (dbTrailRow?.dataVersion) setDataVersion(dbTrailRow.dataVersion);
 
         setTilesDownloaded(tileManager.isTrailDownloaded(id));
         setLoading(false);
@@ -89,6 +95,39 @@ export default function TrailOverviewScreen() {
       .sort(([, a], [, b]) => b - a)
       .map(([type, count]) => ({ type, label: formatLabel(type), count }));
   }, [trail]);
+
+  const isCustom = dbTrail?.isCustom ?? false;
+
+  async function handleSaveName() {
+    if (!id || !editName.trim()) return;
+    const service = await TrailDataService.create();
+    await service.updateCustomTrail(id, editName.trim());
+    setEditingName(false);
+    // Reload
+    const json = await service.getTrailTrackData(id);
+    if (json) setTrail(trailJsonToTrail(json));
+    const updated = await service.getTrail(id);
+    setDbTrail(updated);
+  }
+
+  function handleDeleteTrail() {
+    if (!id || !trail) return;
+    Alert.alert(
+      'Delete Custom Trail',
+      `Delete "${trail.config.name}" and all associated data? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteCustomTrail(id);
+            router.back();
+          },
+        },
+      ],
+    );
+  }
 
   if (loading) {
     return (
@@ -122,7 +161,38 @@ export default function TrailOverviewScreen() {
         </Pressable>
 
         {/* Trail name */}
-        <Text style={[styles.trailName, { color: colors.textPrimary }]}>{trail.config.name}</Text>
+        {editingName ? (
+          <View style={styles.editNameRow}>
+            <TextInput
+              style={[styles.editNameInput, { color: colors.textPrimary, borderColor: colors.border }]}
+              value={editName}
+              onChangeText={setEditName}
+              autoFocus
+              onSubmitEditing={handleSaveName}
+              returnKeyType="done"
+            />
+            <Pressable onPress={handleSaveName} style={styles.editAction}>
+              <Text style={[styles.editActionText, { color: colors.accent }]}>Save</Text>
+            </Pressable>
+            <Pressable onPress={() => setEditingName(false)} style={styles.editAction}>
+              <Text style={[styles.editActionText, { color: colors.textSecondary }]}>Cancel</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.nameRow}>
+            <Text style={[styles.trailName, { color: colors.textPrimary }]}>{trail.config.name}</Text>
+            {isCustom && (
+              <Pressable
+                onPress={() => { setEditName(trail.config.name); setEditingName(true); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Edit trail name"
+              >
+                <Text style={[styles.editLink, { color: colors.accent }]}>Edit</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {/* Region badge */}
         {trail.config.region && (
@@ -200,6 +270,26 @@ export default function TrailOverviewScreen() {
           </Text>
         )}
 
+        {/* Custom trail management */}
+        {isCustom && (
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>CUSTOM TRAIL</Text>
+            {dbTrail?.sourceFilename && (
+              <Text style={[styles.sourceFile, { color: colors.textSecondary }]}>
+                Source: {dbTrail.sourceFilename}
+              </Text>
+            )}
+            <Pressable
+              onPress={handleDeleteTrail}
+              style={styles.deleteButton}
+              accessibilityRole="button"
+              accessibilityLabel="Delete this custom trail"
+            >
+              <Text style={[styles.deleteText, { color: colors.alertRed }]}>Delete Trail</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Open Map button */}
         <Pressable
           style={[styles.openMapButton, { backgroundColor: colors.accent }]}
@@ -258,9 +348,40 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '600',
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
   trailName: {
     ...typography.displayLarge,
+    flex: 1,
+  },
+  editLink: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  editNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  editNameInput: {
+    ...typography.displayLarge,
+    flex: 1,
+    borderBottomWidth: 1,
+    paddingVertical: spacing.xs,
+  },
+  editAction: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  editActionText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   badge: {
     alignSelf: 'flex-start',
@@ -332,6 +453,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     textAlign: 'center',
     marginBottom: spacing.lg,
+  },
+  sourceFile: {
+    ...typography.caption,
+    marginBottom: spacing.sm,
+  },
+  deleteButton: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+  },
+  deleteText: {
+    ...typography.body,
+    fontWeight: '600',
   },
   openMapButton: {
     borderRadius: radii.lg,

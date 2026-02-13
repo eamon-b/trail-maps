@@ -69,7 +69,7 @@ export default function SectionMapScreen() {
       if (!trailId) return;
       try {
         const trailService = await TrailDataService.create();
-        const json = trailService.getTrailTrackData(trailId);
+        const json = await trailService.getTrailTrackData(trailId);
         if (!json) {
           setLoading(false);
           return;

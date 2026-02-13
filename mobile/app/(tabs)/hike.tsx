@@ -70,7 +70,7 @@ export default function HikeScreen() {
         setActiveTrailId(trailId);
 
         const service = await TrailDataService.create();
-        const json = service.getTrailTrackData(trailId);
+        const json = await service.getTrailTrackData(trailId);
         if (!json) {
           setLoading(false);
           return;

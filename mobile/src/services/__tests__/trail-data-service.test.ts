@@ -28,6 +28,8 @@ describe('TrailDataService', () => {
       lengthKm: 981.6,
       metadataJson: null,
       dataVersion: null,
+      isCustom: false,
+      sourceFilename: null,
     });
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
@@ -44,6 +46,9 @@ describe('TrailDataService', () => {
       region: 'South West WA',
       length_km: 981.6,
       metadata_json: null,
+      data_version: null,
+      is_custom: 0,
+      source_filename: null,
       created_at: '2026-01-01',
       updated_at: '2026-01-01',
     });
@@ -63,8 +68,8 @@ describe('TrailDataService', () => {
 
   it('lists all trails', async () => {
     mockDb.getAllAsync.mockResolvedValueOnce([
-      { id: 'bibbulmun', name: 'bibbulmun Track', short_name: 'bibb', region: 'WA', length_km: 981, metadata_json: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
-      { id: 'larapinta', name: 'Larapinta Trail', short_name: 'larapinta', region: 'NT', length_km: 230, metadata_json: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 'bibbulmun', name: 'bibbulmun Track', short_name: 'bibb', region: 'WA', length_km: 981, metadata_json: null, data_version: null, is_custom: 0, source_filename: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 'larapinta', name: 'Larapinta Trail', short_name: 'larapinta', region: 'NT', length_km: 230, metadata_json: null, data_version: null, is_custom: 0, source_filename: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
 
     const trails = await service.listTrails();

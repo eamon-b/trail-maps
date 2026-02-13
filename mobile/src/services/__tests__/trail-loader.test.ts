@@ -58,6 +58,8 @@ describe('loadBundledTrails', () => {
       region: 'South West WA',
       lengthKm: 981.6,
       dataVersion: null,
+      isCustom: false,
+      sourceFilename: null,
       metadataJson: expect.stringContaining('"totalDistance":981600'),
     });
 
@@ -96,6 +98,8 @@ describe('loadBundledTrails', () => {
       lengthKm: 981.6,
       metadataJson: null,
       dataVersion: null,
+      isCustom: false,
+      sourceFilename: null,
       createdAt: '2026-01-01',
       updatedAt: '2026-01-01',
     });

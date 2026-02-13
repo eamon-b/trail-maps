@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrailMap } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
-import { ElevationProfileDrawer } from '../../src/components/ElevationProfileDrawer';
+import { ElevationProfileDrawer, type ElevationProfileDrawerHandle } from '../../src/components/ElevationProfileDrawer';
 import { WaypointDetailSheet } from '../../src/components/WaypointDetailSheet';
 import { LocationStatusBar, type LocationState } from '../../src/components';
 import { useTheme } from '../../src/theme';
@@ -40,6 +40,7 @@ export default function TrailViewerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [panTarget, setPanTarget] = useState<{ longitude: number; latitude: number; key: number } | null>(null);
   const panKeyRef = useRef(0);
+  const elevationDrawerRef = useRef<ElevationProfileDrawerHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
 
@@ -59,7 +60,7 @@ export default function TrailViewerScreen() {
       if (!id) return;
       try {
         const service = await TrailDataService.create();
-        const json = service.getTrailTrackData(id);
+        const json = await service.getTrailTrackData(id);
         if (!json) {
           setError('Trail not found');
           setLoading(false);
@@ -189,13 +190,18 @@ export default function TrailViewerScreen() {
   }, [trackPoints]);
 
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
-    // Focus the waypoint on the profile (handled via focusedWaypointId)
     if (wp.totalDistance != null) {
       const index = activeTrail?.waypoints?.findIndex(w => w.name === wp.name && w.totalDistance === wp.totalDistance);
       if (index != null && index >= 0) {
-        setFocusedWaypointId(index);
+        // Clear and re-set to ensure the update fires even if the same waypoint is already focused
+        setFocusedWaypointId(null);
+        setTimeout(() => setFocusedWaypointId(index), 0);
       }
     }
+    // Dismiss the waypoint detail sheet so the profile is visible
+    setSelectedWaypoint(null);
+    // Expand the elevation profile drawer
+    elevationDrawerRef.current?.expand();
   }, [activeTrail, setFocusedWaypointId]);
 
   // Direction label
@@ -321,6 +327,7 @@ export default function TrailViewerScreen() {
 
       {/* Elevation profile drawer */}
       <ElevationProfileDrawer
+        ref={elevationDrawerRef}
         trackPoints={activeTrail.track.points}
         waypoints={activeTrail.waypoints}
         currentKm={currentKm}

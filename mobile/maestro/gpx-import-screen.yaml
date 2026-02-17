@@ -1,0 +1,25 @@
+appId: com.trailcompanion.app
+---
+# Verify GPX import screen loads and shows expected UI elements
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Navigate to Contribute tab (where import lives)
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+
+# Look for import option and tap it
+- tapOn:
+    text: "Import"
+    optional: true
+- waitForAnimationToEnd
+
+# Verify import screen header and elements
+- assertVisible: "Import Trail"
+- assertVisible: "Import a GPX file"
+- assertVisible: "Choose File"
+
+# Cancel back
+- tapOn: "Cancel"
+- waitForAnimationToEnd

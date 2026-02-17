@@ -5,8 +5,9 @@ module.exports = {
   ],
   setupFiles: ['./jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  testMatch: ['**/__tests__/**/*.(ts|tsx)', '**/*.(test|spec).(ts|tsx)'],
+  testMatch: ['**/__tests__/**/*.test.(ts|tsx)', '**/*.(test|spec).(ts|tsx)'],
   moduleNameMapper: {
     '^@lib/(.*)$': '<rootDir>/../src/lib/$1',
+    '\\.pbf$': '<rootDir>/jest.setup.js',
   },
 };

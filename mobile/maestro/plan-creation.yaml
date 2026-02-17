@@ -1,0 +1,31 @@
+appId: com.trailcompanion.app
+---
+# Verify plan creation screen opens with expected form elements
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Open first trail card
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Go back to trail list
+- pressKey: back
+- waitForAnimationToEnd
+
+# Tap "+ New Plan" on the first trail card
+- tapOn: "+ New Plan"
+- waitForAnimationToEnd
+
+# Verify plan creation screen opened
+- assertVisible: "New Plan"
+- assertVisible: "Plan Name"
+- assertVisible: "Direction"
+- assertVisible: "NOBO"
+- assertVisible: "SOBO"
+- assertVisible: "Create Plan"
+
+# Cancel back to trail list
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

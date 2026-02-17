@@ -1,0 +1,23 @@
+appId: com.trailcompanion.app
+---
+# Verify plan creation and basic editing flow
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Open plan creation for first trail
+- tapOn: "+ New Plan"
+- waitForAnimationToEnd
+- assertVisible: "New Plan"
+
+# Create a plan with default settings
+- tapOn: "Create Plan"
+- waitForAnimationToEnd
+
+# Verify plan screen loaded with stop selector
+- assertVisible: "Select Stops"
+- assertVisible: "Tap to toggle overnight stops"
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd

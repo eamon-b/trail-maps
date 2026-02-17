@@ -1,0 +1,27 @@
+appId: com.trailcompanion.app
+---
+# Verify measure tool screen loads with expected UI elements
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Open first trail
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Open map screen
+- tapOn: "Open Map"
+- waitForAnimationToEnd
+
+# Tap Measure button to open measure tool
+- tapOn: "Measure"
+- waitForAnimationToEnd
+
+# Verify measure screen UI
+- assertVisible: "Measure"
+- assertVisible: "Start Point"
+- assertVisible: "End Point"
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd

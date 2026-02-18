@@ -124,6 +124,28 @@ describe('measureBetweenPoints', () => {
     expect(result.waypointsBetween).toEqual([]);
   });
 
+  it('finds nearest name even when first waypoint is far away', () => {
+    // First waypoint (Trailhead at km 0) is >2km from start (km 5).
+    // Creek at km 10 is also >2km from start (km 5) — but should still find Creek within 2km? No, 5km away.
+    // Let's measure from km 9 to km 31 — Creek at 10 is within 2km of 9, River at 30 is within 2km of 31.
+    const result = measureBetweenPoints(trail, 9, 31);
+    expect(result.startName).toBe('Creek');
+    expect(result.endName).toBe('River');
+  });
+
+  it('returns undefined names when no waypoints within 2km', () => {
+    // Sparse trail with waypoints far apart
+    const sparseWaypoints = makeWaypoints([
+      { name: 'Start', type: 'trailhead', km: 0 },
+      { name: 'End', type: 'trailhead', km: 50 },
+    ]);
+    const sparseTrail = makeTrail(50, sparseWaypoints);
+    // Measure from km 20 to km 30 — no waypoint within 2km of either
+    const result = measureBetweenPoints(sparseTrail, 20, 30);
+    expect(result.startName).toBeUndefined();
+    expect(result.endName).toBeUndefined();
+  });
+
   it('handles measurement at trail boundaries (0 to totalDistance)', () => {
     const result = measureBetweenPoints(trail, 0, 50);
     expect(result.startKm).toBe(0);

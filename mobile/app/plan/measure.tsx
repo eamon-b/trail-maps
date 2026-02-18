@@ -123,12 +123,11 @@ export default function MeasureScreen() {
 
   // Swap start and end
   const handleSwap = useCallback(() => {
-    setStartPoint(prev => {
-      const oldStart = prev;
-      setEndPoint(oldStart);
-      return endPoint;
-    });
-  }, [endPoint]);
+    const prevStart = startPoint;
+    const prevEnd = endPoint;
+    setStartPoint(prevEnd);
+    setEndPoint(prevStart);
+  }, [startPoint, endPoint]);
 
   const formatHours = (hours: number): string => {
     const h = Math.floor(hours);

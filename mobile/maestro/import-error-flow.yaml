@@ -1,0 +1,56 @@
+appId: com.trailcompanion.app
+---
+# Test import error handling: open import screen, attempt URL import with invalid URL
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Navigate to import screen
+- tapOn: "Import"
+- waitForAnimationToEnd
+- assertVisible: "Import Trail"
+
+# Show URL input
+- tapOn: "Import from URL"
+- waitForAnimationToEnd
+
+# Enter an invalid URL
+- tapOn:
+    id: "urlInput"
+    optional: true
+- inputText: "not-a-valid-url"
+
+# Tap Fetch — should show error
+- tapOn: "Fetch"
+- waitForAnimationToEnd
+
+# Verify error state is shown
+- assertVisible:
+    text: "Import Failed"
+    optional: true
+
+# Verify helpful error message
+- assertVisible:
+    text: "Invalid URL"
+    optional: true
+
+# Verify retry option
+- assertVisible:
+    text: "Try Again"
+    optional: true
+
+# Tap Try Again to go back to pick stage
+- tapOn:
+    text: "Try Again"
+    optional: true
+- waitForAnimationToEnd
+
+# Verify we're back on the pick screen
+- assertVisible:
+    text: "Choose File"
+    optional: true
+
+# Cancel back
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

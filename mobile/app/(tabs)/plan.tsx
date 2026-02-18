@@ -20,6 +20,14 @@ import {
   type TrailTileStatus,
   type DownloadProgress,
 } from '../../src/services/tile-service';
+import {
+  fetchGridIndex,
+  resolveGridCells,
+  downloadGridTiles,
+  type GridProgressCallback,
+} from '../../src/services/grid-tile-service';
+import { calculateTrailBounds, estimateGridDownloadSize } from '../../src/services/trail-bounds';
+import { trailJsonToTrail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
 import { ProgressBar } from '../../src/components';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
@@ -51,7 +59,7 @@ export default function PlanScreen() {
   const [plans, setPlans] = useState<Record<string, Plan[]>>({});
   const [downloadingTrailId, setDownloadingTrailId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ fileName: string; fileIndex: number; totalFiles: number } | null>(null);
-  const [storageInfo, setStorageInfo] = useState<{ usedBytes: number; availableBytes: number } | null>(null);
+  const [storageInfo, setStorageInfo] = useState<{ usedBytes: number; availableBytes: number; customTrailBytes: number } | null>(null);
 
   const loadTrails = useCallback(async () => {
     const service = await TrailDataService.create();
@@ -76,7 +84,8 @@ export default function PlanScreen() {
     // Load storage info
     const usedBytes = tileManager.getTotalStorageUsed();
     const availableBytes = await tileManager.getAvailableSpace();
-    setStorageInfo({ usedBytes, availableBytes });
+    const customTrailBytes = await service.getCustomTrailStorageBytes();
+    setStorageInfo({ usedBytes, availableBytes, customTrailBytes });
   }, []);
 
   useEffect(() => {
@@ -130,15 +139,19 @@ export default function PlanScreen() {
       ),
     );
     // Refresh storage info
-    tileManager.getAvailableSpace().then((availableBytes) => {
+    Promise.all([
+      tileManager.getAvailableSpace(),
+      TrailDataService.create().then(s => s.getCustomTrailStorageBytes()),
+    ]).then(([availableBytes, customTrailBytes]) => {
       setStorageInfo({
         usedBytes: tileManager.getTotalStorageUsed(),
         availableBytes,
+        customTrailBytes,
       });
     }).catch(() => {});
   }
 
-  async function handleDownload(trailId: string) {
+  async function handleDownload(trailId: string, isCustom: boolean) {
     if (!TILE_BASE_URL) {
       Alert.alert(
         'Tile server not configured',
@@ -147,6 +160,14 @@ export default function PlanScreen() {
       return;
     }
 
+    if (isCustom) {
+      await handleDownloadCustom(trailId);
+    } else {
+      await handleDownloadBuiltIn(trailId);
+    }
+  }
+
+  async function handleDownloadBuiltIn(trailId: string) {
     setDownloadingTrailId(trailId);
     let filesDone = 0;
     try {
@@ -155,13 +176,82 @@ export default function PlanScreen() {
         setDownloadProgress({
           fileName: progress.fileName,
           fileIndex: filesDone,
-          totalFiles: 2, // base.mbtiles + contours.mbtiles
+          totalFiles: 2,
         });
         refreshTileStatus(trailId);
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       Alert.alert('Download Failed', msg);
+    }
+    setDownloadingTrailId(null);
+    setDownloadProgress(null);
+    refreshTileStatus(trailId);
+  }
+
+  async function handleDownloadCustom(trailId: string) {
+    try {
+      // Load trail track data to calculate bounding box
+      const service = await TrailDataService.create();
+      const json = await service.getTrailTrackData(trailId);
+      if (!json) {
+        Alert.alert('Error', 'Could not load trail data');
+        return;
+      }
+
+      const trail = trailJsonToTrail(json);
+      const bounds = calculateTrailBounds(trail.track.points);
+
+      // Fetch grid index and resolve cells
+      const gridIndex = await fetchGridIndex(TILE_BASE_URL);
+      const cells = resolveGridCells(bounds, gridIndex);
+
+      if (cells.length === 0) {
+        Alert.alert('No Tiles Available', 'No map tiles are available for this trail\'s region yet.');
+        return;
+      }
+
+      // Show size estimate and confirm
+      const estimatedSize = estimateGridDownloadSize(cells.length);
+      const sizeStr = formatBytes(estimatedSize);
+
+      await new Promise<void>((resolve, reject) => {
+        Alert.alert(
+          'Download Offline Maps',
+          `This will download approximately ${sizeStr} of map tiles (${cells.length} grid cell${cells.length > 1 ? 's' : ''}).`,
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('Cancelled')) },
+            { text: 'Download', onPress: () => resolve() },
+          ],
+        );
+      });
+
+      setDownloadingTrailId(trailId);
+
+      const onProgress: GridProgressCallback = (progress) => {
+        if (progress.phase === 'downloading') {
+          setDownloadProgress({
+            fileName: progress.currentCell ?? 'tiles',
+            fileIndex: progress.cellsComplete,
+            totalFiles: progress.cellsTotal,
+          });
+        } else {
+          setDownloadProgress({
+            fileName: 'Merging tiles...',
+            fileIndex: progress.cellsTotal,
+            totalFiles: progress.cellsTotal,
+          });
+        }
+      };
+
+      await downloadGridTiles(trailId, cells, TILE_BASE_URL, onProgress);
+    } catch (err) {
+      if (err instanceof Error && err.message === 'Cancelled') {
+        // User cancelled — no alert needed
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        Alert.alert('Download Failed', msg);
+      }
     }
     setDownloadingTrailId(null);
     setDownloadProgress(null);
@@ -234,7 +324,7 @@ export default function PlanScreen() {
           No offline maps
         </Text>
         <Pressable
-          onPress={() => handleDownload(item.id)}
+          onPress={() => handleDownload(item.id, item.isCustom)}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Download offline maps for ${item.name}`}
@@ -314,7 +404,7 @@ export default function PlanScreen() {
                 Data updated: {formatDataVersion(item.dataVersion)}
               </Text>
             )}
-            {!item.isCustom && renderTileStatus(item)}
+            {renderTileStatus(item)}
 
             {/* Plans for this trail */}
             {plans[item.id] && plans[item.id].length > 0 && (
@@ -375,11 +465,21 @@ export default function PlanScreen() {
           <Text style={[styles.empty, { color: colors.textSecondary }]}>No trails loaded</Text>
         }
         ListFooterComponent={
-          storageInfo && storageInfo.usedBytes > 0 ? (
+          storageInfo && (storageInfo.usedBytes > 0 || storageInfo.customTrailBytes > 0) ? (
             <View style={[styles.storageFooter, { borderTopColor: colors.border }]}>
-              <Text style={[styles.storageTitle, { color: colors.textPrimary }]}>Offline Storage</Text>
+              <Text style={[styles.storageTitle, { color: colors.textPrimary }]}>Storage</Text>
+              {storageInfo.usedBytes > 0 && (
+                <Text style={[styles.storageDetail, { color: colors.textSecondary }]}>
+                  Maps: {formatBytes(storageInfo.usedBytes)}
+                </Text>
+              )}
+              {storageInfo.customTrailBytes > 0 && (
+                <Text style={[styles.storageDetail, { color: colors.textSecondary }]}>
+                  Custom trails: {formatBytes(storageInfo.customTrailBytes)}
+                </Text>
+              )}
               <Text style={[styles.storageDetail, { color: colors.textSecondary }]}>
-                Maps: {formatBytes(storageInfo.usedBytes)} used  |  {formatBytes(storageInfo.availableBytes)} available
+                {formatBytes(storageInfo.availableBytes)} available
               </Text>
             </View>
           ) : null

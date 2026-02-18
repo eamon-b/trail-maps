@@ -36,17 +36,21 @@ export function measureBetweenPoints(trail: Trail, startKm: number, endKm: numbe
     return km > lo && km < hi;
   });
 
-  // Find nearest waypoint names for start/end
+  // Find nearest waypoint names for start/end (within 2km)
   const startWp = trail.waypoints.reduce<TrailWaypoint | null>((best, wp) => {
     const km = wp.totalDistance ?? 0;
-    if (!best) return Math.abs(km - lo) < 2 ? wp : null;
-    return Math.abs(km - lo) < Math.abs((best.totalDistance ?? 0) - lo) ? wp : best;
+    const dist = Math.abs(km - lo);
+    if (dist >= 2) return best;
+    if (!best) return wp;
+    return dist < Math.abs((best.totalDistance ?? 0) - lo) ? wp : best;
   }, null);
 
   const endWp = trail.waypoints.reduce<TrailWaypoint | null>((best, wp) => {
     const km = wp.totalDistance ?? 0;
-    if (!best) return Math.abs(km - hi) < 2 ? wp : null;
-    return Math.abs(km - hi) < Math.abs((best.totalDistance ?? 0) - hi) ? wp : best;
+    const dist = Math.abs(km - hi);
+    if (dist >= 2) return best;
+    if (!best) return wp;
+    return dist < Math.abs((best.totalDistance ?? 0) - hi) ? wp : best;
   }, null);
 
   return {

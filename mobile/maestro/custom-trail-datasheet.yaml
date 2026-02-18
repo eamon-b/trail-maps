@@ -1,0 +1,53 @@
+appId: com.trailcompanion.app
+---
+# Verify trail overview datasheet section and dedicated datasheet screen
+- launchApp
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"
+
+# Open first trail overview
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Scroll to find the datasheet section on overview
+- scrollUntilVisible:
+    element:
+      text: "DATASHEET"
+    direction: DOWN
+
+# Verify datasheet section elements
+- assertVisible: "DATASHEET"
+- assertVisible: "Export"
+- assertVisible: "Expand"
+
+# Expand the datasheet table
+- tapOn: "Expand"
+- waitForAnimationToEnd
+- assertVisible: "Section"
+- assertVisible: "km"
+- assertVisible: "Collapse"
+
+# Collapse it back
+- tapOn: "Collapse"
+- waitForAnimationToEnd
+
+# Navigate to the dedicated datasheet screen
+- scrollUntilVisible:
+    element:
+      text: "Datasheet"
+    direction: DOWN
+- tapOn:
+    text: "Datasheet"
+    index: 1
+- waitForAnimationToEnd
+
+# Verify dedicated datasheet screen loaded
+- assertVisible: "Datasheet"
+- assertVisible: "km remaining"
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd
+- pressKey: back
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

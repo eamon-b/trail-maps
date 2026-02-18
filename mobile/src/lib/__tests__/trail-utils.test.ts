@@ -93,6 +93,18 @@ describe('reverseTrackPoints', () => {
     // Lat/lon should be reversed order
     expect(reversed[0].lat).toBe(points[3].lat);
   });
+
+  it('handles empty array', () => {
+    const reversed = reverseTrackPoints([], 0);
+    expect(reversed).toEqual([]);
+  });
+
+  it('handles single point', () => {
+    const points = makePoints([0]);
+    const reversed = reverseTrackPoints(points, 0);
+    expect(reversed).toHaveLength(1);
+    expect(reversed[0].dist).toBe(0);
+  });
 });
 
 describe('reverseWaypoints', () => {
@@ -110,6 +122,24 @@ describe('reverseWaypoints', () => {
     expect(reversed[1].totalDistance).toBe(50);
     expect(reversed[2].name).toBe('Start');
     expect(reversed[2].totalDistance).toBe(100);
+  });
+
+  it('handles empty waypoints array', () => {
+    const reversed = reverseWaypoints([], 100, 500);
+    expect(reversed).toEqual([]);
+  });
+
+  it('handles single waypoint', () => {
+    const waypoints = [
+      { name: 'Only', lat: 0, lon: 0, type: 'trailhead', totalDistance: 50, ascent: 100, descent: 50, trackIndex: 250 },
+    ];
+    const reversed = reverseWaypoints(waypoints, 100, 500);
+    expect(reversed).toHaveLength(1);
+    expect(reversed[0].name).toBe('Only');
+    expect(reversed[0].totalDistance).toBe(50);
+    expect(reversed[0].ascent).toBe(50);  // original descent becomes new ascent
+    expect(reversed[0].descent).toBe(100); // original ascent becomes new descent
+    expect(reversed[0].trackIndex).toBe(249); // trackLength - 1 - 250
   });
 });
 
@@ -157,6 +187,53 @@ describe('createReversedTrail', () => {
     expect(reversed.track.points[4].dist).toBe(100);
     expect(reversed.waypoints?.[0].name).toBe('B');
     expect(reversed.waypoints?.[1].name).toBe('A');
+  });
+
+  it('handles trail with no alternates or side trips', () => {
+    const trail: Trail = {
+      config: { id: 'test', name: 'Test', shortName: 'T', region: 'AU', lengthKm: 10, direction: { default: 'N', reversed: 'S' } },
+      track: {
+        points: makePoints([0, 5, 10]),
+        totalDistance: 10,
+        totalAscent: 100,
+        totalDescent: 50,
+      },
+      waypoints: [],
+    };
+
+    const reversed = createReversedTrail(trail);
+
+    expect(reversed.track.totalAscent).toBe(50);
+    expect(reversed.track.totalDescent).toBe(100);
+    expect(reversed.waypoints).toEqual([]);
+    expect(reversed.alternates).toEqual([]);
+    expect(reversed.sideTrips).toEqual([]);
+  });
+
+  it('double-reverse restores original distances', () => {
+    const trail: Trail = {
+      config: { id: 'test', name: 'Test', shortName: 'T', region: 'AU', lengthKm: 50, direction: { default: 'N', reversed: 'S' } },
+      track: {
+        points: makePoints([0, 10, 20, 30, 40, 50]),
+        totalDistance: 50,
+        totalAscent: 200,
+        totalDescent: 150,
+      },
+      waypoints: [
+        { name: 'A', lat: 0, lon: 0, type: 'trailhead', totalDistance: 0 },
+        { name: 'B', lat: 1, lon: 1, type: 'campsite', totalDistance: 25 },
+        { name: 'C', lat: 2, lon: 2, type: 'trailhead', totalDistance: 50 },
+      ],
+    };
+
+    const doubleReversed = createReversedTrail(createReversedTrail(trail));
+
+    expect(doubleReversed.track.totalAscent).toBe(200);
+    expect(doubleReversed.track.totalDescent).toBe(150);
+    expect(doubleReversed.track.points[0].dist).toBeCloseTo(0);
+    expect(doubleReversed.track.points[5].dist).toBeCloseTo(50);
+    expect(doubleReversed.waypoints[0].name).toBe('A');
+    expect(doubleReversed.waypoints[2].name).toBe('C');
   });
 });
 

@@ -2,6 +2,7 @@ import React, { useCallback, useImperativeHandle, useMemo, useRef, forwardRef } 
 import { StyleSheet, Text, View } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { ElevationProfile } from './ElevationProfile';
+import { hasElevationData } from '../services/datasheet-service';
 import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -49,6 +50,7 @@ export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, E
   }), []);
 
   const snapPoints = useMemo(() => [80, '40%', '70%'], []);
+  const withElevation = useMemo(() => hasElevationData(trackPoints), [trackPoints]);
 
   const handleSheetChanges = useCallback((_index: number) => {
     // No-op — drawer stays visible at all snap points
@@ -70,22 +72,33 @@ export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, E
           {currentElevation != null ? `${Math.round(currentElevation)}m` : 'Elevation Profile'}
         </Text>
         <Text style={[styles.headerHint, { color: colors.textSecondary }]}>
-          Pull up for profile
+          {withElevation ? 'Pull up for profile' : 'No elevation data'}
         </Text>
       </View>
 
-      {/* Elevation profile chart */}
+      {/* Elevation profile chart or no-data message */}
       <View style={styles.chartContainer}>
-        <ElevationProfile
-          trackPoints={trackPoints}
-          waypoints={waypoints}
-          currentKm={currentKm}
-          focusedWaypointId={focusedWaypointId}
-          onDistanceTap={onDistanceTap}
-          visibleRange={visibleRange}
-          highlightedRange={highlightedRange}
-          waterSourceKms={waterSourceKms}
-        />
+        {withElevation ? (
+          <ElevationProfile
+            trackPoints={trackPoints}
+            waypoints={waypoints}
+            currentKm={currentKm}
+            focusedWaypointId={focusedWaypointId}
+            onDistanceTap={onDistanceTap}
+            visibleRange={visibleRange}
+            highlightedRange={highlightedRange}
+            waterSourceKms={waterSourceKms}
+          />
+        ) : (
+          <View style={styles.noElevation}>
+            <Text style={[styles.noElevationText, { color: colors.textSecondary }]}>
+              No elevation data available for this trail
+            </Text>
+            <Text style={[styles.noElevationHint, { color: colors.textSecondary }]}>
+              The imported GPX file did not contain elevation information
+            </Text>
+          </View>
+        )}
       </View>
     </BottomSheet>
   );
@@ -120,5 +133,20 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.lg,
+  },
+  noElevation: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  noElevationText: {
+    ...typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  noElevationHint: {
+    ...typography.caption,
+    textAlign: 'center',
   },
 });

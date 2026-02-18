@@ -23,6 +23,11 @@ function getTrailInputs(): Record<string, string> {
       if (existsSync(climatePath)) {
         inputs[`trail-${entry}-climate`] = climatePath;
       }
+      // Add plan.html if it exists
+      const planPath = resolve(entryPath, 'plan.html');
+      if (existsSync(planPath)) {
+        inputs[`trail-${entry}-plan`] = planPath;
+      }
     }
   }
 

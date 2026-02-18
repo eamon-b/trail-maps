@@ -25,13 +25,17 @@ npm run preview        # Preview production build locally
 
 ### Core Library (`src/lib/`)
 
-Shared processing modules:
+Shared processing modules (used by both web and mobile):
 - `distance.ts` - Haversine distance calculations
 - `gpx-parser.ts` - Parse GPX XML into structured data (browser APIs — NOT safe for mobile)
 - `gpx-optimizer.ts` - Track simplification (Douglas-Peucker, browser APIs — NOT safe for mobile)
 - `track-classification.ts` - Classify main/alternate/side-trip tracks
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.)
 - `types.ts` - TypeScript interfaces
+- `plan-types.ts` - Plan data types shared with mobile
+- `day-calculator.ts` - Hiking time estimation and day splitting
+- `resupply-calculator.ts` - Town resupply point calculations
+- `water-carry-calculator.ts` - Water carry distance calculations
 
 ### Build Scripts (`scripts/`)
 
@@ -75,7 +79,7 @@ Built at build time:
 - **Build-time processing**: Trail data is processed at build time into optimized JSON
 - **Static site**: All pages are pre-generated, no runtime server required
 - **Client-side rendering**: Trail viewer loads JSON data and renders interactively
-- **Leaflet maps**: Uses OpenTopoMap tiles for topographic display
+- **Web maps**: Leaflet with OpenTopoMap tiles for topographic display
 
 ## Testing
 
@@ -164,15 +168,22 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 - **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
 - **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.
 
+### Mobile Route Structure (`mobile/app/`)
+
+- `(tabs)/` — Bottom tab navigator: `plan.tsx`, `hike.tsx`, `contribute.tsx`
+- `trail/` — Trail screens: `overview.tsx` (detail card), `[id].tsx` (map viewer), `datasheet.tsx` (waypoint datasheet)
+- `plan/` — Plan screens: `create.tsx`, `[planId].tsx` (edit), `map.tsx`, `section-map.tsx`, `measure.tsx`
+- `import/` — GPX import: `index.tsx`
+
 ### Mobile Source Structure (`mobile/src/`)
 
-- `components/` - React components (DayPlanCard, StopSelector, ResupplyList, etc.)
-- `services/` - Business logic (plan-service, day-calculator, resupply-calculator, water-carry-calculator, tile-service, tile-manager, etc.)
-- `db/` - Database layer (database.ts, schema.ts)
-- `hooks/` - React hooks
-- `theme/` - Theme context and utilities
-- `tokens/` - Design tokens (colors, typography, spacing, motion)
-- `lib/` - Mobile-specific utilities (trail-utils.ts)
+- `components/` — UI components: map (TrailMap, ElevationProfile, ElevationProfileDrawer), planning (DayPlanCard, StopSelector, SectionSelector, PlanSummaryCard), hike dashboard (HikeDashboard, WaypointList, WaypointCard, WaypointDetailSheet, WaterCountdown, LocationStatusBar), common (Card, AlertBanner, ProgressBar, SkeletonPlaceholder, UndoToast, ModeSelector, AppBottomSheet)
+- `services/` — Business logic: data layer (trail-data-service, trail-loader, trail-bounds), planning (plan-service, plan-utils, plan-export, day-calculator, distance-calculator), resources (resupply-calculator, water-carry-calculator), maps (tile-service, tile-manager, grid-tile-service), other (datasheet-service, custom-trail-service, climate-service, location-service, measure-service)
+- `db/` — Database layer (database.ts, schema.ts)
+- `hooks/` — React hooks (useLocation.ts)
+- `theme/` — Theme context and utilities
+- `tokens/` — Design tokens (colors, typography, spacing, motion)
+- `lib/` — Mobile-specific utilities (trail-utils.ts)
 
 ### Android Emulator (ADB)
 
@@ -250,3 +261,13 @@ Maestro test flows live in `mobile/maestro/`. Run them to verify UI behavior end
 - `contribute-placeholder.yaml` — Verify contribute tab placeholder
 - `scroll-trail-list.yaml` — Verify trail list scrolling
 - `deep-back-navigation.yaml` — Verify deep back navigation works
+- `plan-creation.yaml` — Verify plan creation flow
+- `plan-editing.yaml` — Verify plan editing flow
+- `tile-download-status.yaml` — Verify tile download status display
+- `measure-tool.yaml` — Verify measure tool flow
+- `gpx-import-screen.yaml` — Verify GPX import screen
+- `manage-custom-trail.yaml` — Verify custom trail management
+- `import-error-flow.yaml` — Verify import error handling
+- `custom-trail-datasheet.yaml` — Verify custom trail datasheet
+- `custom-trail-offline.yaml` — Verify custom trail offline maps
+- `custom-trail-planner.yaml` — Verify custom trail planner

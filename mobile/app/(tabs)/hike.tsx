@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme';
@@ -21,7 +21,7 @@ import {
 import { computeDays } from '../../src/services/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY } from '../trail/[id]';
-import { spacing } from '../../src/tokens/spacing';
+import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
 const DIRECTION_PREF_KEY = 'trail_direction_prefs';
@@ -200,6 +200,21 @@ export default function HikeScreen() {
         }}
         onWaypointSelect={handleWaypointSelect}
       />
+      {activeTrailId && (
+        <View style={styles.datasheetRow}>
+          <Pressable
+            onPress={() => {
+              const km = currentKm ?? 0;
+              router.push(`/trail/datasheet?id=${activeTrailId}&fromKm=${km}`);
+            }}
+            style={[styles.datasheetLink, { borderColor: colors.accent }]}
+            accessibilityRole="button"
+            accessibilityLabel="View trail datasheet"
+          >
+            <Text style={[styles.datasheetLinkText, { color: colors.accent }]}>Datasheet</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -220,5 +235,19 @@ const styles = StyleSheet.create({
   emptyBody: {
     ...typography.body,
     textAlign: 'center',
+  },
+  datasheetRow: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  datasheetLink: {
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  datasheetLinkText: {
+    ...typography.caption,
+    fontWeight: '700',
   },
 });

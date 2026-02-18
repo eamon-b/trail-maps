@@ -181,6 +181,7 @@ const OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/generated');
 const TRAIL_PAGES_DIR = path.join(PROJECT_ROOT, 'src/web/trails');
 const TRAIL_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'trail-template.html');
 const CLIMATE_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'climate-template.html');
+const PLAN_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'plan-template.html');
 
 interface ParsedGpxTrack {
   name: string;
@@ -1070,6 +1071,32 @@ function generateTrailPage(trail: ProcessedTrail): void {
 }
 
 /**
+ * Generate a plan page for a trail from the plan template
+ */
+function generatePlanPage(trail: ProcessedTrail): void {
+  if (!fs.existsSync(PLAN_TEMPLATE_PATH)) {
+    console.log('  Note: Plan template not found, skipping plan page generation');
+    return;
+  }
+
+  const template = fs.readFileSync(PLAN_TEMPLATE_PATH, 'utf-8');
+
+  const html = template
+    .replace(/\{\{TRAIL_ID\}\}/g, trail.config.id)
+    .replace(/\{\{TRAIL_NAME\}\}/g, trail.config.name)
+    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, trail.config.shortName || trail.config.name);
+
+  const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);
+  if (!fs.existsSync(trailPageDir)) {
+    fs.mkdirSync(trailPageDir, { recursive: true });
+  }
+
+  const htmlPath = path.join(trailPageDir, 'plan.html');
+  fs.writeFileSync(htmlPath, html);
+  console.log(`  ✓ Generated ${htmlPath}`);
+}
+
+/**
  * Generate a climate page for a trail from the template
  */
 function generateClimatePage(trail: ProcessedTrail): void {
@@ -1176,6 +1203,7 @@ async function main() {
       // Generate HTML pages for this trail
       generateTrailPage(processed);
       generateClimatePage(processed);
+      generatePlanPage(processed);
 
       trailIndex.push({
         id: processed.config.id,

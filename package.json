@@ -14,7 +14,8 @@
     "fetch:fonts": "tsx scripts/fetch-font-glyphs.ts",
     "upload:tiles": "bash scripts/upload-tiles.sh",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {

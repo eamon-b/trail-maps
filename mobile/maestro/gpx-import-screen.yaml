@@ -5,21 +5,27 @@ appId: com.trailcompanion.app
 - waitForAnimationToEnd
 - assertVisible: "Select a Trail"
 
-# Navigate to Contribute tab (where import lives)
-- tapOn: "Contribute"
-- waitForAnimationToEnd
-
-# Look for import option and tap it
-- tapOn:
-    text: "Import"
-    optional: true
+# Import button is in the Plan tab header
+- tapOn: "Import"
 - waitForAnimationToEnd
 
 # Verify import screen header and elements
 - assertVisible: "Import Trail"
 - assertVisible: "Import a GPX file"
 - assertVisible: "Choose File"
+- assertVisible: "Import from URL"
+- assertVisible: "SUPPORTED FILES"
+
+# Toggle URL input and verify it appears
+- tapOn: "Import from URL"
+- waitForAnimationToEnd
+- assertVisible: "Fetch"
+
+# Hide URL input
+- tapOn: "Hide URL import"
+- waitForAnimationToEnd
 
 # Cancel back
 - tapOn: "Cancel"
 - waitForAnimationToEnd
+- assertVisible: "Select a Trail"

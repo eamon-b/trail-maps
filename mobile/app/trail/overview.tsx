@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,13 @@ import { TrailDataService, type Trail as DbTrail } from '../../src/services/trai
 import { deleteCustomTrail } from '../../src/services/custom-trail-service';
 import { trailJsonToTrail, getMinMax, type Trail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
+import {
+  generateDatasheet,
+  hasElevationData,
+  datasheetToText,
+  datasheetToCsv,
+  type Datasheet,
+} from '../../src/services/datasheet-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -35,6 +43,12 @@ function formatLabel(type: string): string {
   return WAYPOINT_TYPE_LABELS[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+function formatHours(hours: number): string {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export default function TrailOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -49,6 +63,7 @@ export default function TrailOverviewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [editName, setEditName] = useState('');
+  const [datasheetExpanded, setDatasheetExpanded] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -96,6 +111,16 @@ export default function TrailOverviewScreen() {
       .map(([type, count]) => ({ type, label: formatLabel(type), count }));
   }, [trail]);
 
+  const datasheet: Datasheet | null = useMemo(() => {
+    if (!trail || trail.waypoints.length === 0) return null;
+    return generateDatasheet(trail);
+  }, [trail]);
+
+  const withElevation = useMemo(() => {
+    if (!trail) return false;
+    return hasElevationData(trail.track.points);
+  }, [trail]);
+
   const isCustom = dbTrail?.isCustom ?? false;
 
   async function handleSaveName() {
@@ -127,6 +152,27 @@ export default function TrailOverviewScreen() {
         },
       ],
     );
+  }
+
+  function handleShareDatasheet() {
+    if (!datasheet) return;
+    Alert.alert('Export Datasheet', 'Choose format:', [
+      {
+        text: 'Share as Text',
+        onPress: () => {
+          const text = datasheetToText(datasheet);
+          Share.share({ message: text }).catch(() => {});
+        },
+      },
+      {
+        text: 'Share as CSV',
+        onPress: () => {
+          const csv = datasheetToCsv(datasheet);
+          Share.share({ message: csv }).catch(() => {});
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   }
 
   if (loading) {
@@ -210,20 +256,32 @@ export default function TrailOverviewScreen() {
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>km</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statCell}>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-              +{Math.round(trail.track.totalAscent)}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>m ascent</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statCell}>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-              -{Math.round(trail.track.totalDescent)}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>m descent</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+          {withElevation ? (
+            <>
+              <View style={styles.statCell}>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+                  +{Math.round(trail.track.totalAscent)}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>m ascent</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.statCell}>
+                <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+                  -{Math.round(trail.track.totalDescent)}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>m descent</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            </>
+          ) : (
+            <>
+              <View style={styles.statCell}>
+                <Text style={[styles.statValue, { color: colors.textSecondary }]}>—</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>no elevation</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            </>
+          )}
           <View style={styles.statCell}>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>
               {trail.waypoints.length}
@@ -233,12 +291,111 @@ export default function TrailOverviewScreen() {
         </View>
 
         {/* Elevation range */}
-        {stats && (
+        {withElevation && stats && (
           <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ELEVATION RANGE</Text>
             <Text style={[styles.elevationRange, { color: colors.textPrimary }]}>
               {stats.minEle}m — {stats.maxEle}m
             </Text>
+          </View>
+        )}
+
+        {/* Datasheet — section-by-section breakdown */}
+        {datasheet && datasheet.sections.length > 0 && (
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.datasheetHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginBottom: 0 }]}>
+                DATASHEET
+              </Text>
+              <View style={styles.datasheetActions}>
+                <Pressable
+                  onPress={handleShareDatasheet}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Export datasheet"
+                >
+                  <Text style={[styles.datasheetAction, { color: colors.accent }]}>Export</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDatasheetExpanded(!datasheetExpanded)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={datasheetExpanded ? 'Collapse datasheet' : 'Expand datasheet'}
+                >
+                  <Text style={[styles.datasheetAction, { color: colors.accent }]}>
+                    {datasheetExpanded ? 'Collapse' : 'Expand'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Summary line */}
+            <Text style={[styles.datasheetSummary, { color: colors.textSecondary }]}>
+              {datasheet.summary.sectionCount} sections
+              {datasheet.summary.hasElevation
+                ? ` · ${formatHours(datasheet.summary.totalHours)} hiking time`
+                : ''}
+              {` · ~${datasheet.summary.estimatedDays} days at ${datasheet.summary.dailyPaceKm} km/day`}
+            </Text>
+
+            {/* Resupply points */}
+            {datasheet.summary.resupplyPoints.length > 0 && (
+              <Text style={[styles.resupplyLine, { color: colors.textSecondary }]}>
+                Resupply: {datasheet.summary.resupplyPoints.map(rp => `${rp.name} (km ${rp.km})`).join(', ')}
+              </Text>
+            )}
+
+            {/* Section table */}
+            {datasheetExpanded && (
+              <View style={styles.datasheetTable}>
+                {/* Header row */}
+                <View style={[styles.datasheetRow, styles.datasheetRowHeader, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.dsCell, styles.dsCellName, styles.dsCellHeader, { color: colors.textSecondary }]}>Section</Text>
+                  <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellHeader, { color: colors.textSecondary }]}>km</Text>
+                  {datasheet.summary.hasElevation && (
+                    <>
+                      <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellHeader, { color: colors.textSecondary }]}>+m</Text>
+                      <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellHeader, { color: colors.textSecondary }]}>-m</Text>
+                    </>
+                  )}
+                  <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellHeader, { color: colors.textSecondary }]}>Time</Text>
+                  <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellHeader, { color: colors.textSecondary }]}>Cum</Text>
+                </View>
+
+                {/* Data rows */}
+                {datasheet.sections.map((s) => (
+                  <View
+                    key={s.index}
+                    style={[styles.datasheetRow, { borderBottomColor: colors.border }]}
+                  >
+                    <View style={[styles.dsCell, styles.dsCellName]}>
+                      <Text style={[styles.dsSectionName, { color: colors.textPrimary }]} numberOfLines={1}>
+                        {s.endName}
+                      </Text>
+                    </View>
+                    <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellValue, { color: colors.textPrimary }]}>
+                      {s.distanceKm}
+                    </Text>
+                    {datasheet.summary.hasElevation && (
+                      <>
+                        <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellValue, { color: colors.textPrimary }]}>
+                          {s.ascentM}
+                        </Text>
+                        <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellValue, { color: colors.textPrimary }]}>
+                          {s.descentM}
+                        </Text>
+                      </>
+                    )}
+                    <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellValue, { color: colors.textSecondary }]}>
+                      {formatHours(s.estimatedHours)}
+                    </Text>
+                    <Text style={[styles.dsCell, styles.dsCellNum, styles.dsCellValue, { color: colors.textSecondary }]}>
+                      {s.cumulativeKm}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -289,6 +446,16 @@ export default function TrailOverviewScreen() {
             </Pressable>
           </View>
         )}
+
+        {/* Datasheet button */}
+        <Pressable
+          style={[styles.datasheetButton, { borderColor: colors.accent }]}
+          onPress={() => router.push(`/trail/datasheet?id=${id}`)}
+          accessibilityRole="button"
+          accessibilityLabel="View waypoint datasheet"
+        >
+          <Text style={[styles.datasheetButtonText, { color: colors.accent }]}>Datasheet</Text>
+        </Pressable>
 
         {/* Open Map button */}
         <Pressable
@@ -466,6 +633,17 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '600',
   },
+  datasheetButton: {
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  datasheetButtonText: {
+    ...typography.body,
+    fontWeight: '700',
+  },
   openMapButton: {
     borderRadius: radii.lg,
     paddingVertical: spacing.md,
@@ -475,5 +653,61 @@ const styles = StyleSheet.create({
   openMapText: {
     ...typography.body,
     fontWeight: '700',
+  },
+  // Datasheet styles
+  datasheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  datasheetActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  datasheetAction: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  datasheetSummary: {
+    ...typography.caption,
+    marginBottom: spacing.xs,
+  },
+  resupplyLine: {
+    ...typography.caption,
+    marginBottom: spacing.sm,
+  },
+  datasheetTable: {
+    marginTop: spacing.sm,
+  },
+  datasheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  datasheetRowHeader: {
+    paddingBottom: spacing.xs,
+  },
+  dsCell: {
+    paddingHorizontal: 2,
+  },
+  dsCellName: {
+    flex: 1,
+  },
+  dsCellNum: {
+    width: 44,
+    textAlign: 'right' as const,
+  },
+  dsCellHeader: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  dsCellValue: {
+    fontSize: 12,
+    fontVariant: ['tabular-nums'] as const,
+  },
+  dsSectionName: {
+    fontSize: 12,
   },
 });

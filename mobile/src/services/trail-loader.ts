@@ -28,6 +28,10 @@ export interface TrailJson {
     elevation?: number;
     distance?: number;
     totalDistance?: number;
+    ascent?: number;
+    descent?: number;
+    totalAscent?: number;
+    totalDescent?: number;
   }[];
   track: {
     points: { lat: number; lon: number; ele: number; dist: number }[];

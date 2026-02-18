@@ -7,6 +7,7 @@ import { ProgressBar } from './ProgressBar';
 import { WaypointCard } from './WaypointCard';
 import { WaypointList, WaypointListItem } from './WaypointList';
 import { Card, CardState } from './Card';
+import { WaterCountdown } from './WaterCountdown';
 
 export interface DashboardData {
   /** Trail info */
@@ -32,7 +33,12 @@ export interface DashboardData {
     descentM: number;
     estimatedHours: number;
     completedKm: number;
+    /** Estimated remaining hours for today's section (from current position) */
+    remainingHours?: number;
   };
+
+  /** Distance to next water source in km (for WaterCountdown) */
+  nextWaterKm?: number;
 
   /** Upcoming waypoints */
   upcoming?: WaypointListItem[];
@@ -49,6 +55,17 @@ interface HikeDashboardProps {
   /** Callback when a waypoint in the upcoming list is tapped */
   onWaypointSelect?: (waypoint: WaypointListItem) => void;
   style?: ViewStyle;
+}
+
+/**
+ * Format estimated arrival time: now + remainingHours → "HH:MM"
+ */
+function formatETA(remainingHours: number): string {
+  const arrivalMs = Date.now() + remainingHours * 3_600_000;
+  const d = new Date(arrivalMs);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 /**
@@ -184,6 +201,22 @@ export function HikeDashboard({
                       style={styles.todayProgressBar}
                     />
                   </View>
+                  {/* Remaining distance + ETA */}
+                  {data.today.remainingHours != null && (
+                    <View style={styles.todayEtaRow}>
+                      <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
+                        {(data.today.distanceKm - data.today.completedKm).toFixed(1)} km remaining
+                      </Text>
+                      <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
+                        {'ETA: '}
+                        {formatETA(data.today.remainingHours)}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Next water countdown */}
+                  {data.nextWaterKm != null && (
+                    <WaterCountdown nextWaterKm={data.nextWaterKm} style={styles.waterCountdown} />
+                  )}
                 </View>
               )}
               {!todayExpanded && (
@@ -193,6 +226,13 @@ export function HikeDashboard({
               )}
             </Pressable>
           )}
+        </Card>
+      )}
+
+      {/* No-plan today section: show water countdown when no plan is set */}
+      {!data?.today && !isLoading && data?.nextWaterKm != null && (
+        <Card state="normal" label="TODAY">
+          <WaterCountdown nextWaterKm={data.nextWaterKm} />
         </Card>
       )}
 
@@ -258,5 +298,17 @@ const styles = StyleSheet.create({
   todayCollapsed: {
     ...typography.caption,
     fontStyle: 'italic',
+  },
+  todayEtaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  todayEtaText: {
+    ...typography.caption,
+    fontVariant: ['tabular-nums'],
+  },
+  waterCountdown: {
+    marginTop: spacing.sm,
   },
 });

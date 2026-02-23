@@ -20,6 +20,9 @@ describe('PlanService', () => {
   });
 
   it('creates a new plan', async () => {
+    // createPlan checks the trail exists first
+    mockDb.getFirstAsync.mockResolvedValueOnce({ id: 'bibbulmun' });
+
     await service.createPlan({
       id: 'plan-1',
       trailId: 'bibbulmun',
@@ -54,6 +57,22 @@ describe('PlanService', () => {
     expect(plan!.name).toBe('April Thru-hike');
     expect(plan!.trailId).toBe('bibbulmun');
     expect(plan!.direction).toBe('NOBO');
+  });
+
+  it('rejects createPlan when trail does not exist', async () => {
+    // getFirstAsync returns null (default mock) → trail not found
+    await expect(
+      service.createPlan({
+        id: 'plan-bad',
+        trailId: 'nonexistent',
+        name: 'Bad Plan',
+        direction: 'NOBO',
+        startDate: null,
+        sectionJson: null,
+        stopsJson: null,
+      })
+    ).rejects.toThrow('Trail not found: nonexistent');
+    expect(mockDb.runAsync).not.toHaveBeenCalled();
   });
 
   it('returns null for unknown plan', async () => {

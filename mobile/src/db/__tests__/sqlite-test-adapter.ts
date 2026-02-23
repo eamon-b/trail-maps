@@ -14,6 +14,10 @@ export interface TestDatabase {
 
 export function createTestDatabase(): TestDatabase {
   const db = new Database(':memory:');
+  // Use db.pragma() (better-sqlite3's native PRAGMA API) rather than db.exec().
+  // db.exec('PRAGMA ...') is unreliable across Jest module reloads in the same
+  // worker process — the pragma silently has no effect on subsequent test files.
+  db.pragma('foreign_keys = ON');
 
   return {
     async runAsync(sql: string, params: unknown[] = []) {

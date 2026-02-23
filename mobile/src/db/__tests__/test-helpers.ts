@@ -7,8 +7,7 @@ import { migrateDatabase } from '../schema';
  */
 export async function createMigratedTestDb(): Promise<TestDatabase> {
   const db = createTestDatabase();
-  // Enable foreign keys like the production database
-  await db.execAsync('PRAGMA foreign_keys = ON');
+  // FK enforcement is enabled in createTestDatabase() via db.pragma().
   await migrateDatabase(db as any);
   return db;
 }

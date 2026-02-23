@@ -84,6 +84,13 @@ export class PlanService {
   }
 
   async createPlan(plan: Omit<Plan, 'createdAt' | 'updatedAt'>): Promise<void> {
+    const trail = await this.db.getFirstAsync<{ id: string }>(
+      'SELECT id FROM trails WHERE id = ?',
+      [plan.trailId]
+    );
+    if (!trail) {
+      throw new Error(`Trail not found: ${plan.trailId}`);
+    }
     await this.db.runAsync(
       `INSERT INTO plans (id, trail_id, name, direction, start_date, section_json, stops_json)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,

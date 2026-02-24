@@ -46,7 +46,12 @@ export interface TrailJson {
 // Metro resolves require() for JSON files to the parsed object at build time
 const trailIndex: TrailIndex[] = require('../../assets/trails/index.json');
 export const TRAIL_DATA: Record<string, TrailJson> = {
+  aawt: require('../../assets/trails/aawt.json'),
+  'hume-and-hovell': require('../../assets/trails/hume-and-hovell.json'),
   bibbulmun: require('../../assets/trails/bibbulmun.json'),
+  cape_to_cape: require('../../assets/trails/cape_to_cape.json'),
+  heysen: require('../../assets/trails/heysen.json'),
+  larapinta: require('../../assets/trails/larapinta.json'),
 };
 
 export async function loadBundledTrails(service: TrailDataService): Promise<void> {

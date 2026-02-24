@@ -6,7 +6,7 @@ import { useTheme } from '../../src/theme';
 import { TrailMap } from '../../src/components/TrailMap';
 import { PlanService } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
-import { trailJsonToTrail, createReversedTrail, type Trail } from '../../src/lib/trail-utils';
+import { trailJsonToTrail, createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
 import type { StopData } from '../../src/services/plan-calculator-types';
 import { generateId, migrateStopsJson } from '../../src/services/plan-utils';
 import { spacing, touchTarget } from '../../src/tokens/spacing';
@@ -140,17 +140,9 @@ export default function PlanMapScreen() {
         lat = stop.customLocation.lat;
         lon = stop.customLocation.lon;
       } else {
-        // Find nearest track point for this km
+        // Find nearest track point for this km (binary search)
         const points = trail.track.points;
-        let bestIdx = 0;
-        let bestDist = Infinity;
-        for (let i = 0; i < points.length; i++) {
-          const d = Math.abs(points[i].dist - stop.km);
-          if (d < bestDist) {
-            bestDist = d;
-            bestIdx = i;
-          }
-        }
+        const bestIdx = findNearestByDistance(points, stop.km);
         lat = points[bestIdx].lat;
         lon = points[bestIdx].lon;
       }

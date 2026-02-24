@@ -59,6 +59,7 @@ export default function PlanScreen() {
   const [plans, setPlans] = useState<Record<string, Plan[]>>({});
   const [downloadingTrailId, setDownloadingTrailId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ fileName: string; fileIndex: number; totalFiles: number } | null>(null);
+  const [downloadError, setDownloadError] = useState<{ trailId: string; message: string } | null>(null);
   const [storageInfo, setStorageInfo] = useState<{ usedBytes: number; availableBytes: number; customTrailBytes: number } | null>(null);
 
   const loadTrails = useCallback(async () => {
@@ -169,6 +170,7 @@ export default function PlanScreen() {
 
   async function handleDownloadBuiltIn(trailId: string) {
     setDownloadingTrailId(trailId);
+    setDownloadError(null);
     let filesDone = 0;
     try {
       await downloadTrailTiles(trailId, TILE_BASE_URL, (progress: DownloadProgress) => {
@@ -182,7 +184,7 @@ export default function PlanScreen() {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      Alert.alert('Download Failed', msg);
+      setDownloadError({ trailId, message: msg });
     }
     setDownloadingTrailId(null);
     setDownloadProgress(null);
@@ -250,7 +252,7 @@ export default function PlanScreen() {
         // User cancelled — no alert needed
       } else {
         const msg = err instanceof Error ? err.message : String(err);
-        Alert.alert('Download Failed', msg);
+        setDownloadError({ trailId, message: msg });
       }
     }
     setDownloadingTrailId(null);
@@ -300,6 +302,37 @@ export default function PlanScreen() {
       );
     }
 
+    if (downloadError && downloadError.trailId === item.id) {
+      return (
+        <View style={styles.tileDownloadProgress}>
+          <Text style={[styles.tileText, { color: '#c00' }]} numberOfLines={2}>
+            Download failed: {downloadError.message}
+          </Text>
+          <View style={[styles.tileRow, { borderTopWidth: 0, marginTop: spacing.xs }]}>
+            <Pressable
+              onPress={() => {
+                setDownloadError(null);
+                handleDownload(item.id, item.isCustom);
+              }}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Retry download"
+            >
+              <Text style={[styles.tileAction, { color: colors.accent }]}>Retry</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDownloadError(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss error"
+            >
+              <Text style={[styles.tileAction, { color: colors.textSecondary }]}>Dismiss</Text>
+            </Pressable>
+          </View>
+        </View>
+      );
+    }
+
     if (tileStatus.complete) {
       return (
         <View style={styles.tileRow}>
@@ -340,6 +373,14 @@ export default function PlanScreen() {
       <View style={styles.headerRow}>
         <Text style={[styles.header, { color: colors.accent }]}>Select a Trail</Text>
         <View style={styles.headerActions}>
+          <Pressable
+            onPress={() => router.push('/settings')}
+            style={styles.measureButton}
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+          >
+            <Text style={[styles.measureText, { color: colors.textSecondary }]}>Settings</Text>
+          </Pressable>
           <Pressable
             onPress={() => router.push('/import')}
             style={styles.measureButton}

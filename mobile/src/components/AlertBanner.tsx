@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -23,6 +23,8 @@ interface AlertBannerProps {
   level: AlertLevel;
   /** Alert message text */
   message: string;
+  /** Called when the banner is tapped (e.g. to show snooze menu) */
+  onPress?: () => void;
   /** Called when the banner finishes hiding */
   onHidden?: () => void;
 }
@@ -32,7 +34,7 @@ interface AlertBannerProps {
  * Uses spring animation (damping: 15, stiffness: 150) per spec.
  * Components accept state as props — Part 5 implements detection logic.
  */
-export function AlertBanner({ visible, level, message, onHidden }: AlertBannerProps) {
+export function AlertBanner({ visible, level, message, onPress, onHidden }: AlertBannerProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -68,6 +70,15 @@ export function AlertBanner({ visible, level, message, onHidden }: AlertBannerPr
     level === 'warning' ? '⚠️' :
     'ℹ️';
 
+  const content = (
+    <View style={styles.content}>
+      <Text style={styles.icon}>{levelIcon}</Text>
+      <Text style={[styles.message, { color: '#FFFFFF' }]} numberOfLines={2}>
+        {message}
+      </Text>
+    </View>
+  );
+
   return (
     <Animated.View
       style={[
@@ -78,12 +89,13 @@ export function AlertBanner({ visible, level, message, onHidden }: AlertBannerPr
       accessibilityRole="alert"
       accessibilityLabel={`${level} alert: ${message}`}
     >
-      <View style={styles.content}>
-        <Text style={styles.icon}>{levelIcon}</Text>
-        <Text style={[styles.message, { color: '#FFFFFF' }]} numberOfLines={2}>
-          {message}
-        </Text>
-      </View>
+      {onPress ? (
+        <Pressable onPress={onPress} accessibilityRole="button" accessibilityHint="Tap to snooze alerts">
+          {content}
+        </Pressable>
+      ) : (
+        content
+      )}
     </Animated.View>
   );
 }

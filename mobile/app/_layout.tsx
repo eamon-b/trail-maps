@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, Pressable, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Paths, File } from 'expo-file-system';
 import { ThemeProvider, useTheme, BottomSheetProvider } from '../src/theme';
 import { FocusedWaypointProvider } from '../src/theme/FocusedWaypointContext';
 import { TrailDataService } from '../src/services/trail-data-service';
 import { loadBundledTrails } from '../src/services/trail-loader';
+import { closeDatabase } from '../src/db/database';
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -25,10 +28,31 @@ export default function RootLayout() {
     init();
   }, []);
 
+  const handleReset = useCallback(async () => {
+    try {
+      await closeDatabase();
+      for (const name of ['trail-companion.db', 'trail-companion.db-wal', 'trail-companion.db-shm']) {
+        try {
+          const f = new File(Paths.document, 'SQLite', name);
+          if (f.exists) f.delete();
+        } catch { /* ignore missing files */ }
+      }
+      await AsyncStorage.clear();
+    } catch {
+      // Best effort
+    }
+    // Clear error state to retry initialization
+    setError(null);
+    setReady(false);
+  }, []);
+
   if (error) {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>Failed to initialize: {error}</Text>
+        <Pressable onPress={handleReset} style={styles.resetButton}>
+          <Text style={styles.resetText}>Reset App Data</Text>
+        </Pressable>
       </View>
     );
   }
@@ -54,6 +78,7 @@ export default function RootLayout() {
               <Stack.Screen name="trail" />
               <Stack.Screen name="plan" />
               <Stack.Screen name="import" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
             </Stack>
           </FocusedWaypointProvider>
         </BottomSheetProvider>
@@ -84,5 +109,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#d32f2f',
     textAlign: 'center',
+  },
+  resetButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#d32f2f',
+    borderRadius: 8,
+  },
+  resetText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
   },
 });

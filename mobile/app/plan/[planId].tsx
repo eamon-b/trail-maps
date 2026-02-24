@@ -3,10 +3,12 @@ import {
   View,
   Text,
   FlatList,
+  Modal,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
+  TextInput,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -96,6 +98,8 @@ export default function PlanEditorScreen() {
   // Versioning
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [versions, setVersions] = useState<PlanVersion[]>([]);
+  const [versionNameModalOpen, setVersionNameModalOpen] = useState(false);
+  const [versionNameInput, setVersionNameInput] = useState('');
 
   // Load plan + trail data
   useEffect(() => {
@@ -460,26 +464,21 @@ export default function PlanEditorScreen() {
 
   const handleSaveVersion = useCallback(() => {
     if (!planId) return;
-    Alert.prompt?.('Save Version', 'Enter a name for this version:', async (name: string) => {
-      try {
-        const service = planServiceRef.current ?? await PlanService.create();
-        await service.savePlanVersion(planId, name || undefined);
-        loadVersions();
-      } catch (e) {
-        Alert.alert('Error', e instanceof Error ? e.message : 'Failed to save version');
-      }
-    }) ?? (async () => {
-      // Fallback for platforms without Alert.prompt
-      try {
-        const service = planServiceRef.current ?? await PlanService.create();
-        const versionName = `Version ${versions.length + 1}`;
-        await service.savePlanVersion(planId, versionName);
-        loadVersions();
-      } catch (e) {
-        Alert.alert('Error', e instanceof Error ? e.message : 'Failed to save version');
-      }
-    })();
-  }, [planId, loadVersions, versions.length]);
+    setVersionNameInput('');
+    setVersionNameModalOpen(true);
+  }, [planId]);
+
+  const handleConfirmSaveVersion = useCallback(async () => {
+    if (!planId) return;
+    setVersionNameModalOpen(false);
+    try {
+      const service = planServiceRef.current ?? await PlanService.create();
+      await service.savePlanVersion(planId, versionNameInput || undefined);
+      loadVersions();
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to save version');
+    }
+  }, [planId, versionNameInput, loadVersions]);
 
   const handleLoadVersion = useCallback((version: PlanVersion) => {
     if (!planId) return;
@@ -809,6 +808,49 @@ export default function PlanEditorScreen() {
         onUndo={handleUndo}
         onDismiss={handleUndoDismiss}
       />
+
+      {/* Version name modal (cross-platform replacement for Alert.prompt) */}
+      <Modal
+        visible={versionNameModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setVersionNameModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Save Version</Text>
+            <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+              Enter a name for this version:
+            </Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.textPrimary, borderColor: colors.border }]}
+              value={versionNameInput}
+              onChangeText={setVersionNameInput}
+              placeholder="Version name"
+              placeholderTextColor={colors.textSecondary}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleConfirmSaveVersion}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={() => setVersionNameModalOpen(false)}
+                style={styles.modalButton}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.modalButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleConfirmSaveVersion}
+                style={styles.modalButton}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.modalButtonText, { color: colors.accent }]}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -962,6 +1004,49 @@ const styles = StyleSheet.create({
   },
   versionDelete: {
     ...typography.caption,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+  },
+  modalTitle: {
+    ...typography.titleLarge,
+    marginBottom: spacing.xs,
+  },
+  modalMessage: {
+    ...typography.body,
+    marginBottom: spacing.md,
+  },
+  modalInput: {
+    ...typography.body,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.md,
+  },
+  modalButton: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  modalButtonText: {
+    ...typography.body,
     fontWeight: '600',
   },
 });

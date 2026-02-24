@@ -37,9 +37,12 @@ Shared processing modules (used by both web and mobile):
 - `resupply-calculator.ts` - Town resupply point calculations
 - `water-carry-calculator.ts` - Water carry distance calculations
 
+**Note on calculator duplication:** `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` have parallel implementations in both `src/lib/` (web) and `mobile/src/services/` (mobile). The mobile versions were written first; the web versions were ported later. Changes to calculation logic should be applied to both locations. Future cleanup: consolidate into `src/lib/` and share via Metro `watchFolders`.
+
 ### Build Scripts (`scripts/`)
 
 - `build-trails.ts` - Generates static trail pages from GPX/JSON data
+- `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision)
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
 - `fetch-pois.ts` - Fetches points of interest

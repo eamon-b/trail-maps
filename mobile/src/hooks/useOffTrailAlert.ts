@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LocationState } from '../components/LocationStatusBar';
 import type { SnappedLocation } from './useLocation';
-import type { TrackPoint } from '../lib/trail-utils';
+import { findNearestByDistance, type TrackPoint } from '../lib/trail-utils';
 import {
   computeAlertState,
   computeAlertDetail,
@@ -104,8 +104,9 @@ export function useOffTrailAlert(
 
       // Compute detail text including bearing to trail when off-trail
       let bearing: number | null = null;
-      if (rawState === 'offTrail' && location?.raw && location.trailKm != null) {
-        const nearestPt = findNearestTrailPoint(location.trailKm, trackPoints);
+      if (rawState === 'offTrail' && location?.raw && location.trailKm != null && trackPoints.length > 0) {
+        const nearestIdx = findNearestByDistance(trackPoints, location.trailKm);
+        const nearestPt = trackPoints[nearestIdx];
         if (nearestPt) {
           bearing = getBearingToTrail(
             location.raw.latitude,
@@ -128,24 +129,6 @@ export function useOffTrailAlert(
   }, [location, accuracy, enabled, thresholds, isSnoozed, trackPoints]);
 
   return { alertState, alertDetail, isSnoozed, snoozeUntil, snooze, clearSnooze };
-}
-
-/**
- * Find the track point with the nearest cumulative km to `trailKm`.
- * Used to get lat/lon of the snapped trail position for bearing calculation.
- */
-function findNearestTrailPoint(trailKm: number, trackPoints: TrackPoint[]): TrackPoint | null {
-  if (trackPoints.length === 0) return null;
-  let nearest = trackPoints[0];
-  let nearestDelta = Math.abs(trackPoints[0].dist - trailKm);
-  for (const pt of trackPoints) {
-    const delta = Math.abs(pt.dist - trailKm);
-    if (delta < nearestDelta) {
-      nearestDelta = delta;
-      nearest = pt;
-    }
-  }
-  return nearest;
 }
 
 /**

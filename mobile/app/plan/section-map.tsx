@@ -6,7 +6,7 @@ import { useTheme } from '../../src/theme';
 import { TrailMap } from '../../src/components/TrailMap';
 import { PlanService } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
-import { trailJsonToTrail, createReversedTrail, type Trail } from '../../src/lib/trail-utils';
+import { trailJsonToTrail, createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
 import { spacing, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -155,15 +155,7 @@ export default function SectionMapScreen() {
     const points = trail.track.points;
 
     const findCoords = (km: number) => {
-      let bestIdx = 0;
-      let bestDist = Infinity;
-      for (let i = 0; i < points.length; i++) {
-        const d = Math.abs(points[i].dist - km);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIdx = i;
-        }
-      }
+      const bestIdx = findNearestByDistance(points, km);
       return { latitude: points[bestIdx].lat, longitude: points[bestIdx].lon };
     };
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { HikeDashboard, type DashboardData } from '../../src/components';
 import { LocationStatusBar } from '../../src/components/LocationStatusBar';
@@ -29,7 +29,7 @@ import { ACTIVE_TRAIL_KEY } from '../trail/[id]';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 import type { LocationState } from '../../src/components/LocationStatusBar';
-import type { SnoozeDuration } from '../../src/services/off-trail-alert-service';
+import type { AlertThresholdPreset, SnoozeDuration } from '../../src/services/off-trail-alert-service';
 
 const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 
@@ -77,6 +77,7 @@ export default function HikeScreen() {
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSnoozeMenu, setShowSnoozeMenu] = useState(false);
+  const [alertPreset, setAlertPreset] = useState<AlertThresholdPreset>('normal');
 
   const trackPoints = useMemo(() => trail?.track.points ?? [], [trail]);
   const { location, accuracy } = useLocation(trackPoints);
@@ -88,7 +89,7 @@ export default function HikeScreen() {
     location,
     accuracy,
     trackPoints,
-    { thresholdPreset: 'normal', enabled: !!trail },
+    { thresholdPreset: alertPreset, enabled: !!trail },
   );
 
   // Haptic feedback when state escalates to warning or offTrail
@@ -101,51 +102,71 @@ export default function HikeScreen() {
     }
   }, [alertState]);
 
-  // Load the active trail
-  useEffect(() => {
-    async function load() {
-      try {
-        const trailId = await AsyncStorage.getItem(ACTIVE_TRAIL_KEY);
-        if (!trailId) {
-          setLoading(false);
-          return;
-        }
-        setActiveTrailId(trailId);
-
-        const service = await TrailDataService.create();
-        const json = await service.getTrailTrackData(trailId);
-        if (!json) {
-          setLoading(false);
-          return;
-        }
-
-        let parsed = trailJsonToTrail(json);
-
-        // Respect saved direction preference
-        const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
-        const prefs = prefsStr ? JSON.parse(prefsStr) : {};
-        if (prefs[trailId]) {
-          parsed = createReversedTrail(parsed);
-        }
-
-        setTrail(parsed);
-
-        // Load active plan for this trail
+  // Load the active trail — reload when tab regains focus
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function load() {
         try {
-          const planService = await PlanService.create();
-          const plan = await planService.getActivePlanForTrail(trailId);
-          setActivePlan(plan);
-        } catch {
-          // No plan — that's fine
-        }
+          // Load alert threshold preference
+          const savedThreshold = await AsyncStorage.getItem('trail-companion:alertThreshold');
+          if (!cancelled && savedThreshold && ['tight', 'normal', 'loose'].includes(savedThreshold)) {
+            setAlertPreset(savedThreshold as AlertThresholdPreset);
+          }
 
-        setLoading(false);
-      } catch {
-        setLoading(false);
+          const trailId = await AsyncStorage.getItem(ACTIVE_TRAIL_KEY);
+          if (cancelled) return;
+          if (!trailId) {
+            setTrail(null);
+            setActiveTrailId(null);
+            setActivePlan(null);
+            setLoading(false);
+            return;
+          }
+          setActiveTrailId(trailId);
+
+          const service = await TrailDataService.create();
+          const json = await service.getTrailTrackData(trailId);
+          if (cancelled) return;
+          if (!json) {
+            setLoading(false);
+            return;
+          }
+
+          let parsed = trailJsonToTrail(json);
+
+          // Load active plan for this trail
+          let plan: Plan | null = null;
+          try {
+            const planService = await PlanService.create();
+            plan = await planService.getActivePlanForTrail(trailId);
+          } catch {
+            // No plan — that's fine
+          }
+          if (cancelled) return;
+
+          // Use plan direction if available, otherwise fall back to direction preference
+          if (plan?.direction === 'SOBO') {
+            parsed = createReversedTrail(parsed);
+          } else if (!plan) {
+            const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
+            const prefs = prefsStr ? JSON.parse(prefsStr) : {};
+            if (prefs[trailId]) {
+              parsed = createReversedTrail(parsed);
+            }
+          }
+
+          setTrail(parsed);
+          setActivePlan(plan);
+          setLoading(false);
+        } catch {
+          if (!cancelled) setLoading(false);
+        }
       }
-    }
-    load();
-  }, []);
+      load();
+      return () => { cancelled = true; };
+    }, []),
+  );
 
   // Compute plan days for the "today" section
   const planDays = useMemo((): ComputedDay[] => {
@@ -304,6 +325,7 @@ export default function HikeScreen() {
           visible={alertState === 'offTrail' && !isSnoozed}
           level="error"
           message={alertDetail ? `Off trail — ${alertDetail}` : 'Off trail'}
+          onPress={handleAlertBannerPress}
           onHidden={() => setShowSnoozeMenu(false)}
         />
       )}

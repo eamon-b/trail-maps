@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "build:mobile-trails": "tsx scripts/build-mobile-trails.ts"
   },
   "dependencies": {
     "papaparse": "^5.4.1"

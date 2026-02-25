@@ -6,7 +6,6 @@
  */
 
 import { Directory, Paths } from 'expo-file-system';
-import * as FileSystem from 'expo-file-system';
 import {
   getTrailTileStatus,
   downloadTrailTiles,
@@ -34,8 +33,8 @@ export class TileManager {
   }
 
   /** Get available device storage in bytes */
-  async getAvailableSpace(): Promise<number> {
-    return FileSystem.getFreeDiskStorageAsync();
+  getAvailableSpace(): number {
+    return Paths.availableDiskSpace;
   }
 
   /** List trail IDs that have downloaded tile sets */

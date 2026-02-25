@@ -59,6 +59,7 @@ const GLYPH_RANGES = [
   '256-511',
   '512-767',
   '768-1023',
+  '7680-7935',
   '8192-8447',
   '8448-8703',
 ] as const;
@@ -69,6 +70,7 @@ const GLYPH_ASSETS: Record<string, number> = {
   '256-511': require('../../assets/fonts/Open Sans Regular/256-511.pbf'),
   '512-767': require('../../assets/fonts/Open Sans Regular/512-767.pbf'),
   '768-1023': require('../../assets/fonts/Open Sans Regular/768-1023.pbf'),
+  '7680-7935': require('../../assets/fonts/Open Sans Regular/7680-7935.pbf'),
   '8192-8447': require('../../assets/fonts/Open Sans Regular/8192-8447.pbf'),
   '8448-8703': require('../../assets/fonts/Open Sans Regular/8448-8703.pbf'),
 };
@@ -188,15 +190,18 @@ export async function downloadTrailTiles(
       continue;
     }
 
+    const fileUrl = `${url}/${trailId}/${name}`;
     try {
-      await File.downloadFileAsync(`${url}/${trailId}/${name}`, dest, {
+      await File.downloadFileAsync(fileUrl, dest, {
         idempotent: true,
       });
       onProgress?.({ fileName: name, done: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      onProgress?.({ fileName: name, done: false, error: msg });
-      throw new Error(`Failed to download ${name}: ${msg}`);
+      const detail = `Failed to download ${name} from ${fileUrl}: ${msg}`;
+      console.error('[tile-service]', detail);
+      onProgress?.({ fileName: name, done: false, error: detail });
+      throw new Error(detail);
     }
   }
 }

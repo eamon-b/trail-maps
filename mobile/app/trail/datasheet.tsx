@@ -132,7 +132,7 @@ export default function DatasheetScreen() {
 
       <FlatList
         data={visibleRows}
-        keyExtractor={(item) => item.waypoint.name + (item.waypoint.totalDistance ?? 0)}
+        keyExtractor={(item, index) => `${index}-${item.waypoint.name}`}
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
         ListHeaderComponent={
           <View style={styles.listHeader}>

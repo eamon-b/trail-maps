@@ -225,6 +225,10 @@ export function TrailMap({
   customPins,
 }: TrailMapProps) {
   const { colors } = useTheme();
+
+  // Match overlay text font to the active base style's available glyphs.
+  // Liberty (online) serves Noto Sans; our offline style bundles Open Sans.
+  const labelFont = mapStyleOverride ? ['Open Sans Regular'] : ['Noto Sans Regular'];
   const cameraRef = useRef<CameraRef>(null);
   const mapRef = useRef<MapViewRef>(null);
   const hasSetInitialBounds = useRef(false);
@@ -488,6 +492,7 @@ export function TrailMap({
               minZoomLevel={10}
               style={{
                 textField: ['get', 'label'],
+                textFont: labelFont,
                 textSize: 11,
                 textColor: colors.textPrimary,
                 textHaloColor: '#ffffff',
@@ -575,6 +580,7 @@ export function TrailMap({
               minZoomLevel={11}
               style={{
                 textField: ['get', 'name'],
+                textFont: labelFont,
                 textSize: 11,
                 textColor: colors.textPrimary,
                 textHaloColor: '#ffffff',

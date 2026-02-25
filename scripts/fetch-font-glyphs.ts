@@ -36,6 +36,7 @@ const GLYPH_RANGES = [
   '256-511',     // Latin Extended-A (ăĕğ etc.)
   '512-767',     // Latin Extended-B
   '768-1023',    // Combining diacritical marks + Greek
+  '7680-7935',   // Latin Extended Additional (ọ, ụ, ẹ — used in some place names)
   '8192-8447',   // General punctuation (—, –, ', ", etc.)
   '8448-8703',   // Letterlike symbols
 ];

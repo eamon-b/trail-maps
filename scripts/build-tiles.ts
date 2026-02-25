@@ -237,8 +237,10 @@ async function processTrail(
   }
 
   // Set up working directories
+  // Work dir uses filesystem dir name (internal, not uploaded)
   const workDir = path.join(TILES_WORK_DIR, dirName);
-  const outputDir = path.join(TILES_OUTPUT_DIR, dirName);
+  // Output dir uses the canonical trail ID so R2 keys match what the app requests
+  const outputDir = path.join(TILES_OUTPUT_DIR, trailId);
   ensureDir(workDir);
   ensureDir(outputDir);
 

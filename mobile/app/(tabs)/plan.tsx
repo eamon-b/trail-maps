@@ -84,7 +84,7 @@ export default function PlanScreen() {
 
     // Load storage info
     const usedBytes = tileManager.getTotalStorageUsed();
-    const availableBytes = await tileManager.getAvailableSpace();
+    const availableBytes = tileManager.getAvailableSpace();
     const customTrailBytes = await service.getCustomTrailStorageBytes();
     setStorageInfo({ usedBytes, availableBytes, customTrailBytes });
   }, []);
@@ -140,16 +140,15 @@ export default function PlanScreen() {
       ),
     );
     // Refresh storage info
-    Promise.all([
-      tileManager.getAvailableSpace(),
-      TrailDataService.create().then(s => s.getCustomTrailStorageBytes()),
-    ]).then(([availableBytes, customTrailBytes]) => {
-      setStorageInfo({
-        usedBytes: tileManager.getTotalStorageUsed(),
-        availableBytes,
-        customTrailBytes,
-      });
-    }).catch(() => {});
+    TrailDataService.create()
+      .then(s => s.getCustomTrailStorageBytes())
+      .then((customTrailBytes) => {
+        setStorageInfo({
+          usedBytes: tileManager.getTotalStorageUsed(),
+          availableBytes: tileManager.getAvailableSpace(),
+          customTrailBytes,
+        });
+      }).catch(() => {});
   }
 
   async function handleDownload(trailId: string, isCustom: boolean) {
@@ -157,6 +156,13 @@ export default function PlanScreen() {
       Alert.alert(
         'Tile server not configured',
         'Set EXPO_PUBLIC_TILE_BASE_URL in your environment (e.g. .env file).\n\nFor development, use the dev screen (Dev Catalog > Map Tiles).',
+      );
+      return;
+    }
+    if (!/^https?:\/\/.+/.test(TILE_BASE_URL)) {
+      Alert.alert(
+        'Invalid tile server URL',
+        `EXPO_PUBLIC_TILE_BASE_URL must be a valid URL starting with http:// or https://.\n\nCurrent value: "${TILE_BASE_URL}"`,
       );
       return;
     }
@@ -305,7 +311,7 @@ export default function PlanScreen() {
     if (downloadError && downloadError.trailId === item.id) {
       return (
         <View style={styles.tileDownloadProgress}>
-          <Text style={[styles.tileText, { color: '#c00' }]} numberOfLines={2}>
+          <Text style={[styles.tileText, { color: '#c00' }]}>
             Download failed: {downloadError.message}
           </Text>
           <View style={[styles.tileRow, { borderTopWidth: 0, marginTop: spacing.xs }]}>

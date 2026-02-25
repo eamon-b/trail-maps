@@ -183,10 +183,12 @@ export async function downloadGridTiles(
               downloadedContours.push(dest.uri);
             }
           }
-        } catch {
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error('[grid-tile-service]', `Failed to download ${fileUrl}: ${msg}`);
           // Some cells may not have contours (flat terrain) — that's OK
           if (fileName === 'base.mbtiles') {
-            throw new Error(`Failed to download base tiles for cell ${cell.id}`);
+            throw new Error(`Failed to download base tiles for cell ${cell.id} from ${fileUrl}: ${msg}`);
           }
         }
       }

@@ -15,8 +15,7 @@ jest.mock('expo-file-system', () => {
   return {
     __esModule: true,
     Directory: MockDir,
-    Paths: { document: '/mock/document' },
-    getFreeDiskStorageAsync: jest.fn().mockResolvedValue(1000000000),
+    Paths: { document: '/mock/document', availableDiskSpace: 1000000000 },
     readAsStringAsync: jest.fn(),
     writeAsStringAsync: jest.fn(),
     documentDirectory: '/mock/document/',

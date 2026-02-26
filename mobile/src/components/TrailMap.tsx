@@ -96,7 +96,7 @@ function buildTrailGeoJSON(points: TrackPoint[]) {
 
 function buildVariantGeoJSON(variants: RouteVariant[], variantType: string) {
   const features = variants
-    .filter(v => v.points && v.points.length > 0)
+    .filter(v => v.points && v.points.length >= 2)
     .map(v => ({
       type: 'Feature' as const,
       geometry: {
@@ -234,7 +234,7 @@ export function TrailMap({
   const hasSetInitialBounds = useRef(false);
 
   const trailGeoJSON = useMemo(() => {
-    if (displayPoints.length === 0) return null;
+    if (displayPoints.length < 2) return null;
     return buildTrailGeoJSON(displayPoints);
   }, [displayPoints]);
 

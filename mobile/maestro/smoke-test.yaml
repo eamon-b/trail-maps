@@ -2,8 +2,14 @@ appId: com.trailcompanion.app
 ---
 # Quick smoke test: launch → verify data loaded → navigate tabs → open trail
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000
+
+# Wait for trail list to render (data loads async from SQLite)
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 10000
 
 # Verify trail list rendered (at least one trail with a km value)
 - assertVisible:

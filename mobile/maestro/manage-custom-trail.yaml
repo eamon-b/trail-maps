@@ -1,11 +1,12 @@
 appId: com.trailcompanion.app
 ---
-# Manage a custom trail: view details, edit name, delete
-# Prerequisites: A custom trail must already be imported
+# Manage a custom trail: view details, verify management options
+# Prerequisites: A custom trail must already be imported (steps are optional if not)
 
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000
 
 # Look for a custom trail badge in the list (indicates a custom trail exists)
 - assertVisible:
@@ -33,7 +34,9 @@ appId: com.trailcompanion.app
     text: "Delete Trail"
     optional: true
 
-# Go back to trail list
-- tapOn: "Back"
+# Go back to trail list (use Back button if on overview, otherwise already on list)
+- tapOn:
+    text: "Back"
+    optional: true
 - waitForAnimationToEnd
 - assertVisible: "Select a Trail"

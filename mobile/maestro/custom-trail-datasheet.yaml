@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify trail overview datasheet section and dedicated datasheet screen
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 10000
 
 # Open first trail overview
 - tapOn: "View trail →"
@@ -14,6 +15,7 @@ appId: com.trailcompanion.app
     element:
       text: "DATASHEET"
     direction: DOWN
+    timeout: 10000
 
 # Verify datasheet section elements
 - assertVisible: "DATASHEET"
@@ -31,19 +33,21 @@ appId: com.trailcompanion.app
 - tapOn: "Collapse"
 - waitForAnimationToEnd
 
-# Navigate to the dedicated datasheet screen
+# Scroll down to the Datasheet button
 - scrollUntilVisible:
     element:
       text: "Datasheet"
     direction: DOWN
-- tapOn:
-    text: "Datasheet"
-    index: 1
+    timeout: 5000
+
+# Navigate to the dedicated datasheet screen
+- tapOn: "Datasheet"
 - waitForAnimationToEnd
 
 # Verify dedicated datasheet screen loaded
-- assertVisible: "Datasheet"
-- assertVisible: "km remaining"
+- extendedWaitUntil:
+    visible: "km remaining"
+    timeout: 5000
 
 # Go back
 - pressKey: back

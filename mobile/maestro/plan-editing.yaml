@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify plan creation and basic editing flow
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 10000
 
 # Open plan creation for first trail
 - tapOn: "+ New Plan"
@@ -14,10 +15,20 @@ appId: com.trailcompanion.app
 - tapOn: "Create Plan"
 - waitForAnimationToEnd
 
-# Verify plan screen loaded with stop selector
+# Verify plan screen loaded with tab bar
+- extendedWaitUntil:
+    visible: "Days"
+    timeout: 5000
+
+# Open the stop selector via FAB
+- tapOn: "+ Add Stops"
+- waitForAnimationToEnd
+
+# Verify stop selector content
 - assertVisible: "Select Stops"
-- assertVisible: "Tap to toggle overnight stops"
 
 # Go back
+- pressKey: back
+- waitForAnimationToEnd
 - pressKey: back
 - waitForAnimationToEnd

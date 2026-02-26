@@ -267,6 +267,7 @@ export function classifyAndTileContours(
     '--no-feature-limit',
     '--no-tile-size-limit',
     '--simplification=10',
+    '--minimum-detail=2',
     '--force',
     ...layerArgs,
   ].join(' '), { verbose });

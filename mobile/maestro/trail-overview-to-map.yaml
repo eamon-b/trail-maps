@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Full navigation flow: trail list → overview → map → back → back
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 10000
 
 # Open first trail overview
 - tapOn: "View trail →"
@@ -17,9 +18,13 @@ appId: com.trailcompanion.app
 # Press back to return to overview
 - pressKey: back
 - waitForAnimationToEnd
-- assertVisible: "Open Map"
+- extendedWaitUntil:
+    visible: "Open Map"
+    timeout: 5000
 
 # Press back to return to trail list
 - pressKey: back
 - waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 5000

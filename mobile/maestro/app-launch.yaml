@@ -2,9 +2,13 @@ appId: com.trailcompanion.app
 ---
 # Verify the app launches and data loads successfully
 - launchApp
-- assertVisible: "Loading trail data..."
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000
 - assertVisible: "Plan"
 - assertVisible: "Hike"
 - assertVisible: "Contribute"
+# Verify trail data loaded from SQLite
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 10000

@@ -248,6 +248,7 @@ export default function ImportScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
               <View style={[styles.urlInputContainer, { borderColor: colors.border }]}>
                 <TextInput
+                  testID="urlInput"
                   style={[styles.urlInput, { color: colors.textPrimary, borderColor: colors.border }]}
                   placeholder="https://example.com/trail.gpx"
                   placeholderTextColor={colors.textSecondary}

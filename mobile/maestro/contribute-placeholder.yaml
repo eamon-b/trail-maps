@@ -9,5 +9,5 @@ appId: com.trailcompanion.app
 - waitForAnimationToEnd
 
 # Verify placeholder content
-- assertVisible: "Contribute Mode"
-- assertVisible: "Report trail conditions"
+- assertVisible: "Contribute"
+- assertVisible: "Import GPX Trail"

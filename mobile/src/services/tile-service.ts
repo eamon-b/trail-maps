@@ -104,6 +104,20 @@ export async function provisionGlyphs(): Promise<string> {
         src.copy(destFile);
       }
     }
+
+    // Create empty PBF files for all glyph ranges not covered by bundled fonts.
+    // Offline tiles may contain CJK or other non-Latin text in place names;
+    // without these fallback files MapLibre errors with "Failed to load glyph range".
+    // An empty file is a valid protobuf meaning "no glyphs in this range".
+    const emptyPbf = new Uint8Array(0);
+    for (let start = 0; start < 65536; start += 256) {
+      const range = `${start}-${start + 255}`;
+      const file = new File(destDir, `${range}.pbf`);
+      if (!file.exists) {
+        file.write(emptyPbf);
+      }
+    }
+
     _glyphsProvisioned = true;
   }
 

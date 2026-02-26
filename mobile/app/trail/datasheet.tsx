@@ -10,8 +10,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
-import { TrailDataService } from '../../src/services/trail-data-service';
-import { trailJsonToTrail, type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
+import { useTrailData } from '../../src/contexts/TrailDataContext';
+import type { TrailWaypoint } from '../../src/lib/trail-utils';
 import { calculateElevationBetween } from '../../src/services/distance-calculator';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { spacing, radii } from '../../src/tokens/spacing';
@@ -38,27 +38,15 @@ export default function DatasheetScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { trail, loading, error, loadTrail } = useTrailData();
 
-  const [trail, setTrail] = useState<Trail | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showPast, setShowPast] = useState(false);
 
   const referenceKm = fromKm ? parseFloat(fromKm) : 0;
 
   useEffect(() => {
-    async function load() {
-      if (!id) return;
-      try {
-        const service = await TrailDataService.create();
-        const json = await service.getTrailTrackData(id);
-        if (json) setTrail(trailJsonToTrail(json));
-      } catch {
-        // handled by null trail
-      }
-      setLoading(false);
-    }
-    load();
-  }, [id]);
+    if (id) loadTrail(id);
+  }, [id, loadTrail]);
 
   const rows = useMemo((): WaypointRow[] => {
     if (!trail) return [];
@@ -98,7 +86,7 @@ export default function DatasheetScreen() {
 
   const hasPastWaypoints = rows.some(r => r.isPast);
 
-  if (loading) {
+  if (loading || (!trail && !error)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -106,10 +94,10 @@ export default function DatasheetScreen() {
     );
   }
 
-  if (!trail) {
+  if (error || !trail) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <Text style={[styles.errorText, { color: colors.alertRed }]}>Trail not found</Text>
+        <Text style={[styles.errorText, { color: colors.alertRed }]}>{error ?? 'Trail not found'}</Text>
         <Pressable onPress={() => router.back()} style={styles.backPressable}>
           <Text style={[styles.backLabel, { color: colors.accent }]}>Go back</Text>
         </Pressable>

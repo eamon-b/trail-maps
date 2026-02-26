@@ -11,9 +11,8 @@ import { LocationStatusBar, type LocationState } from '../../src/components';
 import { useTheme } from '../../src/theme';
 import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
 import { useLocation } from '../../src/hooks/useLocation';
-import { TrailDataService } from '../../src/services/trail-data-service';
+import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
-  trailJsonToTrail,
   createReversedTrail,
   findNearestByDistance,
   type Trail,
@@ -23,7 +22,7 @@ import { tileManager } from '../../src/services/tile-manager';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
-const DIRECTION_PREF_KEY = 'trail_direction_prefs';
+export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
 
 export default function TrailViewerScreen() {
@@ -32,12 +31,11 @@ export default function TrailViewerScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { focusedWaypointId, setFocusedWaypointId } = useFocusedWaypoint();
+  const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [selectedWaypoint, setSelectedWaypoint] = useState<TrailWaypoint | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [panTarget, setPanTarget] = useState<{ longitude: number; latitude: number; key: number } | null>(null);
   const panKeyRef = useRef(0);
   const elevationDrawerRef = useRef<ElevationProfileDrawerHandle>(null);
@@ -45,80 +43,41 @@ export default function TrailViewerScreen() {
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
 
   // Active trail data (respects direction)
-  const [originalTrail, setOriginalTrail] = useState<Trail | null>(null);
   const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
 
+  const originalTrail = contextTrail;
   const activeTrail = isReversed ? reversedTrail : originalTrail;
   const trackPoints = useMemo(() => activeTrail?.track.points ?? [], [activeTrail]);
 
   const { location, accuracy, isTracking, startTracking, stopTracking } =
     useLocation(trackPoints);
 
-  // Load trail data
+  // Load trail data via shared context
   useEffect(() => {
-    async function load() {
-      if (!id) return;
-      try {
-        const service = await TrailDataService.create();
-        const json = await service.getTrailTrackData(id);
-        if (!json) {
-          setError('Trail not found');
-          setLoading(false);
-          return;
-        }
+    if (!id) return;
+    loadTrail(id);
 
-        const parsed = trailJsonToTrail(json);
-        setOriginalTrail(parsed);
-
-        // Load saved direction preference
-        const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
-        const prefs = prefsStr ? JSON.parse(prefsStr) : {};
-        if (prefs[id]) {
-          const rev = createReversedTrail(parsed);
-          setReversedTrail(rev);
-          setIsReversed(true);
-        }
-
-        // Persist as the active trail for the Hike tab
-        AsyncStorage.setItem(ACTIVE_TRAIL_KEY, id).catch(() => {});
-
-        // Check for offline tiles and build style if available
-        tileManager.getOfflineStyle(id).then((style) => {
-          if (style) setOfflineMapStyle(style);
-        }).catch(() => {});
-
-        setLoading(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load trail');
-        setLoading(false);
-      }
-    }
-    load();
-  }, [id]);
-
-  // Direction toggle
-  const toggleDirection = useCallback(async () => {
-    if (!originalTrail || !id) return;
-
-    const newReversed = !isReversed;
-
-    if (newReversed && !reversedTrail) {
-      const rev = createReversedTrail(originalTrail);
-      setReversedTrail(rev);
-    }
-
-    setIsReversed(newReversed);
-
-    // Persist preference
-    try {
-      const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
+    // Load saved direction preference
+    AsyncStorage.getItem(DIRECTION_PREF_KEY).then(prefsStr => {
       const prefs = prefsStr ? JSON.parse(prefsStr) : {};
-      prefs[id] = newReversed;
-      await AsyncStorage.setItem(DIRECTION_PREF_KEY, JSON.stringify(prefs));
-    } catch {
-      // Non-critical
+      if (prefs[id]) setIsReversed(true);
+    }).catch(() => {});
+
+    // Persist as the active trail for the Hike tab
+    AsyncStorage.setItem(ACTIVE_TRAIL_KEY, id).catch(() => {});
+
+    // Check for offline tiles
+    tileManager.getOfflineStyle(id).then((style) => {
+      if (style) setOfflineMapStyle(style);
+    }).catch(() => {});
+  }, [id, loadTrail]);
+
+  // Build reversed trail when original loads and direction is reversed
+  useEffect(() => {
+    if (isReversed && originalTrail && !reversedTrail) {
+      setReversedTrail(createReversedTrail(originalTrail));
     }
-  }, [isReversed, originalTrail, reversedTrail, id]);
+  }, [isReversed, originalTrail, reversedTrail]);
 
   // GPS state for LocationStatusBar
   const locationState = useMemo((): LocationState => {
@@ -190,28 +149,24 @@ export default function TrailViewerScreen() {
   }, [trackPoints]);
 
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
-    if (wp.totalDistance != null) {
-      const index = activeTrail?.waypoints?.findIndex(w => w.name === wp.name && w.totalDistance === wp.totalDistance);
-      if (index != null && index >= 0) {
-        // Clear and re-set to ensure the update fires even if the same waypoint is already focused
-        setFocusedWaypointId(null);
-        setTimeout(() => setFocusedWaypointId(index), 0);
-      }
-    }
     // Dismiss the waypoint detail sheet so the profile is visible
     setSelectedWaypoint(null);
-    // Expand the elevation profile drawer
-    elevationDrawerRef.current?.expand();
+    // Delay expanding the elevation profile drawer until after the waypoint
+    // detail sheet's BottomSheet has unmounted — calling snapToIndex while
+    // another @gorhom/bottom-sheet is still in the tree causes the animation
+    // to be suppressed.
+    requestAnimationFrame(() => {
+      if (wp.totalDistance != null) {
+        const index = activeTrail?.waypoints?.findIndex(w => w.name === wp.name && w.totalDistance === wp.totalDistance);
+        if (index != null && index >= 0) {
+          setFocusedWaypointId(index);
+        }
+      }
+      elevationDrawerRef.current?.expand();
+    });
   }, [activeTrail, setFocusedWaypointId]);
 
-  // Direction label
-  const directionLabel = useMemo(() => {
-    const dir = activeTrail?.config.direction;
-    if (dir) return isReversed ? dir.reversed : dir.default;
-    return isReversed ? 'Reversed' : 'Default';
-  }, [activeTrail, isReversed]);
-
-  if (loading) {
+  if (contextLoading || (!activeTrail && !contextError)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -220,10 +175,10 @@ export default function TrailViewerScreen() {
     );
   }
 
-  if (error || !activeTrail) {
+  if (contextError || !activeTrail) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.alertRed }]}>{error ?? 'Trail not found'}</Text>
+        <Text style={[styles.errorText, { color: colors.alertRed }]}>{contextError ?? 'Trail not found'}</Text>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Text style={[styles.backText, { color: colors.accent }]}>Go back</Text>
         </Pressable>
@@ -245,10 +200,16 @@ export default function TrailViewerScreen() {
         />
       </View>
 
-      {/* Direction toggle + GPS toggle bar */}
+      {/* Toolbar */}
       <View style={[styles.toolbar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/plan');
+            }
+          }}
           style={styles.toolbarButton}
           accessibilityLabel="Go back"
           accessibilityRole="button"
@@ -260,15 +221,6 @@ export default function TrailViewerScreen() {
           <Text style={[styles.trailName, { color: colors.textPrimary }]} numberOfLines={1}>
             {activeTrail.config.name}
           </Text>
-          <Pressable
-            onPress={toggleDirection}
-            accessibilityLabel={`Direction: ${directionLabel}. Tap to toggle.`}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.directionLabel, { color: colors.accent }]}>
-              {directionLabel} ↔
-            </Text>
-          </Pressable>
         </View>
 
         <Pressable
@@ -281,25 +233,19 @@ export default function TrailViewerScreen() {
             GPS
           </Text>
         </Pressable>
-      </View>
 
-      {/* Trail stats bar */}
-      <View style={[styles.statsBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.stat, { color: colors.textSecondary }]}>
-          {Math.round(activeTrail.track.totalDistance)} km
-        </Text>
-        <Text style={[styles.statDivider, { color: colors.border }]}>|</Text>
-        <Text style={[styles.stat, { color: colors.textSecondary }]}>
-          +{Math.round(activeTrail.track.totalAscent)}m
-        </Text>
-        <Text style={[styles.statDivider, { color: colors.border }]}>|</Text>
-        <Text style={[styles.stat, { color: colors.textSecondary }]}>
-          -{Math.round(activeTrail.track.totalDescent)}m
-        </Text>
-        <Text style={[styles.statDivider, { color: colors.border }]}>|</Text>
-        <Text style={[styles.stat, { color: colors.textSecondary }]}>
-          {activeTrail.waypoints?.length ?? 0} waypoints
-        </Text>
+        <Pressable
+          onPress={() => {
+            const params: Record<string, string> = { id: id! };
+            if (currentKm != null) params.fromKm = currentKm.toFixed(1);
+            router.push({ pathname: '/trail/datasheet', params });
+          }}
+          style={styles.toolbarButton}
+          accessibilityLabel="View waypoint datasheet"
+          accessibilityRole="button"
+        >
+          <Text style={[styles.toolbarButtonText, { color: colors.accent }]}>☰</Text>
+        </Pressable>
       </View>
 
       {/* Map */}
@@ -401,10 +347,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
   },
-  directionLabel: {
-    ...typography.caption,
-    fontWeight: '500',
-  },
   gpsButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
@@ -414,22 +356,6 @@ const styles = StyleSheet.create({
   gpsButtonText: {
     ...typography.caption,
     fontWeight: '700',
-  },
-  statsBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: spacing.xs,
-  },
-  stat: {
-    fontSize: 11,
-    fontVariant: ['tabular-nums'] as const,
-  },
-  statDivider: {
-    fontSize: 11,
   },
   mapContainer: {
     flex: 1,

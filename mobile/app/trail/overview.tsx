@@ -11,11 +11,12 @@ import {
   Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
-import { TrailDataService, type Trail as DbTrail } from '../../src/services/trail-data-service';
+import { useTrailData } from '../../src/contexts/TrailDataContext';
 import { deleteCustomTrail } from '../../src/services/custom-trail-service';
-import { trailJsonToTrail, getMinMax, type Trail } from '../../src/lib/trail-utils';
+import { getMinMax } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
 import {
   generateDatasheet,
@@ -24,6 +25,7 @@ import {
   datasheetToCsv,
   type Datasheet,
 } from '../../src/services/datasheet-service';
+import { DIRECTION_PREF_KEY } from './[id]';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -54,44 +56,26 @@ export default function TrailOverviewScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { trail, dbTrail, loading, error, loadTrail, reloadTrail } = useTrailData();
 
-  const [trail, setTrail] = useState<Trail | null>(null);
-  const [dbTrail, setDbTrail] = useState<DbTrail | null>(null);
-  const [dataVersion, setDataVersion] = useState<string | null>(null);
   const [tilesDownloaded, setTilesDownloaded] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [editName, setEditName] = useState('');
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      if (!id) return;
-      try {
-        const service = await TrailDataService.create();
-        const json = await service.getTrailTrackData(id);
-        if (!json) {
-          setError('Trail not found');
-          setLoading(false);
-          return;
-        }
-        const parsed = trailJsonToTrail(json);
-        setTrail(parsed);
+    if (id) {
+      loadTrail(id);
+      setTilesDownloaded(tileManager.isTrailDownloaded(id));
 
-        const dbTrailRow = await service.getTrail(id);
-        setDbTrail(dbTrailRow);
-        if (dbTrailRow?.dataVersion) setDataVersion(dbTrailRow.dataVersion);
-
-        setTilesDownloaded(tileManager.isTrailDownloaded(id));
-        setLoading(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load trail');
-        setLoading(false);
-      }
+      // Load saved direction preference
+      AsyncStorage.getItem(DIRECTION_PREF_KEY).then(prefsStr => {
+        const prefs = prefsStr ? JSON.parse(prefsStr) : {};
+        setIsReversed(!!prefs[id]);
+      }).catch(() => {});
     }
-    load();
-  }, [id]);
+  }, [id, loadTrail]);
 
   const stats = useMemo(() => {
     if (!trail) return null;
@@ -121,18 +105,16 @@ export default function TrailOverviewScreen() {
     return hasElevationData(trail.track.points);
   }, [trail]);
 
+  const dataVersion = dbTrail?.dataVersion ?? null;
   const isCustom = dbTrail?.isCustom ?? false;
 
   async function handleSaveName() {
     if (!id || !editName.trim()) return;
+    const { TrailDataService } = await import('../../src/services/trail-data-service');
     const service = await TrailDataService.create();
     await service.updateCustomTrail(id, editName.trim());
     setEditingName(false);
-    // Reload
-    const json = await service.getTrailTrackData(id);
-    if (json) setTrail(trailJsonToTrail(json));
-    const updated = await service.getTrail(id);
-    setDbTrail(updated);
+    await reloadTrail();
   }
 
   function handleDeleteTrail() {
@@ -175,7 +157,26 @@ export default function TrailOverviewScreen() {
     ]);
   }
 
-  if (loading) {
+  const directionLabels = useMemo(() => {
+    if (!trail) return { default: 'Default', reversed: 'Reversed' };
+    const dir = trail.config.direction;
+    return dir ? { default: dir.default, reversed: dir.reversed } : { default: 'Default', reversed: 'Reversed' };
+  }, [trail]);
+
+  async function handleDirectionChange(reversed: boolean) {
+    if (!id) return;
+    setIsReversed(reversed);
+    try {
+      const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
+      const prefs = prefsStr ? JSON.parse(prefsStr) : {};
+      prefs[id] = reversed;
+      await AsyncStorage.setItem(DIRECTION_PREF_KEY, JSON.stringify(prefs));
+    } catch {
+      // Non-critical
+    }
+  }
+
+  if (loading || (!trail && !error)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -246,6 +247,44 @@ export default function TrailOverviewScreen() {
             <Text style={[styles.badgeText, { color: colors.accent }]}>{trail.config.region}</Text>
           </View>
         )}
+
+        {/* Direction selector */}
+        <View style={[styles.directionRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Pressable
+            onPress={() => handleDirectionChange(false)}
+            style={[
+              styles.directionOption,
+              !isReversed && { backgroundColor: colors.accent },
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: !isReversed }}
+            accessibilityLabel={`Direction: ${directionLabels.default}`}
+          >
+            <Text style={[
+              styles.directionOptionText,
+              { color: !isReversed ? colors.textInverse : colors.textSecondary },
+            ]}>
+              {directionLabels.default}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleDirectionChange(true)}
+            style={[
+              styles.directionOption,
+              isReversed && { backgroundColor: colors.accent },
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isReversed }}
+            accessibilityLabel={`Direction: ${directionLabels.reversed}`}
+          >
+            <Text style={[
+              styles.directionOptionText,
+              { color: isReversed ? colors.textInverse : colors.textSecondary },
+            ]}>
+              {directionLabels.reversed}
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Stats grid */}
         <View style={[styles.statsGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -558,6 +597,22 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   badgeText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  directionRow: {
+    flexDirection: 'row',
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  directionOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  directionOptionText: {
     ...typography.caption,
     fontWeight: '600',
   },

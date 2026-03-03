@@ -4,6 +4,7 @@ import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { TrailMap } from '../../src/components/TrailMap';
+import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
 import { PlanService } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { trailJsonToTrail, createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
@@ -251,16 +252,18 @@ export default function SectionMapScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TrailMap
-        displayPoints={trail.track.displayPoints ?? trail.track.points}
-        trackPoints={trail.track.points}
-        waypoints={trail.waypoints}
-        alternates={trail.alternates}
-        sideTrips={trail.sideTrips}
-        customPins={customPins}
-        highlightedSegment={highlightedSegment}
-        onLongPress={handleLongPress}
-      />
+      <MapErrorBoundary>
+        <TrailMap
+          displayPoints={trail.track.displayPoints ?? trail.track.points}
+          trackPoints={trail.track.points}
+          waypoints={trail.waypoints}
+          alternates={trail.alternates}
+          sideTrips={trail.sideTrips}
+          customPins={customPins}
+          highlightedSegment={highlightedSegment}
+          onLongPress={handleLongPress}
+        />
+      </MapErrorBoundary>
 
       {/* Header overlay */}
       <View style={[styles.headerOverlay, { paddingTop: insets.top }]}>

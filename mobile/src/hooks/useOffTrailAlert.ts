@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { LocationState } from '../components/LocationStatusBar';
 import type { SnappedLocation } from './useLocation';
 import { findNearestByDistance, type TrackPoint } from '../lib/trail-utils';
@@ -11,6 +12,8 @@ import {
   type AlertThresholdPreset,
   type SnoozeDuration,
 } from '../services/off-trail-alert-service';
+
+const SNOOZE_STORAGE_KEY = 'trail-companion:snoozeUntil';
 
 /** Number of consecutive readings required before a state transition fires */
 const DEBOUNCE_COUNT = 3;
@@ -59,12 +62,29 @@ export function useOffTrailAlert(
 
   const isSnoozed = snoozeUntil != null && snoozeUntil > new Date();
 
+  // Restore persisted snooze on mount
+  useEffect(() => {
+    AsyncStorage.getItem(SNOOZE_STORAGE_KEY).then((value) => {
+      if (value) {
+        const expiry = new Date(value);
+        if (expiry > new Date()) {
+          setSnoozeUntil(expiry);
+        } else {
+          AsyncStorage.removeItem(SNOOZE_STORAGE_KEY);
+        }
+      }
+    });
+  }, []);
+
   const snooze = useCallback((duration: SnoozeDuration) => {
-    setSnoozeUntil(new Date(Date.now() + SNOOZE_DURATIONS[duration]));
+    const expiry = new Date(Date.now() + SNOOZE_DURATIONS[duration]);
+    setSnoozeUntil(expiry);
+    AsyncStorage.setItem(SNOOZE_STORAGE_KEY, expiry.toISOString());
   }, []);
 
   const clearSnooze = useCallback(() => {
     setSnoozeUntil(null);
+    AsyncStorage.removeItem(SNOOZE_STORAGE_KEY);
   }, []);
 
   useEffect(() => {

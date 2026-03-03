@@ -25,6 +25,7 @@ import {
   PROJECT_ROOT,
   run,
   ensureDir,
+  cleanWorkDir,
   formatBytes,
   checkDependencies,
   clipDem,
@@ -32,6 +33,7 @@ import {
   classifyAndTileContours,
   extractBaseTiles,
   writeManifest,
+  mgaEpsgForLon,
 } from './tile-pipeline.js';
 
 // --- Path setup ---
@@ -41,7 +43,8 @@ const TILES_WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles');
 const TILES_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles');
 
 // --- MGA Zone mapping for Australian trails ---
-// Each trail needs a projected CRS for accurate buffering.
+// Optional overrides for trails where auto-detection from centroid longitude
+// isn't suitable. Auto-detection uses mgaEpsgForLon() from tile-pipeline.ts.
 // MGA (Map Grid of Australia) zones use EPSG:283XX where XX is the zone number.
 
 const TRAIL_TILE_CONFIGS: Record<string, TrailTileConfig> = {
@@ -228,12 +231,20 @@ async function processTrail(
   console.log(`\nProcessing trail: ${trailId}`);
   console.log('─'.repeat(40));
 
-  // Validate tile config exists for this trail
-  const tileConfig = TRAIL_TILE_CONFIGS[trailId];
+  // Get tile config: use explicit override if available, otherwise auto-detect from centroid
+  let tileConfig = TRAIL_TILE_CONFIGS[trailId];
   if (!tileConfig) {
-    console.error(`  ✗ No tile config (MGA zone) defined for trail: ${trailId}`);
-    console.error(`    Add an entry to TRAIL_TILE_CONFIGS in build-tiles.ts`);
-    throw new Error(`Missing tile config for ${trailId}`);
+    // Read GPX to compute centroid longitude for MGA zone auto-detection
+    const gpxPath_ = path.join(trailDir, config.gpxFile);
+    const pts = readGpxTrackPoints(gpxPath_);
+    if (pts.length === 0) {
+      throw new Error(`No track points found in GPX for trail: ${trailId}`);
+    }
+    const lonCenter = pts.reduce((sum, p) => sum + p.lon, 0) / pts.length;
+    const epsg = mgaEpsgForLon(lonCenter);
+    const mgaZone = epsg - 28300;
+    tileConfig = { mgaZone, epsg };
+    console.log(`  MGA zone auto-detected: zone ${mgaZone} (EPSG:${epsg}) from centroid lon ${lonCenter.toFixed(2)}`);
   }
 
   // Set up working directories
@@ -308,6 +319,9 @@ async function processTrail(
   ];
 
   const manifest = writeManifest(trailId, outputDir, bounds, manifestFiles);
+
+  // Clean up work directory
+  cleanWorkDir(workDir);
 
   console.log(`\n  ✓ Complete: ${trailId}`);
   console.log(`    Total size: ${formatBytes(manifest.totalSize)}`);

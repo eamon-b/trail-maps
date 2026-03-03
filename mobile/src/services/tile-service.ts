@@ -7,40 +7,18 @@
  */
 import { File, Directory, Paths } from 'expo-file-system';
 import { Asset } from 'expo-asset';
+import type { TileManifest } from '@lib/types';
+import {
+  TILE_FILES,
+  type TileFileName,
+  tilesRoot,
+  trailTilesDir,
+  fontsRoot,
+  uriToPath,
+  manifestFile,
+} from './tile-paths';
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const TILE_FILES = ['base.mbtiles', 'contours.mbtiles'] as const;
-export type TileFileName = (typeof TILE_FILES)[number];
-
-// ---------------------------------------------------------------------------
-// Directory helpers
-// ---------------------------------------------------------------------------
-
-/** Root directory for all downloaded tiles: {documentDir}/tiles/ */
-function tilesRoot(): Directory {
-  return new Directory(Paths.document, 'tiles');
-}
-
-/** Per-trail directory: {documentDir}/tiles/{trailId}/ */
-function trailTilesDir(trailId: string): Directory {
-  return new Directory(Paths.document, 'tiles', trailId);
-}
-
-/** Directory where font glyphs are copied for MapLibre: {documentDir}/fonts/ */
-function fontsRoot(): Directory {
-  return new Directory(Paths.document, 'fonts');
-}
-
-/** Convert a file:// URI to a bare path for mbtiles:// protocol */
-function uriToPath(uri: string): string {
-  let p = uri;
-  if (p.startsWith('file://')) p = p.slice('file://'.length);
-  if (p.endsWith('/')) p = p.slice(0, -1);
-  return p;
-}
+export type { TileFileName };
 
 // ---------------------------------------------------------------------------
 // Font glyph provisioning
@@ -140,6 +118,8 @@ export interface TrailTileStatus {
   /** true when all expected tile files are present */
   complete: boolean;
   totalSizeBytes: number;
+  /** Version string from downloaded manifest, if available */
+  version?: string;
 }
 
 /** Check on-disk status for a trail's tiles. */
@@ -159,7 +139,20 @@ export function getTrailTileStatus(trailId: string): TrailTileStatus {
 
   const complete = files.every((f) => f.exists && f.sizeBytes > 0);
   const totalSizeBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
-  return { trailId, files, complete, totalSizeBytes };
+
+  // Read version from saved manifest
+  let version: string | undefined;
+  const mf = manifestFile(trailId);
+  if (mf.exists) {
+    try {
+      const parsed = JSON.parse(mf.textSync());
+      version = parsed.version;
+    } catch {
+      // corrupt manifest, ignore
+    }
+  }
+
+  return { trailId, files, complete, totalSizeBytes, version };
 }
 
 // ---------------------------------------------------------------------------
@@ -167,26 +160,90 @@ export function getTrailTileStatus(trailId: string): TrailTileStatus {
 // ---------------------------------------------------------------------------
 
 export interface DownloadProgress {
+  /** Current file being downloaded */
   fileName: TileFileName;
+  /** Whether this file is done */
   done: boolean;
+  /** Error message if download failed */
   error?: string;
+  /** Bytes downloaded so far (across all files) */
+  bytesDownloaded: number;
+  /** Total bytes expected (from manifest, 0 if unknown) */
+  bytesTotal: number;
 }
 
 export type ProgressCallback = (progress: DownloadProgress) => void;
 
+/** Options for downloadTrailTiles */
+export interface DownloadOptions {
+  /** Called after each file completes with byte-level totals */
+  onProgress?: ProgressCallback;
+  /** Set to true to cancel the download between files */
+  signal?: { cancelled: boolean };
+}
+
+/**
+ * Fetch the manifest for a trail. Returns null if not available.
+ */
+async function fetchManifest(
+  baseUrl: string,
+  trailId: string,
+): Promise<TileManifest | null> {
+  const url = `${baseUrl.replace(/\/$/, '')}/${trailId}/manifest.json`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return (await response.json()) as TileManifest;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if a remote manifest has a newer version than what's on disk.
+ */
+export async function checkForTileUpdate(
+  trailId: string,
+  baseUrl: string,
+): Promise<{ updateAvailable: boolean; localVersion?: string; remoteVersion?: string }> {
+  const local = getTrailTileStatus(trailId);
+  const remote = await fetchManifest(baseUrl, trailId);
+
+  if (!remote) return { updateAvailable: false, localVersion: local.version };
+  if (!local.complete) return { updateAvailable: true, remoteVersion: remote.version };
+  if (!local.version) return { updateAvailable: true, remoteVersion: remote.version };
+
+  return {
+    updateAvailable: remote.version !== local.version,
+    localVersion: local.version,
+    remoteVersion: remote.version,
+  };
+}
+
 /**
  * Download tile files for a trail from a base URL.
+ *
+ * Fetches the manifest first for size validation, supports cancellation
+ * between files, and provides byte-level progress totals.
  *
  * @param trailId  - Trail identifier (matches directory under tiles server)
  * @param baseUrl  - Base URL where tiles are hosted, e.g. "https://cdn.example.com/tiles"
  *                   Files are fetched from {baseUrl}/{trailId}/{fileName}
- * @param onProgress - Optional callback fired after each file completes
+ * @param optionsOrCallback - DownloadOptions, or legacy ProgressCallback for compat
  */
 export async function downloadTrailTiles(
   trailId: string,
   baseUrl: string,
-  onProgress?: ProgressCallback,
+  optionsOrCallback?: DownloadOptions | ProgressCallback,
 ): Promise<void> {
+  // Support both new options object and legacy callback signature
+  const opts: DownloadOptions =
+    typeof optionsOrCallback === 'function'
+      ? { onProgress: optionsOrCallback }
+      : optionsOrCallback ?? {};
+
+  const { onProgress, signal } = opts;
+
   // Ensure directory hierarchy
   const root = tilesRoot();
   if (!root.exists) root.create();
@@ -195,13 +252,36 @@ export async function downloadTrailTiles(
 
   const url = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
-  for (const name of TILE_FILES) {
-    const dest = new File(dir, name);
+  // Fetch manifest for size info and post-download validation
+  const manifest = await fetchManifest(url, trailId);
+  const expectedSizes = new Map<string, number>();
+  let bytesTotal = 0;
+  if (manifest) {
+    for (const f of manifest.files) {
+      expectedSizes.set(f.name, f.size);
+      bytesTotal += f.size;
+    }
+  }
 
-    // Skip if already downloaded (simple size check)
-    if (dest.exists && (dest.size ?? 0) > 1000) {
-      onProgress?.({ fileName: name, done: true });
-      continue;
+  let bytesDownloaded = 0;
+
+  for (const name of TILE_FILES) {
+    // Check cancellation
+    if (signal?.cancelled) {
+      throw new Error('Cancelled');
+    }
+
+    const dest = new File(dir, name);
+    const expectedSize = expectedSizes.get(name);
+
+    // Skip if already downloaded and matches expected size (or reasonable fallback)
+    if (dest.exists) {
+      const size = dest.size ?? 0;
+      if (expectedSize ? size === expectedSize : size > 1000) {
+        bytesDownloaded += size;
+        onProgress?.({ fileName: name, done: true, bytesDownloaded, bytesTotal });
+        continue;
+      }
     }
 
     const fileUrl = `${url}/${trailId}/${name}`;
@@ -209,14 +289,30 @@ export async function downloadTrailTiles(
       await File.downloadFileAsync(fileUrl, dest, {
         idempotent: true,
       });
-      onProgress?.({ fileName: name, done: true });
+
+      // Validate downloaded size against manifest
+      const downloadedSize = dest.size ?? 0;
+      if (expectedSize && downloadedSize !== expectedSize) {
+        throw new Error(
+          `Size mismatch for ${name}: expected ${expectedSize} bytes, got ${downloadedSize}`,
+        );
+      }
+
+      bytesDownloaded += downloadedSize;
+      onProgress?.({ fileName: name, done: true, bytesDownloaded, bytesTotal });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const detail = `Failed to download ${name} from ${fileUrl}: ${msg}`;
       console.error('[tile-service]', detail);
-      onProgress?.({ fileName: name, done: false, error: detail });
+      onProgress?.({ fileName: name, done: false, error: detail, bytesDownloaded, bytesTotal });
       throw new Error(detail);
     }
+  }
+
+  // Save manifest to disk for version tracking
+  if (manifest) {
+    const mf = manifestFile(trailId);
+    mf.write(JSON.stringify(manifest));
   }
 }
 
@@ -230,8 +326,16 @@ export function deleteTrailTiles(trailId: string): void {
 // MapLibre style builder
 // ---------------------------------------------------------------------------
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+// Single source of truth: scripts/topo-style.json, copied to mobile/assets/
+const TOPO_STYLE_TEMPLATE = require('../../assets/topo-style.json');
+/* eslint-enable @typescript-eslint/no-require-imports */
+
 /**
  * Build a MapLibre style JSON object for rendering a trail's offline tiles.
+ *
+ * Loads the shared topo-style.json template and interpolates local file paths
+ * for mbtiles:// sources and file:// glyph URLs.
  *
  * Call `provisionGlyphs()` first to get the glyphsPath.
  *
@@ -243,344 +347,15 @@ export function buildTopoStyle(trailId: string, glyphsPath: string): object {
   const dir = trailTilesDir(trailId);
   const basePath = uriToPath(dir.uri);
 
-  return {
-    version: 8,
-    name: 'Trail Companion Topo',
-    sources: {
-      basemap: {
-        type: 'vector',
-        url: `mbtiles://${basePath}/base.mbtiles`,
-      },
-      contour: {
-        type: 'vector',
-        url: `mbtiles://${basePath}/contours.mbtiles`,
-      },
-    },
-    glyphs: `file://${glyphsPath}/{fontstack}/{range}.pbf`,
-    layers: [
-      {
-        id: 'background',
-        type: 'background',
-        paint: { 'background-color': '#f8f4f0' },
-      },
-      {
-        id: 'earth',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'earth',
-        paint: { 'fill-color': '#f8f4f0' },
-      },
-      {
-        id: 'landcover-grassland',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'landcover',
-        filter: ['==', 'kind', 'grassland'],
-        paint: { 'fill-color': '#d8e8c8', 'fill-opacity': 0.6 },
-      },
-      {
-        id: 'landcover-forest',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'landcover',
-        filter: ['==', 'kind', 'forest'],
-        paint: { 'fill-color': '#aed1a0', 'fill-opacity': 0.5 },
-      },
-      {
-        id: 'landcover-scrub',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'landcover',
-        filter: ['==', 'kind', 'scrub'],
-        paint: { 'fill-color': '#c8d7ab', 'fill-opacity': 0.4 },
-      },
-      {
-        id: 'landuse-park',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'landuse',
-        filter: [
-          'in',
-          'kind',
-          'park',
-          'national_park',
-          'nature_reserve',
-          'protected_area',
-        ],
-        paint: { 'fill-color': '#c8dfab', 'fill-opacity': 0.3 },
-      },
-      {
-        id: 'water',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'water',
-        paint: { 'fill-color': '#aad3df' },
-      },
-      {
-        id: 'waterway',
-        type: 'line',
-        source: 'basemap',
-        'source-layer': 'water',
-        filter: ['in', 'kind_detail', 'river', 'stream', 'canal'],
-        paint: {
-          'line-color': '#aad3df',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 15, 2],
-        },
-      },
-      {
-        id: 'contour-regular',
-        type: 'line',
-        source: 'contour',
-        'source-layer': 'contour',
-        minzoom: 11,
-        filter: ['!=', ['get', 'is_index'], 1],
-        paint: {
-          'line-color': 'rgb(179, 134, 89)',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            11,
-            0.3,
-            14,
-            0.6,
-          ],
-          'line-opacity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            11,
-            0.15,
-            14,
-            0.35,
-          ],
-        },
-      },
-      {
-        id: 'contour-index',
-        type: 'line',
-        source: 'contour',
-        'source-layer': 'contour',
-        minzoom: 9,
-        filter: ['==', ['get', 'is_index'], 1],
-        paint: {
-          'line-color': 'rgb(166, 116, 66)',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            9,
-            0.4,
-            11,
-            0.8,
-            14,
-            1.4,
-          ],
-          'line-opacity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            9,
-            0.1,
-            11,
-            0.25,
-            14,
-            0.5,
-          ],
-        },
-      },
-      {
-        id: 'road-path',
-        type: 'line',
-        source: 'basemap',
-        'source-layer': 'roads',
-        filter: ['==', 'kind', 'path'],
-        paint: {
-          'line-color': '#b0a090',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            12,
-            0.5,
-            15,
-            1.5,
-          ],
-          'line-dasharray': [3, 2],
-        },
-      },
-      {
-        id: 'road-minor',
-        type: 'line',
-        source: 'basemap',
-        'source-layer': 'roads',
-        filter: ['==', 'kind', 'minor_road'],
-        paint: {
-          'line-color': '#ffffff',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            10,
-            0.5,
-            15,
-            2.5,
-          ],
-        },
-      },
-      {
-        id: 'road-major',
-        type: 'line',
-        source: 'basemap',
-        'source-layer': 'roads',
-        filter: ['==', 'kind', 'major_road'],
-        paint: {
-          'line-color': '#fefeb3',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            8,
-            0.5,
-            15,
-            4,
-          ],
-        },
-      },
-      {
-        id: 'road-highway',
-        type: 'line',
-        source: 'basemap',
-        'source-layer': 'roads',
-        filter: ['==', 'kind', 'highway'],
-        paint: {
-          'line-color': '#e9ac77',
-          'line-width': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            6,
-            0.5,
-            15,
-            6,
-          ],
-        },
-      },
-      {
-        id: 'building',
-        type: 'fill',
-        source: 'basemap',
-        'source-layer': 'buildings',
-        minzoom: 13,
-        paint: { 'fill-color': '#d9d0c9', 'fill-opacity': 0.7 },
-      },
-      {
-        id: 'contour-label',
-        type: 'symbol',
-        source: 'contour',
-        'source-layer': 'contour',
-        minzoom: 11,
-        filter: ['==', ['get', 'is_index'], 1],
-        layout: {
-          'symbol-placement': 'line',
-          'text-field': [
-            'concat',
-            ['to-string', ['get', 'elevation']],
-            'm',
-          ],
-          'text-size': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            11,
-            9,
-            14,
-            11,
-          ],
-          'text-max-angle': 25,
-          'text-padding': 150,
-          'text-font': ['Open Sans Regular'],
-        },
-        paint: {
-          'text-color': 'rgb(131, 66, 37)',
-          'text-halo-color': 'rgba(255, 255, 255, 0.85)',
-          'text-halo-width': 1.5,
-        },
-      },
-      {
-        id: 'place-village',
-        type: 'symbol',
-        source: 'basemap',
-        'source-layer': 'places',
-        filter: ['==', 'kind_detail', 'village'],
-        layout: {
-          'text-field': ['get', 'name'],
-          'text-size': 12,
-          'text-font': ['Open Sans Regular'],
-        },
-        paint: {
-          'text-color': '#333',
-          'text-halo-color': '#fff',
-          'text-halo-width': 1.5,
-        },
-      },
-      {
-        id: 'place-town',
-        type: 'symbol',
-        source: 'basemap',
-        'source-layer': 'places',
-        filter: ['==', 'kind_detail', 'town'],
-        layout: {
-          'text-field': ['get', 'name'],
-          'text-size': 14,
-          'text-font': ['Open Sans Regular'],
-        },
-        paint: {
-          'text-color': '#333',
-          'text-halo-color': '#fff',
-          'text-halo-width': 2,
-        },
-      },
-      {
-        id: 'place-city',
-        type: 'symbol',
-        source: 'basemap',
-        'source-layer': 'places',
-        filter: ['in', 'kind_detail', 'city', 'metropolis'],
-        layout: {
-          'text-field': ['get', 'name'],
-          'text-size': 16,
-          'text-font': ['Open Sans Regular'],
-        },
-        paint: {
-          'text-color': '#222',
-          'text-halo-color': '#fff',
-          'text-halo-width': 2,
-        },
-      },
-      {
-        id: 'peak',
-        type: 'symbol',
-        source: 'basemap',
-        'source-layer': 'pois',
-        filter: ['==', 'kind', 'peak'],
-        layout: {
-          'text-field': [
-            'concat',
-            ['get', 'name'],
-            '\n',
-            ['get', 'elevation'],
-          ],
-          'text-size': 11,
-          'text-anchor': 'center',
-          'text-font': ['Open Sans Regular'],
-        },
-        paint: {
-          'text-color': '#6a4c30',
-          'text-halo-color': '#fff',
-          'text-halo-width': 1.5,
-        },
-      },
-    ],
-  };
+  // Deep clone the template to avoid mutating the bundled module
+  const style = JSON.parse(JSON.stringify(TOPO_STYLE_TEMPLATE));
+
+  // Interpolate source URLs
+  style.sources.basemap.url = `mbtiles://${basePath}/base.mbtiles`;
+  style.sources.contour.url = `mbtiles://${basePath}/contours.mbtiles`;
+
+  // Interpolate glyph path
+  style.glyphs = `file://${glyphsPath}/{fontstack}/{range}.pbf`;
+
+  return style;
 }

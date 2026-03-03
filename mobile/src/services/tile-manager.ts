@@ -10,16 +10,14 @@ import {
   getTrailTileStatus,
   downloadTrailTiles,
   deleteTrailTiles,
+  checkForTileUpdate,
   provisionGlyphs,
   buildTopoStyle,
   type TrailTileStatus,
+  type DownloadOptions,
   type ProgressCallback,
 } from './tile-service';
-
-/** Root directory for all downloaded tiles: {documentDir}/tiles/ */
-function tilesRoot(): Directory {
-  return new Directory(Paths.document, 'tiles');
-}
+import { tilesRoot } from './tile-paths';
 
 export class TileManager {
   /** Check if a trail's tiles have been downloaded for offline use */
@@ -58,9 +56,18 @@ export class TileManager {
     return trailIds.reduce((sum, id) => sum + getTrailTileStatus(id).totalSizeBytes, 0);
   }
 
-  /** Download tiles for a trail */
-  async downloadTrail(trailId: string, baseUrl: string, onProgress?: ProgressCallback): Promise<void> {
-    return downloadTrailTiles(trailId, baseUrl, onProgress);
+  /** Download tiles for a trail (supports options object or legacy callback) */
+  async downloadTrail(
+    trailId: string,
+    baseUrl: string,
+    optionsOrCallback?: DownloadOptions | ProgressCallback,
+  ): Promise<void> {
+    return downloadTrailTiles(trailId, baseUrl, optionsOrCallback);
+  }
+
+  /** Check if newer tiles are available on the server */
+  async checkForUpdate(trailId: string, baseUrl: string) {
+    return checkForTileUpdate(trailId, baseUrl);
   }
 
   /** Delete downloaded tiles for a trail */

@@ -25,6 +25,7 @@ import {
   DEM_CACHE_DIR,
   run,
   ensureDir,
+  cleanWorkDir,
   formatBytes,
   fileSizeBytes,
   checkDependencies,
@@ -33,6 +34,7 @@ import {
   classifyAndTileContours,
   extractBaseTiles,
   writeManifest,
+  mgaEpsgForLon,
 } from './tile-pipeline.js';
 
 // --- Grid constants ---
@@ -46,22 +48,6 @@ const BUFFER_METERS = 1000; // 1km buffer for contour continuity at cell edges
 
 const GRID_WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles/grid');
 const GRID_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles/grid');
-
-// --- MGA Zone lookup ---
-
-/**
- * Return the EPSG code for the MGA zone covering a given longitude.
- */
-function mgaEpsgForLon(lonCenter: number): number {
-  if (lonCenter < 114) return 28349;  // Zone 49
-  if (lonCenter < 120) return 28350;  // Zone 50
-  if (lonCenter < 126) return 28351;  // Zone 51
-  if (lonCenter < 132) return 28352;  // Zone 52
-  if (lonCenter < 138) return 28353;  // Zone 53
-  if (lonCenter < 144) return 28354;  // Zone 54
-  if (lonCenter < 150) return 28355;  // Zone 55
-  return 28356;                        // Zone 56
-}
 
 // --- Grid cell enumeration ---
 
@@ -123,6 +109,7 @@ function demFilesForCell(cell: CellDef): string[] {
   if (!fs.existsSync(DEM_CACHE_DIR)) return [];
 
   const files: string[] = [];
+  const demExtensions = ['.hgt', '.tif', '.tiff'];
   // SRTM tile name = SW corner. Cell covers cell.west to cell.east, -cell.north to -cell.south.
   // For a cell E114_S34 (114-116E, 34-36S), we need DEM tiles:
   //   S34E114, S34E115, S35E114, S35E115
@@ -130,9 +117,12 @@ function demFilesForCell(cell: CellDef): string[] {
   for (let lat = cell.south; lat < cell.north; lat++) {
     for (let lon = cell.west; lon < cell.east; lon++) {
       const tileName = `S${String(lat).padStart(2, '0')}E${String(lon).padStart(3, '0')}`;
-      const hgtFile = `${tileName}.hgt`;
-      if (fs.existsSync(path.join(DEM_CACHE_DIR, hgtFile))) {
-        files.push(hgtFile);
+      for (const ext of demExtensions) {
+        const demFile = `${tileName}${ext}`;
+        if (fs.existsSync(path.join(DEM_CACHE_DIR, demFile))) {
+          files.push(demFile);
+          break; // found one format, skip others for this tile
+        }
       }
     }
   }
@@ -159,10 +149,12 @@ function generateCellPolygon(
   const north = -cell.south;
 
   if (bufferMeters > 0) {
-    // Create unbuffered GeoJSON, then use ogr2ogr to buffer in projected CRS
+    // Create unbuffered GeoJSON with explicit layer name, then use ogr2ogr to buffer in projected CRS
     const unbufferedPath = outputPath.replace('.geojson', '_unbuffered.geojson');
+    const layerName = 'cell';
     const geojson = {
       type: 'FeatureCollection',
+      name: layerName,
       features: [{
         type: 'Feature',
         properties: {},
@@ -188,22 +180,8 @@ function generateCellPolygon(
       `"${unbufferedPath}"`,
       '-dialect', 'sqlite',
       '-sql',
-      `"SELECT ST_Transform(ST_Buffer(ST_Transform(geometry, ${cell.epsg}), ${bufferMeters}), 4326) AS geometry FROM '${unbufferedPath.endsWith('.geojson') ? path.basename(unbufferedPath, '.geojson') : 'OGRGeoJSON'}'"`,
+      `"SELECT ST_Transform(ST_Buffer(ST_Transform(geometry, ${cell.epsg}), ${bufferMeters}), 4326) AS geometry FROM ${layerName}"`,
     ].join(' '), { verbose });
-
-    // ogr2ogr may use 'OGRGeoJSON' as default layer name for GeoJSON input
-    if (!fs.existsSync(outputPath) || fileSizeBytes(outputPath) === 0) {
-      // Retry with standard layer name
-      run([
-        'ogr2ogr',
-        '-f', 'GeoJSON',
-        `"${outputPath}"`,
-        `"${unbufferedPath}"`,
-        '-dialect', 'sqlite',
-        '-sql',
-        `"SELECT ST_Transform(ST_Buffer(ST_Transform(geometry, ${cell.epsg}), ${bufferMeters}), 4326) AS geometry FROM OGRGeoJSON"`,
-      ].join(' '), { verbose });
-    }
 
     if (fs.existsSync(unbufferedPath)) fs.unlinkSync(unbufferedPath);
   } else {
@@ -409,6 +387,9 @@ function processCell(
       { name: 'contours.mbtiles', path: outputContoursMbtiles },
     ];
     const manifest = writeManifest(cellId, outputDir, bounds, manifestFiles);
+
+    // Clean up work directory
+    cleanWorkDir(workDir);
 
     console.log(`  ✓ Complete: ${cellId} (${formatBytes(manifest.totalSize)})`);
     return { success: true };

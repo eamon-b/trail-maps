@@ -9,27 +9,17 @@
 import { File, Directory, Paths } from 'expo-file-system';
 import { openDatabaseAsync } from 'expo-sqlite';
 import type { GridIndex, GridCell } from '@lib/types';
+import { TILE_FILES, tilesRoot, trailTilesDir, uriToPath } from './tile-paths';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const GRID_INDEX_CACHE_MS = 60 * 60 * 1000; // 1 hour
-const TILE_FILES = ['base.mbtiles', 'contours.mbtiles'] as const;
 
 // ---------------------------------------------------------------------------
 // Directory helpers
 // ---------------------------------------------------------------------------
-
-/** Root directory for all downloaded tiles: {documentDir}/tiles/ */
-function tilesRoot(): Directory {
-  return new Directory(Paths.document, 'tiles');
-}
-
-/** Per-trail directory: {documentDir}/tiles/{trailId}/ */
-function trailTilesDir(trailId: string): Directory {
-  return new Directory(Paths.document, 'tiles', trailId);
-}
 
 /** Temporary directory for grid cell downloads */
 function gridTempDir(): Directory {
@@ -118,9 +108,20 @@ export interface GridDownloadProgress {
   cellsTotal: number;
   cellsComplete: number;
   currentCell?: string;
+  /** Bytes downloaded so far across all cells */
+  bytesDownloaded: number;
+  /** Total bytes expected (from grid index cell sizes) */
+  bytesTotal: number;
 }
 
 export type GridProgressCallback = (progress: GridDownloadProgress) => void;
+
+/** Options for downloadGridTiles */
+export interface GridDownloadOptions {
+  onProgress?: GridProgressCallback;
+  /** Set to true to cancel the download between cells */
+  signal?: { cancelled: boolean };
+}
 
 // ---------------------------------------------------------------------------
 // Download and merge
@@ -137,16 +138,28 @@ export async function downloadGridTiles(
   trailId: string,
   cells: GridCell[],
   baseUrl: string,
-  onProgress?: GridProgressCallback,
+  optionsOrCallback?: GridDownloadOptions | GridProgressCallback,
 ): Promise<void> {
   if (cells.length === 0) {
     throw new Error('No grid cells to download');
   }
 
+  // Support both new options object and legacy callback signature
+  const opts: GridDownloadOptions =
+    typeof optionsOrCallback === 'function'
+      ? { onProgress: optionsOrCallback }
+      : optionsOrCallback ?? {};
+
+  const { onProgress, signal } = opts;
+
   const url = baseUrl.replace(/\/$/, '');
   const tempDir = gridTempDir();
   const root = tilesRoot();
   const destDir = trailTilesDir(trailId);
+
+  // Compute total expected bytes from grid index
+  const bytesTotal = cells.reduce((sum, c) => sum + c.totalSize, 0);
+  let bytesDownloaded = 0;
 
   // Ensure directories
   if (!root.exists) root.create();
@@ -159,12 +172,19 @@ export async function downloadGridTiles(
     const downloadedContours: string[] = [];
 
     for (let i = 0; i < cells.length; i++) {
+      // Check cancellation
+      if (signal?.cancelled) {
+        throw new Error('Cancelled');
+      }
+
       const cell = cells[i];
       onProgress?.({
         phase: 'downloading',
         cellsTotal: cells.length,
         cellsComplete: i,
         currentCell: cell.id,
+        bytesDownloaded,
+        bytesTotal,
       });
 
       const cellTempDir = new Directory(tempDir, cell.id);
@@ -176,7 +196,9 @@ export async function downloadGridTiles(
 
         try {
           await File.downloadFileAsync(fileUrl, dest, { idempotent: true });
-          if (dest.exists && (dest.size ?? 0) > 100) {
+          const downloadedSize = dest.exists ? (dest.size ?? 0) : 0;
+          if (downloadedSize > 100) {
+            bytesDownloaded += downloadedSize;
             if (fileName === 'base.mbtiles') {
               downloadedBase.push(dest.uri);
             } else {
@@ -199,6 +221,8 @@ export async function downloadGridTiles(
       phase: 'merging',
       cellsTotal: cells.length,
       cellsComplete: cells.length,
+      bytesDownloaded,
+      bytesTotal,
     });
 
     const destBasePath = uriToPath(new File(destDir, 'base.mbtiles').uri);
@@ -287,14 +311,3 @@ export async function mergeMbtiles(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Convert a file:// URI to a bare filesystem path. */
-function uriToPath(uri: string): string {
-  let p = uri;
-  if (p.startsWith('file://')) p = p.slice('file://'.length);
-  if (p.endsWith('/')) p = p.slice(0, -1);
-  return p;
-}

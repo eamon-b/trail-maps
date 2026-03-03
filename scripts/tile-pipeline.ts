@@ -57,6 +57,16 @@ export function ensureDir(dir: string): void {
   }
 }
 
+/**
+ * Remove a work directory and all its contents.
+ * Safe to call if the directory doesn't exist.
+ */
+export function cleanWorkDir(dir: string): void {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 export function fileSha256(filePath: string): string {
   const data = fs.readFileSync(filePath);
   return crypto.createHash('sha256').update(data).digest('hex');
@@ -70,6 +80,23 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// --- MGA Zone lookup ---
+
+/**
+ * Return the EPSG code for the MGA zone covering a given longitude.
+ * MGA (Map Grid of Australia) zones use EPSG:283XX where XX is the zone number.
+ */
+export function mgaEpsgForLon(lonCenter: number): number {
+  if (lonCenter < 114) return 28349;  // Zone 49
+  if (lonCenter < 120) return 28350;  // Zone 50
+  if (lonCenter < 126) return 28351;  // Zone 51
+  if (lonCenter < 132) return 28352;  // Zone 52
+  if (lonCenter < 138) return 28353;  // Zone 53
+  if (lonCenter < 144) return 28354;  // Zone 54
+  if (lonCenter < 150) return 28355;  // Zone 55
+  return 28356;                        // Zone 56
 }
 
 // --- Dependency checking ---
@@ -219,7 +246,7 @@ export function classifyAndTileContours(
     `-nln ${classifiedLayerName}`,
     '-dialect sqlite',
     '-sql',
-    `"SELECT geometry, elevation, CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS is_index FROM '${rawLayerName}'"`,
+    `"SELECT geometry, elevation, CAST(CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS INTEGER) AS is_index FROM '${rawLayerName}'"`,
   ].join(' '), { verbose });
 
   // 4b: Split into zoom-tier files for density control
@@ -300,6 +327,7 @@ export function extractBaseTiles(
     `"${protomapsSource}"`,
     `"${basePmtilesPath}"`,
     `--region="${regionPath}"`,
+    `--minzoom=${MIN_ZOOM}`,
     `--maxzoom=${MAX_ZOOM}`,
   ].join(' '), { verbose });
 

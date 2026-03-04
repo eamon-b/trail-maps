@@ -1,23 +1,53 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+mkdir -p /tmp/maestro-screenshots
+
 # Forward Metro port so emulator can reach the host bundler
 adb reverse tcp:8081 tcp:8081
 
 # Start Metro bundler in background (CI=true disables interactive UI)
-cd mobile && npx expo start --dev-client --port 8081 &
+# Use explicit subshell so the cd doesn't affect the parent shell
+(cd mobile && npx expo start --dev-client --port 8081) &
 METRO_PID=$!
-cd ..
 
-# Wait for Metro to be ready (up to 120s)
+# Wait for Metro to be ready (up to 120s) — fail explicitly if it doesn't start
+METRO_READY=false
 for i in $(seq 1 60); do
-  curl -s http://localhost:8081/status 2>/dev/null && break
+  if curl -s http://localhost:8081/status 2>/dev/null | grep -q running; then
+    METRO_READY=true
+    break
+  fi
   sleep 2
 done
+if [ "$METRO_READY" = false ]; then
+  echo "::error::Metro bundler failed to start within 120s"
+  kill $METRO_PID 2>/dev/null || true
+  exit 1
+fi
 
-# Install APK and give the app time to connect + load bundle
-adb install mobile/android/app/build/outputs/apk/debug/app-debug.apk
-sleep 10
+# Install APK
+adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+# Launch the app and wait for it to be ready instead of blind sleep
+adb shell am start -n com.trailcompanion.app/.MainActivity
+APP_READY=false
+for i in $(seq 1 30); do
+  if adb shell dumpsys activity activities 2>/dev/null | grep -q trailcompanion; then
+    APP_READY=true
+    break
+  fi
+  sleep 1
+done
+if [ "$APP_READY" = false ]; then
+  echo "::error::App failed to launch within 30s"
+  adb logcat -d -t 50 ReactNativeJS:* *:E > /tmp/maestro-screenshots/logcat-launch-failure.txt || true
+  kill $METRO_PID 2>/dev/null || true
+  exit 1
+fi
+
+# Give the JS bundle a moment to finish loading after activity is visible
+sleep 3
 
 # Run Maestro tests
 ~/.maestro/bin/maestro test mobile/maestro/

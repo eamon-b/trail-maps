@@ -12,7 +12,7 @@ on:
 jobs:
   maestro-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -56,11 +56,22 @@ jobs:
       - name: Install Android SDK components
         run: sdkmanager "system-images;android-34;google_apis;x86_64" "emulator"
 
+      # Cache the built APK — native build only needs to re-run when native
+      # deps or app config change, not for JS-only changes (~26 min saved).
+      - name: Cache debug APK
+        id: apk-cache
+        uses: actions/cache@v4
+        with:
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          key: apk-${{ hashFiles('mobile/package-lock.json', 'mobile/app.json') }}
+
       - name: Generate native project
+        if: steps.apk-cache.outputs.cache-hit != 'true'
         run: npx expo prebuild --platform android
         working-directory: mobile
 
       - name: Cache Gradle dependencies
+        if: steps.apk-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -70,10 +81,24 @@ jobs:
           restore-keys: gradle-
 
       - name: Build debug APK
+        if: steps.apk-cache.outputs.cache-hit != 'true'
         run: ./gradlew assembleDebug
         working-directory: mobile/android
 
+      - name: Stop Gradle daemon
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        run: ./gradlew --stop
+        working-directory: mobile/android
+
+      - name: Cache Maestro CLI
+        id: maestro-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.maestro
+          key: maestro-cli-v1
+
       - name: Install Maestro CLI
+        if: steps.maestro-cache.outputs.cache-hit != 'true'
         run: curl -Ls "https://get.maestro.mobile.dev" | bash
 
       - name: Run Maestro tests
@@ -82,16 +107,31 @@ jobs:
           api-level: 34
           target: google_apis
           arch: x86_64
-          profile: pixel_6
           disable-animations: true
           emulator-boot-timeout: 300
+          ram-size: 1536M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 1536
           script: bash mobile/ci/run-maestro.sh
 
       - name: Upload test results
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: maestro-results
           path: |
             ~/.maestro/tests/
             /tmp/maestro-screenshots/
+
+      - name: Capture failure diagnostics
+        if: failure()
+        run: |
+          mkdir -p /tmp/maestro-screenshots
+          adb exec-out screencap -p > /tmp/maestro-screenshots/failure.png || true
+          adb logcat -d -t 200 ReactNativeJS:* *:E > /tmp/maestro-screenshots/logcat.txt || true
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-failure-diagnostics
+          path: /tmp/maestro-screenshots/

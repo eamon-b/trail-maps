@@ -71,15 +71,9 @@ export default function PlanScreen() {
     }));
     setTrails(withTiles);
 
-    // Load plans for each trail
+    // Load all plans in a single query
     const planService = await PlanService.create();
-    const plansByTrail: Record<string, Plan[]> = {};
-    for (const trail of list) {
-      const trailPlans = await planService.listPlansForTrail(trail.id);
-      if (trailPlans.length > 0) {
-        plansByTrail[trail.id] = trailPlans;
-      }
-    }
+    const plansByTrail = await planService.listAllPlansByTrail();
     setPlans(plansByTrail);
 
     // Load storage info

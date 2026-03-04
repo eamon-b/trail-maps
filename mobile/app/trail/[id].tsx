@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, Pressable, ActivityIndicator, InteractionManager } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -153,12 +153,12 @@ export default function TrailViewerScreen() {
   }, [trackPoints]);
 
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
-    // Dismiss the waypoint detail sheet so the profile is visible
+    // Dismiss the waypoint detail sheet first
     setSelectedWaypoint(null);
-    // Use a longer delay to ensure the WaypointDetailSheet's BottomSheet
-    // has fully unmounted — having two @gorhom/bottom-sheet instances active
-    // simultaneously suppresses snap animations.
-    setTimeout(() => {
+    // Expand the profile after the sheet unmounts — InteractionManager ensures
+    // the BottomSheet is fully removed before the ElevationProfileDrawer expands,
+    // avoiding two @gorhom/bottom-sheet instances suppressing snap animations.
+    InteractionManager.runAfterInteractions(() => {
       if (wp.totalDistance != null) {
         const index = activeTrail?.waypoints?.findIndex(w =>
           w.name === wp.name && Math.abs((w.totalDistance ?? -1) - (wp.totalDistance ?? -2)) < 0.1
@@ -168,7 +168,7 @@ export default function TrailViewerScreen() {
         }
       }
       elevationDrawerRef.current?.expand();
-    }, 350);
+    });
   }, [activeTrail, setFocusedWaypointId]);
 
   if (contextLoading || (!activeTrail && !contextError)) {

@@ -66,13 +66,15 @@ export function calculateDistancesToWaypoints(
 
 /**
  * Get the next waypoint of each important type.
+ * Accepts pre-computed distances to avoid recalculating.
  */
 export function getNextWaypointsByType(
   currentKm: number,
   waypoints: TrailWaypoint[],
   trackPoints: TrackPoint[],
+  precomputedDistances?: WaypointDistance[],
 ): NextWaypointsByType {
-  const distances = calculateDistancesToWaypoints(currentKm, waypoints, trackPoints);
+  const distances = precomputedDistances ?? calculateDistancesToWaypoints(currentKm, waypoints, trackPoints);
 
   const typeMapping: Record<string, keyof NextWaypointsByType> = {
     campsite: 'campsite',

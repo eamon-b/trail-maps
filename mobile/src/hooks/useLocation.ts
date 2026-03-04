@@ -67,16 +67,62 @@ export function useLocation(
     getLocationPermissionStatus().then(setPermissionStatus);
   }, []);
 
+  const lastSnapRef = useRef<{ idx: number; lat: number; lon: number } | null>(null);
+
+  // Reset snap cache when track points change (e.g. direction reversal)
+  useEffect(() => {
+    lastSnapRef.current = null;
+  }, [trackPoints]);
+
   const snapToTrail = useCallback((update: LocationUpdate): SnappedLocation => {
     const points = trackPointsRef.current;
     if (!points || points.length === 0) {
       return { raw: update, trailKm: null, distanceFromTrail: null };
     }
 
-    // Find nearest track point by lat/lon distance
+    const last = lastSnapRef.current;
+
+    // Skip re-snapping if GPS hasn't moved more than 10m from last reading
+    if (last) {
+      const moved = haversineDistance(update.latitude, update.longitude, last.lat, last.lon);
+      if (moved < 10) {
+        return {
+          raw: update,
+          trailKm: points[last.idx].dist,
+          distanceFromTrail: haversineDistance(update.latitude, update.longitude, points[last.idx].lat, points[last.idx].lon),
+        };
+      }
+    }
+
     let nearestIdx = 0;
     let nearestDist = Infinity;
-    // Sample every 10th point for efficiency, then refine
+
+    // Start-from-last: search a window around the previous snapped index
+    if (last) {
+      const windowSize = 50;
+      const start = Math.max(0, last.idx - windowSize);
+      const end = Math.min(points.length - 1, last.idx + windowSize);
+      for (let i = start; i <= end; i++) {
+        const dist = haversineDistance(update.latitude, update.longitude, points[i].lat, points[i].lon);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIdx = i;
+        }
+      }
+      // If window result is within 500m, use it; otherwise fall back to full scan
+      if (nearestDist < 500) {
+        lastSnapRef.current = { idx: nearestIdx, lat: update.latitude, lon: update.longitude };
+        return {
+          raw: update,
+          trailKm: points[nearestIdx].dist,
+          distanceFromTrail: nearestDist,
+        };
+      }
+    }
+
+    // Full coarse-then-refine scan (fallback)
+    nearestIdx = 0;
+    nearestDist = Infinity;
     const step = Math.max(1, Math.floor(points.length / 500));
     for (let i = 0; i < points.length; i += step) {
       const dist = haversineDistance(update.latitude, update.longitude, points[i].lat, points[i].lon);
@@ -96,6 +142,7 @@ export function useLocation(
       }
     }
 
+    lastSnapRef.current = { idx: nearestIdx, lat: update.latitude, lon: update.longitude };
     return {
       raw: update,
       trailKm: points[nearestIdx].dist,

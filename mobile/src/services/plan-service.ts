@@ -114,6 +114,20 @@ export class PlanService {
     return rows.map(rowToPlan);
   }
 
+  /** List all plans across all trails in a single query, grouped by trail ID */
+  async listAllPlansByTrail(): Promise<Record<string, Plan[]>> {
+    const rows = await this.db.getAllAsync<PlanRow>(
+      'SELECT * FROM plans ORDER BY trail_id, updated_at DESC'
+    );
+    const result: Record<string, Plan[]> = {};
+    for (const row of rows) {
+      const plan = rowToPlan(row);
+      if (!result[plan.trailId]) result[plan.trailId] = [];
+      result[plan.trailId].push(plan);
+    }
+    return result;
+  }
+
   async updatePlan(id: string, updates: Partial<Pick<Plan, 'name' | 'direction' | 'startDate' | 'sectionJson' | 'stopsJson'>>): Promise<void> {
     const sets: string[] = [];
     const values: (string | null)[] = [];

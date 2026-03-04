@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, LayoutChangeEvent } from 'react-native';
 import { Canvas, Path, Skia, LinearGradient, vec, Line, Circle, Group, Rect } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -189,10 +189,17 @@ export function ElevationProfile({
       });
   }, [chartMetrics, waterSourceKms, sampledPoints]);
 
+  // Throttle crosshair state updates to ~20fps to avoid excessive re-renders
+  const lastCrosshairUpdate = useRef(0);
+  const CROSSHAIR_THROTTLE_MS = 50;
+
   const panGesture = useMemo(() => {
     return Gesture.Pan()
       .onUpdate((e) => {
         if (!chartMetrics) return;
+        const now = Date.now();
+        if (now - lastCrosshairUpdate.current < CROSSHAIR_THROTTLE_MS) return;
+        lastCrosshairUpdate.current = now;
         const x = e.x;
         const km = ((x - PADDING.left) / chartMetrics.chartWidth) * chartMetrics.maxDist;
         if (km >= 0 && km <= chartMetrics.maxDist) {

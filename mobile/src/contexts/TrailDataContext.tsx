@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { TrailDataService, type Trail as DbTrail } from '../services/trail-data-service';
 import { trailJsonToTrail, type Trail } from '../lib/trail-utils';
 
@@ -71,8 +71,13 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
     await loadTrail(id);
   }, [loadTrail]);
 
+  const contextValue = useMemo(
+    () => ({ trail, dbTrail, loading, error, loadTrail, reloadTrail }),
+    [trail, dbTrail, loading, error, loadTrail, reloadTrail],
+  );
+
   return (
-    <TrailDataContext.Provider value={{ trail, dbTrail, loading, error, loadTrail, reloadTrail }}>
+    <TrailDataContext.Provider value={contextValue}>
       {children}
     </TrailDataContext.Provider>
   );

@@ -120,14 +120,21 @@ export class TrailDataService {
   }
 
   async storeWaypoints(trailId: string, waypoints: Omit<Waypoint, 'id' | 'trailId'>[]): Promise<void> {
-    await this.db.runAsync('DELETE FROM waypoints WHERE trail_id = ?', [trailId]);
+    await this.db.execAsync('BEGIN');
+    try {
+      await this.db.runAsync('DELETE FROM waypoints WHERE trail_id = ?', [trailId]);
 
-    for (const wp of waypoints) {
-      await this.db.runAsync(
-        `INSERT INTO waypoints (trail_id, name, type, lat, lon, ele, km_position, description)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [trailId, wp.name, wp.type, wp.lat, wp.lon, wp.ele, wp.kmPosition, wp.description]
-      );
+      for (const wp of waypoints) {
+        await this.db.runAsync(
+          `INSERT INTO waypoints (trail_id, name, type, lat, lon, ele, km_position, description)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [trailId, wp.name, wp.type, wp.lat, wp.lon, wp.ele, wp.kmPosition, wp.description]
+        );
+      }
+      await this.db.execAsync('COMMIT');
+    } catch (e) {
+      await this.db.execAsync('ROLLBACK');
+      throw e;
     }
   }
 

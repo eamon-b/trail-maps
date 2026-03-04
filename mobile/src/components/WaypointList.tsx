@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
@@ -45,6 +45,9 @@ interface WaypointListProps {
   style?: ViewStyle;
 }
 
+// Fixed row height: minHeight(44) + marginBottom(2)
+const ITEM_HEIGHT = touchTarget.min + 2;
+
 /** Scrollable waypoint list with emoji icons and highlighting */
 export function WaypointList({
   waypoints,
@@ -57,6 +60,16 @@ export function WaypointList({
   const { colors } = useTheme();
   const listRef = useRef<FlatList>(null);
   const displayWaypoints = maxItems ? waypoints.slice(0, maxItems) : waypoints;
+  const isFullList = !maxItems;
+
+  const getItemLayout = useMemo(() => {
+    if (!isFullList) return undefined;
+    return (_data: unknown, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    });
+  }, [isFullList]);
 
   // Scroll to focused waypoint when it changes
   useEffect(() => {
@@ -115,7 +128,16 @@ export function WaypointList({
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         scrollEnabled={!maxItems}
-        onScrollToIndexFailed={() => {}}
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={isFullList}
+        initialNumToRender={isFullList ? 15 : undefined}
+        onScrollToIndexFailed={(info) => {
+          // Fallback: scroll to approximate offset when index isn't laid out yet
+          listRef.current?.scrollToOffset({
+            offset: info.index * ITEM_HEIGHT,
+            animated: true,
+          });
+        }}
       />
       {maxItems && waypoints.length > maxItems && onSeeAll && (
         <Pressable

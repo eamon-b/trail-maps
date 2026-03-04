@@ -187,8 +187,8 @@ export default function HikeScreen() {
     const dirConfig = trail.config.direction;
     const direction = dirConfig ? dirConfig.default : 'Default';
 
-    const next = getNextWaypointsByType(km, waypoints, trail.track.points);
     const allDistances = calculateDistancesToWaypoints(km, waypoints, trail.track.points);
+    const next = getNextWaypointsByType(km, waypoints, trail.track.points, allDistances);
 
     // Find current day from plan
     let today: DashboardData['today'] | undefined;

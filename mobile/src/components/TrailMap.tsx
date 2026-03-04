@@ -190,6 +190,48 @@ function accuracyCircleRadiusExpression(latDegrees: number): unknown[] {
   ];
 }
 
+// --- Static MapLibre layer styles (avoid re-creating on every render) ---
+
+const trailLineStyle = {
+  lineColor: '#e53935',
+  lineWidth: 3,
+  lineOpacity: 0.9,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+};
+
+const alternatesLineStyle = {
+  lineColor: '#ff9800',
+  lineWidth: 3,
+  lineOpacity: 0.8,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+  lineDasharray: [2, 1],
+};
+
+const sideTripsLineStyle = {
+  lineColor: '#9c27b0',
+  lineWidth: 3,
+  lineOpacity: 0.8,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+  lineDasharray: [2, 1],
+};
+
+const customPinsCircleStyle = {
+  circleRadius: 7,
+  circleColor: ['get', 'color'] as unknown as string,
+  circleStrokeColor: '#ffffff',
+  circleStrokeWidth: 2,
+};
+
+const userDotStyle = {
+  circleRadius: 6,
+  circleColor: '#2196F3',
+  circleStrokeColor: '#ffffff',
+  circleStrokeWidth: 2,
+};
+
 function computeBounds(points: TrackPoint[]): { ne: [number, number]; sw: [number, number] } {
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
   for (const p of points) {
@@ -278,6 +320,79 @@ export function TrailMap({
     return computeBounds(displayPoints);
   }, [displayPoints]);
 
+  // Theme-dependent styles (memoized since they depend on colors.accent)
+  const highlightGlowStyle = useMemo(() => ({
+    lineColor: colors.accent,
+    lineWidth: 8,
+    lineOpacity: 0.3,
+    lineCap: 'round' as const,
+    lineJoin: 'round' as const,
+  }), [colors.accent]);
+
+  const highlightSolidStyle = useMemo(() => ({
+    lineColor: colors.accent,
+    lineWidth: 4,
+    lineOpacity: 1,
+    lineCap: 'round' as const,
+    lineJoin: 'round' as const,
+  }), [colors.accent]);
+
+  const waypointCircleStyle = useMemo(() => ({
+    circleRadius: [
+      'case',
+      ['==', ['get', 'id'], focusedWaypointId ?? -1],
+      8,
+      5,
+    ] as unknown as number,
+    circleColor: ['get', 'color'] as unknown as string,
+    circleStrokeColor: [
+      'case',
+      ['==', ['get', 'id'], focusedWaypointId ?? -1],
+      colors.accent,
+      '#ffffff',
+    ] as unknown as string,
+    circleStrokeWidth: [
+      'case',
+      ['==', ['get', 'id'], focusedWaypointId ?? -1],
+      3,
+      1.5,
+    ] as unknown as number,
+  }), [focusedWaypointId, colors.accent]);
+
+  const symbolLabelStyle = useMemo(() => ({
+    textField: ['get', 'name'] as unknown as string,
+    textFont: labelFont,
+    textSize: 12,
+    textColor: '#333333',
+    textHaloColor: '#ffffff',
+    textHaloWidth: 1.5,
+    textOffset: [0, 1.2] as [number, number],
+    textAnchor: 'top' as const,
+    textMaxWidth: 15,
+    textAllowOverlap: false,
+  }), [labelFont]);
+
+  const customPinLabelStyle = useMemo(() => ({
+    textField: ['get', 'label'] as unknown as string,
+    textFont: labelFont,
+    textSize: 12,
+    textColor: '#333333',
+    textHaloColor: '#ffffff',
+    textHaloWidth: 1.5,
+    textOffset: [0, 1.4] as [number, number],
+    textAnchor: 'top' as const,
+    textMaxWidth: 15,
+    textAllowOverlap: false,
+  }), [labelFont]);
+
+  const userAccuracyStyle = useMemo(() => ({
+    circleRadius: accuracyRadius as unknown as number,
+    circleColor: 'rgba(33, 150, 243, 0.1)',
+    circleStrokeColor: 'rgba(33, 150, 243, 0.3)',
+    circleStrokeWidth: 1,
+    circlePitchAlignment: 'map' as const,
+  }), [accuracyRadius]);
+
   // Fit camera to trail bounds on initial load
   useEffect(() => {
     if (bounds && cameraRef.current && !hasSetInitialBounds.current) {
@@ -362,34 +477,41 @@ export function TrailMap({
     [onWaypointPress, waypoints],
   );
 
-  const handleRegionDidChange = useCallback(async () => {
-    if (!onVisibleBoundsChange || !trackPoints || trackPoints.length === 0 || !mapRef.current) return;
-    try {
-      const bounds = await mapRef.current.getVisibleBounds();
-      if (!bounds || bounds.length < 2) return;
-      // bounds is [[neLon, neLat], [swLon, swLat]]
-      const [ne, sw] = bounds;
-      const minLon = sw[0], maxLon = ne[0];
-      const minLat = sw[1], maxLat = ne[1];
+  const regionChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-      // Find the km range of track points within the visible bounds
-      let minKm = Infinity;
-      let maxKm = -Infinity;
-      // Sample for efficiency
-      const step = Math.max(1, Math.floor(trackPoints.length / 200));
-      for (let i = 0; i < trackPoints.length; i += step) {
-        const p = trackPoints[i];
-        if (p.lat >= minLat && p.lat <= maxLat && p.lon >= minLon && p.lon <= maxLon) {
-          if (p.dist < minKm) minKm = p.dist;
-          if (p.dist > maxKm) maxKm = p.dist;
+  const handleRegionDidChange = useCallback(() => {
+    if (!onVisibleBoundsChange || !trackPoints || trackPoints.length === 0 || !mapRef.current) return;
+    // Debounce to avoid excessive state updates during rapid pans
+    if (regionChangeTimer.current) clearTimeout(regionChangeTimer.current);
+    regionChangeTimer.current = setTimeout(async () => {
+      try {
+        if (!mapRef.current) return;
+        const bounds = await mapRef.current.getVisibleBounds();
+        if (!bounds || bounds.length < 2) return;
+        // bounds is [[neLon, neLat], [swLon, swLat]]
+        const [ne, sw] = bounds;
+        const minLon = sw[0], maxLon = ne[0];
+        const minLat = sw[1], maxLat = ne[1];
+
+        // Find the km range of track points within the visible bounds
+        let minKm = Infinity;
+        let maxKm = -Infinity;
+        // Sample for efficiency
+        const step = Math.max(1, Math.floor(trackPoints.length / 200));
+        for (let i = 0; i < trackPoints.length; i += step) {
+          const p = trackPoints[i];
+          if (p.lat >= minLat && p.lat <= maxLat && p.lon >= minLon && p.lon <= maxLon) {
+            if (p.dist < minKm) minKm = p.dist;
+            if (p.dist > maxKm) maxKm = p.dist;
+          }
         }
+        if (minKm <= maxKm) {
+          onVisibleBoundsChange(minKm, maxKm);
+        }
+      } catch {
+        // getVisibleBounds can fail during init
       }
-      if (minKm <= maxKm) {
-        onVisibleBoundsChange(minKm, maxKm);
-      }
-    } catch {
-      // getVisibleBounds can fail during init
-    }
+    }, 150);
   }, [onVisibleBoundsChange, trackPoints]);
 
   const showRecenter = !isFollowingUser && userLocation != null;
@@ -424,13 +546,7 @@ export function TrailMap({
           <MapLibreGL.ShapeSource id="trail-line" shape={trailGeoJSON}>
             <MapLibreGL.LineLayer
               id="trail-line-layer"
-              style={{
-                lineColor: '#e53935',
-                lineWidth: 3,
-                lineOpacity: 0.9,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
+              style={trailLineStyle}
             />
           </MapLibreGL.ShapeSource>
         )}
@@ -440,23 +556,11 @@ export function TrailMap({
           <MapLibreGL.ShapeSource id="highlight-segment" shape={highlightGeoJSON}>
             <MapLibreGL.LineLayer
               id="highlight-glow"
-              style={{
-                lineColor: colors.accent,
-                lineWidth: 8,
-                lineOpacity: 0.3,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
+              style={highlightGlowStyle}
             />
             <MapLibreGL.LineLayer
               id="highlight-solid"
-              style={{
-                lineColor: colors.accent,
-                lineWidth: 4,
-                lineOpacity: 1,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
+              style={highlightSolidStyle}
             />
           </MapLibreGL.ShapeSource>
         )}
@@ -466,28 +570,12 @@ export function TrailMap({
           <MapLibreGL.ShapeSource id="custom-pins" shape={customPinsGeoJSON}>
             <MapLibreGL.CircleLayer
               id="custom-pins-circles"
-              style={{
-                circleRadius: 7,
-                circleColor: ['get', 'color'],
-                circleStrokeColor: '#ffffff',
-                circleStrokeWidth: 2,
-              }}
+              style={customPinsCircleStyle}
             />
             <MapLibreGL.SymbolLayer
               id="custom-pins-labels"
               minZoomLevel={10}
-              style={{
-                textField: ['get', 'label'],
-                textFont: labelFont,
-                textSize: 12,
-                textColor: '#333333',
-                textHaloColor: '#ffffff',
-                textHaloWidth: 1.5,
-                textOffset: [0, 1.4],
-                textAnchor: 'top',
-                textMaxWidth: 15,
-                textAllowOverlap: false,
-              }}
+              style={customPinLabelStyle}
             />
           </MapLibreGL.ShapeSource>
         )}
@@ -497,14 +585,7 @@ export function TrailMap({
           <MapLibreGL.ShapeSource id="alternates" shape={alternatesGeoJSON}>
             <MapLibreGL.LineLayer
               id="alternates-layer"
-              style={{
-                lineColor: '#ff9800',
-                lineWidth: 3,
-                lineOpacity: 0.8,
-                lineCap: 'round',
-                lineJoin: 'round',
-                lineDasharray: [2, 1],
-              }}
+              style={alternatesLineStyle}
             />
           </MapLibreGL.ShapeSource>
         )}
@@ -514,14 +595,7 @@ export function TrailMap({
           <MapLibreGL.ShapeSource id="side-trips" shape={sideTripsGeoJSON}>
             <MapLibreGL.LineLayer
               id="side-trips-layer"
-              style={{
-                lineColor: '#9c27b0',
-                lineWidth: 3,
-                lineOpacity: 0.8,
-                lineCap: 'round',
-                lineJoin: 'round',
-                lineDasharray: [2, 1],
-              }}
+              style={sideTripsLineStyle}
             />
           </MapLibreGL.ShapeSource>
         )}
@@ -537,45 +611,14 @@ export function TrailMap({
             {/* Circles always visible */}
             <MapLibreGL.CircleLayer
               id="waypoints-circles"
-              style={{
-                circleRadius: [
-                  'case',
-                  ['==', ['get', 'id'], focusedWaypointId ?? -1],
-                  8,
-                  5,
-                ],
-                circleColor: ['get', 'color'],
-                circleStrokeColor: [
-                  'case',
-                  ['==', ['get', 'id'], focusedWaypointId ?? -1],
-                  colors.accent,
-                  '#ffffff',
-                ],
-                circleStrokeWidth: [
-                  'case',
-                  ['==', ['get', 'id'], focusedWaypointId ?? -1],
-                  3,
-                  1.5,
-                ],
-              }}
+              style={waypointCircleStyle}
             />
 
             {/* Labels at zoom >= 11 */}
             <MapLibreGL.SymbolLayer
               id="waypoints-labels"
               minZoomLevel={11}
-              style={{
-                textField: ['get', 'name'],
-                textFont: labelFont,
-                textSize: 12,
-                textColor: '#333333',
-                textHaloColor: '#ffffff',
-                textHaloWidth: 1.5,
-                textOffset: [0, 1.2],
-                textAnchor: 'top',
-                textMaxWidth: 15,
-                textAllowOverlap: false,
-              }}
+              style={symbolLabelStyle}
             />
           </MapLibreGL.ShapeSource>
         )}
@@ -587,24 +630,13 @@ export function TrailMap({
             {(userLocation?.accuracy ?? 0) > 20 && (
               <MapLibreGL.CircleLayer
                 id="user-accuracy"
-                style={{
-                  circleRadius: accuracyRadius as unknown as number,
-                  circleColor: 'rgba(33, 150, 243, 0.1)',
-                  circleStrokeColor: 'rgba(33, 150, 243, 0.3)',
-                  circleStrokeWidth: 1,
-                  circlePitchAlignment: 'map',
-                }}
+                style={userAccuracyStyle}
               />
             )}
             {/* Blue dot */}
             <MapLibreGL.CircleLayer
               id="user-dot"
-              style={{
-                circleRadius: 6,
-                circleColor: '#2196F3',
-                circleStrokeColor: '#ffffff',
-                circleStrokeWidth: 2,
-              }}
+              style={userDotStyle}
             />
           </MapLibreGL.ShapeSource>
         )}

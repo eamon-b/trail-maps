@@ -155,7 +155,7 @@ export default function PlanScreen() {
     if (!TILE_BASE_URL) {
       Alert.alert(
         'Tile server not configured',
-        'Set EXPO_PUBLIC_TILE_BASE_URL in your environment (e.g. .env file).\n\nFor development, use the dev screen (Dev Catalog > Map Tiles).',
+        'Set EXPO_PUBLIC_TILE_BASE_URL in your environment.\n\nFor local development, add it to .env. For EAS builds, add it to eas.json under the build profile\'s "env" key.',
       );
       return;
     }

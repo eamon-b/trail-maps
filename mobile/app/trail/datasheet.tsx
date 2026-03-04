@@ -8,12 +8,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
-import type { TrailWaypoint } from '../../src/lib/trail-utils';
+import { createReversedTrail, type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
 import { calculateElevationBetween } from '../../src/services/distance-calculator';
 import { waypointEmojis } from '../../src/components/WaypointList';
+import { DIRECTION_PREF_KEY } from './[id]';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -41,18 +43,37 @@ export default function DatasheetScreen() {
   const { trail, loading, error, loadTrail } = useTrailData();
 
   const [showPast, setShowPast] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
+  const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
 
   const referenceKm = fromKm ? parseFloat(fromKm) : 0;
 
   useEffect(() => {
-    if (id) loadTrail(id);
+    if (id) {
+      loadTrail(id);
+      // Load saved direction preference
+      AsyncStorage.getItem(DIRECTION_PREF_KEY).then(prefsStr => {
+        const prefs = prefsStr ? JSON.parse(prefsStr) : {};
+        setIsReversed(!!prefs[id]);
+      }).catch(() => {});
+    }
   }, [id, loadTrail]);
 
-  const rows = useMemo((): WaypointRow[] => {
-    if (!trail) return [];
-    const trackPoints = trail.track.points;
+  // Build reversed trail when needed
+  useEffect(() => {
+    if (isReversed && trail && !reversedTrail) {
+      setReversedTrail(createReversedTrail(trail));
+    }
+  }, [isReversed, trail, reversedTrail]);
 
-    return trail.waypoints
+  // Active trail respects direction
+  const activeTrail = isReversed ? reversedTrail ?? trail : trail;
+
+  const rows = useMemo((): WaypointRow[] => {
+    if (!activeTrail) return [];
+    const trackPoints = activeTrail.track.points;
+
+    return activeTrail.waypoints
       .filter(wp => wp.totalDistance != null)
       .map(wp => {
         const wpKm = wp.totalDistance ?? 0;
@@ -66,7 +87,7 @@ export default function DatasheetScreen() {
           isPast,
         };
       });
-  }, [trail, referenceKm]);
+  }, [activeTrail, referenceKm]);
 
   const visibleRows = useMemo(() => {
     if (showPast) return rows;
@@ -74,19 +95,19 @@ export default function DatasheetScreen() {
   }, [rows, showPast]);
 
   const summary = useMemo(() => {
-    if (!trail) return null;
-    const totalDist = trail.track.totalDistance - referenceKm;
+    if (!activeTrail) return null;
+    const totalDist = activeTrail.track.totalDistance - referenceKm;
     const { gain } = calculateElevationBetween(
       referenceKm,
-      trail.track.totalDistance,
-      trail.track.points,
+      activeTrail.track.totalDistance,
+      activeTrail.track.points,
     );
     return { remainingKm: Math.max(0, totalDist), remainingGain: gain };
-  }, [trail, referenceKm]);
+  }, [activeTrail, referenceKm]);
 
   const hasPastWaypoints = rows.some(r => r.isPast);
 
-  if (loading || (!trail && !error)) {
+  if (loading || (!activeTrail && !error)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -94,7 +115,7 @@ export default function DatasheetScreen() {
     );
   }
 
-  if (error || !trail) {
+  if (error || !activeTrail) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <Text style={[styles.errorText, { color: colors.alertRed }]}>{error ?? 'Trail not found'}</Text>
@@ -114,7 +135,7 @@ export default function DatasheetScreen() {
           <Text style={[styles.backLabel, { color: colors.accent }]}>Back</Text>
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-          {trail.config.name} — Datasheet
+          {activeTrail.config.name} — Datasheet
         </Text>
       </View>
 

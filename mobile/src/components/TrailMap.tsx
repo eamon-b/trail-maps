@@ -296,21 +296,7 @@ export function TrailMap({
     }
   }, [isFollowingUser, userLocation]);
 
-  // Focus on waypoint when focusedWaypointId changes
-  useEffect(() => {
-    if (focusedWaypointId != null && waypoints && cameraRef.current) {
-      const wp = waypoints[focusedWaypointId as number];
-      if (wp) {
-        cameraRef.current.setCamera({
-          centerCoordinate: [wp.lon, wp.lat],
-          zoomLevel: 14,
-          animationDuration: 500,
-        });
-      }
-    }
-  }, [focusedWaypointId, waypoints]);
-
-  // Pan to coordinate from external navigation (profile tap, etc.)
+  // Pan to coordinate from external navigation (waypoint tap, profile tap, etc.)
   useEffect(() => {
     if (panTarget && cameraRef.current) {
       cameraRef.current.setCamera({
@@ -493,13 +479,13 @@ export function TrailMap({
               style={{
                 textField: ['get', 'label'],
                 textFont: labelFont,
-                textSize: 11,
+                textSize: 12,
                 textColor: colors.textPrimary,
                 textHaloColor: '#ffffff',
                 textHaloWidth: 1.5,
                 textOffset: [0, 1.4],
                 textAnchor: 'top',
-                textMaxWidth: 8,
+                textMaxWidth: 15,
                 textAllowOverlap: false,
               }}
             />
@@ -581,13 +567,13 @@ export function TrailMap({
               style={{
                 textField: ['get', 'name'],
                 textFont: labelFont,
-                textSize: 11,
+                textSize: 12,
                 textColor: colors.textPrimary,
                 textHaloColor: '#ffffff',
                 textHaloWidth: 1.5,
                 textOffset: [0, 1.2],
                 textAnchor: 'top',
-                textMaxWidth: 8,
+                textMaxWidth: 15,
                 textAllowOverlap: false,
               }}
             />

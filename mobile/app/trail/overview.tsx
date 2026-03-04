@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import { deleteCustomTrail } from '../../src/services/custom-trail-service';
-import { getMinMax } from '../../src/lib/trail-utils';
+import { getMinMax, createReversedTrail, type Trail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
 import {
   generateDatasheet,
@@ -63,6 +63,7 @@ export default function TrailOverviewScreen() {
   const [editName, setEditName] = useState('');
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
+  const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -77,33 +78,43 @@ export default function TrailOverviewScreen() {
     }
   }, [id, loadTrail]);
 
+  // Build reversed trail when original loads and direction is reversed
+  useEffect(() => {
+    if (isReversed && trail && !reversedTrail) {
+      setReversedTrail(createReversedTrail(trail));
+    }
+  }, [isReversed, trail, reversedTrail]);
+
+  // Active trail respects direction
+  const activeTrail = isReversed ? reversedTrail ?? trail : trail;
+
   const stats = useMemo(() => {
-    if (!trail) return null;
-    const elevations = trail.track.points.map((p) => p.ele);
+    if (!activeTrail) return null;
+    const elevations = activeTrail.track.points.map((p) => p.ele);
     const { min, max } = getMinMax(elevations);
     return { minEle: Math.round(min), maxEle: Math.round(max) };
-  }, [trail]);
+  }, [activeTrail]);
 
   const waypointCounts = useMemo(() => {
-    if (!trail) return [];
+    if (!activeTrail) return [];
     const counts: Record<string, number> = {};
-    for (const wp of trail.waypoints) {
+    for (const wp of activeTrail.waypoints) {
       counts[wp.type] = (counts[wp.type] ?? 0) + 1;
     }
     return Object.entries(counts)
       .sort(([, a], [, b]) => b - a)
       .map(([type, count]) => ({ type, label: formatLabel(type), count }));
-  }, [trail]);
+  }, [activeTrail]);
 
   const datasheet: Datasheet | null = useMemo(() => {
-    if (!trail || trail.waypoints.length === 0) return null;
-    return generateDatasheet(trail);
-  }, [trail]);
+    if (!activeTrail || activeTrail.waypoints.length === 0) return null;
+    return generateDatasheet(activeTrail);
+  }, [activeTrail]);
 
   const withElevation = useMemo(() => {
-    if (!trail) return false;
-    return hasElevationData(trail.track.points);
-  }, [trail]);
+    if (!activeTrail) return false;
+    return hasElevationData(activeTrail.track.points);
+  }, [activeTrail]);
 
   const dataVersion = dbTrail?.dataVersion ?? null;
   const isCustom = dbTrail?.isCustom ?? false;
@@ -166,6 +177,10 @@ export default function TrailOverviewScreen() {
   async function handleDirectionChange(reversed: boolean) {
     if (!id) return;
     setIsReversed(reversed);
+    // Build reversed trail on demand
+    if (reversed && trail && !reversedTrail) {
+      setReversedTrail(createReversedTrail(trail));
+    }
     try {
       const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
       const prefs = prefsStr ? JSON.parse(prefsStr) : {};
@@ -176,7 +191,7 @@ export default function TrailOverviewScreen() {
     }
   }
 
-  if (loading || (!trail && !error)) {
+  if (loading || (!activeTrail && !error)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -185,7 +200,7 @@ export default function TrailOverviewScreen() {
     );
   }
 
-  if (error || !trail) {
+  if (error || !activeTrail) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <Text style={[styles.errorText, { color: colors.alertRed }]}>{error ?? 'Trail not found'}</Text>
@@ -227,10 +242,10 @@ export default function TrailOverviewScreen() {
           </View>
         ) : (
           <View style={styles.nameRow}>
-            <Text style={[styles.trailName, { color: colors.textPrimary }]}>{trail.config.name}</Text>
+            <Text style={[styles.trailName, { color: colors.textPrimary }]}>{activeTrail.config.name}</Text>
             {isCustom && (
               <Pressable
-                onPress={() => { setEditName(trail.config.name); setEditingName(true); }}
+                onPress={() => { setEditName(activeTrail.config.name); setEditingName(true); }}
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel="Edit trail name"
@@ -242,9 +257,9 @@ export default function TrailOverviewScreen() {
         )}
 
         {/* Region badge */}
-        {trail.config.region && (
+        {activeTrail.config.region && (
           <View style={[styles.badge, { backgroundColor: colors.accentSubtle }]}>
-            <Text style={[styles.badgeText, { color: colors.accent }]}>{trail.config.region}</Text>
+            <Text style={[styles.badgeText, { color: colors.accent }]}>{activeTrail.config.region}</Text>
           </View>
         )}
 
@@ -290,7 +305,7 @@ export default function TrailOverviewScreen() {
         <View style={[styles.statsGrid, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.statCell}>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-              {Math.round(trail.track.totalDistance)}
+              {Math.round(activeTrail.track.totalDistance)}
             </Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>km</Text>
           </View>
@@ -299,14 +314,14 @@ export default function TrailOverviewScreen() {
             <>
               <View style={styles.statCell}>
                 <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                  +{Math.round(trail.track.totalAscent)}
+                  +{Math.round(activeTrail.track.totalAscent)}
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>m ascent</Text>
               </View>
               <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
               <View style={styles.statCell}>
                 <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                  -{Math.round(trail.track.totalDescent)}
+                  -{Math.round(activeTrail.track.totalDescent)}
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>m descent</Text>
               </View>
@@ -323,7 +338,7 @@ export default function TrailOverviewScreen() {
           )}
           <View style={styles.statCell}>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-              {trail.waypoints.length}
+              {activeTrail.waypoints.length}
             </Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>waypoints</Text>
           </View>
@@ -376,6 +391,11 @@ export default function TrailOverviewScreen() {
                 : ''}
               {` · ~${datasheet.summary.estimatedDays} days at ${datasheet.summary.dailyPaceKm} km/day`}
             </Text>
+            {datasheet.summary.hasElevation && (
+              <Text style={[styles.datasheetSummary, { color: colors.textSecondary }]}>
+                {"Times estimated via Naismith's Rule (4 km/h + 600m/h ascent)"}
+              </Text>
+            )}
 
             {/* Resupply points */}
             {datasheet.summary.resupplyPoints.length > 0 && (

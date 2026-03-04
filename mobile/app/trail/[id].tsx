@@ -119,6 +119,10 @@ export default function TrailViewerScreen() {
   const handleWaypointPress = useCallback((wp: TrailWaypoint, index: number) => {
     setSelectedWaypoint(wp);
     setFocusedWaypointId(index);
+    // Pan camera to waypoint as a one-shot action (not driven by focusedWaypointId effect)
+    panKeyRef.current += 1;
+    setPanTarget({ longitude: wp.lon, latitude: wp.lat, key: panKeyRef.current });
+    setIsFollowingUser(false);
   }, [setFocusedWaypointId]);
 
   const handleDismissWaypoint = useCallback(() => {
@@ -151,19 +155,20 @@ export default function TrailViewerScreen() {
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
     // Dismiss the waypoint detail sheet so the profile is visible
     setSelectedWaypoint(null);
-    // Delay expanding the elevation profile drawer until after the waypoint
-    // detail sheet's BottomSheet has unmounted — calling snapToIndex while
-    // another @gorhom/bottom-sheet is still in the tree causes the animation
-    // to be suppressed.
-    requestAnimationFrame(() => {
+    // Use a longer delay to ensure the WaypointDetailSheet's BottomSheet
+    // has fully unmounted — having two @gorhom/bottom-sheet instances active
+    // simultaneously suppresses snap animations.
+    setTimeout(() => {
       if (wp.totalDistance != null) {
-        const index = activeTrail?.waypoints?.findIndex(w => w.name === wp.name && w.totalDistance === wp.totalDistance);
+        const index = activeTrail?.waypoints?.findIndex(w =>
+          w.name === wp.name && Math.abs((w.totalDistance ?? -1) - (wp.totalDistance ?? -2)) < 0.1
+        );
         if (index != null && index >= 0) {
           setFocusedWaypointId(index);
         }
       }
       elevationDrawerRef.current?.expand();
-    });
+    }, 350);
   }, [activeTrail, setFocusedWaypointId]);
 
   if (contextLoading || (!activeTrail && !contextError)) {

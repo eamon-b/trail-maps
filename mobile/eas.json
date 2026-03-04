@@ -14,9 +14,16 @@
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_TILE_BASE_URL": "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev"
+      }
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_TILE_BASE_URL": "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev"
+      }
+    }
   },
   "submit": {
     "production": {}

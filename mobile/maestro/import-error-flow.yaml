@@ -4,7 +4,7 @@ appId: com.trailcompanion.app
 - launchApp
 - extendedWaitUntil:
     visible: "Select a Trail"
-    timeout: 10000
+    timeout: 30000
 
 # Navigate to import screen
 - tapOn: "Import"

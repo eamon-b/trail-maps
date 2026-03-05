@@ -56,11 +56,13 @@ jobs:
       - name: Install Android SDK components
         run: sdkmanager "system-images;android-34;google_apis;x86_64" "emulator"
 
-      # Cache the built APK — native build only needs to re-run when native
+      # Restore cached APK — native build only needs to re-run when native
       # deps or app config change, not for JS-only changes (~26 min saved).
-      - name: Cache debug APK
+      # Uses cache/restore + explicit cache/save (instead of cache@v4) because
+      # the post-job save doesn't run when the job is cancelled by timeout.
+      - name: Restore cached APK
         id: apk-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           key: apk-${{ hashFiles('mobile/package-lock.json', 'mobile/app.json') }}
@@ -70,9 +72,9 @@ jobs:
         run: npx expo prebuild --platform android
         working-directory: mobile
 
-      - name: Cache Gradle dependencies
+      - name: Restore Gradle cache
         if: steps.apk-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.gradle/caches
@@ -90,9 +92,27 @@ jobs:
         run: ./gradlew --stop
         working-directory: mobile/android
 
-      - name: Cache Maestro CLI
+      # Save caches immediately after build — don't rely on post-job which
+      # won't run if the job is cancelled (e.g. by timeout).
+      - name: Save APK cache
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          key: apk-${{ hashFiles('mobile/package-lock.json', 'mobile/app.json') }}
+
+      - name: Save Gradle cache
+        if: steps.apk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/gradle-wrapper.properties') }}
+
+      - name: Restore Maestro CLI cache
         id: maestro-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.maestro
           key: maestro-cli-v1
@@ -100,6 +120,13 @@ jobs:
       - name: Install Maestro CLI
         if: steps.maestro-cache.outputs.cache-hit != 'true'
         run: curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Save Maestro CLI cache
+        if: steps.maestro-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.maestro
+          key: maestro-cli-v1
 
       - name: Run Maestro tests
         uses: reactivecircus/android-emulator-runner@v2

@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Test deep navigation stack unwinds correctly
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Navigate deep: trail list → overview → map
 - tapOn: "View trail →"

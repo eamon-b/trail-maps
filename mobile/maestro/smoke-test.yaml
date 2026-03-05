@@ -4,12 +4,12 @@ appId: com.trailcompanion.app
 - launchApp
 - extendedWaitUntil:
     visible: "Select a Trail"
-    timeout: 10000
+    timeout: 30000
 
 # Wait for trail list to render (data loads async from SQLite)
 - extendedWaitUntil:
     visible: "View trail →"
-    timeout: 10000
+    timeout: 15000
 
 # Verify trail list rendered (at least one trail with a km value)
 - assertVisible:

@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify plan creation screen opens with expected form elements
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Open first trail card
 - tapOn: "View trail →"

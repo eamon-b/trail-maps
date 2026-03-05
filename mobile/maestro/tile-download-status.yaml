@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify trail overview shows offline maps section with download status
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Open first trail
 - tapOn: "View trail →"

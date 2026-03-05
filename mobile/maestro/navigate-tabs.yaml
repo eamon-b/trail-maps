@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify all tabs are reachable
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Navigate to Hike tab
 - tapOn: "Hike"

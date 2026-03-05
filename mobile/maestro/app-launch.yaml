@@ -4,11 +4,11 @@ appId: com.trailcompanion.app
 - launchApp
 - extendedWaitUntil:
     visible: "Select a Trail"
-    timeout: 10000
+    timeout: 30000
 - assertVisible: "Plan"
 - assertVisible: "Hike"
 - assertVisible: "Contribute"
 # Verify trail data loaded from SQLite
 - extendedWaitUntil:
     visible: "View trail →"
-    timeout: 10000
+    timeout: 15000

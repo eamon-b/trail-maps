@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify campsite planner is accessible from a trail
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Tap "+ New Plan" on the first trail card
 - tapOn: "+ New Plan"

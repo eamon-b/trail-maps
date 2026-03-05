@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify GPX import screen loads and shows expected UI elements
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Import button is in the Plan tab header
 - tapOn: "Import"

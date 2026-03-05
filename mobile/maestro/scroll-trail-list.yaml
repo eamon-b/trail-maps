@@ -2,8 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify multiple trails render and the list is scrollable
 - launchApp
-- waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Verify first trail is visible
 - assertVisible: "Australian Alps Walking Track"

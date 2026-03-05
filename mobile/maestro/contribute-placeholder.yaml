@@ -2,7 +2,9 @@ appId: com.trailcompanion.app
 ---
 # Verify the Contribute tab content
 - launchApp
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
 
 # Navigate to Contribute tab
 - tapOn: "Contribute"

@@ -26,6 +26,13 @@ if [ "$METRO_READY" = false ]; then
   exit 1
 fi
 
+# Pre-compile the JS bundle so it's cached before the app requests it.
+# Without this, the first app launch triggers bundle compilation which can
+# take 30+ seconds on CI, causing Maestro tests to time out.
+echo "Pre-compiling JS bundle..."
+curl -s "http://localhost:8081/index.bundle?platform=android&dev=true&minify=false" > /dev/null
+echo "Bundle compiled."
+
 # Install APK
 adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
@@ -47,7 +54,7 @@ if [ "$APP_READY" = false ]; then
 fi
 
 # Give the JS bundle a moment to finish loading after activity is visible
-sleep 3
+sleep 5
 
 # Run Maestro tests
 ~/.maestro/bin/maestro test mobile/maestro/

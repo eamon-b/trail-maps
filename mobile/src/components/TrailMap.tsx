@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
 import type { TrackPoint, TrailWaypoint, RouteVariant } from '../lib/trail-utils';
 import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
+import { getOnlineStyleWithContours } from '../services/online-style-service';
 
 MapLibreGL.setAccessToken(null);
 
@@ -268,6 +269,14 @@ export function TrailMap({
 }: TrailMapProps) {
   const { colors } = useTheme();
 
+  // Fetch online style with contour overlay when no offline style is set
+  const [onlineStyle, setOnlineStyle] = useState<object | null>(null);
+  useEffect(() => {
+    if (!mapStyleOverride) {
+      getOnlineStyleWithContours().then(setOnlineStyle).catch(() => {});
+    }
+  }, [mapStyleOverride]);
+
   // Match overlay text font to the active base style's available glyphs.
   // Liberty (online) serves Noto Sans; our offline style bundles Open Sans.
   const labelFont = mapStyleOverride ? ['Open Sans Regular'] : ['Noto Sans Regular'];
@@ -362,10 +371,10 @@ export function TrailMap({
   const symbolLabelStyle = useMemo(() => ({
     textField: ['get', 'name'] as unknown as string,
     textFont: labelFont,
-    textSize: 12,
-    textColor: '#333333',
+    textSize: 13,
+    textColor: '#1a1a1a',
     textHaloColor: '#ffffff',
-    textHaloWidth: 1.5,
+    textHaloWidth: 2.5,
     textOffset: [0, 1.2] as [number, number],
     textAnchor: 'top' as const,
     textMaxWidth: 15,
@@ -375,10 +384,10 @@ export function TrailMap({
   const customPinLabelStyle = useMemo(() => ({
     textField: ['get', 'label'] as unknown as string,
     textFont: labelFont,
-    textSize: 12,
-    textColor: '#333333',
+    textSize: 13,
+    textColor: '#1a1a1a',
     textHaloColor: '#ffffff',
-    textHaloWidth: 1.5,
+    textHaloWidth: 2.5,
     textOffset: [0, 1.4] as [number, number],
     textAnchor: 'top' as const,
     textMaxWidth: 15,
@@ -521,7 +530,7 @@ export function TrailMap({
       <MapLibreGL.MapView
         ref={mapRef}
         style={styles.map}
-        mapStyle={mapStyleOverride ?? STYLE_URL}
+        mapStyle={mapStyleOverride ?? onlineStyle ?? STYLE_URL}
         logoEnabled={false}
         attributionEnabled={false}
         onRegionWillChange={(feature) => {

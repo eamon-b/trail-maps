@@ -11,6 +11,7 @@
 #   ./scripts/upload-tiles.sh bibbulmun        # Upload one trail
 #   ./scripts/upload-tiles.sh --grid           # Upload all grid tiles
 #   ./scripts/upload-tiles.sh --grid E114_S34  # Upload one grid cell
+#   ./scripts/upload-tiles.sh --contours       # Upload australia-contours.pmtiles
 #
 # The script reads from public/data/tiles/ (the build output directory)
 # and uploads to the aus-map-data R2 bucket.
@@ -144,12 +145,32 @@ upload_grid() {
   fi
 }
 
+# --- Contour PMTiles upload ---
+
+upload_contours() {
+  local pmtiles_file="$TILES_DIR/australia-contours.pmtiles"
+
+  if [ ! -f "$pmtiles_file" ]; then
+    echo "Error: $pmtiles_file not found. Run build-contours-australia first."
+    exit 1
+  fi
+
+  echo "Uploading contour PMTiles..."
+  upload_file "$pmtiles_file" "contours/australia.pmtiles" \
+    "application/octet-stream" \
+    "public, max-age=2592000"
+  echo "Done: contours/australia.pmtiles"
+}
+
 # --- Main dispatch ---
 
 if [ $# -ge 1 ] && [ "$1" = "--grid" ]; then
   # Grid mode
   shift
   upload_grid "${1:-}"
+elif [ $# -ge 1 ] && [ "$1" = "--contours" ]; then
+  # Contour PMTiles mode
+  upload_contours
 elif [ $# -ge 1 ]; then
   # Upload specific trail(s)
   for trail_id in "$@"; do

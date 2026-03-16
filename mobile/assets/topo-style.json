@@ -5,13 +5,13 @@
     "basemap": {
       "type": "vector",
       "url": "mbtiles://{basePath}/base.mbtiles",
-      "minzoom": 8,
+      "minzoom": 4,
       "maxzoom": 15
     },
     "contour": {
       "type": "vector",
       "url": "mbtiles://{basePath}/contours.mbtiles",
-      "minzoom": 8,
+      "minzoom": 4,
       "maxzoom": 15
     }
   },
@@ -82,7 +82,8 @@
       "type": "fill",
       "source": "basemap",
       "source-layer": "water",
-      "filter": ["!=", "kind", "ocean"],
+      "minzoom": 12,
+      "filter": ["!in", "kind", "ocean", "bay", "reef"],
       "paint": {
         "fill-color": "#aad3df"
       }
@@ -117,11 +118,27 @@
       "source": "contour",
       "source-layer": "contour",
       "minzoom": 9,
-      "filter": ["==", ["to-number", ["get", "is_index"]], 1],
+      "filter": ["all",
+        ["==", ["to-number", ["get", "is_index"]], 1],
+        ["!=", ["%", ["to-number", ["get", "elevation"]], 200], 0]
+      ],
       "paint": {
         "line-color": "rgb(166, 116, 66)",
         "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 11, 1.0, 14, 1.6],
         "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.25, 11, 0.4, 14, 0.6]
+      }
+    },
+    {
+      "id": "contour-major-index",
+      "type": "line",
+      "source": "contour",
+      "source-layer": "contour",
+      "minzoom": 9,
+      "filter": ["==", ["%", ["to-number", ["get", "elevation"]], 200], 0],
+      "paint": {
+        "line-color": "rgb(150, 100, 50)",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 11, 1.4, 14, 2.0],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.35, 11, 0.5, 14, 0.7]
       }
     },
     {
@@ -190,15 +207,15 @@
       "layout": {
         "symbol-placement": "line",
         "text-field": ["concat", ["to-string", ["get", "elevation"]], "m"],
-        "text-size": ["interpolate", ["linear"], ["zoom"], 11, 9, 14, 11],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 10, 9, 14, 12],
         "text-max-angle": 25,
-        "text-padding": 150,
+        "text-padding": 100,
         "text-font": ["Open Sans Regular"]
       },
       "paint": {
         "text-color": "rgb(131, 66, 37)",
         "text-halo-color": "rgba(255, 255, 255, 0.85)",
-        "text-halo-width": 1.5
+        "text-halo-width": 2
       }
     },
     {

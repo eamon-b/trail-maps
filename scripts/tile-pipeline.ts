@@ -23,7 +23,7 @@ export const DEM_CACHE_DIR = path.join(PROJECT_ROOT, 'data/dem');
 
 // --- Constants ---
 
-export const MIN_ZOOM = 8;
+export const MIN_ZOOM = 4;
 export const MAX_ZOOM = 15;
 export const CONTOUR_INTERVAL = 10; // metres
 export const INDEX_CONTOUR_INTERVAL = 50; // metres (bold lines)
@@ -196,14 +196,54 @@ export function clipDem(
 }
 
 /**
+ * Smooth a DEM using cubic-spline resampling.
+ * This acts as a low-pass filter that reduces single-pixel SRTM noise
+ * while preserving real terrain features. Resamples at the same 1-arc-second
+ * resolution but through cubic spline interpolation.
+ */
+export function smoothDem(
+  demPath: string,
+  smoothedPath: string,
+  verbose: boolean
+): void {
+  console.log('  Smoothing DEM (cubicspline)...');
+
+  if (fs.existsSync(smoothedPath)) fs.unlinkSync(smoothedPath);
+
+  run([
+    'gdalwarp',
+    '-overwrite',
+    '-r cubicspline',
+    '-tr 0.000278 0.000278',
+    '-co COMPRESS=LZW',
+    '-co TILED=YES',
+    `"${demPath}"`,
+    `"${smoothedPath}"`,
+  ].join(' '), { verbose });
+
+  console.log(`    ✓ Smoothed DEM: ${smoothedPath} (${formatBytes(fileSizeBytes(smoothedPath))})`);
+}
+
+/**
  * Generate contour lines from DEM.
+ * If skipSmooth is false (default), applies cubic-spline smoothing first.
  */
 export function generateContours(
   demPath: string,
   contoursRawPath: string,
-  verbose: boolean
+  verbose: boolean,
+  opts?: { skipSmooth?: boolean }
 ): void {
   console.log('  Generating contour lines...');
+
+  // Optionally smooth the DEM before generating contours
+  let contourInputPath = demPath;
+  const smoothedPath = demPath.replace(/\.tif$/, '_smoothed.tif');
+
+  if (!opts?.skipSmooth) {
+    smoothDem(demPath, smoothedPath, verbose);
+    contourInputPath = smoothedPath;
+  }
 
   // Remove existing output (gdal_contour won't overwrite)
   if (fs.existsSync(contoursRawPath)) fs.unlinkSync(contoursRawPath);
@@ -214,9 +254,12 @@ export function generateContours(
     `-i ${CONTOUR_INTERVAL}`,
     '-snodata -9999',
     '-f FlatGeobuf',
-    `"${demPath}"`,
+    `"${contourInputPath}"`,
     `"${contoursRawPath}"`,
   ].join(' '), { verbose });
+
+  // Clean up smoothed DEM
+  if (fs.existsSync(smoothedPath)) fs.unlinkSync(smoothedPath);
 
   console.log(`    ✓ Raw contours: ${contoursRawPath} (${formatBytes(fileSizeBytes(contoursRawPath))})`);
 }
@@ -253,7 +296,7 @@ export function classifyAndTileContours(
   const workDir = path.dirname(contoursMbtilesPath);
   const tiers = [
     { suffix: 'z9',  minZoom: 9,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
-    { suffix: 'z11', minZoom: 11, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
+    { suffix: 'z10', minZoom: 10, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
     { suffix: 'z12', minZoom: 12, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
     { suffix: 'z13', minZoom: 13, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) != 0` },
   ];
@@ -287,14 +330,14 @@ export function classifyAndTileContours(
   run([
     'tippecanoe',
     `-o "${contoursMbtilesPath}"`,
+    '-Z9',
     `-z${MAX_ZOOM}`,
     '-P',
     '-y elevation',
     '-y is_index',
-    '--no-feature-limit',
-    '--no-tile-size-limit',
-    '--simplification=10',
-    '--minimum-detail=2',
+    '--drop-smallest-as-needed',
+    '--simplification=14',
+    '--minimum-detail=4',
     '--force',
     ...layerArgs,
   ].join(' '), { verbose });

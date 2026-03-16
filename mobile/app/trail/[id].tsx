@@ -128,6 +128,7 @@ export default function TrailViewerScreen() {
   const handleDismissWaypoint = useCallback(() => {
     setSelectedWaypoint(null);
     setFocusedWaypointId(null);
+    setPanTarget(null);
   }, [setFocusedWaypointId]);
 
   const handleMapPan = useCallback(() => {

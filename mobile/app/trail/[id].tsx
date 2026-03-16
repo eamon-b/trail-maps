@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Text, Pressable, ActivityIndicator, InteractionManager } from 'react-native';
+import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,8 @@ import { typography } from '../../src/tokens/typography';
 
 export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
+/** Delay (ms) to let react-native-reanimated clean up after a BottomSheet unmount */
+const BOTTOM_SHEET_CLEANUP_DELAY = 350;
 
 export default function TrailViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -155,10 +157,11 @@ export default function TrailViewerScreen() {
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
     // Dismiss the waypoint detail sheet first
     setSelectedWaypoint(null);
-    // Expand the profile after the sheet unmounts — InteractionManager ensures
-    // the BottomSheet is fully removed before the ElevationProfileDrawer expands,
-    // avoiding two @gorhom/bottom-sheet instances suppressing snap animations.
-    InteractionManager.runAfterInteractions(() => {
+    // Wait for @gorhom/bottom-sheet + react-native-reanimated to finish cleaning
+    // up after the WaypointDetailSheet unmounts. InteractionManager doesn't track
+    // Reanimated worklet cleanup, so we use a timeout to avoid snapToIndex failing
+    // silently when two BottomSheet instances overlap.
+    setTimeout(() => {
       if (wp.totalDistance != null) {
         const index = activeTrail?.waypoints?.findIndex(w =>
           w.name === wp.name && Math.abs((w.totalDistance ?? -1) - (wp.totalDistance ?? -2)) < 0.1
@@ -168,7 +171,7 @@ export default function TrailViewerScreen() {
         }
       }
       elevationDrawerRef.current?.expand();
-    });
+    }, BOTTOM_SHEET_CLEANUP_DELAY);
   }, [activeTrail, setFocusedWaypointId]);
 
   if (contextLoading || (!activeTrail && !contextError)) {

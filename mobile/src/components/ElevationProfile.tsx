@@ -311,13 +311,27 @@ export function ElevationProfile({
         />
       )}
 
+      {/* Focused waypoint vertical indicator line */}
+      {focusedWaypointId != null && waypointDots.find(d => d.index === focusedWaypointId) && (() => {
+        const dot = waypointDots.find(d => d.index === focusedWaypointId)!;
+        return (
+          <Line
+            p1={vec(dot.x, PADDING.top)}
+            p2={vec(dot.x, PADDING.top + chartMetrics.chartHeight)}
+            color={dot.color}
+            strokeWidth={1.5}
+            opacity={0.5}
+          />
+        );
+      })()}
+
       {/* Waypoint dots */}
       {waypointDots.map((dot) => (
         <Circle
           key={dot.index}
           cx={dot.x}
           cy={dot.y}
-          r={focusedWaypointId === dot.index ? 5 : 3}
+          r={focusedWaypointId === dot.index ? 6 : 3}
           color={dot.color}
         />
       ))}

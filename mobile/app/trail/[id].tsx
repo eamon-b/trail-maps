@@ -24,8 +24,6 @@ import { typography } from '../../src/tokens/typography';
 
 export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
-/** Delay (ms) to let react-native-reanimated clean up after a BottomSheet unmount */
-const BOTTOM_SHEET_CLEANUP_DELAY = 350;
 
 export default function TrailViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -135,7 +133,18 @@ export default function TrailViewerScreen() {
 
   const handleMapPan = useCallback(() => {
     setIsFollowingUser(false);
+    // Clear panTarget so the camera can't snap back to the waypoint after the user pans
+    setPanTarget(null);
   }, []);
+
+  const handleMapPress = useCallback(() => {
+    // Tapping an empty area of the map deselects the waypoint
+    if (selectedWaypoint) {
+      setSelectedWaypoint(null);
+      setFocusedWaypointId(null);
+      setPanTarget(null);
+    }
+  }, [selectedWaypoint, setFocusedWaypointId]);
 
   const handleRecenter = useCallback(() => {
     setIsFollowingUser(true);
@@ -156,23 +165,20 @@ export default function TrailViewerScreen() {
   }, [trackPoints]);
 
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
-    // Dismiss the waypoint detail sheet first
     setSelectedWaypoint(null);
-    // Wait for @gorhom/bottom-sheet + react-native-reanimated to finish cleaning
-    // up after the WaypointDetailSheet unmounts. InteractionManager doesn't track
-    // Reanimated worklet cleanup, so we use a timeout to avoid snapToIndex failing
-    // silently when two BottomSheet instances overlap.
-    setTimeout(() => {
-      if (wp.totalDistance != null) {
-        const index = activeTrail?.waypoints?.findIndex(w =>
-          w.name === wp.name && Math.abs((w.totalDistance ?? -1) - (wp.totalDistance ?? -2)) < 0.1
-        );
-        if (index != null && index >= 0) {
-          setFocusedWaypointId(index);
-        }
+    setPanTarget(null);
+    if (wp.totalDistance != null) {
+      const index = activeTrail?.waypoints?.findIndex(w =>
+        w.name === wp.name && Math.abs((w.totalDistance ?? -1) - (wp.totalDistance ?? -2)) < 0.1
+      );
+      if (index != null && index >= 0) {
+        setFocusedWaypointId(index);
       }
+    }
+    // Expand after React flushes state updates so the BottomSheet isn't mid-transition
+    requestAnimationFrame(() => {
       elevationDrawerRef.current?.expand();
-    }, BOTTOM_SHEET_CLEANUP_DELAY);
+    });
   }, [activeTrail, setFocusedWaypointId]);
 
   if (contextLoading || (!activeTrail && !contextError)) {
@@ -270,6 +276,7 @@ export default function TrailViewerScreen() {
             onWaypointPress={handleWaypointPress}
             isFollowingUser={isFollowingUser}
             onMapPan={handleMapPan}
+            onMapPress={handleMapPress}
             onRecenter={handleRecenter}
             currentKm={currentKm}
             panTarget={panTarget}

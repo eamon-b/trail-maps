@@ -64,6 +64,8 @@ export interface TrailMapProps {
   isFollowingUser?: boolean;
   /** Called when user manually pans the map */
   onMapPan?: () => void;
+  /** Called when user taps an empty area of the map (not a waypoint) */
+  onMapPress?: () => void;
   /** Called when user taps re-center button */
   onRecenter?: () => void;
   /** Current position along trail in km (for display chip) */
@@ -257,6 +259,7 @@ export function TrailMap({
   onWaypointPress,
   isFollowingUser,
   onMapPan,
+  onMapPress,
   onRecenter,
   currentKm,
   panTarget,
@@ -328,6 +331,14 @@ export function TrailMap({
     if (displayPoints.length === 0) return null;
     return computeBounds(displayPoints);
   }, [displayPoints]);
+
+  // Memoize so the Camera component sees a stable reference (prevents re-application on re-renders)
+  const cameraDefaultSettings = useMemo(() => {
+    if (bounds) {
+      return { bounds: { ne: bounds.ne, sw: bounds.sw, paddingTop: 40, paddingBottom: 40, paddingLeft: 40, paddingRight: 40 } };
+    }
+    return { centerCoordinate: [135, -28] as [number, number], zoomLevel: 4 };
+  }, [bounds]);
 
   // Theme-dependent styles (memoized since they depend on colors.accent)
   const highlightGlowStyle = useMemo(() => ({
@@ -533,6 +544,7 @@ export function TrailMap({
         mapStyle={mapStyleOverride ?? onlineStyle ?? STYLE_URL}
         logoEnabled={false}
         attributionEnabled={false}
+        onPress={onMapPress}
         onRegionWillChange={(feature) => {
           if (feature.properties?.isUserInteraction && onMapPan) {
             onMapPan();
@@ -543,11 +555,7 @@ export function TrailMap({
       >
         <MapLibreGL.Camera
           ref={cameraRef}
-          defaultSettings={
-            bounds
-              ? { bounds: { ne: bounds.ne, sw: bounds.sw, paddingTop: 40, paddingBottom: 40, paddingLeft: 40, paddingRight: 40 } }
-              : { centerCoordinate: [135, -28], zoomLevel: 4 }
-          }
+          defaultSettings={cameraDefaultSettings}
         />
 
         {/* Main trail line */}

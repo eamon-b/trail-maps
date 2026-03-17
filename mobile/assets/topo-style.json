@@ -82,8 +82,7 @@
       "type": "fill",
       "source": "basemap",
       "source-layer": "water",
-      "minzoom": 12,
-      "filter": ["!in", "kind", "ocean", "bay", "reef"],
+      "filter": ["in", "kind_detail", "lake", "reservoir", "basin"],
       "paint": {
         "fill-color": "#aad3df"
       }

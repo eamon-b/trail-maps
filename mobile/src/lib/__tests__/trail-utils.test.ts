@@ -1,5 +1,6 @@
 import {
   findNearestByDistance,
+  findWaypointIndex,
   getMinMax,
   niceAxisTicks,
   reverseTrackPoints,
@@ -9,6 +10,7 @@ import {
   createReversedTrail,
   findVariantByKey,
   type TrackPoint,
+  type TrailWaypoint,
   type Trail,
 } from '../trail-utils';
 
@@ -258,5 +260,102 @@ describe('findVariantByKey', () => {
 
   it('returns null for unknown key', () => {
     expect(findVariantByKey('alternate-unknown', trail)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// findWaypointIndex
+// ---------------------------------------------------------------------------
+
+function makeWaypoint(overrides: Partial<TrailWaypoint>): TrailWaypoint {
+  return { name: 'Waypoint', lat: -33.0, lon: 115.0, type: 'poi', ...overrides };
+}
+
+describe('findWaypointIndex', () => {
+  const waypoints: TrailWaypoint[] = [
+    makeWaypoint({ name: 'Start', lat: -33.0, lon: 115.0, totalDistance: 0 }),
+    makeWaypoint({ name: 'Water Tank', lat: -33.1, lon: 115.1, totalDistance: 12.5 }),
+    makeWaypoint({ name: 'Camp A', lat: -33.2, lon: 115.2, totalDistance: 25.0 }),
+    makeWaypoint({ name: 'Lookout', lat: -33.3, lon: 115.3 }), // no totalDistance
+    makeWaypoint({ name: 'Camp B', lat: -33.4, lon: 115.4, totalDistance: 50.0 }),
+    makeWaypoint({ name: 'End', lat: -33.5, lon: 115.5, totalDistance: 75.0 }),
+  ];
+
+  it('finds waypoint by name and totalDistance', () => {
+    const target = makeWaypoint({ name: 'Camp A', totalDistance: 25.0 });
+    expect(findWaypointIndex(waypoints, target)).toBe(2);
+  });
+
+  it('matches totalDistance within 0.1km tolerance', () => {
+    const target = makeWaypoint({ name: 'Water Tank', totalDistance: 12.45 });
+    expect(findWaypointIndex(waypoints, target)).toBe(1);
+  });
+
+  it('does not match when totalDistance differs by more than tolerance', () => {
+    const target = makeWaypoint({ name: 'Water Tank', totalDistance: 13.0 });
+    expect(findWaypointIndex(waypoints, target)).toBe(-1);
+  });
+
+  it('falls back to coordinate match when target has no totalDistance', () => {
+    const target = makeWaypoint({ name: 'Lookout', lat: -33.3, lon: 115.3 });
+    expect(findWaypointIndex(waypoints, target)).toBe(3);
+  });
+
+  it('requires name match for coordinate fallback', () => {
+    const target = makeWaypoint({ name: 'Wrong Name', lat: -33.3, lon: 115.3 });
+    expect(findWaypointIndex(waypoints, target)).toBe(-1);
+  });
+
+  it('returns -1 for waypoint not in array', () => {
+    const target = makeWaypoint({ name: 'Missing', totalDistance: 999 });
+    expect(findWaypointIndex(waypoints, target)).toBe(-1);
+  });
+
+  it('returns -1 for empty waypoints array', () => {
+    const target = makeWaypoint({ name: 'Start', totalDistance: 0 });
+    expect(findWaypointIndex([], target)).toBe(-1);
+  });
+
+  it('distinguishes duplicate names by totalDistance', () => {
+    const dupes: TrailWaypoint[] = [
+      makeWaypoint({ name: 'Water', totalDistance: 10.0 }),
+      makeWaypoint({ name: 'Water', totalDistance: 30.0 }),
+      makeWaypoint({ name: 'Water', totalDistance: 55.0 }),
+    ];
+    expect(findWaypointIndex(dupes, makeWaypoint({ name: 'Water', totalDistance: 30.0 }))).toBe(1);
+    expect(findWaypointIndex(dupes, makeWaypoint({ name: 'Water', totalDistance: 55.05 }))).toBe(2);
+  });
+
+  it('prefers name+distance match over coordinate fallback', () => {
+    // Target has totalDistance — should use primary match, not coordinates
+    const target = makeWaypoint({ name: 'Camp B', lat: -99, lon: -99, totalDistance: 50.0 });
+    expect(findWaypointIndex(waypoints, target)).toBe(4);
+  });
+
+  it('corresponds correctly through datasheet filter', () => {
+    // Simulate what the datasheet does: filter waypoints to those with totalDistance
+    const filtered = waypoints.filter(wp => wp.totalDistance != null);
+    // filtered indices: 0=Start, 1=WaterTank, 2=CampA, 3=CampB, 4=End
+    // Original indices: 0=Start, 1=WaterTank, 2=CampA, 4=CampB, 5=End
+
+    // Pick a waypoint from the filtered list (e.g., filtered index 3 = Camp B)
+    const datasheetWp = filtered[3]; // Camp B
+    expect(datasheetWp.name).toBe('Camp B');
+
+    // findWaypointIndex should return the ORIGINAL index (4), not the filtered index (3)
+    const originalIndex = findWaypointIndex(waypoints, datasheetWp);
+    expect(originalIndex).toBe(4);
+    expect(waypoints[originalIndex].name).toBe('Camp B');
+  });
+
+  it('maps every filtered waypoint back to its original index', () => {
+    const filtered = waypoints.filter(wp => wp.totalDistance != null);
+    const expectedOriginalIndices = [0, 1, 2, 4, 5]; // indices 3 (Lookout) is skipped
+
+    filtered.forEach((wp, filteredIdx) => {
+      const originalIdx = findWaypointIndex(waypoints, wp);
+      expect(originalIdx).toBe(expectedOriginalIndices[filteredIdx]);
+      expect(waypoints[originalIdx]).toBe(wp); // same object reference
+    });
   });
 });

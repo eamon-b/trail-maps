@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
-import { createReversedTrail, type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
+import { createReversedTrail, findWaypointIndex, type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
 import { calculateElevationBetween } from '../../src/services/distance-calculator';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { DIRECTION_PREF_KEY } from './[id]';
@@ -41,8 +42,10 @@ export default function DatasheetScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { trail, loading, error, loadTrail } = useTrailData();
+  const { setPendingPan } = useFocusedWaypoint();
 
   const [showPast, setShowPast] = useState(false);
+  const [expandedName, setExpandedName] = useState<string | null>(null);
   const [isReversed, setIsReversed] = useState(false);
   const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
 
@@ -107,6 +110,14 @@ export default function DatasheetScreen() {
 
   const hasPastWaypoints = rows.some(r => r.isPast);
 
+  const handleShowOnMap = useCallback((wp: TrailWaypoint) => {
+    if (!activeTrail || !id) return;
+    const waypointIndex = findWaypointIndex(activeTrail.waypoints, wp);
+    if (waypointIndex < 0) return;
+    setPendingPan({ latitude: wp.lat, longitude: wp.lon, waypointIndex });
+    router.replace({ pathname: '/trail/[id]', params: { id } });
+  }, [activeTrail, id, setPendingPan, router]);
+
   if (loading || (!activeTrail && !error)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -141,7 +152,7 @@ export default function DatasheetScreen() {
 
       <FlatList
         data={visibleRows}
-        keyExtractor={(item, index) => `${index}-${item.waypoint.name}`}
+        keyExtractor={(item, index) => `${index}-${item.waypoint.name}-${item.waypoint.totalDistance ?? item.waypoint.lat}`}
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
         ListHeaderComponent={
           <View style={styles.listHeader}>
@@ -190,43 +201,97 @@ export default function DatasheetScreen() {
           const emoji = waypointEmojis[wp.type] ?? waypointEmojis.poi ?? '📍';
           const typeLabel = TYPE_LABELS[wp.type];
           const dimmed = item.isPast;
+          const rowKey = `${wp.name}-${wp.totalDistance ?? wp.lat}`;
+          const isExpanded = expandedName === rowKey;
 
           return (
-            <View style={[styles.row, { borderBottomColor: colors.border }]}>
-              <View style={styles.rowLeft}>
-                <Text style={styles.emoji}>{emoji}</Text>
-                <View style={styles.nameCol}>
-                  <Text
-                    style={[
-                      styles.wpName,
-                      { color: dimmed ? colors.textSecondary : colors.textPrimary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {wp.name}
-                  </Text>
-                  {typeLabel && (
-                    <Text style={[styles.typeLabel, { color: colors.textSecondary }]}>
-                      {typeLabel}
-                      {wp.elevation != null ? ` · ${Math.round(wp.elevation)}m` : ''}
+            <Pressable
+              onPress={() => setExpandedName(isExpanded ? null : rowKey)}
+              onLongPress={() => handleShowOnMap(wp)}
+              style={[styles.row, { borderBottomColor: colors.border }]}
+              accessibilityLabel={`${wp.name}, long press to show on map`}
+              accessibilityRole="button"
+            >
+              <View style={styles.rowContent}>
+                <View style={styles.rowTop}>
+                  <View style={styles.rowLeft}>
+                    <Text style={styles.emoji}>{emoji}</Text>
+                    <View style={styles.nameCol}>
+                      <Text
+                        style={[
+                          styles.wpName,
+                          { color: dimmed ? colors.textSecondary : colors.textPrimary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {wp.name}
+                      </Text>
+                      {typeLabel && (
+                        <Text style={[styles.typeLabel, { color: colors.textSecondary }]}>
+                          {typeLabel}
+                          {wp.elevation != null ? ` · ${Math.round(wp.elevation)}m` : ''}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.rowRight}>
+                    <Text
+                      style={[
+                        styles.distValue,
+                        { color: dimmed ? colors.textSecondary : colors.textPrimary },
+                      ]}
+                    >
+                      {item.distanceFromRef >= 0 ? '' : '-'}{Math.abs(item.distanceFromRef).toFixed(1)} km
                     </Text>
-                  )}
+                    <Text style={[styles.elevValue, { color: colors.textSecondary }]}>
+                      +{item.elevationGain}m
+                    </Text>
+                  </View>
                 </View>
+
+                {isExpanded && (
+                  <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
+                    <View style={styles.detailRow}>
+                      {wp.totalDistance != null && (
+                        <View style={styles.detailItem}>
+                          <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
+                            {wp.totalDistance.toFixed(1)} km
+                          </Text>
+                          <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                            along trail
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.detailItem}>
+                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
+                          +{item.elevationGain}m / -{item.elevationLoss}m
+                        </Text>
+                        <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                          gain / loss
+                        </Text>
+                      </View>
+                    </View>
+
+                    {wp.description ? (
+                      <Text style={[styles.description, { color: colors.textSecondary }]}>
+                        {wp.description}
+                      </Text>
+                    ) : null}
+
+                    <Pressable
+                      onPress={() => handleShowOnMap(wp)}
+                      style={[styles.showOnMapButton, { borderColor: colors.accent }]}
+                      accessibilityLabel={`Show ${wp.name} on map`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={[styles.showOnMapText, { color: colors.accent }]}>
+                        Show on map
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
-              <View style={styles.rowRight}>
-                <Text
-                  style={[
-                    styles.distValue,
-                    { color: dimmed ? colors.textSecondary : colors.textPrimary },
-                  ]}
-                >
-                  {item.distanceFromRef >= 0 ? '' : '-'}{Math.abs(item.distanceFromRef).toFixed(1)} km
-                </Text>
-                <Text style={[styles.elevValue, { color: colors.textSecondary }]}>
-                  +{item.elevationGain}m
-                </Text>
-              </View>
-            </View>
+            </Pressable>
           );
         }}
       />
@@ -320,12 +385,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowContent: {
+    flex: 1,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   rowLeft: {
     flexDirection: 'row',
@@ -360,5 +430,41 @@ const styles = StyleSheet.create({
   elevValue: {
     ...typography.caption,
     fontVariant: ['tabular-nums'],
+  },
+  expandedSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  detailItem: {},
+  detailValue: {
+    ...typography.caption,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  detailLabel: {
+    ...typography.caption,
+    marginTop: 1,
+  },
+  description: {
+    ...typography.caption,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+  },
+  showOnMapButton: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  showOnMapText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
 });

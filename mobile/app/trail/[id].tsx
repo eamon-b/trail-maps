@@ -15,6 +15,7 @@ import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
   createReversedTrail,
   findNearestByDistance,
+  findWaypointIndex,
   type Trail,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
@@ -30,7 +31,7 @@ export default function TrailViewerScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { focusedWaypointId, setFocusedWaypointId } = useFocusedWaypoint();
+  const { focusedWaypointId, setFocusedWaypointId, pendingPan, setPendingPan } = useFocusedWaypoint();
   const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
@@ -79,6 +80,25 @@ export default function TrailViewerScreen() {
     }
   }, [isReversed, originalTrail, reversedTrail]);
 
+  // Consume pending pan from external navigation (e.g. datasheet "Show on map")
+  useEffect(() => {
+    if (pendingPan && activeTrail) {
+      const wp = activeTrail.waypoints[pendingPan.waypointIndex];
+      if (wp) {
+        setSelectedWaypoint(wp);
+        setFocusedWaypointId(pendingPan.waypointIndex);
+        panKeyRef.current += 1;
+        setPanTarget({
+          longitude: pendingPan.longitude,
+          latitude: pendingPan.latitude,
+          key: panKeyRef.current,
+        });
+        setIsFollowingUser(false);
+      }
+      setPendingPan(null);
+    }
+  }, [pendingPan, activeTrail, setFocusedWaypointId, setPendingPan]);
+
   // GPS state for LocationStatusBar
   const locationState = useMemo((): LocationState => {
     if (!isTracking) return 'noGps';
@@ -119,9 +139,6 @@ export default function TrailViewerScreen() {
   const handleWaypointPress = useCallback((wp: TrailWaypoint, index: number) => {
     setSelectedWaypoint(wp);
     setFocusedWaypointId(index);
-    // Pan camera to waypoint as a one-shot action (not driven by focusedWaypointId effect)
-    panKeyRef.current += 1;
-    setPanTarget({ longitude: wp.lon, latitude: wp.lat, key: panKeyRef.current });
     setIsFollowingUser(false);
   }, [setFocusedWaypointId]);
 
@@ -167,11 +184,9 @@ export default function TrailViewerScreen() {
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
     setSelectedWaypoint(null);
     setPanTarget(null);
-    if (wp.totalDistance != null) {
-      const index = activeTrail?.waypoints?.findIndex(w =>
-        w.name === wp.name && Math.abs((w.totalDistance ?? -1) - (wp.totalDistance ?? -2)) < 0.1
-      );
-      if (index != null && index >= 0) {
+    if (activeTrail?.waypoints) {
+      const index = findWaypointIndex(activeTrail.waypoints, wp);
+      if (index >= 0) {
         setFocusedWaypointId(index);
       }
     }

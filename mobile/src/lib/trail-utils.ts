@@ -253,6 +253,31 @@ export function findNearestByDistance(points: TrackPoint[], targetKm: number): n
   return lo;
 }
 
+/**
+ * Find the index of a target waypoint in the waypoints array.
+ * Primary match: name + totalDistance (within 0.1 km tolerance).
+ * Fallback: name + lat/lon coordinates (within ~11 m tolerance).
+ * Returns -1 if not found.
+ */
+export function findWaypointIndex(
+  waypoints: TrailWaypoint[],
+  target: TrailWaypoint,
+): number {
+  if (target.totalDistance != null) {
+    const idx = waypoints.findIndex(
+      w => w.name === target.name &&
+           w.totalDistance != null &&
+           Math.abs(w.totalDistance! - target.totalDistance!) < 0.1,
+    );
+    if (idx >= 0) return idx;
+  }
+  return waypoints.findIndex(
+    w => w.name === target.name &&
+         Math.abs(w.lat - target.lat) < 0.0001 &&
+         Math.abs(w.lon - target.lon) < 0.0001,
+  );
+}
+
 /** Find a route variant by its key (e.g. "alternate-some-name"). */
 export function findVariantByKey(key: string, trail: Trail): RouteVariant | null {
   for (const v of trail.alternates || []) {

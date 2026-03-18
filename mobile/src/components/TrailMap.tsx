@@ -556,6 +556,7 @@ export function TrailMap({
         <MapLibreGL.Camera
           ref={cameraRef}
           defaultSettings={cameraDefaultSettings}
+          minZoomLevel={mapStyleOverride ? 9 : 4}
         />
 
         {/* Main trail line */}

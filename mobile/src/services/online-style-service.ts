@@ -32,12 +32,12 @@ function getContourLayers(): object[] {
       type: 'line',
       source: 'contour',
       'source-layer': 'contour',
-      minzoom: 11,
+      minzoom: 13,
       filter: ['!=', ['to-number', ['get', 'is_index']], 1],
       paint: {
         'line-color': 'rgb(179, 134, 89)',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 14, 1.0],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.35, 14, 0.55],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.4, 14, 0.7, 15, 1.0],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0.25, 14, 0.4, 15, 0.55],
       },
     },
     {
@@ -45,7 +45,7 @@ function getContourLayers(): object[] {
       type: 'line',
       source: 'contour',
       'source-layer': 'contour',
-      minzoom: 9,
+      minzoom: 11,
       filter: [
         'all',
         ['==', ['to-number', ['get', 'is_index']], 1],
@@ -53,8 +53,8 @@ function getContourLayers(): object[] {
       ],
       paint: {
         'line-color': 'rgb(166, 116, 66)',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.7, 11, 1.2, 14, 2.0],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.35, 11, 0.5, 14, 0.7],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 12, 0.9, 14, 2.0],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.25, 12, 0.4, 14, 0.7],
       },
     },
     {
@@ -66,8 +66,8 @@ function getContourLayers(): object[] {
       filter: ['==', ['%', ['to-number', ['get', 'elevation']], 200], 0],
       paint: {
         'line-color': 'rgb(150, 100, 50)',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1.0, 11, 1.6, 14, 2.4],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.4, 11, 0.55, 14, 0.75],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.6, 11, 1.2, 13, 1.6, 15, 2.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.25, 11, 0.45, 13, 0.6, 15, 0.75],
       },
     },
     {
@@ -75,7 +75,7 @@ function getContourLayers(): object[] {
       type: 'symbol',
       source: 'contour',
       'source-layer': 'contour',
-      minzoom: 11,
+      minzoom: 12,
       filter: ['==', ['to-number', ['get', 'is_index']], 1],
       layout: {
         'symbol-placement': 'line',

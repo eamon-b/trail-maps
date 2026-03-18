@@ -103,12 +103,12 @@
       "type": "line",
       "source": "contour",
       "source-layer": "contour",
-      "minzoom": 11,
+      "minzoom": 13,
       "filter": ["!=", ["to-number", ["get", "is_index"]], 1],
       "paint": {
         "line-color": "rgb(179, 134, 89)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 14, 0.8],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.25, 14, 0.45]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.3, 14, 0.6, 15, 0.8],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0.2, 14, 0.35, 15, 0.45]
       }
     },
     {
@@ -116,15 +116,15 @@
       "type": "line",
       "source": "contour",
       "source-layer": "contour",
-      "minzoom": 9,
+      "minzoom": 11,
       "filter": ["all",
         ["==", ["to-number", ["get", "is_index"]], 1],
         ["!=", ["%", ["to-number", ["get", "elevation"]], 200], 0]
       ],
       "paint": {
         "line-color": "rgb(166, 116, 66)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 11, 1.0, 14, 1.6],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.25, 11, 0.4, 14, 0.6]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 12, 0.8, 14, 1.6],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.2, 12, 0.35, 14, 0.6]
       }
     },
     {
@@ -136,8 +136,8 @@
       "filter": ["==", ["%", ["to-number", ["get", "elevation"]], 200], 0],
       "paint": {
         "line-color": "rgb(150, 100, 50)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 11, 1.4, 14, 2.0],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.35, 11, 0.5, 14, 0.7]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 11, 1.0, 13, 1.4, 15, 2.0],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.2, 11, 0.4, 13, 0.55, 15, 0.7]
       }
     },
     {
@@ -201,7 +201,7 @@
       "type": "symbol",
       "source": "contour",
       "source-layer": "contour",
-      "minzoom": 11,
+      "minzoom": 12,
       "filter": ["==", ["to-number", ["get", "is_index"]], 1],
       "layout": {
         "symbol-placement": "line",

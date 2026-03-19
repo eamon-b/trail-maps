@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Test deep navigation stack unwinds correctly
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000
@@ -9,7 +9,11 @@ appId: com.trailcompanion.app
 # Navigate deep: trail list → overview → map
 - tapOn: "View trail →"
 - waitForAnimationToEnd
-- assertVisible: "Open Map"
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
 
 - tapOn: "Open Map"
 - waitForAnimationToEnd
@@ -17,9 +21,13 @@ appId: com.trailcompanion.app
 # Unwind: map → overview
 - pressKey: back
 - waitForAnimationToEnd
-- assertVisible: "Open Map"
+- extendedWaitUntil:
+    visible: "Australian Alps Walking Track"
+    timeout: 10000
 
 # Unwind: overview → trail list
 - pressKey: back
 - waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000

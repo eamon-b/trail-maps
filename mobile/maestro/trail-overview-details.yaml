@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify trail overview screen renders all content sections
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000
@@ -30,8 +30,16 @@ appId: com.trailcompanion.app
 # Verify offline maps section
 - assertVisible: "OFFLINE MAPS"
 
-# Verify Open Map button
-- assertVisible: "Open Map"
+# Verify Open Map button (below fold, needs scroll)
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
 
-# Verify back navigation link
-- assertVisible: "Back"
+# Scroll back up to verify back navigation link
+- scrollUntilVisible:
+    element:
+      text: "Back"
+    direction: UP
+    timeout: 5000

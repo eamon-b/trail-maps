@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify tapping a trail card navigates to the trail overview
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

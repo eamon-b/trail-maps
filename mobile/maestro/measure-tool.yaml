@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify measure tool screen loads with expected UI elements
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Measure"
     timeout: 30000

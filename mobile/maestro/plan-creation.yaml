@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify plan creation screen opens with expected form elements
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

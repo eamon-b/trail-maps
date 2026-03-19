@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify trail overview shows offline maps section with download status
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify GPX import screen loads and shows expected UI elements
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

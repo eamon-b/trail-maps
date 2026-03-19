@@ -36,8 +36,13 @@ echo "Bundle compiled."
 # Install APK
 adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
-# Launch the app and wait for it to be ready instead of blind sleep
-adb shell am start -n com.trailcompanion.app/.MainActivity
+# Launch the app via deep link to bypass the Expo Dev Launcher screen.
+# Dev builds show a launcher UI on plain `am start`; the deep link tells
+# the dev client to auto-connect to the Metro bundler.
+adb shell am start -a android.intent.action.VIEW \
+  -d "exp+trail-maps://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" \
+  com.trailcompanion.app
+
 APP_READY=false
 for i in $(seq 1 30); do
   if adb shell dumpsys activity activities 2>/dev/null | grep -q trailcompanion; then
@@ -53,8 +58,11 @@ if [ "$APP_READY" = false ]; then
   exit 1
 fi
 
-# Give the JS bundle a moment to finish loading after activity is visible
-sleep 5
+# Wait for the JS bundle to load and the dev menu welcome to appear,
+# then dismiss it with a back press so Maestro tests start clean.
+sleep 10
+adb shell input keyevent KEYCODE_BACK
+sleep 2
 
 # Run Maestro tests
 ~/.maestro/bin/maestro test mobile/maestro/

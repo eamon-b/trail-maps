@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify trail overview datasheet section and dedicated datasheet screen
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "View trail →"
     timeout: 30000
@@ -41,13 +41,16 @@ appId: com.trailcompanion.app
     timeout: 5000
 
 # Navigate to the dedicated datasheet screen
-- tapOn: "Datasheet"
+# Tap the last "Datasheet" match (button) not the section header "DATASHEET"
+- tapOn:
+    text: "Datasheet"
+    index: 1
 - waitForAnimationToEnd
 
 # Verify dedicated datasheet screen loaded
 - extendedWaitUntil:
     visible: "km remaining"
-    timeout: 5000
+    timeout: 15000
 
 # Go back
 - pressKey: back

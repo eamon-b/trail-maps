@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify the Hike tab loads and shows either empty state or active trail
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

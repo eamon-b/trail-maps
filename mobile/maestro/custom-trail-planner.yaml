@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Verify campsite planner is accessible from a trail
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

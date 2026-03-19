@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Full navigation flow: trail list → overview → map → back → back
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "View trail →"
     timeout: 30000
@@ -9,7 +9,11 @@ appId: com.trailcompanion.app
 # Open first trail overview
 - tapOn: "View trail →"
 - waitForAnimationToEnd
-- assertVisible: "Open Map"
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
 
 # Tap Open Map to navigate to map screen
 - tapOn: "Open Map"
@@ -18,9 +22,11 @@ appId: com.trailcompanion.app
 # Press back to return to overview
 - pressKey: back
 - waitForAnimationToEnd
-- extendedWaitUntil:
-    visible: "Open Map"
-    timeout: 5000
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
 
 # Press back to return to trail list
 - pressKey: back

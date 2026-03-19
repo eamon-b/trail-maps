@@ -3,7 +3,7 @@ appId: com.trailcompanion.app
 # Manage a custom trail: view details, verify management options
 # Prerequisites: A custom trail must already be imported (steps are optional if not)
 
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

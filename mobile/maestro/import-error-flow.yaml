@@ -1,7 +1,7 @@
 appId: com.trailcompanion.app
 ---
 # Test import error handling: open import screen, attempt URL import with invalid URL
-- launchApp
+- runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
     visible: "Select a Trail"
     timeout: 30000

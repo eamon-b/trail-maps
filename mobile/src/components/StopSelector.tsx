@@ -11,8 +11,6 @@ interface StopSelectorProps {
   /** Set of km positions that are currently selected as stops */
   selectedStopKms: Set<number>;
   onToggleStop: (waypoint: TrailWaypoint) => void;
-  /** @deprecated Use selectedStopKms instead */
-  selectedStopNames?: Set<string>;
 }
 
 /**
@@ -24,7 +22,6 @@ export function StopSelector({
   waypoints,
   selectedStopKms,
   onToggleStop,
-  selectedStopNames,
 }: StopSelectorProps) {
   const { colors } = useTheme();
   const [search, setSearch] = useState('');
@@ -38,9 +35,7 @@ export function StopSelector({
   const renderItem = useCallback(
     ({ item, index }: { item: TrailWaypoint; index: number }) => {
       const km = item.totalDistance ?? 0;
-      const isSelected = selectedStopKms
-        ? selectedStopKms.has(km)
-        : (selectedStopNames?.has(item.name) ?? false);
+      const isSelected = selectedStopKms.has(km);
       const emoji = waypointEmojis[item.type] ?? waypointEmojis.poi;
 
       // Distance from previous waypoint in the filtered list
@@ -83,7 +78,7 @@ export function StopSelector({
         </Pressable>
       );
     },
-    [filtered, selectedStopKms, selectedStopNames, onToggleStop, colors],
+    [filtered, selectedStopKms, onToggleStop, colors],
   );
 
   return (
@@ -111,7 +106,7 @@ export function StopSelector({
       />
       {filtered.length === 0 && search.trim() ? (
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          No stops matching &ldquo;{search.trim()}&rdquo;
+          No stops matching "{search.trim()}"
         </Text>
       ) : (
         <FlatList

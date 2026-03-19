@@ -14,6 +14,7 @@ import { closeDatabase } from '../src/db/database';
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     async function init() {
@@ -26,7 +27,7 @@ export default function RootLayout() {
       }
     }
     init();
-  }, []);
+  }, [retryCount]);
 
   const handleReset = useCallback(async () => {
     try {
@@ -44,6 +45,7 @@ export default function RootLayout() {
     // Clear error state to retry initialization
     setError(null);
     setReady(false);
+    setRetryCount(c => c + 1);
   }, []);
 
   if (error) {

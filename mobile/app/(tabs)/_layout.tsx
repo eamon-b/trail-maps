@@ -10,11 +10,11 @@ export default function TabLayout() {
   const { mode, setMode, colors, themeVariant } = useTheme();
   const { dismissSheet } = useBottomSheetDismiss();
 
-  // Android back button: dismiss bottom sheet if open → otherwise no-op (don't exit app)
+  // Android back button: dismiss bottom sheet if open, otherwise allow default behavior
   useFocusEffect(
     useCallback(() => {
       const handler = BackHandler.addEventListener('hardwareBackPress', () => {
-        return dismissSheet() || true;
+        return dismissSheet();
       });
       return () => handler.remove();
     }, [dismissSheet]),

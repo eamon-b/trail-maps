@@ -158,3 +158,31 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     removeItem: jest.fn(() => Promise.resolve()),
   },
 }));
+
+jest.mock('expo-location', () => ({
+  getCurrentPositionAsync: jest.fn(() => Promise.resolve({
+    coords: { latitude: 0, longitude: 0, altitude: 0, accuracy: 0, heading: 0, speed: 0 },
+    timestamp: Date.now(),
+  })),
+  requestForegroundPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestBackgroundPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  watchPositionAsync: jest.fn(() => Promise.resolve({ remove: jest.fn() })),
+  Accuracy: {
+    Lowest: 1,
+    Low: 2,
+    Balanced: 3,
+    High: 4,
+    Highest: 5,
+    BestForNavigation: 6,
+  },
+}));
+
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: jest.fn(() => Promise.resolve(false)),
+  unregisterTaskAsync: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('expo-document-picker', () => ({
+  getDocumentAsync: jest.fn(() => Promise.resolve({ canceled: true, assets: null })),
+}));

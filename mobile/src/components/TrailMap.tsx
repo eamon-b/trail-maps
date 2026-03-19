@@ -499,6 +499,15 @@ export function TrailMap({
 
   const regionChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Clear the debounce timer on unmount to prevent state updates after cleanup
+  useEffect(() => {
+    return () => {
+      if (regionChangeTimer.current) {
+        clearTimeout(regionChangeTimer.current);
+      }
+    };
+  }, []);
+
   const handleRegionDidChange = useCallback(() => {
     if (!onVisibleBoundsChange || !trackPoints || trackPoints.length === 0 || !mapRef.current) return;
     // Debounce to avoid excessive state updates during rapid pans

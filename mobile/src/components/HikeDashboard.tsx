@@ -48,8 +48,8 @@ interface HikeDashboardProps {
   data: DashboardData | null;
   /** Overall loading state */
   state?: CardState;
-  /** GPS state — when 'degraded', show absolute positions */
-  gpsState?: 'normal' | 'degraded';
+  /** GPS state — when 'degraded' or 'searching', show absolute positions */
+  gpsState?: 'normal' | 'degraded' | 'searching';
   /** Callback when "See all waypoints" is tapped */
   onSeeAllWaypoints?: () => void;
   /** Callback when a waypoint in the upcoming list is tapped */
@@ -88,9 +88,11 @@ export function HikeDashboard({
   const [todayExpanded, setTodayExpanded] = useState(true);
 
   const isLoading = state === 'loading';
-  const cardState: CardState = isLoading ? 'loading' : gpsState === 'degraded' ? 'degraded' : 'normal';
+  const cardState: CardState = isLoading ? 'loading' : (gpsState === 'degraded' || gpsState === 'searching') ? 'degraded' : 'normal';
 
-  const degradedMsg = gpsState === 'degraded'
+  const degradedMsg = gpsState === 'searching'
+    ? 'Searching for GPS signal...'
+    : gpsState === 'degraded'
     ? `Last known: km ${data?.currentKm?.toFixed(1) ?? '?'} (no GPS)`
     : undefined;
 
@@ -189,14 +191,14 @@ export function HikeDashboard({
                     {data.today.startName} → {data.today.endName}
                   </Text>
                   <Text style={[styles.todayStats, { color: colors.textPrimary }]}>
-                    {data.today.distanceKm.toFixed(1)} km  +{data.today.ascentM}m/-{data.today.descentM}m  ~{data.today.estimatedHours}h {Math.round(data.today.estimatedHours * 60 % 60)}m
+                    {data.today.distanceKm.toFixed(1)} km  +{data.today.ascentM}m/-{data.today.descentM}m  ~{Math.floor(data.today.estimatedHours)}h {Math.round((data.today.estimatedHours % 1) * 60)}m
                   </Text>
                   <View style={styles.todayProgress}>
                     <Text style={[styles.todayProgressText, { color: colors.textSecondary }]}>
-                      Done: {data.today.completedKm.toFixed(1)} km ({Math.round((data.today.completedKm / data.today.distanceKm) * 100)}%)
+                      Done: {data.today.completedKm.toFixed(1)} km ({data.today.distanceKm > 0 ? Math.round((data.today.completedKm / data.today.distanceKm) * 100) : 0}%)
                     </Text>
                     <ProgressBar
-                      progress={data.today.completedKm / data.today.distanceKm}
+                      progress={data.today.distanceKm > 0 ? data.today.completedKm / data.today.distanceKm : 0}
                       height={4}
                       style={styles.todayProgressBar}
                     />

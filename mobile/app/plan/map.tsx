@@ -15,35 +15,14 @@ import { typography } from '../../src/tokens/typography';
 
 /**
  * Find the nearest waypoint to a given km position.
- * Returns the waypoint name if one is within 0.5 km, otherwise null.
+ * Returns the name and type if one is within maxDistKm, otherwise defaults.
  */
-function findNearestWaypointName(
+function findNearestWaypoint(
   trail: Trail,
   km: number,
   maxDistKm = 0.5,
-): string | null {
+): { name: string | null; type: string } {
   let bestName: string | null = null;
-  let bestDist = Infinity;
-  for (const wp of trail.waypoints) {
-    const wpKm = wp.totalDistance ?? 0;
-    const d = Math.abs(wpKm - km);
-    if (d < bestDist && d <= maxDistKm) {
-      bestDist = d;
-      bestName = wp.name;
-    }
-  }
-  return bestName;
-}
-
-/**
- * Find the nearest waypoint type for a given km position.
- * Returns the type if one is within 0.5 km, otherwise 'campsite' as default.
- */
-function findNearestWaypointType(
-  trail: Trail,
-  km: number,
-  maxDistKm = 0.5,
-): string {
   let bestType = 'campsite';
   let bestDist = Infinity;
   for (const wp of trail.waypoints) {
@@ -51,10 +30,11 @@ function findNearestWaypointType(
     const d = Math.abs(wpKm - km);
     if (d < bestDist && d <= maxDistKm) {
       bestDist = d;
+      bestName = wp.name;
       bestType = wp.type;
     }
   }
-  return bestType;
+  return { name: bestName, type: bestType };
 }
 
 export default function PlanMapScreen() {
@@ -152,10 +132,10 @@ export default function PlanMapScreen() {
         latitude: lat,
         longitude: lon,
         label,
-        color: isTargetStop ? '#FF5722' : '#4CAF50',
+        color: isTargetStop ? colors.alertRed : colors.alertGreen,
       };
     });
-  }, [trail, stops, isRelocationMode, stopId]);
+  }, [trail, stops, isRelocationMode, stopId, colors]);
 
   // Highlighted segment — day view or stop relocation
   const highlightedSegment = useMemo(() => {
@@ -189,18 +169,17 @@ export default function PlanMapScreen() {
             {
               text: 'Move',
               onPress: async () => {
-                const nearestName = findNearestWaypointName(trail, km);
-                const nearestType = findNearestWaypointType(trail, km);
+                const nearest = findNearestWaypoint(trail, km);
 
                 const updatedStops = stops.map((s) => {
                   if (s.id !== stopId) return s;
-                  if (nearestName) {
+                  if (nearest.name) {
                     // Snap to nearest waypoint
                     return {
                       ...s,
                       km,
-                      waypointName: nearestName,
-                      waypointType: nearestType,
+                      waypointName: nearest.name,
+                      waypointType: nearest.type,
                       customLocation: undefined,
                     };
                   }
@@ -243,15 +222,14 @@ export default function PlanMapScreen() {
             {
               text: 'Add',
               onPress: async () => {
-                const nearestName = findNearestWaypointName(trail, km);
-                const nearestType = findNearestWaypointType(trail, km);
+                const nearest = findNearestWaypoint(trail, km);
 
                 const newStop: StopData = {
                   id: generateId(),
-                  waypointName: nearestName,
-                  waypointType: nearestType,
+                  waypointName: nearest.name,
+                  waypointType: nearest.type,
                   km,
-                  customLocation: nearestName
+                  customLocation: nearest.name
                     ? undefined
                     : {
                         lat: coordinate.latitude,

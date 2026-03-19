@@ -42,7 +42,7 @@
       [
         "@maplibre/maplibre-react-native",
         {
-          "locationWhenInUsePermission": "Show current location on the map."
+          "locationWhenInUsePermission": "Show your position on the trail map and calculate distances to waypoints."
         }
       ],
       [

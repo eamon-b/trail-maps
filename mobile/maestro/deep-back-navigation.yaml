@@ -18,11 +18,14 @@ appId: com.trailcompanion.app
 - tapOn: "Open Map"
 - waitForAnimationToEnd
 
-# Unwind: map → overview
+# Unwind: map → overview (scroll position is preserved from earlier scroll,
+# so the trail name may be above the viewport — scroll up to find it)
 - pressKey: back
 - waitForAnimationToEnd
-- extendedWaitUntil:
-    visible: "Australian Alps Walking Track"
+- scrollUntilVisible:
+    element:
+      text: "Australian Alps Walking Track"
+    direction: UP
     timeout: 10000
 
 # Unwind: overview → trail list

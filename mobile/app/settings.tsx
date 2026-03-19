@@ -42,6 +42,22 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const [alertPreset, setAlertPreset] = useState<AlertPreset>('normal');
+
+  // Load persisted alert threshold preference
+  useEffect(() => {
+    AsyncStorage.getItem(ALERT_THRESHOLD_KEY).then((val) => {
+      if (val === 'tight' || val === 'normal' || val === 'loose') {
+        setAlertPreset(val);
+      }
+    });
+  }, []);
+
+  const handleAlertSelect = useCallback(async (value: AlertPreset) => {
+    setAlertPreset(value);
+    await AsyncStorage.setItem(ALERT_THRESHOLD_KEY, value);
+  }, []);
+
   const currentThemeValue: ThemeVariant | 'system' = autoDarkMode ? 'system' : themeVariant;
 
   const handleThemeSelect = useCallback(
@@ -168,12 +184,22 @@ export default function SettingsScreen() {
         </Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {ALERT_OPTIONS.map((opt, i) => (
-            <AlertOption
+            <Pressable
               key={opt.value}
-              opt={opt}
-              index={i}
-              colors={colors}
-            />
+              onPress={() => handleAlertSelect(opt.value)}
+              style={[
+                styles.optionRow,
+                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: alertPreset === opt.value }}
+            >
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>{opt.description}</Text>
+              </View>
+              {alertPreset === opt.value && <Text style={[styles.checkmark, { color: colors.accent }]}>&#x2713;</Text>}
+            </Pressable>
           ))}
         </View>
 
@@ -195,47 +221,6 @@ export default function SettingsScreen() {
   );
 }
 
-function AlertOption({
-  opt,
-  index,
-  colors,
-}: {
-  opt: { label: string; value: AlertPreset; description: string };
-  index: number;
-  colors: { textPrimary: string; textSecondary: string; accent: string; border: string };
-}) {
-  const [selected, setSelected] = useState(false);
-
-  // Load persisted preference
-  useEffect(() => {
-    AsyncStorage.getItem(ALERT_THRESHOLD_KEY).then((val) => {
-      setSelected(val === opt.value || (!val && opt.value === 'normal'));
-    });
-  }, [opt.value]);
-
-  const handlePress = useCallback(async () => {
-    await AsyncStorage.setItem(ALERT_THRESHOLD_KEY, opt.value);
-    setSelected(true);
-  }, [opt.value]);
-
-  return (
-    <Pressable
-      onPress={handlePress}
-      style={[
-        styles.optionRow,
-        index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-      ]}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-    >
-      <View style={styles.optionInfo}>
-        <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
-        <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>{opt.description}</Text>
-      </View>
-      {selected && <Text style={[styles.checkmark, { color: colors.accent }]}>✓</Text>}
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {

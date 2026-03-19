@@ -636,7 +636,7 @@ export default function PlanEditorScreen() {
                 No stops planned yet
               </Text>
               <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
-                Tap &ldquo;Add Stops&rdquo; to select overnight stops along the trail.
+                Tap "Add Stops" to select overnight stops along the trail.
               </Text>
             </View>
           ) : (
@@ -767,12 +767,9 @@ export default function PlanEditorScreen() {
               No saved versions yet
             </Text>
           ) : (
-            <FlatList
-              data={versions}
-              keyExtractor={(v) => v.id}
-              scrollEnabled={false}
-              renderItem={({ item: v }) => (
-                <View style={styles.versionRow}>
+            <>
+              {versions.map((v) => (
+                <View key={v.id} style={styles.versionRow}>
                   <Pressable
                     onPress={() => handleLoadVersion(v)}
                     style={styles.versionInfo}
@@ -795,8 +792,8 @@ export default function PlanEditorScreen() {
                     <Text style={[styles.versionDelete, { color: '#c00' }]}>Delete</Text>
                   </Pressable>
                 </View>
-              )}
-            />
+              ))}
+            </>
           )}
         </View>
       </AppBottomSheet>

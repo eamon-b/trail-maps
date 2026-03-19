@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,9 +14,6 @@ import { ClimateCard } from './ClimateCard';
 import { springConfigs, timingConfigs } from '../tokens/motion';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.4;
 
 export interface DayPlanData {
   dayNumber: number;
@@ -72,6 +69,8 @@ export function DayPlanCard({
 }: DayPlanCardProps) {
   const { colors, highContrast } = useTheme();
   const reduceMotion = useReduceMotion();
+  const { width: screenWidth } = useWindowDimensions();
+  const swipeThreshold = screenWidth * 0.4;
   const translateX = useSharedValue(0);
 
   const handleRemove = useCallback(() => {
@@ -102,13 +101,13 @@ export function DayPlanCard({
       }
     })
     .onEnd((event) => {
-      if (event.translationX < -SWIPE_THRESHOLD) {
+      if (event.translationX < -swipeThreshold) {
         // Past threshold — animate out and remove
         if (reduceMotion) {
-          translateX.value = -SCREEN_WIDTH;
+          translateX.value = -screenWidth;
           runOnJS(handleRemove)();
         } else {
-          translateX.value = withTiming(-SCREEN_WIDTH, timingConfigs.slideIn, (finished) => {
+          translateX.value = withTiming(-screenWidth, timingConfigs.slideIn, (finished) => {
             if (finished) {
               runOnJS(handleRemove)();
             }

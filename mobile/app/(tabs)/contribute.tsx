@@ -18,7 +18,7 @@ export default function ContributeScreen() {
         accessibilityRole="button"
         accessibilityLabel="Import a GPX trail"
       >
-        <Text style={styles.importButtonText}>Import GPX Trail</Text>
+        <Text style={[styles.importButtonText, { color: colors.textInverse }]}>Import GPX Trail</Text>
       </Pressable>
 
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -57,7 +57,6 @@ const styles = StyleSheet.create({
   },
   importButtonText: {
     ...typography.body,
-    color: '#FFFFFF',
     fontWeight: '700',
   },
   subtitle: {

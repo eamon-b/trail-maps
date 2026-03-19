@@ -142,19 +142,4 @@ describe('StopSelector', () => {
     });
   });
 
-  it('falls back to deprecated selectedStopNames prop', async () => {
-    renderWithTheme(
-      <StopSelector
-        waypoints={waypoints}
-        selectedStopKms={undefined as any}
-        selectedStopNames={new Set(['Camp Alpha'])}
-        onToggleStop={onToggleStop}
-      />
-    );
-
-    await waitFor(() => {
-      const campAlpha = screen.getByLabelText(/Camp Alpha.*selected/);
-      expect(campAlpha).toBeTruthy();
-    });
-  });
 });

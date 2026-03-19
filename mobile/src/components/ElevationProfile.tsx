@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, LayoutChangeEvent } from 'react-native';
 import { Canvas, Path, Skia, LinearGradient, vec, Line, Circle, Group, Rect } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -86,11 +86,12 @@ export function ElevationProfile({
     const eleMin = eleTicks.length > 0 ? Math.min(minEle, eleTicks[0]) : minEle;
     const eleMax = eleTicks.length > 0 ? Math.max(maxEle, eleTicks[eleTicks.length - 1]) : maxEle;
     const eleRange = eleMax - eleMin || 1;
+    const safeMaxDist = maxDist || 1;
 
     const chartWidth = size.width - PADDING.left - PADDING.right;
     const chartHeight = size.height - PADDING.top - PADDING.bottom;
 
-    return { eleMin, eleMax, eleRange, maxDist, eleTicks, distTicks, chartWidth, chartHeight };
+    return { eleMin, eleMax, eleRange, maxDist: safeMaxDist, eleTicks, distTicks, chartWidth, chartHeight };
   }, [sampledPoints, size]);
 
   const elevationPath = useMemo(() => {
@@ -118,6 +119,19 @@ export function ElevationProfile({
     fill.close();
     return fill;
   }, [elevationPath, chartMetrics]);
+
+  // Dispose native Skia Path objects when they are replaced or on unmount
+  useEffect(() => {
+    return () => {
+      elevationPath?.dispose();
+    };
+  }, [elevationPath]);
+
+  useEffect(() => {
+    return () => {
+      fillPath?.dispose();
+    };
+  }, [fillPath]);
 
   const gridLines = useMemo(() => {
     if (!chartMetrics) return [];

@@ -13,7 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
-import { createReversedTrail, findWaypointIndex, type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
+import { findWaypointIndex, type TrailWaypoint } from '../../src/lib/trail-utils';
+import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { calculateElevationBetween } from '../../src/services/distance-calculator';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { DIRECTION_PREF_KEY } from './[id]';
@@ -47,7 +48,6 @@ export default function DatasheetScreen() {
   const [showPast, setShowPast] = useState(false);
   const [expandedName, setExpandedName] = useState<string | null>(null);
   const [isReversed, setIsReversed] = useState(false);
-  const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
 
   const referenceKm = fromKm ? parseFloat(fromKm) : 0;
 
@@ -62,15 +62,8 @@ export default function DatasheetScreen() {
     }
   }, [id, loadTrail]);
 
-  // Build reversed trail when needed
-  useEffect(() => {
-    if (isReversed && trail && !reversedTrail) {
-      setReversedTrail(createReversedTrail(trail));
-    }
-  }, [isReversed, trail, reversedTrail]);
-
-  // Active trail respects direction
-  const activeTrail = isReversed ? reversedTrail ?? trail : trail;
+  // Active trail respects direction (recomputes when trail or direction changes)
+  const activeTrail = useDirectionalTrail(trail, isReversed);
 
   const rows = useMemo((): WaypointRow[] => {
     if (!activeTrail) return [];

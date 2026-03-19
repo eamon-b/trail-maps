@@ -25,13 +25,11 @@ import {
 } from '../../src/services/distance-calculator';
 import { computeDays } from '../../src/services/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
-import { ACTIVE_TRAIL_KEY } from '../trail/[id]';
+import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 import type { LocationState } from '../../src/components/LocationStatusBar';
 import type { AlertThresholdPreset, SnoozeDuration } from '../../src/services/off-trail-alert-service';
-
-const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 
 /** Snooze options shown when the off-trail alert banner is tapped */
 const SNOOZE_OPTIONS: { label: string; value: SnoozeDuration }[] = [
@@ -240,7 +238,7 @@ export default function HikeScreen() {
   }, [trail, currentKm, planDays]);
 
   const dashboardState = loading ? 'loading' : trail ? 'normal' : 'empty';
-  const gpsState = (accuracy ?? 0) > 100 ? 'degraded' as const : 'normal' as const;
+  const gpsState = accuracy === null ? 'searching' as const : accuracy > 100 ? 'degraded' as const : 'normal' as const;
 
   const handleWaypointSelect = useCallback((wp: WaypointListItem) => {
     if (activeTrailId) {

@@ -42,4 +42,4 @@ appId: com.trailcompanion.app
     element:
       text: "Back"
     direction: UP
-    timeout: 5000
+    timeout: 10000

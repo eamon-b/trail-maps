@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export CI=true
+
 mkdir -p /tmp/maestro-screenshots
 
 # Forward Metro port so emulator can reach the host bundler

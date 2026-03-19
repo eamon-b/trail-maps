@@ -13,12 +13,11 @@ import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
 import { useLocation } from '../../src/hooks/useLocation';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
-  createReversedTrail,
   findNearestByDistance,
   findWaypointIndex,
-  type Trail,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
+import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { tileManager } from '../../src/services/tile-manager';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
@@ -43,11 +42,8 @@ export default function TrailViewerScreen() {
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
 
-  // Active trail data (respects direction)
-  const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
-
-  const originalTrail = contextTrail;
-  const activeTrail = isReversed ? reversedTrail : originalTrail;
+  // Active trail data (respects direction — recomputes when trail or direction changes)
+  const activeTrail = useDirectionalTrail(contextTrail, isReversed);
   const trackPoints = useMemo(() => activeTrail?.track.points ?? [], [activeTrail]);
 
   const { location, accuracy, isTracking, startTracking, stopTracking } =
@@ -72,13 +68,6 @@ export default function TrailViewerScreen() {
       if (style) setOfflineMapStyle(style);
     }).catch(() => {});
   }, [id, loadTrail]);
-
-  // Build reversed trail when original loads and direction is reversed
-  useEffect(() => {
-    if (isReversed && originalTrail && !reversedTrail) {
-      setReversedTrail(createReversedTrail(originalTrail));
-    }
-  }, [isReversed, originalTrail, reversedTrail]);
 
   // Consume pending pan from external navigation (e.g. datasheet "Show on map")
   useEffect(() => {

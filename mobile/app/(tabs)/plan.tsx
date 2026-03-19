@@ -305,7 +305,7 @@ export default function PlanScreen() {
     if (downloadError && downloadError.trailId === item.id) {
       return (
         <View style={styles.tileDownloadProgress}>
-          <Text style={[styles.tileText, { color: '#c00' }]}>
+          <Text style={[styles.tileText, { color: colors.alertRed }]}>
             Download failed: {downloadError.message}
           </Text>
           <View style={[styles.tileRow, { borderTopWidth: 0, marginTop: spacing.xs }]}>
@@ -345,7 +345,7 @@ export default function PlanScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Delete offline maps for ${item.name}`}
           >
-            <Text style={[styles.tileAction, { color: '#c00' }]}>Delete</Text>
+            <Text style={[styles.tileAction, { color: colors.alertRed }]}>Delete</Text>
           </Pressable>
         </View>
       );
@@ -472,7 +472,7 @@ export default function PlanScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`Delete plan ${p.name}`}
                     >
-                      <Text style={[styles.tileAction, { color: '#c00' }]}>Delete</Text>
+                      <Text style={[styles.tileAction, { color: colors.alertRed }]}>Delete</Text>
                     </Pressable>
                   </View>
                 ))}
@@ -496,7 +496,7 @@ export default function PlanScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`Delete custom trail ${item.name}`}
                 >
-                  <Text style={[styles.tileAction, { color: '#c00' }]}>Delete trail</Text>
+                  <Text style={[styles.tileAction, { color: colors.alertRed }]}>Delete trail</Text>
                 </Pressable>
               )}
             </View>

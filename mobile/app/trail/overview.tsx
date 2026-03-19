@@ -16,7 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import { deleteCustomTrail } from '../../src/services/custom-trail-service';
-import { getMinMax, createReversedTrail, type Trail } from '../../src/lib/trail-utils';
+import { getMinMax } from '../../src/lib/trail-utils';
+import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { tileManager } from '../../src/services/tile-manager';
 import {
   generateDatasheet,
@@ -63,7 +64,6 @@ export default function TrailOverviewScreen() {
   const [editName, setEditName] = useState('');
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
-  const [reversedTrail, setReversedTrail] = useState<Trail | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -78,15 +78,8 @@ export default function TrailOverviewScreen() {
     }
   }, [id, loadTrail]);
 
-  // Build reversed trail when original loads and direction is reversed
-  useEffect(() => {
-    if (isReversed && trail && !reversedTrail) {
-      setReversedTrail(createReversedTrail(trail));
-    }
-  }, [isReversed, trail, reversedTrail]);
-
-  // Active trail respects direction
-  const activeTrail = isReversed ? reversedTrail ?? trail : trail;
+  // Active trail respects direction (recomputes when trail or direction changes)
+  const activeTrail = useDirectionalTrail(trail, isReversed);
 
   const stats = useMemo(() => {
     if (!activeTrail) return null;
@@ -177,10 +170,6 @@ export default function TrailOverviewScreen() {
   async function handleDirectionChange(reversed: boolean) {
     if (!id) return;
     setIsReversed(reversed);
-    // Build reversed trail on demand
-    if (reversed && trail && !reversedTrail) {
-      setReversedTrail(createReversedTrail(trail));
-    }
     try {
       const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
       const prefs = prefsStr ? JSON.parse(prefsStr) : {};

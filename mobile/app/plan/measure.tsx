@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, TextInput, FlatList, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
@@ -257,16 +257,16 @@ export default function MeasureScreen() {
           />
           {filteredStartWaypoints.length === 0 && startSearch.trim() ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No waypoints matching &ldquo;{startSearch.trim()}&rdquo;
+              No waypoints matching "{startSearch.trim()}"
             </Text>
           ) : (
-            <FlatList
-              data={filteredStartWaypoints}
-              keyExtractor={(item) => `start-${item.name}-${item.totalDistance ?? 0}`}
-              renderItem={({ item }) => renderWaypointItem(item, startPoint, setStartPoint)}
-              scrollEnabled={false}
-              style={styles.waypointList}
-            />
+            <View style={styles.waypointList}>
+              {filteredStartWaypoints.map((item) => (
+                <React.Fragment key={`start-${item.name}-${item.totalDistance ?? 0}`}>
+                  {renderWaypointItem(item, startPoint, setStartPoint)}
+                </React.Fragment>
+              ))}
+            </View>
           )}
         </View>
 
@@ -324,16 +324,16 @@ export default function MeasureScreen() {
           />
           {filteredEndWaypoints.length === 0 && endSearch.trim() ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No waypoints matching &ldquo;{endSearch.trim()}&rdquo;
+              No waypoints matching "{endSearch.trim()}"
             </Text>
           ) : (
-            <FlatList
-              data={filteredEndWaypoints}
-              keyExtractor={(item) => `end-${item.name}-${item.totalDistance ?? 0}`}
-              renderItem={({ item }) => renderWaypointItem(item, endPoint, setEndPoint)}
-              scrollEnabled={false}
-              style={styles.waypointList}
-            />
+            <View style={styles.waypointList}>
+              {filteredEndWaypoints.map((item) => (
+                <React.Fragment key={`end-${item.name}-${item.totalDistance ?? 0}`}>
+                  {renderWaypointItem(item, endPoint, setEndPoint)}
+                </React.Fragment>
+              ))}
+            </View>
           )}
         </View>
 

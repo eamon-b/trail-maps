@@ -183,7 +183,7 @@ export function SectionSelector({
 
   const renderWaypointItem = useCallback(
     (target: PickerTarget) =>
-      function WaypointItem({ item }: { item: TrailWaypoint }) {
+      ({ item }: { item: TrailWaypoint }) => {
         const km = item.totalDistance ?? 0;
         const emoji = waypointEmojis[item.type] ?? waypointEmojis.poi;
         const isSelected =

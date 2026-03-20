@@ -636,7 +636,7 @@ export default function PlanEditorScreen() {
                 No stops planned yet
               </Text>
               <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
-                Tap "Add Stops" to select overnight stops along the trail.
+                Tap &quot;Add Stops&quot; to select overnight stops along the trail.
               </Text>
             </View>
           ) : (

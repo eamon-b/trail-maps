@@ -106,7 +106,7 @@ export function StopSelector({
       />
       {filtered.length === 0 && search.trim() ? (
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-          No stops matching "{search.trim()}"
+          No stops matching &quot;{search.trim()}&quot;
         </Text>
       ) : (
         <FlatList

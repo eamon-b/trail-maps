@@ -182,8 +182,8 @@ export function SectionSelector({
   // -------------------------------------------------------------------------
 
   const renderWaypointItem = useCallback(
-    (target: PickerTarget) =>
-      ({ item }: { item: TrailWaypoint }) => {
+    (target: PickerTarget) => {
+      const WaypointItem = ({ item }: { item: TrailWaypoint }) => {
         const km = item.totalDistance ?? 0;
         const emoji = waypointEmojis[item.type] ?? waypointEmojis.poi;
         const isSelected =
@@ -221,7 +221,10 @@ export function SectionSelector({
             )}
           </Pressable>
         );
-      },
+      };
+      WaypointItem.displayName = 'WaypointItem';
+      return WaypointItem;
+    },
     [startKm, startName, endKm, endName, handleSelectWaypoint, colors],
   );
 

@@ -257,7 +257,7 @@ export default function MeasureScreen() {
           />
           {filteredStartWaypoints.length === 0 && startSearch.trim() ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No waypoints matching "{startSearch.trim()}"
+              No waypoints matching &quot;{startSearch.trim()}&quot;
             </Text>
           ) : (
             <View style={styles.waypointList}>
@@ -324,7 +324,7 @@ export default function MeasureScreen() {
           />
           {filteredEndWaypoints.length === 0 && endSearch.trim() ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No waypoints matching "{endSearch.trim()}"
+              No waypoints matching &quot;{endSearch.trim()}&quot;
             </Text>
           ) : (
             <View style={styles.waypointList}>

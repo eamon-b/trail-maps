@@ -43,6 +43,7 @@ Shared processing modules (used by both web and mobile):
 
 - `build-trails.ts` - Generates static trail pages from GPX/JSON data
 - `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision)
+- `build-contours-australia.ts` - Builds contour PMTiles for the contour tile worker
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
 - `fetch-pois.ts` - Fetches points of interest
@@ -55,10 +56,13 @@ Shared processing modules (used by both web and mobile):
 ### Web UI (`src/web/`)
 
 - `index.html` - Landing page with trail listing
-- `trails/index.html` - Trail listing page
+- `styles.css` - Global styles
 - `trails/trail-template.html` - Template for individual trail pages
-- `trails/climate-template.html` - Template for climate data pages
 - `trails/trail-viewer.ts` - Interactive trail viewer (map, elevation profile, waypoints)
+- `trails/climate-template.html` - Template for climate data pages
+- `trails/plan-template.html` - Template for plan visualization pages
+- `trails/plan-viewer.ts` - Interactive plan viewer
+- `trails/plan-state.ts` - Plan state management
 
 ### Trail Data (`data/trails/`)
 
@@ -77,6 +81,10 @@ Built at build time:
 
 `@lib` maps to `src/lib/` (configured in vite.config.ts and tsconfig.json).
 
+### Contour Tile Worker (`workers/contour-tiles/`)
+
+Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: `/{source}/{z}/{x}/{y}.pbf`. Uses R2 bucket `aus-map-data` with PMTiles at `contours/australia.pmtiles`. Built with `wrangler`.
+
 ## Key Patterns
 
 - **Build-time processing**: Trail data is processed at build time into optimized JSON
@@ -87,6 +95,13 @@ Built at build time:
 ## Testing
 
 Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` in `src/lib/`). Mobile tests use `__tests__/` subdirectories within `components/`, `services/`, `tokens/`, and `lib/`.
+
+```bash
+# Mobile tests (from mobile/)
+npm test                           # Run all mobile tests (Jest)
+npm run test:watch                 # Watch mode
+npm run test:integration           # Integration tests only
+```
 
 ## Mobile App (Expo / React Native)
 
@@ -173,6 +188,9 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 
 ### Mobile Route Structure (`mobile/app/`)
 
+- `_layout.tsx` — Root layout
+- `index.tsx` — Entry redirect
+- `settings.tsx` — App settings screen
 - `(tabs)/` — Bottom tab navigator: `plan.tsx`, `hike.tsx`, `contribute.tsx`
 - `trail/` — Trail screens: `overview.tsx` (detail card), `[id].tsx` (map viewer), `datasheet.tsx` (waypoint datasheet)
 - `plan/` — Plan screens: `create.tsx`, `[planId].tsx` (edit), `map.tsx`, `section-map.tsx`, `measure.tsx`
@@ -180,13 +198,14 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 
 ### Mobile Source Structure (`mobile/src/`)
 
-- `components/` — UI components: map (TrailMap, ElevationProfile, ElevationProfileDrawer), planning (DayPlanCard, StopSelector, SectionSelector, PlanSummaryCard), hike dashboard (HikeDashboard, WaypointList, WaypointCard, WaypointDetailSheet, WaterCountdown, LocationStatusBar), common (Card, AlertBanner, ProgressBar, SkeletonPlaceholder, UndoToast, ModeSelector, AppBottomSheet)
-- `services/` — Business logic: data layer (trail-data-service, trail-loader, trail-bounds), planning (plan-service, plan-utils, plan-export, day-calculator, distance-calculator), resources (resupply-calculator, water-carry-calculator), maps (tile-service, tile-manager, grid-tile-service), other (datasheet-service, custom-trail-service, climate-service, location-service, measure-service)
+- `components/` — UI components: map (TrailMap, ElevationProfile, ElevationProfileDrawer, MapErrorBoundary), planning (DayPlanCard, StopSelector, SectionSelector, PlanSummaryCard), hike dashboard (HikeDashboard, WaypointList, WaypointCard, WaypointDetailSheet, WaterCountdown, LocationStatusBar, SunriseCountdown), resources (ResupplyList, WaterCarryList, ClimateCard, ClimateOverview), common (Card, AlertBanner, ProgressBar, SkeletonPlaceholder, UndoToast, ModeSelector, AppBottomSheet, haptics)
+- `services/` — Business logic: data layer (trail-data-service, trail-loader, trail-bounds), planning (plan-service, plan-utils, plan-export, plan-calculator-types, day-calculator, distance-calculator), resources (resupply-calculator, water-carry-calculator), maps (tile-service, tile-manager, tile-paths, grid-tile-service, online-style-service), other (datasheet-service, custom-trail-service, climate-service, location-service, measure-service, off-trail-alert-service)
+- `contexts/` — React contexts (TrailDataContext)
 - `db/` — Database layer (database.ts, schema.ts)
-- `hooks/` — React hooks (useLocation.ts)
+- `hooks/` — React hooks (useLocation, useDirectionalTrail, useOffTrailAlert)
 - `theme/` — Theme context and utilities
 - `tokens/` — Design tokens (colors, typography, spacing, motion)
-- `lib/` — Mobile-specific utilities (trail-utils.ts)
+- `lib/` — Mobile-specific utilities (trail-utils, gpx-parser, gpx-processor, sunrise-sunset)
 
 ### Android Emulator (ADB)
 
@@ -195,48 +214,19 @@ An Android emulator (Pixel 7) is available for testing. The user runs Metro dev 
 **Prerequisites**: User must have the emulator running and Metro dev server started before Claude uses these commands.
 
 ```bash
-# Screenshots — capture and view with Read tool
-adb exec-out screencap -p > /tmp/screenshot.png
-
-# Launch the app
-adb shell am start -n com.trailcompanion.app/.MainActivity
-
-# Force stop the app
-adb shell am force-stop com.trailcompanion.app
-
-# Clear app data (reset to fresh state)
-adb shell pm clear com.trailcompanion.app
-
-# Tap at coordinates (x, y)
-adb shell input tap 540 1200
-
-# Swipe (x1 y1 x2 y2 duration_ms)
-adb shell input swipe 540 1500 540 500 300
-
-# Press back button
-adb shell input keyevent KEYCODE_BACK
-
-# Type text
-adb shell input text "hello"
-
-# View recent logs (React Native / app errors)
-adb logcat -d -t 50 ReactNativeJS:* *:E | grep -v chatty
-
-# Install APK
-adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
-
-# Check if app is installed
-adb shell pm list packages | grep trailcompanion
-
-# Get current activity (useful for knowing which screen is shown)
-adb shell dumpsys activity activities | grep mResumedActivity
+adb exec-out screencap -p > /tmp/screenshot.png   # Screenshot (view with Read tool)
+adb shell am start -n com.trailcompanion.app/.MainActivity  # Launch app
+adb shell am force-stop com.trailcompanion.app     # Force stop
+adb shell pm clear com.trailcompanion.app          # Clear app data (fresh state)
+adb shell input tap 540 1200                       # Tap at (x, y)
+adb shell input swipe 540 1500 540 500 300         # Swipe (x1 y1 x2 y2 ms)
+adb shell input keyevent KEYCODE_BACK              # Back button
+adb shell input text "hello"                       # Type text
+adb logcat -d -t 50 ReactNativeJS:* *:E | grep -v chatty  # Recent RN logs
+adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk  # Install APK
 ```
 
-**Workflow for verifying changes visually**:
-1. Make code changes (Metro will hot-reload)
-2. `adb exec-out screencap -p > /tmp/screenshot.png` — capture screen
-3. Read `/tmp/screenshot.png` — visually inspect the result
-4. `adb logcat -d -t 50 ReactNativeJS:* *:E` — check for errors
+**Visual verification workflow**: Make changes (Metro hot-reloads) → screenshot → Read the PNG → check `adb logcat` for errors.
 
 ### Maestro UI Tests
 
@@ -253,24 +243,4 @@ Maestro test flows live in `mobile/maestro/`. Run them to verify UI behavior end
 ~/.maestro/bin/maestro record mobile/maestro/new-flow.yaml
 ```
 
-**Available flows**:
-- `smoke-test.yaml` — Full smoke: launch, verify data, navigate tabs, open trail, go back
-- `app-launch.yaml` — Verify app launches and data loads
-- `navigate-tabs.yaml` — Verify all tabs are reachable
-- `view-trail.yaml` — Verify trail card opens trail overview
-- `trail-overview-details.yaml` — Verify trail overview details display
-- `trail-overview-to-map.yaml` — Verify navigation from overview to map
-- `hike-empty-state.yaml` — Verify hike tab empty state
-- `contribute-placeholder.yaml` — Verify contribute tab placeholder
-- `scroll-trail-list.yaml` — Verify trail list scrolling
-- `deep-back-navigation.yaml` — Verify deep back navigation works
-- `plan-creation.yaml` — Verify plan creation flow
-- `plan-editing.yaml` — Verify plan editing flow
-- `tile-download-status.yaml` — Verify tile download status display
-- `measure-tool.yaml` — Verify measure tool flow
-- `gpx-import-screen.yaml` — Verify GPX import screen
-- `manage-custom-trail.yaml` — Verify custom trail management
-- `import-error-flow.yaml` — Verify import error handling
-- `custom-trail-datasheet.yaml` — Verify custom trail datasheet
-- `custom-trail-offline.yaml` — Verify custom trail offline maps
-- `custom-trail-planner.yaml` — Verify custom trail planner
+**Key flows**: `smoke-test.yaml` (full smoke), `app-launch.yaml`, `navigate-tabs.yaml`, `view-trail.yaml`, `trail-overview-details.yaml`, `trail-overview-to-map.yaml`, `deep-back-navigation.yaml`, `plan-creation.yaml`, `plan-editing.yaml`, `measure-tool.yaml`, `gpx-import-screen.yaml`, `manage-custom-trail.yaml`. Run `ls mobile/maestro/` for the full list (~20 flows).

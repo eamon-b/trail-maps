@@ -5,6 +5,20 @@ export CI=true
 
 mkdir -p /tmp/maestro-screenshots
 
+# Cleanup: kill Metro process tree and emulator on exit.
+# Metro spawns several child node processes; killing just the parent PID
+# leaves orphans that keep the android-emulator-runner step alive until
+# the job-level timeout cancels it.
+cleanup() {
+  # Kill all child processes of this script (Metro + any other background jobs)
+  pkill -TERM -P $$ 2>/dev/null || true
+  sleep 1
+  pkill -KILL -P $$ 2>/dev/null || true
+  # Kill emulator so the runner action doesn't hang during its own cleanup
+  adb emu kill 2>/dev/null || true
+}
+trap cleanup EXIT
+
 # Forward Metro port so emulator can reach the host bundler
 adb reverse tcp:8081 tcp:8081
 
@@ -24,7 +38,6 @@ for i in $(seq 1 60); do
 done
 if [ "$METRO_READY" = false ]; then
   echo "::error::Metro bundler failed to start within 120s"
-  kill $METRO_PID 2>/dev/null || true
   exit 1
 fi
 
@@ -56,7 +69,6 @@ done
 if [ "$APP_READY" = false ]; then
   echo "::error::App failed to launch within 30s"
   adb logcat -d -t 50 ReactNativeJS:* *:E > /tmp/maestro-screenshots/logcat-launch-failure.txt || true
-  kill $METRO_PID 2>/dev/null || true
   exit 1
 fi
 
@@ -66,14 +78,5 @@ sleep 10
 adb shell input keyevent KEYCODE_BACK
 sleep 2
 
-# Run Maestro tests
+# Run Maestro tests (cleanup trap handles Metro + emulator on exit)
 ~/.maestro/bin/maestro test mobile/maestro/
-RESULT=$?
-
-kill $METRO_PID 2>/dev/null || true
-
-# Explicitly kill the emulator so the android-emulator-runner cleanup
-# doesn't hang waiting for a graceful shutdown (which can stall 45+ min).
-adb emu kill 2>/dev/null || true
-
-exit $RESULT

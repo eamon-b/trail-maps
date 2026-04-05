@@ -41,15 +41,13 @@ appId: com.trailcompanion.app
 # Scroll down to the Datasheet button (after WAYPOINTS and OFFLINE MAPS sections)
 - scrollUntilVisible:
     element:
-      text: "Datasheet"
+      id: "datasheet-button"
     direction: DOWN
     timeout: 15000
 
 # Navigate to the dedicated datasheet screen
-# Tap the last "Datasheet" match (button) not the section header "DATASHEET"
 - tapOn:
-    text: "Datasheet"
-    index: 1
+    id: "datasheet-button"
 - waitForAnimationToEnd
 
 # Verify dedicated datasheet screen loaded

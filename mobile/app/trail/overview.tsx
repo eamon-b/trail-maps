@@ -497,6 +497,7 @@ export default function TrailOverviewScreen() {
 
         {/* Datasheet button */}
         <Pressable
+          testID="datasheet-button"
           style={[styles.datasheetButton, { borderColor: colors.accent }]}
           onPress={() => router.push(`/trail/datasheet?id=${id}`)}
           accessibilityRole="button"

@@ -10,13 +10,26 @@ appId: com.trailcompanion.app
 - tapOn: "+ New Plan"
 - waitForAnimationToEnd
 
+# Wait for plan creation screen to load
+- extendedWaitUntil:
+    visible: "New Plan"
+    timeout: 10000
+
 # Verify plan creation screen
-- assertVisible: "New Plan"
 - assertVisible: "Plan Name"
 - assertVisible: "Direction"
-- assertVisible: "Create Plan"
+
+# Dismiss keyboard (autoFocus on plan name) and scroll to Create Plan
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Create Plan"
+    direction: DOWN
+    timeout: 5000
 
 # Cancel back
 - tapOn: "Cancel"
 - waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000

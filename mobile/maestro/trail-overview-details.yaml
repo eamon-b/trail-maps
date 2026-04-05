@@ -10,8 +10,10 @@ appId: com.trailcompanion.app
 - tapOn: "View trail →"
 - waitForAnimationToEnd
 
-# Verify trail name visible
-- assertVisible: "Australian Alps Walking Track"
+# Wait for trail data to load
+- extendedWaitUntil:
+    visible: "Australian Alps Walking Track"
+    timeout: 15000
 
 # Verify stats labels
 - assertVisible: "km"
@@ -22,13 +24,31 @@ appId: com.trailcompanion.app
 # Verify elevation range section
 - assertVisible: "ELEVATION RANGE"
 
-# Verify waypoints section with type labels
-- assertVisible: "WAYPOINTS"
-- assertVisible: "Campsites"
-- assertVisible: "Water sources"
+# Scroll to waypoints section (below datasheet on overview)
+- scrollUntilVisible:
+    element:
+      text: "WAYPOINTS"
+    direction: DOWN
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: "Campsites"
+    direction: DOWN
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Water sources"
+    direction: DOWN
+    timeout: 5000
 
 # Verify offline maps section
-- assertVisible: "OFFLINE MAPS"
+- scrollUntilVisible:
+    element:
+      text: "OFFLINE MAPS"
+    direction: DOWN
+    timeout: 10000
 
 # Verify Open Map button (below fold, needs scroll)
 - scrollUntilVisible:

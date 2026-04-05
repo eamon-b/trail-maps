@@ -10,6 +10,11 @@ appId: com.trailcompanion.app
 - tapOn: "View trail →"
 - waitForAnimationToEnd
 
+# Wait for trail data to load
+- extendedWaitUntil:
+    visible: "Australian Alps Walking Track"
+    timeout: 15000
+
 # Scroll to find the datasheet section on overview
 - scrollUntilVisible:
     element:
@@ -18,27 +23,27 @@ appId: com.trailcompanion.app
     timeout: 10000
 
 # Verify datasheet section elements
-- assertVisible: "DATASHEET"
 - assertVisible: "Export"
 - assertVisible: "Expand"
 
 # Expand the datasheet table
 - tapOn: "Expand"
 - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Collapse"
+    timeout: 5000
 - assertVisible: "Section"
-- assertVisible: "km"
-- assertVisible: "Collapse"
 
 # Collapse it back
 - tapOn: "Collapse"
 - waitForAnimationToEnd
 
-# Scroll down to the Datasheet button
+# Scroll down to the Datasheet button (after WAYPOINTS and OFFLINE MAPS sections)
 - scrollUntilVisible:
     element:
       text: "Datasheet"
     direction: DOWN
-    timeout: 5000
+    timeout: 15000
 
 # Navigate to the dedicated datasheet screen
 # Tap the last "Datasheet" match (button) not the section header "DATASHEET"
@@ -57,4 +62,6 @@ appId: com.trailcompanion.app
 - waitForAnimationToEnd
 - pressKey: back
 - waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000

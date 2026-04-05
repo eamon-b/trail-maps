@@ -71,4 +71,9 @@ sleep 2
 RESULT=$?
 
 kill $METRO_PID 2>/dev/null || true
+
+# Explicitly kill the emulator so the android-emulator-runner cleanup
+# doesn't hang waiting for a graceful shutdown (which can stall 45+ min).
+adb emu kill 2>/dev/null || true
+
 exit $RESULT

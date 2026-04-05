@@ -9,18 +9,32 @@ appId: com.trailcompanion.app
 # Navigate to import screen
 - tapOn: "Import"
 - waitForAnimationToEnd
-- assertVisible: "Import Trail"
+- extendedWaitUntil:
+    visible: "Import Trail"
+    timeout: 10000
 
 # Show URL input
 - tapOn: "Import from URL"
 - waitForAnimationToEnd
+
+# Wait for URL input to expand
+- extendedWaitUntil:
+    visible:
+      id: "urlInput"
+    timeout: 5000
 
 # Enter an invalid URL
 - tapOn:
     id: "urlInput"
 - inputText: "not-a-valid-url"
 
+# Dismiss keyboard so Fetch button is visible
+- hideKeyboard
+
 # Tap Fetch — should show error
+- extendedWaitUntil:
+    visible: "Fetch"
+    timeout: 5000
 - tapOn: "Fetch"
 - waitForAnimationToEnd
 
@@ -37,9 +51,13 @@ appId: com.trailcompanion.app
 - waitForAnimationToEnd
 
 # Verify we're back on the pick screen
-- assertVisible: "Choose File"
+- extendedWaitUntil:
+    visible: "Choose File"
+    timeout: 5000
 
 # Cancel back
 - tapOn: "Cancel"
 - waitForAnimationToEnd
-- assertVisible: "Select a Trail"
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000

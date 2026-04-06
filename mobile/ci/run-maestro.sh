@@ -5,32 +5,14 @@ export CI=true
 
 mkdir -p /tmp/maestro-screenshots
 
-# Cleanup: kill Metro process tree and emulator on exit.
-# Metro spawns several child node processes; killing just the parent PID
-# leaves orphans that keep the android-emulator-runner step alive until
-# the job-level timeout cancels it.
-cleanup() {
-  # Kill Metro and all its node descendants. Metro spawns a deep process
-  # tree (subshell → npx → node → node workers). Orphan node processes
-  # keep the android-emulator-runner step alive until the job timeout.
-  # pkill -f reliably matches all processes in the tree regardless of depth.
-  pkill -TERM -f "expo start --dev-client" 2>/dev/null || true
-  [ -n "${METRO_PID:-}" ] && kill "$METRO_PID" 2>/dev/null || true
-  sleep 2
-  pkill -KILL -f "expo start --dev-client" 2>/dev/null || true
-  [ -n "${METRO_PID:-}" ] && kill -9 "$METRO_PID" 2>/dev/null || true
-  # Kill emulator so the runner action doesn't hang during its own cleanup
-  adb emu kill 2>/dev/null || true
-}
-trap cleanup EXIT
-
 # Forward Metro port so emulator can reach the host bundler
 adb reverse tcp:8081 tcp:8081
 
-# Start Metro bundler in background (CI=true disables interactive UI)
-# Use explicit subshell so the cd doesn't affect the parent shell
-(cd mobile && npx expo start --dev-client --port 8081) &
-METRO_PID=$!
+# Start Metro bundler in a new session (setsid) so its process tree is
+# detached from the script's process group.  Without this, Metro's child
+# node processes become orphans that the GitHub Actions runner waits on
+# after the script exits, causing a ~45 min hang until the job timeout.
+setsid sh -c 'cd mobile && exec npx expo start --dev-client --port 8081' &
 
 # Wait for Metro to be ready (up to 120s) — fail explicitly if it doesn't start
 METRO_READY=false
@@ -83,5 +65,5 @@ sleep 10
 adb shell input keyevent KEYCODE_BACK
 sleep 2
 
-# Run Maestro tests (cleanup trap handles Metro + emulator on exit)
+# Run Maestro tests
 ~/.maestro/bin/maestro test mobile/maestro/

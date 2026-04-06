@@ -6,6 +6,7 @@ import { haversineDistance as haversineDistanceMeters } from '../src/lib/distanc
 import { douglasPeucker } from '../src/lib/gpx-optimizer.js';
 import { classifyTracks, combineTracksGeographically } from '../src/lib/track-classification.js';
 import { classifyWaypoint } from '../src/lib/waypoint-classifier.js';
+import { escapeHtml, escapeJsString } from '../src/lib/escape.js';
 import type { TrackClassificationConfig, GpxPoint as LibGpxPoint } from '../src/lib/types.js';
 
 /** Calculate haversine distance in km */
@@ -1052,12 +1053,12 @@ function generateTrailPage(trail: ProcessedTrail): void {
 
   const template = fs.readFileSync(TRAIL_TEMPLATE_PATH, 'utf-8');
 
-  // Replace placeholders
+  // Replace placeholders with escaped values
   const html = template
-    .replace(/\{\{TRAIL_ID\}\}/g, trail.config.id)
-    .replace(/\{\{TRAIL_NAME\}\}/g, trail.config.name)
-    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, trail.config.shortName || trail.config.name)
-    .replace(/\{\{TRAIL_REGION\}\}/g, trail.config.region || 'Unknown');
+    .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
+    .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
+    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name))
+    .replace(/\{\{TRAIL_REGION\}\}/g, escapeHtml(trail.config.region || 'Unknown'));
 
   // Create trail directory and write HTML
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);
@@ -1082,9 +1083,9 @@ function generatePlanPage(trail: ProcessedTrail): void {
   const template = fs.readFileSync(PLAN_TEMPLATE_PATH, 'utf-8');
 
   const html = template
-    .replace(/\{\{TRAIL_ID\}\}/g, trail.config.id)
-    .replace(/\{\{TRAIL_NAME\}\}/g, trail.config.name)
-    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, trail.config.shortName || trail.config.name);
+    .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
+    .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
+    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name));
 
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);
   if (!fs.existsSync(trailPageDir)) {
@@ -1107,11 +1108,11 @@ function generateClimatePage(trail: ProcessedTrail): void {
 
   const template = fs.readFileSync(CLIMATE_TEMPLATE_PATH, 'utf-8');
 
-  // Replace placeholders
+  // Replace placeholders with escaped values
   const html = template
-    .replace(/\{\{TRAIL_ID\}\}/g, trail.config.id)
-    .replace(/\{\{TRAIL_NAME\}\}/g, trail.config.name)
-    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, trail.config.shortName || trail.config.name);
+    .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
+    .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
+    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name));
 
   // Create trail directory if it doesn't exist
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);

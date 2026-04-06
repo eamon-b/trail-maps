@@ -57,17 +57,23 @@ export function computeResupplyGaps(
 ): ResupplyGap[] {
   if (points.length === 0) return [];
 
+  const effectiveDailyKm = Math.max(1, dailyKm);
   const gaps: ResupplyGap[] = [];
 
+  // Deduplicate points at the same km position
+  const deduped = points.filter(
+    (p, i) => i === 0 || p.km !== points[i - 1].km,
+  );
+
   // Gap from trail start to first resupply
-  const firstDist = points[0].km - trailStartKm;
+  const firstDist = deduped[0].km - trailStartKm;
   if (firstDist > 0) {
-    const days = Math.ceil(firstDist / dailyKm);
+    const days = Math.ceil(firstDist / effectiveDailyKm);
     gaps.push({
       fromName: 'Trail Start',
-      toName: points[0].name,
+      toName: deduped[0].name,
       fromKm: trailStartKm,
-      toKm: points[0].km,
+      toKm: deduped[0].km,
       distanceKm: Math.round(firstDist * 10) / 10,
       estimatedDays: days,
       isLong: days > longThresholdDays,
@@ -75,14 +81,15 @@ export function computeResupplyGaps(
   }
 
   // Gaps between consecutive resupply points
-  for (let i = 0; i < points.length - 1; i++) {
-    const dist = points[i + 1].km - points[i].km;
-    const days = Math.ceil(dist / dailyKm);
+  for (let i = 0; i < deduped.length - 1; i++) {
+    const dist = deduped[i + 1].km - deduped[i].km;
+    if (dist <= 0) continue;
+    const days = Math.ceil(dist / effectiveDailyKm);
     gaps.push({
-      fromName: points[i].name,
-      toName: points[i + 1].name,
-      fromKm: points[i].km,
-      toKm: points[i + 1].km,
+      fromName: deduped[i].name,
+      toName: deduped[i + 1].name,
+      fromKm: deduped[i].km,
+      toKm: deduped[i + 1].km,
       distanceKm: Math.round(dist * 10) / 10,
       estimatedDays: days,
       isLong: days > longThresholdDays,
@@ -90,13 +97,13 @@ export function computeResupplyGaps(
   }
 
   // Gap from last resupply to trail end
-  const lastDist = trailEndKm - points[points.length - 1].km;
+  const lastDist = trailEndKm - deduped[deduped.length - 1].km;
   if (lastDist > 0) {
-    const days = Math.ceil(lastDist / dailyKm);
+    const days = Math.ceil(lastDist / effectiveDailyKm);
     gaps.push({
-      fromName: points[points.length - 1].name,
+      fromName: deduped[deduped.length - 1].name,
       toName: 'Trail End',
-      fromKm: points[points.length - 1].km,
+      fromKm: deduped[deduped.length - 1].km,
       toKm: trailEndKm,
       distanceKm: Math.round(lastDist * 10) / 10,
       estimatedDays: days,

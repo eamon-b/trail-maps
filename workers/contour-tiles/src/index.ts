@@ -11,13 +11,18 @@ import { Compression, PMTiles, RangeResponse, Source } from 'pmtiles';
 
 interface Env {
   TILES_BUCKET: R2Bucket;
+  ALLOWED_ORIGIN?: string; // e.g. 'https://trailmaps.example.com' — defaults to '*' for dev
 }
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-  'Access-Control-Allow-Headers': 'Range',
-};
+const MAX_ZOOM = 22;
+
+function corsHeaders(env: Env): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
+    'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    'Access-Control-Allow-Headers': 'Range',
+  };
+}
 
 const PMTILES_KEY = 'contours/australia.pmtiles';
 
@@ -80,9 +85,11 @@ function parseTilePath(
 ): { source: string; z: number; x: number; y: number } | null {
   const match = pathname.match(/^\/(\w+)\/(\d+)\/(\d+)\/(\d+)\.pbf$/);
   if (!match) return null;
+  const z = parseInt(match[2], 10);
+  if (z > MAX_ZOOM) return null;
   return {
     source: match[1],
-    z: parseInt(match[2], 10),
+    z,
     x: parseInt(match[3], 10),
     y: parseInt(match[4], 10),
   };
@@ -92,11 +99,11 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: corsHeaders(env) });
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
-      return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS });
+      return new Response('Method not allowed', { status: 405, headers: corsHeaders(env) });
     }
 
     const url = new URL(request.url);
@@ -105,14 +112,14 @@ export default {
     if (!tile) {
       return new Response('Not found. Use: /{source}/{z}/{x}/{y}.pbf', {
         status: 404,
-        headers: CORS_HEADERS,
+        headers: corsHeaders(env),
       });
     }
 
     if (tile.source !== 'contours') {
       return new Response(`Unknown source: ${tile.source}`, {
         status: 404,
-        headers: CORS_HEADERS,
+        headers: corsHeaders(env),
       });
     }
 
@@ -122,18 +129,18 @@ export default {
       // Check metadata for zoom range
       const header = await pmtiles.getHeader();
       if (tile.z < header.minZoom || tile.z > header.maxZoom) {
-        return new Response(null, { status: 204, headers: CORS_HEADERS });
+        return new Response(null, { status: 204, headers: corsHeaders(env) });
       }
 
       const tileData = await pmtiles.getZxy(tile.z, tile.x, tile.y);
 
       if (!tileData || !tileData.data || tileData.data.byteLength === 0) {
         // Empty tile (ocean, no data for this area)
-        return new Response(null, { status: 204, headers: CORS_HEADERS });
+        return new Response(null, { status: 204, headers: corsHeaders(env) });
       }
 
       const responseHeaders: Record<string, string> = {
-        ...CORS_HEADERS,
+        ...corsHeaders(env),
         'Content-Type': 'application/x-protobuf',
         'Cache-Control': 'public, max-age=86400',
       };
@@ -152,7 +159,7 @@ export default {
       console.error(`Tile error ${tile.z}/${tile.x}/${tile.y}: ${message}`);
       return new Response('Internal server error', {
         status: 500,
-        headers: CORS_HEADERS,
+        headers: corsHeaders(env),
       });
     }
   },

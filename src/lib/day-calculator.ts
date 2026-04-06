@@ -127,9 +127,14 @@ export function computeDays(
     km: number;
   }
 
+  // Sort stops by km and clamp to trail bounds
+  const sortedStops = [...stops]
+    .sort((a, b) => a.km - b.km)
+    .filter(s => s.km > rangeStartKm && s.km < rangeEndKm);
+
   const boundaries: Boundary[] = [
     { name: rangeStartName, km: rangeStartKm },
-    ...stops.map(s => ({ name: s.waypointName ?? 'Stop', km: s.km })),
+    ...sortedStops.map(s => ({ name: s.waypointName ?? 'Stop', km: s.km })),
     { name: rangeEndName, km: rangeEndKm },
   ];
 

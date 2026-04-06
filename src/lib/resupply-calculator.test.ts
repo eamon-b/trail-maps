@@ -102,3 +102,31 @@ describe('analyzeResupply', () => {
     expect(result.longestGapDays).toBe(4);
   });
 });
+
+// --- Edge cases from code review ---
+
+describe('computeResupplyGaps edge cases', () => {
+  it('does not produce zero-distance gap when two points at same km', () => {
+    const points = extractResupplyPoints([
+      { name: 'Store A', type: 'food', totalDistance: 50 },
+      { name: 'Store B', type: 'food', totalDistance: 50 },
+      { name: 'Town', type: 'town', totalDistance: 100 },
+    ]);
+    const gaps = computeResupplyGaps(points, 0, 150);
+    // No gap should have distance <= 0
+    for (const gap of gaps) {
+      expect(gap.distanceKm).toBeGreaterThan(0);
+    }
+  });
+
+  it('does not produce Infinity or NaN for estimatedDays with zero dailyKm', () => {
+    const points = extractResupplyPoints([
+      { name: 'Town A', type: 'town', totalDistance: 50 },
+    ]);
+    // dailyKm = 0 would cause division by zero
+    const gaps = computeResupplyGaps(points, 0, 100, 0);
+    for (const gap of gaps) {
+      expect(Number.isFinite(gap.estimatedDays)).toBe(true);
+    }
+  });
+});

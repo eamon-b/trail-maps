@@ -29,7 +29,7 @@ const WATER_TYPES = new Set(['water', 'water-tank']);
 /** Default threshold for a "dry stretch" warning in km */
 export const DEFAULT_DRY_STRETCH_KM = 15;
 
-const SEASONAL_KEYWORDS = ['seasonal', 'dry in summer', 'unreliable', 'intermittent', 'may be dry'];
+const SEASONAL_KEYWORDS = ['seasonal', 'dry in summer', 'dries up', 'unreliable', 'not reliable', 'intermittent', 'may be dry', 'often dry'];
 
 /**
  * Extract water sources from trail waypoints, sorted by km.
@@ -66,44 +66,51 @@ export function computeWaterGaps(
 ): WaterGap[] {
   if (sources.length === 0) return [];
 
+  const effectiveThreshold = Math.max(0, dryStretchThreshold);
   const gaps: WaterGap[] = [];
 
+  // Deduplicate sources at the same km position
+  const deduped = sources.filter(
+    (s, i) => i === 0 || s.km !== sources[i - 1].km,
+  );
+
   // Gap from trail start to first source
-  const firstDist = sources[0].km - trailStartKm;
+  const firstDist = deduped[0].km - trailStartKm;
   if (firstDist > 0) {
     gaps.push({
       fromName: 'Trail Start',
-      toName: sources[0].name,
+      toName: deduped[0].name,
       fromKm: trailStartKm,
-      toKm: sources[0].km,
+      toKm: deduped[0].km,
       distanceKm: Math.round(firstDist * 10) / 10,
-      isDryStretch: firstDist >= dryStretchThreshold,
+      isDryStretch: firstDist >= effectiveThreshold,
     });
   }
 
   // Gaps between consecutive sources
-  for (let i = 0; i < sources.length - 1; i++) {
-    const dist = sources[i + 1].km - sources[i].km;
+  for (let i = 0; i < deduped.length - 1; i++) {
+    const dist = deduped[i + 1].km - deduped[i].km;
+    if (dist <= 0) continue;
     gaps.push({
-      fromName: sources[i].name,
-      toName: sources[i + 1].name,
-      fromKm: sources[i].km,
-      toKm: sources[i + 1].km,
+      fromName: deduped[i].name,
+      toName: deduped[i + 1].name,
+      fromKm: deduped[i].km,
+      toKm: deduped[i + 1].km,
       distanceKm: Math.round(dist * 10) / 10,
-      isDryStretch: dist >= dryStretchThreshold,
+      isDryStretch: dist >= effectiveThreshold,
     });
   }
 
   // Gap from last source to trail end
-  const lastDist = trailEndKm - sources[sources.length - 1].km;
+  const lastDist = trailEndKm - deduped[deduped.length - 1].km;
   if (lastDist > 0) {
     gaps.push({
-      fromName: sources[sources.length - 1].name,
+      fromName: deduped[deduped.length - 1].name,
       toName: 'Trail End',
-      fromKm: sources[sources.length - 1].km,
+      fromKm: deduped[deduped.length - 1].km,
       toKm: trailEndKm,
       distanceKm: Math.round(lastDist * 10) / 10,
-      isDryStretch: lastDist >= dryStretchThreshold,
+      isDryStretch: lastDist >= effectiveThreshold,
     });
   }
 

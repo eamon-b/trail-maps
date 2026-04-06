@@ -187,4 +187,46 @@ describe('computeDays', () => {
     expect(days[0].startName).toBe('Trailhead');
     expect(days[0].endName).toBe('Summit');
   });
+
+  it('handles unsorted stops by producing correct day distances', () => {
+    // Stops passed out of order — computeDays should sort them or reject them.
+    // Currently it trusts the caller, so unsorted stops produce negative distances.
+    const trail = makeFlatTrail(100);
+    const unsortedStops: StopData[] = [
+      { km: 70, waypointName: 'Camp B' },
+      { km: 30, waypointName: 'Camp A' },
+    ];
+    const days = computeDays(trail, unsortedStops);
+    // Every day must have a non-negative distance
+    for (const day of days) {
+      expect(day.distanceKm).toBeGreaterThanOrEqual(0);
+    }
+    // Total distance across all days must equal trail length
+    const totalDist = days.reduce((sum, d) => sum + d.distanceKm, 0);
+    expect(totalDist).toBeCloseTo(100, 1);
+  });
+
+  it('handles empty track points without crashing', () => {
+    const trail: PlanTrail = {
+      config: { name: 'Empty Trail' },
+      track: { points: [], totalDistance: 50 },
+      waypoints: [],
+    };
+    // Should not throw; should either return valid days or an empty array
+    const days = computeDays(trail, []);
+    expect(Array.isArray(days)).toBe(true);
+    if (days.length > 0) {
+      expect(days[0].distanceKm).toBe(50);
+    }
+  });
+
+  it('handles stops beyond trail end gracefully', () => {
+    const trail = makeFlatTrail(50);
+    const stops: StopData[] = [{ km: 80, waypointName: 'Past End' }];
+    // Stop at 80km on a 50km trail — should not produce negative day distance
+    const days = computeDays(trail, stops);
+    for (const day of days) {
+      expect(day.distanceKm).toBeGreaterThanOrEqual(0);
+    }
+  });
 });

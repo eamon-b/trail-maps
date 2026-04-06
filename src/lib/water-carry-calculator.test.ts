@@ -108,3 +108,59 @@ describe('analyzeWaterCarry', () => {
     expect(result.hasWaterData).toBe(true);
   });
 });
+
+// --- Edge cases from code review ---
+
+describe('computeWaterGaps edge cases', () => {
+  it('does not produce zero-distance gap when two sources at same km', () => {
+    const sources = [
+      { name: 'Spring A', km: 20, type: 'water' },
+      { name: 'Spring B', km: 20, type: 'water' },
+      { name: 'Creek', km: 50, type: 'water' },
+    ];
+    const gaps = computeWaterGaps(sources, 0, 80);
+    // No gap should have distanceKm <= 0
+    for (const gap of gaps) {
+      expect(gap.distanceKm).toBeGreaterThan(0);
+    }
+  });
+
+  it('clamps negative dryStretchThreshold to 0', () => {
+    const sources = [
+      { name: 'Spring', km: 10, type: 'water' },
+      { name: 'Creek', km: 20, type: 'water' },
+    ];
+    // Negative threshold is clamped to 0, meaning all gaps are flagged
+    const gaps = computeWaterGaps(sources, 0, 30, -5);
+    // Every gap >= 0 → all flagged as dry stretch (safe default)
+    for (const gap of gaps) {
+      expect(gap.isDryStretch).toBe(true);
+    }
+  });
+});
+
+describe('extractWaterSources seasonal keyword variants', () => {
+  it('detects "dries up in summer" as seasonal', () => {
+    const wps: PlanWaypoint[] = [
+      { name: 'Var Creek', type: 'water', totalDistance: 10, description: 'Dries up in summer months' },
+    ];
+    const sources = extractWaterSources(wps);
+    expect(sources[0].seasonalNote).toBeTruthy();
+  });
+
+  it('detects "often dry" as seasonal', () => {
+    const wps: PlanWaypoint[] = [
+      { name: 'Dry Creek', type: 'water', totalDistance: 10, description: 'Often dry after October' },
+    ];
+    const sources = extractWaterSources(wps);
+    expect(sources[0].seasonalNote).toBeTruthy();
+  });
+
+  it('detects "not reliable" / "unreliable" as seasonal', () => {
+    const wps: PlanWaypoint[] = [
+      { name: 'Iffy Spring', type: 'water', totalDistance: 10, description: 'Not reliable in dry years' },
+    ];
+    const sources = extractWaterSources(wps);
+    expect(sources[0].seasonalNote).toBeTruthy();
+  });
+});

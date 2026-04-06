@@ -21,6 +21,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { JSDOM } from 'jsdom';
 import type { TrailTileConfig } from '../src/lib/types.js';
+import { parseCoordinate } from '../src/lib/parse-coordinate.js';
 import {
   PROJECT_ROOT,
   run,
@@ -118,19 +119,21 @@ interface TrackPoint {
   lon: number;
 }
 
+
 function readGpxTrackPoints(gpxPath: string): TrackPoint[] {
   const xml = fs.readFileSync(gpxPath, 'utf-8');
   const dom = new JSDOM(xml, { contentType: 'text/xml' });
   const doc = dom.window.document;
 
   const points: TrackPoint[] = [];
+  const fileName = path.basename(gpxPath);
 
   // Get all track points
   const trkpts = doc.querySelectorAll('trkseg trkpt');
   for (const pt of Array.from(trkpts) as Element[]) {
     points.push({
-      lat: parseFloat(pt.getAttribute('lat') || '0'),
-      lon: parseFloat(pt.getAttribute('lon') || '0'),
+      lat: parseCoordinate(pt.getAttribute('lat'), 'lat', `trkpt in ${fileName}`),
+      lon: parseCoordinate(pt.getAttribute('lon'), 'lon', `trkpt in ${fileName}`),
     });
   }
 
@@ -139,8 +142,8 @@ function readGpxTrackPoints(gpxPath: string): TrackPoint[] {
     const rtepts = doc.querySelectorAll('rte rtept');
     for (const pt of Array.from(rtepts) as Element[]) {
       points.push({
-        lat: parseFloat(pt.getAttribute('lat') || '0'),
-        lon: parseFloat(pt.getAttribute('lon') || '0'),
+        lat: parseCoordinate(pt.getAttribute('lat'), 'lat', `rtept in ${fileName}`),
+        lon: parseCoordinate(pt.getAttribute('lon'), 'lon', `rtept in ${fileName}`),
       });
     }
   }

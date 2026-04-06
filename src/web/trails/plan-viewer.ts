@@ -716,16 +716,21 @@ function scheduleSave(): void {
   setSaveStatus('unsaved');
   if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
   saveDebounceTimer = setTimeout(() => {
-    savePlanState(trail.config.id, planState);
-    setSaveStatus('saved');
+    const ok = savePlanState(trail.config.id, planState);
+    setSaveStatus(ok ? 'saved' : 'error');
   }, 800);
 }
 
-function setSaveStatus(status: 'saved' | 'unsaved'): void {
+function setSaveStatus(status: 'saved' | 'unsaved' | 'error'): void {
   const el = document.getElementById('save-status');
   if (!el) return;
-  el.textContent = status === 'saved' ? 'Saved' : 'Unsaved…';
-  el.className = status === 'saved' ? '' : 'unsaved';
+  if (status === 'error') {
+    el.textContent = 'Save failed';
+    el.className = 'unsaved';
+  } else {
+    el.textContent = status === 'saved' ? 'Saved' : 'Unsaved…';
+    el.className = status === 'saved' ? '' : 'unsaved';
+  }
 }
 
 // ---------------------------------------------------------------------------

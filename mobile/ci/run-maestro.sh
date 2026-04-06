@@ -65,5 +65,15 @@ sleep 10
 adb shell input keyevent KEYCODE_BACK
 sleep 2
 
-# Run Maestro tests
-~/.maestro/bin/maestro test mobile/maestro/
+# Run Maestro tests — capture exit code so we can clean up Metro before exiting
+MAESTRO_EXIT=0
+~/.maestro/bin/maestro test mobile/maestro/ || MAESTRO_EXIT=$?
+
+# Kill Metro and its entire process tree.  Even with setsid, the GitHub
+# Actions runner waits for orphan node processes, causing a ~45 min hang.
+pkill -f "expo start --dev-client" || true
+sleep 2
+# Belt-and-suspenders: kill any remaining node processes spawned by Metro
+pkill -f "metro-config" || true
+
+exit $MAESTRO_EXIT

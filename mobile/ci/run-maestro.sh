@@ -10,10 +10,15 @@ mkdir -p /tmp/maestro-screenshots
 # leaves orphans that keep the android-emulator-runner step alive until
 # the job-level timeout cancels it.
 cleanup() {
-  # Kill all child processes of this script (Metro + any other background jobs)
-  pkill -TERM -P $$ 2>/dev/null || true
-  sleep 1
-  pkill -KILL -P $$ 2>/dev/null || true
+  # Kill Metro and all its node descendants. Metro spawns a deep process
+  # tree (subshell → npx → node → node workers). Orphan node processes
+  # keep the android-emulator-runner step alive until the job timeout.
+  # pkill -f reliably matches all processes in the tree regardless of depth.
+  pkill -TERM -f "expo start --dev-client" 2>/dev/null || true
+  [ -n "${METRO_PID:-}" ] && kill "$METRO_PID" 2>/dev/null || true
+  sleep 2
+  pkill -KILL -f "expo start --dev-client" 2>/dev/null || true
+  [ -n "${METRO_PID:-}" ] && kill -9 "$METRO_PID" 2>/dev/null || true
   # Kill emulator so the runner action doesn't hang during its own cleanup
   adb emu kill 2>/dev/null || true
 }

@@ -92,7 +92,14 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     if (!migration) {
       throw new Error(`Missing migration for version ${v}`);
     }
-    await db.execAsync(migration);
+    await db.execAsync('BEGIN');
+    try {
+      await db.execAsync(migration);
+      await db.execAsync('COMMIT');
+    } catch (e) {
+      await db.execAsync('ROLLBACK');
+      throw e;
+    }
   }
 }
 

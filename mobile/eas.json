@@ -3,7 +3,14 @@
     "version": ">= 7.0.0"
   },
   "build": {
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_TILE_BASE_URL": "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev",
+        "EXPO_PUBLIC_CONTOUR_TILE_URL": "https://aus-map-data.workers.dev"
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
@@ -11,24 +18,14 @@
       },
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_TILE_BASE_URL": "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev",
-        "EXPO_PUBLIC_CONTOUR_TILE_URL": "https://aus-map-data.workers.dev"
       }
     },
     "preview": {
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_TILE_BASE_URL": "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev",
-        "EXPO_PUBLIC_CONTOUR_TILE_URL": "https://aus-map-data.workers.dev"
-      }
+      "extends": "base",
+      "distribution": "internal"
     },
     "production": {
-      "env": {
-        "EXPO_PUBLIC_TILE_BASE_URL": "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev",
-        "EXPO_PUBLIC_CONTOUR_TILE_URL": "https://aus-map-data.workers.dev"
-      }
+      "extends": "base"
     }
   },
   "submit": {

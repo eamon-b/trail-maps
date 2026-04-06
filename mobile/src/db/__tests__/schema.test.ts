@@ -17,11 +17,11 @@ describe('schema', () => {
 
     await migrateDatabase(mockDb as any);
 
-    // Should run migrations 1 through 4
-    expect(executedSql.length).toBe(4);
+    // Each migration runs 3 calls: BEGIN, migration SQL, COMMIT
+    expect(executedSql.length).toBe(4 * 3);
 
-    // Migration 4 should add custom trail columns
-    const migration4 = executedSql[3];
+    // Migration 4 SQL is the 2nd call in the last group of 3 (BEGIN, SQL, COMMIT)
+    const migration4 = executedSql[executedSql.length - 2];
     expect(migration4).toContain('is_custom');
     expect(migration4).toContain('source_filename');
     expect(migration4).toContain('track_data_json');
@@ -50,8 +50,8 @@ describe('schema', () => {
 
     await migrateDatabase(mockDb as any);
 
-    // Should only run migration 4
-    expect(executedSql.length).toBe(1);
-    expect(executedSql[0]).toContain('is_custom');
+    // Should only run migration 4: BEGIN, SQL, COMMIT
+    expect(executedSql.length).toBe(3);
+    expect(executedSql[1]).toContain('is_custom');
   });
 });

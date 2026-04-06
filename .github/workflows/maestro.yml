@@ -140,6 +140,15 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 1536
           script: bash mobile/ci/run-maestro.sh
 
+      # Capture diagnostics BEFORE uploading artifacts so screenshots and
+      # logcat are included in the main maestro-results artifact.
+      - name: Capture failure diagnostics
+        if: failure()
+        run: |
+          mkdir -p /tmp/maestro-screenshots
+          adb exec-out screencap -p > /tmp/maestro-screenshots/failure.png || true
+          adb logcat -d -t 200 ReactNativeJS:* *:E > /tmp/maestro-screenshots/logcat.txt || true
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -148,17 +157,3 @@ jobs:
           path: |
             ~/.maestro/tests/
             /tmp/maestro-screenshots/
-
-      - name: Capture failure diagnostics
-        if: failure()
-        run: |
-          mkdir -p /tmp/maestro-screenshots
-          adb exec-out screencap -p > /tmp/maestro-screenshots/failure.png || true
-          adb logcat -d -t 200 ReactNativeJS:* *:E > /tmp/maestro-screenshots/logcat.txt || true
-
-      - name: Upload failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: maestro-failure-diagnostics
-          path: /tmp/maestro-screenshots/

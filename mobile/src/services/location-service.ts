@@ -143,6 +143,7 @@ export async function stopBackgroundTracking(): Promise<void> {
   if (isRunning) {
     await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
   }
+  backgroundSubscribers.clear();
 }
 
 /** Subscribe to location updates from the background task. Returns an unsubscribe function. */

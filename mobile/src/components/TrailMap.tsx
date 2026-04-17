@@ -57,9 +57,9 @@ export interface TrailMapProps {
   /** User's current GPS location */
   userLocation?: LocationCoords | null;
   /** ID of focused waypoint to highlight */
-  focusedWaypointId?: string | number | null;
+  focusedWaypointId?: string | null;
   /** Called when a waypoint marker is tapped */
-  onWaypointPress?: (waypoint: TrailWaypoint, index: number) => void;
+  onWaypointPress?: (waypoint: TrailWaypoint) => void;
   /** Whether camera should follow the user */
   isFollowingUser?: boolean;
   /** Called when user manually pans the map */
@@ -112,14 +112,14 @@ function buildVariantGeoJSON(variants: RouteVariant[], variantType: string) {
 }
 
 function buildWaypointsGeoJSON(waypoints: TrailWaypoint[]) {
-  const features = waypoints.map((wp, index) => ({
+  const features = waypoints.map((wp) => ({
     type: 'Feature' as const,
     geometry: {
       type: 'Point' as const,
       coordinates: [wp.lon, wp.lat],
     },
     properties: {
-      id: index,
+      id: wp.id,
       name: wp.name,
       type: wp.type,
       color: getWaypointColor(wp.type),
@@ -357,27 +357,30 @@ export function TrailMap({
     lineJoin: 'round' as const,
   }), [colors.accent]);
 
-  const waypointCircleStyle = useMemo(() => ({
-    circleRadius: [
-      'case',
-      ['==', ['get', 'id'], focusedWaypointId ?? -1],
-      8,
-      5,
-    ] as unknown as number,
-    circleColor: ['get', 'color'] as unknown as string,
-    circleStrokeColor: [
-      'case',
-      ['==', ['get', 'id'], focusedWaypointId ?? -1],
-      colors.accent,
-      '#ffffff',
-    ] as unknown as string,
-    circleStrokeWidth: [
-      'case',
-      ['==', ['get', 'id'], focusedWaypointId ?? -1],
-      3,
-      1.5,
-    ] as unknown as number,
-  }), [focusedWaypointId, colors.accent]);
+  const waypointCircleStyle = useMemo(() => {
+    const focusId = focusedWaypointId ?? '';
+    return {
+      circleRadius: [
+        'case',
+        ['==', ['get', 'id'], focusId],
+        8,
+        5,
+      ] as unknown as number,
+      circleColor: ['get', 'color'] as unknown as string,
+      circleStrokeColor: [
+        'case',
+        ['==', ['get', 'id'], focusId],
+        colors.accent,
+        '#ffffff',
+      ] as unknown as string,
+      circleStrokeWidth: [
+        'case',
+        ['==', ['get', 'id'], focusId],
+        3,
+        1.5,
+      ] as unknown as number,
+    };
+  }, [focusedWaypointId, colors.accent]);
 
   const symbolLabelStyle = useMemo(() => ({
     textField: ['get', 'name'] as unknown as string,
@@ -489,10 +492,10 @@ export function TrailMap({
     (event: OnPressEvent) => {
       if (!onWaypointPress || !waypoints) return;
       const feature = event.features?.[0];
-      const index = feature?.properties?.id as number | undefined;
-      if (index != null && waypoints[index]) {
-        onWaypointPress(waypoints[index], index);
-      }
+      const id = feature?.properties?.id as string | undefined;
+      if (id == null) return;
+      const wp = waypoints.find(w => w.id === id);
+      if (wp) onWaypointPress(wp);
     },
     [onWaypointPress, waypoints],
   );

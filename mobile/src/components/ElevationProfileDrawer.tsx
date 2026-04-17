@@ -18,7 +18,7 @@ interface ElevationProfileDrawerProps {
   waypoints?: TrailWaypoint[];
   currentKm?: number | null;
   currentElevation?: number | null;
-  focusedWaypointId?: number | null;
+  focusedWaypointId?: string | null;
   /** Called when user taps a distance on the profile */
   onDistanceTap?: (km: number) => void;
   /** Visible km range from the map viewport */

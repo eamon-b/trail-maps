@@ -10,10 +10,10 @@ function renderWithTheme(ui: React.ReactElement) {
 
 function makeWaypoints(): TrailWaypoint[] {
   return [
-    { name: 'Camp Alpha', lat: -33, lon: 115, type: 'campsite', totalDistance: 10 },
-    { name: 'Creek Beta', lat: -33.1, lon: 115.1, type: 'water', totalDistance: 25 },
-    { name: 'Town Gamma', lat: -33.2, lon: 115.2, type: 'town', totalDistance: 40 },
-    { name: 'Hut Delta', lat: -33.3, lon: 115.3, type: 'hut', totalDistance: 55 },
+    { id: 'wp-0', name: 'Camp Alpha', lat: -33, lon: 115, type: 'campsite', totalDistance: 10 },
+    { id: 'wp-1', name: 'Creek Beta', lat: -33.1, lon: 115.1, type: 'water', totalDistance: 25 },
+    { id: 'wp-2', name: 'Town Gamma', lat: -33.2, lon: 115.2, type: 'town', totalDistance: 40 },
+    { id: 'wp-3', name: 'Hut Delta', lat: -33.3, lon: 115.3, type: 'hut', totalDistance: 55 },
   ];
 }
 

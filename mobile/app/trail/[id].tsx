@@ -14,7 +14,6 @@ import { useLocation } from '../../src/hooks/useLocation';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
   findNearestByDistance,
-  findWaypointIndex,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
@@ -69,23 +68,25 @@ export default function TrailViewerScreen() {
     }).catch(() => {});
   }, [id, loadTrail]);
 
-  // Consume pending pan from external navigation (e.g. datasheet "Show on map")
+  // Consume pending pan from external navigation (e.g. datasheet "Show on map").
+  // Don't clear pendingPan until the trail is ready — otherwise a cold-start
+  // from the datasheet would drop the pan on the first render where
+  // activeTrail is still null.
   useEffect(() => {
-    if (pendingPan && activeTrail) {
-      const wp = activeTrail.waypoints[pendingPan.waypointIndex];
-      if (wp) {
-        setSelectedWaypoint(wp);
-        setFocusedWaypointId(pendingPan.waypointIndex);
-        panKeyRef.current += 1;
-        setPanTarget({
-          longitude: pendingPan.longitude,
-          latitude: pendingPan.latitude,
-          key: panKeyRef.current,
-        });
-        setIsFollowingUser(false);
-      }
-      setPendingPan(null);
+    if (!pendingPan || !activeTrail) return;
+    const wp = activeTrail.waypoints.find(w => w.id === pendingPan.waypointId);
+    if (wp) {
+      setSelectedWaypoint(wp);
+      setFocusedWaypointId(wp.id);
+      panKeyRef.current += 1;
+      setPanTarget({
+        longitude: pendingPan.longitude,
+        latitude: pendingPan.latitude,
+        key: panKeyRef.current,
+      });
+      setIsFollowingUser(false);
     }
+    setPendingPan(null);
   }, [pendingPan, activeTrail, setFocusedWaypointId, setPendingPan]);
 
   // GPS state for LocationStatusBar
@@ -125,9 +126,9 @@ export default function TrailViewerScreen() {
   }, [currentKm, selectedWaypoint]);
 
   // Handlers
-  const handleWaypointPress = useCallback((wp: TrailWaypoint, index: number) => {
+  const handleWaypointPress = useCallback((wp: TrailWaypoint) => {
     setSelectedWaypoint(wp);
-    setFocusedWaypointId(index);
+    setFocusedWaypointId(wp.id);
     setIsFollowingUser(false);
   }, [setFocusedWaypointId]);
 
@@ -173,17 +174,12 @@ export default function TrailViewerScreen() {
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
     setSelectedWaypoint(null);
     setPanTarget(null);
-    if (activeTrail?.waypoints) {
-      const index = findWaypointIndex(activeTrail.waypoints, wp);
-      if (index >= 0) {
-        setFocusedWaypointId(index);
-      }
-    }
+    setFocusedWaypointId(wp.id);
     // Expand after React flushes state updates so the BottomSheet isn't mid-transition
     requestAnimationFrame(() => {
       elevationDrawerRef.current?.expand();
     });
-  }, [activeTrail, setFocusedWaypointId]);
+  }, [setFocusedWaypointId]);
 
   if (contextLoading || (!activeTrail && !contextError)) {
     return (
@@ -276,7 +272,7 @@ export default function TrailViewerScreen() {
             sideTrips={activeTrail.sideTrips}
             waypoints={activeTrail.waypoints}
             userLocation={userLocationForMap}
-            focusedWaypointId={focusedWaypointId as number | null}
+            focusedWaypointId={focusedWaypointId}
             onWaypointPress={handleWaypointPress}
             isFollowingUser={isFollowingUser}
             onMapPan={handleMapPan}
@@ -298,7 +294,7 @@ export default function TrailViewerScreen() {
         waypoints={activeTrail.waypoints}
         currentKm={currentKm}
         currentElevation={currentElevation}
-        focusedWaypointId={focusedWaypointId as number | null}
+        focusedWaypointId={focusedWaypointId}
         onDistanceTap={handleProfileDistanceTap}
         visibleRange={visibleRange}
       />

@@ -7,7 +7,8 @@ import {
 } from '../water-carry-calculator';
 
 function makeWaypoints(items: { name: string; type: string; km: number }[]): TrailWaypoint[] {
-  return items.map(s => ({
+  return items.map((s, i) => ({
+    id: `wp-${i}`,
     name: s.name,
     lat: -33,
     lon: 115,
@@ -238,7 +239,8 @@ describe('analyzeWaterCarryForSection — detailed', () => {
 // ---------------------------------------------------------------------------
 
 function makeWaypointsWithDesc(items: { name: string; type: string; km: number; description?: string }[]): TrailWaypoint[] {
-  return items.map(s => ({
+  return items.map((s, i) => ({
+    id: `wp-${i}`,
     name: s.name,
     lat: -33,
     lon: 115,

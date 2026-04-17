@@ -14,7 +14,8 @@ import {
 import type { ResupplyPoint } from '../resupply-calculator';
 
 function makeWaypoints(items: { name: string; type: string; km: number }[]): TrailWaypoint[] {
-  return items.map(s => ({
+  return items.map((s, i) => ({
+    id: `wp-${i}`,
     name: s.name,
     lat: -33,
     lon: 115,

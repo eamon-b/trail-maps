@@ -21,6 +21,8 @@ export interface TrackPoint {
 }
 
 export interface TrailWaypoint {
+  /** Stable id — assigned at trail load time, survives direction reversal and filtering. */
+  id: string;
   name: string;
   lat: number;
   lon: number;
@@ -107,7 +109,8 @@ export function trailJsonToTrail(json: TrailJson): Trail {
       totalAscent: json.track.totalAscent,
       totalDescent: json.track.totalDescent,
     },
-    waypoints: json.waypoints.map(wp => ({
+    waypoints: json.waypoints.map((wp, i) => ({
+      id: `wp-${i}`,
       name: wp.name,
       lat: wp.lat,
       lon: wp.lon,
@@ -251,31 +254,6 @@ export function findNearestByDistance(points: TrackPoint[], targetKm: number): n
   }
 
   return lo;
-}
-
-/**
- * Find the index of a target waypoint in the waypoints array.
- * Primary match: name + totalDistance (within 0.1 km tolerance).
- * Fallback: name + lat/lon coordinates (within ~11 m tolerance).
- * Returns -1 if not found.
- */
-export function findWaypointIndex(
-  waypoints: TrailWaypoint[],
-  target: TrailWaypoint,
-): number {
-  if (target.totalDistance != null) {
-    const idx = waypoints.findIndex(
-      w => w.name === target.name &&
-           w.totalDistance != null &&
-           Math.abs(w.totalDistance! - target.totalDistance!) < 0.1,
-    );
-    if (idx >= 0) return idx;
-  }
-  return waypoints.findIndex(
-    w => w.name === target.name &&
-         Math.abs(w.lat - target.lat) < 0.0001 &&
-         Math.abs(w.lon - target.lon) < 0.0001,
-  );
 }
 
 /** Find a route variant by its key (e.g. "alternate-some-name"). */

@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
-import { findWaypointIndex, type TrailWaypoint } from '../../src/lib/trail-utils';
+import { type TrailWaypoint } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { calculateElevationBetween } from '../../src/services/distance-calculator';
 import { waypointEmojis } from '../../src/components/WaypointList';
@@ -104,12 +104,10 @@ export default function DatasheetScreen() {
   const hasPastWaypoints = rows.some(r => r.isPast);
 
   const handleShowOnMap = useCallback((wp: TrailWaypoint) => {
-    if (!activeTrail || !id) return;
-    const waypointIndex = findWaypointIndex(activeTrail.waypoints, wp);
-    if (waypointIndex < 0) return;
-    setPendingPan({ latitude: wp.lat, longitude: wp.lon, waypointIndex });
+    if (!id) return;
+    setPendingPan({ latitude: wp.lat, longitude: wp.lon, waypointId: wp.id });
     router.replace({ pathname: '/trail/[id]', params: { id } });
-  }, [activeTrail, id, setPendingPan, router]);
+  }, [id, setPendingPan, router]);
 
   if (loading || (!activeTrail && !error)) {
     return (

@@ -3,14 +3,14 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 interface PendingPan {
   latitude: number;
   longitude: number;
-  waypointIndex: number;
+  waypointId: string;
 }
 
 interface FocusedWaypointContextValue {
-  /** ID of the currently focused waypoint, null if none */
-  focusedWaypointId: string | number | null;
+  /** Stable id of the currently focused waypoint, null if none */
+  focusedWaypointId: string | null;
   /** Set the focused waypoint — updates all views (map, list, day plan) */
-  setFocusedWaypointId: (id: string | number | null) => void;
+  setFocusedWaypointId: (id: string | null) => void;
   /** One-shot pan target from external navigation (e.g. datasheet → map) */
   pendingPan: PendingPan | null;
   /** Set a pending pan target for the map to consume */
@@ -24,10 +24,10 @@ const FocusedWaypointContext = createContext<FocusedWaypointContextValue | null>
  * Selecting a waypoint in any view (map, list, dashboard) updates all other views.
  */
 export function FocusedWaypointProvider({ children }: { children: React.ReactNode }) {
-  const [focusedWaypointId, setFocusedWaypointIdState] = useState<string | number | null>(null);
+  const [focusedWaypointId, setFocusedWaypointIdState] = useState<string | null>(null);
   const [pendingPan, setPendingPanState] = useState<PendingPan | null>(null);
 
-  const setFocusedWaypointId = useCallback((id: string | number | null) => {
+  const setFocusedWaypointId = useCallback((id: string | null) => {
     setFocusedWaypointIdState(id);
   }, []);
 

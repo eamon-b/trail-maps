@@ -50,7 +50,8 @@ function makeMixedPoints(): TrackPoint[] {
 }
 
 function makeWaypoints(stops: { name: string; type: string; km: number }[]): TrailWaypoint[] {
-  return stops.map(s => ({
+  return stops.map((s, i) => ({
+    id: `wp-${i}`,
     name: s.name,
     lat: -33,
     lon: 115,
@@ -161,7 +162,7 @@ describe('calculateDistancesToWaypoints', () => {
 
   it('treats missing totalDistance as 0', () => {
     const waypoints: TrailWaypoint[] = [
-      { name: 'No Dist', lat: -33, lon: 115, type: 'campsite' },
+      { id: 'wp-0', name: 'No Dist', lat: -33, lon: 115, type: 'campsite' },
     ];
     // currentKm = 0, totalDistance defaults to 0, so 0 > 0 is false → not ahead
     const result = calculateDistancesToWaypoints(0, waypoints, trackPoints);

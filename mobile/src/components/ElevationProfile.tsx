@@ -15,8 +15,8 @@ interface ElevationProfileProps {
   waypoints?: TrailWaypoint[];
   /** Current GPS position in km along trail */
   currentKm?: number | null;
-  /** Focused waypoint ID (index) */
-  focusedWaypointId?: number | null;
+  /** Stable id of the focused waypoint */
+  focusedWaypointId?: string | null;
   /** Called when user taps on the profile at a distance */
   onDistanceTap?: (km: number) => void;
   /** Visible km range from the map viewport [minKm, maxKm] */
@@ -152,12 +152,12 @@ export function ElevationProfile({
   const waypointDots = useMemo(() => {
     if (!chartMetrics || !waypoints) return [];
     const { eleMin, eleRange, maxDist, chartWidth, chartHeight } = chartMetrics;
-    return waypoints.reduce<{ x: number; y: number; color: string; index: number }[]>((acc, wp, originalIndex) => {
+    return waypoints.reduce<{ x: number; y: number; color: string; id: string }[]>((acc, wp) => {
       if (wp.totalDistance != null && wp.elevation != null) {
         const x = PADDING.left + ((wp.totalDistance ?? 0) / maxDist) * chartWidth;
         const y = PADDING.top + chartHeight - (((wp.elevation ?? 0) - eleMin) / eleRange) * chartHeight;
         const color = WAYPOINT_PROFILE_COLORS[wp.type] ?? '#757575';
-        acc.push({ x, y, color, index: originalIndex });
+        acc.push({ x, y, color, id: wp.id });
       }
       return acc;
     }, []);
@@ -326,8 +326,8 @@ export function ElevationProfile({
       )}
 
       {/* Focused waypoint vertical indicator line */}
-      {focusedWaypointId != null && waypointDots.find(d => d.index === focusedWaypointId) && (() => {
-        const dot = waypointDots.find(d => d.index === focusedWaypointId)!;
+      {focusedWaypointId != null && waypointDots.find(d => d.id === focusedWaypointId) && (() => {
+        const dot = waypointDots.find(d => d.id === focusedWaypointId)!;
         return (
           <Line
             p1={vec(dot.x, PADDING.top)}
@@ -342,10 +342,10 @@ export function ElevationProfile({
       {/* Waypoint dots */}
       {waypointDots.map((dot) => (
         <Circle
-          key={dot.index}
+          key={dot.id}
           cx={dot.x}
           cy={dot.y}
-          r={focusedWaypointId === dot.index ? 6 : 3}
+          r={focusedWaypointId === dot.id ? 6 : 3}
           color={dot.color}
         />
       ))}

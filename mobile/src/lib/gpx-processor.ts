@@ -481,6 +481,7 @@ function enrichWaypoints(
     const trackPoint = trackPoints[visit.trackIndex];
 
     enriched.push({
+      id: `wp-${enriched.length}`,
       name: visit.cleanedName,
       lat: visit.waypoint.lat,
       lon: visit.waypoint.lon,

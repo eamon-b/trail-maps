@@ -25,7 +25,8 @@ function makeTrackPoints(totalKm: number, count: number, withElevation = true): 
 }
 
 function makeWaypoints(stops: { name: string; type: string; km: number }[]): TrailWaypoint[] {
-  return stops.map(s => ({
+  return stops.map((s, i) => ({
+    id: `wp-${i}`,
     name: s.name,
     lat: -33,
     lon: 115,

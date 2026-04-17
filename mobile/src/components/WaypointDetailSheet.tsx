@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { waypointEmojis } from './WaypointList';
@@ -35,11 +35,10 @@ export function WaypointDetailSheet({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(300)).current;
-  const isVisible = useRef(false);
-  // Keep last non-null waypoint so content stays visible during exit animation
-  const lastWaypoint = useRef<TrailWaypoint | null>(null);
-  if (waypoint) lastWaypoint.current = waypoint;
-  const displayWaypoint = waypoint ?? lastWaypoint.current;
+  // Snapshot of what to render. Captured from the prop on open, cleared
+  // only when the exit animation completes, so the view has content to
+  // animate out even after the parent has dropped the waypoint.
+  const [displayWaypoint, setDisplayWaypoint] = useState<TrailWaypoint | null>(null);
 
   // Hold the latest onExitComplete in a ref so the effect doesn't re-run
   // (and cancel the animation) when the callback identity changes.
@@ -48,23 +47,27 @@ export function WaypointDetailSheet({
 
   useEffect(() => {
     if (waypoint) {
-      isVisible.current = true;
+      setDisplayWaypoint(waypoint);
       Animated.spring(translateY, {
         toValue: 0,
         useNativeDriver: true,
         damping: 20,
         stiffness: 200,
       }).start();
-    } else if (isVisible.current) {
+    } else if (displayWaypoint) {
       Animated.timing(translateY, {
         toValue: 300,
         duration: 200,
         useNativeDriver: true,
       }).start(({ finished }) => {
-        isVisible.current = false;
+        setDisplayWaypoint(null);
         if (finished) onExitCompleteRef.current?.();
       });
     }
+    // displayWaypoint intentionally excluded — the exit branch reads it
+    // only at the moment the prop goes null, and we don't want setState
+    // callbacks to re-trigger the effect while the animation is running.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoint, translateY]);
 
   if (!displayWaypoint) return null;

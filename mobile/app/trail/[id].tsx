@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-nati
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TrailMap } from '../../src/components/TrailMap';
+import { TrailMap, type TrailMapHandle } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
 import { ElevationProfileDrawer, type ElevationProfileDrawerHandle } from '../../src/components/ElevationProfileDrawer';
 import { WaypointDetailSheet } from '../../src/components/WaypointDetailSheet';
@@ -35,8 +35,7 @@ export default function TrailViewerScreen() {
   const [isReversed, setIsReversed] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [selectedWaypoint, setSelectedWaypoint] = useState<TrailWaypoint | null>(null);
-  const [panTarget, setPanTarget] = useState<{ longitude: number; latitude: number; key: number } | null>(null);
-  const panKeyRef = useRef(0);
+  const mapRef = useRef<TrailMapHandle>(null);
   const elevationDrawerRef = useRef<ElevationProfileDrawerHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
@@ -78,12 +77,7 @@ export default function TrailViewerScreen() {
     if (wp) {
       setSelectedWaypoint(wp);
       setFocusedWaypointId(wp.id);
-      panKeyRef.current += 1;
-      setPanTarget({
-        longitude: pendingPan.longitude,
-        latitude: pendingPan.latitude,
-        key: panKeyRef.current,
-      });
+      mapRef.current?.panTo(pendingPan.latitude, pendingPan.longitude);
       setIsFollowingUser(false);
     }
     setPendingPan(null);
@@ -135,13 +129,10 @@ export default function TrailViewerScreen() {
   const handleDismissWaypoint = useCallback(() => {
     setSelectedWaypoint(null);
     setFocusedWaypointId(null);
-    setPanTarget(null);
   }, [setFocusedWaypointId]);
 
   const handleMapPan = useCallback(() => {
     setIsFollowingUser(false);
-    // Clear panTarget so the camera can't snap back to the waypoint after the user pans
-    setPanTarget(null);
   }, []);
 
   const handleMapPress = useCallback(() => {
@@ -149,7 +140,6 @@ export default function TrailViewerScreen() {
     if (selectedWaypoint) {
       setSelectedWaypoint(null);
       setFocusedWaypointId(null);
-      setPanTarget(null);
     }
   }, [selectedWaypoint, setFocusedWaypointId]);
 
@@ -166,14 +156,12 @@ export default function TrailViewerScreen() {
     const idx = findNearestByDistance(trackPoints, km);
     const point = trackPoints[idx];
     if (!point) return;
-    panKeyRef.current += 1;
-    setPanTarget({ longitude: point.lon, latitude: point.lat, key: panKeyRef.current });
+    mapRef.current?.panTo(point.lat, point.lon);
     setIsFollowingUser(false);
   }, [trackPoints]);
 
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
     setSelectedWaypoint(null);
-    setPanTarget(null);
     setFocusedWaypointId(wp.id);
     // Expand after React flushes state updates so the BottomSheet isn't mid-transition
     requestAnimationFrame(() => {
@@ -267,6 +255,7 @@ export default function TrailViewerScreen() {
       <View style={styles.mapContainer}>
         <MapErrorBoundary>
           <TrailMap
+            ref={mapRef}
             displayPoints={activeTrail.track.displayPoints ?? activeTrail.track.points}
             alternates={activeTrail.alternates}
             sideTrips={activeTrail.sideTrips}
@@ -279,7 +268,6 @@ export default function TrailViewerScreen() {
             onMapPress={handleMapPress}
             onRecenter={handleRecenter}
             currentKm={currentKm}
-            panTarget={panTarget}
             mapStyleOverride={offlineMapStyle}
             trackPoints={trackPoints}
             onVisibleBoundsChange={handleVisibleBoundsChange}

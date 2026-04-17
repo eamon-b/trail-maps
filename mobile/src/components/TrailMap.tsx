@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
 import type { TrackPoint, TrailWaypoint, RouteVariant } from '../lib/trail-utils';
@@ -70,8 +70,6 @@ export interface TrailMapProps {
   onRecenter?: () => void;
   /** Current position along trail in km (for display chip) */
   currentKm?: number | null;
-  /** Coordinate to pan camera to (from profile tap or other navigation). Increment counter to re-trigger same coordinate. */
-  panTarget?: { longitude: number; latitude: number; key: number } | null;
   /** Override the default MapTiler Cloud style with a custom style (e.g. offline MBTiles) */
   mapStyleOverride?: object | null;
   /** Called when map viewport changes, with the visible km range along the trail */
@@ -84,6 +82,11 @@ export interface TrailMapProps {
   onLongPress?: (coordinate: { latitude: number; longitude: number; nearestKm: number }) => void;
   /** Custom marker pins (for stop locations, measure points, etc.) */
   customPins?: { latitude: number; longitude: number; label: string; color?: string }[];
+}
+
+/** Imperative handle for one-shot camera actions (pan, fit). */
+export interface TrailMapHandle {
+  panTo: (latitude: number, longitude: number, zoomLevel?: number) => void;
 }
 
 function buildTrailGeoJSON(points: TrackPoint[]) {
@@ -249,7 +252,7 @@ function computeBounds(points: TrackPoint[]): { ne: [number, number]; sw: [numbe
   };
 }
 
-export function TrailMap({
+export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function TrailMap({
   displayPoints,
   alternates,
   sideTrips,
@@ -262,14 +265,13 @@ export function TrailMap({
   onMapPress,
   onRecenter,
   currentKm,
-  panTarget,
   mapStyleOverride,
   onVisibleBoundsChange,
   trackPoints,
   highlightedSegment,
   onLongPress,
   customPins,
-}: TrailMapProps) {
+}, ref) {
   const { colors } = useTheme();
 
   // Fetch online style with contour overlay when no offline style is set
@@ -434,16 +436,17 @@ export function TrailMap({
     }
   }, [isFollowingUser, userLocation]);
 
-  // Pan to coordinate from external navigation (waypoint tap, profile tap, etc.)
-  useEffect(() => {
-    if (panTarget && cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: [panTarget.longitude, panTarget.latitude],
-        zoomLevel: 14,
+  // Expose imperative camera actions to parents. Pan is a one-shot action,
+  // not synchronised state — there is nothing to "re-apply" on re-render.
+  useImperativeHandle(ref, () => ({
+    panTo: (latitude: number, longitude: number, zoomLevel = 14) => {
+      cameraRef.current?.setCamera({
+        centerCoordinate: [longitude, latitude],
+        zoomLevel,
         animationDuration: 500,
       });
-    }
-  }, [panTarget]);
+    },
+  }), []);
 
   // Fit camera to highlighted segment
   useEffect(() => {
@@ -694,7 +697,7 @@ export function TrailMap({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

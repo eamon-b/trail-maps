@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrailMap, type TrailMapHandle } from '../../src/components/TrailMap';
@@ -65,7 +66,8 @@ export default function TrailViewerScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { setFocusedWaypointId, pendingPan, setPendingPan } = useFocusedWaypoint();
+  const { pendingPan, setPendingPan } = useFocusedWaypoint();
+  const isFocused = useIsFocused();
   const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
@@ -76,11 +78,6 @@ export default function TrailViewerScreen() {
   const elevationDrawerRef = useRef<ElevationProfileDrawerHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
-
-  // Mirror focus to context so any other tree consumer (future) can read it.
-  useEffect(() => {
-    setFocusedWaypointId(focusedWaypointId);
-  }, [focusedWaypointId, setFocusedWaypointId]);
 
   // Active trail data (respects direction — recomputes when trail or direction changes)
   const activeTrail = useDirectionalTrail(contextTrail, isReversed);
@@ -110,10 +107,15 @@ export default function TrailViewerScreen() {
   }, [id, loadTrail]);
 
   // Consume pending pan from external navigation (e.g. datasheet "Show on map").
+  // Gate on isFocused so that when two trail/[id] instances are in the stack
+  // (datasheet replaced the top → new instance mounts above an older one),
+  // only the focused (top) instance consumes it. Otherwise the underneath
+  // instance would drain the context before the new one subscribed.
   // Don't clear pendingPan until the trail is ready — otherwise a cold-start
   // from the datasheet would drop the pan on the first render where
   // activeTrail is still null.
   useEffect(() => {
+    if (!isFocused) return;
     if (!pendingPan || !activeTrail) return;
     const wp = activeTrail.waypoints.find(w => w.id === pendingPan.waypointId);
     if (wp) {
@@ -122,7 +124,7 @@ export default function TrailViewerScreen() {
       setIsFollowingUser(false);
     }
     setPendingPan(null);
-  }, [pendingPan, activeTrail, setPendingPan]);
+  }, [isFocused, pendingPan, activeTrail, setPendingPan]);
 
   // GPS state for LocationStatusBar
   const locationState = useMemo((): LocationState => {

@@ -7,10 +7,6 @@ interface PendingPan {
 }
 
 interface FocusedWaypointContextValue {
-  /** Stable id of the currently focused waypoint, null if none */
-  focusedWaypointId: string | null;
-  /** Set the focused waypoint — updates all views (map, list, day plan) */
-  setFocusedWaypointId: (id: string | null) => void;
   /** One-shot pan target from external navigation (e.g. datasheet → map) */
   pendingPan: PendingPan | null;
   /** Set a pending pan target for the map to consume */
@@ -20,24 +16,21 @@ interface FocusedWaypointContextValue {
 const FocusedWaypointContext = createContext<FocusedWaypointContextValue | null>(null);
 
 /**
- * Provider for cross-view waypoint focus synchronization.
- * Selecting a waypoint in any view (map, list, dashboard) updates all other views.
+ * Provider for cross-screen waypoint navigation. Currently only carries a
+ * pending pan payload so the datasheet can request the map screen to pan
+ * to a waypoint after navigation. Per-screen focus state lives locally —
+ * only add to this context when a second screen actually needs to read it.
  */
 export function FocusedWaypointProvider({ children }: { children: React.ReactNode }) {
-  const [focusedWaypointId, setFocusedWaypointIdState] = useState<string | null>(null);
   const [pendingPan, setPendingPanState] = useState<PendingPan | null>(null);
-
-  const setFocusedWaypointId = useCallback((id: string | null) => {
-    setFocusedWaypointIdState(id);
-  }, []);
 
   const setPendingPan = useCallback((target: PendingPan | null) => {
     setPendingPanState(target);
   }, []);
 
   const value = useMemo(
-    () => ({ focusedWaypointId, setFocusedWaypointId, pendingPan, setPendingPan }),
-    [focusedWaypointId, setFocusedWaypointId, pendingPan, setPendingPan],
+    () => ({ pendingPan, setPendingPan }),
+    [pendingPan, setPendingPan],
   );
 
   return (

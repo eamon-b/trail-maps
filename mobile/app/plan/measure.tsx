@@ -59,7 +59,7 @@ export default function MeasureScreen() {
       const km = parseFloat(params.mapSelected_start_km);
       const name = params.mapSelected_start_name ?? `km ${km.toFixed(1)}`;
       setStartPoint({
-        id: `map-sel-start-${km}`,
+        id: 'measure-start',
         name,
         lat: 0,
         lon: 0,
@@ -71,7 +71,7 @@ export default function MeasureScreen() {
       const km = parseFloat(params.mapSelected_end_km);
       const name = params.mapSelected_end_name ?? `km ${km.toFixed(1)}`;
       setEndPoint({
-        id: `map-sel-end-${km}`,
+        id: 'measure-end',
         name,
         lat: 0,
         lon: 0,

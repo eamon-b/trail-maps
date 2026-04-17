@@ -21,7 +21,13 @@ export interface TrackPoint {
 }
 
 export interface TrailWaypoint {
-  /** Stable id — assigned at trail load time, survives direction reversal and filtering. */
+  /**
+   * In-memory id for the waypoint. Stable across direction reversal and
+   * filtering within a single load, so it's safe for React keys and
+   * cross-view selection state. Assigned positionally from the source JSON,
+   * so it will change if the trail data is rebuilt with different ordering —
+   * do NOT persist this id (e.g. into saved plans or AsyncStorage).
+   */
   id: string;
   name: string;
   lat: number;

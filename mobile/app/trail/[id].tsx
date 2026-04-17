@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,21 +24,63 @@ import { typography } from '../../src/tokens/typography';
 export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
 
+// ---------------------------------------------------------------------------
+// Selection reducer
+// ---------------------------------------------------------------------------
+//
+// Unifies the two pieces of waypoint-selection state (detail sheet + focus
+// highlight) so they can never get out of sync. Every user action becomes a
+// single dispatch, which eliminates an entire class of "sheet shows but
+// highlight cleared" / "highlight lingers after dismiss" bugs.
+
+interface SelectionState {
+  /** Waypoint displayed in the bottom detail sheet (null = sheet hidden). */
+  sheetWaypoint: TrailWaypoint | null;
+  /** Id of the waypoint highlighted on map + elevation profile. */
+  focusedId: string | null;
+}
+
+type SelectionAction =
+  | { type: 'selectFromMap'; waypoint: TrailWaypoint }
+  | { type: 'hydrateFromPendingPan'; waypoint: TrailWaypoint }
+  | { type: 'deselect' }
+  | { type: 'showOnProfile'; waypoint: TrailWaypoint };
+
+const EMPTY_SELECTION: SelectionState = { sheetWaypoint: null, focusedId: null };
+
+function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
+  switch (action.type) {
+    case 'selectFromMap':
+    case 'hydrateFromPendingPan':
+      return { sheetWaypoint: action.waypoint, focusedId: action.waypoint.id };
+    case 'showOnProfile':
+      return { sheetWaypoint: null, focusedId: action.waypoint.id };
+    case 'deselect':
+      return EMPTY_SELECTION;
+  }
+}
+
 export default function TrailViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { focusedWaypointId, setFocusedWaypointId, pendingPan, setPendingPan } = useFocusedWaypoint();
+  const { setFocusedWaypointId, pendingPan, setPendingPan } = useFocusedWaypoint();
   const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
-  const [selectedWaypoint, setSelectedWaypoint] = useState<TrailWaypoint | null>(null);
+  const [selection, dispatchSelection] = useReducer(selectionReducer, EMPTY_SELECTION);
+  const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId } = selection;
   const mapRef = useRef<TrailMapHandle>(null);
   const elevationDrawerRef = useRef<ElevationProfileDrawerHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
+
+  // Mirror focus to context so any other tree consumer (future) can read it.
+  useEffect(() => {
+    setFocusedWaypointId(focusedWaypointId);
+  }, [focusedWaypointId, setFocusedWaypointId]);
 
   // Active trail data (respects direction — recomputes when trail or direction changes)
   const activeTrail = useDirectionalTrail(contextTrail, isReversed);
@@ -75,13 +117,12 @@ export default function TrailViewerScreen() {
     if (!pendingPan || !activeTrail) return;
     const wp = activeTrail.waypoints.find(w => w.id === pendingPan.waypointId);
     if (wp) {
-      setSelectedWaypoint(wp);
-      setFocusedWaypointId(wp.id);
+      dispatchSelection({ type: 'hydrateFromPendingPan', waypoint: wp });
       mapRef.current?.panTo(pendingPan.latitude, pendingPan.longitude);
       setIsFollowingUser(false);
     }
     setPendingPan(null);
-  }, [pendingPan, activeTrail, setFocusedWaypointId, setPendingPan]);
+  }, [pendingPan, activeTrail, setPendingPan]);
 
   // GPS state for LocationStatusBar
   const locationState = useMemo((): LocationState => {
@@ -119,29 +160,25 @@ export default function TrailViewerScreen() {
     return selectedWaypoint.totalDistance - currentKm;
   }, [currentKm, selectedWaypoint]);
 
-  // Handlers
+  // Handlers — each user intent becomes a single dispatch + side effects
   const handleWaypointPress = useCallback((wp: TrailWaypoint) => {
-    setSelectedWaypoint(wp);
-    setFocusedWaypointId(wp.id);
+    dispatchSelection({ type: 'selectFromMap', waypoint: wp });
     setIsFollowingUser(false);
-  }, [setFocusedWaypointId]);
+  }, []);
 
   const handleDismissWaypoint = useCallback(() => {
-    setSelectedWaypoint(null);
-    setFocusedWaypointId(null);
-  }, [setFocusedWaypointId]);
+    dispatchSelection({ type: 'deselect' });
+  }, []);
 
   const handleMapPan = useCallback(() => {
     setIsFollowingUser(false);
   }, []);
 
   const handleMapPress = useCallback(() => {
-    // Tapping an empty area of the map deselects the waypoint
     if (selectedWaypoint) {
-      setSelectedWaypoint(null);
-      setFocusedWaypointId(null);
+      dispatchSelection({ type: 'deselect' });
     }
-  }, [selectedWaypoint, setFocusedWaypointId]);
+  }, [selectedWaypoint]);
 
   const handleRecenter = useCallback(() => {
     setIsFollowingUser(true);
@@ -161,13 +198,12 @@ export default function TrailViewerScreen() {
   }, [trackPoints]);
 
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
-    setSelectedWaypoint(null);
-    setFocusedWaypointId(wp.id);
+    dispatchSelection({ type: 'showOnProfile', waypoint: wp });
     // Expand after React flushes state updates so the BottomSheet isn't mid-transition
     requestAnimationFrame(() => {
       elevationDrawerRef.current?.expand();
     });
-  }, [setFocusedWaypointId]);
+  }, []);
 
   if (contextLoading || (!activeTrail && !contextError)) {
     return (

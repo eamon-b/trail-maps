@@ -15,6 +15,10 @@ interface WaypointDetailSheetProps {
   waypoint: TrailWaypoint | null;
   /** Called when the card is dismissed */
   onDismiss: () => void;
+  /** Called after the exit animation has finished. Use this to sequence
+   * follow-up actions (like expanding another sheet) so they don't clash
+   * with an in-flight dismiss animation. */
+  onExitComplete?: () => void;
   /** Distance from current GPS position in km (if available) */
   distanceFromUser?: number | null;
   /** Called when "Show on elevation profile" is tapped */
@@ -24,6 +28,7 @@ interface WaypointDetailSheetProps {
 export function WaypointDetailSheet({
   waypoint,
   onDismiss,
+  onExitComplete,
   distanceFromUser,
   onShowOnProfile,
 }: WaypointDetailSheetProps) {
@@ -35,6 +40,11 @@ export function WaypointDetailSheet({
   const lastWaypoint = useRef<TrailWaypoint | null>(null);
   if (waypoint) lastWaypoint.current = waypoint;
   const displayWaypoint = waypoint ?? lastWaypoint.current;
+
+  // Hold the latest onExitComplete in a ref so the effect doesn't re-run
+  // (and cancel the animation) when the callback identity changes.
+  const onExitCompleteRef = useRef(onExitComplete);
+  onExitCompleteRef.current = onExitComplete;
 
   useEffect(() => {
     if (waypoint) {
@@ -50,8 +60,9 @@ export function WaypointDetailSheet({
         toValue: 300,
         duration: 200,
         useNativeDriver: true,
-      }).start(() => {
+      }).start(({ finished }) => {
         isVisible.current = false;
+        if (finished) onExitCompleteRef.current?.();
       });
     }
   }, [waypoint, translateY]);

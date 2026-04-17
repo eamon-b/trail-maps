@@ -197,12 +197,20 @@ export default function TrailViewerScreen() {
     setIsFollowingUser(false);
   }, [trackPoints]);
 
+  // Queue an action to run after the waypoint sheet's exit animation
+  // completes. Sequencing on the animation end avoids visual jank from the
+  // expand starting while the sheet is still sliding out.
+  const onSheetExitRef = useRef<(() => void) | null>(null);
+
+  const handleSheetExitComplete = useCallback(() => {
+    const action = onSheetExitRef.current;
+    onSheetExitRef.current = null;
+    action?.();
+  }, []);
+
   const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
+    onSheetExitRef.current = () => elevationDrawerRef.current?.expand();
     dispatchSelection({ type: 'showOnProfile', waypoint: wp });
-    // Expand after React flushes state updates so the BottomSheet isn't mid-transition
-    requestAnimationFrame(() => {
-      elevationDrawerRef.current?.expand();
-    });
   }, []);
 
   if (contextLoading || (!activeTrail && !contextError)) {
@@ -327,6 +335,7 @@ export default function TrailViewerScreen() {
       <WaypointDetailSheet
         waypoint={selectedWaypoint}
         onDismiss={handleDismissWaypoint}
+        onExitComplete={handleSheetExitComplete}
         distanceFromUser={distanceToSelected}
         onShowOnProfile={handleShowOnProfile}
       />

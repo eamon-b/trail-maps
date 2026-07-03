@@ -2,7 +2,7 @@
 #
 # Download ALL SRTM 1-arc-second DEM tiles covering Australia.
 #
-# Australia SRTM coverage: S10-S43, E112-E153.
+# Australia SRTM coverage: S10-S44, E112-E153.
 # Tile names use the SW corner convention: S34E114 covers 34S-33S, 114E-115E.
 #
 # This downloads ~600-800 land tiles (~3-5 GB). Ocean tiles return 404 and are skipped.
@@ -28,9 +28,11 @@ DEM_DIR="$PROJECT_ROOT/data/dem"
 BASE_URL="https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/SRTMGL1.003"
 COOKIE_FILE="$DEM_DIR/.cookies"
 
-# Australia bounds (inclusive). Tile name = SW corner of 1x1 degree cell.
+# Australia bounds (inclusive). Tile name = SW corner of 1x1 degree cell,
+# so row S44 (covering 44S-43S) is needed for southern Tasmania — South East
+# Cape sits at ~43.64S.
 LAT_MIN=10
-LAT_MAX=43
+LAT_MAX=44
 LON_MIN=112
 LON_MAX=153
 
@@ -63,7 +65,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: $0 [--all] [--dry-run] [--lat MIN MAX] [--lon MIN MAX]"
       echo "  --all          Re-download all tiles (overwrite existing)"
       echo "  --dry-run      Show what would be downloaded without downloading"
-      echo "  --lat MIN MAX  Only download latitudes S{MIN} to S{MAX} (default: 10 43)"
+      echo "  --lat MIN MAX  Only download latitudes S{MIN} to S{MAX} (default: 10 44)"
       echo "  --lon MIN MAX  Only download longitudes E{MIN} to E{MAX} (default: 112 153)"
       exit 0
       ;;

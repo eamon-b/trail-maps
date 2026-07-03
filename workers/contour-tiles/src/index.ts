@@ -123,7 +123,7 @@ export default {
       });
     }
 
-    try {
+    const serveTile = async (): Promise<Response> => {
       const pmtiles = getPMTiles(env.TILES_BUCKET);
 
       // Check metadata for zoom range
@@ -154,6 +154,23 @@ export default {
         status: 200,
         headers: responseHeaders,
       });
+    };
+
+    try {
+      try {
+        return await serveTile();
+      } catch (firstError) {
+        // Re-uploading australia.pmtiles changes the R2 etag, and a PMTiles
+        // instance cached from before the upload fails etag validation on its
+        // next range read. Drop the cached instance and retry once so warm
+        // isolates recover immediately instead of 500ing until recycled.
+        pmtilesInstance = null;
+        console.warn(
+          `Tile ${tile.z}/${tile.x}/${tile.y}: retrying with fresh PMTiles instance after: ` +
+          (firstError instanceof Error ? firstError.message : String(firstError))
+        );
+        return await serveTile();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error(`Tile error ${tile.z}/${tile.x}/${tile.y}: ${message}`);

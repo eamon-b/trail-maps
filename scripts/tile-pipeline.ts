@@ -156,6 +156,22 @@ export function parseCellId(cellId: string): { lon: number; lat: number } | null
 }
 
 /**
+ * True if the cell id parses AND lies on the canonical grid lattice.
+ * A misaligned id like E113_S35 would build fine in isolation but its output
+ * overlaps two real cells, duplicating features in a merged tileset.
+ */
+export function isAlignedCellId(cellId: string): boolean {
+  const parsed = parseCellId(cellId);
+  if (!parsed) return false;
+  return (
+    (parsed.lon - GRID_LON_MIN) % CELL_SIZE_DEG === 0 &&
+    (parsed.lat - GRID_LAT_MIN) % CELL_SIZE_DEG === 0 &&
+    parsed.lon >= GRID_LON_MIN && parsed.lon < GRID_LON_MAX &&
+    parsed.lat >= GRID_LAT_MIN && parsed.lat < GRID_LAT_MAX
+  );
+}
+
+/**
  * Check which SRTM DEM files exist for a grid cell's area.
  * Returns the list of filenames that overlap.
  */
@@ -164,11 +180,10 @@ export function demFilesForCell(cell: CellDef): string[] {
 
   const files: string[] = [];
   const demExtensions = ['.hgt', '.tif', '.tiff'];
-  // SRTM tile name = SW corner. Cell covers cell.west to cell.east, -cell.north to -cell.south.
-  // For a cell E114_S34 (114-116E, 34-36S), we need DEM tiles:
-  //   S34E114, S34E115, S35E114, S35E115
-  // (where tile S34E114 covers 34S-33S, 114E-115E)
-  for (let lat = cell.south; lat < cell.north; lat++) {
+  // SRTM tile name = SW corner, so tile S35E114 covers 35S-34S, 114E-115E.
+  // A cell E114_S34 (114-116E, real latitudes -36..-34) therefore needs DEM
+  // tiles S35E114, S35E115, S36E114, S36E115.
+  for (let lat = cell.south + 1; lat <= cell.north; lat++) {
     for (let lon = cell.west; lon < cell.east; lon++) {
       const tileName = `S${String(lat).padStart(2, '0')}E${String(lon).padStart(3, '0')}`;
       for (const ext of demExtensions) {
@@ -300,6 +315,9 @@ export function smoothDem(
     '-overwrite',
     '-r cubicspline',
     '-tr 0.000278 0.000278',
+    // Align the output pixel grid to -tr multiples so separately-warped
+    // regions sample the DEM identically and contours meet at shared edges.
+    '-tap',
     '-co COMPRESS=LZW',
     '-co TILED=YES',
     '-co BIGTIFF=YES',
@@ -384,7 +402,9 @@ export function classifyAndTileContours(
     { suffix: 'z9',  minZoom: 9,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
     { suffix: 'z10', minZoom: 10, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
     { suffix: 'z12', minZoom: 12, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
-    { suffix: 'z13', minZoom: 13, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) != 0` },
+    // %50 != 0 as well: odd multiples of 50 (50, 150, ...) have %20 = 10 and
+    // are already emitted by the z10 tier — without it they'd appear twice.
+    { suffix: 'z13', minZoom: 13, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) != 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
   ];
 
   const tierFiles: { path: string; minZoom: number; suffix: string }[] = [];

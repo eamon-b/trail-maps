@@ -8,6 +8,7 @@
 
 import type { TrailJson } from '../services/trail-loader';
 import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
+import { findNearestByDistance as nearestTrackIndex } from '@lib/track-geometry';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -222,4 +223,83 @@ export function niceAxisTicks(min: number, max: number, targetCount: number): nu
   }
 
   return ticks;
+}
+
+// ---------------------------------------------------------------------------
+// Custom waypoints
+// ---------------------------------------------------------------------------
+
+/**
+ * The subset of a stored custom waypoint row that the merge needs.
+ * Matches the CustomWaypoint shape returned by TrailDataService.
+ */
+export interface CustomWaypointLike {
+  id: string;
+  name: string;
+  type: string;
+  lat: number;
+  lon: number;
+  ele?: number | null;
+  kmPosition: number;
+  description?: string | null;
+}
+
+/**
+ * Merge user-created waypoints into a trail's waypoint list.
+ *
+ * Pure function applied at the load boundary (TrailDataContext.loadTrail), so
+ * every consumer — map, datasheet, water-carry, elevation profile, measure —
+ * picks custom waypoints up with zero further changes.
+ *
+ * - Ids are `custom-${row.id}` (stable across reversal; UI uses the prefix to
+ *   offer edit/delete).
+ * - `totalDistance` is the stored snapped km; `trackIndex` is resolved against
+ *   the full-resolution track so reversal mirrors it correctly.
+ * - Segment `distance` deltas are recomputed for ALL waypoints so the merged
+ *   ordering stays self-consistent.
+ * - Custom waypoints carry no per-segment elevation stats (ascent/descent 0).
+ *
+ * The input trail must be in its base (as-loaded) direction; reversal via
+ * createReversedTrail happens downstream and handles merged rows untouched.
+ */
+export function mergeCustomWaypoints(trail: Trail, custom: CustomWaypointLike[]): Trail {
+  if (custom.length === 0) return trail;
+
+  const points = trail.track.points;
+
+  const customWaypoints: TrailWaypoint[] = custom.map(row => {
+    const trackIndex = nearestTrackIndex(points, row.kmPosition);
+    return {
+      id: `custom-${row.id}`,
+      name: row.name,
+      lat: row.lat,
+      lon: row.lon,
+      type: row.type,
+      description: row.description ?? undefined,
+      elevation: row.ele ?? points[trackIndex]?.ele,
+      totalDistance: row.kmPosition,
+      ascent: 0,
+      descent: 0,
+      trackIndex,
+    };
+  });
+
+  // Stable sort: bundled waypoints keep their relative order; a custom
+  // waypoint at the same km slots in after the bundled one.
+  const merged = [...trail.waypoints, ...customWaypoints].sort(
+    (a, b) => (a.totalDistance ?? 0) - (b.totalDistance ?? 0),
+  );
+
+  // Recompute segment distances (delta from the previous waypoint) for every
+  // waypoint — insertion changes the "previous waypoint" for the row after
+  // each custom insert. The first waypoint's distance is measured from the
+  // trail start.
+  const waypoints = merged.map((wp, i) => ({
+    ...wp,
+    distance: i === 0
+      ? Math.max(0, wp.totalDistance ?? 0)
+      : Math.max(0, (wp.totalDistance ?? 0) - (merged[i - 1].totalDistance ?? 0)),
+  }));
+
+  return { ...trail, waypoints };
 }

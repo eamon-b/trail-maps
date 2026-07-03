@@ -34,6 +34,9 @@ const WAYPOINT_COLORS: Record<string, string> = {
   'side-trip': '#9C27B0',
 };
 
+/** Distinct marker color for user-created waypoints (id prefix "custom-") */
+const CUSTOM_WAYPOINT_COLOR = '#E91E63';
+
 function getWaypointColor(type: string): string {
   return WAYPOINT_COLORS[type] ?? '#757575';
 }
@@ -78,8 +81,16 @@ export interface TrailMapProps {
   trackPoints?: TrackPoint[];
   /** Highlighted segment to show on the trail (e.g., a day's hike) */
   highlightedSegment?: { startKm: number; endKm: number } | null;
-  /** Called on long press with the nearest trail coordinate */
-  onLongPress?: (coordinate: { latitude: number; longitude: number; nearestKm: number }) => void;
+  /** Called on long press with the nearest trail coordinate (latitude/longitude
+   * are snapped to the track; pressedLatitude/pressedLongitude are the raw
+   * touch location, e.g. for placing off-track custom waypoints) */
+  onLongPress?: (coordinate: {
+    latitude: number;
+    longitude: number;
+    nearestKm: number;
+    pressedLatitude: number;
+    pressedLongitude: number;
+  }) => void;
   /** Custom marker pins (for stop locations, measure points, etc.) */
   customPins?: { latitude: number; longitude: number; label: string; color?: string }[];
 }
@@ -125,7 +136,7 @@ function buildWaypointsGeoJSON(waypoints: TrailWaypoint[]) {
       id: wp.id,
       name: wp.name,
       type: wp.type,
-      color: getWaypointColor(wp.type),
+      color: wp.id.startsWith('custom-') ? CUSTOM_WAYPOINT_COLOR : getWaypointColor(wp.type),
       totalDistance: wp.totalDistance ?? 0,
     },
   }));
@@ -496,6 +507,8 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
         latitude: nearest.lat,
         longitude: nearest.lon,
         nearestKm: nearest.dist,
+        pressedLatitude: lat,
+        pressedLongitude: lon,
       });
     },
     [onLongPress, displayPoints],

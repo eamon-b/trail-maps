@@ -7,7 +7,7 @@ import { migrateDatabase, SCHEMA_VERSION } from '../../schema';
 // ---------------------------------------------------------------------------
 
 describe('schema migrations', () => {
-  it('fresh migration (0 → current) creates all 5 tables', async () => {
+  it('fresh migration (0 → current) creates all 6 tables', async () => {
     const db = await createMigratedTestDb();
 
     const tables = await db.getAllAsync<{ name: string }>(
@@ -20,6 +20,7 @@ describe('schema migrations', () => {
     expect(tableNames).toContain('plans');
     expect(tableNames).toContain('plan_versions');
     expect(tableNames).toContain('schema_version');
+    expect(tableNames).toContain('custom_waypoints');
 
     await db.closeAsync();
   });
@@ -133,6 +134,68 @@ describe('schema migrations', () => {
 
     await db.closeAsync();
   });
+
+  it('v4 → v5 preserves existing rows and adds custom_waypoints + climate_json', async () => {
+    const db = createTestDatabase();
+
+    // Build a database at v4 with data in every user-facing table
+    await migrateDatabase(db as any, 4);
+    await db.runAsync('INSERT INTO trails (id, name, is_custom) VALUES (?, ?, ?)', ['trail-1', 'Test Trail', 0]);
+    await db.runAsync(
+      'INSERT INTO waypoints (trail_id, name, type, lat, lon) VALUES (?, ?, ?, ?, ?)',
+      ['trail-1', 'Camp', 'campsite', -33, 115]
+    );
+    await db.runAsync('INSERT INTO plans (id, trail_id, name) VALUES (?, ?, ?)', ['plan-1', 'trail-1', 'My Plan']);
+
+    // Upgrade to v5
+    await migrateDatabase(db as any);
+
+    const version = await db.getFirstAsync<{ version: number }>('SELECT version FROM schema_version');
+    expect(version!.version).toBe(SCHEMA_VERSION);
+
+    // Existing rows preserved
+    expect(await db.getAllAsync('SELECT * FROM trails')).toHaveLength(1);
+    expect(await db.getAllAsync('SELECT * FROM waypoints')).toHaveLength(1);
+    expect(await db.getAllAsync('SELECT * FROM plans')).toHaveLength(1);
+
+    // custom_waypoints table is usable
+    await db.runAsync(
+      `INSERT INTO custom_waypoints (id, trail_id, name, type, lat, lon, km_position, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['cw-1', 'trail-1', 'My spring', 'water', -33.5, 115.5, 42.3, '2026-07-04', '2026-07-04']
+    );
+    const cw = await db.getFirstAsync<{ name: string; type: string }>(
+      'SELECT name, type FROM custom_waypoints WHERE id = ?', ['cw-1']
+    );
+    expect(cw!.name).toBe('My spring');
+
+    // climate_json column exists (reserved for item 3)
+    await db.runAsync('UPDATE trails SET climate_json = ? WHERE id = ?', ['{"locations":[]}', 'trail-1']);
+    const trail = await db.getFirstAsync<{ climate_json: string }>(
+      'SELECT climate_json FROM trails WHERE id = ?', ['trail-1']
+    );
+    expect(trail!.climate_json).toBe('{"locations":[]}');
+
+    await db.closeAsync();
+  });
+
+  it('custom_waypoints defaults type to water', async () => {
+    const db = await createMigratedTestDb();
+
+    await db.runAsync('INSERT INTO trails (id, name) VALUES (?, ?)', ['trail-1', 'Test Trail']);
+    await db.runAsync(
+      `INSERT INTO custom_waypoints (id, trail_id, name, lat, lon, km_position, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['cw-1', 'trail-1', 'Unnamed source', -33, 115, 10, '2026-07-04', '2026-07-04']
+    );
+
+    const row = await db.getFirstAsync<{ type: string }>(
+      'SELECT type FROM custom_waypoints WHERE id = ?', ['cw-1']
+    );
+    expect(row!.type).toBe('water');
+
+    await db.closeAsync();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -231,6 +294,41 @@ describe('constraints', () => {
     await db.runAsync('DELETE FROM plans WHERE id = ?', ['plan-1']);
 
     const after = await db.getAllAsync('SELECT * FROM plan_versions WHERE plan_id = ?', ['plan-1']);
+    expect(after).toHaveLength(0);
+
+    await db.closeAsync();
+  });
+
+  it('FK: custom waypoint with invalid trail_id fails', async () => {
+    const db = await createMigratedTestDb();
+
+    await expect(
+      db.runAsync(
+        `INSERT INTO custom_waypoints (id, trail_id, name, lat, lon, km_position, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['cw-1', 'nonexistent', 'Bad WP', -33, 115, 10, '2026-07-04', '2026-07-04']
+      )
+    ).rejects.toThrow();
+
+    await db.closeAsync();
+  });
+
+  it('cascade: deleting trail removes custom_waypoints', async () => {
+    const db = await createMigratedTestDb();
+
+    await db.runAsync('INSERT INTO trails (id, name) VALUES (?, ?)', ['trail-1', 'Test Trail']);
+    await db.runAsync(
+      `INSERT INTO custom_waypoints (id, trail_id, name, type, lat, lon, km_position, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['cw-1', 'trail-1', 'My spring', 'water', -33, 115, 12.5, '2026-07-04', '2026-07-04']
+    );
+
+    const before = await db.getAllAsync('SELECT * FROM custom_waypoints WHERE trail_id = ?', ['trail-1']);
+    expect(before).toHaveLength(1);
+
+    await db.runAsync('DELETE FROM trails WHERE id = ?', ['trail-1']);
+
+    const after = await db.getAllAsync('SELECT * FROM custom_waypoints WHERE trail_id = ?', ['trail-1']);
     expect(after).toHaveLength(0);
 
     await db.closeAsync();

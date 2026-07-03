@@ -1,13 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { View, StyleSheet, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { haversineDistance } from '@lib/distance';
 import { TrailMap, type TrailMapHandle } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
 import { ElevationProfileDrawer } from '../../src/components/ElevationProfileDrawer';
 import { WaypointDetailSheet } from '../../src/components/WaypointDetailSheet';
+import { AddWaypointSheet, type AddWaypointValues } from '../../src/components/AddWaypointSheet';
 import { LocationStatusBar, type LocationState } from '../../src/components';
 import { useTheme } from '../../src/theme';
 import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
@@ -18,9 +20,31 @@ import {
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
+import { TrailDataService } from '../../src/services/trail-data-service';
 import { tileManager } from '../../src/services/tile-manager';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
+
+/** The custom-waypoint DB row id encoded in a merged TrailWaypoint id. */
+const CUSTOM_ID_PREFIX = 'custom-';
+function customRowId(wp: TrailWaypoint): string {
+  return wp.id.slice(CUSTOM_ID_PREFIX.length);
+}
+
+/** A long-pressed location pending confirmation in the AddWaypointSheet. */
+interface PendingWaypoint {
+  /** Raw pressed location (where the marker will render) */
+  lat: number;
+  lon: number;
+  /** Track elevation at the snapped km */
+  ele: number | null;
+  /** Snapped km in the trail's base (as-stored) direction */
+  baseKm: number;
+  /** Snapped km in the currently displayed direction (for the sheet's label) */
+  activeKm: number;
+  /** Metres from the pressed location to the track point at the snapped km */
+  offTrackM: number;
+}
 
 export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
@@ -96,10 +120,13 @@ export default function TrailViewerScreen() {
   const insets = useSafeAreaInsets();
   const { pendingPan, setPendingPan } = useFocusedWaypoint();
   const isFocused = useIsFocused();
-  const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail } = useTrailData();
+  const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail, reloadTrail } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
   const [viewer, dispatch] = useReducer(viewerReducer, INITIAL_VIEWER_STATE);
+  // Custom waypoint add/edit state (null = sheet closed)
+  const [pendingWaypoint, setPendingWaypoint] = useState<PendingWaypoint | null>(null);
+  const [editingWaypoint, setEditingWaypoint] = useState<TrailWaypoint | null>(null);
   const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId, drawerIndex, cameraMode } = viewer;
   const mapRef = useRef<TrailMapHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
@@ -230,6 +257,116 @@ export default function TrailViewerScreen() {
     dispatch({ type: 'drawerMoved', index });
   }, []);
 
+  // --- Custom waypoints -----------------------------------------------------
+
+  // Long-press on the map opens the Add Waypoint sheet at the pressed spot.
+  const handleMapLongPress = useCallback((coord: {
+    latitude: number;
+    longitude: number;
+    nearestKm: number;
+    pressedLatitude: number;
+    pressedLongitude: number;
+  }) => {
+    const trail = activeTrail;
+    if (!trail) return;
+
+    const pressedLat = coord.pressedLatitude ?? coord.latitude;
+    const pressedLon = coord.pressedLongitude ?? coord.longitude;
+
+    // Snap against the full-resolution track (the map long-press snaps to
+    // display points, which are lower resolution).
+    const points = trail.track.points;
+    const idx = findNearestByDistance(points, coord.nearestKm);
+    const trackPt = points[idx];
+    const offTrackM = trackPt
+      ? haversineDistance(pressedLat, pressedLon, trackPt.lat, trackPt.lon)
+      : 0;
+
+    // km_position is stored in the trail's base direction so the merge at the
+    // load boundary (which happens pre-reversal) places it correctly.
+    const baseKm = isReversed
+      ? trail.track.totalDistance - coord.nearestKm
+      : coord.nearestKm;
+
+    setEditingWaypoint(null);
+    setPendingWaypoint({
+      lat: pressedLat,
+      lon: pressedLon,
+      ele: trackPt?.ele ?? null,
+      baseKm,
+      activeKm: coord.nearestKm,
+      offTrackM,
+    });
+  }, [activeTrail, isReversed]);
+
+  const closeWaypointSheet = useCallback(() => {
+    setPendingWaypoint(null);
+    setEditingWaypoint(null);
+  }, []);
+
+  const handleSaveWaypoint = useCallback(async (values: AddWaypointValues) => {
+    if (!id) return;
+    try {
+      const service = await TrailDataService.create();
+      if (editingWaypoint) {
+        await service.updateCustomWaypoint(customRowId(editingWaypoint), {
+          name: values.name,
+          type: values.type,
+          description: values.description || null,
+        });
+      } else if (pendingWaypoint) {
+        await service.addCustomWaypoint({
+          trailId: id,
+          name: values.name,
+          type: values.type,
+          lat: pendingWaypoint.lat,
+          lon: pendingWaypoint.lon,
+          ele: pendingWaypoint.ele,
+          kmPosition: pendingWaypoint.baseKm,
+          offTrackM: pendingWaypoint.offTrackM,
+          description: values.description || null,
+        });
+      }
+      closeWaypointSheet();
+      dispatch({ type: 'deselect' });
+      await reloadTrail();
+    } catch (e) {
+      console.warn('Failed to save custom waypoint:', e);
+      Alert.alert('Save failed', 'Could not save the waypoint. Please try again.');
+    }
+  }, [id, editingWaypoint, pendingWaypoint, closeWaypointSheet, reloadTrail]);
+
+  const handleEditWaypoint = useCallback((wp: TrailWaypoint) => {
+    dispatch({ type: 'deselect' });
+    setPendingWaypoint(null);
+    setEditingWaypoint(wp);
+  }, []);
+
+  const handleDeleteWaypoint = useCallback((wp: TrailWaypoint) => {
+    Alert.alert(
+      'Delete waypoint',
+      `Delete "${wp.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const service = await TrailDataService.create();
+              await service.deleteCustomWaypoint(customRowId(wp));
+              dispatch({ type: 'deselect' });
+              await reloadTrail();
+            } catch (e) {
+              console.warn('Failed to delete custom waypoint:', e);
+              Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  }, [reloadTrail]);
+
   if (contextLoading || (!activeTrail && !contextError)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
@@ -332,6 +469,7 @@ export default function TrailViewerScreen() {
             mapStyleOverride={offlineMapStyle}
             trackPoints={trackPoints}
             onVisibleBoundsChange={handleVisibleBoundsChange}
+            onLongPress={handleMapLongPress}
           />
         </MapErrorBoundary>
       </View>
@@ -355,6 +493,31 @@ export default function TrailViewerScreen() {
         onDismiss={handleDismissWaypoint}
         distanceFromUser={distanceToSelected}
         onShowOnProfile={handleShowOnProfile}
+        onEdit={handleEditWaypoint}
+        onDelete={handleDeleteWaypoint}
+      />
+
+      {/* Add / edit custom waypoint sheet (opened by map long-press or Edit) */}
+      <AddWaypointSheet
+        isOpen={pendingWaypoint != null || editingWaypoint != null}
+        mode={editingWaypoint ? 'edit' : 'add'}
+        kmPosition={
+          editingWaypoint
+            ? editingWaypoint.totalDistance ?? null
+            : pendingWaypoint?.activeKm ?? null
+        }
+        offTrackM={editingWaypoint ? null : pendingWaypoint?.offTrackM ?? null}
+        initialValues={
+          editingWaypoint
+            ? {
+                name: editingWaypoint.name,
+                type: editingWaypoint.type,
+                description: editingWaypoint.description,
+              }
+            : null
+        }
+        onDismiss={closeWaypointSheet}
+        onSave={handleSaveWaypoint}
       />
     </View>
   );

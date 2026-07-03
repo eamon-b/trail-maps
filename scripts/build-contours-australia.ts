@@ -358,6 +358,13 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
       skipped++;
       continue;
     }
+    // A cell that died mid-tier-loop leaves partial files without a .done
+    // marker; merging them would silently drop part of that cell's contours.
+    if (!fs.existsSync(cellDoneMarker(m[1]))) {
+      console.warn(`  ⚠ Skipping ${file} — cell has no .done marker (incomplete build; re-run without --merge-only)`);
+      skipped++;
+      continue;
+    }
     const filePath = path.join(WORK_DIR, file);
     layerArgs.push('-L', JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom }));
     fileCount++;
@@ -378,6 +385,9 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
   execFileSync('tippecanoe', [
     '-t', tmpDir,
     '-o', outputPath,
+    // Without -q the continuous progress indicator accumulates in the piped
+    // stderr buffer for hours and can hit maxBuffer, killing the merge late.
+    ...(verbose ? [] : ['-q']),
     `-Z${CONTOUR_MIN_ZOOM}`,
     `-z${MAX_ZOOM}`,
     '-P',

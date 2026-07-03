@@ -1,4 +1,7 @@
-import { findNearestByDistance, type TrackPoint, type TrailWaypoint } from '../lib/trail-utils';
+import { calculateElevationBetween } from '@lib/track-geometry';
+import type { TrackPoint, TrailWaypoint } from '../lib/trail-utils';
+
+export { calculateElevationBetween };
 
 export interface WaypointDistance {
   waypoint: TrailWaypoint;
@@ -15,30 +18,6 @@ export interface NextWaypointsByType {
   water?: WaypointDistance;
   town?: WaypointDistance;
   shelter?: WaypointDistance;
-}
-
-/**
- * Calculate elevation gain and loss between two km positions on the trail.
- */
-export function calculateElevationBetween(
-  startKm: number,
-  endKm: number,
-  trackPoints: TrackPoint[],
-): { gain: number; loss: number } {
-  const startIdx = findNearestByDistance(trackPoints, startKm);
-  const endIdx = findNearestByDistance(trackPoints, endKm);
-
-  let gain = 0;
-  let loss = 0;
-  const lo = Math.min(startIdx, endIdx);
-  const hi = Math.max(startIdx, endIdx);
-  for (let i = lo + 1; i <= hi && i < trackPoints.length; i++) {
-    const diff = trackPoints[i].ele - trackPoints[i - 1].ele;
-    if (diff > 0) gain += diff;
-    else loss += Math.abs(diff);
-  }
-
-  return { gain: Math.round(gain), loss: Math.round(loss) };
 }
 
 /**

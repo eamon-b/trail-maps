@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react-native';
 import { ResupplyList } from '../ResupplyList';
 import { ThemeProvider } from '../../theme';
-import type { ResupplyAnalysis } from '../../services/resupply-calculator';
+import type { ResupplyAnalysis } from '@lib/resupply-calculator';
 import type { ComputedDay } from '../../services/plan-calculator-types';
 
 function renderWithTheme(ui: React.ReactElement) {

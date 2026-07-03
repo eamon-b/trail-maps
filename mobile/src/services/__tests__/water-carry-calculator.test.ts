@@ -4,7 +4,7 @@ import {
   computeWaterGaps,
   analyzeWaterCarry,
   analyzeWaterCarryForSection,
-} from '../water-carry-calculator';
+} from '@lib/water-carry-calculator';
 
 function makeWaypoints(items: { name: string; type: string; km: number }[]): TrailWaypoint[] {
   return items.map((s, i) => ({

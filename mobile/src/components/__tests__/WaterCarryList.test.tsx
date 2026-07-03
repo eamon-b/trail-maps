@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react-native';
 import { WaterCarryList } from '../WaterCarryList';
 import { ThemeProvider } from '../../theme';
-import type { WaterCarryAnalysis } from '../../services/water-carry-calculator';
+import type { WaterCarryAnalysis } from '@lib/water-carry-calculator';
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider>{ui}</ThemeProvider>);

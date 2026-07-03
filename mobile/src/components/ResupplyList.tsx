@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
-import type { ResupplyAnalysis, ResupplyGap } from '../services/resupply-calculator';
-import { foodCarryForGap, correlateResupplyWithDays, DEFAULT_GRAMS_PER_DAY } from '../services/resupply-calculator';
+import type { ResupplyAnalysis, ResupplyGap } from '@lib/resupply-calculator';
+import { foodCarryForGap, correlateResupplyWithDays, DEFAULT_GRAMS_PER_DAY } from '@lib/resupply-calculator';
 import type { ComputedDay } from '../services/plan-calculator-types';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';

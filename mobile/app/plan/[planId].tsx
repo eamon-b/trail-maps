@@ -23,7 +23,7 @@ import {
   type Trail,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
-import { computeDays, addStop, removeStop } from '../../src/services/day-calculator';
+import { computeDays, addStop, removeStop } from '@lib/day-calculator';
 import type { StopData, SectionConfig, ComputedDay } from '../../src/services/plan-calculator-types';
 import { DayPlanCard, type DayPlanData } from '../../src/components/DayPlanCard';
 import { PlanSummaryCard } from '../../src/components/PlanSummaryCard';
@@ -34,8 +34,8 @@ import { AppBottomSheet } from '../../src/components/AppBottomSheet';
 import { UndoToast } from '../../src/components/UndoToast';
 import { WaterCarryList } from '../../src/components/WaterCarryList';
 import { ResupplyList } from '../../src/components/ResupplyList';
-import { analyzeWaterCarry, analyzeWaterCarryForSection } from '../../src/services/water-carry-calculator';
-import { analyzeResupply, analyzeResupplyForSection } from '../../src/services/resupply-calculator';
+import { analyzeWaterCarry, analyzeWaterCarryForSection } from '@lib/water-carry-calculator';
+import { analyzeResupply, analyzeResupplyForSection } from '@lib/resupply-calculator';
 import { loadClimateData, getClimateForDay, type ClimateData, type DayClimate } from '../../src/services/climate-service';
 import { exportPlanAsText, exportPlanAsCsv } from '../../src/services/plan-export';
 import { generateId, migrateStopsJson } from '../../src/services/plan-utils';

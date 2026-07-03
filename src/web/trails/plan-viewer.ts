@@ -10,6 +10,7 @@ declare const L: typeof Leaflet;
 
 import type { PlanTrackPoint, PlanWaypoint, StopData, ComputedDay, PlanState } from '@lib/plan-types';
 import { computeDays } from '@lib/day-calculator';
+import { findNearestByDistance } from '@lib/track-geometry';
 import { analyzeResupply } from '@lib/resupply-calculator';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { loadPlanState, savePlanState } from './plan-state';
@@ -147,18 +148,6 @@ function getDayColors(count: number): string[] {
   const colors: string[] = [];
   for (let i = 0; i < count; i++) colors.push(palette[i % palette.length]);
   return colors;
-}
-
-function findNearestByDistance(points: PlanTrackPoint[], targetKm: number): number {
-  if (points.length === 0) return 0;
-  let lo = 0, hi = points.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (points[mid].dist < targetKm) lo = mid + 1;
-    else hi = mid;
-  }
-  if (lo > 0 && Math.abs(points[lo - 1].dist - targetKm) < Math.abs(points[lo].dist - targetKm)) return lo - 1;
-  return lo;
 }
 
 // ---------------------------------------------------------------------------

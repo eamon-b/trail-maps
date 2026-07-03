@@ -6,7 +6,7 @@ import {
   addStop,
   removeStop,
   computeDays,
-} from '../day-calculator';
+} from '@lib/day-calculator';
 
 // ---------------------------------------------------------------------------
 // Helpers: build a synthetic trail for testing

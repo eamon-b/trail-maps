@@ -10,8 +10,8 @@ import {
   foodCarryForGap,
   findNextResupply,
   DEFAULT_GRAMS_PER_DAY,
-} from '../resupply-calculator';
-import type { ResupplyPoint } from '../resupply-calculator';
+} from '@lib/resupply-calculator';
+import type { ResupplyPoint } from '@lib/resupply-calculator';
 
 function makeWaypoints(items: { name: string; type: string; km: number }[]): TrailWaypoint[] {
   return items.map((s, i) => ({

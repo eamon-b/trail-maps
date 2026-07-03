@@ -8,7 +8,7 @@
 
 import type { Trail, TrailWaypoint, TrackPoint } from '../lib/trail-utils';
 import { calculateElevationBetween } from './distance-calculator';
-import { estimateHikingTime, countWaterSources } from './day-calculator';
+import { estimateHikingTime, countWaterSources } from '@lib/day-calculator';
 
 // ---------------------------------------------------------------------------
 // Types

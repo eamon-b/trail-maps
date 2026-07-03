@@ -1,6 +1,6 @@
 import type { Trail, TrailWaypoint } from '../lib/trail-utils';
 import { calculateElevationBetween } from './distance-calculator';
-import { estimateHikingTime, countWaterSources } from './day-calculator';
+import { estimateHikingTime, countWaterSources } from '@lib/day-calculator';
 
 export interface MeasureResult {
   startKm: number;

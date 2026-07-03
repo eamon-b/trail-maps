@@ -223,36 +223,10 @@ export function createReversedTrail(trail: Trail): Trail {
 // Lookup helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Find the index of the track point nearest to a given km distance.
- * Uses binary search for efficiency on sorted distance arrays.
- */
-export function findNearestByDistance(points: TrackPoint[], targetKm: number): number {
-  if (points.length === 0) return 0;
-  if (points.length === 1) return 0;
-
-  let lo = 0;
-  let hi = points.length - 1;
-
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (points[mid].dist < targetKm) {
-      lo = mid + 1;
-    } else {
-      hi = mid;
-    }
-  }
-
-  // lo is the first point with dist >= targetKm
-  // Check if lo-1 is closer
-  if (lo > 0) {
-    const diffBefore = Math.abs(points[lo - 1].dist - targetKm);
-    const diffAfter = Math.abs(points[lo].dist - targetKm);
-    return diffBefore <= diffAfter ? lo - 1 : lo;
-  }
-
-  return lo;
-}
+// findNearestByDistance is shared with the web viewers; the implementation
+// lives in src/lib/track-geometry.ts and is re-exported here so existing
+// mobile imports keep working.
+export { findNearestByDistance } from '@lib/track-geometry';
 
 /** Find a route variant by its key (e.g. "alternate-some-name"). */
 export function findVariantByKey(key: string, trail: Trail): RouteVariant | null {

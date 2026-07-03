@@ -19,6 +19,10 @@ interface WaypointDetailSheetProps {
   distanceFromUser?: number | null;
   /** Called when "Show on elevation profile" is tapped */
   onShowOnProfile?: (waypoint: TrailWaypoint) => void;
+  /** Called when "Edit waypoint" is tapped (custom waypoints only) */
+  onEdit?: (waypoint: TrailWaypoint) => void;
+  /** Called when "Delete waypoint" is tapped (custom waypoints only) */
+  onDelete?: (waypoint: TrailWaypoint) => void;
 }
 
 export function WaypointDetailSheet({
@@ -26,6 +30,8 @@ export function WaypointDetailSheet({
   onDismiss,
   distanceFromUser,
   onShowOnProfile,
+  onEdit,
+  onDelete,
 }: WaypointDetailSheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -62,6 +68,7 @@ export function WaypointDetailSheet({
   if (!displayWaypoint) return null;
 
   const emoji = waypointEmojis[displayWaypoint.type] ?? waypointEmojis.poi ?? '📍';
+  const isCustom = displayWaypoint.id.startsWith('custom-');
 
   return (
     <Animated.View
@@ -143,6 +150,36 @@ export function WaypointDetailSheet({
           </Text>
         </Pressable>
       )}
+
+      {/* User-created waypoints can be edited or deleted */}
+      {isCustom && (onEdit || onDelete) && (
+        <View style={styles.customActions}>
+          {onEdit && (
+            <Pressable
+              onPress={() => onEdit(displayWaypoint)}
+              style={[styles.customActionButton, { borderColor: colors.accent }]}
+              accessibilityLabel="Edit waypoint"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.customActionText, { color: colors.accent }]}>
+                Edit waypoint
+              </Text>
+            </Pressable>
+          )}
+          {onDelete && (
+            <Pressable
+              onPress={() => onDelete(displayWaypoint)}
+              style={[styles.customActionButton, { borderColor: colors.alertRed }]}
+              accessibilityLabel="Delete waypoint"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.customActionText, { color: colors.alertRed }]}>
+                Delete waypoint
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -222,6 +259,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileButtonText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  customActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  customActionButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  customActionText: {
     ...typography.caption,
     fontWeight: '600',
   },

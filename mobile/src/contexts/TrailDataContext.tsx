@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { TrailDataService, type Trail as DbTrail } from '../services/trail-data-service';
-import { trailJsonToTrail, type Trail } from '../lib/trail-utils';
+import { trailJsonToTrail, mergeCustomWaypoints, type Trail } from '../lib/trail-utils';
 
 interface TrailDataState {
   /** The parsed trail object, ready for display */
@@ -47,7 +47,20 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const parsed = trailJsonToTrail(json);
+      let parsed = trailJsonToTrail(json);
+
+      // Merge user-created waypoints at the load boundary so every consumer
+      // (map, datasheet, water-carry, elevation, measure) sees them. Failure
+      // here must never block the trail itself from loading.
+      try {
+        const customRows = await service.getCustomWaypoints(id);
+        if (customRows.length > 0) {
+          parsed = mergeCustomWaypoints(parsed, customRows);
+        }
+      } catch (e) {
+        console.warn('Failed to load custom waypoints:', e);
+      }
+
       trailRef.current = parsed;
       setTrail(parsed);
 

@@ -67,6 +67,29 @@
       border-radius: 4px;
       font-size: 0.875rem;
     }
+    #direction-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid var(--border-color, #ccc);
+      border-radius: 4px;
+      background: var(--bg-primary, #fff);
+      color: var(--accent-color, #2196F3);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    #direction-toggle:hover {
+      background: var(--bg-secondary, #f0f7ff);
+      border-color: var(--accent-color, #2196F3);
+    }
+    #direction-toggle .direction-arrows {
+      font-size: 0.95rem;
+      line-height: 1;
+    }
     #save-status {
       font-size: 0.8rem;
       color: var(--text-secondary, #888);
@@ -398,6 +421,10 @@
         <label for="plan-start-date" style="font-size:0.875rem;">Start:</label>
         <input type="date" id="plan-start-date" />
       </div>
+      <button type="button" id="direction-toggle" title="Toggle hiking direction">
+        <span class="direction-arrows" aria-hidden="true">⇄</span>
+        <span id="direction-label">NOBO</span>
+      </button>
       <span id="save-status">Saved</span>
     </div>
 

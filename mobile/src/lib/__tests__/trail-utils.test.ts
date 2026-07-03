@@ -153,6 +153,60 @@ describe('reverseAlternates', () => {
     expect(reversed[0].startDistance).toBe(70);
     expect(reversed[0].endDistance).toBe(90);
   });
+
+  it('recomputes waypoint absolute km for the reversed walk', () => {
+    // 15km-long alternate branching at km 10, rejoining at km 30 of a 100km trail.
+    // Waypoint sits 5km along the variant → absolute km 15.
+    const alts = [{
+      name: 'Alt 1',
+      type: 'alternate' as const,
+      distance: 15,
+      startDistance: 10,
+      endDistance: 30,
+      points: [
+        { lat: 0, lon: 0, ele: 0, dist: 0 },
+        { lat: 1, lon: 1, ele: 0, dist: 0 },
+        { lat: 2, lon: 2, ele: 0, dist: 0 },
+      ],
+      waypoints: [
+        {
+          name: 'Hut', type: 'hut', lat: 1, lon: 1, elevation: 100,
+          distance: 5, totalDistance: 15, ascent: 120, descent: 30,
+          totalAscent: 120, totalDescent: 30, variantTrackIndex: 1,
+        },
+      ],
+    }];
+    const reversed = reverseAlternates(alts, 100);
+
+    // Reversed: variant now branches at 100-30=70; waypoint is 15-5=10km
+    // along the reversed variant → absolute km 80.
+    const wp = reversed[0].waypoints![0];
+    expect(reversed[0].startDistance).toBe(70);
+    expect(wp.totalDistance).toBe(80);
+    expect(wp.distance).toBe(10); // gap from the (new) variant start
+    expect(wp.ascent).toBe(30);   // swapped
+    expect(wp.descent).toBe(120); // swapped
+    expect(wp.variantTrackIndex).toBe(1); // 3 points: 2 - 1
+  });
+
+  it('reverses waypoint order for multi-waypoint alternates', () => {
+    const alts = [{
+      name: 'Alt', type: 'alternate' as const, distance: 10,
+      startDistance: 20, endDistance: 32,
+      points: [],
+      waypoints: [
+        { name: 'First', type: 'poi', lat: 0, lon: 0, elevation: 0, distance: 2, totalDistance: 22, ascent: 0, descent: 0, totalAscent: 0, totalDescent: 0, variantTrackIndex: 0 },
+        { name: 'Second', type: 'poi', lat: 0, lon: 0, elevation: 0, distance: 6, totalDistance: 28, ascent: 0, descent: 0, totalAscent: 0, totalDescent: 0, variantTrackIndex: 0 },
+      ],
+    }];
+    const reversed = reverseAlternates(alts, 100);
+    // New branch at 100-32=68. 'Second' (8km along old) is 2km along new → 70;
+    // 'First' (2km along old) is 8km along new → 76.
+    expect(reversed[0].waypoints!.map(w => w.name)).toEqual(['Second', 'First']);
+    expect(reversed[0].waypoints![0].totalDistance).toBe(70);
+    expect(reversed[0].waypoints![1].totalDistance).toBe(76);
+    expect(reversed[0].waypoints![1].distance).toBe(6); // gap from Second
+  });
 });
 
 describe('transformSideTrips', () => {
@@ -161,6 +215,32 @@ describe('transformSideTrips', () => {
     const transformed = transformSideTrips(trips, 100);
 
     expect(transformed[0].startDistance).toBe(75);
+  });
+
+  it('shifts waypoint absolute km with the junction, keeping variant-relative stats', () => {
+    // Spur at km 25 with a campsite 3km up it → absolute km 28.
+    const trips = [{
+      name: 'Spur',
+      type: 'side-trip' as const,
+      distance: 4,
+      startDistance: 25,
+      waypoints: [
+        {
+          name: 'Camp', type: 'campsite', lat: 0, lon: 0, elevation: 200,
+          distance: 3, totalDistance: 28, ascent: 50, descent: 10,
+          totalAscent: 50, totalDescent: 10, variantTrackIndex: 7,
+        },
+      ],
+    }];
+    const transformed = transformSideTrips(trips, 100);
+
+    // Junction mirrors to km 75; camp is still 3km up the spur → 78.
+    const wp = transformed[0].waypoints![0];
+    expect(transformed[0].startDistance).toBe(75);
+    expect(wp.totalDistance).toBe(78);
+    expect(wp.distance).toBe(3);   // unchanged — spur walked the same way
+    expect(wp.ascent).toBe(50);    // unchanged
+    expect(wp.variantTrackIndex).toBe(7); // unchanged
   });
 });
 

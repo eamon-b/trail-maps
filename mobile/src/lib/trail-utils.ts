@@ -61,21 +61,25 @@ export interface RouteVariant {
   endDistance?: number;
   elevation?: { ascent?: number; descent?: number };
   points?: TrackPoint[];
-  waypoints?: {
-    name: string;
-    type: string;
-    lat: number;
-    lon: number;
-    elevation: number;
-    distance: number;
-    totalDistance: number;
-    ascent: number;
-    descent: number;
-    totalAscent: number;
-    totalDescent: number;
-    variantTrackIndex: number;
-    description?: string;
-  }[];
+  waypoints?: VariantWaypoint[];
+}
+
+export interface VariantWaypoint {
+  name: string;
+  type: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+  /** Segment distance from previous variant waypoint (variant-relative) in km */
+  distance: number;
+  /** Absolute trail km: junction startDistance + distance walked along the variant */
+  totalDistance: number;
+  ascent: number;
+  descent: number;
+  totalAscent: number;
+  totalDescent: number;
+  variantTrackIndex: number;
+  description?: string;
 }
 
 export interface Trail {
@@ -184,22 +188,75 @@ export function reverseWaypoints(
   });
 }
 
-/** Reverse alternate route variants, flipping start/end distances. */
+/**
+ * Reverse alternate route variants, flipping start/end distances and
+ * recomputing waypoint positions.
+ *
+ * Waypoint totalDistance is absolute trail km (junction + along-variant), so
+ * reversal maps each waypoint's along-variant offset onto the reversed walk:
+ * newAbs = newStart + (variantLength - oldAlongVariant). Per-waypoint
+ * ascent/descent swap, matching the convention used by reverseWaypoints for
+ * the main route.
+ */
 export function reverseAlternates(alternates: RouteVariant[], totalDistance: number): RouteVariant[] {
-  return alternates.map(alt => ({
-    ...alt,
-    startDistance: totalDistance - (alt.endDistance || 0),
-    endDistance: totalDistance - (alt.startDistance || 0),
-    points: alt.points ? [...alt.points].reverse() : [],
-  }));
+  return alternates.map(alt => {
+    const oldStart = alt.startDistance || 0;
+    const newStart = totalDistance - (alt.endDistance || 0);
+    const variantLen = alt.distance ?? 0;
+    const pointCount = alt.points?.length ?? 0;
+
+    let waypoints = alt.waypoints;
+    if (waypoints && waypoints.length > 0) {
+      const reordered = [...waypoints].reverse().map(wp => {
+        const alongVariant = Math.max(0, wp.totalDistance - oldStart);
+        const newAlongVariant = Math.max(0, variantLen - alongVariant);
+        return {
+          ...wp,
+          totalDistance: Math.round((newStart + newAlongVariant) * 100) / 100,
+          ascent: wp.descent,
+          descent: wp.ascent,
+          variantTrackIndex: pointCount > 0 ? pointCount - 1 - wp.variantTrackIndex : 0,
+        };
+      });
+
+      let runningAscent = 0;
+      let runningDescent = 0;
+      let prevAbs = newStart;
+      waypoints = reordered.map(wp => {
+        const distance = Math.round(Math.max(0, wp.totalDistance - prevAbs) * 100) / 100;
+        prevAbs = wp.totalDistance;
+        runningAscent += wp.ascent;
+        runningDescent += wp.descent;
+        return { ...wp, distance, totalAscent: runningAscent, totalDescent: runningDescent };
+      });
+    }
+
+    return {
+      ...alt,
+      startDistance: newStart,
+      endDistance: totalDistance - oldStart,
+      points: alt.points ? [...alt.points].reverse() : [],
+      waypoints,
+    };
+  });
 }
 
-/** Transform side trips for direction change (flip attachment point). */
+/**
+ * Transform side trips for direction change (flip attachment point).
+ * A side trip is walked out-and-back the same way in either direction, so
+ * only the junction km and the waypoints' absolute km move; along-variant
+ * offsets and stats are unchanged.
+ */
 export function transformSideTrips(sideTrips: RouteVariant[], totalDistance: number): RouteVariant[] {
-  return sideTrips.map(trip => ({
-    ...trip,
-    startDistance: totalDistance - (trip.startDistance || 0),
-  }));
+  return sideTrips.map(trip => {
+    const oldStart = trip.startDistance || 0;
+    const newStart = totalDistance - oldStart;
+    const waypoints = trip.waypoints?.map(wp => ({
+      ...wp,
+      totalDistance: Math.round((newStart + Math.max(0, wp.totalDistance - oldStart)) * 100) / 100,
+    }));
+    return { ...trip, startDistance: newStart, waypoints };
+  });
 }
 
 /** Create a fully reversed copy of a trail (swap start/end direction). */

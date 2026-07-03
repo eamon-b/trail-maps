@@ -163,6 +163,18 @@ export function ElevationProfile({
     }, []);
   }, [chartMetrics, waypoints]);
 
+  // Focused-waypoint marker position. Derived from totalDistance alone so the
+  // indicator still appears for waypoints without an elevation value (which
+  // would be missing from waypointDots).
+  const focusedMarker = useMemo(() => {
+    if (!chartMetrics || focusedWaypointId == null || !waypoints) return null;
+    const wp = waypoints.find(w => w.id === focusedWaypointId);
+    if (!wp || wp.totalDistance == null) return null;
+    const x = PADDING.left + (wp.totalDistance / chartMetrics.maxDist) * chartMetrics.chartWidth;
+    const color = WAYPOINT_PROFILE_COLORS[wp.type] ?? colors.accent;
+    return { x, color };
+  }, [chartMetrics, focusedWaypointId, waypoints, colors.accent]);
+
   const currentPositionX = useMemo(() => {
     if (!chartMetrics || currentKm == null) return null;
     return PADDING.left + (currentKm / chartMetrics.maxDist) * chartMetrics.chartWidth;
@@ -326,18 +338,24 @@ export function ElevationProfile({
       )}
 
       {/* Focused waypoint vertical indicator line */}
-      {focusedWaypointId != null && waypointDots.find(d => d.id === focusedWaypointId) && (() => {
-        const dot = waypointDots.find(d => d.id === focusedWaypointId)!;
-        return (
+      {focusedMarker && (
+        <>
           <Line
-            p1={vec(dot.x, PADDING.top)}
-            p2={vec(dot.x, PADDING.top + chartMetrics.chartHeight)}
-            color={dot.color}
-            strokeWidth={1.5}
-            opacity={0.5}
+            p1={vec(focusedMarker.x, PADDING.top)}
+            p2={vec(focusedMarker.x, PADDING.top + chartMetrics.chartHeight)}
+            color={focusedMarker.color}
+            strokeWidth={6}
+            opacity={0.25}
           />
-        );
-      })()}
+          <Line
+            p1={vec(focusedMarker.x, PADDING.top)}
+            p2={vec(focusedMarker.x, PADDING.top + chartMetrics.chartHeight)}
+            color={focusedMarker.color}
+            strokeWidth={2}
+            opacity={0.9}
+          />
+        </>
+      )}
 
       {/* Waypoint dots */}
       {waypointDots.map((dot) => (

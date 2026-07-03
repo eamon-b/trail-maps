@@ -106,7 +106,10 @@ export default function DatasheetScreen() {
   const handleShowOnMap = useCallback((wp: TrailWaypoint) => {
     if (!id) return;
     setPendingPan({ latitude: wp.lat, longitude: wp.lon, waypointId: wp.id });
-    router.replace({ pathname: '/trail/[id]', params: { id } });
+    // navigate (not replace/push): returns to the map screen already in the
+    // stack when there is one, so a second trail/[id] instance — with its own
+    // camera and follow state fighting this one's — is never created.
+    router.navigate({ pathname: '/trail/[id]', params: { id } });
   }, [id, setPendingPan, router]);
 
   if (loading || (!activeTrail && !error)) {

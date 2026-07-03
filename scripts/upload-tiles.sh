@@ -162,7 +162,7 @@ upload_contours() {
   fi
 
   local size
-  size=$(stat -c %s "$pmtiles_file")
+  size=$(wc -c < "$pmtiles_file")
 
   if [ "$size" -le "$WRANGLER_MAX_BYTES" ]; then
     echo "Uploading contour PMTiles via wrangler..."

@@ -23,13 +23,13 @@
  *   npx tsx scripts/build-contours-australia.ts --merge-only      (skip cells, just tippecanoe)
  *   npx tsx scripts/build-contours-australia.ts --force
  *   npx tsx scripts/build-contours-australia.ts --skip-smooth
- *   npx tsx scripts/build-contours-australia.ts --keep-work
+ *   npx tsx scripts/build-contours-australia.ts --clean-work  (delete tier files after merge)
  *   npx tsx scripts/build-contours-australia.ts --output-dir /path/to/output
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execFile } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 import {
   PROJECT_ROOT,
   DEM_CACHE_DIR,
@@ -44,6 +44,7 @@ import {
   checkDependencies,
   enumerateCells,
   parseCellId,
+  isAlignedCellId,
   demFilesForCell,
   mgaEpsgForLon,
   CELL_SIZE_DEG,
@@ -74,7 +75,9 @@ const TIERS: Tier[] = [
   { suffix: 'z9',  minZoom: 9,  where: `(CAST(elevation AS INTEGER) % 100) = 0` },
   { suffix: 'z10', minZoom: 10, where: `(CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
   { suffix: 'z12', minZoom: 12, where: `(CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
-  { suffix: 'z13', minZoom: 13, where: `(CAST(elevation AS INTEGER) % 20) != 0` },
+  // %50 != 0 as well: odd multiples of 50 (50, 150, ...) have %20 = 10 and are
+  // already emitted by the z10 tier — without it they'd appear twice.
+  { suffix: 'z13', minZoom: 13, where: `(CAST(elevation AS INTEGER) % 20) != 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
 ];
 
 // --- CLI argument parsing ---
@@ -87,7 +90,7 @@ interface CliArgs {
   parallel: number;
   force: boolean;
   mergeOnly: boolean;
-  keepWork: boolean;
+  cleanWork: boolean;
 }
 
 function parseArgs(): CliArgs {
@@ -100,7 +103,7 @@ function parseArgs(): CliArgs {
     parallel: 1,
     force: false,
     mergeOnly: false,
-    keepWork: false,
+    cleanWork: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -126,8 +129,8 @@ function parseArgs(): CliArgs {
       case '--merge-only':
         result.mergeOnly = true;
         break;
-      case '--keep-work':
-        result.keepWork = true;
+      case '--clean-work':
+        result.cleanWork = true;
         break;
       default:
         console.error(`Unknown argument: ${args[i]}`);
@@ -209,6 +212,12 @@ function processCell(cell: CellDef, args: CliArgs): void {
       `-te ${cell.west - CELL_BUFFER_DEG} ${latMin - CELL_BUFFER_DEG} ${cell.east + CELL_BUFFER_DEG} ${latMax + CELL_BUFFER_DEG}`,
       `-r ${resampling}`,
       '-tr 0.000278 0.000278',
+      // -tap aligns every cell's pixel grid to the same global -tr lattice.
+      // Without it, adjacent cells (whose -te origins differ by 2°, not a
+      // multiple of -tr) sample the DEM ~0.24px apart and smoothed elevations
+      // diverge by several metres at the shared edge — contour lines would
+      // dangle at every cell boundary instead of meeting.
+      '-tap',
       '-dstnodata -9999',
       '-co COMPRESS=LZW',
       '-co TILED=YES',
@@ -328,20 +337,29 @@ async function processCells(
 
 /**
  * Merge every cell's tier FlatGeobufs into one PMTiles file with tippecanoe.
+ *
+ * Invoked via execFileSync with an argv array, NOT through run()/execSync:
+ * ~250 cells x 4 tiers of -L arguments as a single shell string would sit at
+ * ~95% of Linux's per-argument limit (MAX_ARG_STRLEN, 128KiB) and fail with
+ * E2BIG at the end of a multi-hour build. As separate argv entries the limit
+ * is the full ARG_MAX (~2MB).
  */
 function mergeToPmtiles(outputPath: string, verbose: boolean): void {
   const layerArgs: string[] = [];
   let fileCount = 0;
+  let skipped = 0;
 
   for (const file of fs.readdirSync(WORK_DIR).sort()) {
     const m = file.match(/^(E\d+_S\d+)_(z\d+)\.fgb$/);
     if (!m) continue;
     const tier = TIERS.find(t => t.suffix === m[2]);
-    if (!tier) continue;
+    if (!tier || !isAlignedCellId(m[1])) {
+      console.warn(`  ⚠ Skipping ${file} — not on the canonical cell grid`);
+      skipped++;
+      continue;
+    }
     const filePath = path.join(WORK_DIR, file);
-    if (fileSizeBytes(filePath) === 0) continue;
-    const config = JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom });
-    layerArgs.push(`-L '${config}'`);
+    layerArgs.push('-L', JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom }));
     fileCount++;
   }
 
@@ -349,22 +367,26 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
     throw new Error(`No cell tier files found in ${WORK_DIR} — nothing to merge`);
   }
 
-  console.log(`  Merging ${fileCount} tier files from ${WORK_DIR}`);
+  console.log(`  Merging ${fileCount} tier files from ${WORK_DIR}` +
+    (skipped ? ` (${skipped} skipped)` : ''));
 
-  run([
-    'tippecanoe',
-    `-o "${outputPath}"`,
+  execFileSync('tippecanoe', [
+    '-o', outputPath,
     `-Z${CONTOUR_MIN_ZOOM}`,
     `-z${MAX_ZOOM}`,
     '-P',
-    '-y elevation',
-    '-y is_index',
+    '-y', 'elevation',
+    '-y', 'is_index',
     '--drop-smallest-as-needed',
     '--simplification=14',
     '--minimum-detail=4',
     '--force',
     ...layerArgs,
-  ].join(' '), { verbose });
+  ], {
+    cwd: PROJECT_ROOT,
+    stdio: verbose ? 'inherit' : 'pipe',
+    maxBuffer: 50 * 1024 * 1024,
+  });
 
   console.log(`  ✓ PMTiles output: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
 }
@@ -377,8 +399,8 @@ async function main(): Promise<void> {
   // Single-cell child mode: process one cell, no banner, no merge.
   if (args.cell) {
     const parsed = parseCellId(args.cell);
-    if (!parsed) {
-      console.error(`Invalid cell ID: ${args.cell} (expected format: E114_S34)`);
+    if (!parsed || !isAlignedCellId(args.cell)) {
+      console.error(`Invalid cell ID: ${args.cell} (expected an even-degree grid cell like E114_S34)`);
       process.exit(1);
     }
     ensureDir(WORK_DIR);
@@ -444,8 +466,13 @@ async function main(): Promise<void> {
     console.log('\nStep 3: Merging into PMTiles with tippecanoe...');
     mergeToPmtiles(outputPath, args.verbose);
 
-    if (!args.keepWork) {
+    // Tier files are the expensive artifact (hours of GDAL work) and enable
+    // cheap tippecanoe-only re-merges via --merge-only; keep them by default.
+    if (args.cleanWork) {
       cleanWorkDir(WORK_DIR);
+    } else {
+      console.log(`\n  Work dir kept for --merge-only re-runs: ${WORK_DIR}`);
+      console.log('  (pass --clean-work to delete it)');
     }
 
     const elapsed = ((Date.now() - startTime) / 1000 / 60).toFixed(1);

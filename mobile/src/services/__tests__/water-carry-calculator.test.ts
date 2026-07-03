@@ -1,4 +1,4 @@
-import type { TrailWaypoint } from '../../lib/trail-utils';
+import { mergeCustomWaypoints, type Trail, type TrailWaypoint } from '../../lib/trail-utils';
 import {
   extractWaterSources,
   computeWaterGaps,
@@ -287,5 +287,79 @@ describe('extractWaterSources — seasonal notes', () => {
     expect(sources).toHaveLength(2);
     expect(sources[0].seasonalNote).toBeUndefined();
     expect(sources[1].seasonalNote).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// integration: merged custom waypoints flow into the water-carry analysis
+// ---------------------------------------------------------------------------
+
+describe('water carry with merged custom waypoints', () => {
+  function makeTrail(): Trail {
+    return {
+      config: {
+        id: 'test',
+        name: 'Test Trail',
+        shortName: 'T',
+        region: 'AU',
+        lengthKm: 60,
+        direction: { default: 'NOBO', reversed: 'SOBO' },
+      },
+      track: {
+        points: [
+          { lat: -33, lon: 115, ele: 100, dist: 0 },
+          { lat: -33.2, lon: 115.2, ele: 150, dist: 30 },
+          { lat: -33.4, lon: 115.4, ele: 200, dist: 60 },
+        ],
+        totalDistance: 60,
+        totalAscent: 100,
+        totalDescent: 0,
+      },
+      waypoints: makeWaypoints([
+        { name: 'Creek', type: 'water', km: 10 },
+        { name: 'Tank', type: 'water-tank', km: 50 },
+      ]),
+    };
+  }
+
+  it('a merged type:water custom waypoint shrinks a dry-stretch gap', () => {
+    const trail = makeTrail();
+
+    // Before merging: Creek(10) → Tank(50) is a 40km dry stretch
+    const before = analyzeWaterCarry(trail.waypoints, trail.track.totalDistance);
+    expect(before.longestGapKm).toBe(40);
+    expect(before.dryStretchCount).toBe(1);
+
+    const merged = mergeCustomWaypoints(trail, [{
+      id: 'abc123',
+      name: 'My spring',
+      type: 'water',
+      lat: -33.25,
+      lon: 115.25,
+      kmPosition: 28,
+    }]);
+
+    const after = analyzeWaterCarry(merged.waypoints, merged.track.totalDistance);
+    expect(after.sources.map(s => s.name)).toEqual(['Creek', 'My spring', 'Tank']);
+    // Gap splits into 18km + 22km — the 40km dry stretch is gone
+    expect(after.longestGapKm).toBe(22);
+    expect(after.dryStretchCount).toBe(2); // both halves still >= 15km default
+    expect(after.gaps.some(g => g.distanceKm >= 40)).toBe(false);
+  });
+
+  it('a merged non-water custom waypoint does not affect water gaps', () => {
+    const trail = makeTrail();
+    const merged = mergeCustomWaypoints(trail, [{
+      id: 'camp1',
+      name: 'My camp',
+      type: 'campsite',
+      lat: -33.25,
+      lon: 115.25,
+      kmPosition: 28,
+    }]);
+
+    const after = analyzeWaterCarry(merged.waypoints, merged.track.totalDistance);
+    expect(after.longestGapKm).toBe(40);
+    expect(after.sources.map(s => s.name)).toEqual(['Creek', 'Tank']);
   });
 });

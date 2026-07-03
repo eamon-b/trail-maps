@@ -28,6 +28,50 @@ export interface Waypoint {
   description: string | null;
 }
 
+/** Waypoint types users can pick when adding a custom waypoint. */
+export const CUSTOM_WAYPOINT_TYPES = ['water', 'water-tank', 'campsite', 'poi'] as const;
+export type CustomWaypointType = (typeof CUSTOM_WAYPOINT_TYPES)[number];
+
+/**
+ * A user-created waypoint. Stored in the dedicated `custom_waypoints` table
+ * (never the bulk-rewritten `waypoints` table), so trail data refreshes can't
+ * wipe it. `lat`/`lon` are the raw pressed location; `kmPosition` is the
+ * snapped trail km used by distance math; `offTrackM` is the metres between
+ * the two.
+ */
+export interface CustomWaypoint {
+  id: string;
+  trailId: string;
+  name: string;
+  type: string;
+  lat: number;
+  lon: number;
+  ele: number | null;
+  kmPosition: number;
+  offTrackM: number | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Input for creating a custom waypoint (id + timestamps are generated). */
+export type NewCustomWaypoint = {
+  trailId: string;
+  name: string;
+  type?: string;
+  lat: number;
+  lon: number;
+  ele?: number | null;
+  kmPosition: number;
+  offTrackM?: number | null;
+  description?: string | null;
+};
+
+/** Fields of a custom waypoint that can be edited after creation. */
+export type CustomWaypointUpdate = Partial<
+  Pick<CustomWaypoint, 'name' | 'type' | 'lat' | 'lon' | 'ele' | 'kmPosition' | 'offTrackM' | 'description'>
+>;
+
 interface TrailRow {
   id: string;
   name: string;
@@ -54,6 +98,21 @@ interface WaypointRow {
   description: string | null;
 }
 
+interface CustomWaypointRow {
+  id: string;
+  trail_id: string;
+  name: string;
+  type: string;
+  lat: number;
+  lon: number;
+  ele: number | null;
+  km_position: number;
+  off_track_m: number | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 function rowToTrail(row: TrailRow): Trail {
   return {
     id: row.id,
@@ -68,6 +127,32 @@ function rowToTrail(row: TrailRow): Trail {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function rowToCustomWaypoint(row: CustomWaypointRow): CustomWaypoint {
+  return {
+    id: row.id,
+    trailId: row.trail_id,
+    name: row.name,
+    type: row.type,
+    lat: row.lat,
+    lon: row.lon,
+    ele: row.ele,
+    kmPosition: row.km_position,
+    offTrackM: row.off_track_m,
+    description: row.description,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Generate a unique custom waypoint id. Same base36-timestamp precedent as
+ * generateCustomTrailId in custom-trail-service.ts, plus a random suffix so
+ * rapid successive adds can't collide.
+ */
+function generateCustomWaypointId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function rowToWaypoint(row: WaypointRow): Waypoint {
@@ -215,5 +300,84 @@ export class TrailDataService {
       'SELECT * FROM trails WHERE is_custom = 1 ORDER BY created_at DESC'
     );
     return rows.map(rowToTrail);
+  }
+
+  // -------------------------------------------------------------------------
+  // Custom waypoints (user-created, per-trail)
+  // -------------------------------------------------------------------------
+
+  /** Add a user-created waypoint. Returns the stored row (with generated id). */
+  async addCustomWaypoint(wp: NewCustomWaypoint): Promise<CustomWaypoint> {
+    const id = generateCustomWaypointId();
+    const now = new Date().toISOString();
+    const type = wp.type ?? 'water';
+
+    await this.db.runAsync(
+      `INSERT INTO custom_waypoints (id, trail_id, name, type, lat, lon, ele, km_position, off_track_m, description, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, wp.trailId, wp.name, type, wp.lat, wp.lon, wp.ele ?? null, wp.kmPosition, wp.offTrackM ?? null, wp.description ?? null, now, now]
+    );
+
+    return {
+      id,
+      trailId: wp.trailId,
+      name: wp.name,
+      type,
+      lat: wp.lat,
+      lon: wp.lon,
+      ele: wp.ele ?? null,
+      kmPosition: wp.kmPosition,
+      offTrackM: wp.offTrackM ?? null,
+      description: wp.description ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  /** Get all custom waypoints for a trail, ordered along the trail. */
+  async getCustomWaypoints(trailId: string): Promise<CustomWaypoint[]> {
+    const rows = await this.db.getAllAsync<CustomWaypointRow>(
+      'SELECT * FROM custom_waypoints WHERE trail_id = ? ORDER BY km_position',
+      [trailId]
+    );
+    return rows.map(rowToCustomWaypoint);
+  }
+
+  /** Update editable fields of a custom waypoint. */
+  async updateCustomWaypoint(id: string, updates: CustomWaypointUpdate): Promise<void> {
+    const columnByField: Record<keyof CustomWaypointUpdate, string> = {
+      name: 'name',
+      type: 'type',
+      lat: 'lat',
+      lon: 'lon',
+      ele: 'ele',
+      kmPosition: 'km_position',
+      offTrackM: 'off_track_m',
+      description: 'description',
+    };
+
+    const setClauses: string[] = [];
+    const params: (string | number | null)[] = [];
+    for (const [field, column] of Object.entries(columnByField) as [keyof CustomWaypointUpdate, string][]) {
+      if (field in updates) {
+        setClauses.push(`${column} = ?`);
+        params.push(updates[field] ?? null);
+      }
+    }
+    if (setClauses.length === 0) return;
+
+    setClauses.push('updated_at = ?');
+    params.push(new Date().toISOString());
+    params.push(id);
+
+    await this.db.runAsync(
+      `UPDATE custom_waypoints SET ${setClauses.join(', ')} WHERE id = ?`,
+      params
+    );
+  }
+
+  /** Delete a custom waypoint by id. */
+  async deleteCustomWaypoint(id: string): Promise<void> {
+    await this.db.runAsync('DELETE FROM custom_waypoints WHERE id = ?', [id]);
   }
 }

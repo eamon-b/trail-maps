@@ -27,9 +27,17 @@ export default function ContributeScreen() {
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
+      <Text style={[styles.tip, { color: colors.textPrimary }]}>
+        Know a water source or campsite that isn&apos;t on the map? Long-press the spot on any
+        trail map to add your own waypoint. It flows into water carries, datasheets, and plans
+        automatically.
+      </Text>
+
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
       <Text style={[styles.comingSoon, { color: colors.textSecondary }]}>
-        Community features — trail condition reports, water source updates, and waypoint
-        contributions — are coming in v2.
+        Community features — sharing your waypoints, trail condition reports, and water source
+        updates — are coming in v2.
       </Text>
     </View>
   );
@@ -67,6 +75,12 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     width: '60%',
+    marginBottom: spacing.lg,
+  },
+  tip: {
+    ...typography.caption,
+    textAlign: 'center',
+    lineHeight: 20,
     marginBottom: spacing.lg,
   },
   comingSoon: {

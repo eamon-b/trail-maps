@@ -1,0 +1,83 @@
+appId: com.trailcompanion.app
+---
+# Custom waypoints (issue #6, Phase 4 item 2): long-press the trail map to add
+# a waypoint, verify it appears, then delete it via the detail sheet.
+#
+# Known risk: the initial long-press lands on the MapLibre GL canvas; the
+# handler snaps to the nearest track point no matter where the press lands,
+# so any point over the map works. Everything after the long-press exercises
+# native views only.
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 30000
+
+# Open the first trail (AAWT) and its map
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Open Map"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "View waypoint datasheet"
+    timeout: 15000
+
+# Long-press the map to open the Add Waypoint sheet
+- longPressOn:
+    point: "50%, 45%"
+- extendedWaitUntil:
+    visible: "Add Waypoint"
+    timeout: 10000
+
+# Fill in the waypoint: name "My spring", type water, save
+- tapOn: "Waypoint name"
+- inputText: "My spring"
+- hideKeyboard
+- tapOn: "Water"
+- tapOn: "Save"
+- waitForAnimationToEnd
+
+# The trail reloads with the merged waypoint; the map screen comes back
+- extendedWaitUntil:
+    visible: "View waypoint datasheet"
+    timeout: 15000
+
+# Verify the waypoint is visible in the datasheet (native list)
+- tapOn: "View waypoint datasheet"
+- extendedWaitUntil:
+    visible: "My spring"
+    timeout: 15000
+- takeScreenshot: custom-waypoint-added
+
+# Open it on the map to reach the detail sheet with Edit/Delete actions
+- tapOn: "My spring"
+- waitForAnimationToEnd
+- tapOn: "Show on map"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Delete waypoint"
+    timeout: 10000
+- assertVisible: "Edit waypoint"
+
+# Delete it and confirm via the system alert
+- tapOn: "Delete waypoint"
+- extendedWaitUntil:
+    visible: "Delete"
+    timeout: 5000
+- tapOn: "Delete"
+- waitForAnimationToEnd
+
+# Verify it is gone from the datasheet
+- extendedWaitUntil:
+    visible: "View waypoint datasheet"
+    timeout: 15000
+- tapOn: "View waypoint datasheet"
+- extendedWaitUntil:
+    visible: "km remaining"
+    timeout: 15000
+- assertNotVisible: "My spring"
+- takeScreenshot: custom-waypoint-deleted

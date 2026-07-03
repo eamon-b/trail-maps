@@ -99,6 +99,90 @@ export function mgaEpsgForLon(lonCenter: number): number {
   return 28356;                        // Zone 56
 }
 
+// --- Grid cell enumeration ---
+
+export const CELL_SIZE_DEG = 2;
+export const GRID_LON_MIN = 112;
+export const GRID_LON_MAX = 154; // exclusive: last cell starts at 152
+export const GRID_LAT_MIN = 10;  // 10°S
+export const GRID_LAT_MAX = 44;  // 44°S (exclusive: last cell starts at 42)
+
+export interface CellDef {
+  id: string;
+  west: number;
+  south: number; // degrees south, stored as positive
+  east: number;
+  north: number; // degrees south, stored as positive
+  epsg: number;
+}
+
+export function enumerateCells(opts?: {
+  lonMin?: number;
+  lonMax?: number;
+  latMin?: number;
+  latMax?: number;
+}): CellDef[] {
+  const lonMin = opts?.lonMin ?? GRID_LON_MIN;
+  const lonMax = opts?.lonMax ?? GRID_LON_MAX;
+  const latMin = opts?.latMin ?? GRID_LAT_MIN;
+  const latMax = opts?.latMax ?? GRID_LAT_MAX;
+
+  const cells: CellDef[] = [];
+  for (let lon = lonMin; lon < lonMax; lon += CELL_SIZE_DEG) {
+    for (let lat = latMin; lat < latMax; lat += CELL_SIZE_DEG) {
+      const west = lon;
+      const east = lon + CELL_SIZE_DEG;
+      const south = lat; // degrees south (stored as positive)
+      const north = lat + CELL_SIZE_DEG;
+      const lonCenter = west + CELL_SIZE_DEG / 2;
+      const id = `E${lon}_S${lat}`;
+      cells.push({
+        id,
+        west,
+        south,
+        east,
+        north,
+        epsg: mgaEpsgForLon(lonCenter),
+      });
+    }
+  }
+  return cells;
+}
+
+export function parseCellId(cellId: string): { lon: number; lat: number } | null {
+  const m = cellId.match(/^E(\d+)_S(\d+)$/);
+  if (!m) return null;
+  return { lon: parseInt(m[1], 10), lat: parseInt(m[2], 10) };
+}
+
+/**
+ * Check which SRTM DEM files exist for a grid cell's area.
+ * Returns the list of filenames that overlap.
+ */
+export function demFilesForCell(cell: CellDef): string[] {
+  if (!fs.existsSync(DEM_CACHE_DIR)) return [];
+
+  const files: string[] = [];
+  const demExtensions = ['.hgt', '.tif', '.tiff'];
+  // SRTM tile name = SW corner. Cell covers cell.west to cell.east, -cell.north to -cell.south.
+  // For a cell E114_S34 (114-116E, 34-36S), we need DEM tiles:
+  //   S34E114, S34E115, S35E114, S35E115
+  // (where tile S34E114 covers 34S-33S, 114E-115E)
+  for (let lat = cell.south; lat < cell.north; lat++) {
+    for (let lon = cell.west; lon < cell.east; lon++) {
+      const tileName = `S${String(lat).padStart(2, '0')}E${String(lon).padStart(3, '0')}`;
+      for (const ext of demExtensions) {
+        const demFile = `${tileName}${ext}`;
+        if (fs.existsSync(path.join(DEM_CACHE_DIR, demFile))) {
+          files.push(demFile);
+          break; // found one format, skip others for this tile
+        }
+      }
+    }
+  }
+  return files;
+}
+
 // --- Dependency checking ---
 
 interface DependencyCheck {
@@ -185,6 +269,7 @@ export function clipDem(
     '-dstnodata -9999',
     '-co COMPRESS=LZW',
     '-co TILED=YES',
+    '-co BIGTIFF=YES',
     `"${vrtPath}"`,
     `"${demOutputPath}"`,
   ].join(' '), { verbose });
@@ -217,6 +302,7 @@ export function smoothDem(
     '-tr 0.000278 0.000278',
     '-co COMPRESS=LZW',
     '-co TILED=YES',
+    '-co BIGTIFF=YES',
     `"${demPath}"`,
     `"${smoothedPath}"`,
   ].join(' '), { verbose });

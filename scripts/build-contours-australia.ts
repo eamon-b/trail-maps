@@ -1,21 +1,35 @@
 /**
- * Australia-Wide Contour PMTiles Build
+ * Australia-Wide Contour PMTiles Build (chunked)
  *
  * Generates a single PMTiles file containing contour lines for all of
- * Australia. Unlike the grid pipeline (which splits into cells), this
- * produces one output file suitable for serving via Cloudflare Worker.
+ * Australia, suitable for serving via the contour-tiles Cloudflare Worker.
+ *
+ * Unlike the previous implementation (which warped the entire continent into
+ * one smoothed GeoTIFF — ~37GB, and historically died at the 4GiB classic-TIFF
+ * ceiling), this build processes the same 2°×2° grid cells as
+ * build-grid-tiles.ts: each cell is clipped+smoothed+contoured independently,
+ * split into zoom-tier FlatGeobufs, and a single tippecanoe run at the end
+ * merges every cell's tiers into one PMTiles file.
+ *
+ * Cells are resumable: a completed cell writes a `.done` marker and is skipped
+ * on re-run (use --force to rebuild).
  *
  * Prerequisites: gdal (3.6+), tippecanoe
  *
  * Usage:
  *   npx tsx scripts/build-contours-australia.ts
- *   npx tsx scripts/build-contours-australia.ts --verbose
+ *   npx tsx scripts/build-contours-australia.ts --parallel 4
+ *   npx tsx scripts/build-contours-australia.ts --cell E146_S36   (single cell, no merge)
+ *   npx tsx scripts/build-contours-australia.ts --merge-only      (skip cells, just tippecanoe)
+ *   npx tsx scripts/build-contours-australia.ts --force
  *   npx tsx scripts/build-contours-australia.ts --skip-smooth
+ *   npx tsx scripts/build-contours-australia.ts --keep-work
  *   npx tsx scripts/build-contours-australia.ts --output-dir /path/to/output
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFile } from 'child_process';
 import {
   PROJECT_ROOT,
   DEM_CACHE_DIR,
@@ -28,7 +42,12 @@ import {
   formatBytes,
   fileSizeBytes,
   checkDependencies,
-  smoothDem,
+  enumerateCells,
+  parseCellId,
+  demFilesForCell,
+  mgaEpsgForLon,
+  CELL_SIZE_DEG,
+  type CellDef,
 } from './tile-pipeline.js';
 
 // --- Constants ---
@@ -38,12 +57,37 @@ const WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles/contours-australia');
 const DEFAULT_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles');
 const OUTPUT_FILENAME = 'australia-contours.pmtiles';
 
+// Warp buffer around each cell so cubic-spline smoothing sees the same
+// neighbourhood pixels as the adjacent cell; contours are clipped back to the
+// exact cell extent so features tile seamlessly without duplication.
+const CELL_BUFFER_DEG = 0.01; // ~1.1km
+
+const CLASSIFIED_LAYER = 'contour';
+
+interface Tier {
+  suffix: string;
+  minZoom: number;
+  where: string;
+}
+
+const TIERS: Tier[] = [
+  { suffix: 'z9',  minZoom: 9,  where: `(CAST(elevation AS INTEGER) % 100) = 0` },
+  { suffix: 'z10', minZoom: 10, where: `(CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
+  { suffix: 'z12', minZoom: 12, where: `(CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
+  { suffix: 'z13', minZoom: 13, where: `(CAST(elevation AS INTEGER) % 20) != 0` },
+];
+
 // --- CLI argument parsing ---
 
 interface CliArgs {
   verbose: boolean;
   skipSmooth: boolean;
   outputDir: string;
+  cell: string | null;
+  parallel: number;
+  force: boolean;
+  mergeOnly: boolean;
+  keepWork: boolean;
 }
 
 function parseArgs(): CliArgs {
@@ -52,6 +96,11 @@ function parseArgs(): CliArgs {
     verbose: false,
     skipSmooth: false,
     outputDir: DEFAULT_OUTPUT_DIR,
+    cell: null,
+    parallel: 1,
+    force: false,
+    mergeOnly: false,
+    keepWork: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -65,6 +114,21 @@ function parseArgs(): CliArgs {
       case '--output-dir':
         result.outputDir = args[++i];
         break;
+      case '--cell':
+        result.cell = args[++i];
+        break;
+      case '--parallel':
+        result.parallel = parseInt(args[++i], 10);
+        break;
+      case '--force':
+        result.force = true;
+        break;
+      case '--merge-only':
+        result.mergeOnly = true;
+        break;
+      case '--keep-work':
+        result.keepWork = true;
+        break;
       default:
         console.error(`Unknown argument: ${args[i]}`);
         process.exit(1);
@@ -74,14 +138,24 @@ function parseArgs(): CliArgs {
   return result;
 }
 
+// --- Per-cell paths ---
+
+function cellTierPath(cellId: string, tier: Tier): string {
+  return path.join(WORK_DIR, `${cellId}_${tier.suffix}.fgb`);
+}
+
+function cellDoneMarker(cellId: string): string {
+  return path.join(WORK_DIR, `${cellId}.done`);
+}
+
+const MOSAIC_VRT_PATH = path.join(WORK_DIR, 'dem_mosaic.vrt');
+
 // --- Pipeline steps ---
 
 /**
  * Build a VRT mosaic of ALL DEM tiles in data/dem/.
  */
 function buildDemMosaic(vrtPath: string, verbose: boolean): void {
-  console.log('Step 1: Building DEM mosaic...');
-
   if (!fs.existsSync(DEM_CACHE_DIR)) {
     throw new Error(`DEM cache directory not found: ${DEM_CACHE_DIR}`);
   }
@@ -97,113 +171,185 @@ function buildDemMosaic(vrtPath: string, verbose: boolean): void {
 
   console.log(`  Found ${demFiles.length} DEM tiles`);
 
-  const demPaths = demFiles.map(f => `"${path.join(DEM_CACHE_DIR, f)}"`).join(' ');
-  run(`gdalbuildvrt -vrtnodata -9999 "${vrtPath}" ${demPaths}`, { verbose });
+  // gdalbuildvrt reads the file list from an argument file to avoid
+  // command-line length limits with hundreds of tiles.
+  const listPath = vrtPath.replace(/\.vrt$/, '_files.txt');
+  fs.writeFileSync(
+    listPath,
+    demFiles.map(f => path.join(DEM_CACHE_DIR, f)).join('\n')
+  );
+  run(`gdalbuildvrt -vrtnodata -9999 -input_file_list "${listPath}" "${vrtPath}"`, { verbose });
+  fs.unlinkSync(listPath);
 
   console.log(`  ✓ VRT mosaic: ${vrtPath}`);
 }
 
 /**
- * Generate contour lines from the DEM mosaic.
+ * Process a single cell: warp+smooth a buffered window from the DEM mosaic,
+ * generate contours, then classify + clip to the exact cell extent + split
+ * into zoom-tier FlatGeobufs in a single ogr2ogr pass per tier.
  */
-function generateContours(
-  demPath: string,
-  contoursPath: string,
-  verbose: boolean
-): void {
-  console.log('Step 3: Generating contour lines...');
+function processCell(cell: CellDef, args: CliArgs): void {
+  const cellId = cell.id;
 
-  if (fs.existsSync(contoursPath)) fs.unlinkSync(contoursPath);
+  // Cell bounds in real (negative) latitudes
+  const latMin = -cell.north;
+  const latMax = -cell.south;
 
-  run([
-    'gdal_contour',
-    '-a elevation',
-    `-i ${CONTOUR_INTERVAL}`,
-    '-snodata -9999',
-    '-f FlatGeobuf',
-    `"${demPath}"`,
-    `"${contoursPath}"`,
-  ].join(' '), { verbose });
+  const demPath = path.join(WORK_DIR, `${cellId}_dem.tif`);
+  const rawPath = path.join(WORK_DIR, `${cellId}_raw.fgb`);
 
-  console.log(`  ✓ Raw contours: ${contoursPath} (${formatBytes(fileSizeBytes(contoursPath))})`);
-}
-
-/**
- * Classify contours with is_index field.
- */
-function classifyContours(
-  rawPath: string,
-  classifiedPath: string,
-  verbose: boolean
-): void {
-  console.log('Step 4: Classifying contours...');
-
-  if (fs.existsSync(classifiedPath)) fs.unlinkSync(classifiedPath);
-
-  const rawLayerName = 'contour';
-  const classifiedLayerName = 'contour';
-
-  run([
-    'ogr2ogr',
-    '-f FlatGeobuf',
-    `"${classifiedPath}"`,
-    `"${rawPath}"`,
-    `-nln ${classifiedLayerName}`,
-    '-dialect sqlite',
-    '-sql',
-    `"SELECT geometry, elevation, CAST(CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS INTEGER) AS is_index FROM '${rawLayerName}'"`,
-  ].join(' '), { verbose });
-
-  console.log(`  ✓ Classified contours: ${classifiedPath} (${formatBytes(fileSizeBytes(classifiedPath))})`);
-}
-
-/**
- * Split contours into zoom tiers and tile into a single PMTiles file.
- */
-function tileContours(
-  classifiedPath: string,
-  outputPath: string,
-  verbose: boolean
-): void {
-  console.log('Step 5: Splitting into zoom tiers...');
-
-  const classifiedLayerName = 'contour';
-  const tiers = [
-    { suffix: 'z9',  minZoom: 9,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
-    { suffix: 'z10', minZoom: 10, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
-    { suffix: 'z12', minZoom: 12, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
-    { suffix: 'z13', minZoom: 13, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) != 0` },
-  ];
-
-  const tierFiles: { path: string; minZoom: number; suffix: string }[] = [];
-
-  for (const tier of tiers) {
-    const tierPath = path.join(WORK_DIR, `contours_${tier.suffix}.fgb`);
-    if (fs.existsSync(tierPath)) fs.unlinkSync(tierPath);
-
+  try {
+    // 1: Clip + (optionally) smooth in one warp from the mosaic.
+    //    Buffered extent so smoothing matches the neighbouring cell.
+    const resampling = args.skipSmooth ? 'near' : 'cubicspline';
     run([
-      'ogr2ogr',
-      '-f FlatGeobuf',
-      `"${tierPath}"`,
-      `"${classifiedPath}"`,
-      '-dialect sqlite',
-      '-sql',
-      `"${tier.sql}"`,
-    ].join(' '), { verbose });
+      'gdalwarp',
+      '-overwrite',
+      `-te ${cell.west - CELL_BUFFER_DEG} ${latMin - CELL_BUFFER_DEG} ${cell.east + CELL_BUFFER_DEG} ${latMax + CELL_BUFFER_DEG}`,
+      `-r ${resampling}`,
+      '-tr 0.000278 0.000278',
+      '-dstnodata -9999',
+      '-co COMPRESS=LZW',
+      '-co TILED=YES',
+      '-co BIGTIFF=YES',
+      `"${MOSAIC_VRT_PATH}"`,
+      `"${demPath}"`,
+    ].join(' '), { verbose: args.verbose });
 
-    if (fs.existsSync(tierPath) && fileSizeBytes(tierPath) > 0) {
-      tierFiles.push({ path: tierPath, minZoom: tier.minZoom, suffix: tier.suffix });
-      console.log(`  ${tier.suffix}: ${formatBytes(fileSizeBytes(tierPath))}`);
+    // 2: Generate contours
+    if (fs.existsSync(rawPath)) fs.unlinkSync(rawPath);
+    run([
+      'gdal_contour',
+      '-a elevation',
+      `-i ${CONTOUR_INTERVAL}`,
+      '-snodata -9999',
+      '-f FlatGeobuf',
+      `"${demPath}"`,
+      `"${rawPath}"`,
+    ].join(' '), { verbose: args.verbose });
+
+    // 3: Per tier: classify (is_index), filter, and clip back to the exact
+    //    cell extent so adjacent cells don't duplicate features.
+    for (const tier of TIERS) {
+      const tierPath = cellTierPath(cellId, tier);
+      if (fs.existsSync(tierPath)) fs.unlinkSync(tierPath);
+      run([
+        'ogr2ogr',
+        '-f FlatGeobuf',
+        `"${tierPath}"`,
+        `"${rawPath}"`,
+        `-nln ${CLASSIFIED_LAYER}`,
+        // Clipping can split a contour into a MultiLineString; promote the
+        // layer type so mixed geometries write cleanly.
+        '-nlt PROMOTE_TO_MULTI',
+        `-clipsrc ${cell.west} ${latMin} ${cell.east} ${latMax}`,
+        '-dialect sqlite',
+        '-sql',
+        `"SELECT geometry, elevation, CAST(CASE WHEN (CAST(elevation AS INTEGER) % ${INDEX_CONTOUR_INTERVAL}) = 0 THEN 1 ELSE 0 END AS INTEGER) AS is_index FROM 'contour' WHERE ${tier.where}"`,
+      ].join(' '), { verbose: args.verbose });
     }
+
+    fs.writeFileSync(cellDoneMarker(cellId), new Date().toISOString());
+  } finally {
+    // Intermediates are per-cell and large; always clean them.
+    if (fs.existsSync(demPath)) fs.unlinkSync(demPath);
+    if (fs.existsSync(rawPath)) fs.unlinkSync(rawPath);
+  }
+}
+
+/**
+ * Run cells in parallel by spawning this script with --cell <id>.
+ */
+async function processCells(
+  cells: CellDef[],
+  args: CliArgs
+): Promise<{ cellId: string; success: boolean; error?: string }[]> {
+  const results: { cellId: string; success: boolean; error?: string }[] = [];
+
+  if (args.parallel <= 1) {
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      console.log(`  [${i + 1}/${cells.length}] ${cell.id}...`);
+      try {
+        processCell(cell, args);
+        results.push({ cellId: cell.id, success: true });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`  ✗ ${cell.id}: ${message}`);
+        results.push({ cellId: cell.id, success: false, error: message });
+      }
+    }
+    return results;
   }
 
-  // Build layer args for tippecanoe
-  console.log('\nStep 6: Tiling with tippecanoe (PMTiles output)...');
+  const scriptPath = new URL(import.meta.url).pathname;
+  const childArgs: string[] = [];
+  if (args.skipSmooth) childArgs.push('--skip-smooth');
+  if (args.verbose) childArgs.push('--verbose');
+  if (args.force) childArgs.push('--force');
 
-  const layerArgs = tierFiles.map(({ path: filePath, minZoom }) => {
-    const config = JSON.stringify({ file: filePath, layer: 'contour', minzoom: minZoom });
-    return `-L '${config}'`;
-  });
+  const queue = [...cells];
+  let completed = 0;
+
+  const runNext = async (): Promise<void> => {
+    for (;;) {
+      const cell = queue.shift();
+      if (!cell) return;
+      await new Promise<void>((resolve) => {
+        execFile('npx', ['tsx', scriptPath, '--cell', cell.id, ...childArgs], {
+          cwd: PROJECT_ROOT,
+          maxBuffer: 50 * 1024 * 1024,
+        }, (error, stdout, stderr) => {
+          completed++;
+          if (args.verbose) {
+            if (stdout) process.stdout.write(stdout);
+            if (stderr) process.stderr.write(stderr);
+          }
+          if (error) {
+            console.error(`  ✗ [${completed}/${cells.length}] ${cell.id}: ${error.message.split('\n')[0]}`);
+            results.push({ cellId: cell.id, success: false, error: error.message });
+          } else {
+            console.log(`  ✓ [${completed}/${cells.length}] ${cell.id}`);
+            results.push({ cellId: cell.id, success: true });
+          }
+          resolve();
+        });
+      });
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(args.parallel, cells.length) }, () => runNext())
+  );
+
+  return results;
+}
+
+/**
+ * Merge every cell's tier FlatGeobufs into one PMTiles file with tippecanoe.
+ */
+function mergeToPmtiles(outputPath: string, verbose: boolean): void {
+  const layerArgs: string[] = [];
+  let fileCount = 0;
+
+  for (const file of fs.readdirSync(WORK_DIR).sort()) {
+    const m = file.match(/^(E\d+_S\d+)_(z\d+)\.fgb$/);
+    if (!m) continue;
+    const tier = TIERS.find(t => t.suffix === m[2]);
+    if (!tier) continue;
+    const filePath = path.join(WORK_DIR, file);
+    if (fileSizeBytes(filePath) === 0) continue;
+    const config = JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom });
+    layerArgs.push(`-L '${config}'`);
+    fileCount++;
+  }
+
+  if (fileCount === 0) {
+    throw new Error(`No cell tier files found in ${WORK_DIR} — nothing to merge`);
+  }
+
+  console.log(`  Merging ${fileCount} tier files from ${WORK_DIR}`);
 
   run([
     'tippecanoe',
@@ -220,70 +366,88 @@ function tileContours(
     ...layerArgs,
   ].join(' '), { verbose });
 
-  // Clean up tier files
-  for (const tier of tierFiles) {
-    if (fs.existsSync(tier.path)) fs.unlinkSync(tier.path);
-  }
-
   console.log(`  ✓ PMTiles output: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
 }
 
 // --- Main ---
 
 async function main(): Promise<void> {
-  console.log('Australia-Wide Contour PMTiles Build');
-  console.log('====================================\n');
-
   const args = parseArgs();
 
-  // Check dependencies (only need contour tools, not base map tools)
+  // Single-cell child mode: process one cell, no banner, no merge.
+  if (args.cell) {
+    const parsed = parseCellId(args.cell);
+    if (!parsed) {
+      console.error(`Invalid cell ID: ${args.cell} (expected format: E114_S34)`);
+      process.exit(1);
+    }
+    ensureDir(WORK_DIR);
+    if (!fs.existsSync(MOSAIC_VRT_PATH)) {
+      buildDemMosaic(MOSAIC_VRT_PATH, args.verbose);
+    }
+    const lonCenter = parsed.lon + CELL_SIZE_DEG / 2;
+    const cell: CellDef = {
+      id: args.cell,
+      west: parsed.lon,
+      south: parsed.lat,
+      east: parsed.lon + CELL_SIZE_DEG,
+      north: parsed.lat + CELL_SIZE_DEG,
+      epsg: mgaEpsgForLon(lonCenter),
+    };
+    if (!args.force && fs.existsSync(cellDoneMarker(cell.id))) {
+      console.log(`Skipping ${cell.id} (already built — use --force to rebuild)`);
+      return;
+    }
+    processCell(cell, args);
+    return;
+  }
+
+  console.log('Australia-Wide Contour PMTiles Build (chunked)');
+  console.log('==============================================\n');
+
   console.log('Checking dependencies...');
   checkDependencies({ skipBase: true });
   console.log('  ✓ All dependencies found\n');
 
-  // Ensure directories
   ensureDir(WORK_DIR);
   ensureDir(args.outputDir);
 
   const startTime = Date.now();
-
-  // File paths
-  const vrtPath = path.join(WORK_DIR, 'dem_mosaic.vrt');
-  const smoothedPath = path.join(WORK_DIR, 'dem_smoothed.tif');
-  const contoursRawPath = path.join(WORK_DIR, 'contours_raw.fgb');
-  const contoursClassifiedPath = path.join(WORK_DIR, 'contours.fgb');
   const outputPath = path.join(args.outputDir, OUTPUT_FILENAME);
 
   try {
-    // Step 1: Build VRT mosaic
-    buildDemMosaic(vrtPath, args.verbose);
+    if (!args.mergeOnly) {
+      console.log('Step 1: Building DEM mosaic...');
+      buildDemMosaic(MOSAIC_VRT_PATH, args.verbose);
 
-    // Step 2: Smooth the DEM (optional)
-    let contourInputPath = vrtPath;
-    if (!args.skipSmooth) {
-      console.log('\nStep 2: Smoothing DEM...');
-      smoothDem(vrtPath, smoothedPath, args.verbose);
-      contourInputPath = smoothedPath;
-    } else {
-      console.log('\nStep 2: Skipping DEM smoothing (--skip-smooth)');
+      // Enumerate land cells (those with DEM coverage)
+      const allCells = enumerateCells();
+      const landCells = allCells.filter(c => demFilesForCell(c).length > 0);
+      const pendingCells = args.force
+        ? landCells
+        : landCells.filter(c => !fs.existsSync(cellDoneMarker(c.id)));
+
+      console.log(`\nStep 2: Processing cells (${landCells.length} land cells, ` +
+        `${landCells.length - pendingCells.length} already built, ` +
+        `${pendingCells.length} to process, parallelism ${args.parallel})...`);
+
+      const results = await processCells(pendingCells, args);
+      const failed = results.filter(r => !r.success);
+      if (failed.length > 0) {
+        console.error(`\n${failed.length} cells failed:`);
+        failed.forEach(r => console.error(`  ${r.cellId}: ${r.error?.split('\n')[0]}`));
+        console.error('\nRe-run to retry failed cells (completed cells are skipped).');
+        process.exit(1);
+      }
     }
 
-    // Step 3: Generate contours
-    console.log('');
-    generateContours(contourInputPath, contoursRawPath, args.verbose);
+    console.log('\nStep 3: Merging into PMTiles with tippecanoe...');
+    mergeToPmtiles(outputPath, args.verbose);
 
-    // Step 4: Classify contours
-    console.log('');
-    classifyContours(contoursRawPath, contoursClassifiedPath, args.verbose);
+    if (!args.keepWork) {
+      cleanWorkDir(WORK_DIR);
+    }
 
-    // Step 5-6: Split into tiers and tile
-    console.log('');
-    tileContours(contoursClassifiedPath, outputPath, args.verbose);
-
-    // Clean up work directory (keep output)
-    cleanWorkDir(WORK_DIR);
-
-    // Report
     const elapsed = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
     const fileSize = fileSizeBytes(outputPath);
     console.log('\n' + '═'.repeat(40));

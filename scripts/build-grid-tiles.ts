@@ -22,7 +22,6 @@ import { execFile } from 'child_process';
 import type { GridIndex, GridCell } from '../src/lib/types.js';
 import {
   PROJECT_ROOT,
-  DEM_CACHE_DIR,
   run,
   ensureDir,
   cleanWorkDir,
@@ -35,99 +34,23 @@ import {
   extractBaseTiles,
   writeManifest,
   mgaEpsgForLon,
+  CELL_SIZE_DEG,
+  GRID_LON_MIN,
+  GRID_LON_MAX,
+  GRID_LAT_MIN,
+  GRID_LAT_MAX,
+  enumerateCells,
+  parseCellId,
+  demFilesForCell,
+  type CellDef,
 } from './tile-pipeline.js';
 
 // --- Grid constants ---
 
-const CELL_SIZE_DEG = 2;
-const GRID_LON_MIN = 112;
-const GRID_LON_MAX = 154; // exclusive: last cell starts at 152
-const GRID_LAT_MIN = 10;  // 10°S
-const GRID_LAT_MAX = 44;  // 44°S (exclusive: last cell starts at 42)
 const BUFFER_METERS = 1000; // 1km buffer for contour continuity at cell edges
 
 const GRID_WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles/grid');
 const GRID_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles/grid');
-
-// --- Grid cell enumeration ---
-
-interface CellDef {
-  id: string;
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-  epsg: number;
-}
-
-function enumerateCells(opts?: {
-  lonMin?: number;
-  lonMax?: number;
-  latMin?: number;
-  latMax?: number;
-}): CellDef[] {
-  const lonMin = opts?.lonMin ?? GRID_LON_MIN;
-  const lonMax = opts?.lonMax ?? GRID_LON_MAX;
-  const latMin = opts?.latMin ?? GRID_LAT_MIN;
-  const latMax = opts?.latMax ?? GRID_LAT_MAX;
-
-  const cells: CellDef[] = [];
-  for (let lon = lonMin; lon < lonMax; lon += CELL_SIZE_DEG) {
-    for (let lat = latMin; lat < latMax; lat += CELL_SIZE_DEG) {
-      const west = lon;
-      const east = lon + CELL_SIZE_DEG;
-      const south = lat; // degrees south (stored as positive)
-      const north = lat + CELL_SIZE_DEG;
-      const lonCenter = west + CELL_SIZE_DEG / 2;
-      const id = `E${lon}_S${lat}`;
-      cells.push({
-        id,
-        west,
-        south,
-        east,
-        north,
-        epsg: mgaEpsgForLon(lonCenter),
-      });
-    }
-  }
-  return cells;
-}
-
-function parseCellId(cellId: string): { lon: number; lat: number } | null {
-  const m = cellId.match(/^E(\d+)_S(\d+)$/);
-  if (!m) return null;
-  return { lon: parseInt(m[1], 10), lat: parseInt(m[2], 10) };
-}
-
-// --- DEM availability check ---
-
-/**
- * Check which SRTM .hgt files exist for a grid cell's area.
- * Returns the list of .hgt filenames that overlap.
- */
-function demFilesForCell(cell: CellDef): string[] {
-  if (!fs.existsSync(DEM_CACHE_DIR)) return [];
-
-  const files: string[] = [];
-  const demExtensions = ['.hgt', '.tif', '.tiff'];
-  // SRTM tile name = SW corner. Cell covers cell.west to cell.east, -cell.north to -cell.south.
-  // For a cell E114_S34 (114-116E, 34-36S), we need DEM tiles:
-  //   S34E114, S34E115, S35E114, S35E115
-  // (where tile S34E114 covers 34S-33S, 114E-115E)
-  for (let lat = cell.south; lat < cell.north; lat++) {
-    for (let lon = cell.west; lon < cell.east; lon++) {
-      const tileName = `S${String(lat).padStart(2, '0')}E${String(lon).padStart(3, '0')}`;
-      for (const ext of demExtensions) {
-        const demFile = `${tileName}${ext}`;
-        if (fs.existsSync(path.join(DEM_CACHE_DIR, demFile))) {
-          files.push(demFile);
-          break; // found one format, skip others for this tile
-        }
-      }
-    }
-  }
-  return files;
-}
 
 // --- Cell polygon generation ---
 

@@ -10,8 +10,8 @@ import { typography } from '../src/tokens/typography';
 import { closeDatabase } from '../src/db/database';
 import { Paths, File } from 'expo-file-system';
 
-const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
-const BACKGROUND_TRACKING_KEY = 'trail-companion:backgroundTracking';
+export const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
+export const BACKGROUND_TRACKING_KEY = 'trail-companion:backgroundTracking';
 
 type AlertPreset = 'tight' | 'normal' | 'loose';
 

@@ -8,6 +8,10 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.(ts|tsx)', '**/*.(test|spec).(ts|tsx)'],
   moduleNameMapper: {
     '^@lib/(.*)$': '<rootDir>/../src/lib/$1',
+    // Shared @lib files live outside mobile/, so Babel's runtime helpers
+    // injected during transform can't be resolved by walking up from their
+    // location — pin them to mobile's copy.
+    '^@babel/runtime/(.*)$': '<rootDir>/node_modules/@babel/runtime/$1',
     '\\.pbf$': '<rootDir>/jest.setup.js',
   },
 };

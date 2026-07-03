@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { AppState, StyleSheet, View, Text, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
@@ -26,6 +26,7 @@ import {
 import { computeDays } from '../../src/services/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
+import { ALERT_THRESHOLD_KEY, BACKGROUND_TRACKING_KEY } from '../settings';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 import type { LocationState } from '../../src/components/LocationStatusBar';
@@ -82,17 +83,30 @@ export default function HikeScreen() {
   const { location, accuracy, isTracking, startTracking, stopTracking } =
     useLocation(trackPoints, { background: backgroundTracking });
 
-  // Start GPS automatically once the active trail is loaded — the dashboard's
-  // distances are meaningless without a live position. Restart when the
-  // background preference changes so the new mode takes effect immediately.
-  const trackingModeRef = useRef<boolean | null>(null);
+  // Track while the Hike tab is focused — the dashboard's distances are
+  // meaningless without a live position. Foreground sessions stop on blur to
+  // save battery; background sessions (explicit opt-in) keep running through
+  // blur and screen lock. startTracking is idempotent, and useLocation owns
+  // restarting when the background preference changes.
+  useFocusEffect(
+    useCallback(() => {
+      if (!trail) return;
+      startTracking();
+      return () => {
+        if (!backgroundTracking) stopTracking();
+      };
+    }, [trail, backgroundTracking, startTracking, stopTracking]),
+  );
+
+  // Retry when the app returns to the foreground — covers the user granting
+  // location permission in OS settings and switching back.
   useEffect(() => {
-    if (!trail) return;
-    if (isTracking && trackingModeRef.current === backgroundTracking) return;
-    if (isTracking) stopTracking();
-    trackingModeRef.current = backgroundTracking;
-    startTracking();
-  }, [trail, backgroundTracking, isTracking, startTracking, stopTracking]);
+    if (!trail || isTracking) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') startTracking();
+    });
+    return () => sub.remove();
+  }, [trail, isTracking, startTracking]);
 
   const currentKm = location?.trailKm ?? null;
 
@@ -121,13 +135,13 @@ export default function HikeScreen() {
       async function load() {
         try {
           // Load alert threshold preference
-          const savedThreshold = await AsyncStorage.getItem('trail-companion:alertThreshold');
+          const savedThreshold = await AsyncStorage.getItem(ALERT_THRESHOLD_KEY);
           if (!cancelled && savedThreshold && ['tight', 'normal', 'loose'].includes(savedThreshold)) {
             setAlertPreset(savedThreshold as AlertThresholdPreset);
           }
 
           // Load background tracking preference
-          const savedBackground = await AsyncStorage.getItem('trail-companion:backgroundTracking');
+          const savedBackground = await AsyncStorage.getItem(BACKGROUND_TRACKING_KEY);
           if (!cancelled) {
             setBackgroundTracking(savedBackground === 'true');
           }

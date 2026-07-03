@@ -95,15 +95,24 @@ export async function startLocationTracking(
           cb(update);
         }
       },
-    ).then((sub) => {
-      subscription = sub;
-      subscriptionStarting = null;
-      // Everyone unsubscribed while the watch was starting — tear it down.
-      if (foregroundSubscribers.size === 0) {
-        sub.remove();
-        subscription = null;
-      }
-    });
+    ).then(
+      (sub) => {
+        subscription = sub;
+        subscriptionStarting = null;
+        // Everyone unsubscribed while the watch was starting — tear it down.
+        if (foregroundSubscribers.size === 0) {
+          sub.remove();
+          subscription = null;
+        }
+      },
+      (err) => {
+        // Clear the in-flight marker so the next start attempt can create a
+        // fresh watch — a retained rejected promise would wedge tracking for
+        // the rest of the app session.
+        subscriptionStarting = null;
+        throw err;
+      },
+    );
   }
 
   await subscriptionStarting;

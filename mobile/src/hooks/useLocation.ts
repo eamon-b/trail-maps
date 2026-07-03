@@ -161,8 +161,15 @@ export function useLocation(
   // down what was started — not what the (possibly since-changed) background
   // option currently says.
   const activeModeRef = useRef<'foreground' | 'background' | null>(null);
+  // Re-entrancy guard: a start already in flight short-circuits further calls,
+  // so effect re-runs can't stack overlapping permission requests / starts.
+  const startingRef = useRef(false);
 
   const startTracking = useCallback(async () => {
+    // Idempotent: a start in flight or a live session makes this a no-op, so
+    // callers (focus effects, retry listeners) can invoke it freely.
+    if (startingRef.current || activeModeRef.current !== null) return;
+    startingRef.current = true;
     try {
       const status = await requestLocationPermission();
       setPermissionStatus(status);
@@ -191,6 +198,8 @@ export function useLocation(
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start tracking');
+    } finally {
+      startingRef.current = false;
     }
   }, [handleLocationUpdate, background]);
 
@@ -206,6 +215,18 @@ export function useLocation(
     activeModeRef.current = null;
     setIsTracking(false);
   }, [handleLocationUpdate]);
+
+  // The hook owns mode switching: if the background option changes while a
+  // session is live, restart in the new mode. Callers just flip the option.
+  // Keyed on isTracking so an option flip that lands while a start is still
+  // in flight gets reconciled once that start completes.
+  useEffect(() => {
+    if (!isTracking) return;
+    const wantedMode = background ? 'background' : 'foreground';
+    if (activeModeRef.current === wantedMode) return;
+    stopTrackingFn();
+    startTracking();
+  }, [background, isTracking, startTracking, stopTrackingFn]);
 
   // Clean up this instance's subscriptions on unmount. Scoped to our own
   // callback/mode so unmounting one screen never kills another screen's

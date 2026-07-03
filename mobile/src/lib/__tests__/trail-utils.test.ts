@@ -11,6 +11,7 @@ import {
   findVariantByKey,
   type TrackPoint,
   type Trail,
+  type RouteVariant,
 } from '../trail-utils';
 import type { TrailJson } from '../../services/trail-loader';
 
@@ -215,6 +216,24 @@ describe('transformSideTrips', () => {
     const transformed = transformSideTrips(trips, 100);
 
     expect(transformed[0].startDistance).toBe(75);
+  });
+
+  it('leaves unattached side trips untouched (no junction to mirror)', () => {
+    // Regression: AAWT spurs starting >500m off-track have no startDistance;
+    // their waypoint km are variant-relative and must not be transformed.
+    const spur: RouteVariant = {
+      name: 'Detached spur',
+      type: 'side-trip' as const,
+      distance: 2.8,
+      waypoints: [{
+        name: 'Homestead', type: 'poi', lat: 0, lon: 0, elevation: 100,
+        distance: 0.34, totalDistance: 0.34, ascent: 5, descent: 0,
+        totalAscent: 5, totalDescent: 0, variantTrackIndex: 3,
+      }],
+    };
+    const transformed = transformSideTrips([spur], 688.3);
+    expect(transformed[0].startDistance).toBeUndefined();
+    expect(transformed[0].waypoints![0].totalDistance).toBe(0.34);
   });
 
   it('shifts waypoint absolute km with the junction, keeping variant-relative stats', () => {

@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
 import type { TrackPoint, TrailWaypoint, RouteVariant } from '../lib/trail-utils';
@@ -252,7 +252,9 @@ function computeBounds(points: TrackPoint[]): { ne: [number, number]; sw: [numbe
   };
 }
 
-export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function TrailMap({
+// memo: parents re-render on every GPS tick and drawer move; the map only
+// needs to re-render when its own (mostly memoized) props change.
+export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function TrailMap({
   displayPoints,
   alternates,
   sideTrips,
@@ -559,10 +561,11 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
 
   const showRecenter = !isFollowingUser && userLocation != null;
 
-  // Detect a drag gesture directly from the touch stream. MapLibre's
-  // isUserInteraction flag on region events is unreliable across versions, so
-  // it can leave follow mode enabled after a user pan — the camera then fights
-  // the user and "snaps back" on the next GPS tick. Touch events on the
+  // Single authority for "user panned": a drag detected in the touch stream.
+  // MapLibre's isUserInteraction flag on region events is unreliable across
+  // versions (it can miss real pans, leaving follow mode to fight the user)
+  // and it also fires for gestures that shouldn't break follow, like
+  // double-tap zoom — so it is deliberately not used. Touch events on the
   // wrapping View are passive observers (they never claim the responder), so
   // the map's native gestures are unaffected. Only a moved touch counts — a
   // plain tap (waypoint select / dismiss) should not break follow mode.
@@ -593,11 +596,6 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
         logoEnabled={false}
         attributionEnabled={false}
         onPress={onMapPress}
-        onRegionWillChange={(feature) => {
-          if (feature.properties?.isUserInteraction && onMapPan) {
-            onMapPan();
-          }
-        }}
         onRegionDidChange={handleRegionDidChange}
         onLongPress={onLongPress ? handleLongPress : undefined}
       >
@@ -730,7 +728,7 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
       )}
     </View>
   );
-});
+}));
 
 const styles = StyleSheet.create({
   container: {

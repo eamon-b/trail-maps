@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { ElevationProfile } from './ElevationProfile';
@@ -44,29 +44,21 @@ export function ElevationProfileDrawer({
   onIndexChange,
 }: ElevationProfileDrawerProps) {
   const { colors } = useTheme();
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const currentIndexRef = useRef(index);
 
   const snapPoints = useMemo(() => [80, '40%', '70%'], []);
   const withElevation = useMemo(() => hasElevationData(trackPoints), [trackPoints]);
 
-  // Snap whenever the owner-controlled index diverges from the sheet's actual
-  // position. Done via effect + ref (rather than relying on gorhom reacting to
-  // its `index` prop) so the behaviour is explicit and testable.
-  useEffect(() => {
-    if (index !== currentIndexRef.current) {
-      bottomSheetRef.current?.snapToIndex(index);
-    }
-  }, [index]);
-
+  // Controlled position: gorhom v5 reacts to `index` prop changes by snapping
+  // (its internal effect calls the same handler as the imperative
+  // snapToIndex), and onChange reports drags back so the owner stays in sync.
+  // Floor at 0 — the collapsed 80px detent is the minimum; -1 (closed) would
+  // leave no affordance to reopen the drawer.
   const handleSheetChanges = useCallback((newIndex: number) => {
-    currentIndexRef.current = newIndex;
-    onIndexChange?.(newIndex);
+    onIndexChange?.(Math.max(0, newIndex));
   }, [onIndexChange]);
 
   return (
     <BottomSheet
-      ref={bottomSheetRef}
       index={index}
       snapPoints={snapPoints}
       // Explicit snap points only — dynamic sizing would splice a

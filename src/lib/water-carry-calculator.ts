@@ -1,13 +1,15 @@
 /**
- * Water carry distance calculator for the web trip planner.
+ * Water carry distance calculator.
  *
- * Analyzes water source spacing along a trail to identify dry stretches.
- * Safety-critical for Australian trails.
+ * Analyzes water source spacing along a trail to identify dry stretches
+ * and help hikers plan water carries. Safety-critical for Australian trails.
  *
- * Ported from mobile/src/services/water-carry-calculator.ts.
+ * Shared between the web planner and the mobile app.
  */
 
 import type { PlanWaypoint, WaterGap } from './plan-types';
+
+export type { WaterGap };
 
 export interface WaterSource {
   name: string;
@@ -119,6 +121,9 @@ export function computeWaterGaps(
 
 /**
  * Full water carry analysis for a trail.
+ *
+ * Returns sources, gaps between them, dry stretch warnings, and whether
+ * the trail has any water data at all.
  */
 export function analyzeWaterCarry(
   waypoints: PlanWaypoint[],
@@ -137,4 +142,39 @@ export function analyzeWaterCarry(
   const dryStretchCount = gaps.filter(g => g.isDryStretch).length;
 
   return { sources, gaps, longestGapKm, dryStretchCount, hasWaterData };
+}
+
+/**
+ * Get water sources and gaps scoped to a section of trail.
+ */
+export function analyzeWaterCarryForSection(
+  waypoints: PlanWaypoint[],
+  startKm: number,
+  endKm: number,
+  dryStretchThreshold: number = DEFAULT_DRY_STRETCH_KM,
+): WaterCarryAnalysis {
+  const allSources = extractWaterSources(waypoints);
+  const sectionSources = allSources.filter(s => s.km >= startKm && s.km <= endKm);
+
+  if (sectionSources.length === 0) {
+    return {
+      sources: [],
+      gaps: [],
+      longestGapKm: 0,
+      dryStretchCount: 0,
+      hasWaterData: allSources.length > 0,
+    };
+  }
+
+  const gaps = computeWaterGaps(sectionSources, startKm, endKm, dryStretchThreshold);
+  const longestGapKm = gaps.reduce((max, g) => Math.max(max, g.distanceKm), 0);
+  const dryStretchCount = gaps.filter(g => g.isDryStretch).length;
+
+  return {
+    sources: sectionSources,
+    gaps,
+    longestGapKm,
+    dryStretchCount,
+    hasWaterData: true,
+  };
 }

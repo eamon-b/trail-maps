@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   estimateHikingTime,
   countWaterSources,
-  calculateElevationBetween,
   computeDays,
 } from './day-calculator';
 import type { PlanTrail } from './day-calculator';
@@ -63,38 +62,6 @@ describe('countWaterSources', () => {
 
   it('returns 0 when no sources in range', () => {
     expect(countWaterSources(40, 50, waypoints)).toBe(0);
-  });
-});
-
-// --- calculateElevationBetween ---
-
-describe('calculateElevationBetween', () => {
-  // Track points: 0km=100m, 1km=150m, 2km=120m, 3km=200m
-  const trackPoints = [
-    { lat: 0, lon: 0, ele: 100, dist: 0 },
-    { lat: 0, lon: 0, ele: 150, dist: 1 },
-    { lat: 0, lon: 0, ele: 120, dist: 2 },
-    { lat: 0, lon: 0, ele: 200, dist: 3 },
-  ];
-
-  it('computes gain and loss for the full trail', () => {
-    const { gain, loss } = calculateElevationBetween(0, 3, trackPoints);
-    // 100→150 (+50), 150→120 (-30), 120→200 (+80)
-    expect(gain).toBe(130);
-    expect(loss).toBe(30);
-  });
-
-  it('computes for a sub-section', () => {
-    const { gain, loss } = calculateElevationBetween(1, 3, trackPoints);
-    // 150→120 (-30), 120→200 (+80)
-    expect(gain).toBe(80);
-    expect(loss).toBe(30);
-  });
-
-  it('returns 0,0 for same start/end', () => {
-    const { gain, loss } = calculateElevationBetween(1, 1, trackPoints);
-    expect(gain).toBe(0);
-    expect(loss).toBe(0);
   });
 });
 
@@ -159,10 +126,10 @@ describe('computeDays', () => {
     expect(days[1].date).toBe('2025-03-16');
   });
 
-  it('date is null when no startDate', () => {
+  it('date is undefined when no startDate', () => {
     const trail = makeFlatTrail(50);
     const days = computeDays(trail, []);
-    expect(days[0].date).toBeNull();
+    expect(days[0].date).toBeUndefined();
   });
 
   it('counts water sources correctly', () => {

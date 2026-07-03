@@ -33,11 +33,12 @@ Shared processing modules (used by both web and mobile):
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.)
 - `types.ts` - TypeScript interfaces
 - `plan-types.ts` - Plan data types shared with mobile
+- `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions
 - `day-calculator.ts` - Hiking time estimation and day splitting
-- `resupply-calculator.ts` - Town resupply point calculations
+- `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight)
 - `water-carry-calculator.ts` - Water carry distance calculations
 
-**Note on calculator duplication:** `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` have parallel implementations in both `src/lib/` (web) and `mobile/src/services/` (mobile). The mobile versions were written first; the web versions were ported later. Changes to calculation logic should be applied to both locations. Future cleanup: consolidate into `src/lib/` and share via Metro `watchFolders`.
+**Shared calculators:** `track-geometry.ts`, `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` are the single implementations used by both web and mobile. Mobile imports them via the `@lib` alias (Metro `watchFolders` + tsconfig paths + Jest `moduleNameMapper`). Parameter types are structural (e.g. `PlanWaypoint`, `PlanStopInput`) so each platform's own trail/waypoint/stop shapes are accepted without conversion. Mobile-only StopData (persisted in SQLite) stays in `mobile/src/services/plan-calculator-types.ts`, which re-exports the shared `SectionConfig`/`ComputedDay`.
 
 ### Build Scripts (`scripts/`)
 
@@ -182,7 +183,7 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 
 - **Map**: MapLibre React Native with OpenFreeMap vector tiles (offline capable)
 - **Storage**: `expo-sqlite` for trail data, `expo-file-system` for tile files
-- **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
+- **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types, plan-types, track-geometry, variant-reverse, day-calculator, resupply-calculator, water-carry-calculator. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
 - **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
 - **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.
 

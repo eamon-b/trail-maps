@@ -23,7 +23,7 @@ import {
   calculateDistancesToWaypoints,
   type WaypointDistance,
 } from '../../src/services/distance-calculator';
-import { computeDays } from '../../src/services/day-calculator';
+import { computeDays } from '@lib/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
 import { ALERT_THRESHOLD_KEY, BACKGROUND_TRACKING_KEY } from '../settings';

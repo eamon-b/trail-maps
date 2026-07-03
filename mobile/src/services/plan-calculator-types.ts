@@ -2,8 +2,11 @@
  * Types for the multi-day campsite planner.
  *
  * StopData is persisted as JSON in the plans table (stops_json column).
- * ComputedDay is derived at runtime from stops + trail data.
+ * SectionConfig and ComputedDay are shared with the web planner and live in
+ * src/lib/plan-types.ts (resolved via the @lib alias / Metro watchFolders).
  */
+
+export type { SectionConfig, ComputedDay } from '@lib/plan-types';
 
 /** A planned overnight stop, serialized into stops_json. Ordered by km. */
 export interface StopData {
@@ -18,27 +21,3 @@ export interface StopData {
   };
   notes?: string;
 }
-
-/** Configuration for section hiking — start/end boundaries. */
-export interface SectionConfig {
-  startKm: number;
-  endKm: number;
-  startName: string;
-  endName: string;
-}
-
-/** Runtime-computed day segment between two stops (or trail start/end). */
-export interface ComputedDay {
-  dayNumber: number;
-  date?: string;
-  startName: string;
-  endName: string;
-  startKm: number;
-  endKm: number;
-  distanceKm: number;
-  ascentM: number;
-  descentM: number;
-  estimatedHours: number;
-  waterSources: number;
-}
-

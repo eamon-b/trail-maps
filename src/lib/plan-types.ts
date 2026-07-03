@@ -1,20 +1,29 @@
 /**
- * Shared planning types for the web trip planner.
+ * Shared planning types used by the web trip planner and the mobile app.
  *
  * These interfaces are designed to be JSON-serialisable so that plan state
- * can be stored in localStorage and later encoded in URL params or QR codes.
+ * can be stored in localStorage / SQLite and later encoded in URL params or
+ * QR codes.
  */
 
-/** A planned overnight stop. Ordered by km. */
+/** A planned overnight stop for the web planner. Ordered by km. */
 export interface StopData {
   km: number;              // totalDistance position on trail
   waypointName: string;    // display name
 }
 
+/** Configuration for section hiking — start/end boundaries. */
+export interface SectionConfig {
+  startKm: number;
+  endKm: number;
+  startName: string;
+  endName: string;
+}
+
 /** Runtime-computed day segment between two stops (or trail start/end). */
 export interface ComputedDay {
   dayNumber: number;
-  date: string | null;     // ISO date if startDate set, otherwise null
+  date?: string;           // ISO date if startDate set, otherwise undefined
   startName: string;
   endName: string;
   startKm: number;

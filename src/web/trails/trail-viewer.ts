@@ -3,6 +3,7 @@
 
 import type * as Leaflet from 'leaflet';
 import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
+import { findNearestByDistance } from '@lib/track-geometry';
 declare const L: typeof Leaflet;
 
 interface TrackPoint {
@@ -193,26 +194,6 @@ function autoLinkUrls(text: string): string {
     /https?:\/\/[^\s<]+[^\s<.,;:!?)\]]/g,
     url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
   );
-}
-
-// Binary search to find nearest point by distance (O(log n) instead of O(n))
-function findNearestByDistance(points: TrackPoint[], targetDist: number): number {
-  if (points.length === 0) return 0;
-  let low = 0, high = points.length - 1;
-
-  while (low < high) {
-    const mid = Math.floor((low + high) / 2);
-    if (points[mid].dist < targetDist) {
-      low = mid + 1;
-    } else {
-      high = mid;
-    }
-  }
-
-  const candidates = [low - 1, low, low + 1].filter(i => i >= 0 && i < points.length);
-  return candidates.reduce((best, i) =>
-    Math.abs(points[i].dist - targetDist) < Math.abs(points[best].dist - targetDist) ? i : best
-  , candidates[0]);
 }
 
 function initMap(trail: Trail): void {

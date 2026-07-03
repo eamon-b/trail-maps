@@ -11,6 +11,8 @@
     "fetch:elevation": "tsx scripts/fetch-elevation.ts",
     "build:tiles": "tsx scripts/build-tiles.ts",
     "build:tiles:bibbulmun": "tsx scripts/build-tiles.ts --trail bibbulmun",
+    "build:contours-australia": "tsx scripts/build-contours-australia.ts",
+    "sync:style": "cp scripts/topo-style.json mobile/assets/topo-style.json",
     "fetch:fonts": "tsx scripts/fetch-font-glyphs.ts",
     "upload:tiles": "bash scripts/upload-tiles.sh",
     "preview": "vite preview",

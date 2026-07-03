@@ -370,7 +370,13 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
   console.log(`  Merging ${fileCount} tier files from ${WORK_DIR}` +
     (skipped ? ` (${skipped} skipped)` : ''));
 
+  // tippecanoe spills tens of GB of temporary sort files to /tmp by default;
+  // on tmpfs that exhausts the quota mid-merge. Keep temps next to the data.
+  const tmpDir = path.join(WORK_DIR, 'tmp');
+  ensureDir(tmpDir);
+
   execFileSync('tippecanoe', [
+    '-t', tmpDir,
     '-o', outputPath,
     `-Z${CONTOUR_MIN_ZOOM}`,
     `-z${MAX_ZOOM}`,

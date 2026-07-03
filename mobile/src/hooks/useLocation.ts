@@ -157,6 +157,10 @@ export function useLocation(
   }, [snapToTrail]);
 
   const bgUnsubRef = useRef<(() => void) | null>(null);
+  // Mode the current tracking session was actually started in. Stop must tear
+  // down what was started — not what the (possibly since-changed) background
+  // option currently says.
+  const activeModeRef = useRef<'foreground' | 'background' | null>(null);
 
   const startTracking = useCallback(async () => {
     try {
@@ -177,8 +181,10 @@ export function useLocation(
 
         bgUnsubRef.current = subscribeToBackgroundLocation(handleLocationUpdate);
         await startBackgroundTracking();
+        activeModeRef.current = 'background';
       } else {
         await startLocationTracking(handleLocationUpdate);
+        activeModeRef.current = 'foreground';
       }
 
       setIsTracking(true);
@@ -189,25 +195,31 @@ export function useLocation(
   }, [handleLocationUpdate, background]);
 
   const stopTrackingFn = useCallback(() => {
-    if (background) {
+    if (activeModeRef.current === 'background') {
       bgUnsubRef.current?.();
       bgUnsubRef.current = null;
       stopBackgroundTracking();
-    } else {
-      stopLocationTracking();
+    } else if (activeModeRef.current === 'foreground') {
+      // Unsubscribe only this hook instance — another screen may be tracking.
+      stopLocationTracking(handleLocationUpdate);
     }
+    activeModeRef.current = null;
     setIsTracking(false);
-  }, [background]);
+  }, [handleLocationUpdate]);
 
-  // Clean up on unmount
+  // Clean up this instance's subscriptions on unmount. Scoped to our own
+  // callback/mode so unmounting one screen never kills another screen's
+  // tracking session.
   useEffect(() => {
     return () => {
-      stopLocationTracking();
-      bgUnsubRef.current?.();
-      bgUnsubRef.current = null;
-      stopBackgroundTracking();
+      stopLocationTracking(handleLocationUpdate);
+      if (bgUnsubRef.current) {
+        bgUnsubRef.current();
+        bgUnsubRef.current = null;
+        stopBackgroundTracking();
+      }
     };
-  }, []);
+  }, [handleLocationUpdate]);
 
   return {
     location,

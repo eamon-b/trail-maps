@@ -76,9 +76,23 @@ export default function HikeScreen() {
   const [loading, setLoading] = useState(true);
   const [showSnoozeMenu, setShowSnoozeMenu] = useState(false);
   const [alertPreset, setAlertPreset] = useState<AlertThresholdPreset>('normal');
+  const [backgroundTracking, setBackgroundTracking] = useState(false);
 
   const trackPoints = useMemo(() => trail?.track.points ?? [], [trail]);
-  const { location, accuracy } = useLocation(trackPoints);
+  const { location, accuracy, isTracking, startTracking, stopTracking } =
+    useLocation(trackPoints, { background: backgroundTracking });
+
+  // Start GPS automatically once the active trail is loaded — the dashboard's
+  // distances are meaningless without a live position. Restart when the
+  // background preference changes so the new mode takes effect immediately.
+  const trackingModeRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!trail) return;
+    if (isTracking && trackingModeRef.current === backgroundTracking) return;
+    if (isTracking) stopTracking();
+    trackingModeRef.current = backgroundTracking;
+    startTracking();
+  }, [trail, backgroundTracking, isTracking, startTracking, stopTracking]);
 
   const currentKm = location?.trailKm ?? null;
 
@@ -110,6 +124,12 @@ export default function HikeScreen() {
           const savedThreshold = await AsyncStorage.getItem('trail-companion:alertThreshold');
           if (!cancelled && savedThreshold && ['tight', 'normal', 'loose'].includes(savedThreshold)) {
             setAlertPreset(savedThreshold as AlertThresholdPreset);
+          }
+
+          // Load background tracking preference
+          const savedBackground = await AsyncStorage.getItem('trail-companion:backgroundTracking');
+          if (!cancelled) {
+            setBackgroundTracking(savedBackground === 'true');
           }
 
           const trailId = await AsyncStorage.getItem(ACTIVE_TRAIL_KEY);

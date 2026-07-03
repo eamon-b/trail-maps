@@ -257,21 +257,30 @@ export default function PlanEditorScreen() {
     }
   }, [trail, stops, updateStops]);
 
+  // Resolve the stop that ends a given day. computeDays sorts stops and clamps
+  // them to the plan/section range, so day index and stops[] index can diverge
+  // (section plans, stops at exactly km 0 / trail end) — match on the day's
+  // end-boundary km instead of position. The last day ends at the range end,
+  // not a stop, so this returns -1 for it.
+  const stopIndexEndingDay = useCallback((dayIndex: number): number => {
+    const endKm = days[dayIndex]?.endKm;
+    if (endKm === undefined) return -1;
+    return stops.findIndex(s => s.km === endKm);
+  }, [days, stops]);
+
   // Handle remove (swipe-to-delete on a day card)
   const handleRemove = useCallback((dayIndex: number) => {
-    // The stop to remove is the one that ENDS this day (i.e., stops[dayIndex])
-    // Day 0 ends at stops[0], Day 1 ends at stops[1], etc.
-    // Last day has no stop to remove.
-    if (dayIndex >= stops.length) return;
+    const stopIdx = stopIndexEndingDay(dayIndex);
+    if (stopIdx < 0) return;
 
     undoStopsRef.current = stops;
-    const stop = stops[dayIndex];
+    const stop = stops[stopIdx];
     const removedName = stop.customLocation?.name ?? stop.waypointName ?? 'Stop';
-    const newStops = removeStop(stops, dayIndex);
+    const newStops = removeStop(stops, stopIdx);
     updateStops(newStops);
     setUndoMessage(`Removed ${removedName}`);
     setUndoVisible(true);
-  }, [stops, updateStops]);
+  }, [stops, stopIndexEndingDay, updateStops]);
 
   // Handle undo
   const handleUndo = useCallback(() => {
@@ -289,16 +298,18 @@ export default function PlanEditorScreen() {
 
   // Handle merge up (removes the stop between this day and previous)
   const handleMergeUp = useCallback((dayIndex: number) => {
-    // Day N merges with Day N-1 by removing stops[dayIndex - 1]
-    if (dayIndex < 1 || dayIndex - 1 >= stops.length) return;
-    const stop = stops[dayIndex - 1];
+    // Day N merges with Day N-1 by removing the stop that ends Day N-1
+    if (dayIndex < 1) return;
+    const stopIdx = stopIndexEndingDay(dayIndex - 1);
+    if (stopIdx < 0) return;
+    const stop = stops[stopIdx];
     const removedName = stop.customLocation?.name ?? stop.waypointName ?? 'Stop';
     undoStopsRef.current = stops;
-    const newStops = removeStop(stops, dayIndex - 1);
+    const newStops = removeStop(stops, stopIdx);
     updateStops(newStops);
     setUndoMessage(`Merged at ${removedName}`);
     setUndoVisible(true);
-  }, [stops, updateStops]);
+  }, [stops, stopIndexEndingDay, updateStops]);
 
   // Handle split — show selector for waypoints between day's start/end
   const handleSplit = useCallback((dayIndex: number) => {
@@ -402,8 +413,10 @@ export default function PlanEditorScreen() {
 
   // Long press to relocate stop on map
   const handleLongPressDay = useCallback((dayIndex: number) => {
-    if (!plan || dayIndex >= stops.length) return;
-    const stop = stops[dayIndex];
+    if (!plan) return;
+    const stopIdx = stopIndexEndingDay(dayIndex);
+    if (stopIdx < 0) return;
+    const stop = stops[stopIdx];
     router.push({
       pathname: '/plan/map',
       params: {
@@ -413,7 +426,7 @@ export default function PlanEditorScreen() {
         currentKm: String(stop.km),
       },
     });
-  }, [plan, stops, router]);
+  }, [plan, stops, stopIndexEndingDay, router]);
 
   // Export handlers
   const handleExport = useCallback(() => {
@@ -647,11 +660,11 @@ export default function PlanEditorScreen() {
               renderItem={({ item, index }) => (
                 <DayPlanCard
                   data={dayToCardData(item)}
-                  onRemove={index < stops.length ? () => handleRemove(index) : undefined}
+                  onRemove={index < days.length - 1 ? () => handleRemove(index) : undefined}
                   onMergeUp={index > 0 ? () => handleMergeUp(index) : undefined}
                   onSplit={() => handleSplit(index)}
                   onShowOnMap={() => handleShowOnMap(index)}
-                  onLongPress={index < stops.length ? () => handleLongPressDay(index) : undefined}
+                  onLongPress={index < days.length - 1 ? () => handleLongPressDay(index) : undefined}
                   climate={dayClimate[index]}
                 />
               )}

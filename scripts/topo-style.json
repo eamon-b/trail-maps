@@ -82,7 +82,7 @@
       "type": "fill",
       "source": "basemap",
       "source-layer": "water",
-      "filter": ["in", "kind_detail", "lake", "reservoir", "basin"],
+      "filter": ["==", "$type", "Polygon"],
       "paint": {
         "fill-color": "#aad3df"
       }
@@ -92,7 +92,10 @@
       "type": "line",
       "source": "basemap",
       "source-layer": "water",
-      "filter": ["in", "kind_detail", "river", "stream", "canal"],
+      "filter": ["all",
+        ["==", "$type", "LineString"],
+        ["in", "kind_detail", "river", "stream", "canal"]
+      ],
       "paint": {
         "line-color": "#aad3df",
         "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 15, 2]
@@ -123,8 +126,8 @@
       ],
       "paint": {
         "line-color": "rgb(166, 116, 66)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 12, 0.8, 14, 1.6],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.2, 12, 0.35, 14, 0.6]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 12, 1.0, 14, 1.6],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.3, 12, 0.45, 14, 0.6]
       }
     },
     {
@@ -136,8 +139,8 @@
       "filter": ["==", ["%", ["to-number", ["get", "elevation"]], 200], 0],
       "paint": {
         "line-color": "rgb(150, 100, 50)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 11, 1.0, 13, 1.4, 15, 2.0],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.2, 11, 0.4, 13, 0.55, 15, 0.7]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 11, 1.4, 13, 1.6, 15, 2.0],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.35, 11, 0.55, 13, 0.6, 15, 0.7]
       }
     },
     {

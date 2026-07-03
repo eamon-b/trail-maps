@@ -2,6 +2,16 @@ name = "contour-tiles"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
+# Serve on the account's workers.dev subdomain:
+#   https://contour-tiles.<account-subdomain>.workers.dev
+# That URL must match EXPO_PUBLIC_CONTOUR_TILE_URL in mobile/eas.json and
+# mobile/.env. Deploy with: npm run deploy (requires `wrangler login`).
+workers_dev = true
+
 [[r2_buckets]]
 binding = "TILES_BUCKET"
 bucket_name = "aus-map-data"
+
+# Optionally lock CORS down in production:
+# [vars]
+# ALLOWED_ORIGIN = "https://trailmaps.example.com"

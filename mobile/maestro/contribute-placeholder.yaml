@@ -1,0 +1,15 @@
+appId: com.trailcompanion.app
+---
+# Verify the Contribute tab content
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
+
+# Navigate to Contribute tab
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+
+# Verify placeholder content
+- assertVisible: "Contribute"
+- assertVisible: "Import GPX Trail"

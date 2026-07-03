@@ -1,0 +1,65 @@
+appId: com.trailcompanion.app
+---
+# Verify trail overview datasheet section and dedicated datasheet screen
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 30000
+
+# Open first trail overview
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Wait for trail data to load
+- extendedWaitUntil:
+    visible: "Australian Alps Walking Track"
+    timeout: 15000
+
+# Scroll to find the datasheet section on overview
+- scrollUntilVisible:
+    element:
+      text: "DATASHEET"
+    direction: DOWN
+    timeout: 10000
+
+# Verify datasheet section elements
+- assertVisible: "Export"
+- assertVisible: "Expand"
+
+# Expand the datasheet table
+- tapOn: "Expand"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Collapse"
+    timeout: 5000
+- assertVisible: "Section"
+
+# Collapse it back
+- tapOn: "Collapse"
+- waitForAnimationToEnd
+
+# Scroll down to the Datasheet button (after WAYPOINTS and OFFLINE MAPS sections)
+- scrollUntilVisible:
+    element:
+      id: "datasheet-button"
+    direction: DOWN
+    timeout: 15000
+
+# Navigate to the dedicated datasheet screen
+- tapOn:
+    id: "datasheet-button"
+- waitForAnimationToEnd
+
+# Verify dedicated datasheet screen loaded
+- extendedWaitUntil:
+    visible: "km remaining"
+    timeout: 15000
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd
+- pressKey: back
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 10000

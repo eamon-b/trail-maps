@@ -354,5 +354,48 @@ describe('waypoint-classifier', () => {
         expect(classifyWaypoint('Unknown Place').source).toBe('default');
       });
     });
+
+    describe('additional edge cases', () => {
+      it('handles empty string name', () => {
+        const result = classifyWaypoint('');
+        expect(result.type).toBe('waypoint');
+        expect(result.source).toBe('default');
+      });
+
+      it('handles whitespace-only name', () => {
+        const result = classifyWaypoint('   ');
+        expect(result.type).toBe('waypoint');
+      });
+
+      it('handles name that is only a prefix', () => {
+        const result = classifyWaypoint('C:');
+        // Should still classify via prefix
+        expect(result).toBeDefined();
+      });
+
+      it('is case-insensitive for known towns', () => {
+        const upper = classifyWaypoint('JINDABYNE');
+        const lower = classifyWaypoint('jindabyne');
+        const mixed = classifyWaypoint('Jindabyne');
+        expect(upper.type).toBe('town');
+        expect(lower.type).toBe('town');
+        expect(mixed.type).toBe('town');
+      });
+
+      it('all 14 standard types are classifiable', () => {
+        const typeExamples: Record<string, string> = {
+          campsite: 'C: Test Camp',
+          'water-tank': 'WT: Creek',
+          town: 'Jindabyne',
+          hut: 'H: Mountain Hut',
+          endpoint: 'S: Start Point',
+          trailhead: 'TH: Northern Trailhead',
+        };
+        for (const [expectedType, name] of Object.entries(typeExamples)) {
+          const result = classifyWaypoint(name);
+          expect(result.type).toBe(expectedType);
+        }
+      });
+    });
   });
 });

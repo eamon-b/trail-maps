@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan — {{TRAIL_NAME}} - Trail Maps</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    /* ---- Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+
+    /* ---- Plan layout: header + three panels ---- */
+    #plan-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      min-width: 900px;
+    }
+
+    /* ---- Header bar ---- */
+    #plan-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-primary, #fff);
+      border-bottom: 1px solid var(--border-color, #ddd);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    #plan-header .back-link {
+      color: var(--accent-color, #2196F3);
+      text-decoration: none;
+      font-weight: 500;
+      white-space: nowrap;
+      font-size: 0.9rem;
+    }
+    #plan-header .back-link:hover { text-decoration: underline; }
+    #plan-header .trail-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-secondary, #666);
+      white-space: nowrap;
+    }
+    #plan-name-input {
+      flex: 1;
+      min-width: 120px;
+      max-width: 300px;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid var(--border-color, #ccc);
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    #plan-date-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      font-size: 0.875rem;
+    }
+    #plan-start-date {
+      padding: 0.35rem 0.6rem;
+      border: 1px solid var(--border-color, #ccc);
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+    #save-status {
+      font-size: 0.8rem;
+      color: var(--text-secondary, #888);
+      white-space: nowrap;
+    }
+    #save-status.unsaved { color: #e65100; }
+
+    /* ---- Three-panel area ---- */
+    #plan-body {
+      display: grid;
+      grid-template-columns: 300px 1fr 220px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ---- Left panel ---- */
+    #left-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color, #ddd);
+      min-height: 0;
+      overflow: hidden;
+    }
+    #left-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color, #ddd);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.6rem 0.5rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary, #666);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.active {
+      color: var(--accent-color, #2196F3);
+      border-bottom-color: var(--accent-color, #2196F3);
+    }
+    .tab-btn:hover { color: var(--accent-color, #2196F3); }
+    .tab-panel {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .tab-panel.active { display: flex; flex-direction: column; }
+
+    /* Days tab */
+    #days-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+    .day-card {
+      border: 1px solid var(--border-color, #ddd);
+      border-radius: 6px;
+      padding: 0.65rem 0.75rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .day-card:hover { background: var(--bg-secondary, #f5f5f5); }
+    .day-card.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .day-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.2rem;
+    }
+    .day-card-number { font-weight: 700; font-size: 0.9rem; }
+    .day-card-date { font-size: 0.75rem; color: var(--text-secondary, #888); }
+    .day-card-route {
+      font-size: 0.8rem;
+      color: var(--text-secondary, #555);
+      margin-bottom: 0.3rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .day-card-stats {
+      font-size: 0.75rem;
+      color: var(--text-secondary, #777);
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .day-card-stats .water-info { color: #0284c7; }
+    .days-empty {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      color: var(--text-secondary, #888);
+      font-size: 0.875rem;
+    }
+
+    /* Collapsible sections (resupply, water carry) */
+    .collapse-section {
+      border-top: 1px solid var(--border-color, #ddd);
+      flex-shrink: 0;
+    }
+    .collapse-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary, #666);
+      user-select: none;
+    }
+    .collapse-header:hover { background: var(--bg-secondary, #f5f5f5); }
+    .collapse-chevron { font-size: 0.65rem; transition: transform 0.15s; }
+    .collapse-chevron.open { transform: rotate(90deg); }
+    .collapse-body { display: none; padding: 0 0.5rem 0.5rem; }
+    .collapse-body.open { display: block; }
+    .gap-item {
+      font-size: 0.78rem;
+      padding: 0.3rem 0.25rem;
+      border-bottom: 1px solid var(--border-color, #eee);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+    .gap-item:last-child { border-bottom: none; }
+    .gap-warn { color: #dc2626; font-weight: 600; }
+    .gap-ok { color: var(--text-secondary, #555); }
+
+    /* Stops tab */
+    #stops-search {
+      padding: 0.5rem;
+      flex-shrink: 0;
+    }
+    #stops-search input {
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--border-color, #ccc);
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    #stops-list {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .stop-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color, #eee);
+      font-size: 0.8rem;
+      transition: background 0.1s;
+    }
+    .stop-row:hover { background: var(--bg-secondary, #f5f5f5); }
+    .stop-row.is-stop { background: #eff6ff; }
+    .stop-row.is-stop:hover { background: #dbeafe; }
+    .stop-check { font-size: 1rem; width: 1.1rem; flex-shrink: 0; }
+    .stop-type-icon { font-size: 1rem; flex-shrink: 0; }
+    .stop-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stop-km { color: var(--text-secondary, #888); white-space: nowrap; }
+    .stop-gap { color: var(--text-secondary, #aaa); font-size: 0.72rem; white-space: nowrap; }
+
+    /* ---- Center panel ---- */
+    #center-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #plan-map {
+      flex: 1;
+      min-height: 0;
+    }
+    #elevation-section {
+      height: 160px;
+      border-top: 1px solid var(--border-color, #ddd);
+      flex-shrink: 0;
+      position: relative;
+    }
+    #elevation-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #elev-hover-line {
+      position: absolute;
+      top: 0;
+      bottom: 24px;
+      width: 2px;
+      background: #ff5722;
+      pointer-events: none;
+      display: none;
+    }
+    #elev-hover-tooltip {
+      position: absolute;
+      top: 5px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      pointer-events: none;
+      display: none;
+      white-space: nowrap;
+    }
+
+    /* ---- Right panel (datasheet) ---- */
+    #right-panel {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border-color, #ddd);
+      overflow: hidden;
+      min-height: 0;
+    }
+    #datasheet-header {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border-color, #ddd);
+      flex-shrink: 0;
+    }
+    #datasheet-title {
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin: 0 0 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #datasheet-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-secondary, #888);
+    }
+    #datasheet-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .ds-row {
+      display: grid;
+      grid-template-columns: 1.4rem 1fr auto;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--border-color, #eee);
+      font-size: 0.78rem;
+    }
+    .ds-row:last-child { border-bottom: none; }
+    .ds-type-icon { text-align: center; }
+    .ds-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ds-km { text-align: right; color: var(--text-secondary, #888); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .ds-row.ds-start { font-weight: 700; background: var(--bg-secondary, #f9f9f9); }
+    .ds-row.ds-end { font-weight: 700; background: var(--bg-secondary, #f9f9f9); }
+
+    /* ---- Waypoint map markers ---- */
+    .waypoint-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      border: 2px solid white;
+    }
+    .waypoint-marker.town { background: #ffcc80; }
+    .waypoint-marker.hut { background: #b39ddb; }
+    .waypoint-marker.campsite { background: #a5d6a7; }
+    .waypoint-marker.water { background: #81d4fa; }
+    .waypoint-marker.water-tank { background: #80cbc4; }
+    .waypoint-marker.mountain { background: #bcaaa4; }
+    .waypoint-marker.food { background: #ffab91; }
+    .waypoint-marker.trailhead { background: #ffe082; }
+    .waypoint-marker.endpoint { background: #ef9a9a; }
+    .waypoint-marker.default { background: #e0e0e0; }
+    .waypoint-marker.is-stop { border-color: #3b82f6; border-width: 3px; }
+    .stop-flag-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: #3b82f6;
+      color: white;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      border: 2px solid white;
+    }
+
+    /* ---- Small screen fallback ---- */
+    #small-screen-msg {
+      display: none;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-secondary, #666);
+    }
+    @media (max-width: 900px) {
+      #plan-shell { display: none; }
+      #small-screen-msg { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <div id="small-screen-msg">
+    <p>The trip planner requires a screen width of at least 900px.</p>
+    <p><a href="index.html">← Back to trail</a></p>
+  </div>
+
+  <div id="plan-shell">
+    <!-- Header bar -->
+    <div id="plan-header">
+      <a href="index.html" class="back-link">← Trail</a>
+      <span class="trail-title">{{TRAIL_NAME}}</span>
+      <input type="text" id="plan-name-input" placeholder="Plan name…" maxlength="80" />
+      <div id="plan-date-group">
+        <label for="plan-start-date" style="font-size:0.875rem;">Start:</label>
+        <input type="date" id="plan-start-date" />
+      </div>
+      <span id="save-status">Saved</span>
+    </div>
+
+    <!-- Three-panel body -->
+    <div id="plan-body">
+
+      <!-- Left panel -->
+      <div id="left-panel">
+        <div id="left-tabs">
+          <button class="tab-btn active" data-tab="days">Days</button>
+          <button class="tab-btn" data-tab="stops">Stops</button>
+        </div>
+
+        <!-- Days tab -->
+        <div id="tab-days" class="tab-panel active">
+          <div id="days-list">
+            <p class="days-empty">Add stops in the Stops tab to build your day plan.</p>
+          </div>
+
+          <!-- Resupply section -->
+          <div class="collapse-section" id="resupply-section" hidden>
+            <div class="collapse-header" data-collapse="resupply">
+              Resupply <span class="collapse-chevron open">▶</span>
+            </div>
+            <div class="collapse-body open" id="resupply-body"></div>
+          </div>
+
+          <!-- Water carry section -->
+          <div class="collapse-section" id="water-section" hidden>
+            <div class="collapse-header" data-collapse="water">
+              Water carry <span class="collapse-chevron open">▶</span>
+            </div>
+            <div class="collapse-body open" id="water-body"></div>
+          </div>
+        </div>
+
+        <!-- Stops tab -->
+        <div id="tab-stops" class="tab-panel">
+          <div id="stops-search">
+            <input type="text" id="stops-filter" placeholder="Filter waypoints…" autocomplete="off" />
+          </div>
+          <div id="stops-list"></div>
+        </div>
+      </div>
+
+      <!-- Center panel -->
+      <div id="center-panel">
+        <div id="plan-map"></div>
+        <div id="elevation-section">
+          <canvas id="elevation-canvas"></canvas>
+          <div id="elev-hover-line"></div>
+          <div id="elev-hover-tooltip"></div>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div id="right-panel">
+        <div id="datasheet-header">
+          <p id="datasheet-title">All waypoints</p>
+          <p id="datasheet-subtitle"></p>
+        </div>
+        <div id="datasheet-body"></div>
+      </div>
+
+    </div><!-- #plan-body -->
+  </div><!-- #plan-shell -->
+
+  <script type="module">
+    import { initPlanViewer } from '../plan-viewer.ts';
+    initPlanViewer('{{TRAIL_ID}}');
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+appId: com.trailcompanion.app
+---
+# Verify trail overview shows offline maps section and tile download status
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
+
+# Open first trail overview
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Scroll to offline maps section
+- scrollUntilVisible:
+    element:
+      text: "OFFLINE MAPS"
+    direction: DOWN
+
+# Verify offline maps section exists with status
+- assertVisible: "OFFLINE MAPS"
+
+# Navigate to Plan tab to check tile management UI
+- pressKey: back
+- waitForAnimationToEnd
+- tapOn: "Plan"
+- waitForAnimationToEnd
+
+# Go back to start
+- tapOn: "Plan"
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

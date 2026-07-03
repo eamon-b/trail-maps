@@ -355,3 +355,63 @@ describe('TRACK_CLASSIFICATION_DEFAULTS', () => {
     expect(TRACK_CLASSIFICATION_DEFAULTS.fallbackToLongest).toBe(true);
   });
 });
+
+describe('additional edge cases', () => {
+  function mockPoints(count: number, startLat = -33.0, startLon = 151.0): GpxPoint[] {
+    return Array.from({ length: count }, (_, i) => ({
+      lat: startLat + i * 0.01,
+      lon: startLon + i * 0.01,
+      ele: 100,
+      time: null,
+    }));
+  }
+
+  it('handles 10+ tracks with complex classification', () => {
+    const tracks = Array.from({ length: 12 }, (_, i) => ({
+      name: `Track ${i}`,
+      points: mockPoints(5, -33 + i * 0.1),
+    }));
+    tracks[0].name = 'Main Route';
+
+    const result = classifyTracks(tracks, {
+      mainRoutePatterns: ['^Main Route$'],
+    });
+    expect(result.mainTracks).toHaveLength(1);
+    expect(result.unclassifiedTracks.length + result.mainTracks.length).toBeLessThanOrEqual(12);
+  });
+
+  it('handles all tracks matching alternate pattern (no main)', () => {
+    const tracks = [
+      { name: 'Alt Route A', points: mockPoints(10) },
+      { name: 'Alt Route B', points: mockPoints(5) },
+    ];
+
+    const result = classifyTracks(tracks, {
+      alternatePatterns: ['^Alt'],
+      fallbackToLongest: false,
+    });
+    expect(result.mainTracks).toHaveLength(0);
+    expect(result.alternateTracks).toHaveLength(2);
+  });
+
+  it('handles tracks with unicode characters in names', () => {
+    const tracks = [
+      { name: 'Main Röute', points: mockPoints(10) },
+      { name: 'Détour Path', points: mockPoints(5) },
+    ];
+
+    const result = classifyTracks(tracks, {
+      mainRoutePatterns: ['Röute'],
+      alternatePatterns: ['Détour'],
+    });
+    expect(result.mainTracks).toHaveLength(1);
+    expect(result.alternateTracks).toHaveLength(1);
+  });
+
+  it('empty tracks array returns empty result', () => {
+    const result = classifyTracks([], {});
+    expect(result.mainTracks).toHaveLength(0);
+    expect(result.alternateTracks).toHaveLength(0);
+    expect(result.sideTripTracks).toHaveLength(0);
+  });
+});

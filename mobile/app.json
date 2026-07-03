@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Trail Companion",
+    "slug": "trail-maps",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "trail-companion",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4CAF50"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trailcompanion.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your position on the trail map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location keeps tracking your hike when the screen is locked.",
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4CAF50"
+      },
+      "package": "com.trailcompanion.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@maplibre/maplibre-react-native",
+        {
+          "locationWhenInUsePermission": "Show your position on the trail map and calculate distances to waypoints."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Show your position on the trail map and calculate distances to waypoints.",
+          "locationAlwaysAndWhenInUsePermission": "Background location keeps tracking your hike when the screen is locked.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-sqlite"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b498c5fd-080e-45cb-9ad2-5619b4b85cfc"
+      },
+      "router": {}
+    },
+    "owner": "eamonb123"
+  }
+}

@@ -1,0 +1,60 @@
+Grid Tile Pipeline — How to Run
+================================
+
+Prerequisites:
+  - gdal 3.6+, tippecanoe, pmtiles CLI
+  - data/protomaps/planet.pmtiles (Protomaps planet file)
+  - ~/.netrc with NASA EarthData credentials
+  - wrangler authenticated (for upload)
+
+
+Step 1: Download SRTM DEM tiles (~3-5 GB, 2-4 hours)
+
+  ./scripts/download-dem-australia.sh
+
+
+Step 2: Build grid tiles (~3-4 hours with parallelism)
+
+  npx tsx scripts/build-grid-tiles.ts \
+    --protomaps-file data/protomaps/planet.pmtiles \
+    --parallel 4
+
+
+Step 3: Upload to R2 (~15-25 GB)
+
+  ./scripts/upload-tiles.sh --grid
+
+
+Testing with a single cell first (~2-5 min)
+--------------------------------------------
+
+  npx tsx scripts/build-grid-tiles.ts \
+    --cell E116_S32 \
+    --protomaps-file data/protomaps/planet.pmtiles
+
+  ./scripts/upload-tiles.sh --grid E116_S32
+
+
+Building a regional subset
+--------------------------
+
+  # Western Australia only
+  npx tsx scripts/build-grid-tiles.ts \
+    --lon-range 112,126 \
+    --protomaps-file data/protomaps/planet.pmtiles \
+    --parallel 4
+
+  # Southern NSW/VIC only
+  npx tsx scripts/build-grid-tiles.ts \
+    --lat-range 34,38 \
+    --protomaps-file data/protomaps/planet.pmtiles \
+    --parallel 4
+
+
+Resuming an interrupted build
+-----------------------------
+
+  npx tsx scripts/build-grid-tiles.ts \
+    --protomaps-file data/protomaps/planet.pmtiles \
+    --parallel 4 \
+    --skip-existing

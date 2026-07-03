@@ -1,0 +1,32 @@
+appId: com.trailcompanion.app
+---
+# Quick smoke test: launch → verify data loaded → navigate tabs → open trail
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "Select a Trail"
+    timeout: 30000
+
+# Wait for trail list to render (data loads async from SQLite)
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 15000
+
+# Verify trail list rendered with trail name
+- assertVisible: "Australian Alps Walking Track"
+
+# Navigate through tabs
+- tapOn: "Hike"
+- waitForAnimationToEnd
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+- tapOn: "Plan"
+- waitForAnimationToEnd
+
+# Open first trail
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd
+- assertVisible: "Select a Trail"

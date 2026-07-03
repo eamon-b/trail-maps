@@ -1,0 +1,27 @@
+appId: com.trailcompanion.app
+---
+# Verify measure tool screen loads with expected UI elements
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "Measure"
+    timeout: 30000
+
+# Tap Measure button in the Plan tab header
+- tapOn: "Measure"
+- waitForAnimationToEnd
+
+# Select trail from the dialog (multiple trails available)
+- tapOn:
+    text: "Australian Alps Walking Track"
+    optional: true
+- waitForAnimationToEnd
+
+# Verify measure screen UI
+- extendedWaitUntil:
+    visible: "Start Point"
+    timeout: 5000
+- assertVisible: "End Point"
+
+# Go back
+- pressKey: back
+- waitForAnimationToEnd

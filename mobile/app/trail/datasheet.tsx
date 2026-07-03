@@ -15,7 +15,7 @@ import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import { type TrailWaypoint } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
-import { calculateElevationBetween } from '../../src/services/distance-calculator';
+import { calculateElevationBetween } from '@lib/track-geometry';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { DIRECTION_PREF_KEY } from './[id]';
 import { spacing, radii } from '../../src/tokens/spacing';

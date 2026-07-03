@@ -1,6 +1,6 @@
 import type { TrackPoint, TrailWaypoint } from '../../lib/trail-utils';
+import { calculateElevationBetween } from '@lib/track-geometry';
 import {
-  calculateElevationBetween,
   calculateDistancesToWaypoints,
   getNextWaypointsByType,
 } from '../distance-calculator';

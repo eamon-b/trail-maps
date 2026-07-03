@@ -1,8 +1,6 @@
 import { calculateElevationBetween } from '@lib/track-geometry';
 import type { TrackPoint, TrailWaypoint } from '../lib/trail-utils';
 
-export { calculateElevationBetween };
-
 export interface WaypointDistance {
   waypoint: TrailWaypoint;
   /** Trail distance from current position in km */

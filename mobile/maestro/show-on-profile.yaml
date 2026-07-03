@@ -1,0 +1,48 @@
+appId: com.trailcompanion.app
+---
+# Regression: "Show on elevation profile" must close the waypoint detail
+# sheet AND expand the elevation drawer. This chain was broken repeatedly
+# before the declarative-drawer refactor (issue #6, Phase 1).
+#
+# Waypoint selection goes through the datasheet's "Show on map" because map
+# markers render inside the MapLibre GL canvas and can't be targeted by text.
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 30000
+
+# Open the first trail (AAWT) and its map
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Open Map"
+- waitForAnimationToEnd
+
+# Select a waypoint via datasheet → "Show on map"
+- tapOn: "View waypoint datasheet"
+- extendedWaitUntil:
+    visible: "O'Sheas Mill Site"
+    timeout: 15000
+- tapOn: "O'Sheas Mill Site"
+- waitForAnimationToEnd
+- tapOn: "Show on map"
+- waitForAnimationToEnd
+
+# Back on the map: waypoint detail sheet is up
+- extendedWaitUntil:
+    visible: "Show on elevation profile"
+    timeout: 10000
+
+# The regression under test
+- tapOn: "Show on elevation profile"
+- waitForAnimationToEnd
+
+# Detail sheet closed…
+- assertNotVisible: "Show on elevation profile"
+# …and the drawer actually expanded (hint text flips when index > 0)
+- assertVisible: "Pull down to collapse"
+- takeScreenshot: show-on-profile

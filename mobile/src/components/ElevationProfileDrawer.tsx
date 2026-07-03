@@ -83,7 +83,11 @@ export function ElevationProfileDrawer({
           {currentElevation != null ? `${Math.round(currentElevation)}m` : 'Elevation Profile'}
         </Text>
         <Text style={[styles.headerHint, { color: colors.textSecondary }]}>
-          {withElevation ? 'Pull up for profile' : 'No elevation data'}
+          {!withElevation
+            ? 'No elevation data'
+            : index > 0
+              ? 'Pull down to collapse'
+              : 'Pull up for profile'}
         </Text>
       </View>
 

@@ -385,8 +385,10 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
   execFileSync('tippecanoe', [
     '-t', tmpDir,
     '-o', outputPath,
-    // Without -q the continuous progress indicator accumulates in the piped
-    // stderr buffer for hours and can hit maxBuffer, killing the merge late.
+    // Quiet the progress indicator unless --verbose. Output also streams to
+    // the terminal (stdio inherit) instead of a pipe: any capture buffer
+    // eventually fills over a multi-hour merge and kills tippecanoe with
+    // ENOBUFS — -q alone doesn't prevent per-tile feature-drop warnings.
     ...(verbose ? [] : ['-q']),
     `-Z${CONTOUR_MIN_ZOOM}`,
     `-z${MAX_ZOOM}`,
@@ -400,8 +402,7 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
     ...layerArgs,
   ], {
     cwd: PROJECT_ROOT,
-    stdio: verbose ? 'inherit' : 'pipe',
-    maxBuffer: 50 * 1024 * 1024,
+    stdio: ['ignore', 'inherit', 'inherit'],
   });
 
   console.log(`  ✓ PMTiles output: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);

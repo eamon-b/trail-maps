@@ -146,10 +146,12 @@ export async function getOnlineStyleWithContours(): Promise<object | null> {
   const style = await fetchLibertyStyle();
 
   // Clone sources and layers so we don't mutate the cached style object
+  // (trailing slash in the env var would yield //contours/... which the
+  // worker's path regex rejects)
   const sources = { ...(style.sources as Record<string, unknown>) };
   sources.contour = {
     type: 'vector',
-    tiles: [`${contourTileUrl}/contours/{z}/{x}/{y}.pbf`],
+    tiles: [`${contourTileUrl.replace(/\/$/, '')}/contours/{z}/{x}/{y}.pbf`],
     minzoom: 9,
     maxzoom: 15,
   };

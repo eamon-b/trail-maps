@@ -6,6 +6,8 @@
  * QR codes.
  */
 
+import type { PlanDirection } from './plan-direction';
+
 /** A planned overnight stop for the web planner. Ordered by km. */
 export interface StopData {
   km: number;              // totalDistance position on trail
@@ -40,6 +42,12 @@ export interface PlanState {
   name: string;
   startDate: string | null;   // ISO date string or null
   stops: StopData[];           // sorted by km, excludes trail start/end (implicit)
+  /**
+   * Hiking direction. Absent = 'NOBO' (plans saved before the direction
+   * toggle existed). Stop km stay NOBO-absolute regardless of direction —
+   * see src/lib/plan-direction.ts for the km-space contract.
+   */
+  direction?: PlanDirection;
 }
 
 /** Gap between consecutive resupply points. */

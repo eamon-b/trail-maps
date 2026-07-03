@@ -144,80 +144,16 @@ export function trailJsonToTrail(json: TrailJson): Trail {
 // Direction reversal
 // ---------------------------------------------------------------------------
 
-/** Reverse track points, flipping cumulative distances. */
-export function reverseTrackPoints(points: TrackPoint[], totalDistance: number): TrackPoint[] {
-  return [...points].reverse().map(p => ({
-    ...p,
-    dist: totalDistance - p.dist,
-  }));
-}
-
-/** Reverse waypoints, recalculating segment distances and ascent/descent. */
-export function reverseWaypoints(
-  waypoints: TrailWaypoint[],
-  totalDistance: number,
-  trackLength: number,
-): TrailWaypoint[] {
-  const reversed = [...waypoints].reverse();
-
-  const withNewTotals = reversed.map(wp => ({
-    ...wp,
-    newTotalDistance: totalDistance - (wp.totalDistance || 0),
-  }));
-
-  let runningAscent = 0;
-  let runningDescent = 0;
-
-  return withNewTotals.map((wp, i, arr) => {
-    const segmentAscent = wp.descent || 0;
-    const segmentDescent = wp.ascent || 0;
-    runningAscent += segmentAscent;
-    runningDescent += segmentDescent;
-
-    const segmentDist = i === 0 ? 0 : wp.newTotalDistance - arr[i - 1].newTotalDistance;
-
-    return {
-      ...wp,
-      distance: Math.abs(segmentDist),
-      totalDistance: wp.newTotalDistance,
-      ascent: segmentAscent,
-      descent: segmentDescent,
-      totalAscent: runningAscent,
-      totalDescent: runningDescent,
-      trackIndex: trackLength - 1 - (wp.trackIndex || 0),
-    };
-  });
-}
+// Trail/track/waypoint reversal is shared with the web plan viewer; the
+// implementation lives in src/lib/trail-reverse.ts (structural generics, so
+// the mobile Trail/TrailWaypoint/TrackPoint types flow through unchanged)
+// and is re-exported here so existing mobile imports keep working.
+export { reverseTrackPoints, reverseWaypoints, createReversedTrail } from '@lib/trail-reverse';
 
 // Variant reversal math is shared with the web viewer via src/lib (see
 // @lib/variant-reverse for the semantics, including the untouched passthrough
 // for variants that never attach to the main track).
 export { reverseAlternates, transformSideTrips };
-
-/** Create a fully reversed copy of a trail (swap start/end direction). */
-export function createReversedTrail(trail: Trail): Trail {
-  const totalDist = trail.track.totalDistance;
-  const trackLength = trail.track.points.length;
-
-  const reversedPoints = reverseTrackPoints(trail.track.points, totalDist);
-  const reversedDisplay = trail.track.displayPoints
-    ? reverseTrackPoints(trail.track.displayPoints, totalDist)
-    : undefined;
-
-  return {
-    config: trail.config,
-    track: {
-      points: reversedPoints,
-      displayPoints: reversedDisplay,
-      totalDistance: totalDist,
-      totalAscent: trail.track.totalDescent,
-      totalDescent: trail.track.totalAscent,
-    },
-    waypoints: reverseWaypoints(trail.waypoints, totalDist, trackLength),
-    alternates: reverseAlternates(trail.alternates || [], totalDist),
-    sideTrips: transformSideTrips(trail.sideTrips || [], totalDist),
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Lookup helpers

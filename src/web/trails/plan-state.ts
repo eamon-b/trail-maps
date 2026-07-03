@@ -15,6 +15,8 @@ function isValidPlanState(data: unknown): data is PlanState {
   if (typeof obj.name !== 'string') return false;
   if (obj.startDate !== null && typeof obj.startDate !== 'string') return false;
   if (!Array.isArray(obj.stops)) return false;
+  // direction is optional (absent = NOBO); reject anything but the two enum values
+  if (obj.direction !== undefined && obj.direction !== 'NOBO' && obj.direction !== 'SOBO') return false;
   return true;
 }
 

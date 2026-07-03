@@ -13,6 +13,8 @@ import { computeDays } from '@lib/day-calculator';
 import { findNearestByDistance } from '@lib/track-geometry';
 import { analyzeResupply } from '@lib/resupply-calculator';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
+import { createReversedTrail } from '@lib/trail-reverse';
+import { KM_EPSILON, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { loadPlanState, savePlanState } from './plan-state';
 
 // ---------------------------------------------------------------------------
@@ -25,6 +27,8 @@ interface Trail {
     name: string;
     shortName?: string;
     region?: string;
+    /** Display labels for the two hiking directions (e.g. Westbound/Eastbound). */
+    direction?: { default: string; reversed: string };
   };
   track: {
     points: PlanTrackPoint[];
@@ -41,6 +45,8 @@ interface Trail {
 // ---------------------------------------------------------------------------
 
 let trail: Trail;
+/** Lazily-built reversed copy of `trail`; only computed when SOBO is first viewed. */
+let reversedTrail: Trail | null = null;
 let planState: PlanState = { name: '', startDate: null, stops: [] };
 let currentDays: ComputedDay[] = [];
 let selectedDayIndex: number | null = null;
@@ -139,8 +145,40 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+// ---------------------------------------------------------------------------
+// Direction (km-space contract)
+// ---------------------------------------------------------------------------
+//
+// planState.stops[].km is ALWAYS stored NOBO-absolute (the trail as built).
+// Everything at runtime — renderers, computeDays, marker clicks — works in
+// "active" km, i.e. the currently viewed direction. The only conversions are:
+//   storage -> active: activeStops() (used by renderAll and the renderers)
+//   active -> storage: toNoboKm() in toggleStop()
+// No renderer may branch on direction; they just read activeTrail()/activeStops().
+
+function direction(): PlanDirection {
+  return planState.direction ?? 'NOBO';
+}
+
+/** The trail oriented in the active direction. */
+function activeTrail(): Trail {
+  return direction() === 'SOBO' ? (reversedTrail ??= createReversedTrail(trail)) : trail;
+}
+
+/** Stored stops mapped into active-direction km, sorted ascending. */
+function activeStops(): StopData[] {
+  return stopsToActive(planState.stops, direction(), trail.track.totalDistance);
+}
+
+/** Display label for a direction, from trail config with NOBO/SOBO fallback. */
+function directionLabel(dir: PlanDirection): string {
+  const labels = trail.config.direction;
+  return dir === 'NOBO' ? (labels?.default ?? 'NOBO') : (labels?.reversed ?? 'SOBO');
+}
+
+/** @param km active-direction km */
 function isStop(km: number): boolean {
-  return planState.stops.some(s => Math.abs(s.km - km) < 0.01);
+  return activeStops().some(s => Math.abs(s.km - km) < KM_EPSILON);
 }
 
 function getDayColors(count: number): string[] {
@@ -187,7 +225,7 @@ function initMap(): void {
   stopMarkers = L.layerGroup().addTo(map);
 
   // Base trail polyline (always visible, muted)
-  const displayPoints = trail.track.displayPoints ?? trail.track.points;
+  const displayPoints = activeTrail().track.displayPoints ?? activeTrail().track.points;
   const latLngs = displayPoints.map(p => [p.lat, p.lon] as [number, number]);
   basePolyline = L.polyline(latLngs, { color: '#aaa', weight: 3, opacity: 0.55 }).addTo(map);
 
@@ -206,9 +244,9 @@ function drawWaypointMarkers(): void {
   waypointMarkers.forEach(({ marker }) => marker.remove());
   waypointMarkers = [];
 
-  const waypoints = trail.waypoints ?? [];
+  const waypoints = activeTrail().waypoints ?? [];
   waypoints.forEach(wp => {
-    const km = wp.totalDistance ?? 0;
+    const km = wp.totalDistance ?? 0; // active-direction km
     const type = wp.type ?? 'waypoint';
     const icon = waypointIcon(type);
     const isSelected = isStop(km);
@@ -236,10 +274,11 @@ function redrawMapLayers(): void {
   const days = currentDays;
   const colors = getDayColors(days.length);
 
+  const points = activeTrail().track.points;
   days.forEach((day, i) => {
-    const startIdx = findNearestByDistance(trail.track.points, day.startKm);
-    const endIdx = findNearestByDistance(trail.track.points, day.endKm);
-    const slice = trail.track.points.slice(
+    const startIdx = findNearestByDistance(points, day.startKm);
+    const endIdx = findNearestByDistance(points, day.endKm);
+    const slice = points.slice(
       Math.min(startIdx, endIdx),
       Math.max(startIdx, endIdx) + 1
     );
@@ -260,9 +299,9 @@ function redrawMapLayers(): void {
 
   // Stop markers
   stopMarkers.clearLayers();
-  planState.stops.forEach(stop => {
+  activeStops().forEach(stop => {
     // Find waypoint position
-    const wp = (trail.waypoints ?? []).find(w => Math.abs((w.totalDistance ?? 0) - stop.km) < 0.01);
+    const wp = (activeTrail().waypoints ?? []).find(w => Math.abs((w.totalDistance ?? 0) - stop.km) < KM_EPSILON);
     if (!wp) return;
     const divIcon = L.divIcon({
       className: '',
@@ -293,12 +332,12 @@ function drawElevationProfile(): void {
   canvas.height = rect.height * window.devicePixelRatio;
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-  const pts = trail.track.points;
+  const pts = activeTrail().track.points;
   if (pts.length === 0) return;
 
   const elevations = pts.map(p => p.ele);
   const { min: minEle, max: maxEle } = getMinMax(elevations);
-  const maxDist = trail.track.totalDistance;
+  const maxDist = activeTrail().track.totalDistance;
 
   const eleTicks = niceAxisTicks(minEle, maxEle, 4);
   const distTicks = niceAxisTicks(0, maxDist, 5);
@@ -388,7 +427,7 @@ function drawElevationProfile(): void {
   }
 
   // Stop markers on elevation
-  planState.stops.forEach(stop => {
+  activeStops().forEach(stop => {
     const x = PAD.left + (stop.km / maxDist) * width;
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 1.5;
@@ -415,8 +454,9 @@ function setupElevationHover(): void {
 
     const fracDist = Math.max(0, Math.min(1, x / width));
     const km = fracDist * elevMaxDist;
-    const ptIdx = findNearestByDistance(trail.track.points, km);
-    const pt = trail.track.points[ptIdx];
+    const points = activeTrail().track.points;
+    const ptIdx = findNearestByDistance(points, km);
+    const pt = points[ptIdx];
     if (!pt) return;
 
     const xPx = PAD.left + (pt.dist / elevMaxDist) * width;
@@ -490,8 +530,8 @@ function renderResupplySection(): void {
   const body = document.getElementById('resupply-body');
   if (!section || !body) return;
 
-  const waypoints = trail.waypoints ?? [];
-  const analysis = analyzeResupply(waypoints, trail.track.totalDistance);
+  const waypoints = activeTrail().waypoints ?? [];
+  const analysis = analyzeResupply(waypoints, activeTrail().track.totalDistance);
 
   if (!analysis.hasResupplyData) {
     section.hidden = true;
@@ -514,8 +554,8 @@ function renderWaterCarrySection(): void {
   const body = document.getElementById('water-body');
   if (!section || !body) return;
 
-  const waypoints = trail.waypoints ?? [];
-  const analysis = analyzeWaterCarry(waypoints, trail.track.totalDistance);
+  const waypoints = activeTrail().waypoints ?? [];
+  const analysis = analyzeWaterCarry(waypoints, activeTrail().track.totalDistance);
 
   if (!analysis.hasWaterData) {
     section.hidden = true;
@@ -541,7 +581,7 @@ function renderStopList(): void {
   const container = document.getElementById('stops-list');
   if (!container) return;
 
-  const waypoints = (trail.waypoints ?? []).filter(wp =>
+  const waypoints = (activeTrail().waypoints ?? []).filter(wp =>
     !stopsFilter || (wp.name ?? '').toLowerCase().includes(stopsFilter.toLowerCase())
   );
 
@@ -571,7 +611,7 @@ function renderStopList(): void {
   container.querySelectorAll('.stop-row').forEach(row => {
     row.addEventListener('click', () => {
       const km = parseFloat((row as HTMLElement).dataset.km ?? '0');
-      const found = (trail.waypoints ?? []).find(w => Math.abs((w.totalDistance ?? 0) - km) < 0.01);
+      const found = (activeTrail().waypoints ?? []).find(w => Math.abs((w.totalDistance ?? 0) - km) < KM_EPSILON);
       const name = found?.name ?? 'Stop';
       toggleStop(km, name);
     });
@@ -588,7 +628,7 @@ function renderDayDatasheet(day: ComputedDay | null): void {
   const body = document.getElementById('datasheet-body');
   if (!title || !subtitle || !body) return;
 
-  const waypoints = trail.waypoints ?? [];
+  const waypoints = activeTrail().waypoints ?? [];
 
   if (!day) {
     title.textContent = 'All waypoints';
@@ -658,11 +698,12 @@ function selectDay(index: number | null): void {
   if (index !== null && map) {
     const day = currentDays[index];
     if (day) {
-      const startIdx = findNearestByDistance(trail.track.points, day.startKm);
-      const endIdx = findNearestByDistance(trail.track.points, day.endKm);
+      const points = activeTrail().track.points;
+      const startIdx = findNearestByDistance(points, day.startKm);
+      const endIdx = findNearestByDistance(points, day.endKm);
       const lo = Math.min(startIdx, endIdx);
       const hi = Math.max(startIdx, endIdx);
-      const slice = trail.track.points.slice(lo, hi + 1);
+      const slice = points.slice(lo, hi + 1);
       if (slice.length > 0) {
         const latLngs = slice.map(p => [p.lat, p.lon] as [number, number]);
         map.fitBounds(L.polyline(latLngs).getBounds(), { padding: [30, 30] });
@@ -671,18 +712,31 @@ function selectDay(index: number | null): void {
   }
 }
 
+/** @param km active-direction km (as shown in the UI); stored NOBO-absolute */
 function toggleStop(km: number, name: string): void {
-  const existingIdx = planState.stops.findIndex(s => Math.abs(s.km - km) < 0.01);
+  const noboKm = toNoboKm(km, direction(), trail.track.totalDistance);
+  const existingIdx = planState.stops.findIndex(s => Math.abs(s.km - noboKm) < KM_EPSILON);
   if (existingIdx >= 0) {
     planState.stops = planState.stops.filter((_, i) => i !== existingIdx);
   } else {
-    const stop: StopData = { km, waypointName: name };
-    const insertIdx = planState.stops.findIndex(s => s.km > km);
+    const stop: StopData = { km: noboKm, waypointName: name };
+    const insertIdx = planState.stops.findIndex(s => s.km > noboKm);
     if (insertIdx === -1) planState.stops.push(stop);
     else planState.stops.splice(insertIdx, 0, stop);
   }
 
   scheduleSave();
+  renderAll();
+}
+
+function setDirection(dir: PlanDirection): void {
+  if (direction() === dir) return;
+  planState.direction = dir;
+  selectedDayIndex = null;
+  scheduleSave();
+  updateDirectionButton();
+  // renderAll() recomputes days from the reoriented trail and rebuilds day
+  // polylines, stop markers, waypoint markers, and the elevation profile.
   renderAll();
 }
 
@@ -762,7 +816,7 @@ function initTabs(): void {
 // ---------------------------------------------------------------------------
 
 function renderAll(): void {
-  currentDays = computeDays(trail, planState.stops, planState.startDate);
+  currentDays = computeDays(activeTrail(), activeStops(), planState.startDate);
   // Clamp selectedDayIndex in case stops were removed
   if (selectedDayIndex !== null && selectedDayIndex >= currentDays.length) {
     selectedDayIndex = null;
@@ -781,9 +835,17 @@ function renderAll(): void {
 // Header bindings
 // ---------------------------------------------------------------------------
 
+function updateDirectionButton(): void {
+  const label = document.getElementById('direction-label');
+  const btn = document.getElementById('direction-toggle') as HTMLButtonElement | null;
+  if (label) label.textContent = directionLabel(direction());
+  if (btn) btn.title = `Switch to ${directionLabel(direction() === 'NOBO' ? 'SOBO' : 'NOBO')}`;
+}
+
 function initHeader(): void {
   const nameInput = document.getElementById('plan-name-input') as HTMLInputElement;
   const dateInput = document.getElementById('plan-start-date') as HTMLInputElement;
+  const directionBtn = document.getElementById('direction-toggle') as HTMLButtonElement;
 
   if (nameInput) {
     nameInput.value = planState.name;
@@ -793,6 +855,13 @@ function initHeader(): void {
   if (dateInput) {
     dateInput.value = planState.startDate ?? '';
     dateInput.addEventListener('change', () => setStartDate(dateInput.value));
+  }
+
+  if (directionBtn) {
+    updateDirectionButton();
+    directionBtn.addEventListener('click', () => {
+      setDirection(direction() === 'NOBO' ? 'SOBO' : 'NOBO');
+    });
   }
 }
 

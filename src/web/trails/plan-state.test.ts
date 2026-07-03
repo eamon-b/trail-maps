@@ -55,6 +55,37 @@ describe('loadPlanState with corrupt data', () => {
   });
 });
 
+describe('direction field validation', () => {
+  it('round-trips a plan with direction set', () => {
+    const state: PlanState = { ...validState, direction: 'SOBO' };
+    savePlanState('dir-trail', state);
+    expect(loadPlanState('dir-trail')).toEqual(state);
+  });
+
+  it('accepts a plan without direction (pre-direction plans = NOBO)', () => {
+    savePlanState('no-dir-trail', validState);
+    const loaded = loadPlanState('no-dir-trail');
+    expect(loaded).toEqual(validState);
+    expect(loaded?.direction).toBeUndefined();
+  });
+
+  it('rejects a plan with an invalid direction value', () => {
+    localStorage.setItem(
+      'trail-plan-bad-dir',
+      JSON.stringify({ ...validState, direction: 'northbound' }),
+    );
+    expect(loadPlanState('bad-dir')).toBeNull();
+  });
+
+  it('rejects a plan with a non-string direction', () => {
+    localStorage.setItem(
+      'trail-plan-bad-dir2',
+      JSON.stringify({ ...validState, direction: 1 }),
+    );
+    expect(loadPlanState('bad-dir2')).toBeNull();
+  });
+});
+
 describe('savePlanState error handling', () => {
   it('returns false on QuotaExceededError instead of silently swallowing it', () => {
     // Simulate localStorage being full

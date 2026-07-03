@@ -118,8 +118,8 @@ interface VariantWaypoint {
   lat: number;
   lon: number;
   elevation: number;
-  distance: number;        // segment distance from previous waypoint
-  totalDistance: number;   // cumulative distance along variant
+  distance: number;        // segment distance from previous waypoint (variant-relative)
+  totalDistance: number;   // absolute trail km: junction startDistance + distance along variant
   ascent: number;
   descent: number;
   totalAscent: number;
@@ -562,6 +562,13 @@ function enrichWaypoints(
  * Enrich route variants with waypoint data.
  * For each variant, walks along its track points and matches nearby waypoints
  * using the same hysteresis approach as the main route.
+ *
+ * Waypoint `totalDistance` is on the TRAIL's absolute km scale: the junction
+ * km where the variant leaves the main track (`startDistance`, set by
+ * findVariantJunctions — call that first) plus the distance walked along the
+ * variant. This keeps variant waypoints directly comparable with main-route
+ * waypoints in datasheets. Falls back to variant-relative km when the variant
+ * never attaches to the main track.
  */
 function enrichVariantWaypoints(
   variants: RouteVariant[],
@@ -575,6 +582,7 @@ function enrichVariantWaypoints(
     const visits = findWaypointVisits(waypoints, variant.points);
     if (visits.length === 0) return variant;
 
+    const junctionKm = variant.startDistance ?? 0;
     const variantWaypoints: VariantWaypoint[] = [];
     let prevTrackIndex = 0;
     let runningDistance = 0;
@@ -597,7 +605,7 @@ function enrichVariantWaypoints(
         lon: visit.waypoint.lon,
         elevation: Math.round(trackPoint.ele),
         distance: Math.round(segmentStats.distance * 100) / 100,
-        totalDistance: Math.round(runningDistance * 100) / 100,
+        totalDistance: Math.round((junctionKm + runningDistance) * 100) / 100,
         ascent: Math.round(segmentStats.ascent),
         descent: Math.round(segmentStats.descent),
         totalAscent: Math.round(runningAscent),

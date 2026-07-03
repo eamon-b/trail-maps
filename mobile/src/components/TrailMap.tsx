@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
 import type { TrackPoint, TrailWaypoint, RouteVariant } from '../lib/trail-utils';
@@ -252,7 +252,9 @@ function computeBounds(points: TrackPoint[]): { ne: [number, number]; sw: [numbe
   };
 }
 
-export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function TrailMap({
+// memo: parents re-render on every GPS tick and drawer move; the map only
+// needs to re-render when its own (mostly memoized) props change.
+export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function TrailMap({
   displayPoints,
   alternates,
   sideTrips,
@@ -425,14 +427,22 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
     }
   }, [bounds]);
 
-  // Follow user when tracking
+  // Follow user when tracking. The first re-center after following turns on
+  // sets a sensible zoom; subsequent GPS ticks keep whatever zoom the user has
+  // chosen since (omitting zoomLevel preserves the current zoom).
+  const followZoomApplied = useRef(false);
   useEffect(() => {
-    if (isFollowingUser && userLocation && cameraRef.current) {
+    if (!isFollowingUser) {
+      followZoomApplied.current = false;
+      return;
+    }
+    if (userLocation && cameraRef.current) {
       cameraRef.current.setCamera({
         centerCoordinate: [userLocation.longitude, userLocation.latitude],
-        zoomLevel: 14,
+        ...(followZoomApplied.current ? {} : { zoomLevel: 14 }),
         animationDuration: 500,
       });
+      followZoomApplied.current = true;
     }
   }, [isFollowingUser, userLocation]);
 
@@ -551,8 +561,34 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
 
   const showRecenter = !isFollowingUser && userLocation != null;
 
+  // Single authority for "user panned": a drag detected in the touch stream.
+  // MapLibre's isUserInteraction flag on region events is unreliable across
+  // versions (it can miss real pans, leaving follow mode to fight the user)
+  // and it also fires for gestures that shouldn't break follow, like
+  // double-tap zoom — so it is deliberately not used. Touch events on the
+  // wrapping View are passive observers (they never claim the responder), so
+  // the map's native gestures are unaffected. Only a moved touch counts — a
+  // plain tap (waypoint select / dismiss) should not break follow mode.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const handleTouchStart = useCallback((e: { nativeEvent: { pageX: number; pageY: number } }) => {
+    touchStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+  }, []);
+  const handleTouchMove = useCallback((e: { nativeEvent: { pageX: number; pageY: number } }) => {
+    if (!onMapPan || !touchStart.current) return;
+    const dx = e.nativeEvent.pageX - touchStart.current.x;
+    const dy = e.nativeEvent.pageY - touchStart.current.y;
+    if (dx * dx + dy * dy > 100) { // >10px of movement = a deliberate drag
+      touchStart.current = null;
+      onMapPan();
+    }
+  }, [onMapPan]);
+
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onTouchStart={handleTouchStart}
+      onTouchMove={isFollowingUser ? handleTouchMove : undefined}
+    >
       <MapLibreGL.MapView
         ref={mapRef}
         style={styles.map}
@@ -560,11 +596,6 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
         logoEnabled={false}
         attributionEnabled={false}
         onPress={onMapPress}
-        onRegionWillChange={(feature) => {
-          if (feature.properties?.isUserInteraction && onMapPan) {
-            onMapPan();
-          }
-        }}
         onRegionDidChange={handleRegionDidChange}
         onLongPress={onLongPress ? handleLongPress : undefined}
       >
@@ -697,7 +728,7 @@ export const TrailMap = forwardRef<TrailMapHandle, TrailMapProps>(function Trail
       )}
     </View>
   );
-});
+}));
 
 const styles = StyleSheet.create({
   container: {

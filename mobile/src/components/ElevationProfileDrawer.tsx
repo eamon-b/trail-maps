@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle, useMemo, useRef, forwardRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { ElevationProfile } from './ElevationProfile';
@@ -7,11 +7,6 @@ import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import type { TrackPoint, TrailWaypoint } from '../lib/trail-utils';
-
-export interface ElevationProfileDrawerHandle {
-  /** Expand the drawer to show the elevation profile chart */
-  expand: () => void;
-}
 
 interface ElevationProfileDrawerProps {
   trackPoints: TrackPoint[];
@@ -27,9 +22,15 @@ interface ElevationProfileDrawerProps {
   highlightedRange?: { startKm: number; endKm: number } | null;
   /** Water source km positions */
   waterSourceKms?: number[];
+  /** Snap point index the drawer should be at (0 = collapsed, 1 = 40%, 2 = 70%).
+   * The drawer animates whenever this changes. */
+  index: number;
+  /** Reports the actual snap index after any move (user drag or programmatic),
+   * so the owner can keep `index` in sync. */
+  onIndexChange?: (index: number) => void;
 }
 
-export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, ElevationProfileDrawerProps>(function ElevationProfileDrawer({
+export function ElevationProfileDrawer({
   trackPoints,
   waypoints,
   currentKm,
@@ -39,28 +40,30 @@ export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, E
   visibleRange,
   highlightedRange,
   waterSourceKms,
-}, ref) {
+  index,
+  onIndexChange,
+}: ElevationProfileDrawerProps) {
   const { colors } = useTheme();
-  const bottomSheetRef = useRef<BottomSheet>(null);
-
-  useImperativeHandle(ref, () => ({
-    expand() {
-      bottomSheetRef.current?.snapToIndex(1);
-    },
-  }), []);
 
   const snapPoints = useMemo(() => [80, '40%', '70%'], []);
   const withElevation = useMemo(() => hasElevationData(trackPoints), [trackPoints]);
 
-  const handleSheetChanges = useCallback((_index: number) => {
-    // No-op — drawer stays visible at all snap points
-  }, []);
+  // Controlled position: gorhom v5 reacts to `index` prop changes by snapping
+  // (its internal effect calls the same handler as the imperative
+  // snapToIndex), and onChange reports drags back so the owner stays in sync.
+  // Floor at 0 — the collapsed 80px detent is the minimum; -1 (closed) would
+  // leave no affordance to reopen the drawer.
+  const handleSheetChanges = useCallback((newIndex: number) => {
+    onIndexChange?.(Math.max(0, newIndex));
+  }, [onIndexChange]);
 
   return (
     <BottomSheet
-      ref={bottomSheetRef}
-      index={0}
+      index={index}
       snapPoints={snapPoints}
+      // Explicit snap points only — dynamic sizing would splice a
+      // content-height snap point into the list and shift every index.
+      enableDynamicSizing={false}
       onChange={handleSheetChanges}
       handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: colors.textSecondary }]}
       backgroundStyle={[styles.background, { backgroundColor: colors.surface }]}
@@ -72,7 +75,11 @@ export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, E
           {currentElevation != null ? `${Math.round(currentElevation)}m` : 'Elevation Profile'}
         </Text>
         <Text style={[styles.headerHint, { color: colors.textSecondary }]}>
-          {withElevation ? 'Pull up for profile' : 'No elevation data'}
+          {!withElevation
+            ? 'No elevation data'
+            : index > 0
+              ? 'Pull down to collapse'
+              : 'Pull up for profile'}
         </Text>
       </View>
 
@@ -102,7 +109,7 @@ export const ElevationProfileDrawer = forwardRef<ElevationProfileDrawerHandle, E
       </View>
     </BottomSheet>
   );
-});
+}
 
 const styles = StyleSheet.create({
   background: {

@@ -10,7 +10,8 @@ import { typography } from '../src/tokens/typography';
 import { closeDatabase } from '../src/db/database';
 import { Paths, File } from 'expo-file-system';
 
-const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
+export const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
+export const BACKGROUND_TRACKING_KEY = 'trail-companion:backgroundTracking';
 
 type AlertPreset = 'tight' | 'normal' | 'loose';
 
@@ -43,13 +44,17 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
 
   const [alertPreset, setAlertPreset] = useState<AlertPreset>('normal');
+  const [backgroundTracking, setBackgroundTracking] = useState(false);
 
-  // Load persisted alert threshold preference
+  // Load persisted preferences
   useEffect(() => {
     AsyncStorage.getItem(ALERT_THRESHOLD_KEY).then((val) => {
       if (val === 'tight' || val === 'normal' || val === 'loose') {
         setAlertPreset(val);
       }
+    });
+    AsyncStorage.getItem(BACKGROUND_TRACKING_KEY).then((val) => {
+      setBackgroundTracking(val === 'true');
     });
   }, []);
 
@@ -57,6 +62,12 @@ export default function SettingsScreen() {
     setAlertPreset(value);
     await AsyncStorage.setItem(ALERT_THRESHOLD_KEY, value);
   }, []);
+
+  const handleBackgroundTrackingToggle = useCallback(async () => {
+    const next = !backgroundTracking;
+    setBackgroundTracking(next);
+    await AsyncStorage.setItem(BACKGROUND_TRACKING_KEY, String(next));
+  }, [backgroundTracking]);
 
   const currentThemeValue: ThemeVariant | 'system' = autoDarkMode ? 'system' : themeVariant;
 
@@ -174,6 +185,30 @@ export default function SettingsScreen() {
             </View>
             <Text style={[styles.checkmark, { color: highContrast ? colors.accent : colors.textSecondary }]}>
               {highContrast ? '✓' : ''}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* GPS Tracking Section */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
+          GPS TRACKING
+        </Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Pressable
+            onPress={handleBackgroundTrackingToggle}
+            style={styles.optionRow}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: backgroundTracking }}
+          >
+            <View style={styles.optionInfo}>
+              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Background Tracking</Text>
+              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                Keep tracking while the screen is locked. Uses more battery and
+                asks for the &quot;Allow all the time&quot; location permission.
+              </Text>
+            </View>
+            <Text style={[styles.checkmark, { color: backgroundTracking ? colors.accent : colors.textSecondary }]}>
+              {backgroundTracking ? '✓' : ''}
             </Text>
           </Pressable>
         </View>

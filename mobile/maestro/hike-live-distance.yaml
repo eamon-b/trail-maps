@@ -1,0 +1,50 @@
+appId: com.trailcompanion.app
+---
+# Regression: the Hike tab must start GPS on its own and compute distances
+# from the live position (it previously never called startTracking, so the
+# dashboard always measured from km 0 — issue #6, Phase 1).
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 30000
+
+# Open the first trail's map once so it becomes the active trail
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Open Map"
+- waitForAnimationToEnd
+
+# Put the device on the AAWT (track start, Walhalla end)
+- setLocation:
+    latitude: -37.941445
+    longitude: 146.451953
+
+# Back out to the tab bar and open Hike
+- pressKey: back
+- waitForAnimationToEnd
+- pressKey: back
+- waitForAnimationToEnd
+- tapOn: "Hike"
+- waitForAnimationToEnd
+
+# The tab auto-starts GPS → Android permission prompt (first run only).
+# Wording varies by API level; try the common variants.
+- tapOn:
+    text: "While using the app"
+    optional: true
+- tapOn:
+    text: "Allow"
+    optional: true
+
+# Live position acquired and snapped: status flips to "On trail".
+# Before the fix this stayed "No GPS" forever.
+- extendedWaitUntil:
+    visible: "On trail"
+    timeout: 45000
+- assertVisible: "NEXT CAMPSITE"
+- takeScreenshot: hike-live-distance

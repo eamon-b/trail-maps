@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrailMap, type TrailMapHandle } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
-import { ElevationProfileDrawer, type ElevationProfileDrawerHandle } from '../../src/components/ElevationProfileDrawer';
+import { ElevationProfileDrawer } from '../../src/components/ElevationProfileDrawer';
 import { WaypointDetailSheet } from '../../src/components/WaypointDetailSheet';
 import { LocationStatusBar, type LocationState } from '../../src/components';
 import { useTheme } from '../../src/theme';
@@ -26,38 +26,66 @@ export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
 
 // ---------------------------------------------------------------------------
-// Selection reducer
+// Viewer reducer
 // ---------------------------------------------------------------------------
 //
-// Unifies the two pieces of waypoint-selection state (detail sheet + focus
-// highlight) so they can never get out of sync. Every user action becomes a
-// single dispatch, which eliminates an entire class of "sheet shows but
-// highlight cleared" / "highlight lingers after dismiss" bugs.
+// Single owner for every piece of interaction state on this screen: waypoint
+// selection, the elevation drawer's snap position, and the camera mode. Each
+// user intent is one dispatch that atomically produces the whole next UI
+// state, so the sheet, drawer, highlight, and camera can never disagree —
+// there is no cross-component sequencing (animation callbacks, imperative
+// expands) left to get out of order.
 
-interface SelectionState {
+interface ViewerState {
   /** Waypoint displayed in the bottom detail sheet (null = sheet hidden). */
   sheetWaypoint: TrailWaypoint | null;
   /** Id of the waypoint highlighted on map + elevation profile. */
   focusedId: string | null;
+  /** Elevation drawer snap index (0 = collapsed, 1 = 40%, 2 = 70%). */
+  drawerIndex: number;
+  /** 'follow' re-centers on each GPS tick; 'free' leaves the camera alone. */
+  cameraMode: 'follow' | 'free';
 }
 
-type SelectionAction =
-  | { type: 'selectFromMap'; waypoint: TrailWaypoint }
-  | { type: 'hydrateFromPendingPan'; waypoint: TrailWaypoint }
+type ViewerAction =
+  | { type: 'selectWaypoint'; waypoint: TrailWaypoint }
   | { type: 'deselect' }
-  | { type: 'showOnProfile'; waypoint: TrailWaypoint };
+  | { type: 'showOnProfile'; waypoint: TrailWaypoint }
+  | { type: 'userPanned' }
+  | { type: 'recenter' }
+  | { type: 'drawerMoved'; index: number };
 
-const EMPTY_SELECTION: SelectionState = { sheetWaypoint: null, focusedId: null };
+const INITIAL_VIEWER_STATE: ViewerState = {
+  sheetWaypoint: null,
+  focusedId: null,
+  drawerIndex: 0,
+  cameraMode: 'follow',
+};
 
-function selectionReducer(state: SelectionState, action: SelectionAction): SelectionState {
+function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
   switch (action.type) {
-    case 'selectFromMap':
-    case 'hydrateFromPendingPan':
-      return { sheetWaypoint: action.waypoint, focusedId: action.waypoint.id };
-    case 'showOnProfile':
-      return { sheetWaypoint: null, focusedId: action.waypoint.id };
+    case 'selectWaypoint':
+      // Camera goes free so a GPS tick can't yank the map away from the
+      // waypoint the user is inspecting.
+      return { ...state, sheetWaypoint: action.waypoint, focusedId: action.waypoint.id, cameraMode: 'free' };
     case 'deselect':
-      return EMPTY_SELECTION;
+      return { ...state, sheetWaypoint: null, focusedId: null };
+    case 'showOnProfile':
+      // Close the detail sheet and open the drawer in the same state change.
+      // The sheet animates itself out from its own snapshot; nothing waits on
+      // its exit animation.
+      return {
+        ...state,
+        sheetWaypoint: null,
+        focusedId: action.waypoint.id,
+        drawerIndex: Math.max(1, state.drawerIndex),
+      };
+    case 'userPanned':
+      return state.cameraMode === 'free' ? state : { ...state, cameraMode: 'free' };
+    case 'recenter':
+      return { ...state, cameraMode: 'follow' };
+    case 'drawerMoved':
+      return state.drawerIndex === action.index ? state : { ...state, drawerIndex: action.index };
   }
 }
 
@@ -71,11 +99,9 @@ export default function TrailViewerScreen() {
   const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
-  const [isFollowingUser, setIsFollowingUser] = useState(true);
-  const [selection, dispatchSelection] = useReducer(selectionReducer, EMPTY_SELECTION);
-  const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId } = selection;
+  const [viewer, dispatch] = useReducer(viewerReducer, INITIAL_VIEWER_STATE);
+  const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId, drawerIndex, cameraMode } = viewer;
   const mapRef = useRef<TrailMapHandle>(null);
-  const elevationDrawerRef = useRef<ElevationProfileDrawerHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
 
@@ -106,22 +132,19 @@ export default function TrailViewerScreen() {
     }).catch(() => {});
   }, [id, loadTrail]);
 
-  // Consume pending pan from external navigation (e.g. datasheet "Show on map").
-  // Gate on isFocused so that when two trail/[id] instances are in the stack
-  // (datasheet replaced the top → new instance mounts above an older one),
-  // only the focused (top) instance consumes it. Otherwise the underneath
-  // instance would drain the context before the new one subscribed.
-  // Don't clear pendingPan until the trail is ready — otherwise a cold-start
-  // from the datasheet would drop the pan on the first render where
-  // activeTrail is still null.
+  // Consume pending pan from external navigation (e.g. datasheet "Show on
+  // map"). The datasheet navigates back to this existing instance (it never
+  // creates a second one), but keep the isFocused gate so the pan is only
+  // consumed when this screen is actually visible. Don't clear pendingPan
+  // until the trail is ready — otherwise a cold-start from the datasheet
+  // would drop the pan on the first render where activeTrail is still null.
   useEffect(() => {
     if (!isFocused) return;
     if (!pendingPan || !activeTrail) return;
     const wp = activeTrail.waypoints.find(w => w.id === pendingPan.waypointId);
     if (wp) {
-      dispatchSelection({ type: 'hydrateFromPendingPan', waypoint: wp });
+      dispatch({ type: 'selectWaypoint', waypoint: wp });
       mapRef.current?.panTo(pendingPan.latitude, pendingPan.longitude);
-      setIsFollowingUser(false);
     }
     setPendingPan(null);
   }, [isFocused, pendingPan, activeTrail, setPendingPan]);
@@ -162,28 +185,28 @@ export default function TrailViewerScreen() {
     return selectedWaypoint.totalDistance - currentKm;
   }, [currentKm, selectedWaypoint]);
 
-  // Handlers — each user intent becomes a single dispatch + side effects
+  // Handlers — each user intent is a single dispatch (+ at most a one-shot
+  // imperative pan, which is fire-and-forget and never re-applied)
   const handleWaypointPress = useCallback((wp: TrailWaypoint) => {
-    dispatchSelection({ type: 'selectFromMap', waypoint: wp });
-    setIsFollowingUser(false);
+    dispatch({ type: 'selectWaypoint', waypoint: wp });
   }, []);
 
   const handleDismissWaypoint = useCallback(() => {
-    dispatchSelection({ type: 'deselect' });
+    dispatch({ type: 'deselect' });
   }, []);
 
   const handleMapPan = useCallback(() => {
-    setIsFollowingUser(false);
+    dispatch({ type: 'userPanned' });
   }, []);
 
   const handleMapPress = useCallback(() => {
     if (selectedWaypoint) {
-      dispatchSelection({ type: 'deselect' });
+      dispatch({ type: 'deselect' });
     }
   }, [selectedWaypoint]);
 
   const handleRecenter = useCallback(() => {
-    setIsFollowingUser(true);
+    dispatch({ type: 'recenter' });
   }, []);
 
   const handleVisibleBoundsChange = useCallback((minKm: number, maxKm: number) => {
@@ -195,24 +218,16 @@ export default function TrailViewerScreen() {
     const idx = findNearestByDistance(trackPoints, km);
     const point = trackPoints[idx];
     if (!point) return;
+    dispatch({ type: 'userPanned' });
     mapRef.current?.panTo(point.lat, point.lon);
-    setIsFollowingUser(false);
   }, [trackPoints]);
 
-  // Queue an action to run after the waypoint sheet's exit animation
-  // completes. Sequencing on the animation end avoids visual jank from the
-  // expand starting while the sheet is still sliding out.
-  const onSheetExitRef = useRef<(() => void) | null>(null);
-
-  const handleSheetExitComplete = useCallback(() => {
-    const action = onSheetExitRef.current;
-    onSheetExitRef.current = null;
-    action?.();
+  const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
+    dispatch({ type: 'showOnProfile', waypoint: wp });
   }, []);
 
-  const handleShowOnProfile = useCallback((wp: TrailWaypoint) => {
-    onSheetExitRef.current = () => elevationDrawerRef.current?.expand();
-    dispatchSelection({ type: 'showOnProfile', waypoint: wp });
+  const handleDrawerIndexChange = useCallback((index: number) => {
+    dispatch({ type: 'drawerMoved', index });
   }, []);
 
   if (contextLoading || (!activeTrail && !contextError)) {
@@ -309,7 +324,7 @@ export default function TrailViewerScreen() {
             userLocation={userLocationForMap}
             focusedWaypointId={focusedWaypointId}
             onWaypointPress={handleWaypointPress}
-            isFollowingUser={isFollowingUser}
+            isFollowingUser={cameraMode === 'follow'}
             onMapPan={handleMapPan}
             onMapPress={handleMapPress}
             onRecenter={handleRecenter}
@@ -323,7 +338,6 @@ export default function TrailViewerScreen() {
 
       {/* Elevation profile drawer */}
       <ElevationProfileDrawer
-        ref={elevationDrawerRef}
         trackPoints={activeTrail.track.points}
         waypoints={activeTrail.waypoints}
         currentKm={currentKm}
@@ -331,13 +345,14 @@ export default function TrailViewerScreen() {
         focusedWaypointId={focusedWaypointId}
         onDistanceTap={handleProfileDistanceTap}
         visibleRange={visibleRange}
+        index={drawerIndex}
+        onIndexChange={handleDrawerIndexChange}
       />
 
       {/* Waypoint detail sheet */}
       <WaypointDetailSheet
         waypoint={selectedWaypoint}
         onDismiss={handleDismissWaypoint}
-        onExitComplete={handleSheetExitComplete}
         distanceFromUser={distanceToSelected}
         onShowOnProfile={handleShowOnProfile}
       />

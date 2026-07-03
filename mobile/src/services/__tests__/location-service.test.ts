@@ -89,6 +89,12 @@ describe('requestLocationPermission', () => {
 // ---------------------------------------------------------------------------
 
 describe('stopLocationTracking', () => {
+  // The service holds module-level state (subscriber set + OS subscription);
+  // reset it between tests via the no-arg clear-all path.
+  afterEach(async () => {
+    await stopLocationTracking();
+  });
+
   it('removes subscription when active', async () => {
     const removeMock = jest.fn();
     mockLocation.watchPositionAsync.mockResolvedValue({ remove: removeMock });
@@ -108,5 +114,49 @@ describe('stopLocationTracking', () => {
 
     // Calling stop again should not throw
     await expect(stopLocationTracking()).resolves.toBeUndefined();
+  });
+
+  it('shares one OS watch across subscribers and keeps it while any remain', async () => {
+    const removeMock = jest.fn();
+    mockLocation.watchPositionAsync.mockClear();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: removeMock });
+
+    const cbA = jest.fn();
+    const cbB = jest.fn();
+    await startLocationTracking(cbA);
+    await startLocationTracking(cbB);
+
+    // One shared OS watch for both subscribers
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(1);
+
+    // Both subscribers receive a tick
+    const emit = mockLocation.watchPositionAsync.mock.calls[0][1];
+    emit({ coords: { latitude: 1, longitude: 2, altitude: 0, accuracy: 5, heading: 0 }, timestamp: 1 });
+    expect(cbA).toHaveBeenCalledTimes(1);
+    expect(cbB).toHaveBeenCalledTimes(1);
+
+    // One subscriber leaving must NOT tear down the watch...
+    await stopLocationTracking(cbA);
+    expect(removeMock).not.toHaveBeenCalled();
+    emit({ coords: { latitude: 1, longitude: 2, altitude: 0, accuracy: 5, heading: 0 }, timestamp: 2 });
+    expect(cbA).toHaveBeenCalledTimes(1); // unsubscribed — no new tick
+    expect(cbB).toHaveBeenCalledTimes(2); // still subscribed
+
+    // ...but the last one leaving does
+    await stopLocationTracking(cbB);
+    expect(removeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('recovers after a failed watch start (no permanent wedge)', async () => {
+    mockLocation.watchPositionAsync.mockClear();
+    mockLocation.watchPositionAsync.mockRejectedValueOnce(new Error('GPS unavailable'));
+
+    await expect(startLocationTracking(jest.fn())).rejects.toThrow('GPS unavailable');
+
+    // A later attempt must create a fresh watch, not replay the old rejection
+    const removeMock = jest.fn();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: removeMock });
+    await expect(startLocationTracking(jest.fn())).resolves.toBeUndefined();
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(2);
   });
 });

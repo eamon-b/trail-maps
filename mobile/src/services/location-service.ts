@@ -12,7 +12,13 @@ export interface LocationUpdate {
 
 export type PermissionStatus = 'granted' | 'denied' | 'undetermined';
 
+// Foreground tracking fans out to all subscribers over a single OS watch, so
+// independent screens (hike tab, map viewer) can track simultaneously and one
+// screen unsubscribing never tears down another's updates.
+type ForegroundLocationCallback = (update: LocationUpdate) => void;
+const foregroundSubscribers = new Set<ForegroundLocationCallback>();
 let subscription: Location.LocationSubscription | null = null;
+let subscriptionStarting: Promise<void> | null = null;
 
 // ---------------------------------------------------------------------------
 // Background location task
@@ -60,34 +66,72 @@ export async function getLocationPermissionStatus(): Promise<PermissionStatus> {
   return 'undetermined';
 }
 
-/** Start continuous location tracking */
+/**
+ * Start continuous location tracking. Multiple callers may subscribe; the OS
+ * watch is created once and shared.
+ */
 export async function startLocationTracking(
-  callback: (location: LocationUpdate) => void,
+  callback: ForegroundLocationCallback,
 ): Promise<void> {
-  await stopLocationTracking();
+  foregroundSubscribers.add(callback);
 
-  subscription = await Location.watchPositionAsync(
-    {
-      accuracy: Location.Accuracy.High,
-      timeInterval: 30000,
-      distanceInterval: 10,
-    },
-    (location) => {
-      callback({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        altitude: location.coords.altitude,
-        accuracy: location.coords.accuracy,
-        heading: location.coords.heading,
-        timestamp: location.timestamp,
-      });
-    },
-  );
+  if (!subscription && !subscriptionStarting) {
+    subscriptionStarting = Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 30000,
+        distanceInterval: 10,
+      },
+      (location) => {
+        const update: LocationUpdate = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          altitude: location.coords.altitude,
+          accuracy: location.coords.accuracy,
+          heading: location.coords.heading,
+          timestamp: location.timestamp,
+        };
+        for (const cb of foregroundSubscribers) {
+          cb(update);
+        }
+      },
+    ).then(
+      (sub) => {
+        subscription = sub;
+        subscriptionStarting = null;
+        // Everyone unsubscribed while the watch was starting — tear it down.
+        if (foregroundSubscribers.size === 0) {
+          sub.remove();
+          subscription = null;
+        }
+      },
+      (err) => {
+        // Clear the in-flight marker so the next start attempt can create a
+        // fresh watch — a retained rejected promise would wedge tracking for
+        // the rest of the app session.
+        subscriptionStarting = null;
+        throw err;
+      },
+    );
+  }
+
+  await subscriptionStarting;
 }
 
-/** Stop continuous location tracking */
-export async function stopLocationTracking(): Promise<void> {
-  if (subscription) {
+/**
+ * Stop continuous location tracking.
+ * With a callback: unsubscribes only that caller; the OS watch stops once the
+ * last subscriber is gone. Without a callback: stops everything.
+ */
+export async function stopLocationTracking(
+  callback?: ForegroundLocationCallback,
+): Promise<void> {
+  if (callback) {
+    foregroundSubscribers.delete(callback);
+  } else {
+    foregroundSubscribers.clear();
+  }
+  if (foregroundSubscribers.size === 0 && subscription) {
     subscription.remove();
     subscription = null;
   }

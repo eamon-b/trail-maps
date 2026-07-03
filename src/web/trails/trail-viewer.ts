@@ -2,6 +2,7 @@
 // This module handles map, elevation profile, waypoints table, and direction reversal
 
 import type * as Leaflet from 'leaflet';
+import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
 declare const L: typeof Leaflet;
 
 interface TrackPoint {
@@ -33,7 +34,9 @@ interface VariantWaypoint {
   lat: number;
   lon: number;
   elevation: number;
+  /** Segment distance from previous variant waypoint (variant-relative) in km */
   distance: number;
+  /** Absolute trail km: junction startDistance + distance walked along the variant */
   totalDistance: number;
   ascent: number;
   descent: number;
@@ -1483,21 +1486,9 @@ function reverseWaypoints(waypoints: Waypoint[], totalDistance: number, trackLen
   });
 }
 
-function reverseAlternates(alternates: RouteVariant[], totalDistance: number): RouteVariant[] {
-  return alternates.map(alt => ({
-    ...alt,
-    startDistance: totalDistance - (alt.endDistance || 0),
-    endDistance: totalDistance - (alt.startDistance || 0),
-    points: alt.points ? [...alt.points].reverse() : []
-  }));
-}
-
-function transformSideTrips(sideTrips: RouteVariant[], totalDistance: number): RouteVariant[] {
-  return sideTrips.map(trip => ({
-    ...trip,
-    startDistance: totalDistance - (trip.startDistance || 0)
-  }));
-}
+// Variant reversal math is shared with the mobile app via @lib/variant-reverse
+// (see that module for semantics, including the untouched passthrough for
+// variants that never attach to the main track).
 
 function createReversedTrail(trail: Trail): Trail {
   const totalDistance = trail.track.totalDistance;

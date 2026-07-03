@@ -7,6 +7,7 @@
  */
 
 import type { TrailJson } from '../services/trail-loader';
+import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,21 +62,25 @@ export interface RouteVariant {
   endDistance?: number;
   elevation?: { ascent?: number; descent?: number };
   points?: TrackPoint[];
-  waypoints?: {
-    name: string;
-    type: string;
-    lat: number;
-    lon: number;
-    elevation: number;
-    distance: number;
-    totalDistance: number;
-    ascent: number;
-    descent: number;
-    totalAscent: number;
-    totalDescent: number;
-    variantTrackIndex: number;
-    description?: string;
-  }[];
+  waypoints?: VariantWaypoint[];
+}
+
+export interface VariantWaypoint {
+  name: string;
+  type: string;
+  lat: number;
+  lon: number;
+  elevation: number;
+  /** Segment distance from previous variant waypoint (variant-relative) in km */
+  distance: number;
+  /** Absolute trail km: junction startDistance + distance walked along the variant */
+  totalDistance: number;
+  ascent: number;
+  descent: number;
+  totalAscent: number;
+  totalDescent: number;
+  variantTrackIndex: number;
+  description?: string;
 }
 
 export interface Trail {
@@ -184,23 +189,10 @@ export function reverseWaypoints(
   });
 }
 
-/** Reverse alternate route variants, flipping start/end distances. */
-export function reverseAlternates(alternates: RouteVariant[], totalDistance: number): RouteVariant[] {
-  return alternates.map(alt => ({
-    ...alt,
-    startDistance: totalDistance - (alt.endDistance || 0),
-    endDistance: totalDistance - (alt.startDistance || 0),
-    points: alt.points ? [...alt.points].reverse() : [],
-  }));
-}
-
-/** Transform side trips for direction change (flip attachment point). */
-export function transformSideTrips(sideTrips: RouteVariant[], totalDistance: number): RouteVariant[] {
-  return sideTrips.map(trip => ({
-    ...trip,
-    startDistance: totalDistance - (trip.startDistance || 0),
-  }));
-}
+// Variant reversal math is shared with the web viewer via src/lib (see
+// @lib/variant-reverse for the semantics, including the untouched passthrough
+// for variants that never attach to the main track).
+export { reverseAlternates, transformSideTrips };
 
 /** Create a fully reversed copy of a trail (swap start/end direction). */
 export function createReversedTrail(trail: Trail): Trail {

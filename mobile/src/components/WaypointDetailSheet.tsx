@@ -15,10 +15,6 @@ interface WaypointDetailSheetProps {
   waypoint: TrailWaypoint | null;
   /** Called when the card is dismissed */
   onDismiss: () => void;
-  /** Called after the exit animation has finished. Use this to sequence
-   * follow-up actions (like expanding another sheet) so they don't clash
-   * with an in-flight dismiss animation. */
-  onExitComplete?: () => void;
   /** Distance from current GPS position in km (if available) */
   distanceFromUser?: number | null;
   /** Called when "Show on elevation profile" is tapped */
@@ -28,7 +24,6 @@ interface WaypointDetailSheetProps {
 export function WaypointDetailSheet({
   waypoint,
   onDismiss,
-  onExitComplete,
   distanceFromUser,
   onShowOnProfile,
 }: WaypointDetailSheetProps) {
@@ -39,11 +34,6 @@ export function WaypointDetailSheet({
   // only when the exit animation completes, so the view has content to
   // animate out even after the parent has dropped the waypoint.
   const [displayWaypoint, setDisplayWaypoint] = useState<TrailWaypoint | null>(null);
-
-  // Hold the latest onExitComplete in a ref so the effect doesn't re-run
-  // (and cancel the animation) when the callback identity changes.
-  const onExitCompleteRef = useRef(onExitComplete);
-  onExitCompleteRef.current = onExitComplete;
 
   useEffect(() => {
     if (waypoint) {
@@ -59,9 +49,8 @@ export function WaypointDetailSheet({
         toValue: 300,
         duration: 200,
         useNativeDriver: true,
-      }).start(({ finished }) => {
+      }).start(() => {
         setDisplayWaypoint(null);
-        if (finished) onExitCompleteRef.current?.();
       });
     }
     // displayWaypoint intentionally excluded — the exit branch reads it
@@ -141,7 +130,8 @@ export function WaypointDetailSheet({
         </Text>
       ) : null}
 
-      {onShowOnProfile && (
+      {/* A waypoint without a trail km can't be placed on the profile */}
+      {onShowOnProfile && displayWaypoint.totalDistance != null && (
         <Pressable
           onPress={() => onShowOnProfile(displayWaypoint)}
           style={[styles.profileButton, { borderColor: colors.accent }]}

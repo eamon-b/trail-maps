@@ -147,6 +147,12 @@ upload_grid() {
 
 # --- Contour PMTiles upload ---
 
+# wrangler `r2 object put` rejects uploads over ~300MiB; the Australia contour
+# PMTiles is several GB, so it must go through an S3-compatible multipart
+# client. We use rclone with a remote named "r2" (S3 provider = Cloudflare).
+RCLONE_REMOTE="r2"
+WRANGLER_MAX_BYTES=$((300 * 1024 * 1024))
+
 upload_contours() {
   local pmtiles_file="$TILES_DIR/australia-contours.pmtiles"
 
@@ -155,10 +161,34 @@ upload_contours() {
     exit 1
   fi
 
-  echo "Uploading contour PMTiles..."
-  upload_file "$pmtiles_file" "contours/australia.pmtiles" \
-    "application/octet-stream" \
-    "public, max-age=2592000"
+  local size
+  size=$(stat -c %s "$pmtiles_file")
+
+  if [ "$size" -le "$WRANGLER_MAX_BYTES" ]; then
+    echo "Uploading contour PMTiles via wrangler..."
+    upload_file "$pmtiles_file" "contours/australia.pmtiles" \
+      "application/octet-stream" \
+      "public, max-age=2592000"
+  else
+    echo "Contour PMTiles is $((size / 1024 / 1024))MB — over wrangler's 300MiB limit."
+    if command -v rclone &> /dev/null && rclone listremotes | grep -q "^${RCLONE_REMOTE}:"; then
+      echo "Uploading via rclone (multipart)..."
+      rclone copyto --progress --s3-chunk-size 64M \
+        "$pmtiles_file" "${RCLONE_REMOTE}:$BUCKET/contours/australia.pmtiles"
+    else
+      cat <<EOF
+No rclone remote named "${RCLONE_REMOTE}" found. To upload files this large:
+  1. Create an R2 API token (S3 credentials) in the Cloudflare dashboard:
+     R2 > Manage R2 API Tokens > Create (Object Read & Write on $BUCKET)
+  2. Configure rclone:
+       rclone config create ${RCLONE_REMOTE} s3 provider=Cloudflare \\
+         access_key_id=<key> secret_access_key=<secret> \\
+         endpoint=https://<account-id>.r2.cloudflarestorage.com
+  3. Re-run: npm run upload:tiles -- --contours
+EOF
+      exit 1
+    fi
+  fi
   echo "Done: contours/australia.pmtiles"
 }
 

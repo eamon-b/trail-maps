@@ -121,4 +121,25 @@ describe('TrailDataService', () => {
     const waypoints = await service.getWaypoints('nonexistent');
     expect(waypoints).toEqual([]);
   });
+
+  it('stores climate JSON in the trails.climate_json column', async () => {
+    await service.storeClimateJson('custom-1', '{"locations":[]}');
+    expect(mockDb.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE trails SET climate_json = ?'),
+      ['{"locations":[]}', 'custom-1'],
+    );
+  });
+
+  it('retrieves cached climate JSON', async () => {
+    mockDb.getFirstAsync.mockResolvedValueOnce({ climate_json: '{"locations":[]}' });
+    expect(await service.getClimateJson('custom-1')).toBe('{"locations":[]}');
+  });
+
+  it('returns null when no climate JSON is cached', async () => {
+    mockDb.getFirstAsync.mockResolvedValueOnce({ climate_json: null });
+    expect(await service.getClimateJson('custom-1')).toBeNull();
+
+    mockDb.getFirstAsync.mockResolvedValueOnce(null);
+    expect(await service.getClimateJson('unknown')).toBeNull();
+  });
 });

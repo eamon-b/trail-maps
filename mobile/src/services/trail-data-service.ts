@@ -294,6 +294,27 @@ export class TrailDataService {
     return row?.total ?? 0;
   }
 
+  /**
+   * Get the cached climate JSON for a trail (runtime-fetched climate for
+   * custom trails, stored in the trails.climate_json column). Returns the raw
+   * JSON string or null if no climate has been cached.
+   */
+  async getClimateJson(trailId: string): Promise<string | null> {
+    const row = await this.db.getFirstAsync<{ climate_json: string | null }>(
+      'SELECT climate_json FROM trails WHERE id = ?',
+      [trailId]
+    );
+    return row?.climate_json ?? null;
+  }
+
+  /** Persist fetched climate JSON for a trail into trails.climate_json. */
+  async storeClimateJson(trailId: string, climateJson: string): Promise<void> {
+    await this.db.runAsync(
+      'UPDATE trails SET climate_json = ?, updated_at = datetime(\'now\') WHERE id = ?',
+      [climateJson, trailId]
+    );
+  }
+
   /** List only custom trails */
   async listCustomTrails(): Promise<Trail[]> {
     const rows = await this.db.getAllAsync<TrailRow>(

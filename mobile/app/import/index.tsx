@@ -26,6 +26,11 @@ import {
   type ImportError,
 } from '../../src/services/custom-trail-service';
 import type { ProcessingResult, ProcessingWarning } from '../../src/lib/gpx-processor';
+import {
+  pickElevationSamplePoints,
+  fetchElevations,
+  applyElevationToTrail,
+} from '../../src/services/elevation-service';
 import type { Trail } from '../../src/lib/trail-utils';
 
 type ImportStage = 'pick' | 'processing' | 'preview' | 'saving' | 'done' | 'error';
@@ -95,6 +100,7 @@ export default function ImportScreen() {
   const [error, setError] = useState<{ message: string; suggestion?: string } | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [elevationFetch, setElevationFetch] = useState<'idle' | 'fetching' | 'error'>('idle');
   const cancelledRef = useRef(false);
 
   const handlePickFile = useCallback(async () => {
@@ -121,6 +127,7 @@ export default function ImportScreen() {
 
       setResult(processingResult);
       setTrailName(processingResult.trail.config.name);
+      setElevationFetch('idle');
       setStage('preview');
     } catch (e) {
       const err = e as ImportError;
@@ -156,6 +163,7 @@ export default function ImportScreen() {
 
       setResult(processingResult);
       setTrailName(processingResult.trail.config.name);
+      setElevationFetch('idle');
       setStage('preview');
     } catch (e) {
       const err = e as ImportError;
@@ -197,7 +205,28 @@ export default function ImportScreen() {
     setProgressPercent(0);
     setShowUrlInput(false);
     setUrlInput('');
+    setElevationFetch('idle');
   }, []);
+
+  // Opt-in elevation backfill for GPX files without <ele> data.
+  // User-triggered network fetch; on failure the trail imports flat as before.
+  const handleFetchElevation = useCallback(async () => {
+    if (!result) return;
+    setElevationFetch('fetching');
+    try {
+      const { dists, coords } = pickElevationSamplePoints(result.trail.track.points);
+      const eles = await fetchElevations(coords);
+      const updatedTrail = applyElevationToTrail(result.trail, dists, eles);
+      setResult({
+        trail: updatedTrail,
+        warnings: result.warnings.filter((w) => w.type !== 'no_elevation'),
+      });
+      setElevationFetch('idle');
+    } catch (e) {
+      console.warn('Elevation fetch failed:', e);
+      setElevationFetch('error');
+    }
+  }, [result]);
 
   // Render based on stage
   return (
@@ -380,6 +409,39 @@ export default function ImportScreen() {
                   </Text>
                 </View>
               ))}
+
+              {/* Opt-in elevation backfill when the GPX had no elevation data */}
+              {result.warnings.some((w) => w.type === 'no_elevation') && (
+                elevationFetch === 'fetching' ? (
+                  <View style={styles.elevationFetchRow}>
+                    <ActivityIndicator size="small" color={colors.accent} />
+                    <Text style={[styles.warningText, { color: colors.textSecondary }]}>
+                      Fetching elevation data...
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    {elevationFetch === 'error' && (
+                      <Text style={[styles.elevationFetchError, { color: colors.alertRed }]}>
+                        Could not fetch elevation data. You can retry, or import with a flat
+                        elevation profile.
+                      </Text>
+                    )}
+                    <Pressable
+                      onPress={handleFetchElevation}
+                      style={[styles.elevationFetchButton, { borderColor: colors.accent }]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Fetch elevation data"
+                    >
+                      <Text style={[styles.elevationFetchText, { color: colors.accent }]}>
+                        {elevationFetch === 'error'
+                          ? 'Retry elevation fetch'
+                          : 'Fetch elevation data (requires internet)'}
+                      </Text>
+                    </Pressable>
+                  </>
+                )
+              )}
             </View>
           )}
 
@@ -661,6 +723,30 @@ const styles = StyleSheet.create({
     ...typography.caption,
     flex: 1,
     lineHeight: 18,
+  },
+  elevationFetchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  elevationFetchError: {
+    ...typography.caption,
+    lineHeight: 18,
+    marginTop: spacing.sm,
+  },
+  elevationFetchButton: {
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+  },
+  elevationFetchText: {
+    ...typography.body,
+    fontWeight: '600',
   },
   actionButtons: {
     marginTop: spacing.md,

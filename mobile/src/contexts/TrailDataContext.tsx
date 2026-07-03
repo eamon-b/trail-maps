@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { TrailDataService, type Trail as DbTrail } from '../services/trail-data-service';
+import { loadCachedCustomTrailClimate } from '../services/custom-climate-service';
 import { trailJsonToTrail, mergeCustomWaypoints, type Trail } from '../lib/trail-utils';
 
 interface TrailDataState {
@@ -66,6 +67,16 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
 
       const dbRow = await service.getTrail(id);
       setDbTrail(dbRow);
+
+      // Custom trails: register any previously fetched climate data from the
+      // SQLite cache (no network). Bundled trails register theirs at startup.
+      if (dbRow?.isCustom) {
+        try {
+          await loadCachedCustomTrailClimate(id);
+        } catch (e) {
+          console.warn('Failed to load cached climate data:', e);
+        }
+      }
 
       setLoading(false);
     } catch (e) {

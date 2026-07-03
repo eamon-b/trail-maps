@@ -26,7 +26,7 @@ import {
   downloadGridTiles,
   type GridProgressCallback,
 } from '../../src/services/grid-tile-service';
-import { calculateTrailBounds, estimateGridDownloadSize } from '../../src/services/trail-bounds';
+import { calculateTrailBounds } from '../../src/services/trail-bounds';
 import { trailJsonToTrail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
 import { ProgressBar } from '../../src/components';
@@ -213,9 +213,9 @@ export default function PlanScreen() {
         return;
       }
 
-      // Show size estimate and confirm
-      const estimatedSize = estimateGridDownloadSize(cells.length);
-      const sizeStr = formatBytes(estimatedSize);
+      // Show the real download size (sum of cell sizes from the grid index)
+      const downloadSize = cells.reduce((sum, cell) => sum + cell.totalSize, 0);
+      const sizeStr = formatBytes(downloadSize);
 
       await new Promise<void>((resolve, reject) => {
         Alert.alert(

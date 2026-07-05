@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { TrailDataService } from '../../src/services/trail-data-service';
-import { trailJsonToTrail, type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
+import { type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
 import { measureBetweenPoints, type MeasureResult } from '../../src/services/measure-service';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { ElevationProfile } from '../../src/components/ElevationProfile';
@@ -37,12 +37,12 @@ export default function MeasureScreen() {
       if (!trailId) return;
       try {
         const trailService = await TrailDataService.create();
-        const json = await trailService.getTrailTrackData(trailId);
-        if (!json) {
+        const parsed = await trailService.getMergedTrail(trailId);
+        if (!parsed) {
           setLoading(false);
           return;
         }
-        setTrail(trailJsonToTrail(json));
+        setTrail(parsed);
       } catch (e) {
         console.warn('Failed to load trail for measure:', e);
       } finally {

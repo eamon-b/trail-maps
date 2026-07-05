@@ -32,10 +32,14 @@ describe('TrailDataService', () => {
       sourceFilename: null,
     });
 
+    // Upsert (not INSERT OR REPLACE): REPLACE would cascade-delete the trail's
+    // plans and custom waypoints on every data refresh.
     expect(mockDb.runAsync).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT OR REPLACE INTO trails'),
+      expect.stringContaining('ON CONFLICT(id) DO UPDATE SET'),
       expect.arrayContaining(['bibbulmun', 'bibbulmun Track']),
     );
+    const [sql] = mockDb.runAsync.mock.calls[0];
+    expect(sql).not.toContain('INSERT OR REPLACE');
   });
 
   it('retrieves a trail by id', async () => {

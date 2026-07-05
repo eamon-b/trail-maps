@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase } from '../db/database';
 import { TRAIL_DATA, type TrailJson } from './trail-loader';
+import { trailJsonToTrail, mergeCustomWaypoints, type Trail as ParsedTrail } from '../lib/trail-utils';
 
 export interface Trail {
   id: string;
@@ -58,7 +59,7 @@ export interface CustomWaypoint {
 export type NewCustomWaypoint = {
   trailId: string;
   name: string;
-  type?: string;
+  type?: CustomWaypointType;
   lat: number;
   lon: number;
   ele?: number | null;
@@ -69,7 +70,9 @@ export type NewCustomWaypoint = {
 
 /** Fields of a custom waypoint that can be edited after creation. */
 export type CustomWaypointUpdate = Partial<
-  Pick<CustomWaypoint, 'name' | 'type' | 'lat' | 'lon' | 'ele' | 'kmPosition' | 'offTrackM' | 'description'>
+  Pick<CustomWaypoint, 'name' | 'lat' | 'lon' | 'ele' | 'kmPosition' | 'offTrackM' | 'description'> & {
+    type: CustomWaypointType;
+  }
 >;
 
 interface TrailRow {
@@ -178,9 +181,23 @@ export class TrailDataService {
   }
 
   async storeTrail(trail: Omit<Trail, 'createdAt' | 'updatedAt'>): Promise<void> {
+    // Upsert — never INSERT OR REPLACE. REPLACE deletes the existing row
+    // first, which (with PRAGMA foreign_keys = ON) fires ON DELETE CASCADE
+    // and would wipe the trail's plans and custom_waypoints on every
+    // dataVersion refresh.
     await this.db.runAsync(
-      `INSERT OR REPLACE INTO trails (id, name, short_name, region, length_km, metadata_json, data_version, is_custom, source_filename, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO trails (id, name, short_name, region, length_km, metadata_json, data_version, is_custom, source_filename, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         short_name = excluded.short_name,
+         region = excluded.region,
+         length_km = excluded.length_km,
+         metadata_json = excluded.metadata_json,
+         data_version = excluded.data_version,
+         is_custom = excluded.is_custom,
+         source_filename = excluded.source_filename,
+         updated_at = excluded.updated_at`,
       [trail.id, trail.name, trail.shortName, trail.region, trail.lengthKm, trail.metadataJson, trail.dataVersion, trail.isCustom ? 1 : 0, trail.sourceFilename]
     );
   }
@@ -247,6 +264,35 @@ export class TrailDataService {
     }
 
     return null;
+  }
+
+  /**
+   * Load a trail as a parsed, display-ready object with the user's custom
+   * waypoints merged in. This is the single load path every trail consumer
+   * (map viewer, hike dashboard, plan edit/map/measure screens) should use so
+   * custom waypoints are never missed.
+   */
+  async getMergedTrail(trailId: string): Promise<ParsedTrail | null> {
+    const json = await this.getTrailTrackData(trailId);
+    if (!json) return null;
+    return this.mergeTrailCustomWaypoints(trailId, trailJsonToTrail(json));
+  }
+
+  /**
+   * Merge the stored custom waypoints for `trailId` into an already-parsed
+   * base trail (must be in its base, as-stored direction). A failure to load
+   * custom waypoints never blocks the trail itself — the base trail is
+   * returned unchanged.
+   */
+  async mergeTrailCustomWaypoints(trailId: string, base: ParsedTrail): Promise<ParsedTrail> {
+    try {
+      const customRows = await this.getCustomWaypoints(trailId);
+      if (customRows.length === 0) return base;
+      return mergeCustomWaypoints(base, customRows);
+    } catch (e) {
+      console.warn('Failed to load custom waypoints:', e);
+      return base;
+    }
   }
 
   /** Store custom trail track data as JSON */
@@ -380,9 +426,12 @@ export class TrailDataService {
     const setClauses: string[] = [];
     const params: (string | number | null)[] = [];
     for (const [field, column] of Object.entries(columnByField) as [keyof CustomWaypointUpdate, string][]) {
-      if (field in updates) {
+      // Skip undefined values (matches plan-service updatePlan semantics):
+      // an explicitly-undefined key means "leave unchanged", not "set NULL".
+      const value = updates[field];
+      if (value !== undefined) {
         setClauses.push(`${column} = ?`);
-        params.push(updates[field] ?? null);
+        params.push(value);
       }
     }
     if (setClauses.length === 0) return;

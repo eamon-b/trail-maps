@@ -5,7 +5,7 @@ import { waypointEmojis } from './WaypointList';
 import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
-import type { TrailWaypoint } from '../lib/trail-utils';
+import { isCustomWaypointId, type TrailWaypoint } from '../lib/trail-utils';
 
 /** Height of the collapsed ElevationProfileDrawer (first snap point) */
 const ELEVATION_DRAWER_COLLAPSED = 80;
@@ -68,7 +68,7 @@ export function WaypointDetailSheet({
   if (!displayWaypoint) return null;
 
   const emoji = waypointEmojis[displayWaypoint.type] ?? waypointEmojis.poi ?? '📍';
-  const isCustom = displayWaypoint.id.startsWith('custom-');
+  const isCustom = isCustomWaypointId(displayWaypoint.id);
 
   return (
     <Animated.View

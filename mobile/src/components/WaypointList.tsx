@@ -10,6 +10,7 @@ export const waypointEmojis: Record<string, string> = {
   hut: '🛖',
   campsite: '⛺',
   water: '💧',
+  'water-tank': '🚰',
   shelter: '🏚️',
   road: '🛣️',
   trailhead: '🥾',

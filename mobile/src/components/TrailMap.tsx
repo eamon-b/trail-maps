@@ -1,7 +1,7 @@
 import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
-import type { TrackPoint, TrailWaypoint, RouteVariant } from '../lib/trail-utils';
+import { isCustomWaypointId, type TrackPoint, type TrailWaypoint, type RouteVariant } from '../lib/trail-utils';
 import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -34,7 +34,7 @@ const WAYPOINT_COLORS: Record<string, string> = {
   'side-trip': '#9C27B0',
 };
 
-/** Distinct marker color for user-created waypoints (id prefix "custom-") */
+/** Distinct marker color for user-created waypoints (see isCustomWaypointId) */
 const CUSTOM_WAYPOINT_COLOR = '#E91E63';
 
 function getWaypointColor(type: string): string {
@@ -136,7 +136,7 @@ function buildWaypointsGeoJSON(waypoints: TrailWaypoint[]) {
       id: wp.id,
       name: wp.name,
       type: wp.type,
-      color: wp.id.startsWith('custom-') ? CUSTOM_WAYPOINT_COLOR : getWaypointColor(wp.type),
+      color: isCustomWaypointId(wp.id) ? CUSTOM_WAYPOINT_COLOR : getWaypointColor(wp.type),
       totalDistance: wp.totalDistance ?? 0,
     },
   }));

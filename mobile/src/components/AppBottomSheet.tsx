@@ -19,6 +19,24 @@ interface AppBottomSheetProps {
   children: React.ReactNode;
   /** Initial snap point index (0=peek, 1=half, 2=full). Default: 1 (half) */
   initialSnap?: number;
+  /**
+   * Snap points for the sheet. Defaults to the app-wide three-stop set
+   * (peek 25% / half 50% / full 90%). Override for sheets that need a
+   * different range (e.g. a form that opens larger).
+   */
+  snapPoints?: (string | number)[];
+  /**
+   * Passed straight through to the underlying gorhom BottomSheet. Left
+   * undefined by default so existing consumers keep gorhom's default
+   * behavior; set false when providing fixed snap points that should not be
+   * augmented by a content-height snap point.
+   */
+  enableDynamicSizing?: boolean;
+  /** Keyboard handling, passed through to the underlying BottomSheet. */
+  keyboardBehavior?: 'extend' | 'fillParent' | 'interactive';
+  keyboardBlurBehavior?: 'none' | 'restore';
+  /** Forwarded to the inner scroll view (e.g. "handled" for forms). */
+  keyboardShouldPersistTaps?: boolean | 'always' | 'never' | 'handled';
 }
 
 /** App-wide bottom sheet with three snap points: peek (25%), half (50%), full (90%) */
@@ -27,6 +45,11 @@ export function AppBottomSheet({
   onDismiss,
   children,
   initialSnap = 1,
+  snapPoints: snapPointsProp,
+  enableDynamicSizing,
+  keyboardBehavior,
+  keyboardBlurBehavior,
+  keyboardShouldPersistTaps,
 }: AppBottomSheetProps) {
   const { colors } = useTheme();
   const { registerSheet } = useBottomSheetDismiss();
@@ -41,7 +64,8 @@ export function AppBottomSheet({
     }
   }, [isOpen, registerSheet, onDismiss]);
 
-  const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
+  const defaultSnapPoints = useMemo(() => ['25%', '50%', '90%'], []);
+  const snapPoints = snapPointsProp ?? defaultSnapPoints;
 
   const handleSheetChanges = useCallback(
     (index: number) => {
@@ -72,10 +96,13 @@ export function AppBottomSheet({
       ref={bottomSheetRef}
       index={initialSnap}
       snapPoints={snapPoints}
+      enableDynamicSizing={enableDynamicSizing}
       onChange={handleSheetChanges}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       animateOnMount={!reduceMotion}
+      keyboardBehavior={keyboardBehavior}
+      keyboardBlurBehavior={keyboardBlurBehavior}
       handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: colors.textSecondary }]}
       backgroundStyle={[styles.background, { backgroundColor: colors.surface }]}
       style={styles.sheet}
@@ -85,6 +112,7 @@ export function AppBottomSheet({
           styles.content,
           { paddingBottom: insets.bottom + spacing.lg },
         ]}
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
       >
         {children}
       </BottomSheetScrollView>

@@ -230,6 +230,23 @@ export function niceAxisTicks(min: number, max: number, targetCount: number): nu
 // ---------------------------------------------------------------------------
 
 /**
+ * Prefix that marks a merged TrailWaypoint as user-created. Minted by
+ * mergeCustomWaypoints; the UI uses it to offer edit/delete and to recover
+ * the custom_waypoints row id.
+ */
+export const CUSTOM_WAYPOINT_ID_PREFIX = 'custom-';
+
+/** Whether a merged TrailWaypoint id refers to a user-created waypoint. */
+export function isCustomWaypointId(id: string): boolean {
+  return id.startsWith(CUSTOM_WAYPOINT_ID_PREFIX);
+}
+
+/** Recover the custom_waypoints DB row id from a merged TrailWaypoint id. */
+export function customWaypointRowId(id: string): string {
+  return id.slice(CUSTOM_WAYPOINT_ID_PREFIX.length);
+}
+
+/**
  * The subset of a stored custom waypoint row that the merge needs.
  * Matches the CustomWaypoint shape returned by TrailDataService.
  */
@@ -275,7 +292,7 @@ export function mergeCustomWaypoints(trail: Trail, custom: CustomWaypointLike[])
   const customWaypoints: TrailWaypoint[] = custom.map(row => {
     const trackIndex = nearestTrackIndex(points, row.kmPosition);
     return {
-      id: `custom-${row.id}`,
+      id: `${CUSTOM_WAYPOINT_ID_PREFIX}${row.id}`,
       name: row.name,
       lat: row.lat,
       lon: row.lon,

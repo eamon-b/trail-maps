@@ -7,7 +7,7 @@ import { TrailMap } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
 import { PlanService } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
-import { trailJsonToTrail, createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
+import { createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
 import { spacing, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -70,12 +70,11 @@ export default function SectionMapScreen() {
       if (!trailId) return;
       try {
         const trailService = await TrailDataService.create();
-        const json = await trailService.getTrailTrackData(trailId);
-        if (!json) {
+        let parsed = await trailService.getMergedTrail(trailId);
+        if (!parsed) {
           setLoading(false);
           return;
         }
-        let parsed = trailJsonToTrail(json);
         if (direction === 'SOBO') {
           parsed = createReversedTrail(parsed);
         }

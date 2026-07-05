@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { TrailDataService, type Trail as DbTrail } from '../services/trail-data-service';
-import { trailJsonToTrail, mergeCustomWaypoints, type Trail } from '../lib/trail-utils';
+import { trailJsonToTrail, type Trail } from '../lib/trail-utils';
 
 interface TrailDataState {
   /** The parsed trail object, ready for display */
@@ -15,6 +15,12 @@ interface TrailDataState {
   loadTrail: (id: string) => Promise<void>;
   /** Force reload trail data (e.g. after editing custom trail name) */
   reloadTrail: () => Promise<void>;
+  /**
+   * Re-merge custom waypoints into the already-loaded trail (after add/edit/
+   * delete). Unlike reloadTrail this never touches `loading`, so consumers
+   * (e.g. the map) are not unmounted and the camera keeps its position.
+   */
+  refreshCustomWaypoints: () => Promise<void>;
 }
 
 const TrailDataContext = createContext<TrailDataState | null>(null);
@@ -26,6 +32,9 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const loadedIdRef = useRef<string | null>(null);
   const trailRef = useRef<Trail | null>(null);
+  // Parsed trail BEFORE custom waypoints were merged in, so
+  // refreshCustomWaypoints can re-merge against a clean base.
+  const baseTrailRef = useRef<Trail | null>(null);
 
   const loadTrail = useCallback(async (id: string) => {
     // Already loaded for this ID
@@ -40,6 +49,7 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
       const json = await service.getTrailTrackData(id);
       if (!json) {
         trailRef.current = null;
+        baseTrailRef.current = null;
         setTrail(null);
         setDbTrail(null);
         setError('Trail not found');
@@ -47,19 +57,13 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      let parsed = trailJsonToTrail(json);
-
-      // Merge user-created waypoints at the load boundary so every consumer
-      // (map, datasheet, water-carry, elevation, measure) sees them. Failure
-      // here must never block the trail itself from loading.
-      try {
-        const customRows = await service.getCustomWaypoints(id);
-        if (customRows.length > 0) {
-          parsed = mergeCustomWaypoints(parsed, customRows);
-        }
-      } catch (e) {
-        console.warn('Failed to load custom waypoints:', e);
-      }
+      // Keep the pre-merge base so refreshCustomWaypoints can re-merge
+      // without re-parsing the trail. The merge itself lives in the service
+      // (getMergedTrail / mergeTrailCustomWaypoints) so every consumer —
+      // map, datasheet, water-carry, elevation, measure — shares one path.
+      const base = trailJsonToTrail(json);
+      baseTrailRef.current = base;
+      const parsed = await service.mergeTrailCustomWaypoints(id, base);
 
       trailRef.current = parsed;
       setTrail(parsed);
@@ -81,12 +85,28 @@ export function TrailDataProvider({ children }: { children: React.ReactNode }) {
     // Force reload by clearing cached state
     loadedIdRef.current = null;
     trailRef.current = null;
+    baseTrailRef.current = null;
     await loadTrail(id);
   }, [loadTrail]);
 
+  const refreshCustomWaypoints = useCallback(async () => {
+    const id = loadedIdRef.current;
+    const base = baseTrailRef.current;
+    if (!id || !base) return;
+
+    try {
+      const service = await TrailDataService.create();
+      const merged = await service.mergeTrailCustomWaypoints(id, base);
+      trailRef.current = merged;
+      setTrail(merged);
+    } catch (e) {
+      console.warn('Failed to refresh custom waypoints:', e);
+    }
+  }, []);
+
   const contextValue = useMemo(
-    () => ({ trail, dbTrail, loading, error, loadTrail, reloadTrail }),
-    [trail, dbTrail, loading, error, loadTrail, reloadTrail],
+    () => ({ trail, dbTrail, loading, error, loadTrail, reloadTrail, refreshCustomWaypoints }),
+    [trail, dbTrail, loading, error, loadTrail, reloadTrail, refreshCustomWaypoints],
   );
 
   return (

@@ -14,7 +14,6 @@ import { triggerLocationHaptic } from '../../src/components/haptics';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { PlanService, type Plan } from '../../src/services/plan-service';
 import {
-  trailJsonToTrail,
   createReversedTrail,
   type Trail,
 } from '../../src/lib/trail-utils';
@@ -158,14 +157,12 @@ export default function HikeScreen() {
           setActiveTrailId(trailId);
 
           const service = await TrailDataService.create();
-          const json = await service.getTrailTrackData(trailId);
+          let parsed = await service.getMergedTrail(trailId);
           if (cancelled) return;
-          if (!json) {
+          if (!parsed) {
             setLoading(false);
             return;
           }
-
-          let parsed = trailJsonToTrail(json);
 
           // Load active plan for this trail
           let plan: Plan | null = null;

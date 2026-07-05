@@ -9,7 +9,10 @@
  * ("Fetch elevation data (requires internet)"); never called automatically.
  */
 
-import type { Trail, TrackPoint, TrailWaypoint } from '../lib/trail-utils';
+import { trailJsonToTrail, type Trail, type TrackPoint, type TrailWaypoint } from '../lib/trail-utils';
+import { calculateSegmentStats } from '../lib/gpx-processor';
+import type { TrailJson } from './trail-loader';
+import { TrailDataService } from './trail-data-service';
 
 const ELEVATION_ENDPOINT = 'https://api.open-meteo.com/v1/elevation';
 
@@ -85,8 +88,8 @@ export function pickElevationSamplePoints(
 export async function fetchElevations(
   coords: Coordinate[],
   onProgress?: (done: number, total: number) => void,
-): Promise<number[]> {
-  const elevations: number[] = [];
+): Promise<(number | null)[]> {
+  const elevations: (number | null)[] = [];
 
   for (let start = 0; start < coords.length; start += ELEVATION_BATCH_SIZE) {
     const batch = coords.slice(start, start + ELEVATION_BATCH_SIZE);
@@ -106,11 +109,36 @@ export async function fetchElevations(
       throw new Error('Elevation API returned an unexpected response');
     }
 
-    elevations.push(...data.elevation.map((e) => e ?? 0));
+    // Preserve nulls (DEM gaps) verbatim. Zero-filling them here would drop the
+    // sample to sea level, and interpolation would then ramp down to 0 and back
+    // up, fabricating ~2x the gap's worth of phantom ascent+descent. Callers
+    // drop null samples so the interpolator bridges the gap from real neighbours.
+    elevations.push(...data.elevation);
     onProgress?.(Math.min(start + batch.length, coords.length), coords.length);
   }
 
   return elevations;
+}
+
+/**
+ * Drop samples whose fetched elevation is null (DEM gaps), keeping the parallel
+ * `dists`/`eles` arrays aligned. The remaining real samples let
+ * backfillTrackElevation interpolate straight across each gap.
+ */
+export function dropNullElevationSamples(
+  dists: number[],
+  eles: (number | null)[],
+): { dists: number[]; eles: number[] } {
+  const outDists: number[] = [];
+  const outEles: number[] = [];
+  for (let i = 0; i < eles.length; i++) {
+    const e = eles[i];
+    if (e != null) {
+      outDists.push(dists[i]);
+      outEles.push(e);
+    }
+  }
+  return { dists: outDists, eles: outEles };
 }
 
 // ---------------------------------------------------------------------------
@@ -173,15 +201,9 @@ function recomputeWaypointStats(
   return waypoints.map((wp) => {
     if (wp.trackIndex == null || wp.trackIndex >= points.length) return wp;
 
-    // Segment ascent/descent between the previous waypoint and this one
-    // (same math as gpx-processor's calculateSegmentStats)
-    let ascent = 0;
-    let descent = 0;
-    for (let i = prevTrackIndex; i < wp.trackIndex && i < points.length - 1; i++) {
-      const elevDiff = points[i + 1].ele - points[i].ele;
-      if (elevDiff > 0) ascent += elevDiff;
-      else descent += Math.abs(elevDiff);
-    }
+    // Segment ascent/descent between the previous waypoint and this one,
+    // via the shared gpx-processor stats pass (distance is ignored here).
+    const { ascent, descent } = calculateSegmentStats(points, prevTrackIndex, wp.trackIndex);
     runningAscent += ascent;
     runningDescent += descent;
     prevTrackIndex = wp.trackIndex;
@@ -215,13 +237,12 @@ export function applyElevationToTrail(
     ? backfillTrackElevation(trail.track.displayPoints, sampleDists, sampleEles)
     : undefined;
 
-  let totalAscent = 0;
-  let totalDescent = 0;
-  for (let i = 1; i < points.length; i++) {
-    const elevDiff = points[i].ele - points[i - 1].ele;
-    if (elevDiff > 0) totalAscent += elevDiff;
-    else totalDescent += Math.abs(elevDiff);
-  }
+  // Total ascent/descent over the full-resolution track via the shared pass.
+  const { ascent: totalAscent, descent: totalDescent } = calculateSegmentStats(
+    points,
+    0,
+    points.length,
+  );
 
   return {
     ...trail,
@@ -234,4 +255,81 @@ export function applyElevationToTrail(
     },
     waypoints: recomputeWaypointStats(trail.waypoints, points),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Post-save backfill orchestration
+// ---------------------------------------------------------------------------
+
+/** Merge an elevation-updated Trail back into its stored TrailJson shape,
+ * preserving config and any extra top-level fields from the original. */
+function trailToTrackData(trail: Trail, base: TrailJson): TrailJson {
+  return {
+    ...base,
+    waypoints: trail.waypoints.map((wp) => ({
+      name: wp.name,
+      lat: wp.lat,
+      lon: wp.lon,
+      type: wp.type,
+      description: wp.description,
+      elevation: wp.elevation,
+      distance: wp.distance,
+      totalDistance: wp.totalDistance,
+      ascent: wp.ascent,
+      descent: wp.descent,
+      totalAscent: wp.totalAscent,
+      totalDescent: wp.totalDescent,
+    })),
+    track: {
+      points: trail.track.points,
+      displayPoints: trail.track.displayPoints ?? trail.track.points,
+      totalDistance: trail.track.totalDistance,
+      totalAscent: trail.track.totalAscent,
+      totalDescent: trail.track.totalDescent,
+    },
+  };
+}
+
+/** True when a stored custom trail has no usable elevation data (flat profile),
+ * i.e. importing offline left every track point at 0 m. */
+export function trailLacksElevation(trail: Trail): boolean {
+  return (
+    (trail.track.totalAscent ?? 0) === 0 &&
+    (trail.track.totalDescent ?? 0) === 0 &&
+    trail.track.points.every((p) => (p.ele ?? 0) === 0)
+  );
+}
+
+/**
+ * Backfill elevation for an already-saved custom trail: loads the stored track,
+ * runs pick -> fetch -> apply, and persists the result. Mirrors climate's
+ * ensureCustomTrailClimate so a trail imported offline can gain elevation later.
+ *
+ * Network access — must only be called from a user-triggered action.
+ * The whole body is guarded: any failure resolves to null and persists nothing.
+ */
+export async function backfillTrailElevation(
+  trailId: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<Trail | null> {
+  try {
+    const service = await TrailDataService.create();
+    const json = await service.getTrailTrackData(trailId);
+    if (!json) return null;
+
+    const trail = trailJsonToTrail(json);
+    const { dists, coords } = pickElevationSamplePoints(trail.track.points);
+    if (coords.length === 0) return null;
+
+    const rawEles = await fetchElevations(coords, onProgress);
+    const { dists: validDists, eles: validEles } = dropNullElevationSamples(dists, rawEles);
+    if (validEles.length === 0) return null;
+
+    const updated = applyElevationToTrail(trail, validDists, validEles);
+    await service.storeCustomTrailData(trailId, trailToTrackData(updated, json));
+    return updated;
+  } catch (e) {
+    console.warn('Elevation backfill failed:', e);
+    return null;
+  }
 }

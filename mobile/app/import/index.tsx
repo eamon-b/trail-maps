@@ -29,6 +29,7 @@ import type { ProcessingResult, ProcessingWarning } from '../../src/lib/gpx-proc
 import {
   pickElevationSamplePoints,
   fetchElevations,
+  dropNullElevationSamples,
   applyElevationToTrail,
 } from '../../src/services/elevation-service';
 import type { Trail } from '../../src/lib/trail-utils';
@@ -181,6 +182,9 @@ export default function ImportScreen() {
 
   const handleSave = useCallback(async () => {
     if (!result) return;
+    // Never save while an elevation fetch is in flight — doing so would persist
+    // the flat profile and discard the elevation about to arrive.
+    if (elevationFetch === 'fetching') return;
 
     setStage('saving');
     try {
@@ -195,7 +199,7 @@ export default function ImportScreen() {
       setError({ message: msg });
       setStage('error');
     }
-  }, [result, trailName, sourceFilename, router]);
+  }, [result, trailName, sourceFilename, router, elevationFetch]);
 
   const handleRetry = useCallback(() => {
     setStage('pick');
@@ -215,8 +219,14 @@ export default function ImportScreen() {
     setElevationFetch('fetching');
     try {
       const { dists, coords } = pickElevationSamplePoints(result.trail.track.points);
-      const eles = await fetchElevations(coords);
-      const updatedTrail = applyElevationToTrail(result.trail, dists, eles);
+      const rawEles = await fetchElevations(coords);
+      // Drop DEM-gap (null) samples so interpolation bridges the gap from real
+      // neighbours instead of dipping to sea level and fabricating ascent.
+      const { dists: validDists, eles: validEles } = dropNullElevationSamples(dists, rawEles);
+      if (validEles.length === 0) {
+        throw new Error('Elevation service returned no usable data for this trail');
+      }
+      const updatedTrail = applyElevationToTrail(result.trail, validDists, validEles);
       setResult({
         trail: updatedTrail,
         warnings: result.warnings.filter((w) => w.type !== 'no_elevation'),
@@ -448,12 +458,20 @@ export default function ImportScreen() {
           {/* Action buttons */}
           <View style={styles.actionButtons}>
             <Pressable
-              style={[styles.importButton, { backgroundColor: colors.accent }]}
+              style={[
+                styles.importButton,
+                { backgroundColor: colors.accent },
+                elevationFetch === 'fetching' && styles.importButtonDisabled,
+              ]}
               onPress={handleSave}
+              disabled={elevationFetch === 'fetching'}
               accessibilityRole="button"
               accessibilityLabel="Import trail"
+              accessibilityState={{ disabled: elevationFetch === 'fetching' }}
             >
-              <Text style={[styles.importButtonText, { color: colors.textInverse }]}>Import</Text>
+              <Text style={[styles.importButtonText, { color: colors.textInverse }]}>
+                {elevationFetch === 'fetching' ? 'Waiting for elevation…' : 'Import'}
+              </Text>
             </Pressable>
             <Pressable
               style={[styles.cancelImportButton, { borderColor: colors.border }]}
@@ -756,6 +774,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     paddingVertical: spacing.md,
     alignItems: 'center',
+  },
+  importButtonDisabled: {
+    opacity: 0.5,
   },
   importButtonText: {
     ...typography.body,

@@ -437,9 +437,12 @@ function findWaypointVisits(
 
 /**
  * Calculate segment distance and elevation between two track point indices.
+ *
+ * Accepts any point with lat/lon/ele so both the GPX pipeline and the
+ * elevation-backfill stats pass can share this single implementation.
  */
-function calculateSegmentStats(
-  points: GpxPoint[],
+export function calculateSegmentStats(
+  points: { lat: number; lon: number; ele: number }[],
   fromIndex: number,
   toIndex: number,
 ): { distanceKm: number; ascent: number; descent: number } {

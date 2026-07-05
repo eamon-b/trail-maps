@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { aggregateDailyToMonthly, type DailyClimateSeries } from './climate-aggregate';
 
 function emptySeries(): DailyClimateSeries {
@@ -112,5 +112,41 @@ describe('aggregateDailyToMonthly', () => {
     ]));
 
     expect(monthly[10].avgRainyDays).toBe(1);
+  });
+
+  // Regression: date-only strings must bucket by their literal calendar month
+  // regardless of the device timezone. `new Date('2020-01-01')` is UTC midnight,
+  // so a local getMonth()/getFullYear() on a UTC-negative device would push
+  // Jan-1 into the previous December, inflating December and understating it.
+  describe('timezone-independent month bucketing', () => {
+    const originalTZ = process.env.TZ;
+    beforeAll(() => { process.env.TZ = 'America/Los_Angeles'; });
+    afterAll(() => { process.env.TZ = originalTZ; });
+
+    it('places 1st-of-month rows in their own month under a UTC-negative tz', () => {
+      const monthly = aggregateDailyToMonthly(buildSeries([
+        { date: '2014-01-01', max: 30, min: 15, precip: 5 },
+        { date: '2015-01-01', max: 30, min: 15, precip: 5 },
+      ]));
+
+      const jan = monthly[0];
+      const dec = monthly[11];
+
+      // Both Jan-1 rows land in January...
+      expect(jan.month).toBe(1);
+      expect(jan.avgTempMax).toBe(30);
+      // precip totalled then divided by 2 distinct years: (5+5)/2 = 5
+      expect(jan.avgPrecipitation).toBe(5);
+      expect(jan.avgRainyDays).toBe(1);
+
+      // ...and nothing bleeds into December.
+      expect(dec).toEqual({
+        month: 12,
+        avgTempMin: 0,
+        avgTempMax: 0,
+        avgPrecipitation: 0,
+        avgRainyDays: 0,
+      });
+    });
   });
 });

@@ -12,9 +12,15 @@
  * served without touching the network.
  */
 
-import { aggregateDailyToMonthly } from '@lib/climate-aggregate';
-import { registerClimateData, type ClimateData, type ClimateLocation } from './climate-service';
+import { aggregateDailyToMonthly, type DailyClimateSeries } from '@lib/climate-aggregate';
+import {
+  registerClimateData,
+  ensureClimateData,
+  type ClimateData,
+  type ClimateLocation,
+} from './climate-service';
 import { TrailDataService } from './trail-data-service';
+import { findNearestByDistance } from '../lib/trail-utils';
 
 // ---------------------------------------------------------------------------
 // Constants (mirrors scripts/fetch-climate.ts, adapted for on-device use)
@@ -65,20 +71,6 @@ interface SampleTrackPoint {
   dist: number;
 }
 
-/** Find the track point nearest to a target cumulative distance. */
-function nearestPointByDist(points: SampleTrackPoint[], targetKm: number): SampleTrackPoint {
-  let lo = 0;
-  let hi = points.length - 1;
-  while (hi - lo > 1) {
-    const mid = (lo + hi) >> 1;
-    if (points[mid].dist < targetKm) lo = mid;
-    else hi = mid;
-  }
-  return Math.abs(points[lo].dist - targetKm) <= Math.abs(points[hi].dist - targetKm)
-    ? points[lo]
-    : points[hi];
-}
-
 /**
  * Pick evenly spaced climate sample points along a track: both endpoints plus
  * interior points roughly every 100 km, capped at `maxLocations` total.
@@ -105,7 +97,7 @@ export function pickClimateSamplePoints(
 
   for (let i = 0; i < count; i++) {
     const targetKm = (totalDistance * i) / (count - 1);
-    const point = nearestPointByDist(points, targetKm);
+    const point = points[findNearestByDistance(points, targetKm)];
     const roundedKm = Math.round(targetKm);
     if (seenKm.has(roundedKm)) continue;
     seenKm.add(roundedKm);
@@ -126,12 +118,7 @@ export function pickClimateSamplePoints(
 
 interface OpenMeteoArchiveResponse {
   elevation?: number;
-  daily: {
-    time: string[];
-    temperature_2m_max: (number | null)[];
-    temperature_2m_min: (number | null)[];
-    precipitation_sum: (number | null)[];
-  };
+  daily: DailyClimateSeries;
 }
 
 async function fetchHistoricalClimate(lat: number, lon: number): Promise<OpenMeteoArchiveResponse> {
@@ -227,31 +214,13 @@ export async function fetchCustomTrailClimate(
 // Cache-first orchestration
 // ---------------------------------------------------------------------------
 
-function parseClimateJson(json: string): ClimateData | null {
-  try {
-    const data = JSON.parse(json) as ClimateData;
-    if (Array.isArray(data?.locations) && data.dataYears) return data;
-  } catch {
-    // fall through
-  }
-  return null;
-}
-
 /**
- * Load previously cached climate for a trail from SQLite (no network) and
- * register it with the in-memory climate service. Returns null if nothing is
- * cached. Safe to call on every trail load.
+ * Load previously cached climate for a trail: registry-first, then the SQLite
+ * `climate_json` cache (no network). Returns null if nothing is cached. Safe to
+ * call on every trail load. Thin wrapper over the shared climate-service loader.
  */
 export async function loadCachedCustomTrailClimate(trailId: string): Promise<ClimateData | null> {
-  const service = await TrailDataService.create();
-  const json = await service.getClimateJson(trailId);
-  if (!json) return null;
-
-  const data = parseClimateJson(json);
-  if (!data) return null;
-
-  registerClimateData(trailId, data);
-  return data;
+  return ensureClimateData(trailId);
 }
 
 /**
@@ -265,11 +234,14 @@ export async function ensureCustomTrailClimate(
   trail: { track: { points: SampleTrackPoint[]; totalDistance: number } },
   onProgress?: (progress: ClimateFetchProgress) => void,
 ): Promise<ClimateData | null> {
-  // Cache first — never hit the network when we already have data
-  const cached = await loadCachedCustomTrailClimate(trailId);
-  if (cached) return cached;
-
+  // The whole body is guarded — including the SQLite cache read — so a storage
+  // rejection can never escape as an unhandled rejection and leave the caller's
+  // fetch state stuck on 'loading'. Any failure resolves to null instead.
   try {
+    // Cache first — never hit the network when we already have data
+    const cached = await loadCachedCustomTrailClimate(trailId);
+    if (cached) return cached;
+
     const data = await fetchCustomTrailClimate(trail, onProgress);
     const service = await TrailDataService.create();
     await service.storeClimateJson(trailId, JSON.stringify(data));

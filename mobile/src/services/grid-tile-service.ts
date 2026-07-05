@@ -49,7 +49,21 @@ export async function fetchGridIndex(baseUrl: string): Promise<GridIndex> {
     throw new Error(`Failed to fetch grid index: HTTP ${response.status}`);
   }
 
-  _cachedIndex = (await response.json()) as GridIndex;
+  const parsed = (await response.json()) as GridIndex;
+  if (!parsed || !Array.isArray(parsed.cells)) {
+    throw new Error('Grid index is malformed (missing cells array)');
+  }
+  // Coerce any missing/non-finite cell size to 0 so downstream size math can
+  // never produce NaN. Warn once so a broken index surfaces in logs.
+  const badSizes = parsed.cells.filter((c) => !Number.isFinite(c.totalSize));
+  if (badSizes.length > 0) {
+    console.warn(
+      `Grid index has ${badSizes.length} cell(s) with an invalid totalSize; treating as 0 bytes.`,
+    );
+    for (const cell of badSizes) cell.totalSize = 0;
+  }
+
+  _cachedIndex = parsed;
   _cachedIndexTime = now;
   return _cachedIndex;
 }

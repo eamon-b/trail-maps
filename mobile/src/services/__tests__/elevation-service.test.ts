@@ -1,6 +1,7 @@
 import {
   pickElevationSamplePoints,
   fetchElevations,
+  dropNullElevationSamples,
   backfillTrackElevation,
   applyElevationToTrail,
   ELEVATION_BATCH_SIZE,
@@ -124,13 +125,46 @@ describe('fetchElevations', () => {
     await expect(fetchElevations(coordList(5))).rejects.toThrow('unexpected response');
   });
 
-  it('substitutes 0 for null elevations', async () => {
+  it('preserves null elevations (DEM gaps) verbatim', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ elevation: [100, null, 300] }),
     });
 
-    expect(await fetchElevations(coordList(3))).toEqual([100, 0, 300]);
+    expect(await fetchElevations(coordList(3))).toEqual([100, null, 300]);
+  });
+});
+
+describe('dropNullElevationSamples', () => {
+  it('drops null-elevation samples, keeping dists/eles aligned', () => {
+    const { dists, eles } = dropNullElevationSamples([0, 5, 10, 15], [100, null, 300, null]);
+    expect(dists).toEqual([0, 10]);
+    expect(eles).toEqual([100, 300]);
+  });
+
+  it('does not fabricate ascent across a null-DEM gap', () => {
+    // Three samples with a null in the middle. Zero-filling the gap would make
+    // the profile climb 0->100 then 100->0 then 0->200 (fake ~300m of ascent).
+    // Dropping the null lets the interpolator run straight 100->200 (0 ascent).
+    const dists = [0, 5, 10];
+    const rawEles: (number | null)[] = [100, null, 200];
+    const { dists: vd, eles: ve } = dropNullElevationSamples(dists, rawEles);
+
+    const points: TrackPoint[] = buildPoints(11, 10);
+    const filled = backfillTrackElevation(points, vd, ve);
+
+    let ascent = 0;
+    let descent = 0;
+    for (let i = 1; i < filled.length; i++) {
+      const d = filled[i].ele - filled[i - 1].ele;
+      if (d > 0) ascent += d;
+      else descent += Math.abs(d);
+    }
+    // Monotonic 100 -> 200 across the whole track: 100m ascent, no descent,
+    // and no phantom dip at the null sample.
+    expect(descent).toBe(0);
+    expect(ascent).toBeCloseTo(100, 5);
+    filled.forEach((p) => expect(p.ele).toBeGreaterThanOrEqual(100));
   });
 });
 

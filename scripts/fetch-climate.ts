@@ -14,7 +14,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { aggregateDailyToMonthly, type MonthlyClimate } from '../src/lib/climate-aggregate.js';
+import { aggregateDailyToMonthly, type MonthlyClimate, type DailyClimateSeries } from '../src/lib/climate-aggregate.js';
 
 interface ClimateLocation {
   name: string;
@@ -69,12 +69,7 @@ interface OpenMeteoResponse {
   latitude: number;
   longitude: number;
   elevation: number;
-  daily: {
-    time: string[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_sum: number[];
-  };
+  daily: DailyClimateSeries;
 }
 
 // Handle both Windows and Unix paths from import.meta.url

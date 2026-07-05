@@ -50,9 +50,13 @@ export function aggregateDailyToMonthly(daily: DailyClimateSeries): MonthlyClima
   }> = new Map();
 
   for (let i = 0; i < time.length; i++) {
-    const date = new Date(time[i]);
-    const month = date.getMonth() + 1; // 1-12
-    const year = date.getFullYear();
+    // Open-Meteo `time` entries are date-only ISO strings ('YYYY-MM-DD').
+    // `new Date('YYYY-MM-DD')` parses as UTC midnight (per ECMA-262), so
+    // reading the month/year with local getters shifts every 1st-of-month
+    // into the previous month on UTC-negative devices. Slice the ISO string
+    // directly to bucket by calendar date regardless of the device timezone.
+    const month = Number(time[i].slice(5, 7)); // 1-12
+    const year = Number(time[i].slice(0, 4));
 
     if (!monthlyData.has(month)) {
       monthlyData.set(month, {

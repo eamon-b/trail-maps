@@ -35,10 +35,9 @@ import { WaterCarryList } from '../../src/components/WaterCarryList';
 import { ResupplyList } from '../../src/components/ResupplyList';
 import { analyzeWaterCarry, analyzeWaterCarryForSection } from '@lib/water-carry-calculator';
 import { analyzeResupply, analyzeResupplyForSection } from '@lib/resupply-calculator';
-import { loadClimateData, getClimateForDay, type ClimateData, type DayClimate } from '../../src/services/climate-service';
+import { ensureClimateData, getClimateForDay, type ClimateData, type DayClimate } from '../../src/services/climate-service';
 import {
   ensureCustomTrailClimate,
-  loadCachedCustomTrailClimate,
   type ClimateFetchProgress,
 } from '../../src/services/custom-climate-service';
 import { exportPlanAsText, exportPlanAsCsv } from '../../src/services/plan-export';
@@ -172,23 +171,21 @@ export default function PlanEditorScreen() {
     load();
   }, [planId, paramTrailId, router]);
 
-  // Load climate data when trail is available. For custom trails, fall back
-  // to the SQLite climate cache (no network — fetches are user-triggered).
+  // Load climate data when trail is available. ensureClimateData is
+  // registry-first (bundled trails) then falls back to the SQLite climate cache
+  // (custom trails); network fetches remain strictly user-triggered.
   useEffect(() => {
     if (!plan?.trailId) return;
     const trailId = plan.trailId;
-    const climate = loadClimateData(trailId);
-    setClimateData(climate);
-    if (climate || !isCustomTrail) return;
 
     let cancelled = false;
-    loadCachedCustomTrailClimate(trailId)
-      .then((cached) => {
-        if (!cancelled && cached) setClimateData(cached);
+    ensureClimateData(trailId)
+      .then((data) => {
+        if (!cancelled) setClimateData(data);
       })
       .catch(() => { /* no cached climate */ });
     return () => { cancelled = true; };
-  }, [plan?.trailId, isCustomTrail]);
+  }, [plan?.trailId]);
 
   // User-triggered climate fetch for custom trails (requires internet)
   const handleFetchClimate = useCallback(async () => {
@@ -197,13 +194,20 @@ export default function PlanEditorScreen() {
     if (!trailId || !baseTrail) return;
 
     setClimateFetch({ status: 'loading' });
-    const data = await ensureCustomTrailClimate(trailId, baseTrail, (progress) => {
-      setClimateFetch({ status: 'loading', progress });
-    });
-    if (data) {
-      setClimateData(data);
-      setClimateFetch({ status: 'idle' });
-    } else {
+    // Defensive: even though ensureCustomTrailClimate resolves to null on
+    // failure, guard the await so an unexpected throw can never strand the
+    // spinner on 'loading' with no retry affordance.
+    try {
+      const data = await ensureCustomTrailClimate(trailId, baseTrail, (progress) => {
+        setClimateFetch({ status: 'loading', progress });
+      });
+      if (data) {
+        setClimateData(data);
+        setClimateFetch({ status: 'idle' });
+      } else {
+        setClimateFetch({ status: 'error' });
+      }
+    } catch {
       setClimateFetch({ status: 'error' });
     }
   }, [plan?.trailId]);

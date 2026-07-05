@@ -213,14 +213,22 @@ export default function PlanScreen() {
         return;
       }
 
-      // Show the real download size (sum of cell sizes from the grid index)
-      const downloadSize = cells.reduce((sum, cell) => sum + cell.totalSize, 0);
-      const sizeStr = formatBytes(downloadSize);
+      // Show the real download size (sum of cell sizes from the grid index).
+      // Guard against cells missing/NaN totalSize so the dialog never renders
+      // "approximately NaN MB"; fall back to a generic phrase if unknown.
+      let anySizeMissing = false;
+      const downloadSize = cells.reduce((sum, cell) => {
+        if (Number.isFinite(cell.totalSize)) return sum + cell.totalSize;
+        anySizeMissing = true;
+        return sum;
+      }, 0);
+      const sizeStr =
+        downloadSize > 0 && !anySizeMissing ? `approximately ${formatBytes(downloadSize)} of ` : '';
 
       await new Promise<void>((resolve, reject) => {
         Alert.alert(
           'Download Offline Maps',
-          `This will download approximately ${sizeStr} of map tiles (${cells.length} grid cell${cells.length > 1 ? 's' : ''}).`,
+          `This will download ${sizeStr}map tiles (${cells.length} grid cell${cells.length > 1 ? 's' : ''}).`,
           [
             { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('Cancelled')) },
             { text: 'Download', onPress: () => resolve() },

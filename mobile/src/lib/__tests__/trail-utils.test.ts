@@ -132,7 +132,7 @@ describe('reverseWaypoints', () => {
     expect(reversed).toEqual([]);
   });
 
-  it('handles single waypoint', () => {
+  it('handles single waypoint (no arriving segment in the reversed walk)', () => {
     const waypoints = [
       { id: 'wp-0', name: 'Only', lat: 0, lon: 0, type: 'trailhead', totalDistance: 50, ascent: 100, descent: 50, trackIndex: 250 },
     ];
@@ -140,8 +140,10 @@ describe('reverseWaypoints', () => {
     expect(reversed).toHaveLength(1);
     expect(reversed[0].name).toBe('Only');
     expect(reversed[0].totalDistance).toBe(50);
-    expect(reversed[0].ascent).toBe(50);  // original descent becomes new ascent
-    expect(reversed[0].descent).toBe(100); // original ascent becomes new descent
+    // Per-waypoint ascent/descent describe the ARRIVING segment; the first
+    // waypoint of the reversed walk has none.
+    expect(reversed[0].ascent).toBe(0);
+    expect(reversed[0].descent).toBe(0);
     expect(reversed[0].trackIndex).toBe(249); // trackLength - 1 - 250
   });
 });

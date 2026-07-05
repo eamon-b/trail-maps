@@ -183,7 +183,7 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 
 - **Map**: MapLibre React Native with OpenFreeMap vector tiles (offline capable)
 - **Storage**: `expo-sqlite` for trail data, `expo-file-system` for tile files
-- **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types, plan-types, track-geometry, variant-reverse, day-calculator, resupply-calculator, water-carry-calculator. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
+- **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types, plan-types, track-geometry, variant-reverse, trail-reverse, plan-direction, day-calculator, resupply-calculator, water-carry-calculator. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
 - **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
 - **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.
 

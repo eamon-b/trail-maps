@@ -20,14 +20,14 @@ Phase 4 is the final phase of the [issue #6](https://github.com/eamon-b/trail-ma
 
 ## Key Design Decisions
 
-1. **Direction toggle = data-layer reversal via a shared `createReversedTrail`** — supersedes the display-layer approach in `plans/web-planner-direction.md`. Rationale: (a) the display-layer plan shows **wrong ascent/descent/estimatedHours** on every SOBO day card (`computeDays` output is direction-dependent; the doc never addresses this); (b) scattering `isSobo ?` conditionals across four renderers recreates the Phase-1 km-offset bug class, while data-layer reversal has exactly two km-space conversion points; (c) it completes the Phase 3 consolidation and gives web mobile's battle-tested single code path. Elevation profile flip comes free and is **in scope**.
+1. **Direction toggle = data-layer reversal via a shared `createReversedTrail`** — supersedes the display-layer approach in `plans/web-planner-direction.md`. Rationale: (a) the display-layer plan shows **wrong ascent/descent/estimatedHours** on every SOBO day card (`computeDays` output is direction-dependent; the doc never addresses this); (b) scattering `isSobo ?` conditionals across four renderers recreates the Phase-1 km-offset bug class, while data-layer reversal has exactly two km-space conversion points; (c) it extends the Phase 3 consolidation: the shared `@lib/trail-reverse` module is the single implementation of reversal (PR #13 as submitted kept a private reversal copy in `trail-viewer.ts`; the review-fix pass migrated it to the shared module). Elevation profile flip comes free and is **in scope**.
 2. **km-space contract:** `PlanState.stops[].km` in localStorage stays **NOBO-absolute forever** (no migration, no rewrite on toggle). Runtime lives entirely in active-direction km. Conversions only at (i) `renderAll()` stops→active and (ii) `toggleStop`/`isStop` active→NOBO, with epsilon 0.05 km comparisons.
 3. **Direction values `'NOBO' | 'SOBO'`** (uppercase — matches mobile's `plans.direction` column). Toggle button text uses trail `config.direction` labels (e.g. Westbound/Eastbound) with NOBO/SOBO fallback.
-4. **Custom waypoints in a new `custom_waypoints` table** (migration 5), not an `is_custom` column: the `waypoints` table is bulk-rewritten on `dataVersion` bumps — separate table makes wiping user data structurally impossible. Rows use uuid PKs and timestamps (sync-ready for crowd-sourcing).
+4. **Custom waypoints in a new `custom_waypoints` table** (migration 5), not an `is_custom` column: the `waypoints` table is bulk-rewritten on `dataVersion` bumps — separate table makes wiping user data structurally impossible. Rows use `${Date.now().toString(36)}-${random}` base36 id PKs (the `custom-trail-service` precedent, as shipped in PR #12) and timestamps. Note these ids are **not** uuids, so the 6b sync design must mint a proper client uuid for idempotency rather than reusing the row id (the 6b doc is being revised accordingly).
 5. **Store raw pressed lat/lon + snapped `km_position` + `off_track_m`** — marker renders where the water actually is; distance math uses the snapped km; UI shows "≈150 m off trail". Same semantics as bundled waypoints, so reversal/calculators work untouched.
 6. **Climate parity via user-triggered runtime fetch** (Open-Meteo archive, 2014–2023, ≤5 auto-picked sample points) cached in a new `trails.climate_json` column and registered through the existing `registerClimateData` — climate-service and UI unchanged. Never fetches silently (offline-first).
 7. **Elevation backfill in scope, opt-in at import** (Open-Meteo elevation API, ≤500 samples, linear interpolation) when GPX lacks `<ele>`.
-8. **Four PRs, one per item.** Merge order 1 → 2 → 3; item 4 (doc) any time. Item 2 owns migration 5 (including `climate_json` so item 3 needs no migration). All Phase 4 branches cut after `phase-3-shared-code` merges.
+8. **Four PRs, one per item.** Merge order 1 → 2 → 3; item 4 (doc) any time. Item 2 owns migration 5 (including `climate_json` so item 3 needs no migration). All Phase 4 branches were cut after `phase-3-shared-code` merged to main (PR #9, commit 33cd6b6).
 
 ## Implementation Steps
 
@@ -66,13 +66,13 @@ Update `mobile/src/db/__tests__/schema.test.ts` (fresh install → v5; v4→v5 p
 **Step 2.3 — Merge at the load boundary.** New pure `mergeCustomWaypoints(trail, custom): Trail` in `mobile/src/lib/trail-utils.ts`: map rows to `TrailWaypoint` with stable ids `custom-${row.id}`, `totalDistance = kmPosition`, `trackIndex` via `findNearestByDistance`; insert sorted; recompute segment `distance` deltas for all waypoints; ascent/descent 0. Must survive `createReversedTrail` (add merge→reverse round-trip test). Wire in `TrailDataContext.loadTrail` (`mobile/src/contexts/TrailDataContext.tsx:50`) after `trailJsonToTrail` — **every consumer (map, datasheet, water-carry, elevation, measure) picks custom waypoints up with zero further changes**; `reloadTrail()` already exists for refresh-after-edit.
 
 **Step 2.4 — UI.**
-- Add: `onLongPress` on `TrailMap` in `mobile/app/trail/[id].tsx` (handler template: `plan/section-map.tsx:116-150`) → new `AddWaypointSheet` component (name, 4-type picker, notes, read-only "km X.X · ≈Y m off trail" via `@lib/distance` haversine) → `addCustomWaypoint` → `reloadTrail()`.
+- Add: `onLongPress` on `TrailMap` in `mobile/app/trail/[id].tsx` (handler template: `plan/section-map.tsx:116-150`) → new `AddWaypointSheet` component (name, 4-type picker, notes, read-only "km X.X · ≈Y m off trail" via `@lib/distance` haversine) → `addCustomWaypoint` → `reloadTrail()`. When the screen is displaying a reversed trail, the long-press handler must convert the snapped km back to base direction before storing — `baseKm = isReversed ? totalDistance - nearestKm : nearestKm` — so `km_position` is always NOBO-absolute.
 - Edit/delete: existing waypoint detail sheet gains Edit/Delete when `id.startsWith('custom-')`; delete confirms via `Alert.alert`.
 - Distinct marker color in `TrailMap` for custom waypoints; update `contribute.tsx` copy to point at long-press-to-add.
 
 ### Item 3 — Custom-trail parity: climate + elevation + tiles (PR 3)
 
-**Step 3.1 — Shared `src/lib/climate-aggregate.ts` (new).** Extract the daily→monthly aggregation from `scripts/fetch-climate.ts` (~lines 172-230): `aggregateDailyToMonthly(daily): MonthlyClimate[]`. Refactor the script to import it (behavioral no-op — diff one regenerated climate.json to prove it). Vitest fixture test.
+**Step 3.1 — Shared `src/lib/climate-aggregate.ts` (new).** Extract the daily→monthly aggregation from `scripts/fetch-climate.ts` (~lines 172-230): `aggregateDailyToMonthly(daily): MonthlyClimate[]`. Refactor the script to import it (behavioral no-op — verified in PR #14 by verbatim-copy extraction plus fixture tests; the smoke run used no `--force` and no network, so nothing was regenerated — diffing one regenerated climate.json remains outstanding verification). Vitest fixture test.
 
 **Step 3.2 — `mobile/src/services/custom-climate-service.ts` (new).**
 - `pickClimateSamplePoints(points, total, max=5)`: endpoints + interior every ~100 km, names "km 0", "km 104"…
@@ -101,7 +101,7 @@ Write `plans/part-6b-crowdsourcing-design.md`, superseding the open questions in
 
 - **Web (Vitest):** new `trail-reverse`, `plan-direction`, `climate-aggregate` suites; existing calculator suites must stay green (`npm test`).
 - **Mobile (Jest):** schema v5 migration tests; custom-waypoint CRUD; `mergeCustomWaypoints` (ordering, stable ids, reversal round-trip); water-carry integration (merged `type:'water'` waypoint shrinks a dry-stretch gap); climate cache-first/failure paths; elevation interpolation (`cd mobile && npx jest`).
-- **Maestro:** new `custom-waypoint.yaml` (long-press → add → visible in datasheet → delete); `custom-trail-climate.yaml` (online-tagged); re-run `plan-creation.yaml`/`plan-editing.yaml` after the trail-utils re-export refactor; `custom-trail-offline.yaml` after the R2 grid upload.
+- **Maestro (delivered vs pending):** `custom-waypoint.yaml` (long-press → add → visible in datasheet → delete) is written but not yet emulator-run (deferred in PR #12); `custom-trail-climate.yaml` (online-tagged) is not yet written (PR #14 defers it to a follow-up); the trail-utils re-export refactor was verified via Playwright + Jest in PR #13 — re-running `plan-creation.yaml`/`plan-editing.yaml` on the emulator is still pending; `custom-trail-offline.yaml` after the R2 grid upload.
 - **Manual smoke, item 1:** toggle SOBO → Day 1 = former last segment **with swapped ascent/descent** (check an asymmetric day); elevation profile flipped; add stop in SOBO → toggle NOBO → stop at `total − km`, not duplicated; reload persists direction.
 - Typechecks: `npx tsc --noEmit` (web + mobile), `npx expo lint`.
 
@@ -113,4 +113,4 @@ Write `plans/part-6b-crowdsourcing-design.md`, superseding the open questions in
 - **Maestro long-press flakiness on the MapLibre canvas** — if unstable, seed a waypoint via a dev-only path and assert the rest of the flow.
 - **Open-Meteo on-device limits/latency** — ≤5 locations, inter-request delay, single retry, per-location progress; strictly user-triggered.
 - **Item 3 tile verification blocked on Phase 2 R2 upload** — only Step 3.4's checklist waits; all item-3 code ships independently.
-- **Sequencing:** all branches cut after `phase-3-shared-code` merges (it's currently uncommitted); item 3 branches from item 2 if not yet merged.
+- **Sequencing:** resolved — `phase-3-shared-code` merged to main as PR #9 (commit 33cd6b6) and all Phase 4 branches were cut from it; item 3 branches from item 2 if not yet merged.

@@ -1,4 +1,4 @@
-# Part 6b: Crowd-Sourcing Design (v2.0)
+# Part 6b: Crowd-Sourcing Design (v2.1)
 
 > **Status:** Design complete — no code in this PR. Implementation is a future phase.
 >
@@ -21,7 +21,7 @@ text-only, all moderated before publication.**
 | Priority | Contribution | Why this order |
 |---|---|---|
 | 1 | **Water-source status reports** ("flowing / low / dry" on an existing water waypoint) | Highest hiker value per byte; safety-relevant; the data model is trivially append-only; the UI is two taps on a waypoint the app already renders. |
-| 2 | **Waypoint corrections & additions** (new waypoint, position/name/type fix, "no longer exists") | Directly reuses the item-2 long-press → `AddCustomWaypointSheet` flow — a submission is just a local custom waypoint the user chooses to share. |
+| 2 | **Waypoint corrections & additions** (new waypoint, position/name/type fix, "no longer exists") | Directly reuses the item-2 long-press → `AddWaypointSheet` flow — a submission is just a local custom waypoint the user chooses to share. |
 | 3 | **Trail condition reports** (closure, hazard, general condition; text + km position) | Valuable but time-sensitive; under 6b's build-time distribution (Section 7) they publish as "recent history", not realtime. Full realtime conditions are the trigger for the 6c live API. |
 
 Water reports come first because the local custom-waypoints feature already teaches
@@ -38,7 +38,7 @@ moderation load is minimal.
 - Editing *other users'* contributions from the app — never; corrections are new
   submissions, merged by moderation.
 - Accounts as a requirement for anything: reading community data requires nothing
-  (Section 7); submitting requires only an anonymous device id (Section 5).
+  (Section 7); submitting requires only an anonymous identity (Section 5).
 
 6a (feedback-form-to-email, no backend) is unchanged and ships before any of this.
 
@@ -46,11 +46,39 @@ moderation load is minimal.
 
 ## 2. Contribution Data Model
 
+### 2.0 Prerequisite work item: stable waypoint ids in published trail JSON
+
+Everything below that references a "bundled waypoint id"
+(`water_observations.waypoint_id`, `waypoint_submissions.target_waypoint_id`,
+the Section 7 fold join) currently has nothing real to point at: published
+trail JSON waypoints carry **no id at all**. The mobile client synthesizes
+positional ids — `trailJsonToTrail` in `mobile/src/lib/trail-utils.ts` assigns
+`wp-${i}` by array index — which shift the moment the fold inserts a community
+waypoint into the array, and SQLite waypoint rowids are rewritten on every
+re-import. Keying observations or corrections on any of those is building on
+sand.
+
+**Decision: the first 6b implementation task — before any server work — is
+stable waypoint ids.** Generated deterministically at build time in
+`build-trails.ts` (e.g. trail id + type + rounded coordinates, so rebuilds are
+stable and collisions surface as build errors), carried through
+`build-mobile-trails.ts` into the mobile JSON, and surfaced by
+`trailJsonToTrail` in place of the synthetic `wp-${i}`. All observation and
+correction references — client outbox, server tables, and the fold — key on
+these ids. Community-added waypoints use their submission uuid as their stable
+id (published as `sourceId`, Section 7), so a single namespace covers both
+cases.
+
 ### 2.1 Client side: `custom_waypoints` grows sync columns
 
-Item 2 lands `custom_waypoints` as migration 5 (uuid PK, `trail_id` FK CASCADE, name,
-type, lat/lon/ele, `km_position`, `off_track_m`, description, timestamps). 6b adds
-**migration 6** — sync bookkeeping only, no shape change to the waypoint itself:
+Item 2 lands `custom_waypoints` as migration 5 (text PK — a base36
+timestamp+random id, `${Date.now().toString(36)}-<random>`, *not* a uuid —
+`trail_id` FK CASCADE, name, type, lat/lon/ele, `km_position`, `off_track_m`,
+description, timestamps). That the local id is locally minted and non-uuid is
+exactly why every *submission* carries its own client-minted uuid (§2.2, §3):
+the submission uuid, not the local row id, is the idempotency key and the
+cross-system handle. 6b adds **migration 6** — sync bookkeeping only, no shape
+change to the waypoint itself:
 
 ```sql
 -- mobile migration 6 (6b)
@@ -59,16 +87,22 @@ ALTER TABLE custom_waypoints ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'local
   -- 'pending'  user tapped Share; queued in the outbox, not yet acknowledged
   -- 'synced'   server acknowledged receipt (queued or approved server-side)
   -- 'rejected' moderator rejected; row keeps working locally, badge explains why
-ALTER TABLE custom_waypoints ADD COLUMN server_id TEXT;      -- server submission uuid
+ALTER TABLE custom_waypoints ADD COLUMN server_id TEXT;      -- submission uuid, minted
+  -- CLIENT-side at share time; sent as the server-row PK (idempotency key, §2.2/§3),
+  -- later matched against published sourceId / duplicate_of for dedupe (§3)
 ALTER TABLE custom_waypoints ADD COLUMN deleted_at TEXT;     -- soft delete: a shared row
   -- can't be hard-deleted until the retraction has been pushed (outbox needs the id)
-ALTER TABLE custom_waypoints ADD COLUMN device_id TEXT;      -- stamped at share time
+ALTER TABLE custom_waypoints ADD COLUMN device_id TEXT;      -- local install uuid, stamped
+  -- at share time — local correlation/debugging only; the server-side identity is the
+  -- Supabase anonymous auth uid (§5), never this value
 
 -- Local outbox for water status observations (append-only, mirrors the server table)
 CREATE TABLE water_observations (
   id TEXT PRIMARY KEY,                 -- uuid, client-generated (idempotency key)
   trail_id TEXT NOT NULL REFERENCES trails(id) ON DELETE CASCADE,
-  waypoint_id TEXT NOT NULL,           -- bundled waypoint id or custom-<uuid>
+  waypoint_id TEXT NOT NULL,           -- stable bundled waypoint id (§2.0), or
+                                       -- 'custom-<localId>' for a custom waypoint
+                                       -- (remapped to its submission uuid at push, §3)
   status TEXT NOT NULL,                -- 'flowing' | 'low' | 'dry'
   note TEXT,
   observed_at TEXT NOT NULL,           -- when the hiker was actually there
@@ -78,15 +112,25 @@ CREATE TABLE water_observations (
 CREATE INDEX idx_water_observations_trail ON water_observations(trail_id);
 ```
 
-Key property (inherited from the item-2 decision): `custom_waypoints` is **never
-touched by `dataVersion` bulk rewrites**, so a rejected or still-pending contribution
-can never be wiped by a trail data refresh.
+Key property — and a **MUST-HOLD invariant, not a free lunch**: `custom_waypoints`
+is never touched by `dataVersion` bulk rewrites, so a rejected or still-pending
+contribution can never be wiped by a trail data refresh. The first draft claimed
+this followed automatically from being a separate table. It does not: as shipped
+in item 2, `storeTrail` in `mobile/src/services/trail-data-service.ts` used
+`INSERT OR REPLACE INTO trails`, and with `PRAGMA foreign_keys = ON` the REPLACE
+deletes the old trail row first — cascading through every `ON DELETE CASCADE` FK
+and wiping `custom_waypoints` (and plans) on every refresh. The property holds
+only because the Phase 4 review fix changes `storeTrail` to a non-destructive
+`ON CONFLICT(id) DO UPDATE` upsert. 6b depends on that fix landing first and
+must pin it with a regression test ("re-importing a trail at a new `dataVersion`
+preserves `custom_waypoints` rows"); every sync decision below assumes it.
 
 ### 2.2 Server side (Supabase Postgres, Sydney — see Section 4)
 
 ```sql
 CREATE TABLE devices (
-  id uuid PRIMARY KEY,                          -- client-generated install uuid
+  id uuid PRIMARY KEY,                          -- = auth.uid() of the Supabase anonymous
+                                                --   session (§5) — NOT client-minted
   email text,                                   -- null unless magic-link linked (§5)
   email_verified_at timestamptz,
   trust_level smallint NOT NULL DEFAULT 0,      -- 0 = normal, 1 = trusted (§6, later)
@@ -95,15 +139,21 @@ CREATE TABLE devices (
 );
 
 CREATE TABLE waypoint_submissions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id uuid NOT NULL REFERENCES devices(id),
+  id uuid PRIMARY KEY,                          -- CLIENT-generated (idempotency key, §3)
+  device_id uuid REFERENCES devices(id) ON DELETE SET NULL,
+                                                -- nullable: privacy deletion anonymizes
+                                                --   in place, it never deletes rows (§8)
   trail_id text NOT NULL,
   kind text NOT NULL CHECK (kind IN ('new', 'correction', 'invalidation')),
-  target_waypoint_id text,                      -- bundled waypoint id for correction/invalidation
+  target_waypoint_id text,                      -- stable bundled waypoint id (§2.0) for
+                                                --   correction/invalidation
   payload jsonb NOT NULL,                       -- { name, type, lat, lon, ele, km_position,
                                                 --   off_track_m, description } (subset for corrections)
   status text NOT NULL DEFAULT 'queued'
-    CHECK (status IN ('queued', 'approved', 'rejected', 'spam')),
+    CHECK (status IN ('queued', 'approved', 'rejected', 'spam', 'retracted')),
+  duplicate_of uuid REFERENCES waypoint_submissions(id),
+                                                -- set when rejected as duplicate of an
+                                                --   approved submission (§3, §6)
   moderator_note text,                          -- shown to the submitting device on rejection
   created_at timestamptz NOT NULL DEFAULT now(),
   reviewed_at timestamptz
@@ -111,21 +161,26 @@ CREATE TABLE waypoint_submissions (
 
 CREATE TABLE water_observations (
   id uuid PRIMARY KEY,                          -- client uuid (idempotent re-push)
-  device_id uuid NOT NULL REFERENCES devices(id),
+  device_id uuid REFERENCES devices(id) ON DELETE SET NULL,  -- nullable, as above (§8)
   trail_id text NOT NULL,
-  waypoint_id text NOT NULL,
+  waypoint_id text NOT NULL,                    -- stable bundled waypoint id (§2.0), or
+                                                --   the waypoint submission uuid for
+                                                --   community/custom waypoints (§3)
   status text NOT NULL CHECK (status IN ('flowing', 'low', 'dry')),
   note text,
   observed_at timestamptz NOT NULL,
   moderation_status text NOT NULL DEFAULT 'queued'
-    CHECK (moderation_status IN ('queued', 'approved', 'rejected', 'spam')),
+    CHECK (moderation_status IN ('queued', 'approved', 'rejected', 'spam', 'retracted')),
   created_at timestamptz NOT NULL DEFAULT now(),
-  reviewed_at timestamptz
+  reviewed_at timestamptz,
+  CHECK (observed_at <= created_at)             -- no future-dated observations (§2.3);
+                                                --   the Edge Function clamps before insert
 );
 
 CREATE TABLE condition_reports (                -- priority 3; same moderation columns
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id uuid NOT NULL REFERENCES devices(id),
+                                                --   and observed_at CHECK as above
+  id uuid PRIMARY KEY,                          -- CLIENT-generated (idempotency key, §3)
+  device_id uuid REFERENCES devices(id) ON DELETE SET NULL,
   trail_id text NOT NULL,
   km_position real NOT NULL,
   category text NOT NULL CHECK (category IN ('closure', 'hazard', 'condition')),
@@ -164,6 +219,17 @@ observations from the last 120 days; weight each `w = exp(-age_days / 30)`; the 
 with the highest summed weight wins; publish `{ status, observedAt: max(observed_at),
 reportCount, agreement }`. A waypoint with no observation inside the window publishes
 `status: 'unknown'` — stale certainty is worse than honest ignorance for water.
+
+The ranking needs one guard the first draft missed: **`observed_at` must be
+clamped.** A future-dated observation has negative `age_days`, so
+`exp(-age_days / 30)` exceeds 1 without bound — a single vandal (or a device
+with a broken clock) could dominate the published status of a safety-critical
+datum. Three layers: the Edge Function rejects (or clamps) any `observed_at`
+beyond `now()` plus a small clock-skew allowance (~10 minutes); the schema
+enforces `CHECK (observed_at <= created_at)` (§2.2); and the fold caps every
+weight at 1 (`w = min(1, exp(-age_days / 30))`) as defense-in-depth. The
+moderation queue also displays observation dates relative to now — a row
+reading "observed 3 days from now" is unmissable to the moderator.
 
 ---
 
@@ -207,17 +273,58 @@ Why this and not the alternatives:
   BGTaskScheduler removes a whole class of platform-specific failure modes and
   battery/privacy review questions.
 
-Outbox mechanics: each row carries a client-generated uuid used as the idempotency
-key, so a retried POST after a dropped response cannot double-submit. Drain order is
-FIFO per table; a 4xx (rejected/invalid) marks the row `rejected` with the server
-message; a 5xx/network failure leaves it `pending` for the next foreground. A shared
-custom waypoint deleted locally becomes a retraction push (`deleted_at` set, row kept
-until the retraction is acknowledged).
+Outbox mechanics: **every** submission type — waypoint submissions, water
+observations, condition reports — carries a client-generated uuid that is the
+server-row PK, inserted with `ON CONFLICT DO NOTHING` semantics in the Edge
+Function, so a retried POST after a dropped response cannot double-submit and a
+partially-failed batch can be re-sent whole. (The first draft gave only
+`water_observations` a client key; server-side `gen_random_uuid()` on the other
+two left retry correlation positional, which breaks exactly when it matters —
+on retry after partial failure. Fixed in §2.2.) `/submit` items and the
+per-item response entries both carry this client id explicitly; the outbox
+marks rows by id, never by position. Drain order is FIFO per table; a 4xx
+(rejected/invalid) marks the row `rejected` with the server message; a
+5xx/network failure leaves it `pending` for the next foreground.
 
-Reconciliation with published data: when a device's own approved submission later
-arrives inside bundled trail JSON, the published waypoint carries the submission uuid
-as `sourceId`; the item-2 `mergeCustomWaypoints` step drops any local row whose
+Observations against custom waypoints: locally an observation may reference
+`custom-<localId>`. If that waypoint has been shared, the push remaps
+`waypoint_id` to the waypoint's submission uuid — the `server_id` stamped at
+share time (§2.1) — because that uuid is the only identifier both sides know,
+and it is what the fold joins on for community waypoints (§7). **Observations
+against a never-shared local waypoint are never pushed**: they stay local-only,
+since nothing on the server (or in anyone else's data) exists for them to
+attach to. Sharing the waypoint later makes its queued observations pushable.
+
+Retraction: deleting a shared custom waypoint (or explicitly retracting any
+submission) sets `deleted_at` locally and enqueues a **retraction item** in
+`/submit` carrying the submission's client uuid. The server marks the
+submission `status = 'retracted'` — a first-class status in the §2.2 CHECKs —
+whether it was still `queued` or already `approved`; the fold excludes
+retracted rows, so retracting an approved submission removes the waypoint, or
+may flip a published water status, at the next fold (the confirmation sheet
+says so). Once the ack returns, the client hard-deletes the soft-deleted local
+row.
+
+Reconciliation with published data: when a device's own approved submission
+later arrives inside bundled trail JSON, the published waypoint carries the
+submission uuid as `sourceId`, and the merge step drops any local row whose
 `server_id` matches a published `sourceId`, so the user never sees a duplicate.
+Two honest corrections to the first draft here:
+
+- **This dedupe does not exist yet.** The item-2 `mergeCustomWaypoints` (in
+  `mobile/src/lib/trail-utils.ts`) simply appends custom waypoints and re-sorts
+  by km; it has no `sourceId` logic. The real 6b work is: add `sourceId` (and
+  stable ids, §2.0) to the published JSON schema, emit them from
+  `build-trails.ts` / `build-mobile-trails.ts`, and add the dedupe pass to the
+  merge.
+- **The rejected-corroborator case.** When two hikers submit the same tank, the
+  moderator approves one and rejects the other as a duplicate — but the
+  rejected device's `server_id` then matches no published `sourceId`, so a
+  naive dedupe leaves that hiker a permanent duplicate pin wearing a "rejected"
+  badge. Fix: the moderator sets `duplicate_of` (§2.2) when rejecting as
+  duplicate; `submission_status` exposes it; the client also drops local rows
+  whose submission's `duplicate_of` matches a published `sourceId`; and the
+  badge for that case reads **"confirmed by the community"**, not "rejected".
 
 ---
 
@@ -252,48 +359,80 @@ Supabase means most "endpoints" are PostgREST inserts guarded by RLS, fronted by
 Edge Function where server-side logic (rate limiting, device upsert) is needed:
 
 ```
-POST /functions/v1/submit            Edge Function — the single write entrypoint.
-                                     Body: { deviceId, items: [...] } (mixed batch of
-                                     waypoint_submissions / water_observations /
-                                     condition_reports). Upserts devices row, enforces
-                                     rate limits (§5), inserts with service role,
-                                     returns per-item { id, status } for outbox marking.
+POST /auth (signInAnonymously)       Supabase Auth — called once, lazily, at first
+                                     submission; creates the anonymous identity
+                                     everything below hangs off (§5).
 
-GET  /rest/v1/submission_status      PostgREST view, RLS: device sees only its own rows.
-       ?device_id=eq.<uuid>          Returns { id, status, moderator_note, reviewed_at }
-                                     — this is the rejection-feedback pull (§6).
+POST /functions/v1/submit            Edge Function — the single write entrypoint,
+                                     called with the anonymous-session JWT. Body:
+                                     { items: [...] } — a mixed batch of
+                                     waypoint_submissions / water_observations /
+                                     condition_reports / retractions, every item
+                                     carrying its client-generated uuid. Derives
+                                     the device from auth.uid() (upserting the
+                                     devices row), enforces rate limits (§5),
+                                     validates observed_at (§2.3), inserts with
+                                     service role using ON CONFLICT DO NOTHING,
+                                     returns per-item { clientId, status } for
+                                     outbox marking.
+
+GET  /rest/v1/submission_status      PostgREST view; RLS binds rows to auth.uid(),
+                                     so the server decides whose rows you see —
+                                     no query-parameter filtering. Returns
+                                     { id, status, duplicate_of, moderator_note,
+                                     reviewed_at } — the rejection-feedback pull
+                                     (§3, §6).
 
 POST /auth/v1/magiclink              Supabase Auth — optional email linking (§5).
 ```
 
-RLS posture: anonymous key can call the Edge Function and read `submission_status`
-(own rows only); no direct table INSERT/UPDATE/DELETE from clients; moderation writes
-happen via Studio / service role only. The fold script (Section 7) reads approved rows
-with the service-role key from CI.
+RLS posture: the shared anon *API key* only identifies the app; every policy is
+bound to `auth.uid()` of the device's anonymous session (§5), so "own rows only"
+is enforced by the server, not by a client-supplied filter. (The first draft's
+`?device_id=eq.<uuid>` filter over a shared key was not security: RLS had no
+authenticated principal to bind to, and the device uuid became a guessable
+bearer secret over submission history and moderator notes.) No direct table
+INSERT/UPDATE/DELETE from clients; moderation writes happen via Studio /
+service role only. The fold script (Section 7) reads approved rows with the
+service-role key from CI.
 
 ---
 
 ## 5. Identity
 
-**Decision: anonymous device-id submissions, with an optional email magic link for
-attribution and rejection/approval notification. Rate-limit on device id + IP. Reading
-community data requires no identity at all — approved data ships inside trail data
-updates, indistinguishable from bundled data.**
+**Decision: Supabase anonymous auth — `signInAnonymously()` called lazily at
+first submission — is the identity, with an optional email magic link for
+attribution and rejection/approval notification. Rate-limit on identity + IP.
+Reading community data requires no identity at all — approved data ships inside
+trail data updates, indistinguishable from bundled data.**
 
-- **Device id:** a uuid generated on first launch, stored in SQLite, sent with every
-  submission. It is the moderation handle (trust level, spam bans) and the key for
-  status feedback. It is not portable across reinstalls — acceptable for 6b; pending
-  local rows survive in SQLite regardless, and lost attribution of *past approved*
-  contributions costs nothing functionally.
+- **Server identity = `auth.uid()`:** the first time a user shares anything, the
+  app calls `signInAnonymously()` and persists the session; the resulting
+  `auth.uid()` is `devices.id`, the moderation handle (trust level, spam bans),
+  and the principal every RLS policy binds to. The first draft used a
+  client-minted install uuid sent as a request parameter — unimplementable as
+  security: with only the shared anon key there is no authenticated principal
+  for RLS, so "device sees its own rows" degrades to a client-supplied filter,
+  and the uuid becomes a guessable bearer secret. §4 reflects the fix.
+- **Local install uuid:** the uuid generated on first launch and stored in
+  SQLite is kept, but demoted to a *local correlation id* (stamped on outbox
+  rows for debugging and support requests). It never authenticates anything and
+  never leaves the device as a credential.
+- **Reinstalls:** uninstalling discards the anonymous session, so a reinstall is
+  a new identity — acceptable for 6b; lost attribution of *past approved*
+  contributions costs nothing functionally. Linking an email (below) is the
+  durability upgrade: signing in with the same magic-link email after a
+  reinstall merges history back onto one identity.
 - **Optional email (magic link):** purely additive — unlocks "notify me when reviewed"
   and a display name on attributed contributions. Never required, never gates any
   feature, collected with the APP 5 notice (Section 8). Linking merges the email onto
   the existing `devices` row; no password ever exists.
 - **Rate limits (enforced in the Edge Function):** per device *and* per IP, e.g.
   30 submissions/day and 5/minute per device, 100/day per IP, with a small burst
-  allowance; over-limit returns 429 and the outbox retries next foreground. Device ids
-  are free to mint, which is why the IP dimension exists; IPs are shared (CGNAT), which
-  is why the device dimension exists. Neither is airtight — the moderation queue is
+  allowance; over-limit returns 429 and the outbox retries next foreground. Anonymous
+  identities are still cheap to mint (uninstall/reinstall, scripted sign-ins), which is
+  why the IP dimension exists; IPs are shared (CGNAT), which is why the per-identity
+  dimension exists. Neither is airtight — the moderation queue is
   the real backstop, rate limiting just keeps the queue human-sized.
 - **No accounts to read:** this falls out of Section 7 and is a deliberate product
   stance — a hiker who never contributes still gets every community improvement with
@@ -353,8 +492,12 @@ SLA: median < 24h, p95 < 72h (measured, Section 9).
 Notes:
 
 - **Dedupe signal, not auto-merge:** two reports of the same tank are usually
-  *corroboration*; the moderator merges by approving one and rejecting the other with
-  note "duplicate of an approved report — thanks, it corroborated it".
+  *corroboration*; the moderator merges by approving one and rejecting the other
+  with `duplicate_of` set to the approved submission's id (§2.2) and a note
+  "duplicate of an approved report — thanks, it corroborated it".
+  `submission_status` exposes `duplicate_of`; the client renders that case as
+  **"confirmed by the community"**, not "rejected", and uses it to drop the
+  local pin once the approved twin is published (§3).
 - **Corrections/invalidations** are applied by the moderator editing the source
   `data/trails/*/trail.json` (or approving the row for the fold script to apply
   mechanically — start manual, automate when volume justifies).
@@ -378,13 +521,18 @@ and community data is offline-first by construction. A live API layer is deferre
 
 Pipeline (only the first step is new):
 
-1. **`scripts/fetch-contributions.ts` (new, CI):** service-role read of approved
-   `waypoint_submissions` / `water_observations` / `condition_reports`; computes the
-   freshness ranking (Section 2.3); writes contributions into the trail source data
-   (new waypoints with `sourceId`, `waterStatus` blocks on water waypoints, a
-   `conditions` array on the trail).
-2. `npm run build:trails` + `build-mobile-trails.ts` — unchanged, now carrying the new
-   fields.
+1. **`scripts/fetch-contributions.ts` (new, CI):** service-role read of
+   approved, non-retracted `waypoint_submissions` / `water_observations` /
+   `condition_reports`; joins observations to waypoints on the **stable
+   waypoint id** (§2.0) for bundled waypoints and on the **submission uuid**
+   for community waypoints (§3) — never on array position; computes the
+   freshness ranking (Section 2.3, weights capped at 1); writes contributions
+   into the trail source data (new waypoints with `sourceId` — which is also
+   their stable id — `waterStatus` blocks on water waypoints, a `conditions`
+   array on the trail).
+2. `npm run build:trails` + `build-mobile-trails.ts` — already emitting stable
+   waypoint ids after the §2.0 prerequisite; the fold adds no further changes
+   here beyond carrying the new fields through.
 3. Bump `dataVersion` per changed trail in the index.
 4. Ship via EAS OTA update (JSON is bundled JS-side data — no store review) and web
    deploy.
@@ -395,6 +543,9 @@ Pipeline (only the first step is new):
 Published shape additions:
 
 ```ts
+// on every published waypoint (the §2.0 prerequisite)
+id: string;                // stable waypoint id, deterministic at build time
+
 // on a water waypoint in trail JSON
 waterStatus?: {
   status: 'flowing' | 'low' | 'dry' | 'unknown';
@@ -415,8 +566,14 @@ conditions?: Array<{
 
 Why this beats a live API for 6b: hikers are offline when the data matters, and this
 path makes community data exactly as offline-capable as the trail itself with zero new
-failure modes; the client diff is nearly nil (render `waterStatus`/`conditions`, plus
-the `sourceId` dedupe); and there is no read-side server to scale, cache, or secure.
+failure modes, and there is no read-side server to scale, cache, or secure. The
+client diff is modest, not "nearly nil" as the first draft claimed: render
+`waterStatus`/`conditions`; add stable ids and `sourceId` to the published JSON
+schema and emit them from `build-trails.ts` / `build-mobile-trails.ts` (§2.0);
+add the `sourceId`/`duplicate_of` dedupe pass to `mergeCustomWaypoints`, which
+today just appends and re-sorts with no dedupe logic at all (§3); plus the
+outbox, anonymous-auth session, and retraction flow of §3–§5. Still far smaller
+than a live read layer, and every piece stays offline-first by construction.
 The honest cost is latency — publication cadence equals release cadence (target: a
 weekly cron fold + EAS update whenever the approved set changed). That is fine for
 water seasonality and waypoint fixes, and merely *adequate* for conditions — which is
@@ -450,8 +607,9 @@ spec. Every UI element built for 6b renders unchanged when 6c swaps the transpor
    Australian Consumer Law (blanket disclaimers can't exclude ACL consumer guarantees,
    so the wording must be "to the maximum extent permitted by law" and reviewed once
    before launch).
-3. **Australian Privacy Act 1988 (APPs).** PII collected is minimal by design: device
-   uuid, optional email, submission timestamps + trail locations. Compliance posture:
+3. **Australian Privacy Act 1988 (APPs).** PII collected is minimal by design: an
+   anonymous device identity (the auth uid, §5), optional email, submission
+   timestamps + trail locations. Compliance posture:
    - *APP 1/5 — open + collection notice:* a privacy policy page and an in-app notice
      at first submission stating what is collected, why, that storage is in Australia
      (Supabase Sydney, Section 4), and the contact address.
@@ -462,10 +620,19 @@ spec. Every UI element built for 6b renders unchanged when 6c swaps the transpor
      specific hiker at a specific tank at a specific hour.
    - *APP 11 — security:* RLS everywhere, service-role key only in CI secrets.
    - *APP 12/13 — access + correction/deletion:* a settings-screen "Delete my
-     contributions and data" action (Edge Function: unlink email, delete device row,
-     reject-and-tombstone unpublished submissions) plus the same via email request.
-     Already-published CC0 contributions are anonymous and stay published; the notice
-     says so explicitly.
+     contributions and data" action (Edge Function), plus the same via email
+     request. The flow is **anonymize-in-place, not row deletion** — the first
+     draft's "delete device row, tombstone submissions" was both impossible and
+     dangerous: submission rows FK the device row (so it could not be deleted
+     as written), and deleting *approved* observations would make the next
+     weekly fold silently flip published water statuses — a privacy request
+     must never mutate safety data. Concretely: erase and unlink the email;
+     hard-delete or tombstone only *unpublished* (queued/pending) rows; keep
+     approved/published rows but sever their device link — `device_id` is
+     nullable with `ON DELETE SET NULL` (§2.2), so deleting the `devices` row
+     anonymizes everything it touched in one statement. Published aggregates
+     are unaffected by design: they are CC0, already carry no device identifier
+     (see APP 3), and the notice says so explicitly.
    - The project is almost certainly under the $3M small-business threshold, so much
      of the Act may not strictly apply — comply anyway; it is cheap at this scale and
      the residency choice was made for it.
@@ -534,3 +701,28 @@ custom waypoints. That reversibility is a deliberate property of this design.
   differs (no stable device id in a browser) — revisit after mobile proves demand.
 - **Moderation dashboard:** at what queue volume does Supabase Studio stop being
   enough and a purpose-built review UI (with map preview of the submission) pay off?
+
+---
+
+## Revision History
+
+- **v2.1 (2026-07-05):** incorporated the Phase 4 design-review findings.
+  Identity moved from a client-minted device uuid to Supabase anonymous auth
+  with RLS bound to `auth.uid()` (§4, §5); client-generated uuid idempotency
+  keys extended from water observations to all three submission types and to
+  `/submit` item/response correlation (§2.2, §3, §4); stable waypoint ids in
+  the published JSON made an explicit prerequisite work item (§2.0) with all
+  references rekeyed on them; the custom-waypoint → submission-uuid observation
+  remap defined, including the never-shared-stays-local rule (§2.1, §3, §7);
+  `observed_at` clamped server-side with fold weights capped at 1 (§2.2, §2.3);
+  privacy deletion changed to anonymize-in-place (§2.2, §8); retraction given a
+  first-class server status, fold semantics, and client hard-delete-on-ack
+  (§2.2, §3, §4); `duplicate_of` added to close the rejected-corroborator
+  dedupe gap (§2.2, §3, §6); the §2.1 "never wiped by refresh" property
+  restated as a MUST-HOLD invariant depending on the non-destructive
+  `storeTrail` upsert, with a required regression test; naming and scope claims
+  corrected against the item-2 implementation (`AddWaypointSheet`, base36 local
+  ids, `mergeCustomWaypoints` has no dedupe yet, honest client-diff scoping in
+  §7).
+- **v2.0 (2026-07-04):** initial design — decisions for scope, data model,
+  sync, backend, identity, moderation, distribution, legal, rollout.

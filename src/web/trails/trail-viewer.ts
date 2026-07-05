@@ -2,8 +2,9 @@
 // This module handles map, elevation profile, waypoints table, and direction reversal
 
 import type * as Leaflet from 'leaflet';
-import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
 import { findNearestByDistance } from '@lib/track-geometry';
+import { createReversedTrail } from '@lib/trail-reverse';
+import { getDirectionLabel as directionLabelFor } from '@lib/plan-direction';
 declare const L: typeof Leaflet;
 
 interface TrackPoint {
@@ -1417,83 +1418,13 @@ function exportGpx(trail: Trail): void {
   URL.revokeObjectURL(url);
 }
 
-// === Direction Reversal Functions ===
-
-function reverseTrackPoints(points: TrackPoint[], totalDistance: number): TrackPoint[] {
-  // Use totalDistance - originalDist to avoid floating-point drift from recalculation
-  return [...points].reverse().map(p => ({
-    ...p,
-    dist: totalDistance - p.dist
-  }));
-}
-
-function reverseDisplayPoints(displayPts: TrackPoint[], totalDistance: number): TrackPoint[] {
-  // Use totalDistance - originalDist to avoid floating-point drift from recalculation
-  return [...displayPts].reverse().map(p => ({
-    ...p,
-    dist: totalDistance - p.dist
-  }));
-}
-
-function reverseWaypoints(waypoints: Waypoint[], totalDistance: number, trackLength: number): Waypoint[] {
-  const reversed = [...waypoints].reverse();
-
-  const withNewTotals = reversed.map(wp => ({
-    ...wp,
-    newTotalDistance: totalDistance - (wp.totalDistance || 0)
-  }));
-
-  let runningAscent = 0;
-  let runningDescent = 0;
-
-  return withNewTotals.map((wp, i, arr) => {
-    const segmentAscent = wp.descent || 0;
-    const segmentDescent = wp.ascent || 0;
-    runningAscent += segmentAscent;
-    runningDescent += segmentDescent;
-
-    const segmentDist = i === 0 ? 0 : wp.newTotalDistance - arr[i - 1].newTotalDistance;
-
-    return {
-      ...wp,
-      distance: Math.abs(segmentDist),
-      totalDistance: wp.newTotalDistance,
-      ascent: segmentAscent,
-      descent: segmentDescent,
-      totalAscent: runningAscent,
-      totalDescent: runningDescent,
-      trackIndex: trackLength - 1 - (wp.trackIndex || 0)
-    };
-  });
-}
-
-// Variant reversal math is shared with the mobile app via @lib/variant-reverse
-// (see that module for semantics, including the untouched passthrough for
-// variants that never attach to the main track).
-
-function createReversedTrail(trail: Trail): Trail {
-  const totalDistance = trail.track.totalDistance;
-  const trackLength = trail.track.points.length;
-
-  const reversedTrackPts = reverseTrackPoints(trail.track.points, totalDistance);
-  const reversedDisplayPts = trail.track.displayPoints
-    ? reverseDisplayPoints(trail.track.displayPoints, totalDistance)
-    : reversedTrackPts;
-
-  return {
-    ...trail,
-    track: {
-      ...trail.track,
-      points: reversedTrackPts,
-      displayPoints: reversedDisplayPts,
-      totalAscent: trail.track.totalDescent,
-      totalDescent: trail.track.totalAscent
-    },
-    waypoints: reverseWaypoints(trail.waypoints || [], totalDistance, trackLength),
-    alternates: reverseAlternates(trail.alternates || [], totalDistance),
-    sideTrips: transformSideTrips(trail.sideTrips || [], totalDistance)
-  };
-}
+// === Direction Reversal ===
+//
+// Track/waypoint/variant reversal is shared with the plan viewer and the
+// mobile app via @lib/trail-reverse (which reuses @lib/variant-reverse for
+// the variant math). Unlike the old inline copy, the lib leaves
+// displayPoints undefined when the source track has none; every consumer
+// reads `displayPoints || points`, so the behaviour is identical.
 
 function getReversedTrail(): Trail {
   if (!trailState.reversedTrail) {
@@ -1532,11 +1463,11 @@ function refreshDisplay(trail: Trail): void {
 }
 
 function getDirectionLabel(isReversed: boolean): string {
-  const config = trailState.originalTrail?.config.direction;
-  if (config) {
-    return isReversed ? config.reversed : config.default;
-  }
-  return isReversed ? 'End → Start' : 'Start → End';
+  return directionLabelFor(
+    trailState.originalTrail?.config.direction,
+    isReversed ? 'SOBO' : 'NOBO',
+    { default: 'Start → End', reversed: 'End → Start' },
+  );
 }
 
 function saveDirectionPreference(trailId: string, isReversed: boolean): void {

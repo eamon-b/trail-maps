@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { KM_EPSILON, toActiveKm, toNoboKm, stopsToActive, type PlanDirection } from './plan-direction';
+import { KM_EPSILON, getDirectionLabel, toActiveKm, toNoboKm, stopsToActive, type PlanDirection } from './plan-direction';
 
 const TOTAL = 981.6; // Bibbulmun-ish, deliberately non-round
-
-function round2(km: number): number {
-  return Math.round(km * 100) / 100;
-}
 
 describe('toActiveKm / toNoboKm', () => {
   it('are the identity for NOBO', () => {
@@ -28,15 +24,53 @@ describe('toActiveKm / toNoboKm', () => {
     }
   });
 
-  it('round-trip stays within KM_EPSILON under 2-decimal rounding', () => {
-    // Simulates storing km rounded to 2 dp at each conversion boundary.
+  it('mirror floating-point error stays far inside KM_EPSILON', () => {
+    // Stops are stored FROM the already-rounded build-time km, so the only
+    // error KM_EPSILON has to absorb is float noise from the mirror itself.
     for (const dir of ['NOBO', 'SOBO'] as PlanDirection[]) {
-      for (const km of [0, 7.777, 123.456, 555.555, TOTAL - 3.333, TOTAL]) {
-        const active = round2(toActiveKm(km, dir, TOTAL));
-        const backToNobo = round2(toNoboKm(active, dir, TOTAL));
-        expect(Math.abs(backToNobo - km)).toBeLessThan(KM_EPSILON);
+      for (const km of [0, 7.77, 123.46, 555.55, TOTAL - 3.33, TOTAL]) {
+        const roundTripped = toNoboKm(toActiveKm(km, dir, TOTAL), dir, TOTAL);
+        expect(Math.abs(roundTripped - km)).toBeLessThan(KM_EPSILON / 1000);
       }
     }
+  });
+});
+
+describe('KM_EPSILON stop-matching semantics', () => {
+  it('keeps distinct waypoints >= 10 m apart distinct', () => {
+    // Real neighbouring waypoints sit 10-50 m apart (e.g. Whites River Hut
+    // at km 500.04 vs Munyang River water at km 500.07); conflating them
+    // would make clicking one remove the other's stop.
+    const hutKm = 500.04;
+    const waterKm = 500.07;
+    expect(Math.abs(hutKm - waterKm)).toBeGreaterThanOrEqual(KM_EPSILON);
+    // Still distinct after mirroring both to SOBO.
+    const hutSobo = toActiveKm(hutKm, 'SOBO', TOTAL);
+    const waterSobo = toActiveKm(waterKm, 'SOBO', TOTAL);
+    expect(Math.abs(hutSobo - waterSobo)).toBeGreaterThanOrEqual(KM_EPSILON);
+  });
+
+  it('still matches identical-km waypoint clusters after a mirror', () => {
+    // Co-located waypoints (e.g. the Standley Chasm cluster) share the exact
+    // same stored km; a stored stop must match them in either direction.
+    const km = 758.23;
+    const storedFromSobo = toNoboKm(toActiveKm(km, 'SOBO', TOTAL), 'SOBO', TOTAL);
+    expect(Math.abs(storedFromSobo - km)).toBeLessThan(KM_EPSILON);
+  });
+});
+
+describe('getDirectionLabel', () => {
+  const fallbacks = { default: 'NOBO', reversed: 'SOBO' };
+
+  it('uses trail config labels when configured', () => {
+    const config = { default: 'Westbound', reversed: 'Eastbound' };
+    expect(getDirectionLabel(config, 'NOBO', fallbacks)).toBe('Westbound');
+    expect(getDirectionLabel(config, 'SOBO', fallbacks)).toBe('Eastbound');
+  });
+
+  it('falls back to the caller-provided labels', () => {
+    expect(getDirectionLabel(undefined, 'NOBO', fallbacks)).toBe('NOBO');
+    expect(getDirectionLabel(undefined, 'SOBO', { default: 'Start → End', reversed: 'End → Start' })).toBe('End → Start');
   });
 });
 

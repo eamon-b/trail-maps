@@ -14,7 +14,7 @@ import { findNearestByDistance } from '@lib/track-geometry';
 import { analyzeResupply } from '@lib/resupply-calculator';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
-import { KM_EPSILON, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
+import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { loadPlanState, savePlanState } from './plan-state';
 
 // ---------------------------------------------------------------------------
@@ -165,15 +165,26 @@ function activeTrail(): Trail {
   return direction() === 'SOBO' ? (reversedTrail ??= createReversedTrail(trail)) : trail;
 }
 
+/**
+ * Cached result of `stopsToActive` for the current render pass. All stop and
+ * direction mutations funnel through renderAll(), which refreshes the cache
+ * before anything reads it; isStop(), the markers, and the elevation profile
+ * then share one array instead of clone-and-sorting per waypoint.
+ */
+let cachedActiveStops: StopData[] = [];
+
+function refreshActiveStops(): void {
+  cachedActiveStops = stopsToActive(planState.stops, direction(), trail.track.totalDistance);
+}
+
 /** Stored stops mapped into active-direction km, sorted ascending. */
 function activeStops(): StopData[] {
-  return stopsToActive(planState.stops, direction(), trail.track.totalDistance);
+  return cachedActiveStops;
 }
 
 /** Display label for a direction, from trail config with NOBO/SOBO fallback. */
 function directionLabel(dir: PlanDirection): string {
-  const labels = trail.config.direction;
-  return dir === 'NOBO' ? (labels?.default ?? 'NOBO') : (labels?.reversed ?? 'SOBO');
+  return getDirectionLabel(trail.config.direction, dir, { default: 'NOBO', reversed: 'SOBO' });
 }
 
 /** @param km active-direction km */
@@ -816,6 +827,7 @@ function initTabs(): void {
 // ---------------------------------------------------------------------------
 
 function renderAll(): void {
+  refreshActiveStops();
   currentDays = computeDays(activeTrail(), activeStops(), planState.startDate);
   // Clamp selectedDayIndex in case stops were removed
   if (selectedDayIndex !== null && selectedDayIndex >= currentDays.length) {
@@ -902,6 +914,7 @@ export async function initPlanViewer(trailId: string): Promise<void> {
     planState = { name: `My ${trail.config.shortName ?? trail.config.name} plan`, startDate: null, stops: [] };
   }
 
+  refreshActiveStops();
   initMap();
   initHeader();
   initTabs();

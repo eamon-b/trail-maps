@@ -75,6 +75,14 @@ export function reverseTrackPoints<P extends ReversibleTrackPoint>(
 /**
  * Reverse waypoints, recalculating segment distances and swapping
  * ascent/descent (a climb walked one way is a descent walked the other).
+ *
+ * Per-waypoint ascent/descent follow the arriving-segment convention set by
+ * build-trails enrichWaypoints ("segment ascent from previous waypoint"):
+ * walking the trail backwards, the segment arriving at reversed[i] is the
+ * segment that originally arrived at reversed[i - 1], with ascent/descent
+ * swapped. The first reversed waypoint has no arriving segment (0/0), and
+ * cumulative totals are recomputed from the per-segment values so the final
+ * waypoint's totals equal the swapped trail totals.
  */
 export function reverseWaypoints<W extends ReversibleWaypoint>(
   waypoints: W[],
@@ -88,8 +96,11 @@ export function reverseWaypoints<W extends ReversibleWaypoint>(
   let runningDescent = 0;
 
   return reversed.map((wp, i) => {
-    const segmentAscent = wp.descent ?? 0;
-    const segmentDescent = wp.ascent ?? 0;
+    // The segment between reversed[i - 1] and reversed[i] carries the stats
+    // stored on reversed[i - 1] (its arriving segment in the original walk).
+    const prev = i > 0 ? reversed[i - 1] : undefined;
+    const segmentAscent = prev ? (prev.descent ?? 0) : 0;
+    const segmentDescent = prev ? (prev.ascent ?? 0) : 0;
     runningAscent += segmentAscent;
     runningDescent += segmentDescent;
 

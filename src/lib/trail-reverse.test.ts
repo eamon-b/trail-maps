@@ -79,7 +79,24 @@ describe('reverseWaypoints', () => {
     expect(reverseWaypoints([], 100, 500)).toEqual([]);
   });
 
-  it('swaps ascent/descent and mirrors trackIndex', () => {
+  it('swaps ascent/descent onto the arriving segment and mirrors trackIndex', () => {
+    const waypoints = [
+      { id: 'wp-0', name: 'Start', type: 'trailhead', totalDistance: 0, ascent: 0, descent: 0, trackIndex: 0 },
+      { id: 'wp-1', name: 'End', type: 'trailhead', totalDistance: 100, ascent: 100, descent: 50, trackIndex: 250 },
+    ];
+    const reversed = reverseWaypoints(waypoints, 100, 500);
+    expect(reversed).toHaveLength(2);
+    expect(reversed[0].name).toBe('End');
+    expect(reversed[0].ascent).toBe(0);  // the new start has no arriving segment
+    expect(reversed[0].descent).toBe(0);
+    expect(reversed[0].trackIndex).toBe(249); // trackLength - 1 - 250
+    expect(reversed[1].name).toBe('Start');
+    expect(reversed[1].ascent).toBe(50);   // Start→End descent, walked backwards
+    expect(reversed[1].descent).toBe(100); // Start→End ascent, walked backwards
+    expect(reversed[1].trackIndex).toBe(499);
+  });
+
+  it('handles single waypoint (no arriving segment in the reversed walk)', () => {
     const waypoints = [
       { id: 'wp-0', name: 'Only', type: 'trailhead', totalDistance: 50, ascent: 100, descent: 50, trackIndex: 250 },
     ];
@@ -87,8 +104,8 @@ describe('reverseWaypoints', () => {
     expect(reversed).toHaveLength(1);
     expect(reversed[0].name).toBe('Only');
     expect(reversed[0].totalDistance).toBe(50);
-    expect(reversed[0].ascent).toBe(50);  // original descent becomes new ascent
-    expect(reversed[0].descent).toBe(100); // original ascent becomes new descent
+    expect(reversed[0].ascent).toBe(0);
+    expect(reversed[0].descent).toBe(0);
     expect(reversed[0].trackIndex).toBe(249); // trackLength - 1 - 250
   });
 
@@ -105,9 +122,20 @@ describe('reverseWaypoints', () => {
     expect(reversed[0].distance).toBe(0);
     expect(reversed[1].distance).toBe(70);
     expect(reversed[2].distance).toBe(30);
-    // Cumulative ascent walks the swapped per-segment values
-    expect(reversed[0].totalAscent).toBe(200);
-    expect(reversed[1].totalAscent).toBe(240);
+    // Arriving-segment stats: C starts the reversed walk (nothing arrived
+    // yet); B's arriving segment is the original B→C swapped; A's is the
+    // original A→B swapped.
+    expect(reversed[0].ascent).toBe(0);
+    expect(reversed[0].descent).toBe(0);
+    expect(reversed[0].totalAscent).toBe(0);
+    expect(reversed[0].totalDescent).toBe(0);
+    expect(reversed[1].ascent).toBe(200);
+    expect(reversed[1].descent).toBe(60);
+    expect(reversed[1].totalAscent).toBe(200);
+    expect(reversed[1].totalDescent).toBe(60);
+    expect(reversed[2].ascent).toBe(40);
+    expect(reversed[2].descent).toBe(120);
+    // Final totals equal the swapped trail totals (ascent 180 / descent 240).
     expect(reversed[2].totalAscent).toBe(240);
     expect(reversed[2].totalDescent).toBe(180);
   });

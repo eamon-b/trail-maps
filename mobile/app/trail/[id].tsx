@@ -17,6 +17,7 @@ import { useLocation } from '../../src/hooks/useLocation';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
   findNearestByDistance,
+  customWaypointRowId,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
@@ -24,12 +25,6 @@ import { TrailDataService } from '../../src/services/trail-data-service';
 import { tileManager } from '../../src/services/tile-manager';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
-
-/** The custom-waypoint DB row id encoded in a merged TrailWaypoint id. */
-const CUSTOM_ID_PREFIX = 'custom-';
-function customRowId(wp: TrailWaypoint): string {
-  return wp.id.slice(CUSTOM_ID_PREFIX.length);
-}
 
 /** A long-pressed location pending confirmation in the AddWaypointSheet. */
 interface PendingWaypoint {
@@ -120,13 +115,16 @@ export default function TrailViewerScreen() {
   const insets = useSafeAreaInsets();
   const { pendingPan, setPendingPan } = useFocusedWaypoint();
   const isFocused = useIsFocused();
-  const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail, reloadTrail } = useTrailData();
+  const { trail: contextTrail, loading: contextLoading, error: contextError, loadTrail, refreshCustomWaypoints } = useTrailData();
 
   const [isReversed, setIsReversed] = useState(false);
   const [viewer, dispatch] = useReducer(viewerReducer, INITIAL_VIEWER_STATE);
   // Custom waypoint add/edit state (null = sheet closed)
   const [pendingWaypoint, setPendingWaypoint] = useState<PendingWaypoint | null>(null);
   const [editingWaypoint, setEditingWaypoint] = useState<TrailWaypoint | null>(null);
+  // In-flight guard so a double-tap on Save can't insert the waypoint twice.
+  const [savingWaypoint, setSavingWaypoint] = useState(false);
+  const savingRef = useRef(false);
   const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId, drawerIndex, cameraMode } = viewer;
   const mapRef = useRef<TrailMapHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
@@ -208,7 +206,7 @@ export default function TrailViewerScreen() {
 
   // Distance from user to selected waypoint
   const distanceToSelected = useMemo(() => {
-    if (currentKm == null || !selectedWaypoint?.totalDistance) return null;
+    if (currentKm == null || selectedWaypoint?.totalDistance == null) return null;
     return selectedWaypoint.totalDistance - currentKm;
   }, [currentKm, selectedWaypoint]);
 
@@ -306,10 +304,14 @@ export default function TrailViewerScreen() {
 
   const handleSaveWaypoint = useCallback(async (values: AddWaypointValues) => {
     if (!id) return;
+    // Guard against a double-tap on Save inserting the waypoint twice.
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSavingWaypoint(true);
     try {
       const service = await TrailDataService.create();
       if (editingWaypoint) {
-        await service.updateCustomWaypoint(customRowId(editingWaypoint), {
+        await service.updateCustomWaypoint(customWaypointRowId(editingWaypoint.id), {
           name: values.name,
           type: values.type,
           description: values.description || null,
@@ -329,12 +331,15 @@ export default function TrailViewerScreen() {
       }
       closeWaypointSheet();
       dispatch({ type: 'deselect' });
-      await reloadTrail();
+      await refreshCustomWaypoints();
     } catch (e) {
       console.warn('Failed to save custom waypoint:', e);
       Alert.alert('Save failed', 'Could not save the waypoint. Please try again.');
+    } finally {
+      savingRef.current = false;
+      setSavingWaypoint(false);
     }
-  }, [id, editingWaypoint, pendingWaypoint, closeWaypointSheet, reloadTrail]);
+  }, [id, editingWaypoint, pendingWaypoint, closeWaypointSheet, refreshCustomWaypoints]);
 
   const handleEditWaypoint = useCallback((wp: TrailWaypoint) => {
     dispatch({ type: 'deselect' });
@@ -354,9 +359,9 @@ export default function TrailViewerScreen() {
           onPress: async () => {
             try {
               const service = await TrailDataService.create();
-              await service.deleteCustomWaypoint(customRowId(wp));
+              await service.deleteCustomWaypoint(customWaypointRowId(wp.id));
               dispatch({ type: 'deselect' });
-              await reloadTrail();
+              await refreshCustomWaypoints();
             } catch (e) {
               console.warn('Failed to delete custom waypoint:', e);
               Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
@@ -365,7 +370,7 @@ export default function TrailViewerScreen() {
         },
       ],
     );
-  }, [reloadTrail]);
+  }, [refreshCustomWaypoints]);
 
   if (contextLoading || (!activeTrail && !contextError)) {
     return (
@@ -518,6 +523,7 @@ export default function TrailViewerScreen() {
         }
         onDismiss={closeWaypointSheet}
         onSave={handleSaveWaypoint}
+        saving={savingWaypoint}
       />
     </View>
   );

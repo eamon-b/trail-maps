@@ -156,6 +156,60 @@ describe('TrailDataService integration', () => {
     expect(trail!.dataVersion).toBe('2.0');
   });
 
+  it('refreshing trail data (bumped dataVersion) preserves plans and custom waypoints', async () => {
+    await service.storeTrail({
+      id: 'heysen',
+      name: 'Heysen Trail',
+      shortName: 'HT',
+      region: 'SA',
+      lengthKm: 1200,
+      metadataJson: null,
+      dataVersion: '1.0',
+      isCustom: false,
+      sourceFilename: null,
+    });
+
+    // A user-created custom waypoint and a plan, both FK'd to the trail.
+    await service.addCustomWaypoint({
+      trailId: 'heysen',
+      name: 'My spring',
+      type: 'water',
+      lat: -35,
+      lon: 138,
+      kmPosition: 42,
+    });
+    await db.runAsync(
+      `INSERT INTO plans (id, trail_id, name, direction) VALUES (?, ?, ?, ?)`,
+      ['plan-1', 'heysen', 'My thru-hike', 'NOBO'],
+    );
+
+    // Simulate a data refresh with a bumped dataVersion (the code path that
+    // previously did INSERT OR REPLACE and cascade-deleted user data).
+    await service.storeTrail({
+      id: 'heysen',
+      name: 'Heysen Trail',
+      shortName: 'HT',
+      region: 'SA',
+      lengthKm: 1210,
+      metadataJson: null,
+      dataVersion: '2.0',
+      isCustom: false,
+      sourceFilename: null,
+    });
+
+    const trail = await service.getTrail('heysen');
+    expect(trail!.dataVersion).toBe('2.0');
+    expect(trail!.lengthKm).toBe(1210);
+
+    // User data survives.
+    const customWaypoints = await service.getCustomWaypoints('heysen');
+    expect(customWaypoints).toHaveLength(1);
+    expect(customWaypoints[0].name).toBe('My spring');
+
+    const plans = await db.getAllAsync('SELECT * FROM plans WHERE trail_id = ?', ['heysen']);
+    expect(plans).toHaveLength(1);
+  });
+
   it('storeWaypoints replaces existing for trail', async () => {
     await service.storeTrail({
       id: 'heysen',

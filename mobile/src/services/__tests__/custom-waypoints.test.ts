@@ -177,4 +177,77 @@ describe('TrailDataService custom waypoints', () => {
   it('exposes the four allowed picker types', () => {
     expect([...CUSTOM_WAYPOINT_TYPES]).toEqual(['water', 'water-tank', 'campsite', 'poi']);
   });
+
+  describe('getMergedTrail', () => {
+    beforeEach(async () => {
+      // A custom trail carries its own track_data_json, so getTrailTrackData
+      // resolves it without needing bundled TRAIL_DATA.
+      await service.storeTrail({
+        id: 'custom-1',
+        name: 'My Custom Trail',
+        shortName: 'MCT',
+        region: null,
+        lengthKm: 50,
+        metadataJson: null,
+        dataVersion: null,
+        isCustom: true,
+        sourceFilename: 'my-trail.gpx',
+      });
+      await service.storeCustomTrailData('custom-1', {
+        config: {
+          id: 'custom-1',
+          name: 'My Custom Trail',
+          shortName: 'MCT',
+          region: 'Custom',
+          lengthKm: 50,
+          direction: { default: 'NOBO', reversed: 'SOBO' },
+        },
+        track: {
+          points: [
+            { lat: -33, lon: 115, ele: 100, dist: 0 },
+            { lat: -33.1, lon: 115.1, ele: 120, dist: 25 },
+            { lat: -33.2, lon: 115.2, ele: 140, dist: 50 },
+          ],
+          totalDistance: 50,
+          totalAscent: 40,
+          totalDescent: 0,
+        },
+        waypoints: [
+          { name: 'Start', type: 'trailhead', lat: -33, lon: 115, totalDistance: 0 },
+        ],
+      } as any);
+    });
+
+    it('returns the parsed trail with custom waypoints merged in', async () => {
+      await service.addCustomWaypoint({
+        trailId: 'custom-1',
+        name: 'Hidden spring',
+        type: 'water',
+        lat: -33.15,
+        lon: 115.15,
+        kmPosition: 30,
+      });
+
+      const merged = await service.getMergedTrail('custom-1');
+      expect(merged).not.toBeNull();
+
+      const names = merged!.waypoints.map(w => w.name);
+      expect(names).toContain('Start');
+      expect(names).toContain('Hidden spring');
+
+      const custom = merged!.waypoints.find(w => w.name === 'Hidden spring')!;
+      expect(custom.id.startsWith('custom-')).toBe(true);
+      expect(custom.totalDistance).toBe(30);
+    });
+
+    it('returns the base trail unchanged when there are no custom waypoints', async () => {
+      const merged = await service.getMergedTrail('custom-1');
+      expect(merged).not.toBeNull();
+      expect(merged!.waypoints.map(w => w.name)).toEqual(['Start']);
+    });
+
+    it('returns null for an unknown trail', async () => {
+      expect(await service.getMergedTrail('does-not-exist')).toBeNull();
+    });
+  });
 });

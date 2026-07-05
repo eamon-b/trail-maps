@@ -18,7 +18,6 @@ import { useTheme } from '../../src/theme';
 import { PlanService, type Plan, type PlanVersion } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import {
-  trailJsonToTrail,
   createReversedTrail,
   type Trail,
   type TrailWaypoint,
@@ -124,14 +123,13 @@ export default function PlanEditorScreen() {
         }
 
         const trailService = await TrailDataService.create();
-        const json = await trailService.getTrailTrackData(tId);
-        if (!json) {
+        let parsed = await trailService.getMergedTrail(tId);
+        if (!parsed) {
           Alert.alert('Error', 'Trail data not found');
           router.back();
           return;
         }
 
-        let parsed = trailJsonToTrail(json);
         if (loaded.direction === 'SOBO') {
           parsed = createReversedTrail(parsed);
         }

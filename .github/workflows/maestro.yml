@@ -128,6 +128,7 @@ jobs:
           key: maestro-cli-v1
 
       - name: Run Maestro tests
+        timeout-minutes: 40
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -139,14 +140,21 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 1536
           script: bash mobile/ci/run-maestro.sh
 
-      # Capture diagnostics BEFORE uploading artifacts so screenshots and
-      # logcat are included in the main maestro-results artifact.
+      # Fallback diagnostics only. run-maestro.sh already captures the
+      # screenshot + logcat from the LIVE emulator before it exits (the
+      # emulator is torn down when the Run Maestro tests step ends, so adb
+      # here talks to a dead device and would otherwise block on "waiting for
+      # device").  The timeout-minutes + `timeout 30` guards make this step
+      # fail fast (≤30s per command) instead of hanging until the job timeout.
       - name: Capture failure diagnostics
         if: failure()
+        timeout-minutes: 3
         run: |
           mkdir -p /tmp/maestro-screenshots
-          adb exec-out screencap -p > /tmp/maestro-screenshots/failure.png || true
-          adb logcat -d -t 200 ReactNativeJS:* *:E > /tmp/maestro-screenshots/logcat.txt || true
+          # Only capture if run-maestro.sh didn't already write live diagnostics
+          # — a `>` redirect would truncate the good file before adb ran.
+          [ -s /tmp/maestro-screenshots/failure.png ] || timeout 30 adb exec-out screencap -p > /tmp/maestro-screenshots/failure.png || true
+          [ -s /tmp/maestro-screenshots/logcat.txt ] || timeout 30 adb logcat -d -t 200 'ReactNativeJS:*' '*:E' > /tmp/maestro-screenshots/logcat.txt || true
 
       - name: Upload test results
         if: always()

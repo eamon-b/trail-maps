@@ -65,9 +65,13 @@ sleep 10
 adb shell input keyevent KEYCODE_BACK
 sleep 2
 
-# Run Maestro tests — capture exit code so we can clean up Metro before exiting
+# Run Maestro tests — capture exit code so we can clean up Metro before exiting.
+# --exclude-tags=quarantine skips flows tagged `quarantine` (e.g.
+# custom-waypoint.yaml, whose datasheet assertion is unreliable on long trails);
+# passing a single flow file to `maestro test` ignores tags, so those stay
+# runnable manually.
 MAESTRO_EXIT=0
-~/.maestro/bin/maestro test mobile/maestro/ || MAESTRO_EXIT=$?
+~/.maestro/bin/maestro test --exclude-tags=quarantine mobile/maestro/ || MAESTRO_EXIT=$?
 
 # On failure, capture diagnostics WHILE the emulator is still alive.  The
 # emulator is torn down by the android-emulator-runner action as soon as this

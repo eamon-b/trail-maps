@@ -46,14 +46,21 @@ appId: com.trailcompanion.app
     visible: "View waypoint datasheet"
     timeout: 15000
 
-# Verify the waypoint is visible in the datasheet (native list)
+# Verify the waypoint is in the datasheet (native list). The long-press snaps
+# to the nearest track point, which on the full-trail view lands mid-trail, so
+# "My spring" is sorted well down the km-ordered list and off the initial
+# viewport. assertVisible/extendedWaitUntil do NOT scroll — use
+# scrollUntilVisible so the check works wherever the row lands.
 - tapOn: "View waypoint datasheet"
-- extendedWaitUntil:
-    visible: "My spring"
+- scrollUntilVisible:
+    element:
+      text: "My spring"
+    direction: DOWN
     timeout: 15000
 - takeScreenshot: custom-waypoint-added
 
 # Open it on the map to reach the detail sheet with Edit/Delete actions
+# (scrollUntilVisible above left the row on-screen).
 - tapOn: "My spring"
 - waitForAnimationToEnd
 - tapOn: "Show on map"

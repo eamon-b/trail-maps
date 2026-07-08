@@ -1,5 +1,5 @@
 import type { TrackPoint } from '../../lib/trail-utils';
-import { calculateTrailBounds, estimateGridDownloadSize } from '../trail-bounds';
+import { calculateTrailBounds } from '../trail-bounds';
 
 function makeTrackPoints(
   latRange: [number, number],
@@ -62,16 +62,5 @@ describe('calculateTrailBounds', () => {
 
     expect(bounds.south).toBeCloseTo(-34.5, 1);
     expect(bounds.north).toBeCloseTo(-32.5, 1);
-  });
-});
-
-describe('estimateGridDownloadSize', () => {
-  it('estimates size based on cell count', () => {
-    expect(estimateGridDownloadSize(1)).toBe(15 * 1024 * 1024);
-    expect(estimateGridDownloadSize(3)).toBe(3 * 15 * 1024 * 1024);
-  });
-
-  it('returns 0 for no cells', () => {
-    expect(estimateGridDownloadSize(0)).toBe(0);
   });
 });

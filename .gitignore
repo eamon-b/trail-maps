@@ -1,4 +1,8 @@
 node_modules/
+# The trailing-slash rule above matches directories only; also ignore the
+# root and mobile `node_modules` symlinks so they can't be committed again.
+/node_modules
+/mobile/node_modules
 dist/
 *.log
 .DS_Store
@@ -17,6 +21,9 @@ aus-map-data/
 # Override global gitignore `lib/` rule for source code
 !src/lib/
 !mobile/src/lib/
+
+# Claude Code local settings (per-user, not shared)
+.claude/settings.local.json
 
 # Environment files
 .env

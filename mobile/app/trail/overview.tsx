@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import { deleteCustomTrail } from '../../src/services/custom-trail-service';
+import { backfillTrailElevation } from '../../src/services/elevation-service';
 import { getMinMax } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { tileManager } from '../../src/services/tile-manager';
@@ -64,6 +65,7 @@ export default function TrailOverviewScreen() {
   const [editName, setEditName] = useState('');
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
+  const [elevationFetch, setElevationFetch] = useState<'idle' | 'fetching' | 'error'>('idle');
 
   useEffect(() => {
     if (id) {
@@ -119,6 +121,24 @@ export default function TrailOverviewScreen() {
     await service.updateCustomTrail(id, editName.trim());
     setEditingName(false);
     await reloadTrail();
+  }
+
+  // User-triggered elevation backfill for a custom trail imported without
+  // elevation (e.g. offline). Mirrors the plan-screen climate fetch pattern.
+  async function handleFetchElevation() {
+    if (!id) return;
+    setElevationFetch('fetching');
+    try {
+      const updated = await backfillTrailElevation(id);
+      if (updated) {
+        setElevationFetch('idle');
+        await reloadTrail();
+      } else {
+        setElevationFetch('error');
+      }
+    } catch {
+      setElevationFetch('error');
+    }
   }
 
   function handleDeleteTrail() {
@@ -340,6 +360,39 @@ export default function TrailOverviewScreen() {
             <Text style={[styles.elevationRange, { color: colors.textPrimary }]}>
               {stats.minEle}m — {stats.maxEle}m
             </Text>
+          </View>
+        )}
+
+        {/* Elevation backfill for a custom trail imported without elevation */}
+        {isCustom && !withElevation && (
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ELEVATION</Text>
+            {elevationFetch === 'fetching' ? (
+              <View style={styles.elevationFetchRow}>
+                <ActivityIndicator size="small" color={colors.accent} />
+                <Text style={[styles.elevationFetchBody, { color: colors.textSecondary }]}>
+                  Fetching elevation data…
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={[styles.elevationFetchBody, { color: colors.textSecondary }]}>
+                  {elevationFetch === 'error'
+                    ? 'Could not fetch elevation data. Check your connection and try again.'
+                    : 'This trail was imported without elevation. Fetch it now to see ascent, descent and the elevation profile.'}
+                </Text>
+                <Pressable
+                  onPress={handleFetchElevation}
+                  style={[styles.elevationFetchButton, { backgroundColor: colors.accent }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fetch elevation data"
+                >
+                  <Text style={[styles.elevationFetchButtonText, { color: colors.textInverse }]}>
+                    {elevationFetch === 'error' ? 'Retry' : 'Fetch elevation data (requires internet)'}
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </View>
         )}
 
@@ -662,6 +715,27 @@ const styles = StyleSheet.create({
   elevationRange: {
     ...typography.displaySmall,
     fontVariant: ['tabular-nums'],
+  },
+  elevationFetchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  elevationFetchBody: {
+    ...typography.body,
+    marginBottom: spacing.md,
+  },
+  elevationFetchButton: {
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+  },
+  elevationFetchButtonText: {
+    ...typography.body,
+    fontWeight: '700',
   },
   waypointRow: {
     flexDirection: 'row',

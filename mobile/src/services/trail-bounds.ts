@@ -50,14 +50,3 @@ export function calculateTrailBounds(
     north: north + bufferDeg,
   };
 }
-
-/**
- * Estimate the download size for grid tiles covering a bounding box.
- * Returns an estimate in bytes based on area coverage.
- *
- * Rough estimate: ~15 MB per 2x2 degree cell (base + contours).
- */
-export function estimateGridDownloadSize(cellCount: number): number {
-  const BYTES_PER_CELL = 15 * 1024 * 1024; // ~15 MB per cell
-  return cellCount * BYTES_PER_CELL;
-}

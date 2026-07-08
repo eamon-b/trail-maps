@@ -4,6 +4,7 @@
  */
 
 import type { ComputedDay } from './plan-calculator-types';
+import { TrailDataService } from './trail-data-service';
 
 export interface MonthlyClimate {
   month: number;
@@ -49,6 +50,41 @@ export function registerClimateData(trailId: string, data: ClimateData): void {
  */
 export function loadClimateData(trailId: string): ClimateData | null {
   return CLIMATE_CACHE[trailId] ?? null;
+}
+
+/** Parse a persisted climate_json string, returning null if malformed. */
+function parseClimateJson(json: string): ClimateData | null {
+  try {
+    const data = JSON.parse(json) as ClimateData;
+    if (Array.isArray(data?.locations) && data.dataYears) return data;
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
+/**
+ * Ensure climate data is loaded for a trail: return the in-memory registry
+ * entry if present (bundled trails register at startup), otherwise fall back to
+ * the SQLite `climate_json` cache (custom trails), registering and returning it.
+ * Returns null if nothing is cached. No network access.
+ *
+ * Single source of truth for the "registry-first, then SQLite" load so callers
+ * (trail loader, plan screen) don't each re-implement the fallback dance.
+ */
+export async function ensureClimateData(trailId: string): Promise<ClimateData | null> {
+  const registered = loadClimateData(trailId);
+  if (registered) return registered;
+
+  const service = await TrailDataService.create();
+  const json = await service.getClimateJson(trailId);
+  if (!json) return null;
+
+  const data = parseClimateJson(json);
+  if (!data) return null;
+
+  registerClimateData(trailId, data);
+  return data;
 }
 
 /**

@@ -14,6 +14,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { aggregateDailyToMonthly, type MonthlyClimate, type DailyClimateSeries } from '../src/lib/climate-aggregate.js';
 
 interface ClimateLocation {
   name: string;
@@ -49,14 +50,6 @@ interface ProcessedTrail {
   pois?: unknown[];
 }
 
-interface MonthlyClimate {
-  month: number;
-  avgTempMin: number;
-  avgTempMax: number;
-  avgPrecipitation: number;
-  avgRainyDays: number;
-}
-
 interface ClimateLocationData {
   name: string;
   lat: number;
@@ -76,12 +69,7 @@ interface OpenMeteoResponse {
   latitude: number;
   longitude: number;
   elevation: number;
-  daily: {
-    time: string[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_sum: number[];
-  };
+  daily: DailyClimateSeries;
 }
 
 // Handle both Windows and Unix paths from import.meta.url
@@ -166,90 +154,6 @@ async function fetchWithRetry(lat: number, lon: number): Promise<OpenMeteoRespon
 }
 
 /**
- * Aggregate daily data into monthly averages.
- */
-function aggregateToMonthly(data: OpenMeteoResponse): MonthlyClimate[] {
-  const { time, temperature_2m_max, temperature_2m_min, precipitation_sum } = data.daily;
-
-  // Group data by month
-  const monthlyData: Map<number, {
-    tempMaxSum: number;
-    tempMinSum: number;
-    precipSum: number;
-    rainyDays: number;
-    count: number;
-    yearCount: Set<number>;
-  }> = new Map();
-
-  for (let i = 0; i < time.length; i++) {
-    const date = new Date(time[i]);
-    const month = date.getMonth() + 1; // 1-12
-    const year = date.getFullYear();
-
-    if (!monthlyData.has(month)) {
-      monthlyData.set(month, {
-        tempMaxSum: 0,
-        tempMinSum: 0,
-        precipSum: 0,
-        rainyDays: 0,
-        count: 0,
-        yearCount: new Set(),
-      });
-    }
-
-    const entry = monthlyData.get(month)!;
-    const tempMax = temperature_2m_max[i];
-    const tempMin = temperature_2m_min[i];
-    const precip = precipitation_sum[i];
-
-    // Skip null/undefined values
-    if (tempMax != null && tempMin != null) {
-      entry.tempMaxSum += tempMax;
-      entry.tempMinSum += tempMin;
-      entry.count++;
-      entry.yearCount.add(year);
-    }
-
-    if (precip != null) {
-      entry.precipSum += precip;
-      if (precip > 1) {
-        entry.rainyDays++;
-      }
-    }
-  }
-
-  // Calculate averages
-  const monthly: MonthlyClimate[] = [];
-
-  for (let month = 1; month <= 12; month++) {
-    const entry = monthlyData.get(month);
-    if (!entry || entry.count === 0) {
-      // No data for this month
-      monthly.push({
-        month,
-        avgTempMin: 0,
-        avgTempMax: 0,
-        avgPrecipitation: 0,
-        avgRainyDays: 0,
-      });
-      continue;
-    }
-
-    const numYears = entry.yearCount.size;
-
-    monthly.push({
-      month,
-      avgTempMin: Math.round(entry.tempMinSum / entry.count * 10) / 10,
-      avgTempMax: Math.round(entry.tempMaxSum / entry.count * 10) / 10,
-      avgPrecipitation: Math.round(entry.precipSum / numYears * 10) / 10,
-      avgRainyDays: Math.round(entry.rainyDays / numYears * 10) / 10,
-    });
-  }
-
-  return monthly;
-}
-
-/**
  * Find distance along trail for a waypoint by name.
  */
 function findWaypointDistance(
@@ -322,7 +226,7 @@ async function processTrail(trailDir: string, force: boolean): Promise<boolean> 
 
     try {
       const response = await fetchWithRetry(loc.lat, loc.lon);
-      const monthly = aggregateToMonthly(response);
+      const monthly = aggregateDailyToMonthly(response.daily);
 
       const locationData: ClimateLocationData = {
         name: loc.name,

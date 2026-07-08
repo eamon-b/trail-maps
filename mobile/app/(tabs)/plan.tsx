@@ -26,7 +26,7 @@ import {
   downloadGridTiles,
   type GridProgressCallback,
 } from '../../src/services/grid-tile-service';
-import { calculateTrailBounds, estimateGridDownloadSize } from '../../src/services/trail-bounds';
+import { calculateTrailBounds } from '../../src/services/trail-bounds';
 import { trailJsonToTrail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
 import { ProgressBar } from '../../src/components';
@@ -213,14 +213,22 @@ export default function PlanScreen() {
         return;
       }
 
-      // Show size estimate and confirm
-      const estimatedSize = estimateGridDownloadSize(cells.length);
-      const sizeStr = formatBytes(estimatedSize);
+      // Show the real download size (sum of cell sizes from the grid index).
+      // Guard against cells missing/NaN totalSize so the dialog never renders
+      // "approximately NaN MB"; fall back to a generic phrase if unknown.
+      let anySizeMissing = false;
+      const downloadSize = cells.reduce((sum, cell) => {
+        if (Number.isFinite(cell.totalSize)) return sum + cell.totalSize;
+        anySizeMissing = true;
+        return sum;
+      }, 0);
+      const sizeStr =
+        downloadSize > 0 && !anySizeMissing ? `approximately ${formatBytes(downloadSize)} of ` : '';
 
       await new Promise<void>((resolve, reject) => {
         Alert.alert(
           'Download Offline Maps',
-          `This will download approximately ${sizeStr} of map tiles (${cells.length} grid cell${cells.length > 1 ? 's' : ''}).`,
+          `This will download ${sizeStr}map tiles (${cells.length} grid cell${cells.length > 1 ? 's' : ''}).`,
           [
             { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('Cancelled')) },
             { text: 'Download', onPress: () => resolve() },

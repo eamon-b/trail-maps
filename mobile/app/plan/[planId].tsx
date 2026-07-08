@@ -35,7 +35,11 @@ import { WaterCarryList } from '../../src/components/WaterCarryList';
 import { ResupplyList } from '../../src/components/ResupplyList';
 import { analyzeWaterCarry, analyzeWaterCarryForSection } from '@lib/water-carry-calculator';
 import { analyzeResupply, analyzeResupplyForSection } from '@lib/resupply-calculator';
-import { loadClimateData, getClimateForDay, type ClimateData, type DayClimate } from '../../src/services/climate-service';
+import { ensureClimateData, getClimateForDay, type ClimateData, type DayClimate } from '../../src/services/climate-service';
+import {
+  ensureCustomTrailClimate,
+  type ClimateFetchProgress,
+} from '../../src/services/custom-climate-service';
 import { exportPlanAsText, exportPlanAsCsv } from '../../src/services/plan-export';
 import { generateId, migrateStopsJson } from '../../src/services/plan-utils';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
@@ -92,6 +96,14 @@ export default function PlanEditorScreen() {
 
   // Climate data
   const [climateData, setClimateData] = useState<ClimateData | null>(null);
+  const [isCustomTrail, setIsCustomTrail] = useState(false);
+  const [climateFetch, setClimateFetch] = useState<{
+    status: 'idle' | 'loading' | 'error';
+    progress?: ClimateFetchProgress;
+  }>({ status: 'idle' });
+  // Unreversed trail (as stored) — climate sample positions are cached in
+  // NOBO km-space, matching bundled climate data.
+  const baseTrailRef = useRef<Trail | null>(null);
 
 
   // Versioning
@@ -130,10 +142,14 @@ export default function PlanEditorScreen() {
           return;
         }
 
+        baseTrailRef.current = parsed;
         if (loaded.direction === 'SOBO') {
           parsed = createReversedTrail(parsed);
         }
         setTrail(parsed);
+
+        const dbRow = await trailService.getTrail(tId);
+        setIsCustomTrail(dbRow?.isCustom ?? false);
 
         // Parse stops with migration for legacy format
         const parsedStops = migrateStopsJson(loaded.stopsJson);
@@ -155,11 +171,45 @@ export default function PlanEditorScreen() {
     load();
   }, [planId, paramTrailId, router]);
 
-  // Load climate data when trail is available
+  // Load climate data when trail is available. ensureClimateData is
+  // registry-first (bundled trails) then falls back to the SQLite climate cache
+  // (custom trails); network fetches remain strictly user-triggered.
   useEffect(() => {
     if (!plan?.trailId) return;
-    const climate = loadClimateData(plan.trailId);
-    setClimateData(climate);
+    const trailId = plan.trailId;
+
+    let cancelled = false;
+    ensureClimateData(trailId)
+      .then((data) => {
+        if (!cancelled) setClimateData(data);
+      })
+      .catch(() => { /* no cached climate */ });
+    return () => { cancelled = true; };
+  }, [plan?.trailId]);
+
+  // User-triggered climate fetch for custom trails (requires internet)
+  const handleFetchClimate = useCallback(async () => {
+    const trailId = plan?.trailId;
+    const baseTrail = baseTrailRef.current;
+    if (!trailId || !baseTrail) return;
+
+    setClimateFetch({ status: 'loading' });
+    // Defensive: even though ensureCustomTrailClimate resolves to null on
+    // failure, guard the await so an unexpected throw can never strand the
+    // spinner on 'loading' with no retry affordance.
+    try {
+      const data = await ensureCustomTrailClimate(trailId, baseTrail, (progress) => {
+        setClimateFetch({ status: 'loading', progress });
+      });
+      if (data) {
+        setClimateData(data);
+        setClimateFetch({ status: 'idle' });
+      } else {
+        setClimateFetch({ status: 'error' });
+      }
+    } catch {
+      setClimateFetch({ status: 'error' });
+    }
   }, [plan?.trailId]);
 
   // Reload stops and section from DB when screen regains focus (e.g. after map changes)
@@ -676,6 +726,40 @@ export default function PlanEditorScreen() {
         <ScrollView contentContainerStyle={styles.list}>
           {climateData ? (
             <ClimateOverview climate={climateData} planMonths={planMonths} />
+          ) : isCustomTrail ? (
+            <View style={[styles.climateFetchCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.climateFetchTitle, { color: colors.textPrimary }]}>
+                No Climate Data Yet
+              </Text>
+              {climateFetch.status === 'loading' ? (
+                <View style={styles.climateFetchProgress}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                  <Text style={[styles.climateFetchBody, { color: colors.textSecondary }]}>
+                    {climateFetch.progress
+                      ? `Fetching ${climateFetch.progress.locationName} (${climateFetch.progress.current}/${climateFetch.progress.total})...`
+                      : 'Fetching climate data...'}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={[styles.climateFetchBody, { color: colors.textSecondary }]}>
+                    {climateFetch.status === 'error'
+                      ? 'Could not fetch climate data. Check your internet connection and try again.'
+                      : 'Climate data requires a one-time internet fetch. Historical averages are downloaded for a few points along the trail and stored on your device for offline use.'}
+                  </Text>
+                  <Pressable
+                    onPress={handleFetchClimate}
+                    style={[styles.climateFetchButton, { backgroundColor: colors.accent }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Fetch climate data"
+                  >
+                    <Text style={[styles.climateFetchButtonText, { color: colors.textInverse }]}>
+                      {climateFetch.status === 'error' ? 'Retry' : 'Fetch Climate Data'}
+                    </Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Climate Data</Text>
@@ -945,6 +1029,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
+  },
+  climateFetchCard: {
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.lg,
+  },
+  climateFetchTitle: {
+    ...typography.titleLarge,
+    marginBottom: spacing.sm,
+  },
+  climateFetchBody: {
+    ...typography.body,
+    lineHeight: 20,
+  },
+  climateFetchProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  climateFetchButton: {
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+  },
+  climateFetchButtonText: {
+    ...typography.body,
+    fontWeight: '700',
   },
   emptyTitle: {
     ...typography.titleLarge,

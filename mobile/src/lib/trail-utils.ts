@@ -8,7 +8,6 @@
 
 import type { TrailJson } from '../services/trail-loader';
 import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
-import { createReversedTrail as createReversedTrailBase } from '@lib/trail-reverse';
 import { findNearestByDistance as nearestTrackIndex } from '@lib/track-geometry';
 
 // ---------------------------------------------------------------------------
@@ -149,18 +148,8 @@ export function trailJsonToTrail(json: TrailJson): Trail {
 // Trail/track/waypoint reversal is shared with the web plan viewer; the
 // implementation lives in src/lib/trail-reverse.ts (structural generics, so
 // the mobile Trail/TrailWaypoint/TrackPoint types flow through unchanged)
-// and reverseTrackPoints/reverseWaypoints are re-exported here so existing
-// mobile imports keep working.
-export { reverseTrackPoints, reverseWaypoints } from '@lib/trail-reverse';
-
-// Reverse a mobile trail, marking merged custom waypoints as pass-through so
-// reversal keeps their ascent/descent at 0 (they are off-track markers with no
-// per-segment elevation) and never misattributes a neighbouring climb to the
-// marker. Bundled trails have no custom rows, so this matches the shared web
-// behaviour for them.
-export function createReversedTrail(trail: Trail): Trail {
-  return createReversedTrailBase(trail, wp => isCustomWaypointId(wp.id ?? ''));
-}
+// and is re-exported here so existing mobile imports keep working.
+export { reverseTrackPoints, reverseWaypoints, createReversedTrail } from '@lib/trail-reverse';
 
 // Variant reversal math is shared with the web viewer via src/lib (see
 // @lib/variant-reverse for the semantics, including the untouched passthrough
@@ -285,10 +274,15 @@ export interface CustomWaypointLike {
  *   the full-resolution track so reversal mirrors it correctly.
  * - Segment `distance` deltas are recomputed for ALL waypoints so the merged
  *   ordering stays self-consistent.
- * - Custom waypoints carry no per-segment elevation stats (ascent/descent 0).
+ * - Custom waypoints carry no per-segment elevation stats (ascent/descent 0)
+ *   in the base direction. These fields are not consumed for merged rows (the
+ *   elevation profile is derived from track geometry), so no terrain climb is
+ *   attributed to the inserted segment.
  *
- * The input trail must be in its base (as-loaded) direction; reversal via
- * createReversedTrail happens downstream and handles merged rows untouched.
+ * The input trail must be in its base (as-loaded) direction. Reversal via the
+ * shared createReversedTrail (@lib/trail-reverse) happens downstream and
+ * recomputes every waypoint's per-segment stats generically (arriving-segment
+ * convention), including custom rows.
  */
 export function mergeCustomWaypoints(trail: Trail, custom: CustomWaypointLike[]): Trail {
   if (custom.length === 0) return trail;

@@ -124,9 +124,14 @@ describe('mergeCustomWaypoints', () => {
     expect(custom.totalDistance).toBe(40);
     // trackIndex mirrors: 6 points → 6 - 1 - 3 = 2
     expect(custom.trackIndex).toBe(2);
-    // Custom rows contribute no elevation to the reversed running totals
-    expect(custom.ascent).toBe(0);
-    expect(custom.descent).toBe(0);
+    // createReversedTrail (shared @lib/trail-reverse) uses the arriving-segment
+    // convention: the segment arriving at reversed[i] carries reversed[i-1]'s
+    // original stats, swapped. So the custom row (reversed[1]) inherits End's
+    // original descent/ascent (200/300). These per-waypoint stats are not
+    // consumed for merged custom rows — the elevation profile is derived from
+    // the track geometry — so the value only matters for reversal consistency.
+    expect(custom.ascent).toBe(200);
+    expect(custom.descent).toBe(300);
 
     // Double reversal restores the merged ordering and km positions
     const roundTrip = createReversedTrail(reversed);

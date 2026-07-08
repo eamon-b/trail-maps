@@ -12,6 +12,7 @@ data/dem/
 data/protomaps/
 data/tiles/
 public/data/tiles/
+aus-map-data/
 
 # Override global gitignore `lib/` rule for source code
 !src/lib/

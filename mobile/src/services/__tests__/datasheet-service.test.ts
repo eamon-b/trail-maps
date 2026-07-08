@@ -1,4 +1,5 @@
 import type { Trail, TrackPoint, TrailWaypoint } from '../../lib/trail-utils';
+import { mergeCustomWaypoints } from '../../lib/trail-utils';
 import {
   generateDatasheet,
   hasElevationData,
@@ -183,6 +184,75 @@ describe('generateDatasheet', () => {
     for (const section of ds.sections) {
       expect(section.distanceKm).toBeGreaterThan(0);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration: merged custom waypoints flow into the datasheet
+//
+// Deterministic guard for the product path the (quarantined) custom-waypoint
+// E2E can only smoke-check: a user long-presses the map, saves a water source,
+// and it must surface in the datasheet on reload. This exercises the real
+// merge → datasheet seam without an emulator.
+// ---------------------------------------------------------------------------
+
+describe('generateDatasheet with merged custom waypoints', () => {
+  const baseWaypoints = makeWaypoints([
+    { name: 'Trailhead A', type: 'trailhead', km: 0.2 },
+    { name: 'Town B', type: 'town', km: 40 },
+    { name: 'Camp 2', type: 'campsite', km: 80 },
+    { name: 'End Point', type: 'trailhead', km: 99.5 },
+  ]);
+
+  const spring = {
+    id: 'spring1',
+    name: 'My spring',
+    type: 'water',
+    lat: -33.3,
+    lon: 115.3,
+    kmPosition: 55,
+  };
+
+  it('counts a merged type:water waypoint as a water source in its section', () => {
+    const trail = makeTrail(100, baseWaypoints);
+    const before = generateDatasheet(trail);
+    expect(before.summary.totalWaterSources).toBe(0);
+
+    const merged = mergeCustomWaypoints(trail, [spring]);
+    const after = generateDatasheet(merged);
+
+    // Summary reflects exactly one new water source
+    expect(after.summary.totalWaterSources).toBe(1);
+    // It lands in the Town B(40) → Camp 2(80) section that contains km 55
+    const section = after.sections.find(s => s.startKm <= 55 && s.endKm >= 55);
+    expect(section?.waterSources).toBe(1);
+  });
+
+  it('surfaces the custom waypoint as a datasheet row at the correct sorted km', () => {
+    const merged = mergeCustomWaypoints(makeTrail(100, baseWaypoints), [spring]);
+
+    // The datasheet screen renders one row per waypoint with a distance
+    // (app/trail/datasheet.tsx filters `totalDistance != null`), so the merged
+    // spring must be present, sorted by distance, with its snapped km position.
+    const rows = merged.waypoints
+      .filter(wp => wp.totalDistance != null)
+      .sort((a, b) => (a.totalDistance ?? 0) - (b.totalDistance ?? 0));
+
+    const row = rows.find(wp => wp.name === 'My spring');
+    expect(row).toBeDefined();
+    expect(row!.totalDistance).toBe(55);
+    // Sorted between Town B (40) and Camp 2 (80)
+    const names = rows.map(wp => wp.name);
+    expect(names.indexOf('My spring')).toBeGreaterThan(names.indexOf('Town B'));
+    expect(names.indexOf('My spring')).toBeLessThan(names.indexOf('Camp 2'));
+  });
+
+  it('does not count a merged non-water waypoint as a water source', () => {
+    const merged = mergeCustomWaypoints(makeTrail(100, baseWaypoints), [
+      { ...spring, id: 'camp9', name: 'My camp', type: 'campsite' },
+    ]);
+    const ds = generateDatasheet(merged);
+    expect(ds.summary.totalWaterSources).toBe(0);
   });
 });
 

@@ -91,7 +91,7 @@ tags:
 - tapOn: "Delete"
 - waitForAnimationToEnd
 
-# Verify it is gone from the datasheet
+# Confirm the datasheet still renders after the delete round-trip.
 - extendedWaitUntil:
     visible: "View waypoint datasheet"
     timeout: 15000
@@ -99,5 +99,10 @@ tags:
 - extendedWaitUntil:
     visible: "km remaining"
     timeout: 15000
-- assertNotVisible: "My spring"
+# NOTE: we deliberately do NOT assertNotVisible "My spring" here. On this
+# virtualized FlatList (AAWT, 176 rows) the deleted mid-trail row is off-screen
+# regardless of whether deletion worked, so the assertion would be a false pass.
+# Deletion is guarded reliably by unit tests instead:
+#   - custom-waypoints.test.ts ("deletes a custom waypoint", real SQLite)
+#   - datasheet-service.test.ts (merged water waypoint appears in the datasheet)
 - takeScreenshot: custom-waypoint-deleted

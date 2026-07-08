@@ -1,5 +1,5 @@
 import { createTestDatabase } from '../sqlite-test-adapter';
-import { createMigratedTestDb } from '../test-helpers';
+import { createMigratedTestDb, expectDbRejection } from '../test-helpers';
 import { migrateDatabase, SCHEMA_VERSION } from '../../schema';
 
 // ---------------------------------------------------------------------------
@@ -206,12 +206,12 @@ describe('constraints', () => {
   it('FK: waypoint with invalid trail_id fails', async () => {
     const db = await createMigratedTestDb();
 
-    await expect(
+    await expectDbRejection(() =>
       db.runAsync(
         'INSERT INTO waypoints (trail_id, name, type, lat, lon) VALUES (?, ?, ?, ?, ?)',
         ['nonexistent', 'Bad WP', 'poi', -33, 115]
       )
-    ).rejects.toThrow();
+    );
 
     await db.closeAsync();
   });
@@ -219,12 +219,12 @@ describe('constraints', () => {
   it('FK: plan with invalid trail_id fails', async () => {
     const db = await createMigratedTestDb();
 
-    await expect(
+    await expectDbRejection(() =>
       db.runAsync(
         'INSERT INTO plans (id, trail_id, name) VALUES (?, ?, ?)',
         ['plan-1', 'nonexistent', 'Bad Plan']
       )
-    ).rejects.toThrow();
+    );
 
     await db.closeAsync();
   });
@@ -302,13 +302,13 @@ describe('constraints', () => {
   it('FK: custom waypoint with invalid trail_id fails', async () => {
     const db = await createMigratedTestDb();
 
-    await expect(
+    await expectDbRejection(() =>
       db.runAsync(
         `INSERT INTO custom_waypoints (id, trail_id, name, lat, lon, km_position, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         ['cw-1', 'nonexistent', 'Bad WP', -33, 115, 10, '2026-07-04', '2026-07-04']
       )
-    ).rejects.toThrow();
+    );
 
     await db.closeAsync();
   });

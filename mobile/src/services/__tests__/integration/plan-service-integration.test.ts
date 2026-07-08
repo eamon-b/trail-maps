@@ -1,4 +1,4 @@
-import { createMigratedTestDb } from '../../../db/__tests__/test-helpers';
+import { createMigratedTestDb, expectDbRejection } from '../../../db/__tests__/test-helpers';
 import { PlanService } from '../../plan-service';
 import type { TestDatabase } from '../../../db/__tests__/sqlite-test-adapter';
 
@@ -268,7 +268,7 @@ describe('PlanService integration', () => {
   });
 
   it('rejects plan with non-existent trail_id', async () => {
-    await expect(
+    await expectDbRejection(() =>
       service.createPlan({
         id: 'plan-bad',
         trailId: 'nonexistent',
@@ -278,6 +278,6 @@ describe('PlanService integration', () => {
         sectionJson: null,
         stopsJson: null,
       })
-    ).rejects.toThrow();
+    );
   });
 });

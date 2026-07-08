@@ -83,28 +83,42 @@ export function reverseTrackPoints<P extends ReversibleTrackPoint>(
  * swapped. The first reversed waypoint has no arriving segment (0/0), and
  * cumulative totals are recomputed from the per-segment values so the final
  * waypoint's totals equal the swapped trail totals.
+ *
+ * `isPassThrough` marks waypoints that carry no per-segment elevation and must
+ * stay transparent to the profile — the mobile app's merged custom waypoints
+ * (off-track water/campsite markers, ascent/descent 0). Such a row keeps 0/0
+ * and does not break the arriving-segment chain: the next contributing
+ * waypoint still sources its segment from the last contributing waypoint
+ * before the marker, so a climb is never misattributed to it. Defaults to
+ * treating every waypoint as contributing (the web trails have no such rows).
  */
 export function reverseWaypoints<W extends ReversibleWaypoint>(
   waypoints: W[],
   totalDistance: number,
   trackLength: number,
+  isPassThrough: (wp: W) => boolean = () => false,
 ): Array<W & Required<ReversibleWaypoint>> {
   const reversed = [...waypoints].reverse();
   const newTotals = reversed.map(wp => totalDistance - (wp.totalDistance ?? 0));
 
   let runningAscent = 0;
   let runningDescent = 0;
+  // The previous *contributing* waypoint — pass-through rows are skipped so
+  // their neighbours' arriving-segment stats hop over them intact.
+  let prevContributing: W | undefined;
 
   return reversed.map((wp, i) => {
-    // The segment between reversed[i - 1] and reversed[i] carries the stats
-    // stored on reversed[i - 1] (its arriving segment in the original walk).
-    const prev = i > 0 ? reversed[i - 1] : undefined;
-    const segmentAscent = prev ? (prev.descent ?? 0) : 0;
-    const segmentDescent = prev ? (prev.ascent ?? 0) : 0;
+    // The arriving segment carries the stats stored on the previous
+    // contributing waypoint in the original walk (ascent/descent swapped).
+    const passThrough = isPassThrough(wp);
+    const segmentAscent = passThrough || !prevContributing ? 0 : (prevContributing.descent ?? 0);
+    const segmentDescent = passThrough || !prevContributing ? 0 : (prevContributing.ascent ?? 0);
     runningAscent += segmentAscent;
     runningDescent += segmentDescent;
 
     const segmentDist = i === 0 ? 0 : newTotals[i] - newTotals[i - 1];
+
+    if (!passThrough) prevContributing = wp;
 
     return {
       ...wp,
@@ -126,8 +140,14 @@ export function reverseWaypoints<W extends ReversibleWaypoint>(
  * trail total, and attached variants are re-anchored to their mirrored
  * junctions. Any extra fields on the trail object (config, climate, …) are
  * passed through unchanged.
+ *
+ * `isPassThrough` is forwarded to `reverseWaypoints` so callers with
+ * transparent rows (mobile custom waypoints) reverse them correctly.
  */
-export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
+export function createReversedTrail<T extends ReversibleTrail>(
+  trail: T,
+  isPassThrough?: (wp: ReversibleWaypoint & { id?: string }) => boolean,
+): T {
   const totalDist = trail.track.totalDistance;
   const trackLength = trail.track.points.length;
 
@@ -146,7 +166,7 @@ export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
       totalAscent: trail.track.totalDescent,
       totalDescent: trail.track.totalAscent,
     },
-    waypoints: reverseWaypoints(trail.waypoints ?? [], totalDist, trackLength),
+    waypoints: reverseWaypoints(trail.waypoints ?? [], totalDist, trackLength, isPassThrough),
     alternates: reverseAlternates(trail.alternates ?? [], totalDist),
     sideTrips: transformSideTrips(trail.sideTrips ?? [], totalDist),
   } as T;

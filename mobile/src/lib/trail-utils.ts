@@ -8,6 +8,7 @@
 
 import type { TrailJson } from '../services/trail-loader';
 import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
+import { createReversedTrail as createReversedTrailBase } from '@lib/trail-reverse';
 import { findNearestByDistance as nearestTrackIndex } from '@lib/track-geometry';
 
 // ---------------------------------------------------------------------------
@@ -148,8 +149,18 @@ export function trailJsonToTrail(json: TrailJson): Trail {
 // Trail/track/waypoint reversal is shared with the web plan viewer; the
 // implementation lives in src/lib/trail-reverse.ts (structural generics, so
 // the mobile Trail/TrailWaypoint/TrackPoint types flow through unchanged)
-// and is re-exported here so existing mobile imports keep working.
-export { reverseTrackPoints, reverseWaypoints, createReversedTrail } from '@lib/trail-reverse';
+// and reverseTrackPoints/reverseWaypoints are re-exported here so existing
+// mobile imports keep working.
+export { reverseTrackPoints, reverseWaypoints } from '@lib/trail-reverse';
+
+// Reverse a mobile trail, marking merged custom waypoints as pass-through so
+// reversal keeps their ascent/descent at 0 (they are off-track markers with no
+// per-segment elevation) and never misattributes a neighbouring climb to the
+// marker. Bundled trails have no custom rows, so this matches the shared web
+// behaviour for them.
+export function createReversedTrail(trail: Trail): Trail {
+  return createReversedTrailBase(trail, wp => isCustomWaypointId(wp.id ?? ''));
+}
 
 // Variant reversal math is shared with the web viewer via src/lib (see
 // @lib/variant-reverse for the semantics, including the untouched passthrough

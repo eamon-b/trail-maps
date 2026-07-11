@@ -75,3 +75,19 @@ describe('WaterCountdown', () => {
     ).toBeTruthy();
   });
 });
+
+describe('WaterCountdown time-to-water', () => {
+  it('appends the Naismith ETA when provided', async () => {
+    renderWithTheme(<WaterCountdown nextWaterKm={5.4} etaMinutes={42} />);
+    await waitFor(() => {
+      expect(screen.getByText('Next water: 5.4 km · ~40 min')).toBeTruthy();
+    });
+  });
+
+  it('omits the ETA when unknown', async () => {
+    renderWithTheme(<WaterCountdown nextWaterKm={5.4} />);
+    await waitFor(() => {
+      expect(screen.getByText('Next water: 5.4 km')).toBeTruthy();
+    });
+  });
+});

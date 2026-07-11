@@ -22,6 +22,8 @@ export interface WaypointListItem {
   kmPosition?: number;
   /** Relative distance from current position */
   distanceAhead?: string;
+  /** Naismith ETA text (e.g. "~50 min") */
+  eta?: string;
 }
 
 interface WaypointListProps {
@@ -88,7 +90,7 @@ export function WaypointList({
               borderColor: isFocused ? colors.accent : 'transparent',
             },
           ]}
-          accessibilityLabel={`${emoji} ${item.name}${item.distanceAhead ? `, ${item.distanceAhead}` : ''}`}
+          accessibilityLabel={`${emoji} ${item.name}${item.distanceAhead ? `, ${item.distanceAhead}` : ''}${item.eta ? `, about ${item.eta.replace('~', '')}` : ''}`}
           accessibilityRole="button"
           accessibilityState={{ selected: isFocused }}
         >
@@ -105,6 +107,11 @@ export function WaypointList({
             >
               {item.name}
             </Text>
+            {item.eta && (
+              <Text style={[styles.eta, { color: colors.textSecondary }]}>
+                {item.eta}
+              </Text>
+            )}
           </View>
         </Pressable>
       );
@@ -178,6 +185,10 @@ const styles = StyleSheet.create({
   name: {
     ...typography.body,
     flex: 1,
+  },
+  eta: {
+    ...typography.caption,
+    fontVariant: ['tabular-nums'],
   },
   seeAllButton: {
     minHeight: touchTarget.min,

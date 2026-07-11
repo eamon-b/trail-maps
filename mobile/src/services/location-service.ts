@@ -6,7 +6,10 @@ export interface LocationUpdate {
   longitude: number;
   altitude: number | null;
   accuracy: number | null;
+  /** Course-over-ground heading in degrees, valid while moving */
   heading: number | null;
+  /** Ground speed in m/s (gates whether `heading` can be trusted) */
+  speed: number | null;
   timestamp: number;
 }
 
@@ -42,6 +45,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
       altitude: loc.coords.altitude,
       accuracy: loc.coords.accuracy,
       heading: loc.coords.heading,
+      speed: loc.coords.speed,
       timestamp: loc.timestamp,
     };
     for (const cb of backgroundSubscribers) {
@@ -89,6 +93,7 @@ export async function startLocationTracking(
           altitude: location.coords.altitude,
           accuracy: location.coords.accuracy,
           heading: location.coords.heading,
+          speed: location.coords.speed,
           timestamp: location.timestamp,
         };
         for (const cb of foregroundSubscribers) {
@@ -148,6 +153,7 @@ export async function getCurrentPosition(): Promise<LocationUpdate> {
     altitude: location.coords.altitude,
     accuracy: location.coords.accuracy,
     heading: location.coords.heading,
+    speed: location.coords.speed,
     timestamp: location.timestamp,
   };
 }

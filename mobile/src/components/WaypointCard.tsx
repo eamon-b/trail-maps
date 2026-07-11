@@ -16,6 +16,12 @@ interface WaypointCardProps {
   distance?: string;
   /** Elevation text (e.g., "+310m") */
   elevation?: string;
+  /** Naismith ETA text (e.g., "~50 min") */
+  eta?: string;
+  /** One-line context note (e.g., a water waypoint's tank condition) */
+  note?: string;
+  /** Which-way indicator (BearingIndicator), rendered at the card's right */
+  bearing?: React.ReactNode;
   /** Emoji icon for waypoint type */
   icon?: string;
   /** Whether to use compact (2-column) layout */
@@ -37,6 +43,9 @@ export function WaypointCard({
   name,
   distance,
   elevation,
+  eta,
+  note,
+  bearing,
   icon,
   compact = false,
   emptyMessage,
@@ -47,7 +56,7 @@ export function WaypointCard({
   const { colors } = useTheme();
 
   const accessibilityLabel = state === 'normal' || state === 'degraded'
-    ? `${label}: ${name ?? 'Unknown'}, ${distance ?? ''}${elevation ? `, ${elevation} elevation gain` : ''}`
+    ? `${label}: ${name ?? 'Unknown'}, ${distance ?? ''}${elevation ? `, ${elevation} elevation gain` : ''}${eta ? `, about ${eta.replace('~', '')}` : ''}`
     : undefined;
 
   // Only make the card tappable when there is a waypoint to navigate to
@@ -82,7 +91,21 @@ export function WaypointCard({
             secondary={elevation}
             compact={compact}
           />
+          {eta && (
+            <Text style={[styles.eta, { color: colors.textSecondary }]}>
+              {eta}
+            </Text>
+          )}
+          {note && (
+            <Text
+              style={[styles.note, { color: colors.textSecondary }]}
+              numberOfLines={1}
+            >
+              {note}
+            </Text>
+          )}
         </View>
+        {bearing && <View style={styles.bearing}>{bearing}</View>}
       </View>
     </Card>
   );
@@ -109,5 +132,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     marginBottom: spacing.xs,
+  },
+  eta: {
+    ...typography.caption,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    marginTop: spacing.xs,
+  },
+  note: {
+    ...typography.caption,
+    marginTop: spacing.xs,
+  },
+  bearing: {
+    alignSelf: 'center',
   },
 });

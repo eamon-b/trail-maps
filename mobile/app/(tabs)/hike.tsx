@@ -26,8 +26,11 @@ import { PlanService, type Plan } from '../../src/services/plan-service';
 import {
   getNextWaypointsByType,
   calculateDistancesToWaypoints,
+  formatEtaMinutes,
   type WaypointDistance,
 } from '../../src/services/distance-calculator';
+import { bearingBetween } from '../../src/lib/bearing';
+import { BearingIndicator } from '../../src/components/BearingIndicator';
 import { computeDays } from '@lib/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
@@ -61,7 +64,14 @@ function toUpcomingList(distances: WaypointDistance[], limit: number): WaypointL
     name: wd.waypoint.name,
     type: wd.waypoint.type,
     distanceAhead: formatDistance(wd.trailDistanceKm),
+    eta: formatEtaMinutes(wd.etaMinutes),
   }));
+}
+
+/** First line of a waypoint description (tank condition etc.), or undefined */
+function descriptionFirstLine(description?: string): string | undefined {
+  const line = description?.split('\n')[0]?.trim();
+  return line || undefined;
 }
 
 /** Format a snooze expiry as HH:MM for the snooze chip */
@@ -140,7 +150,7 @@ export default function HikeScreen() {
   const currentKm = location?.trailKm ?? null;
 
   // Off-trail alert with debouncing and snooze
-  const { alertState, alertDetail, isSnoozed, snoozeUntil, snooze, clearSnooze } = useOffTrailAlert(
+  const { alertState, alertDetail, bearingToTrail, isSnoozed, snoozeUntil, snooze, clearSnooze } = useOffTrailAlert(
     location,
     accuracy,
     trackPoints,
@@ -258,6 +268,11 @@ export default function HikeScreen() {
     const allDistances = calculateDistancesToWaypoints(km, waypoints, trail.track.points);
     const next = getNextWaypointsByType(km, waypoints, trail.track.points, allDistances);
 
+    // Bearing from the current raw position to a waypoint (for the arrow)
+    const raw = location?.raw;
+    const bearingTo = (wd?: WaypointDistance) =>
+      raw && wd ? bearingBetween(raw.latitude, raw.longitude, wd.waypoint.lat, wd.waypoint.lon) : undefined;
+
     // Find current day from plan
     let today: DashboardData['today'] | undefined;
     if (planDays.length > 0) {
@@ -290,22 +305,51 @@ export default function HikeScreen() {
       currentKm: km,
       totalKm: trail.track.totalDistance,
       nextCampsite: next.campsite
-        ? { id: next.campsite.waypoint.id, name: next.campsite.waypoint.name, distance: formatDistance(next.campsite.trailDistanceKm), elevation: formatElevation(next.campsite) }
+        ? {
+            id: next.campsite.waypoint.id,
+            name: next.campsite.waypoint.name,
+            distance: formatDistance(next.campsite.trailDistanceKm),
+            elevation: formatElevation(next.campsite),
+            eta: formatEtaMinutes(next.campsite.etaMinutes),
+            bearing: bearingTo(next.campsite),
+          }
         : undefined,
       nextWater: next.water
-        ? { id: next.water.waypoint.id, name: next.water.waypoint.name, distance: formatDistance(next.water.trailDistanceKm) }
+        ? {
+            id: next.water.waypoint.id,
+            name: next.water.waypoint.name,
+            distance: formatDistance(next.water.trailDistanceKm),
+            eta: formatEtaMinutes(next.water.etaMinutes),
+            bearing: bearingTo(next.water),
+            note: descriptionFirstLine(next.water.waypoint.description),
+          }
         : undefined,
       nextWaterKm: next.water?.trailDistanceKm,
+      nextWaterEtaMinutes: next.water?.etaMinutes,
       nextTown: next.town
-        ? { id: next.town.waypoint.id, name: next.town.waypoint.name, distance: formatDistance(next.town.trailDistanceKm), elevation: formatElevation(next.town) }
+        ? {
+            id: next.town.waypoint.id,
+            name: next.town.waypoint.name,
+            distance: formatDistance(next.town.trailDistanceKm),
+            elevation: formatElevation(next.town),
+            eta: formatEtaMinutes(next.town.etaMinutes),
+          }
         : undefined,
       nextShelter: next.shelter
-        ? { id: next.shelter.waypoint.id, name: next.shelter.waypoint.name, distance: formatDistance(next.shelter.trailDistanceKm) }
+        ? {
+            id: next.shelter.waypoint.id,
+            name: next.shelter.waypoint.name,
+            distance: formatDistance(next.shelter.trailDistanceKm),
+            eta: formatEtaMinutes(next.shelter.etaMinutes),
+          }
+        : undefined,
+      gpsCourse: raw
+        ? { heading: raw.heading, speed: raw.speed, fixTimestamp: raw.timestamp }
         : undefined,
       today,
       upcoming: toUpcomingList(allDistances, 8),
     };
-  }, [trail, currentKm, planDays]);
+  }, [trail, currentKm, planDays, location]);
 
   const dashboardState = loading ? 'loading' : trail ? 'normal' : 'empty';
   const gpsState = accuracy === null ? 'searching' as const : accuracy > 100 ? 'degraded' as const : 'normal' as const;
@@ -601,6 +645,18 @@ export default function HikeScreen() {
           }
           onPress={handleAlertBannerPress}
           onHidden={() => setShowSnoozeMenu(false)}
+          accessory={
+            alertState === 'offTrail' && bearingToTrail != null && rawLocation ? (
+              // Device-relative arrow back to the trail (upgrades the static
+              // "head 247° WSW" text; degrades to cardinal text standing still)
+              <BearingIndicator
+                targetBearing={bearingToTrail}
+                heading={rawLocation.heading}
+                speed={rawLocation.speed}
+                fixTimestamp={rawLocation.timestamp}
+              />
+            ) : undefined
+          }
         />
       )}
 

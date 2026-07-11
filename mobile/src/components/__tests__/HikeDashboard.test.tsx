@@ -70,3 +70,76 @@ describe('HikeDashboard next-waypoint cards', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 });
+
+describe('HikeDashboard ETA / bearing / time-to-water (P1 PR C)', () => {
+  const richData: DashboardData = {
+    ...data,
+    nextCampsite: { id: 'wp-camp-1', name: 'Ridge Camp', distance: '4.2 km', eta: '~1 h 5 min', bearing: 45 },
+    nextWater: {
+      id: 'custom-7',
+      name: 'Creek Tank',
+      distance: '1.1 km',
+      eta: '~15 min',
+      bearing: 250,
+      note: 'Tank half full, clear water',
+    },
+    nextWaterKm: 1.1,
+    nextWaterEtaMinutes: 16,
+    gpsCourse: { heading: null, speed: 0, fixTimestamp: Date.now() },
+    today: {
+      dayNumber: 2,
+      totalDays: 5,
+      startName: 'A',
+      endName: 'B',
+      distanceKm: 20,
+      ascentM: 500,
+      descentM: 300,
+      estimatedHours: 6,
+      completedKm: 10,
+      remainingHours: 3,
+    },
+  };
+
+  it('renders per-waypoint ETAs on the cards', async () => {
+    renderWithTheme(<HikeDashboard data={richData} />);
+    await waitFor(() => {
+      expect(screen.getByText('~1 h 5 min')).toBeTruthy();
+      expect(screen.getByText('~15 min')).toBeTruthy();
+    });
+  });
+
+  it('surfaces the water description first line on the NEXT WATER card', async () => {
+    renderWithTheme(<HikeDashboard data={richData} />);
+    await waitFor(() => {
+      expect(screen.getByText('Tank half full, clear water')).toBeTruthy();
+    });
+  });
+
+  it('labels the day-level ETA "at plan pace"', async () => {
+    renderWithTheme(<HikeDashboard data={richData} />);
+    await waitFor(() => {
+      expect(screen.getByText(/ETA: \d{2}:\d{2} \(at plan pace\)/)).toBeTruthy();
+    });
+  });
+
+  it('degrades the bearing to cardinal text while stationary (speed 0)', async () => {
+    renderWithTheme(<HikeDashboard data={richData} />);
+    await waitFor(() => {
+      // 45° → NE (campsite), 250° → WSW (water); no arrow glyph when not moving
+      expect(screen.getByText('NE')).toBeTruthy();
+      expect(screen.getByText('WSW')).toBeTruthy();
+      expect(screen.queryByText('↑')).toBeNull();
+    });
+  });
+
+  it('shows the rotating arrow when moving with a fresh fix', async () => {
+    const moving: DashboardData = {
+      ...richData,
+      gpsCourse: { heading: 30, speed: 1.4, fixTimestamp: Date.now() },
+    };
+    renderWithTheme(<HikeDashboard data={moving} />);
+    await waitFor(() => {
+      expect(screen.getAllByText('↑').length).toBeGreaterThan(0);
+    });
+  });
+});

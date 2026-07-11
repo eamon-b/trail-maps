@@ -1,8 +1,10 @@
 import type { TrackPoint, TrailWaypoint } from '../../lib/trail-utils';
 import { calculateElevationBetween } from '@lib/track-geometry';
+import { estimateHikingTime } from '@lib/day-calculator';
 import {
   calculateDistancesToWaypoints,
   getNextWaypointsByType,
+  formatEtaMinutes,
 } from '../distance-calculator';
 
 // ---------------------------------------------------------------------------
@@ -160,6 +162,29 @@ describe('calculateDistancesToWaypoints', () => {
     expect(result).toEqual([]);
   });
 
+  it('computes per-waypoint Naismith etaMinutes matching estimateHikingTime', () => {
+    const waypoints = makeWaypoints([
+      { name: 'WP1', type: 'water', km: 30 },
+    ]);
+    const [wd] = calculateDistancesToWaypoints(10, waypoints, trackPoints);
+    // Same call measure-service makes: estimateHikingTime over the km span
+    // with the track's gain/loss between the two positions.
+    const { gain, loss } = calculateElevationBetween(10, 30, trackPoints);
+    expect(wd.etaMinutes).toBeCloseTo(estimateHikingTime(20, gain, loss) * 60, 5);
+    expect(wd.etaMinutes).toBeGreaterThan(0);
+  });
+
+  it('flat-ground ETA follows the 4 km/h Naismith base rate', () => {
+    const flat: TrackPoint[] = [
+      { lat: 0, lon: 0, ele: 100, dist: 0 },
+      { lat: 0, lon: 0, ele: 100, dist: 4 },
+      { lat: 0, lon: 0, ele: 100, dist: 8 },
+    ];
+    const waypoints = makeWaypoints([{ name: 'W', type: 'water', km: 4 }]);
+    const [wd] = calculateDistancesToWaypoints(0, waypoints, flat);
+    expect(wd.etaMinutes).toBe(60); // 4 km at 4 km/h
+  });
+
   it('treats missing totalDistance as 0', () => {
     const waypoints: TrailWaypoint[] = [
       { id: 'wp-0', name: 'No Dist', lat: -33, lon: 115, type: 'campsite' },
@@ -242,5 +267,27 @@ describe('getNextWaypointsByType', () => {
     ]);
     const result = getNextWaypointsByType(10, waypoints, trackPoints);
     expect(result).toEqual({});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatEtaMinutes
+// ---------------------------------------------------------------------------
+
+describe('formatEtaMinutes', () => {
+  it('rounds to 5 minutes under an hour', () => {
+    expect(formatEtaMinutes(48)).toBe('~50 min');
+    expect(formatEtaMinutes(52)).toBe('~50 min');
+    expect(formatEtaMinutes(12)).toBe('~10 min');
+  });
+
+  it('floors tiny estimates at ~5 min (never promises less)', () => {
+    expect(formatEtaMinutes(1)).toBe('~5 min');
+    expect(formatEtaMinutes(0)).toBe('~5 min');
+  });
+
+  it('switches to hours above 60 minutes', () => {
+    expect(formatEtaMinutes(130)).toBe('~2 h 10 min');
+    expect(formatEtaMinutes(120)).toBe('~2 h');
   });
 });

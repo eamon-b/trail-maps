@@ -31,3 +31,6 @@ aus-map-data/
 .env*.local
 .vercel
 .wrangler
+
+# Claude Code session worktrees (agent scratch space)
+.claude/worktrees/

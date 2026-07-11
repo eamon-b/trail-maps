@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
+import { Card } from './Card';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 
@@ -34,22 +35,14 @@ export function PlanSummaryCard({
   section,
   style,
 }: PlanSummaryCardProps) {
-  const { colors, highContrast } = useTheme();
+  const { colors } = useTheme();
 
   const dateRange =
     startDate && endDate ? `${formatDate(startDate)} — ${formatDate(endDate)}` : null;
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: highContrast ? colors.background : colors.surface,
-          borderColor: colors.border,
-          borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth,
-        },
-        style,
-      ]}
+    <Card
+      style={StyleSheet.flatten([styles.card, style])}
       accessibilityLabel={`${planName}, ${direction}, ${totalDays} days, ${Math.round(totalKm)} km`}
     >
       <View style={styles.headerRow}>
@@ -76,7 +69,7 @@ export function PlanSummaryCard({
           {dateRange}
         </Text>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -91,13 +84,7 @@ function formatDate(iso: string): string {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    marginBottom: 0,
   },
   headerRow: {
     flexDirection: 'row',

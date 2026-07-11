@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme';
+import { Card } from './Card';
 import type { WaterCarryAnalysis } from '@lib/water-carry-calculator';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -15,21 +16,21 @@ interface WaterCarryListProps {
  * trail has no water source information.
  */
 export function WaterCarryList({ analysis }: WaterCarryListProps) {
-  const { colors, highContrast } = useTheme();
+  const { colors } = useTheme();
 
   if (!analysis.hasWaterData) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }]}>
+      <Card>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Water Sources</Text>
         <Text style={[styles.noData, { color: colors.textSecondary }]}>
           No water source data available for this trail.
         </Text>
-      </View>
+      </Card>
     );
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }]}>
+    <Card>
       <Text style={[styles.title, { color: colors.textPrimary }]}>Water Sources</Text>
 
       {/* Summary stats */}
@@ -88,16 +89,11 @@ export function WaterCarryList({ analysis }: WaterCarryListProps) {
           </Text>
         </View>
       ))}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   title: {
     ...typography.titleLarge,
     marginBottom: spacing.sm,

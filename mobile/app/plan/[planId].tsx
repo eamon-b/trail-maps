@@ -30,6 +30,8 @@ import { StopSelector } from '../../src/components/StopSelector';
 import { SectionSelector } from '../../src/components/SectionSelector';
 import { ClimateOverview } from '../../src/components/ClimateOverview';
 import { AppBottomSheet } from '../../src/components/AppBottomSheet';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { Card } from '../../src/components/Card';
 import { UndoToast } from '../../src/components/UndoToast';
 import { WaterCarryList } from '../../src/components/WaterCarryList';
 import { ResupplyList } from '../../src/components/ResupplyList';
@@ -596,22 +598,8 @@ export default function PlanEditorScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-          {plan?.name ?? 'Plan'}
-        </Text>
-        <View style={styles.backButton} />
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title={plan?.name ?? 'Plan'} onBack={() => router.back()} />
 
       {/* Save error banner */}
       {saveError && (
@@ -727,7 +715,7 @@ export default function PlanEditorScreen() {
           {climateData ? (
             <ClimateOverview climate={climateData} planMonths={planMonths} />
           ) : isCustomTrail ? (
-            <View style={[styles.climateFetchCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Card>
               <Text style={[styles.climateFetchTitle, { color: colors.textPrimary }]}>
                 No Climate Data Yet
               </Text>
@@ -759,7 +747,7 @@ export default function PlanEditorScreen() {
                   </Pressable>
                 </>
               )}
-            </View>
+            </Card>
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Climate Data</Text>
@@ -956,27 +944,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    minWidth: 50,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  backText: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
-    flex: 1,
-    textAlign: 'center',
-  },
   saveError: {
     ...typography.caption,
     fontWeight: '600',
@@ -1029,11 +996,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
-  },
-  climateFetchCard: {
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: spacing.lg,
   },
   climateFetchTitle: {
     ...typography.titleLarge,

@@ -3,6 +3,7 @@ import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, ActivityIndic
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
 import { measureBetweenPoints, type MeasureResult } from '../../src/services/measure-service';
@@ -195,22 +196,8 @@ export default function MeasureScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-          Measure
-        </Text>
-        <View style={styles.backButton} />
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Measure" onBack={() => router.back()} />
 
       <ScrollView
         style={styles.scrollContainer}
@@ -447,26 +434,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    minWidth: 50,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
   backText: {
     ...typography.body,
     fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
-    flex: 1,
-    textAlign: 'center',
   },
   errorText: {
     ...typography.body,

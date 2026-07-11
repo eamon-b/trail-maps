@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { TrailMap } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { PlanService } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
 import type { StopData } from '../../src/services/plan-calculator-types';
 import { generateId, migrateStopsJson } from '../../src/services/plan-utils';
-import { spacing, touchTarget } from '../../src/tokens/spacing';
+import { spacing } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
 /**
@@ -299,21 +300,13 @@ export default function PlanMapScreen() {
       </MapErrorBoundary>
 
       {/* Header overlay */}
-      <View style={[styles.headerOverlay, { paddingTop: insets.top }]}>
-        <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.cancelButton}
-            accessibilityLabel="Cancel"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.cancelText, { color: colors.accent }]}>Cancel</Text>
-          </Pressable>
-          <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-            {isRelocationMode ? 'Move Stop' : isDayViewMode ? (dayLabel ?? 'Day View') : 'Add Stop'}
-          </Text>
-          <View style={styles.cancelButton} />
-        </View>
+      <View style={styles.headerOverlay}>
+        <ScreenHeader
+          title={isRelocationMode ? 'Move Stop' : isDayViewMode ? (dayLabel ?? 'Day View') : 'Add Stop'}
+          onBack={() => router.back()}
+          backLabel="Cancel"
+          variant="surface"
+        />
       </View>
 
       {/* Instruction chip at bottom */}
@@ -350,32 +343,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  cancelButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  cancelText: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
-    flex: 1,
-    textAlign: 'center',
   },
   instructionContainer: {
     position: 'absolute',

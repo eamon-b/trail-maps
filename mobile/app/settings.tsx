@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../src/theme';
 import type { ThemeVariant } from '../src/tokens/themes';
-import { spacing, radii, touchTarget } from '../src/tokens/spacing';
+import { spacing, touchTarget } from '../src/tokens/spacing';
 import { typography } from '../src/tokens/typography';
+import { Card, PressableRow, ScreenHeader } from '../src/components';
 import { closeDatabase } from '../src/db/database';
 import { Paths, File } from 'expo-file-system';
 
 export const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
 export const BACKGROUND_TRACKING_KEY = 'trail-companion:backgroundTracking';
+export const TRACKING_PROFILE_KEY = 'trail-companion:trackingProfile';
 
 type AlertPreset = 'tight' | 'normal' | 'loose';
 
@@ -41,7 +42,6 @@ export default function SettingsScreen() {
     setHighContrast,
   } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const [alertPreset, setAlertPreset] = useState<AlertPreset>('normal');
   const [backgroundTracking, setBackgroundTracking] = useState(false);
@@ -111,146 +111,161 @@ export default function SettingsScreen() {
     );
   }, []);
 
+  const rowBorder = { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Done</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader
+        title="Settings"
+        onBack={() => router.back()}
+        backLabel="Done"
+        variant="surface"
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Theme Section */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>THEME</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Card flush>
           {THEME_OPTIONS.map((opt, i) => (
-            <Pressable
+            <PressableRow
               key={opt.value}
               onPress={() => handleThemeSelect(opt.value)}
-              style={[
-                styles.optionRow,
-                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-              ]}
               accessibilityRole="radio"
               accessibilityState={{ selected: currentThemeValue === opt.value }}
+              style={[styles.optionRow, i > 0 && rowBorder]}
             >
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
-              {currentThemeValue === opt.value && (
-                <Text style={[styles.checkmark, { color: colors.accent }]}>✓</Text>
-              )}
-            </Pressable>
+              <View style={styles.optionRowInner}>
+                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
+                {currentThemeValue === opt.value && (
+                  <Text style={[styles.checkmark, { color: colors.accent }]}>✓</Text>
+                )}
+              </View>
+            </PressableRow>
           ))}
-        </View>
+        </Card>
 
         {/* Night Red Toggle */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.md }]}>
-          <Pressable
+        <Card flush>
+          <PressableRow
             onPress={() => setNightRedEnabled(!nightRedEnabled)}
-            style={styles.optionRow}
             accessibilityRole="switch"
             accessibilityState={{ checked: nightRedEnabled }}
+            style={styles.optionRow}
           >
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Night Red Mode</Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                Red-shifted display for dark-adapted eyes
-              </Text>
+            <View style={styles.optionRowInner}>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Night Red Mode</Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  Red-shifted display for dark-adapted eyes
+                </Text>
+              </View>
+              <Switch
+                value={nightRedEnabled}
+                onValueChange={setNightRedEnabled}
+                trackColor={{ true: colors.accentMuted }}
+                thumbColor={nightRedEnabled ? colors.accent : undefined}
+                importantForAccessibility="no"
+              />
             </View>
-            <Text style={[styles.checkmark, { color: nightRedEnabled ? colors.accent : colors.textSecondary }]}>
-              {nightRedEnabled ? '✓' : ''}
-            </Text>
-          </Pressable>
-        </View>
+          </PressableRow>
+        </Card>
 
         {/* High Contrast Toggle */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.md }]}>
-          <Pressable
+        <Card flush>
+          <PressableRow
             onPress={() => setHighContrast(!highContrast)}
-            style={styles.optionRow}
             accessibilityRole="switch"
             accessibilityState={{ checked: highContrast }}
+            style={styles.optionRow}
           >
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>High Contrast</Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                Thicker borders and solid backgrounds
-              </Text>
+            <View style={styles.optionRowInner}>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>High Contrast</Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  Thicker borders and solid backgrounds
+                </Text>
+              </View>
+              <Switch
+                value={highContrast}
+                onValueChange={setHighContrast}
+                trackColor={{ true: colors.accentMuted }}
+                thumbColor={highContrast ? colors.accent : undefined}
+                importantForAccessibility="no"
+              />
             </View>
-            <Text style={[styles.checkmark, { color: highContrast ? colors.accent : colors.textSecondary }]}>
-              {highContrast ? '✓' : ''}
-            </Text>
-          </Pressable>
-        </View>
+          </PressableRow>
+        </Card>
 
         {/* GPS Tracking Section */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
           GPS TRACKING
         </Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Pressable
+        <Card flush>
+          <PressableRow
             onPress={handleBackgroundTrackingToggle}
-            style={styles.optionRow}
             accessibilityRole="switch"
             accessibilityState={{ checked: backgroundTracking }}
+            style={styles.optionRow}
           >
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Background Tracking</Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                Keep tracking while the screen is locked. Uses more battery and
-                asks for the &quot;Allow all the time&quot; location permission.
-              </Text>
+            <View style={styles.optionRowInner}>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Background Tracking</Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  Keep tracking while the screen is locked. Uses more battery and
+                  asks for the &quot;Allow all the time&quot; location permission.
+                </Text>
+              </View>
+              <Switch
+                value={backgroundTracking}
+                onValueChange={handleBackgroundTrackingToggle}
+                trackColor={{ true: colors.accentMuted }}
+                thumbColor={backgroundTracking ? colors.accent : undefined}
+                importantForAccessibility="no"
+              />
             </View>
-            <Text style={[styles.checkmark, { color: backgroundTracking ? colors.accent : colors.textSecondary }]}>
-              {backgroundTracking ? '✓' : ''}
-            </Text>
-          </Pressable>
-        </View>
+          </PressableRow>
+        </Card>
 
         {/* Alert Threshold Section */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
           OFF-TRAIL ALERT SENSITIVITY
         </Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Card flush>
           {ALERT_OPTIONS.map((opt, i) => (
-            <Pressable
+            <PressableRow
               key={opt.value}
               onPress={() => handleAlertSelect(opt.value)}
-              style={[
-                styles.optionRow,
-                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-              ]}
               accessibilityRole="radio"
               accessibilityState={{ selected: alertPreset === opt.value }}
+              style={[styles.optionRow, i > 0 && rowBorder]}
             >
-              <View style={styles.optionInfo}>
-                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
-                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>{opt.description}</Text>
+              <View style={styles.optionRowInner}>
+                <View style={styles.optionInfo}>
+                  <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
+                  <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>{opt.description}</Text>
+                </View>
+                {alertPreset === opt.value && <Text style={[styles.checkmark, { color: colors.accent }]}>&#x2713;</Text>}
               </View>
-              {alertPreset === opt.value && <Text style={[styles.checkmark, { color: colors.accent }]}>&#x2713;</Text>}
-            </Pressable>
+            </PressableRow>
           ))}
-        </View>
+        </Card>
 
         {/* Data Section */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
           DATA
         </Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Pressable
+        <Card flush>
+          <PressableRow
             onPress={handleResetData}
+            haptic="warning"
+            accessibilityLabel="Reset app data"
             style={styles.optionRow}
-            accessibilityRole="button"
           >
-            <Text style={[styles.optionLabel, { color: colors.danger }]}>Reset App Data</Text>
-          </Pressable>
-        </View>
+            <View style={styles.optionRowInner}>
+              <Text style={[styles.optionLabel, { color: colors.danger }]}>Reset App Data</Text>
+            </View>
+          </PressableRow>
+        </Card>
       </ScrollView>
     </View>
   );
@@ -260,26 +275,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerTitle: {
-    ...typography.titleLarge,
-    textAlign: 'center',
-  },
-  backButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  backText: {
-    ...typography.body,
-    fontWeight: '600',
   },
   content: {
     padding: spacing.lg,
@@ -291,18 +286,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.sm,
   },
-  card: {
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
   optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     minHeight: touchTarget.min,
+  },
+  optionRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   optionInfo: {
     flex: 1,
@@ -315,7 +308,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkmark: {
-    fontSize: 17,
+    ...typography.body,
     fontWeight: '600',
     marginLeft: spacing.md,
   },

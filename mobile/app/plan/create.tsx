@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { ScreenHeader } from '../../src/components';
 import { PlanService } from '../../src/services/plan-service';
 import { generateId } from '../../src/services/plan-utils';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
@@ -66,22 +67,10 @@ export default function CreatePlanScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Cancel</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>New Plan</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader title="New Plan" onBack={() => router.back()} backLabel="Cancel" />
 
       {trailName && (
         <Text style={[styles.trailLabel, { color: colors.textSecondary }]}>
@@ -201,25 +190,6 @@ export default function CreatePlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  backText: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
   },
   trailLabel: {
     ...typography.caption,

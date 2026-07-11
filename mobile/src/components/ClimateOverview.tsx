@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
+import { Card } from './Card';
 import type { ClimateData } from '../services/climate-service';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -19,22 +20,22 @@ interface ClimateOverviewProps {
  * precipitation data with tabs for multiple climate locations.
  */
 export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewProps) {
-  const { colors, highContrast } = useTheme();
+  const { colors } = useTheme();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const planMonthSet = useMemo(() => new Set(planMonths ?? []), [planMonths]);
 
   const location = climate.locations[selectedIdx];
   if (!location) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }, style]}>
+      <Card style={style}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Climate Data</Text>
         <Text style={[styles.noData, { color: colors.textSecondary }]}>No climate data available.</Text>
-      </View>
+      </Card>
     );
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }, style]}>
+    <Card style={style}>
       <Text style={[styles.title, { color: colors.textPrimary }]}>Climate Data</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         {climate.dataYears.start}–{climate.dataYears.end} averages
@@ -106,16 +107,11 @@ export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewP
           );
         })}
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   title: {
     ...typography.titleLarge,
     marginBottom: spacing.xs,

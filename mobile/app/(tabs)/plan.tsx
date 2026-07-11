@@ -29,7 +29,7 @@ import {
 import { calculateTrailBounds } from '../../src/services/trail-bounds';
 import { trailJsonToTrail } from '../../src/lib/trail-utils';
 import { tileManager } from '../../src/services/tile-manager';
-import { ProgressBar } from '../../src/components';
+import { Card, ProgressBar } from '../../src/components';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -431,9 +431,8 @@ export default function PlanScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <Pressable
-            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            accessibilityRole="button"
+          <Card
+            style={styles.card}
             accessibilityLabel={`${item.name}${item.region ? `, ${item.region}` : ''}${item.lengthKm ? `, ${item.lengthKm} kilometers` : ''}`}
             onPress={() => router.push({ pathname: '/trail/overview', params: { id: item.id } })}
           >
@@ -513,7 +512,7 @@ export default function PlanScreen() {
                 </Pressable>
               )}
             </View>
-          </Pressable>
+          </Card>
         )}
         ListEmptyComponent={
           <Text style={[styles.empty, { color: colors.textSecondary }]}>No trails loaded</Text>
@@ -578,14 +577,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    // List uses gap for separation; Card's default margin would double it
+    marginBottom: 0,
   },
   trailNameRow: {
     flexDirection: 'row',

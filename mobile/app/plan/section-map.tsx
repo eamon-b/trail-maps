@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { TrailMap } from '../../src/components/TrailMap';
 import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { PlanService } from '../../src/services/plan-service';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { createReversedTrail, findNearestByDistance, type Trail } from '../../src/lib/trail-utils';
-import { spacing, touchTarget } from '../../src/tokens/spacing';
+import { spacing } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
 /**
@@ -265,36 +266,19 @@ export default function SectionMapScreen() {
       </MapErrorBoundary>
 
       {/* Header overlay */}
-      <View style={[styles.headerOverlay, { paddingTop: insets.top }]}>
-        <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.headerButton}
-            accessibilityLabel="Cancel"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.headerButtonText, { color: colors.accent }]}>Cancel</Text>
-          </Pressable>
-          <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-            {mode === 'single' ? 'Select Point' : 'Select Section'}
-          </Text>
-          <Pressable
-            onPress={handleApply}
-            disabled={!canApply}
-            style={styles.headerButton}
-            accessibilityLabel="Apply selection"
-            accessibilityRole="button"
-          >
-            <Text
-              style={[
-                styles.headerButtonText,
-                { color: canApply ? colors.accent : colors.textSecondary },
-              ]}
-            >
-              Apply
-            </Text>
-          </Pressable>
-        </View>
+      <View style={styles.headerOverlay}>
+        <ScreenHeader
+          title={mode === 'single' ? 'Select Point' : 'Select Section'}
+          onBack={() => router.back()}
+          backLabel="Cancel"
+          variant="surface"
+          rightAction={{
+            label: 'Apply',
+            onPress: handleApply,
+            disabled: !canApply,
+            accessibilityLabel: 'Apply selection',
+          }}
+        />
       </View>
 
       {/* Instruction chip at bottom */}
@@ -327,32 +311,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  headerButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  headerButtonText: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
-    flex: 1,
-    textAlign: 'center',
   },
   instructionContainer: {
     position: 'absolute',

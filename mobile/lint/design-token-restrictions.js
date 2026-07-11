@@ -68,7 +68,6 @@ const designTokenRestrictions = [
  * - DayPlanCard.tsx           — action glyph size
  * - WaypointCard.tsx          — emoji glyph size
  * - app/plan/measure.tsx      — emoji/check glyph sizes
- * - app/settings.tsx          — checkmark glyph size
  * - app/(tabs)/hike.tsx       — snooze chip icon size
  * - app/(tabs)/plan.tsx       — header/badge font sizes
  * - app/trail/[id].tsx        — toolbar glyph size
@@ -89,7 +88,6 @@ const grandfatheredFiles = [
   'src/components/DayPlanCard.tsx',
   'src/components/WaypointCard.tsx',
   'app/plan/measure.tsx',
-  'app/settings.tsx',
   'app/(tabs)/hike.tsx',
   'app/(tabs)/plan.tsx',
   // NOTE: [ ] are glob character classes — escape route-param filenames.

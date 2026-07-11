@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
-import { ProgressBar, TrailMap } from '../../src/components';
+import { ProgressBar, ScreenHeader, TrailMap } from '../../src/components';
 import {
   pickGpxFile,
   fetchGpxFromUrl,
@@ -240,20 +240,8 @@ export default function ImportScreen() {
 
   // Render based on stage
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.closeButton}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-        >
-          <Text style={[styles.closeText, { color: colors.textSecondary }]}>Cancel</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Import Trail</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Import Trail" onBack={() => router.back()} backLabel="Cancel" />
 
       {stage === 'pick' && (
         <View style={styles.pickContainer}>
@@ -524,30 +512,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: touchTarget.min,
-  },
-  closeButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  closeText: {
-    ...typography.body,
-  },
-  headerTitle: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  headerSpacer: {
-    minWidth: 60,
-  },
-
   // Pick stage
   pickContainer: {
     flex: 1,

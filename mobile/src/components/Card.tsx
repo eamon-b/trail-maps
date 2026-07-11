@@ -10,14 +10,19 @@ export type CardState = 'normal' | 'loading' | 'empty' | 'degraded';
 interface CardProps {
   /** Card visual state */
   state?: CardState;
-  /** Section label (e.g., "NEXT CAMPSITE") */
-  label: string;
+  /** Section label (e.g., "NEXT CAMPSITE"). Omit for label-less surfaces. */
+  label?: string;
   /** Main content for normal/degraded states */
   children?: React.ReactNode;
   /** Message shown in empty state */
   emptyMessage?: string;
   /** Staleness info shown in degraded state */
   degradedMessage?: string;
+  /**
+   * Removes the inner padding and clips children to the rounded corners —
+   * for grouped list rows (settings) that manage their own insets.
+   */
+  flush?: boolean;
   /** Additional styles for the outer container */
   style?: ViewStyle;
   /** Accessibility label for the entire card */
@@ -33,6 +38,7 @@ export function Card({
   children,
   emptyMessage = 'No data available',
   degradedMessage,
+  flush = false,
   style,
   accessibilityLabel,
   onPress,
@@ -42,6 +48,7 @@ export function Card({
   const defaultBorderWidth = highContrast ? 1.5 : StyleSheet.hairlineWidth;
   const cardStyle = [
     styles.card,
+    flush ? styles.cardFlush : styles.cardPadded,
     onPress ? styles.cardPressable : null,
     {
       backgroundColor: highContrast ? colors.background : colors.surface,
@@ -53,12 +60,14 @@ export function Card({
 
   const content = (
     <>
-      <Text
-        style={[styles.label, { color: colors.textSecondary }]}
-        accessibilityRole="header"
-      >
-        {label}
-      </Text>
+      {label != null && (
+        <Text
+          style={[styles.label, { color: colors.textSecondary }]}
+          accessibilityRole="header"
+        >
+          {label}
+        </Text>
+      )}
 
       {state === 'loading' && (
         <View style={styles.skeletonContainer}>
@@ -142,8 +151,13 @@ export function StatDisplay({
 const styles = StyleSheet.create({
   card: {
     borderRadius: radii.lg,
-    padding: spacing.lg,
     marginBottom: spacing.md,
+  },
+  cardPadded: {
+    padding: spacing.lg,
+  },
+  cardFlush: {
+    overflow: 'hidden',
   },
   cardPressable: {
     minHeight: touchTarget.min,

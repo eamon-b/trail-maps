@@ -81,9 +81,13 @@ jobs:
           key: gradle-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
+      # Build only the emulator's ABI — the full four-ABI build exceeds the
+      # runner's disk (packageDebug died on it once the native dep count grew)
+      # and quadruples native compile time for libraries only the CI emulator
+      # will ever load.
       - name: Build debug APK
         if: steps.apk-cache.outputs.cache-hit != 'true'
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=x86_64
         working-directory: mobile/android
 
       - name: Stop Gradle daemon
@@ -150,6 +154,7 @@ jobs:
         if: failure()
         timeout-minutes: 3
         run: |
+          df -h /
           mkdir -p /tmp/maestro-screenshots
           # Only capture if run-maestro.sh didn't already write live diagnostics
           # — a `>` redirect would truncate the good file before adb ran.

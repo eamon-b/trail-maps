@@ -214,6 +214,51 @@ describe('schema migrations', () => {
     await db.closeAsync();
   });
 
+  it('v6 → v7 adds routes + route_legs with cascade wiring', async () => {
+    const db = createTestDatabase();
+
+    await migrateDatabase(db as any, 6);
+    await db.runAsync('INSERT INTO trails (id, name) VALUES (?, ?)', ['trail-1', 'Test Trail']);
+
+    // Upgrade to v7
+    await migrateDatabase(db as any);
+    const version = await db.getFirstAsync<{ version: number }>('SELECT version FROM schema_version');
+    expect(version!.version).toBe(SCHEMA_VERSION);
+
+    // Tables usable
+    await db.runAsync(
+      'INSERT INTO routes (id, trail_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ['r-1', 'trail-1', 'Lookout loop', '2026-07-11', '2026-07-11']
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-1', 0, 'wp-3', 12.5]
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-1', 1, null, 18.0]
+    );
+
+    // Deleting the route cascades to its legs
+    await db.runAsync('DELETE FROM routes WHERE id = ?', ['r-1']);
+    expect(await db.getAllAsync('SELECT * FROM route_legs')).toHaveLength(0);
+
+    // Deleting the trail cascades to routes (and transitively their legs)
+    await db.runAsync(
+      'INSERT INTO routes (id, trail_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ['r-2', 'trail-1', 'Water run', '2026-07-11', '2026-07-11']
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-2', 0, 'wp-1', 5]
+    );
+    await db.runAsync('DELETE FROM trails WHERE id = ?', ['trail-1']);
+    expect(await db.getAllAsync('SELECT * FROM routes')).toHaveLength(0);
+    expect(await db.getAllAsync('SELECT * FROM route_legs')).toHaveLength(0);
+
+    await db.closeAsync();
+  });
+
   it('custom_waypoints defaults type to water', async () => {
     const db = await createMigratedTestDb();
 

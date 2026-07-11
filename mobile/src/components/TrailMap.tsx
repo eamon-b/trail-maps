@@ -63,6 +63,16 @@ export interface TrailMapProps {
   trackPoints?: TrackPoint[];
   /** Highlighted segment to show on the trail (e.g., a day's hike) */
   highlightedSegment?: { startKm: number; endKm: number } | null;
+  /**
+   * Waypoint-sequence route overlay (P1 PR D): on-track legs highlight their
+   * track spans (same styling as highlightedSegment); off-track legs render
+   * as straight dashed lines — visually distinct so their estimates are
+   * never read as trail-accurate.
+   */
+  routeOverlay?: {
+    spans: { startKm: number; endKm: number }[];
+    straightLegs: { from: [number, number]; to: [number, number] }[];
+  } | null;
   /** Called on long press with the nearest trail coordinate (latitude/longitude
    * are snapped to the track; pressedLatitude/pressedLongitude are the raw
    * touch location, e.g. for placing off-track custom waypoints) */
@@ -171,6 +181,37 @@ function buildSegmentGeoJSON(points: TrackPoint[], startKm: number, endKm: numbe
       coordinates: segmentPoints.map(p => [p.lon, p.lat]),
     },
     properties: {},
+  };
+}
+
+function buildRouteSpansGeoJSON(
+  points: TrackPoint[],
+  spans: { startKm: number; endKm: number }[],
+) {
+  const features: GeoJSON.Feature[] = [];
+  for (const span of spans) {
+    const segment = buildSegmentGeoJSON(points, span.startKm, span.endKm);
+    if (segment) features.push(segment);
+  }
+  if (features.length === 0) return null;
+  return { type: 'FeatureCollection' as const, features };
+}
+
+function buildStraightLegsGeoJSON(legs: { from: [number, number]; to: [number, number] }[]) {
+  if (legs.length === 0) return null;
+  return {
+    type: 'FeatureCollection' as const,
+    features: legs.map((leg, i) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [leg.from[1], leg.from[0]],
+          [leg.to[1], leg.to[0]],
+        ],
+      },
+      properties: { id: i },
+    })),
   };
 }
 
@@ -307,6 +348,7 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
   onVisibleBoundsChange,
   trackPoints,
   highlightedSegment,
+  routeOverlay,
   onLongPress,
   customPins,
 }, ref) {
@@ -367,6 +409,16 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
     [customPins],
   );
 
+  const routeSpansGeoJSON = useMemo(() => {
+    if (!routeOverlay || displayPoints.length === 0) return null;
+    return buildRouteSpansGeoJSON(displayPoints, routeOverlay.spans);
+  }, [routeOverlay, displayPoints]);
+
+  const routeStraightLegsGeoJSON = useMemo(() => {
+    if (!routeOverlay) return null;
+    return buildStraightLegsGeoJSON(routeOverlay.straightLegs);
+  }, [routeOverlay]);
+
   const accuracyRadius = useMemo(
     () => accuracyCircleRadiusExpression(userLocation?.latitude ?? -33),
     [userLocation?.latitude],
@@ -400,6 +452,16 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
     lineOpacity: 1,
     lineCap: 'round' as const,
     lineJoin: 'round' as const,
+  }), [colors.accent]);
+
+  // Off-track route legs: dashed straight line — must read differently from
+  // the on-track highlight so estimates aren't taken as trail-accurate.
+  const routeStraightLegStyle = useMemo(() => ({
+    lineColor: colors.accent,
+    lineWidth: 3,
+    lineOpacity: 0.9,
+    lineDasharray: [1.5, 1.5],
+    lineCap: 'round' as const,
   }), [colors.accent]);
 
   const waypointCircleStyle = useMemo(() => {
@@ -678,6 +740,30 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
             <MapLibreGL.LineLayer
               id="highlight-solid"
               style={highlightSolidStyle}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
+
+        {/* Route overlay: on-track spans (highlight styling) */}
+        {routeSpansGeoJSON && (
+          <MapLibreGL.ShapeSource id="route-spans" shape={routeSpansGeoJSON}>
+            <MapLibreGL.LineLayer
+              id="route-spans-glow"
+              style={highlightGlowStyle}
+            />
+            <MapLibreGL.LineLayer
+              id="route-spans-solid"
+              style={highlightSolidStyle}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
+
+        {/* Route overlay: off-track legs (dashed straight lines) */}
+        {routeStraightLegsGeoJSON && (
+          <MapLibreGL.ShapeSource id="route-straight-legs" shape={routeStraightLegsGeoJSON}>
+            <MapLibreGL.LineLayer
+              id="route-straight-legs-layer"
+              style={routeStraightLegStyle}
             />
           </MapLibreGL.ShapeSource>
         )}

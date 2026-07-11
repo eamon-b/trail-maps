@@ -25,6 +25,18 @@ import {
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-data-service';
 import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
+import {
+  RouteService,
+  assembleRouteMetrics,
+  resolveRoutePoints,
+  routeOverlayGeometry,
+  waypointToRoutePoint,
+  type Route,
+  type RouteLeg,
+} from '../../src/services/route-service';
+import { RoutePanel } from '../../src/components/RoutePanel';
+import { routeToGpx } from '../../src/lib/gpx-writer';
+import { shareGpxFile, gpxFilename } from '../../src/services/gpx-export-service';
 import { tileManager } from '../../src/services/tile-manager';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
@@ -122,7 +134,7 @@ function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
 }
 
 export default function TrailViewerScreen() {
-  const { id, focusWaypointId } = useLocalSearchParams<{ id: string; focusWaypointId?: string }>();
+  const { id, focusWaypointId, routeId } = useLocalSearchParams<{ id: string; focusWaypointId?: string; routeId?: string }>();
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -143,6 +155,11 @@ export default function TrailViewerScreen() {
   // Deleted custom waypoint held for undo. Photo file deletion is deferred
   // until the toast expires so undo restores the photo too.
   const [deletedWaypoint, setDeletedWaypoint] = useState<CustomWaypoint | null>(null);
+  // Route builder: ordered waypoints tapped on the map (null = not building)
+  const [routeDraft, setRouteDraft] = useState<TrailWaypoint[] | null>(null);
+  const [savingRoute, setSavingRoute] = useState(false);
+  // Saved route being viewed (deep-linked via the routeId param)
+  const [routeView, setRouteView] = useState<{ route: Route; legs: RouteLeg[] } | null>(null);
   const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId, drawerIndex, cameraMode } = viewer;
   const mapRef = useRef<TrailMapHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
@@ -244,11 +261,66 @@ export default function TrailViewerScreen() {
     return selectedWaypoint.totalDistance - currentKm;
   }, [currentKm, selectedWaypoint]);
 
+  // Consume the routeId route param (deep link from My routes): load the
+  // saved route and show it on the map. Consumed once per param value.
+  const consumedRouteIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!routeId) return;
+    if (consumedRouteIdRef.current === routeId) return;
+    consumedRouteIdRef.current = routeId;
+    (async () => {
+      try {
+        const service = await RouteService.create();
+        const route = await service.getRoute(routeId);
+        if (!route) return;
+        const legs = await service.getRouteLegs(routeId);
+        setRouteDraft(null);
+        setRouteView({ route, legs });
+      } catch (e) {
+        console.warn('Failed to load route:', e);
+      }
+    })();
+  }, [routeId]);
+
+  // Resolve the viewed route's legs against the (direction-aware) trail
+  const routeViewPoints = useMemo(() => {
+    if (!routeView || !activeTrail) return null;
+    return resolveRoutePoints(activeTrail, routeView.legs, { reversed: isReversed });
+  }, [routeView, activeTrail, isReversed]);
+
+  // Builder points → resolved shape shared with the viewer
+  const routeDraftPoints = useMemo(() => {
+    if (!routeDraft) return null;
+    return routeDraft.map((wp, i) => waypointToRoutePoint(wp, i));
+  }, [routeDraft]);
+
+  const activeRoutePoints = routeDraftPoints ?? routeViewPoints;
+
+  const routeMetrics = useMemo(() => {
+    if (!activeTrail || !activeRoutePoints) return null;
+    return assembleRouteMetrics(activeTrail, activeRoutePoints);
+  }, [activeTrail, activeRoutePoints]);
+
+  const routeOverlay = useMemo(() => {
+    if (!activeRoutePoints || activeRoutePoints.length < 2) return null;
+    return routeOverlayGeometry(activeRoutePoints);
+  }, [activeRoutePoints]);
+
   // Handlers — each user intent is a single dispatch (+ at most a one-shot
   // imperative pan, which is fire-and-forget and never re-applied)
   const handleWaypointPress = useCallback((wp: TrailWaypoint) => {
+    // In route-builder mode a waypoint tap appends to the route instead of
+    // opening the detail sheet (consecutive duplicates ignored).
+    if (routeDraft) {
+      setRouteDraft(prev => {
+        if (!prev) return prev;
+        if (prev.length > 0 && prev[prev.length - 1].id === wp.id) return prev;
+        return [...prev, wp];
+      });
+      return;
+    }
     dispatch({ type: 'selectWaypoint', waypoint: wp });
-  }, []);
+  }, [routeDraft]);
 
   const handleDismissWaypoint = useCallback(() => {
     dispatch({ type: 'deselect' });
@@ -428,11 +500,87 @@ export default function TrailViewerScreen() {
     setDeletedWaypoint(null);
   }, [deletedWaypoint]);
 
+  // --- Route builder (toolbar "Route" — P1 PR D) ----------------------------
+
+  const enterRouteBuilder = useCallback(() => {
+    setCrosshair(null);
+    setPendingWaypoint(null);
+    setEditingWaypoint(null);
+    setRouteView(null);
+    dispatch({ type: 'deselect' });
+    setRouteDraft([]);
+  }, []);
+
+  const exitRoutePanel = useCallback(() => {
+    setRouteDraft(null);
+    setRouteView(null);
+  }, []);
+
+  const handleRemoveRoutePoint = useCallback((index: number) => {
+    setRouteDraft(prev => (prev ? prev.filter((_, i) => i !== index) : prev));
+  }, []);
+
+  const handleMoveRoutePoint = useCallback((index: number, direction: -1 | 1) => {
+    setRouteDraft(prev => {
+      if (!prev) return prev;
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }, []);
+
+  const handleSaveRoute = useCallback(async (name: string) => {
+    const trail = activeTrail;
+    if (!id || !trail || !routeDraft || routeDraft.length < 2) return;
+    setSavingRoute(true);
+    try {
+      const service = await RouteService.create();
+      // km_position is stored in the trail's base direction (same convention
+      // as custom_waypoints) so it stays valid whichever way the trail is
+      // later displayed.
+      const legs = routeDraft.map(wp => {
+        const activeKm = wp.totalDistance ?? 0;
+        return {
+          waypointRef: wp.id,
+          kmPosition: isReversed ? trail.track.totalDistance - activeKm : activeKm,
+        };
+      });
+      const route = await service.createRoute(id, name, legs);
+      // Switch straight into viewing the saved route
+      const savedLegs = await service.getRouteLegs(route.id);
+      setRouteDraft(null);
+      setRouteView({ route, legs: savedLegs });
+    } catch (e) {
+      console.warn('Failed to save route:', e);
+      Alert.alert('Save failed', 'Could not save the route. Please try again.');
+    } finally {
+      setSavingRoute(false);
+    }
+  }, [id, activeTrail, routeDraft, isReversed]);
+
+  const handleExportRoute = useCallback(async () => {
+    if (!routeView || !routeViewPoints) return;
+    try {
+      const gpx = routeToGpx(
+        routeView.route.name,
+        routeViewPoints.map(pt => ({ lat: pt.lat, lon: pt.lon, ele: pt.ele, name: pt.name })),
+      );
+      await shareGpxFile(gpxFilename(routeView.route.name), gpx);
+    } catch (e) {
+      console.warn('Failed to export route:', e);
+      Alert.alert('Export failed', 'Could not export the GPX file.');
+    }
+  }, [routeView, routeViewPoints]);
+
   // --- Crosshair placement (toolbar "+" create, edit-mode "Move pin") -------
 
   const enterCreateCrosshair = useCallback(() => {
     setPendingWaypoint(null);
     setEditingWaypoint(null);
+    setRouteDraft(null);
+    setRouteView(null);
     dispatch({ type: 'deselect' });
     // Free the camera so a GPS tick can't drag the map out from under the
     // crosshair while the user is lining up the spot.
@@ -591,6 +739,16 @@ export default function TrailViewerScreen() {
         </Pressable>
 
         <Pressable
+          onPress={routeDraft ? exitRoutePanel : enterRouteBuilder}
+          style={styles.toolbarButton}
+          accessibilityLabel={routeDraft ? 'Exit route builder' : 'Build a route'}
+          accessibilityRole="button"
+          accessibilityState={{ selected: routeDraft != null }}
+        >
+          <Text style={[styles.toolbarButtonText, { color: routeDraft ? colors.textPrimary : colors.accent }]}>⚑</Text>
+        </Pressable>
+
+        <Pressable
           onPress={() => {
             const params: Record<string, string> = { id: id! };
             if (currentKm != null) params.fromKm = currentKm.toFixed(1);
@@ -624,7 +782,8 @@ export default function TrailViewerScreen() {
             mapStyleOverride={offlineMapStyle}
             trackPoints={trackPoints}
             onVisibleBoundsChange={handleVisibleBoundsChange}
-            onLongPress={crosshair ? undefined : handleMapLongPress}
+            onLongPress={crosshair || routeDraft ? undefined : handleMapLongPress}
+            routeOverlay={routeOverlay}
           />
         </MapErrorBoundary>
 
@@ -713,6 +872,22 @@ export default function TrailViewerScreen() {
         saving={savingWaypoint}
         onMovePin={editingWaypoint ? handleMovePin : undefined}
       />
+
+      {/* Route builder / viewer panel (P1 PR D) */}
+      {activeRoutePoints && routeMetrics && (
+        <RoutePanel
+          mode={routeDraft ? 'build' : 'view'}
+          routeName={routeView?.route.name}
+          points={activeRoutePoints}
+          metrics={routeMetrics}
+          onRemovePoint={handleRemoveRoutePoint}
+          onMovePoint={handleMoveRoutePoint}
+          onSave={handleSaveRoute}
+          onExport={routeView ? handleExportRoute : undefined}
+          onClose={exitRoutePanel}
+          saving={savingRoute}
+        />
+      )}
 
       {/* Undo toast for waypoint deletion (5 s window) */}
       <UndoToast

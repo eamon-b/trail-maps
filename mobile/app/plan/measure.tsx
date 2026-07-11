@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,19 +7,18 @@ import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
 import { measureBetweenPoints, type MeasureResult } from '../../src/services/measure-service';
+import {
+  buildPickerParams,
+  createPickerRequestId,
+  parseSinglePointResult,
+} from '../../src/lib/point-picker-contract';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { ElevationProfile } from '../../src/components/ElevationProfile';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
 export default function MeasureScreen() {
-  const params = useLocalSearchParams<{
-    trailId: string;
-    mapSelected_start_km?: string;
-    mapSelected_start_name?: string;
-    mapSelected_end_km?: string;
-    mapSelected_end_name?: string;
-  }>();
+  const params = useLocalSearchParams<Record<string, string>>();
   const trailId = params.trailId;
   const router = useRouter();
   const { colors } = useTheme();
@@ -31,6 +30,25 @@ export default function MeasureScreen() {
   const [endPoint, setEndPoint] = useState<TrailWaypoint | null>(null);
   const [startSearch, setStartSearch] = useState('');
   const [endSearch, setEndSearch] = useState('');
+
+  // Correlation id for the map picker round-trip (typed contract) — only a
+  // result echoing the id we issued is consumed.
+  const pickerRequestIdRef = useRef<string | null>(null);
+
+  const openMapPicker = useCallback((target: 'start' | 'end') => {
+    const requestId = createPickerRequestId();
+    pickerRequestIdRef.current = requestId;
+    router.push({
+      pathname: '/plan/point-picker',
+      params: buildPickerParams({
+        mode: 'single',
+        trailId: trailId ?? '',
+        target,
+        pickerRequestId: requestId,
+        returnTo: '/plan/measure',
+      }),
+    });
+  }, [router, trailId]);
 
   // Load trail data
   useEffect(() => {
@@ -53,34 +71,26 @@ export default function MeasureScreen() {
     load();
   }, [trailId]);
 
-  // Handle map selection results from section-map screen
+  // Handle map selection results from the point picker (typed contract)
   useEffect(() => {
     if (!trail) return;
-    if (params.mapSelected_start_km) {
-      const km = parseFloat(params.mapSelected_start_km);
-      const name = params.mapSelected_start_name ?? `km ${km.toFixed(1)}`;
-      setStartPoint({
-        id: 'measure-start',
-        name,
-        lat: 0,
-        lon: 0,
-        type: 'poi',
-        totalDistance: km,
-      });
+    const result = parseSinglePointResult(params, pickerRequestIdRef.current);
+    if (!result) return;
+    pickerRequestIdRef.current = null;
+    const point: TrailWaypoint = {
+      id: `measure-${result.target}`,
+      name: result.name,
+      lat: 0,
+      lon: 0,
+      type: 'poi',
+      totalDistance: result.km,
+    };
+    if (result.target === 'end') {
+      setEndPoint(point);
+    } else {
+      setStartPoint(point);
     }
-    if (params.mapSelected_end_km) {
-      const km = parseFloat(params.mapSelected_end_km);
-      const name = params.mapSelected_end_name ?? `km ${km.toFixed(1)}`;
-      setEndPoint({
-        id: 'measure-end',
-        name,
-        lat: 0,
-        lon: 0,
-        type: 'poi',
-        totalDistance: km,
-      });
-    }
-  }, [trail, params.mapSelected_start_km, params.mapSelected_end_km, params.mapSelected_start_name, params.mapSelected_end_name]);
+  }, [trail, params]);
 
   // Filtered waypoints for each picker
   const filteredStartWaypoints = useMemo(() => {
@@ -215,12 +225,7 @@ export default function MeasureScreen() {
             )}
           </View>
           <Pressable
-            onPress={() => {
-              router.push({
-                pathname: '/plan/section-map',
-                params: { trailId: trailId ?? '', mode: 'single', target: 'start' },
-              });
-            }}
+            onPress={() => openMapPicker('start')}
             style={[styles.selectOnMapButton, { borderColor: colors.accent }]}
             accessibilityLabel="Select start point on map"
             accessibilityRole="button"
@@ -282,12 +287,7 @@ export default function MeasureScreen() {
             )}
           </View>
           <Pressable
-            onPress={() => {
-              router.push({
-                pathname: '/plan/section-map',
-                params: { trailId: trailId ?? '', mode: 'single', target: 'end' },
-              });
-            }}
+            onPress={() => openMapPicker('end')}
             style={[styles.selectOnMapButton, { borderColor: colors.accent }]}
             accessibilityLabel="Select end point on map"
             accessibilityRole="button"

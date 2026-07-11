@@ -45,6 +45,7 @@ import {
 } from '../../src/services/custom-climate-service';
 import { exportPlanAsText, exportPlanAsCsv } from '../../src/services/plan-export';
 import { generateId, migrateStopsJson } from '../../src/services/plan-utils';
+import { buildPickerParams } from '../../src/lib/point-picker-contract';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -454,17 +455,15 @@ export default function PlanEditorScreen() {
     if (!plan) return;
     setSectionSelectorOpen(false);
     router.push({
-      pathname: '/plan/section-map',
-      params: {
+      pathname: '/plan/point-picker',
+      params: buildPickerParams({
+        mode: 'section',
         trailId: plan.trailId,
         planId: plan.id,
         direction: plan.direction,
-        mode: 'section',
-        ...(section ? {
-          currentStartKm: String(section.startKm),
-          currentEndKm: String(section.endKm),
-        } : {}),
-      },
+        currentStartKm: section?.startKm,
+        currentEndKm: section?.endKm,
+      }),
     });
   }, [plan, section, router]);
 
@@ -473,14 +472,15 @@ export default function PlanEditorScreen() {
     if (!plan || dayIndex >= days.length) return;
     const day = days[dayIndex];
     router.push({
-      pathname: '/plan/map',
-      params: {
+      pathname: '/plan/point-picker',
+      params: buildPickerParams({
+        mode: 'day',
         trailId: plan.trailId,
         planId: plan.id,
-        highlightStartKm: String(day.startKm),
-        highlightEndKm: String(day.endKm),
+        highlightStartKm: day.startKm,
+        highlightEndKm: day.endKm,
         dayLabel: `Day ${day.dayNumber}`,
-      },
+      }),
     });
   }, [plan, days, router]);
 
@@ -491,13 +491,14 @@ export default function PlanEditorScreen() {
     if (stopIdx < 0) return;
     const stop = stops[stopIdx];
     router.push({
-      pathname: '/plan/map',
-      params: {
+      pathname: '/plan/point-picker',
+      params: buildPickerParams({
+        mode: 'relocate',
         trailId: plan.trailId,
         planId: plan.id,
         stopId: stop.id,
-        currentKm: String(stop.km),
-      },
+        currentKm: stop.km,
+      }),
     });
   }, [plan, stops, stopIndexEndingDay, router]);
 

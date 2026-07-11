@@ -69,7 +69,8 @@ export interface ProcessingWarning {
     | 'track_gaps'
     | 'no_waypoints'
     | 'orphaned_waypoints'
-    | 'no_tracks';
+    | 'no_tracks'
+    | 'alternates_preserved';
   message: string;
   count?: number;
 }
@@ -295,34 +296,80 @@ function deduplicateConsecutive(points: GpxPoint[]): { points: GpxPoint[]; remov
 
 const GAP_THRESHOLD_METERS = 500;
 
+interface AlternateCandidate {
+  name: string;
+  points: GpxPoint[];
+}
+
 interface MergeResult {
   points: GpxPoint[];
   gaps: { afterIndex: number; distanceMeters: number }[];
+  /** Secondary <trk>s and <rte>s preserved as alternate routes */
+  alternates: AlternateCandidate[];
 }
 
-/** Merge all track segments into a single point array, detecting gaps. */
+/**
+ * Split GPX geometry into a main route and alternates.
+ *
+ * The main route is the FIRST <trk> (all its <trkseg>s merged — segments are
+ * pause-splits of one recording, not separate routes). Every additional
+ * <trk> and every <rte> is preserved as an alternate instead of being folded
+ * into the main line (P2 decision 10 — the renderer already draws
+ * alternates as dashed orange). Route-only files (e.g. AllTrails exports)
+ * promote the first <rte> to the main route.
+ */
 function mergeTrackSegments(gpxData: GpxData): MergeResult {
   const allPoints: GpxPoint[] = [];
   const gaps: { afterIndex: number; distanceMeters: number }[] = [];
+  const alternates: AlternateCandidate[] = [];
 
-  // Collect all segments from all tracks (MVP: treat all as main route)
-  const segments: GpxPoint[][] = [];
-  for (const track of gpxData.tracks) {
-    for (const segment of track.segments) {
+  // Main route segments: the first non-empty track's segments, or the first
+  // route when the file has no tracks at all.
+  const mainSegments: GpxPoint[][] = [];
+  const firstTrack = gpxData.tracks.find((t) => t.segments.some((s) => s.points.length > 0));
+  let firstRouteUsedAsMain = false;
+
+  if (firstTrack) {
+    for (const segment of firstTrack.segments) {
       if (segment.points.length > 0) {
-        segments.push(segment.points);
+        mainSegments.push(segment.points);
       }
     }
-  }
-
-  // Also include route points as a segment
-  for (const route of gpxData.routes) {
-    if (route.points.length > 0) {
-      segments.push(route.points);
+  } else {
+    const firstRoute = gpxData.routes.find((r) => r.points.length > 0);
+    if (firstRoute) {
+      mainSegments.push(firstRoute.points);
+      firstRouteUsedAsMain = true;
     }
   }
 
-  for (const segPoints of segments) {
+  // Everything else becomes an alternate candidate.
+  let unnamedCount = 0;
+  const nextName = (name: string | undefined, kind: string): string => {
+    if (name && name.trim().length > 0) return name;
+    unnamedCount++;
+    return `${kind} ${unnamedCount}`;
+  };
+
+  for (const track of gpxData.tracks) {
+    if (track === firstTrack) continue;
+    const points = track.segments.flatMap((s) => s.points);
+    if (points.length >= 2) {
+      alternates.push({ name: nextName(track.name, 'Alternate'), points });
+    }
+  }
+  let skippedFirstRoute = false;
+  for (const route of gpxData.routes) {
+    if (firstRouteUsedAsMain && !skippedFirstRoute && route.points.length > 0) {
+      skippedFirstRoute = true;
+      continue;
+    }
+    if (route.points.length >= 2) {
+      alternates.push({ name: nextName(route.name, 'Route'), points: route.points });
+    }
+  }
+
+  for (const segPoints of mainSegments) {
     if (allPoints.length > 0 && segPoints.length > 0) {
       const lastPoint = allPoints[allPoints.length - 1];
       const firstPoint = segPoints[0];
@@ -343,7 +390,34 @@ function mergeTrackSegments(gpxData: GpxData): MergeResult {
     allPoints.push(...segPoints);
   }
 
-  return { points: allPoints, gaps };
+  return { points: allPoints, gaps, alternates };
+}
+
+/** Convert an alternate candidate into a renderable RouteVariant. */
+function buildAlternateVariant(
+  candidate: AlternateCandidate,
+  coordinatePrecision: number,
+): NonNullable<Trail['alternates']>[number] {
+  const cleaned = deduplicateConsecutive(
+    filterInvalidCoordinates(candidate.points).points,
+  ).points;
+  const rounded = roundCoordinates(cleaned, coordinatePrecision);
+
+  let dist = 0;
+  const points: TrackPoint[] = rounded.map((p, i, arr) => {
+    if (i > 0) {
+      const prev = arr[i - 1];
+      dist += haversineDistance(prev.lat, prev.lon, p.lat, p.lon) / 1000;
+    }
+    return { lat: p.lat, lon: p.lon, ele: p.ele, dist };
+  });
+
+  return {
+    name: candidate.name,
+    type: 'alternate' as const,
+    distance: Math.round(dist * 100) / 100,
+    points,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -552,7 +626,7 @@ export function processGpx(
 
   // --- Stage 2: Merge track segments ---
   progress('Merging tracks', 10);
-  const { points: rawPoints, gaps } = mergeTrackSegments(gpxData);
+  const { points: rawPoints, gaps, alternates: alternateCandidates } = mergeTrackSegments(gpxData);
 
   if (rawPoints.length === 0) {
     throw new GpxParseError('GPX file has no track data');
@@ -563,6 +637,21 @@ export function processGpx(
       type: 'track_gaps',
       message: `Found ${gaps.length} gap(s) >500m between track segments`,
       count: gaps.length,
+    });
+  }
+
+  // Secondary <trk>s / <rte>s are preserved as alternates, not folded into
+  // the main line. The import preview offers a per-track include/exclude
+  // checklist over these.
+  const alternates = alternateCandidates
+    .map((candidate) => buildAlternateVariant(candidate, opts.coordinatePrecision))
+    .filter((variant) => (variant.points?.length ?? 0) >= 2);
+
+  if (alternates.length > 0) {
+    warnings.push({
+      type: 'alternates_preserved',
+      message: `Kept ${alternates.length} secondary track(s)/route(s) as alternate routes`,
+      count: alternates.length,
     });
   }
 
@@ -733,7 +822,7 @@ export function processGpx(
       totalDescent,
     },
     waypoints: enrichedWaypoints,
-    alternates: [],
+    alternates,
     sideTrips: [],
   };
 

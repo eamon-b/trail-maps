@@ -235,6 +235,9 @@ export async function saveCustomTrail(
       totalAscent: trail.track.totalAscent,
       totalDescent: trail.track.totalDescent,
     },
+    // Preserved secondary <trk>/<rte> geometry (trailJsonToTrail reads these
+    // back; the map renders them as dashed alternates)
+    ...(trail.alternates && trail.alternates.length > 0 ? { alternates: trail.alternates } : {}),
   };
 
   // Store trail metadata

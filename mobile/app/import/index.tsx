@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -82,6 +82,8 @@ function formatWarning(w: ProcessingWarning): string {
       return `${w.count} waypoint(s) were too far from the track and were excluded.`;
     case 'no_tracks':
       return 'No track data found in this file.';
+    case 'alternates_preserved':
+      return `Kept ${w.count} secondary track(s)/route(s) as alternate routes. Choose which to include below.`;
     default:
       return w.message;
   }
@@ -102,7 +104,29 @@ export default function ImportScreen() {
   const [urlInput, setUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [elevationFetch, setElevationFetch] = useState<'idle' | 'fetching' | 'error'>('idle');
+  // Indices of preserved alternates the user has excluded in the preview
+  const [excludedAlternates, setExcludedAlternates] = useState<Set<number>>(new Set());
   const cancelledRef = useRef(false);
+
+  const toggleAlternate = useCallback((index: number) => {
+    setExcludedAlternates((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }, []);
+
+  // The trail as it will be saved: excluded alternates dropped
+  const previewTrail = useMemo(() => {
+    if (!result) return null;
+    const trail = result.trail;
+    if (!trail.alternates || trail.alternates.length === 0) return trail;
+    return {
+      ...trail,
+      alternates: trail.alternates.filter((_, i) => !excludedAlternates.has(i)),
+    };
+  }, [result, excludedAlternates]);
 
   const handlePickFile = useCallback(async () => {
     try {
@@ -129,6 +153,7 @@ export default function ImportScreen() {
       setResult(processingResult);
       setTrailName(processingResult.trail.config.name);
       setElevationFetch('idle');
+      setExcludedAlternates(new Set());
       setStage('preview');
     } catch (e) {
       const err = e as ImportError;
@@ -165,6 +190,7 @@ export default function ImportScreen() {
       setResult(processingResult);
       setTrailName(processingResult.trail.config.name);
       setElevationFetch('idle');
+      setExcludedAlternates(new Set());
       setStage('preview');
     } catch (e) {
       const err = e as ImportError;
@@ -181,14 +207,16 @@ export default function ImportScreen() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!result) return;
+    if (!result || !previewTrail) return;
     // Never save while an elevation fetch is in flight — doing so would persist
     // the flat profile and discard the elevation about to arrive.
     if (elevationFetch === 'fetching') return;
 
     setStage('saving');
     try {
-      const importResult = await saveCustomTrail(result, trailName, sourceFilename);
+      // Excluded alternates are dropped at save time
+      const toSave = { ...result, trail: previewTrail };
+      const importResult = await saveCustomTrail(toSave, trailName, sourceFilename);
       setStage('done');
       // Navigate back and let the plan screen refresh
       Alert.alert('Trail Imported', `"${trailName}" has been imported successfully.`, [
@@ -199,7 +227,7 @@ export default function ImportScreen() {
       setError({ message: msg });
       setStage('error');
     }
-  }, [result, trailName, sourceFilename, router, elevationFetch]);
+  }, [result, previewTrail, trailName, sourceFilename, router, elevationFetch]);
 
   const handleRetry = useCallback(() => {
     setStage('pick');
@@ -341,11 +369,12 @@ export default function ImportScreen() {
             placeholderTextColor={colors.textSecondary}
           />
 
-          {/* Map preview */}
+          {/* Map preview (includes the currently-included alternates) */}
           <View style={[styles.mapContainer, { borderColor: colors.border }]}>
             <TrailMap
               displayPoints={result.trail.track.displayPoints || result.trail.track.points}
               waypoints={result.trail.waypoints}
+              alternates={previewTrail?.alternates}
             />
           </View>
 
@@ -372,6 +401,55 @@ export default function ImportScreen() {
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>waypoints</Text>
             </View>
           </View>
+
+          {/* Per-track include/exclude checklist for preserved alternates */}
+          {result.trail.alternates && result.trail.alternates.length > 0 && (
+            <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ROUTES IN THIS FILE</Text>
+              <View style={styles.alternateRow}>
+                <Text style={[styles.alternateName, { color: colors.textPrimary }]} numberOfLines={1}>
+                  {result.trail.config.name}
+                </Text>
+                <Text style={[styles.alternateMeta, { color: colors.textSecondary }]}>
+                  Main · {Math.round(result.trail.track.totalDistance * 10) / 10} km
+                </Text>
+              </View>
+              {result.trail.alternates.map((alt, i) => {
+                const included = !excludedAlternates.has(i);
+                return (
+                  <Pressable
+                    key={`alt-${i}`}
+                    onPress={() => toggleAlternate(i)}
+                    style={styles.alternateRow}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: included }}
+                    accessibilityLabel={`${alt.name}${alt.distance != null ? `, ${alt.distance.toFixed(1)} kilometers` : ''}, ${included ? 'included' : 'excluded'}`}
+                  >
+                    <Text
+                      style={[
+                        styles.alternateCheck,
+                        { color: included ? colors.accent : colors.textSecondary },
+                      ]}
+                    >
+                      {included ? '☑' : '☐'}
+                    </Text>
+                    <Text
+                      style={[styles.alternateName, { color: included ? colors.textPrimary : colors.textSecondary }]}
+                      numberOfLines={1}
+                    >
+                      {alt.name}
+                    </Text>
+                    <Text style={[styles.alternateMeta, { color: colors.textSecondary }]}>
+                      {alt.distance != null ? `${alt.distance.toFixed(1)} km` : 'alternate'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              <Text style={[styles.alternateHint, { color: colors.textSecondary }]}>
+                Included routes are saved as dashed alternates on the map.
+              </Text>
+            </View>
+          )}
 
           {/* Waypoints */}
           {result.trail.waypoints.length > 0 && (
@@ -676,6 +754,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.xs,
+  },
+  alternateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: touchTarget.min,
+  },
+  alternateCheck: {
+    ...typography.body,
+    fontWeight: '600',
+  },
+  alternateName: {
+    ...typography.body,
+    flex: 1,
+  },
+  alternateMeta: {
+    ...typography.caption,
+    fontVariant: ['tabular-nums'],
+  },
+  alternateHint: {
+    ...typography.caption,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
   },
   waypointName: {
     ...typography.body,

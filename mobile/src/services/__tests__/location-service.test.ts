@@ -13,6 +13,7 @@ jest.mock('expo-location', () => ({
   },
   Accuracy: {
     High: 6,
+    Balanced: 3,
   },
 }));
 
@@ -21,14 +22,23 @@ jest.mock('expo-task-manager', () => ({
   isTaskRegisteredAsync: jest.fn(),
 }));
 
+jest.mock('expo-battery', () => ({
+  getBatteryLevelAsync: jest.fn(),
+}));
+
 import {
   subscribeToBackgroundLocation,
   requestLocationPermission,
   startLocationTracking,
   stopLocationTracking,
+  setTrackingProfile,
+  getActiveTrackingProfile,
+  resolveTrackingProfile,
+  TRACKING_PROFILES,
 } from '../location-service';
 
 const mockLocation = require('expo-location');
+const mockBattery = require('expo-battery');
 
 // ---------------------------------------------------------------------------
 // subscribeToBackgroundLocation
@@ -158,5 +168,103 @@ describe('stopLocationTracking', () => {
     mockLocation.watchPositionAsync.mockResolvedValue({ remove: removeMock });
     await expect(startLocationTracking(jest.fn())).resolves.toBeUndefined();
     expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tracking profiles
+// ---------------------------------------------------------------------------
+
+describe('tracking profiles', () => {
+  afterEach(async () => {
+    await stopLocationTracking();
+    await setTrackingProfile('standard');
+  });
+
+  it('standard profile matches the historical High/30s/10m options', () => {
+    expect(TRACKING_PROFILES.standard).toEqual({
+      accuracy: mockLocation.Accuracy.High,
+      timeInterval: 30000,
+      distanceInterval: 10,
+    });
+  });
+
+  it('saver profile uses Balanced/120s/25m', () => {
+    expect(TRACKING_PROFILES.saver).toEqual({
+      accuracy: mockLocation.Accuracy.Balanced,
+      timeInterval: 120000,
+      distanceInterval: 25,
+    });
+  });
+
+  it('restarts a live watch with the new profile options and keeps subscribers', async () => {
+    const removeMock = jest.fn();
+    mockLocation.watchPositionAsync.mockClear();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: removeMock });
+
+    const cb = jest.fn();
+    await startLocationTracking(cb);
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(1);
+    expect(mockLocation.watchPositionAsync.mock.calls[0][0]).toEqual(TRACKING_PROFILES.standard);
+
+    await setTrackingProfile('saver');
+    expect(getActiveTrackingProfile()).toBe('saver');
+
+    // Old watch torn down, new one started with saver cadence
+    expect(removeMock).toHaveBeenCalledTimes(1);
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(2);
+    expect(mockLocation.watchPositionAsync.mock.calls[1][0]).toEqual(TRACKING_PROFILES.saver);
+
+    // Existing subscriber still receives ticks from the new watch
+    const emit = mockLocation.watchPositionAsync.mock.calls[1][1];
+    emit({ coords: { latitude: 1, longitude: 2, altitude: 0, accuracy: 5, heading: 0 }, timestamp: 1 });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not restart when the profile is unchanged', async () => {
+    const removeMock = jest.fn();
+    mockLocation.watchPositionAsync.mockClear();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: removeMock });
+
+    await startLocationTracking(jest.fn());
+    await setTrackingProfile('standard');
+
+    expect(removeMock).not.toHaveBeenCalled();
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('a profile switch while stopped applies to the next session', async () => {
+    mockLocation.watchPositionAsync.mockClear();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: jest.fn() });
+
+    await setTrackingProfile('saver');
+    await startLocationTracking(jest.fn());
+
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(1);
+    expect(mockLocation.watchPositionAsync.mock.calls[0][0]).toEqual(TRACKING_PROFILES.saver);
+  });
+});
+
+describe('resolveTrackingProfile', () => {
+  it('passes explicit profiles through', async () => {
+    await expect(resolveTrackingProfile('standard')).resolves.toBe('standard');
+    await expect(resolveTrackingProfile('saver')).resolves.toBe('saver');
+  });
+
+  it('auto selects saver below 30% battery', async () => {
+    mockBattery.getBatteryLevelAsync.mockResolvedValue(0.2);
+    await expect(resolveTrackingProfile('auto')).resolves.toBe('saver');
+  });
+
+  it('auto selects standard at or above 30% battery', async () => {
+    mockBattery.getBatteryLevelAsync.mockResolvedValue(0.5);
+    await expect(resolveTrackingProfile('auto')).resolves.toBe('standard');
+  });
+
+  it('auto falls back to standard when battery info is unavailable', async () => {
+    mockBattery.getBatteryLevelAsync.mockRejectedValue(new Error('no battery API'));
+    await expect(resolveTrackingProfile('auto')).resolves.toBe('standard');
+    mockBattery.getBatteryLevelAsync.mockResolvedValue(-1);
+    await expect(resolveTrackingProfile('auto')).resolves.toBe('standard');
   });
 });

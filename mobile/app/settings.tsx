@@ -7,6 +7,7 @@ import type { ThemeVariant } from '../src/tokens/themes';
 import { spacing, touchTarget } from '../src/tokens/spacing';
 import { typography } from '../src/tokens/typography';
 import { Card, PressableRow, ScreenHeader } from '../src/components';
+import type { TrackingProfilePreference } from '../src/services/location-service';
 import { closeDatabase } from '../src/db/database';
 import { Paths, File } from 'expo-file-system';
 
@@ -29,6 +30,12 @@ const ALERT_OPTIONS: { label: string; value: AlertPreset; description: string }[
   { label: 'Loose', value: 'loose', description: '100m on-trail, 300m drift' },
 ];
 
+const TRACKING_PROFILE_OPTIONS: { label: string; value: TrackingProfilePreference; description: string }[] = [
+  { label: 'Auto', value: 'auto', description: 'Battery saver kicks in below 30% charge' },
+  { label: 'Standard', value: 'standard', description: 'High accuracy — GPS fix every 30 s / 10 m' },
+  { label: 'Battery Saver', value: 'saver', description: 'Balanced accuracy — fix every 2 min / 25 m' },
+];
+
 export default function SettingsScreen() {
   const {
     colors,
@@ -45,6 +52,7 @@ export default function SettingsScreen() {
 
   const [alertPreset, setAlertPreset] = useState<AlertPreset>('normal');
   const [backgroundTracking, setBackgroundTracking] = useState(false);
+  const [trackingProfile, setTrackingProfile] = useState<TrackingProfilePreference>('auto');
 
   // Load persisted preferences
   useEffect(() => {
@@ -56,11 +64,21 @@ export default function SettingsScreen() {
     AsyncStorage.getItem(BACKGROUND_TRACKING_KEY).then((val) => {
       setBackgroundTracking(val === 'true');
     });
+    AsyncStorage.getItem(TRACKING_PROFILE_KEY).then((val) => {
+      if (val === 'auto' || val === 'standard' || val === 'saver') {
+        setTrackingProfile(val);
+      }
+    });
   }, []);
 
   const handleAlertSelect = useCallback(async (value: AlertPreset) => {
     setAlertPreset(value);
     await AsyncStorage.setItem(ALERT_THRESHOLD_KEY, value);
+  }, []);
+
+  const handleTrackingProfileSelect = useCallback(async (value: TrackingProfilePreference) => {
+    setTrackingProfile(value);
+    await AsyncStorage.setItem(TRACKING_PROFILE_KEY, value);
   }, []);
 
   const handleBackgroundTrackingToggle = useCallback(async () => {
@@ -224,6 +242,31 @@ export default function SettingsScreen() {
               />
             </View>
           </PressableRow>
+        </Card>
+
+        {/* Tracking power profile — Auto resolves via battery level when a
+            hike-tab tracking session starts; the hike status line discloses
+            when the saver cadence is active. */}
+        <Card flush style={{ marginTop: spacing.md }}>
+          {TRACKING_PROFILE_OPTIONS.map((opt, i) => (
+            <PressableRow
+              key={opt.value}
+              onPress={() => handleTrackingProfileSelect(opt.value)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: trackingProfile === opt.value }}
+              style={[styles.optionRow, i > 0 && rowBorder]}
+            >
+              <View style={styles.optionRowInner}>
+                <View style={styles.optionInfo}>
+                  <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
+                  <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>{opt.description}</Text>
+                </View>
+                {trackingProfile === opt.value && (
+                  <Text style={[styles.checkmark, { color: colors.accent }]}>&#x2713;</Text>
+                )}
+              </View>
+            </PressableRow>
+          ))}
         </Card>
 
         {/* Alert Threshold Section */}

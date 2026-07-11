@@ -8,6 +8,7 @@ import { LocationStatusBar } from '../../src/components/LocationStatusBar';
 import { AlertBanner } from '../../src/components/AlertBanner';
 import { SunriseCountdown } from '../../src/components/SunriseCountdown';
 import { CoordinatesRow } from '../../src/components/CoordinatesRow';
+import { OfflineReadinessRow } from '../../src/components/OfflineReadinessRow';
 import type { WaypointListItem } from '../../src/components/WaypointList';
 import { useLocation } from '../../src/hooks/useLocation';
 import { useOffTrailAlert } from '../../src/hooks/useOffTrailAlert';
@@ -447,6 +448,8 @@ export default function HikeScreen() {
               style={styles.coordinatesRow}
             />
           )}
+          {/* Offline readiness — one honest line with a download affordance */}
+          <OfflineReadinessRow trailId={activeTrailId} style={styles.offlineRow} />
           <Pressable
             onPress={() => {
               const km = currentKm ?? 0;
@@ -587,6 +590,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   coordinatesRow: {
+    marginBottom: spacing.sm,
+  },
+  offlineRow: {
     marginBottom: spacing.sm,
   },
   datasheetLink: {

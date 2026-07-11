@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
 import { isCustomWaypointId, type TrackPoint, type TrailWaypoint, type RouteVariant } from '../lib/trail-utils';
 import { useTheme } from '../theme';
+import { useReduceMotion } from '../theme/useReduceMotion';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { getOnlineStyleWithContours } from '../services/online-style-service';
@@ -36,6 +37,19 @@ const WAYPOINT_COLORS: Record<string, string> = {
 
 /** Distinct marker color for user-created waypoints (see isCustomWaypointId) */
 const CUSTOM_WAYPOINT_COLOR = '#E91E63';
+
+/**
+ * Waypoints cluster only at or below this zoom — zoomed-out overview levels
+ * where individual circles are unreadable anyway. At hiking zooms (labels
+ * gate at >=11, follow-mode zoom is 14) every waypoint renders individually,
+ * so clustering can never hide the next water source or campsite in the field.
+ */
+export const WAYPOINT_CLUSTER_MAX_ZOOM = 10;
+
+/** Whether waypoints are clustered at a given zoom level. */
+export function isClusteredZoom(zoom: number): boolean {
+  return zoom <= WAYPOINT_CLUSTER_MAX_ZOOM;
+}
 
 function getWaypointColor(type: string): string {
   return WAYPOINT_COLORS[type] ?? '#757575';
@@ -286,6 +300,7 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
   customPins,
 }, ref) {
   const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
 
   // Fetch online style with contour overlay when no offline style is set
   const [onlineStyle, setOnlineStyle] = useState<object | null>(null);
@@ -297,7 +312,10 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
 
   // Match overlay text font to the active base style's available glyphs.
   // Liberty (online) serves Noto Sans; our offline style bundles Open Sans.
-  const labelFont = mapStyleOverride ? ['Open Sans Regular'] : ['Noto Sans Regular'];
+  const labelFont = useMemo(
+    () => (mapStyleOverride ? ['Open Sans Regular'] : ['Noto Sans Regular']),
+    [mapStyleOverride],
+  );
   const cameraRef = useRef<CameraRef>(null);
   const mapRef = useRef<MapViewRef>(null);
   const hasSetInitialBounds = useRef(false);
@@ -396,6 +414,25 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
       ] as unknown as number,
     };
   }, [focusedWaypointId, colors.accent]);
+
+  const clusterCircleStyle = useMemo(() => ({
+    circleColor: colors.accent,
+    circleOpacity: 0.85,
+    circleRadius: [
+      'step', ['get', 'point_count'],
+      14, 10, 18, 25, 22,
+    ] as unknown as number,
+    circleStrokeColor: '#ffffff',
+    circleStrokeWidth: 2,
+  }), [colors.accent]);
+
+  const clusterCountStyle = useMemo(() => ({
+    textField: ['get', 'point_count_abbreviated'] as unknown as string,
+    textFont: labelFont,
+    textSize: 12,
+    textColor: '#ffffff',
+    textAllowOverlap: true,
+  }), [labelFont]);
 
   const symbolLabelStyle = useMemo(() => ({
     textField: ['get', 'name'] as unknown as string,
@@ -515,16 +552,45 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
   );
 
   const handleWaypointPress = useCallback(
-    (event: OnPressEvent) => {
-      if (!onWaypointPress || !waypoints) return;
+    async (event: OnPressEvent) => {
       const feature = event.features?.[0];
+      // Tapping a cluster zooms in to expand it instead of selecting
+      if (feature?.properties?.point_count != null) {
+        const coords = feature.geometry?.type === 'Point'
+          ? (feature.geometry as GeoJSON.Point).coordinates
+          : null;
+        if (coords && coords.length >= 2 && cameraRef.current) {
+          let zoom = WAYPOINT_CLUSTER_MAX_ZOOM;
+          try {
+            zoom = (await mapRef.current?.getZoom()) ?? zoom;
+          } catch { /* fall back to the cluster ceiling */ }
+          cameraRef.current.setCamera({
+            centerCoordinate: [coords[0], coords[1]],
+            zoomLevel: Math.max(zoom + 2, WAYPOINT_CLUSTER_MAX_ZOOM + 1),
+            animationDuration: reduceMotion ? 0 : 400,
+          });
+        }
+        return;
+      }
+      if (!onWaypointPress || !waypoints) return;
       const id = feature?.properties?.id as string | undefined;
       if (id == null) return;
       const wp = waypoints.find(w => w.id === id);
       if (wp) onWaypointPress(wp);
     },
-    [onWaypointPress, waypoints],
+    [onWaypointPress, waypoints, reduceMotion],
   );
+
+  // One-handed/gloved zoom: camera zoom ±1 with animation (reduce-motion aware)
+  const handleZoom = useCallback(async (delta: number) => {
+    try {
+      const zoom = await mapRef.current?.getZoom();
+      if (zoom == null || !cameraRef.current) return;
+      cameraRef.current.zoomTo(zoom + delta, reduceMotion ? 0 : 300);
+    } catch {
+      // getZoom can fail during init — ignore
+    }
+  }, [reduceMotion]);
 
   const regionChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -677,17 +743,34 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
           </MapLibreGL.ShapeSource>
         )}
 
-        {/* Waypoint markers */}
+        {/* Waypoint markers — clustered only at zoomed-out levels (never at
+            hiking zooms; see WAYPOINT_CLUSTER_MAX_ZOOM) */}
         {waypointsGeoJSON.features.length > 0 && (
           <MapLibreGL.ShapeSource
             id="waypoints"
             shape={waypointsGeoJSON}
             onPress={handleWaypointPress}
             hitbox={{ width: 30, height: 30 }}
+            cluster
+            clusterRadius={40}
+            clusterMaxZoomLevel={WAYPOINT_CLUSTER_MAX_ZOOM}
           >
-            {/* Circles always visible */}
+            {/* Cluster bubbles + counts (tap to expand) */}
+            <MapLibreGL.CircleLayer
+              id="waypoints-clusters"
+              filter={['has', 'point_count']}
+              style={clusterCircleStyle}
+            />
+            <MapLibreGL.SymbolLayer
+              id="waypoints-cluster-counts"
+              filter={['has', 'point_count']}
+              style={clusterCountStyle}
+            />
+
+            {/* Individual circles (unclustered points) */}
             <MapLibreGL.CircleLayer
               id="waypoints-circles"
+              filter={['!', ['has', 'point_count']]}
               style={waypointCircleStyle}
             />
 
@@ -695,6 +778,7 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
             <MapLibreGL.SymbolLayer
               id="waypoints-labels"
               minZoomLevel={11}
+              filter={['!', ['has', 'point_count']]}
               style={symbolLabelStyle}
             />
           </MapLibreGL.ShapeSource>
@@ -727,6 +811,26 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
           </Text>
         </View>
       )}
+
+      {/* Zoom buttons — one-handed/gloved essential */}
+      <View style={styles.zoomControls}>
+        <Pressable
+          onPress={() => handleZoom(1)}
+          style={[styles.zoomButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          accessibilityLabel="Zoom in"
+          accessibilityRole="button"
+        >
+          <Text style={[styles.zoomIcon, { color: colors.textPrimary }]}>+</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => handleZoom(-1)}
+          style={[styles.zoomButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          accessibilityLabel="Zoom out"
+          accessibilityRole="button"
+        >
+          <Text style={[styles.zoomIcon, { color: colors.textPrimary }]}>−</Text>
+        </Pressable>
+      </View>
 
       {/* Re-center button */}
       {showRecenter && (
@@ -768,6 +872,28 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
+  },
+  zoomControls: {
+    position: 'absolute',
+    top: '35%',
+    right: spacing.lg,
+    gap: spacing.sm,
+  },
+  zoomButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  zoomIcon: {
+    ...typography.displaySmall,
   },
   recenterButton: {
     position: 'absolute',

@@ -431,6 +431,20 @@ export class TrailDataService {
     return row ? rowToCustomWaypoint(row) : null;
   }
 
+  /**
+   * All custom waypoints across every trail (the "My data" tab), with each
+   * trail's display name attached, grouped by trail then ordered along it.
+   */
+  async getAllCustomWaypoints(): Promise<(CustomWaypoint & { trailName: string })[]> {
+    const rows = await this.db.getAllAsync<CustomWaypointRow & { trail_name: string }>(
+      `SELECT cw.*, t.name AS trail_name
+       FROM custom_waypoints cw
+       JOIN trails t ON t.id = cw.trail_id
+       ORDER BY t.name, cw.km_position`
+    );
+    return rows.map(row => ({ ...rowToCustomWaypoint(row), trailName: row.trail_name }));
+  }
+
   /** Get all custom waypoints for a trail, ordered along the trail. */
   async getCustomWaypoints(trailId: string): Promise<CustomWaypoint[]> {
     const rows = await this.db.getAllAsync<CustomWaypointRow>(

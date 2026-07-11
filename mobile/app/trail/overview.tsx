@@ -7,7 +7,6 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
-  TextInput,
   Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,7 +14,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
-import { deleteCustomTrail } from '../../src/services/custom-trail-service';
 import { backfillTrailElevation } from '../../src/services/elevation-service';
 import { getMinMax } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
@@ -64,8 +62,6 @@ export default function TrailOverviewScreen() {
   const { trail, dbTrail, loading, error, loadTrail, reloadTrail } = useTrailData();
 
   const [tilesDownloaded, setTilesDownloaded] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [editName, setEditName] = useState('');
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
   const [elevationFetch, setElevationFetch] = useState<'idle' | 'fetching' | 'error'>('idle');
@@ -125,15 +121,6 @@ export default function TrailOverviewScreen() {
   const dataVersion = dbTrail?.dataVersion ?? null;
   const isCustom = dbTrail?.isCustom ?? false;
 
-  async function handleSaveName() {
-    if (!id || !editName.trim()) return;
-    const { TrailDataService } = await import('../../src/services/trail-data-service');
-    const service = await TrailDataService.create();
-    await service.updateCustomTrail(id, editName.trim());
-    setEditingName(false);
-    await reloadTrail();
-  }
-
   // User-triggered elevation backfill for a custom trail imported without
   // elevation (e.g. offline). Mirrors the plan-screen climate fetch pattern.
   async function handleFetchElevation() {
@@ -150,25 +137,6 @@ export default function TrailOverviewScreen() {
     } catch {
       setElevationFetch('error');
     }
-  }
-
-  function handleDeleteTrail() {
-    if (!id || !trail) return;
-    Alert.alert(
-      'Delete Custom Trail',
-      `Delete "${trail.config.name}" and all associated data? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteCustomTrail(id);
-            router.back();
-          },
-        },
-      ],
-    );
   }
 
   // "Export my waypoints (GPX)" — the user's custom waypoints on this trail,
@@ -278,39 +246,10 @@ export default function TrailOverviewScreen() {
           <Text style={[styles.backLabel, { color: colors.accent }]}>Back</Text>
         </Pressable>
 
-        {/* Trail name */}
-        {editingName ? (
-          <View style={styles.editNameRow}>
-            <TextInput
-              style={[styles.editNameInput, { color: colors.textPrimary, borderColor: colors.border }]}
-              value={editName}
-              onChangeText={setEditName}
-              autoFocus
-              onSubmitEditing={handleSaveName}
-              returnKeyType="done"
-            />
-            <Pressable onPress={handleSaveName} style={styles.editAction}>
-              <Text style={[styles.editActionText, { color: colors.accent }]}>Save</Text>
-            </Pressable>
-            <Pressable onPress={() => setEditingName(false)} style={styles.editAction}>
-              <Text style={[styles.editActionText, { color: colors.textSecondary }]}>Cancel</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={styles.nameRow}>
-            <Text style={[styles.trailName, { color: colors.textPrimary }]}>{activeTrail.config.name}</Text>
-            {isCustom && (
-              <Pressable
-                onPress={() => { setEditName(activeTrail.config.name); setEditingName(true); }}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Edit trail name"
-              >
-                <Text style={[styles.editLink, { color: colors.accent }]}>Edit</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
+        {/* Trail name (rename/delete moved to the My data tab — P1 PR E) */}
+        <View style={styles.nameRow}>
+          <Text style={[styles.trailName, { color: colors.textPrimary }]}>{activeTrail.config.name}</Text>
+        </View>
 
         {/* Region badge */}
         {activeTrail.config.region && (
@@ -615,14 +554,9 @@ export default function TrailOverviewScreen() {
                 Source: {dbTrail.sourceFilename}
               </Text>
             )}
-            <Pressable
-              onPress={handleDeleteTrail}
-              style={styles.deleteButton}
-              accessibilityRole="button"
-              accessibilityLabel="Delete this custom trail"
-            >
-              <Text style={[styles.deleteText, { color: colors.alertRed }]}>Delete Trail</Text>
-            </Pressable>
+            <Text style={[styles.manageHint, { color: colors.textSecondary }]}>
+              Rename or delete this trail from the Contribute tab (My data).
+            </Text>
           </View>
         )}
 
@@ -704,31 +638,6 @@ const styles = StyleSheet.create({
   trailName: {
     ...typography.displayLarge,
     flex: 1,
-  },
-  editLink: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
-  editNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  editNameInput: {
-    ...typography.displayLarge,
-    flex: 1,
-    borderBottomWidth: 1,
-    paddingVertical: spacing.xs,
-  },
-  editAction: {
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  editActionText: {
-    ...typography.caption,
-    fontWeight: '600',
   },
   badge: {
     alignSelf: 'flex-start',
@@ -854,13 +763,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginBottom: spacing.sm,
   },
-  deleteButton: {
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  deleteText: {
-    ...typography.body,
-    fontWeight: '600',
+  manageHint: {
+    ...typography.caption,
+    fontStyle: 'italic',
   },
   datasheetButton: {
     borderRadius: radii.lg,

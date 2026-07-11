@@ -309,3 +309,48 @@ describe('TrailDataService custom waypoints', () => {
     });
   });
 });
+
+describe('getAllCustomWaypoints (My data)', () => {
+  let db: TestDatabase;
+  let service: TrailDataService;
+
+  beforeEach(async () => {
+    db = await createMigratedTestDb();
+    service = new TrailDataService(db as any);
+    for (const [id, name] of [['heysen', 'Heysen Trail'], ['bibbulmun', 'Bibbulmun Track']] as const) {
+      await service.storeTrail({
+        id, name, shortName: id.slice(0, 2).toUpperCase(), region: null, lengthKm: 100,
+        metadataJson: null, dataVersion: null, isCustom: false, sourceFilename: null,
+      });
+    }
+  });
+
+  afterEach(async () => {
+    await db.closeAsync();
+  });
+
+  it('returns waypoints across trails, grouped by trail name then km', async () => {
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'H far', lat: -35, lon: 138, kmPosition: 90 });
+    await service.addCustomWaypoint({ trailId: 'bibbulmun', name: 'B tank', lat: -32, lon: 116, kmPosition: 20 });
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'H near', lat: -35, lon: 138, kmPosition: 5 });
+
+    const all = await service.getAllCustomWaypoints();
+    expect(all.map(w => w.name)).toEqual(['B tank', 'H near', 'H far']);
+    expect(all.map(w => w.trailName)).toEqual(['Bibbulmun Track', 'Heysen Trail', 'Heysen Trail']);
+  });
+
+  it('returns an empty list when there are no custom waypoints', async () => {
+    expect(await service.getAllCustomWaypoints()).toEqual([]);
+  });
+
+  it('surfaces trail-delete cascades: the deleted trail\'s waypoints vanish from My data', async () => {
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'H spring', lat: -35, lon: 138, kmPosition: 10 });
+    await service.addCustomWaypoint({ trailId: 'bibbulmun', name: 'B tank', lat: -32, lon: 116, kmPosition: 20 });
+
+    await service.deleteTrail('heysen');
+
+    const all = await service.getAllCustomWaypoints();
+    expect(all).toHaveLength(1);
+    expect(all[0].name).toBe('B tank');
+  });
+});

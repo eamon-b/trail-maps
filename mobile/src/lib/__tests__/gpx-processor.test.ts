@@ -277,7 +277,7 @@ describe('processGpx', () => {
     expect(trail.track.points.length).toBe(4);
   });
 
-  it('merges multiple tracks (MVP: all as main route)', () => {
+  it('keeps the first track as main and preserves secondary tracks as alternates', () => {
     const xml = gpxWrap(`
       <trk><name>Part 1</name><trkseg>
         <trkpt lat="-33.0" lon="151.0"><ele>100</ele></trkpt>
@@ -289,8 +289,14 @@ describe('processGpx', () => {
       </trkseg></trk>
     `);
 
-    const { trail } = processGpx(xml);
-    expect(trail.track.points.length).toBe(4);
+    const { trail, warnings } = processGpx(xml);
+    // Main line is only the first <trk>; the second is not folded in
+    expect(trail.track.points.length).toBe(2);
+    expect(trail.alternates).toHaveLength(1);
+    expect(trail.alternates![0].name).toBe('Part 2');
+    expect(trail.alternates![0].type).toBe('alternate');
+    expect(trail.alternates![0].points).toHaveLength(2);
+    expect(warnings.some((w) => w.type === 'alternates_preserved' && w.count === 1)).toBe(true);
   });
 
   it('produces display points for large tracks', () => {

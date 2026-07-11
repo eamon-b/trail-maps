@@ -65,6 +65,9 @@ export const palette = {
   nightRedAccent: '#FF5252',
   nightRedAccentSubtle: '#3A1515',
   nightRedAccentMuted: '#CC4040',
+
+  // Modal/backdrop scrim (theme-independent translucent black)
+  scrim: 'rgba(0, 0, 0, 0.5)',
 } as const;
 
 export type PaletteColor = typeof palette[keyof typeof palette];

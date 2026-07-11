@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,27 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { PressableRow, ScreenHeader } from '../../src/components';
 import { PlanService } from '../../src/services/plan-service';
 import { generateId } from '../../src/services/plan-utils';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
+
+/** Format as the plan-service YYYY-MM-DD contract (local date, not UTC) */
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatDisplayDate(d: Date): string {
+  return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function CreatePlanScreen() {
   const { trailId, trailName } = useLocalSearchParams<{ trailId: string; trailName?: string }>();
@@ -25,17 +39,20 @@ export default function CreatePlanScreen() {
 
   const [name, setName] = useState('My Plan');
   const [direction, setDirection] = useState<'NOBO' | 'SOBO'>('NOBO');
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const dateError = (() => {
-    if (!startDate) return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return 'Use YYYY-MM-DD format';
-    const d = new Date(startDate + 'T12:00:00Z');
-    if (isNaN(d.getTime())) return 'Invalid date';
-    return null;
-  })();
-  const canCreate = !saving && !dateError;
+  const canCreate = !saving;
+
+  // Native picker: on Android the component IS the dialog — hide it on any
+  // change event; on iOS the inline spinner stays until the row is tapped again.
+  const handleDateChange = useCallback((event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (event.type !== 'dismissed' && date) {
+      setStartDate(date);
+    }
+  }, []);
 
   async function handleCreate() {
     if (!trailId) {
@@ -53,7 +70,7 @@ export default function CreatePlanScreen() {
         trailId,
         name: trimmedName,
         direction,
-        startDate: startDate || null,
+        startDate: startDate ? toIsoDate(startDate) : null,
         sectionJson: null,
         stopsJson: JSON.stringify([]),
       });
@@ -66,22 +83,10 @@ export default function CreatePlanScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Cancel</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>New Plan</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader title="New Plan" onBack={() => router.back()} backLabel="Cancel" />
 
       {trailName && (
         <Text style={[styles.trailLabel, { color: colors.textSecondary }]}>
@@ -158,25 +163,45 @@ export default function CreatePlanScreen() {
         <Text style={[styles.label, { color: colors.textSecondary }]}>
           Start Date (optional)
         </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: colors.textPrimary,
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-          value={startDate}
-          onChangeText={setStartDate}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={colors.textSecondary}
-          keyboardType="numbers-and-punctuation"
-        />
-        {dateError && (
-          <Text style={[styles.dateError, { color: colors.alertRed ?? '#c00' }]}>
-            {dateError}
-          </Text>
+        <View style={styles.dateRow}>
+          <PressableRow
+            onPress={() => setShowDatePicker((v) => !v)}
+            accessibilityLabel={
+              startDate
+                ? `Start date ${formatDisplayDate(startDate)}. Tap to change.`
+                : 'Set start date'
+            }
+            style={StyleSheet.flatten([
+              styles.dateButton,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ])}
+          >
+            <Text
+              style={[
+                styles.dateButtonText,
+                { color: startDate ? colors.textPrimary : colors.textSecondary },
+              ]}
+            >
+              {startDate ? formatDisplayDate(startDate) : 'Set date…'}
+            </Text>
+          </PressableRow>
+          {startDate && (
+            <PressableRow
+              onPress={() => setStartDate(null)}
+              accessibilityLabel="Clear start date"
+              style={styles.clearDateButton}
+            >
+              <Text style={[styles.clearDateText, { color: colors.accent }]}>Clear</Text>
+            </PressableRow>
+          )}
+        </View>
+        {showDatePicker && (
+          <DateTimePicker
+            value={startDate ?? new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleDateChange}
+          />
         )}
       </View>
 
@@ -201,25 +226,6 @@ export default function CreatePlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  backText: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
   },
   trailLabel: {
     ...typography.caption,
@@ -276,8 +282,25 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '700',
   },
-  dateError: {
-    ...typography.caption,
-    marginTop: spacing.xs,
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  dateButton: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+  },
+  dateButtonText: {
+    ...typography.body,
+  },
+  clearDateButton: {
+    paddingHorizontal: spacing.sm,
+  },
+  clearDateText: {
+    ...typography.body,
+    fontWeight: '600',
   },
 });

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
+import { Card } from './Card';
 import type { ResupplyAnalysis, ResupplyGap } from '@lib/resupply-calculator';
 import { foodCarryForGap, correlateResupplyWithDays, DEFAULT_GRAMS_PER_DAY } from '@lib/resupply-calculator';
 import type { ComputedDay } from '../services/plan-calculator-types';
@@ -18,7 +19,7 @@ interface ResupplyListProps {
  * and food carry weight calculations. Includes a configurable grams/day input.
  */
 export function ResupplyList({ analysis, days }: ResupplyListProps) {
-  const { colors, highContrast } = useTheme();
+  const { colors } = useTheme();
   const [gramsPerDay, setGramsPerDay] = useState(DEFAULT_GRAMS_PER_DAY.toString());
   const [showFoodCalc, setShowFoodCalc] = useState(false);
 
@@ -34,17 +35,17 @@ export function ResupplyList({ analysis, days }: ResupplyListProps) {
 
   if (!analysis.hasResupplyData) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }]}>
+      <Card>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Resupply Points</Text>
         <Text style={[styles.noData, { color: colors.textSecondary }]}>
           No town or food resupply data for this trail.
         </Text>
-      </View>
+      </Card>
     );
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }]}>
+    <Card>
       <Text style={[styles.title, { color: colors.textPrimary }]}>Resupply Points</Text>
 
       {/* Summary stats */}
@@ -92,7 +93,7 @@ export function ResupplyList({ analysis, days }: ResupplyListProps) {
 
       {/* Resupply points with arrival days */}
       {dayCorrelation && dayCorrelation.length > 0 && (
-        <View style={styles.arrivalSection}>
+        <View style={[styles.arrivalSection, { borderBottomColor: colors.border }]}>
           {dayCorrelation.map((info, i) => (
             <View key={i} style={styles.arrivalRow}>
               <Text style={[styles.arrivalName, { color: colors.textPrimary }]}>
@@ -110,7 +111,7 @@ export function ResupplyList({ analysis, days }: ResupplyListProps) {
       {analysis.gaps.map((gap, i) => (
         <GapRow key={i} gap={gap} showFoodCalc={showFoodCalc} gramsPerDay={parsedGrams} />
       ))}
-    </View>
+    </Card>
   );
 }
 
@@ -122,6 +123,7 @@ function GapRow({ gap, showFoodCalc, gramsPerDay }: { gap: ResupplyGap; showFood
     <View
       style={[
         styles.gapRow,
+        { borderBottomColor: colors.border },
         gap.isLong && { borderLeftColor: colors.alertAmber, borderLeftWidth: 3 },
       ]}
     >
@@ -149,11 +151,6 @@ function GapRow({ gap, showFoodCalc, gramsPerDay }: { gap: ResupplyGap; showFood
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   title: {
     ...typography.titleLarge,
     marginBottom: spacing.sm,
@@ -203,7 +200,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingLeft: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#0001',
   },
   gapHeader: {
     flexDirection: 'row',
@@ -236,7 +232,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   arrivalRow: {
     flexDirection: 'row',

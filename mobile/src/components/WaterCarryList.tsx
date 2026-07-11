@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme';
+import { Card } from './Card';
 import type { WaterCarryAnalysis } from '@lib/water-carry-calculator';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -15,21 +16,21 @@ interface WaterCarryListProps {
  * trail has no water source information.
  */
 export function WaterCarryList({ analysis }: WaterCarryListProps) {
-  const { colors, highContrast } = useTheme();
+  const { colors } = useTheme();
 
   if (!analysis.hasWaterData) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }]}>
+      <Card>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Water Sources</Text>
         <Text style={[styles.noData, { color: colors.textSecondary }]}>
           No water source data available for this trail.
         </Text>
-      </View>
+      </Card>
     );
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }]}>
+    <Card>
       <Text style={[styles.title, { color: colors.textPrimary }]}>Water Sources</Text>
 
       {/* Summary stats */}
@@ -49,7 +50,7 @@ export function WaterCarryList({ analysis }: WaterCarryListProps) {
 
       {/* Sources with seasonal notes */}
       {analysis.sources.some(s => s.seasonalNote) && (
-        <View style={styles.seasonalSection}>
+        <View style={[styles.seasonalSection, { borderBottomColor: colors.border }]}>
           {analysis.sources
             .filter(s => s.seasonalNote)
             .map((source, i) => (
@@ -71,6 +72,7 @@ export function WaterCarryList({ analysis }: WaterCarryListProps) {
           key={i}
           style={[
             styles.gapRow,
+            { borderBottomColor: colors.border },
             gap.isDryStretch && { borderLeftColor: colors.alertAmber, borderLeftWidth: 3 },
           ]}
         >
@@ -87,16 +89,11 @@ export function WaterCarryList({ analysis }: WaterCarryListProps) {
           </Text>
         </View>
       ))}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   title: {
     ...typography.titleLarge,
     marginBottom: spacing.sm,
@@ -119,7 +116,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingLeft: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#0001',
   },
   gapHeader: {
     flexDirection: 'row',
@@ -143,7 +139,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   seasonalRow: {
     paddingVertical: spacing.xs,

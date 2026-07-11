@@ -41,9 +41,9 @@ export function AlertBanner({ visible, level, message, onPress, onHidden }: Aler
   const translateY = useSharedValue(-100);
 
   const backgroundColor =
-    level === 'error' ? colors.alertRed :
+    level === 'error' ? colors.danger :
     level === 'warning' ? colors.alertAmber :
-    colors.accent;
+    colors.info;
 
   useEffect(() => {
     if (visible) {

@@ -23,6 +23,7 @@ import {
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { tileManager } from '../../src/services/tile-manager';
+import { useTileDownloads } from '../../src/hooks/useTileDownloads';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -130,6 +131,16 @@ export default function TrailViewerScreen() {
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
   const [visibleRange, setVisibleRange] = useState<[number, number] | null>(null);
 
+  // Offline-tile download from the map toolbar (shared Plan-tab workflow).
+  // When tiles land, swap the map onto the offline style immediately.
+  const refreshOfflineStyle = useCallback((trailId: string) => {
+    tileManager.getOfflineStyle(trailId).then((style) => {
+      if (style) setOfflineMapStyle(style);
+    }).catch(() => {});
+  }, []);
+  const { downloadingTrailId, download: downloadTiles } = useTileDownloads(refreshOfflineStyle);
+  const [trailIsCustom, setTrailIsCustom] = useState(false);
+
   // Active trail data (respects direction — recomputes when trail or direction changes)
   const activeTrail = useDirectionalTrail(contextTrail, isReversed);
   const trackPoints = useMemo(() => activeTrail?.track.points ?? [], [activeTrail]);
@@ -155,6 +166,12 @@ export default function TrailViewerScreen() {
     tileManager.getOfflineStyle(id).then((style) => {
       if (style) setOfflineMapStyle(style);
     }).catch(() => {});
+
+    // isCustom drives the download path (built-in manifest vs grid tiles)
+    TrailDataService.create()
+      .then((service) => service.getTrail(id))
+      .then((row) => setTrailIsCustom(row?.isCustom ?? false))
+      .catch(() => {});
   }, [id, loadTrail]);
 
   // Consume pending pan from external navigation (e.g. datasheet "Show on
@@ -445,13 +462,29 @@ export default function TrailViewerScreen() {
           </Text>
         </View>
 
+        {/* Offline maps download — only when no offline style is available */}
+        {!offlineMapStyle && id && (
+          <Pressable
+            onPress={() => { if (downloadingTrailId !== id) downloadTiles(id, trailIsCustom); }}
+            style={styles.toolbarButton}
+            accessibilityLabel={downloadingTrailId === id ? 'Downloading offline maps' : 'Download offline maps'}
+            accessibilityRole="button"
+          >
+            {downloadingTrailId === id ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Text style={[styles.toolbarButtonText, { color: colors.accent }]}>⭳</Text>
+            )}
+          </Pressable>
+        )}
+
         <Pressable
           onPress={isTracking ? stopTracking : startTracking}
           style={[styles.gpsButton, { backgroundColor: isTracking ? colors.accent : colors.surface, borderColor: colors.accent }]}
           accessibilityLabel={isTracking ? 'Stop GPS tracking' : 'Start GPS tracking'}
           accessibilityRole="button"
         >
-          <Text style={[styles.gpsButtonText, { color: isTracking ? '#fff' : colors.accent }]}>
+          <Text style={[styles.gpsButtonText, { color: isTracking ? colors.textInverse : colors.accent }]}>
             GPS
           </Text>
         </Pressable>

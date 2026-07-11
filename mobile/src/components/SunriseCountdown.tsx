@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { typography } from '../tokens/typography';
+import { AppText } from './AppText';
 import {
   getSunriseSunset,
   isDaylight,
@@ -88,15 +89,15 @@ export function SunriseCountdown({ latitude, longitude, style }: SunriseCountdow
   const day = isDaylight(sunTimes, now);
   const next = minutesToNextEvent(sunTimes, now);
   const urgent = day && next.minutesUntil <= 60;
-  const color = urgent ? (colors.alertAmber ?? '#FF9800') : colors.textSecondary;
+  const color = urgent ? colors.alertAmber : colors.textSecondary;
 
   return (
     <View
       style={[styles.container, style]}
       accessibilityLabel={display.accessibilityLabel}
     >
-      <Text style={styles.icon}>{display.icon}</Text>
-      <Text style={[styles.text, { color }]}>{display.label}</Text>
+      <AppText style={styles.icon}>{display.icon}</AppText>
+      <AppText style={[styles.text, { color }]}>{display.label}</AppText>
     </View>
   );
 }
@@ -108,10 +109,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   icon: {
-    fontSize: 12,
+    ...typography.bodySmall,
   },
+  // Field-critical countdown — ≥14pt (dataSmall), never caption
   text: {
-    ...typography.caption,
-    fontWeight: '600',
+    ...typography.dataSmall,
   },
 });

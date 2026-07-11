@@ -1,5 +1,64 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import * as Battery from 'expo-battery';
+
+// ---------------------------------------------------------------------------
+// Tracking profiles (battery-aware tiers — decision 8 of the P2 plan)
+// ---------------------------------------------------------------------------
+
+export type TrackingProfile = 'standard' | 'saver';
+
+/** User preference: 'auto' resolves via battery level at start time */
+export type TrackingProfilePreference = 'auto' | TrackingProfile;
+
+/** Battery fraction below which 'auto' selects the saver profile */
+export const AUTO_SAVER_BATTERY_THRESHOLD = 0.3;
+
+interface ProfileOptions {
+  accuracy: Location.LocationAccuracy;
+  timeInterval: number;
+  distanceInterval: number;
+}
+
+export const TRACKING_PROFILES: Record<TrackingProfile, ProfileOptions> = {
+  /** Today's behavior: high accuracy, 30 s / 10 m cadence */
+  standard: {
+    accuracy: Location.Accuracy.High,
+    timeInterval: 30000,
+    distanceInterval: 10,
+  },
+  /** Battery saver: balanced accuracy, 120 s / 25 m cadence */
+  saver: {
+    accuracy: Location.Accuracy.Balanced,
+    timeInterval: 120000,
+    distanceInterval: 25,
+  },
+};
+
+let activeProfile: TrackingProfile = 'standard';
+
+/** The profile the current/next tracking session runs with. */
+export function getActiveTrackingProfile(): TrackingProfile {
+  return activeProfile;
+}
+
+/**
+ * Resolve a user preference to a concrete profile. 'auto' checks the battery
+ * level (saver below AUTO_SAVER_BATTERY_THRESHOLD); a failed battery read
+ * falls back to standard so tracking quality is never silently degraded.
+ */
+export async function resolveTrackingProfile(
+  preference: TrackingProfilePreference,
+): Promise<TrackingProfile> {
+  if (preference === 'standard' || preference === 'saver') return preference;
+  try {
+    const level = await Battery.getBatteryLevelAsync();
+    if (level >= 0 && level < AUTO_SAVER_BATTERY_THRESHOLD) return 'saver';
+  } catch {
+    // Battery info unavailable — prefer full tracking quality
+  }
+  return 'standard';
+}
 
 export interface LocationUpdate {
   latitude: number;
@@ -66,6 +125,44 @@ export async function getLocationPermissionStatus(): Promise<PermissionStatus> {
   return 'undetermined';
 }
 
+/** Create the shared OS watch using the active tracking profile. */
+function startWatch(): Promise<void> {
+  subscriptionStarting = Location.watchPositionAsync(
+    TRACKING_PROFILES[activeProfile],
+    (location) => {
+      const update: LocationUpdate = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        altitude: location.coords.altitude,
+        accuracy: location.coords.accuracy,
+        heading: location.coords.heading,
+        timestamp: location.timestamp,
+      };
+      for (const cb of foregroundSubscribers) {
+        cb(update);
+      }
+    },
+  ).then(
+    (sub) => {
+      subscription = sub;
+      subscriptionStarting = null;
+      // Everyone unsubscribed while the watch was starting — tear it down.
+      if (foregroundSubscribers.size === 0) {
+        sub.remove();
+        subscription = null;
+      }
+    },
+    (err) => {
+      // Clear the in-flight marker so the next start attempt can create a
+      // fresh watch — a retained rejected promise would wedge tracking for
+      // the rest of the app session.
+      subscriptionStarting = null;
+      throw err;
+    },
+  );
+  return subscriptionStarting;
+}
+
 /**
  * Start continuous location tracking. Multiple callers may subscribe; the OS
  * watch is created once and shared.
@@ -76,46 +173,30 @@ export async function startLocationTracking(
   foregroundSubscribers.add(callback);
 
   if (!subscription && !subscriptionStarting) {
-    subscriptionStarting = Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 30000,
-        distanceInterval: 10,
-      },
-      (location) => {
-        const update: LocationUpdate = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          altitude: location.coords.altitude,
-          accuracy: location.coords.accuracy,
-          heading: location.coords.heading,
-          timestamp: location.timestamp,
-        };
-        for (const cb of foregroundSubscribers) {
-          cb(update);
-        }
-      },
-    ).then(
-      (sub) => {
-        subscription = sub;
-        subscriptionStarting = null;
-        // Everyone unsubscribed while the watch was starting — tear it down.
-        if (foregroundSubscribers.size === 0) {
-          sub.remove();
-          subscription = null;
-        }
-      },
-      (err) => {
-        // Clear the in-flight marker so the next start attempt can create a
-        // fresh watch — a retained rejected promise would wedge tracking for
-        // the rest of the app session.
-        subscriptionStarting = null;
-        throw err;
-      },
-    );
+    startWatch();
   }
 
   await subscriptionStarting;
+}
+
+/**
+ * Switch the tracking profile. If a foreground watch is live, it restarts
+ * with the new cadence — subscribers keep receiving updates uninterrupted.
+ */
+export async function setTrackingProfile(profile: TrackingProfile): Promise<void> {
+  if (profile === activeProfile) return;
+  activeProfile = profile;
+
+  // Wait out an in-flight start so we don't race the subscription slot.
+  if (subscriptionStarting) {
+    try { await subscriptionStarting; } catch { /* failed start — nothing to restart */ }
+  }
+
+  if (subscription && foregroundSubscribers.size > 0) {
+    subscription.remove();
+    subscription = null;
+    await startWatch();
+  }
 }
 
 /**
@@ -169,9 +250,7 @@ export async function startBackgroundTracking(): Promise<void> {
   await stopBackgroundTracking();
 
   await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-    accuracy: Location.Accuracy.High,
-    timeInterval: 30000,
-    distanceInterval: 10,
+    ...TRACKING_PROFILES[activeProfile],
     showsBackgroundLocationIndicator: true,
     foregroundService: {
       notificationTitle: 'Trail Companion',

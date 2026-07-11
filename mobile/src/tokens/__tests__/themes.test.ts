@@ -43,7 +43,10 @@ describe('Design Tokens — Themes', () => {
     'border', 'borderSubtle',
     'accent', 'accentSubtle', 'accentMuted', 'accentOnDark', 'accentOnLight',
     'alertGreen', 'alertAmber', 'alertRed',
+    'danger', 'dangerText', 'success', 'info',
+    'waterOk', 'waterLow', 'waterCritical',
     'tempCold', 'tempMild', 'tempHot',
+    'scrim',
     'statusBarStyle',
   ];
 
@@ -106,6 +109,25 @@ describe('Design Tokens — Themes', () => {
     expect(new Set([theme.tempCold, theme.tempMild, theme.tempHot]).size).toBe(3);
   });
 
+  it('water ramp levels are distinguishable in every theme', () => {
+    for (const variant of themeVariants) {
+      const theme = resolveTheme(variant, 'hike');
+      expect(new Set([theme.waterOk, theme.waterLow, theme.waterCritical]).size).toBe(3);
+    }
+  });
+
+  it('night red keeps danger/success/info and the water ramp red-shifted', () => {
+    const theme = resolveTheme('nightRed', 'hike');
+    for (const key of ['danger', 'success', 'info', 'waterOk', 'waterLow', 'waterCritical'] as const) {
+      const hex = theme[key] as string;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      expect(r).toBeGreaterThan(g);
+      expect(r).toBeGreaterThan(b);
+    }
+  });
+
   it('each mode has distinct accent colors in light theme', () => {
     const accents = appModes.map((m) => resolveTheme('light', m).accent);
     const uniqueAccents = new Set(accents);
@@ -132,6 +154,22 @@ describe('Design Tokens — Themes', () => {
           }
         });
       }
+    }
+
+    for (const variant of themeVariants) {
+      it(`danger and success meet 4.5:1 against background in ${themeLabels[variant]}`, () => {
+        const theme = resolveTheme(variant, 'plan');
+        for (const key of ['danger', 'success'] as const) {
+          const ratio = contrastRatio(theme[key] as string, theme.background);
+          expect(ratio).toBeGreaterThanOrEqual(4.5);
+        }
+      });
+
+      it(`dangerText meets 4.5:1 against a danger surface in ${themeLabels[variant]}`, () => {
+        const theme = resolveTheme(variant, 'plan');
+        const ratio = contrastRatio(theme.dangerText, theme.danger);
+        expect(ratio).toBeGreaterThanOrEqual(4.5);
+      });
     }
 
     for (const variant of themeVariants) {

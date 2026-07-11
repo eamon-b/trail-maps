@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
+import { Card } from './Card';
 import type { ClimateData } from '../services/climate-service';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -19,22 +20,22 @@ interface ClimateOverviewProps {
  * precipitation data with tabs for multiple climate locations.
  */
 export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewProps) {
-  const { colors, highContrast } = useTheme();
+  const { colors } = useTheme();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const planMonthSet = useMemo(() => new Set(planMonths ?? []), [planMonths]);
 
   const location = climate.locations[selectedIdx];
   if (!location) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }, style]}>
+      <Card style={style}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Climate Data</Text>
         <Text style={[styles.noData, { color: colors.textSecondary }]}>No climate data available.</Text>
-      </View>
+      </Card>
     );
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth }, style]}>
+    <Card style={style}>
       <Text style={[styles.title, { color: colors.textPrimary }]}>Climate Data</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         {climate.dataYears.start}–{climate.dataYears.end} averages
@@ -66,9 +67,9 @@ export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewP
       )}
 
       {/* Monthly table */}
-      <View style={styles.table}>
+      <View style={[styles.table, { borderTopColor: colors.border }]}>
         {/* Header row */}
-        <View style={styles.tableRow}>
+        <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
           <Text style={[styles.headerCell, styles.monthCell, { color: colors.textSecondary }]}>Month</Text>
           <Text style={[styles.headerCell, styles.tempCell, { color: colors.textSecondary }]}>Min</Text>
           <Text style={[styles.headerCell, styles.tempCell, { color: colors.textSecondary }]}>Max</Text>
@@ -83,6 +84,7 @@ export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewP
               key={m.month}
               style={[
                 styles.tableRow,
+                { borderBottomColor: colors.border },
                 isHighlighted && { backgroundColor: colors.accentSubtle },
               ]}
             >
@@ -105,16 +107,11 @@ export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewP
           );
         })}
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
   title: {
     ...typography.titleLarge,
     marginBottom: spacing.xs,
@@ -146,13 +143,11 @@ const styles = StyleSheet.create({
   },
   table: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
   },
   tableRow: {
     flexDirection: 'row',
     paddingVertical: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   headerCell: {
     ...typography.caption,

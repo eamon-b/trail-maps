@@ -52,7 +52,7 @@ export function LocationStatusBar({ state, detail, style }: LocationStatusBarPro
       accessibilityLabel={`Location status: ${label}${detail ? `. ${detail}` : ''}`}
       accessibilityRole="alert"
     >
-      <Text style={styles.icon}>{icon}</Text>
+      <Text style={[styles.icon, { color: colors.textInverse }]}>{icon}</Text>
       <Text style={[styles.label, { color: colors.textInverse }]}>{label}</Text>
       {detail && (
         <Text style={[styles.detail, { color: colors.textInverse }]}>{detail}</Text>
@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   icon: {
-    fontSize: 16,
-    color: '#FFFFFF',
+    ...typography.body,
+    fontWeight: '700',
   },
   label: {
     ...typography.titleSmall,

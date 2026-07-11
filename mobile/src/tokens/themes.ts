@@ -34,10 +34,28 @@ export interface ThemeColors {
   alertAmber: string;
   alertRed: string;
 
+  // Status semantics — destructive actions, confirmations, informational
+  /** Destructive/error color for text, borders, and filled surfaces */
+  danger: string;
+  /** Text color for content rendered ON a danger-filled surface */
+  dangerText: string;
+  /** Positive/confirmation color */
+  success: string;
+  /** Informational/neutral-emphasis color */
+  info: string;
+
+  // Water-distance ramp (near → moderate → far) for hike-mode countdowns
+  waterOk: string;
+  waterLow: string;
+  waterCritical: string;
+
   // Temperature scale (cold → mild → hot) for climate displays
   tempCold: string;
   tempMild: string;
   tempHot: string;
+
+  /** Modal/backdrop scrim */
+  scrim: string;
 
   // Status bar
   statusBarStyle: 'light' | 'dark';
@@ -153,9 +171,17 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.alertGreenLight,
     alertAmber: palette.alertAmberLight,
     alertRed: palette.alertRedLight,
+    danger: palette.alertRedLight,
+    dangerText: palette.white,
+    success: palette.alertGreenLight,
+    info: palette.blueDark,
+    waterOk: palette.alertGreenLight,
+    waterLow: palette.alertAmberLight,
+    waterCritical: palette.alertRedLight,
     tempCold: palette.blue,
     tempMild: palette.green,
     tempHot: palette.deepOrange,
+    scrim: palette.scrim,
     statusBarStyle: 'dark',
   },
   dark: {
@@ -170,9 +196,17 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.alertGreenDark,
     alertAmber: palette.alertAmberDark,
     alertRed: palette.alertRedDark,
+    danger: palette.alertRedDark,
+    dangerText: palette.black,
+    success: palette.alertGreenDark,
+    info: palette.blueLight,
+    waterOk: palette.alertGreenDark,
+    waterLow: palette.alertAmberDark,
+    waterCritical: palette.alertRedDark,
     tempCold: palette.blueLight,
     tempMild: palette.greenLight,
     tempHot: palette.deepOrangeLight,
+    scrim: palette.scrim,
     statusBarStyle: 'light',
   },
   oled: {
@@ -187,9 +221,17 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.alertGreenDark,
     alertAmber: palette.alertAmberDark,
     alertRed: palette.alertRedDark,
+    danger: palette.alertRedDark,
+    dangerText: palette.black,
+    success: palette.alertGreenDark,
+    info: palette.blueLight,
+    waterOk: palette.alertGreenDark,
+    waterLow: palette.alertAmberDark,
+    waterCritical: palette.alertRedDark,
     tempCold: palette.blueLight,
     tempMild: palette.greenLight,
     tempHot: palette.deepOrangeLight,
+    scrim: palette.scrim,
     statusBarStyle: 'light',
   },
   nightRed: {
@@ -204,10 +246,20 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.nightAlertGreen,
     alertAmber: palette.nightAlertAmber,
     alertRed: palette.nightAlertRed,
+    // Night Red keeps every semantic red-shifted so dark-adapted eyes stay adapted
+    danger: palette.nightAlertRed,
+    dangerText: palette.nightBg,
+    success: palette.nightAlertGreen,
+    info: palette.nightRedAccent,
+    // Water ramp as red intensity (dim → bright), matching the alert ramp
+    waterOk: palette.nightAlertGreen,
+    waterLow: palette.nightAlertAmber,
+    waterCritical: palette.nightAlertRed,
     // Red-shifted intensity ramp so Night Red stays red (dim → bright)
     tempCold: palette.nightTextSecondary,
     tempMild: palette.nightRedAccent,
     tempHot: palette.nightAlertRed,
+    scrim: palette.scrim,
     statusBarStyle: 'light',
   },
 };

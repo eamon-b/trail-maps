@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { typography } from '../tokens/typography';
+import { AppText } from './AppText';
 
 interface WaterCountdownProps {
   /** Distance to next water source in km, or null if unknown */
@@ -11,12 +12,12 @@ interface WaterCountdownProps {
 
 /**
  * Compact inline "Next water: X.X km" indicator with color coding:
- * - Green: < 5 km
- * - Amber: 5–15 km
- * - Red: > 15 km
+ * - waterOk: < 5 km
+ * - waterLow: 5–15 km
+ * - waterCritical: > 15 km
  *
- * All three thresholds resolve through the theme's alert colors so Night Red
- * mode stays red-shifted.
+ * All three thresholds resolve through the theme's semantic water ramp so
+ * Night Red mode stays red-shifted.
  */
 export function WaterCountdown({ nextWaterKm, style }: WaterCountdownProps) {
   const { colors } = useTheme();
@@ -26,16 +27,16 @@ export function WaterCountdown({ nextWaterKm, style }: WaterCountdownProps) {
   }
 
   const color =
-    nextWaterKm < 5 ? colors.alertGreen :
-    nextWaterKm <= 15 ? colors.alertAmber :
-    colors.alertRed;
+    nextWaterKm < 5 ? colors.waterOk :
+    nextWaterKm <= 15 ? colors.waterLow :
+    colors.waterCritical;
 
   return (
     <View style={[styles.container, style]} accessibilityLabel={`Next water source in ${nextWaterKm.toFixed(1)} kilometers`}>
-      <Text style={[styles.icon]}>💧</Text>
-      <Text style={[styles.text, { color }]}>
+      <AppText style={styles.icon}>💧</AppText>
+      <AppText style={[styles.text, { color }]}>
         Next water: {nextWaterKm.toFixed(1)} km
-      </Text>
+      </AppText>
     </View>
   );
 }
@@ -47,11 +48,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   icon: {
-    fontSize: 12,
+    ...typography.bodySmall,
   },
+  // Field-critical number — ≥14pt (dataSmall), never caption
   text: {
-    ...typography.caption,
-    fontWeight: '600',
-    fontVariant: ['tabular-nums'],
+    ...typography.dataSmall,
   },
 });

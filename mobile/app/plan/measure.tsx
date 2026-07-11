@@ -1,24 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { TrailDataService } from '../../src/services/trail-data-service';
 import { type Trail, type TrailWaypoint } from '../../src/lib/trail-utils';
 import { measureBetweenPoints, type MeasureResult } from '../../src/services/measure-service';
+import {
+  buildPickerParams,
+  createPickerRequestId,
+  parseSinglePointResult,
+} from '../../src/lib/point-picker-contract';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { ElevationProfile } from '../../src/components/ElevationProfile';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
 export default function MeasureScreen() {
-  const params = useLocalSearchParams<{
-    trailId: string;
-    mapSelected_start_km?: string;
-    mapSelected_start_name?: string;
-    mapSelected_end_km?: string;
-    mapSelected_end_name?: string;
-  }>();
+  const params = useLocalSearchParams<Record<string, string>>();
   const trailId = params.trailId;
   const router = useRouter();
   const { colors } = useTheme();
@@ -30,6 +30,25 @@ export default function MeasureScreen() {
   const [endPoint, setEndPoint] = useState<TrailWaypoint | null>(null);
   const [startSearch, setStartSearch] = useState('');
   const [endSearch, setEndSearch] = useState('');
+
+  // Correlation id for the map picker round-trip (typed contract) — only a
+  // result echoing the id we issued is consumed.
+  const pickerRequestIdRef = useRef<string | null>(null);
+
+  const openMapPicker = useCallback((target: 'start' | 'end') => {
+    const requestId = createPickerRequestId();
+    pickerRequestIdRef.current = requestId;
+    router.push({
+      pathname: '/plan/point-picker',
+      params: buildPickerParams({
+        mode: 'single',
+        trailId: trailId ?? '',
+        target,
+        pickerRequestId: requestId,
+        returnTo: '/plan/measure',
+      }),
+    });
+  }, [router, trailId]);
 
   // Load trail data
   useEffect(() => {
@@ -52,34 +71,26 @@ export default function MeasureScreen() {
     load();
   }, [trailId]);
 
-  // Handle map selection results from section-map screen
+  // Handle map selection results from the point picker (typed contract)
   useEffect(() => {
     if (!trail) return;
-    if (params.mapSelected_start_km) {
-      const km = parseFloat(params.mapSelected_start_km);
-      const name = params.mapSelected_start_name ?? `km ${km.toFixed(1)}`;
-      setStartPoint({
-        id: 'measure-start',
-        name,
-        lat: 0,
-        lon: 0,
-        type: 'poi',
-        totalDistance: km,
-      });
+    const result = parseSinglePointResult(params, pickerRequestIdRef.current);
+    if (!result) return;
+    pickerRequestIdRef.current = null;
+    const point: TrailWaypoint = {
+      id: `measure-${result.target}`,
+      name: result.name,
+      lat: 0,
+      lon: 0,
+      type: 'poi',
+      totalDistance: result.km,
+    };
+    if (result.target === 'end') {
+      setEndPoint(point);
+    } else {
+      setStartPoint(point);
     }
-    if (params.mapSelected_end_km) {
-      const km = parseFloat(params.mapSelected_end_km);
-      const name = params.mapSelected_end_name ?? `km ${km.toFixed(1)}`;
-      setEndPoint({
-        id: 'measure-end',
-        name,
-        lat: 0,
-        lon: 0,
-        type: 'poi',
-        totalDistance: km,
-      });
-    }
-  }, [trail, params.mapSelected_start_km, params.mapSelected_end_km, params.mapSelected_start_name, params.mapSelected_end_name]);
+  }, [trail, params]);
 
   // Filtered waypoints for each picker
   const filteredStartWaypoints = useMemo(() => {
@@ -195,22 +206,8 @@ export default function MeasureScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
-          Measure
-        </Text>
-        <View style={styles.backButton} />
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Measure" onBack={() => router.back()} />
 
       <ScrollView
         style={styles.scrollContainer}
@@ -228,12 +225,7 @@ export default function MeasureScreen() {
             )}
           </View>
           <Pressable
-            onPress={() => {
-              router.push({
-                pathname: '/plan/section-map',
-                params: { trailId: trailId ?? '', mode: 'single', target: 'start' },
-              });
-            }}
+            onPress={() => openMapPicker('start')}
             style={[styles.selectOnMapButton, { borderColor: colors.accent }]}
             accessibilityLabel="Select start point on map"
             accessibilityRole="button"
@@ -295,12 +287,7 @@ export default function MeasureScreen() {
             )}
           </View>
           <Pressable
-            onPress={() => {
-              router.push({
-                pathname: '/plan/section-map',
-                params: { trailId: trailId ?? '', mode: 'single', target: 'end' },
-              });
-            }}
+            onPress={() => openMapPicker('end')}
             style={[styles.selectOnMapButton, { borderColor: colors.accent }]}
             accessibilityLabel="Select end point on map"
             accessibilityRole="button"
@@ -394,7 +381,7 @@ export default function MeasureScreen() {
 
             {/* Mini elevation profile */}
             {segmentTrackPoints.length > 1 && (
-              <View style={styles.miniProfile}>
+              <View style={[styles.miniProfile, { borderTopColor: colors.border }]}>
                 <ElevationProfile
                   trackPoints={segmentTrackPoints}
                   waterSourceKms={segmentWaterKms}
@@ -405,7 +392,7 @@ export default function MeasureScreen() {
 
             {/* Waypoints between */}
             {result.waypointsBetween.length > 0 && (
-              <View style={styles.waypointsBetween}>
+              <View style={[styles.waypointsBetween, { borderTopColor: colors.border }]}>
                 <Text style={[styles.waypointsBetweenTitle, { color: colors.textPrimary }]}>
                   Waypoints Between ({result.waypointsBetween.length})
                 </Text>
@@ -447,26 +434,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    minWidth: 50,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
   backText: {
     ...typography.body,
     fontWeight: '600',
-  },
-  title: {
-    ...typography.titleLarge,
-    flex: 1,
-    textAlign: 'center',
   },
   errorText: {
     ...typography.body,
@@ -606,13 +576,11 @@ const styles = StyleSheet.create({
   miniProfile: {
     marginTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(128,128,128,0.2)',
     paddingTop: spacing.md,
   },
   waypointsBetween: {
     marginTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(128,128,128,0.2)',
     paddingTop: spacing.md,
   },
   waypointsBetweenTitle: {

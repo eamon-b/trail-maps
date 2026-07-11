@@ -238,9 +238,14 @@ describe('Garmin Connect style (multi-track, Garmin extensions)', () => {
     expect(data.tracks[0].segments[0].points[0].ele).toBe(1200);
   });
 
-  it('processes multi-track into single merged trail (MVP)', () => {
+  it('keeps the first track as main and preserves the second as an alternate', () => {
     const { trail } = processGpx(GARMIN_STYLE);
-    expect(trail.track.points).toHaveLength(4);
+    // Day 1 is the main line; Day 2 is preserved as an alternate the import
+    // preview can include/exclude (P2 decision 10)
+    expect(trail.track.points).toHaveLength(2);
+    expect(trail.alternates).toHaveLength(1);
+    expect(trail.alternates![0].name).toBe('Day 2 - Camp to Summit');
+    expect(trail.alternates![0].points).toHaveLength(2);
     expect(trail.waypoints).toHaveLength(1);
     expect(trail.waypoints[0].type).toBe('campsite');
   });

@@ -8,6 +8,7 @@ import { LocationStatusBar } from '../../src/components/LocationStatusBar';
 import { AlertBanner } from '../../src/components/AlertBanner';
 import { SunriseCountdown } from '../../src/components/SunriseCountdown';
 import { CoordinatesRow } from '../../src/components/CoordinatesRow';
+import { OfflineReadinessRow } from '../../src/components/OfflineReadinessRow';
 import type { WaypointListItem } from '../../src/components/WaypointList';
 import { useLocation } from '../../src/hooks/useLocation';
 import { useOffTrailAlert } from '../../src/hooks/useOffTrailAlert';
@@ -26,7 +27,12 @@ import {
 import { computeDays } from '@lib/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
-import { ALERT_THRESHOLD_KEY, BACKGROUND_TRACKING_KEY } from '../settings';
+import { ALERT_THRESHOLD_KEY, BACKGROUND_TRACKING_KEY, TRACKING_PROFILE_KEY } from '../settings';
+import {
+  resolveTrackingProfile,
+  setTrackingProfile,
+  type TrackingProfile,
+} from '../../src/services/location-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 import type { LocationState } from '../../src/components/LocationStatusBar';
@@ -87,6 +93,9 @@ export default function HikeScreen() {
   const [showSnoozeMenu, setShowSnoozeMenu] = useState(false);
   const [alertPreset, setAlertPreset] = useState<AlertThresholdPreset>('normal');
   const [backgroundTracking, setBackgroundTracking] = useState(false);
+  // Active tracking cadence — disclosed in the status line so a degraded fix
+  // rate (battery saver) is never mysterious.
+  const [activeProfile, setActiveProfile] = useState<TrackingProfile>('standard');
   // Warning-state banner dismissal (snooze-lite: the status bar stays amber)
   const [warningDismissed, setWarningDismissed] = useState(false);
 
@@ -159,6 +168,16 @@ export default function HikeScreen() {
           const savedBackground = await AsyncStorage.getItem(BACKGROUND_TRACKING_KEY);
           if (!cancelled) {
             setBackgroundTracking(savedBackground === 'true');
+          }
+
+          // Resolve + apply the tracking power profile (Auto checks battery)
+          const savedProfile = await AsyncStorage.getItem(TRACKING_PROFILE_KEY);
+          const pref = savedProfile === 'standard' || savedProfile === 'saver' ? savedProfile : 'auto';
+          const resolved = await resolveTrackingProfile(pref);
+          if (!cancelled) {
+            setActiveProfile(resolved);
+            // Restarts a live watch when the cadence changed
+            setTrackingProfile(resolved).catch(() => {});
           }
 
           const trailId = await AsyncStorage.getItem(ACTIVE_TRAIL_KEY);
@@ -343,7 +362,9 @@ export default function HikeScreen() {
           state={alertState}
           detail={showLocationError
             ? (permissionDenied ? 'Permission needed' : 'Location unavailable')
-            : alertDetail}
+            : (activeProfile === 'saver'
+                ? (alertDetail ? `${alertDetail} · Battery saver` : 'Battery saver')
+                : alertDetail)}
         />
       )}
 
@@ -427,6 +448,8 @@ export default function HikeScreen() {
               style={styles.coordinatesRow}
             />
           )}
+          {/* Offline readiness — one honest line with a download affordance */}
+          <OfflineReadinessRow trailId={activeTrailId} style={styles.offlineRow} />
           <Pressable
             onPress={() => {
               const km = currentKm ?? 0;
@@ -567,6 +590,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   coordinatesRow: {
+    marginBottom: spacing.sm,
+  },
+  offlineRow: {
     marginBottom: spacing.sm,
   },
   datasheetLink: {

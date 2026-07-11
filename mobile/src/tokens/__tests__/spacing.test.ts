@@ -18,4 +18,8 @@ describe('Design Tokens — Spacing', () => {
   it('minimum touch target is 44pt', () => {
     expect(touchTarget.min).toBe(44);
   });
+
+  it('field touch target is 56pt for hike-mode primary actions', () => {
+    expect(touchTarget.field).toBe(56);
+  });
 });

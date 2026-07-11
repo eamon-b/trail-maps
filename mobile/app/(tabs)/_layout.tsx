@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { BackHandler, Text, View } from 'react-native';
+import { BackHandler, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme, useBottomSheetDismiss } from '../../src/theme';
 import { resolveTheme, type AppMode } from '../../src/tokens/themes';
 import { ModeSelector } from '../../src/components/ModeSelector';
@@ -53,8 +54,8 @@ export default function TabLayout() {
             title: 'Plan',
             tabBarActiveTintColor: resolveTheme(themeVariant, 'plan').accent,
             headerTintColor: resolveTheme(themeVariant, 'plan').accent,
-            tabBarIcon: ({ color, size }) => (
-              <TabIcon label="P" color={color} size={size} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'map' : 'map-outline'} color={color} size={size} />
             ),
           }}
         />
@@ -64,8 +65,8 @@ export default function TabLayout() {
             title: 'Hike',
             tabBarActiveTintColor: resolveTheme(themeVariant, 'hike').accent,
             headerTintColor: resolveTheme(themeVariant, 'hike').accent,
-            tabBarIcon: ({ color, size }) => (
-              <TabIcon label="H" color={color} size={size} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'footsteps' : 'footsteps-outline'} color={color} size={size} />
             ),
           }}
         />
@@ -75,8 +76,8 @@ export default function TabLayout() {
             title: 'Contribute',
             tabBarActiveTintColor: resolveTheme(themeVariant, 'contribute').accent,
             headerTintColor: resolveTheme(themeVariant, 'contribute').accent,
-            tabBarIcon: ({ color, size }) => (
-              <TabIcon label="C" color={color} size={size} />
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} color={color} size={size} />
             ),
           }}
         />
@@ -85,19 +86,3 @@ export default function TabLayout() {
   );
 }
 
-function TabIcon({ label, color, size }: { label: string; color: string; size: number }) {
-  return (
-    <View style={{
-      width: size,
-      height: size,
-      borderRadius: size / 2,
-      backgroundColor: color,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <Text style={{ color: '#fff', fontSize: size * 0.5, fontWeight: 'bold' }}>
-        {label}
-      </Text>
-    </View>
-  );
-}

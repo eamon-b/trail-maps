@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 const MIGRATIONS: Record<number, string> = {
   1: `
@@ -100,6 +100,13 @@ const MIGRATIONS: Record<number, string> = {
     CREATE INDEX IF NOT EXISTS idx_custom_waypoints_trail_id ON custom_waypoints(trail_id);
     ALTER TABLE trails ADD COLUMN climate_json TEXT;
     UPDATE schema_version SET version = 5;
+  `,
+  // Migration 6: optional photo attachment for custom waypoints (P1 PR A).
+  // Stores a file URI under FileSystem documentDirectory/waypoint-photos/;
+  // nullable, no backfill — existing waypoints simply have no photo.
+  6: `
+    ALTER TABLE custom_waypoints ADD COLUMN photo_uri TEXT;
+    UPDATE schema_version SET version = 6;
   `,
 };
 

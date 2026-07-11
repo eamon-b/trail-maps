@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View, Pressable } from 'react-native';
+import { Animated, Image, Modal, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { waypointEmojis } from './WaypointList';
 import { useTheme } from '../theme';
@@ -35,6 +35,7 @@ export function WaypointDetailSheet({
 }: WaypointDetailSheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const [photoFullScreen, setPhotoFullScreen] = useState(false);
   const translateY = useRef(new Animated.Value(300)).current;
   // Snapshot of what to render. Captured from the prop on open, cleared
   // only when the exit animation completes, so the view has content to
@@ -89,7 +90,12 @@ export function WaypointDetailSheet({
           <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
             {displayWaypoint.name}
           </Text>
-          <Text style={[styles.type, { color: colors.textSecondary }]}>{displayWaypoint.type}</Text>
+          <Text style={[styles.type, { color: colors.textSecondary }]}>
+            {displayWaypoint.type}
+            {(displayWaypoint.offTrackM ?? 0) > 25
+              ? ` · ≈${Math.round(displayWaypoint.offTrackM!)} m off trail`
+              : ''}
+          </Text>
         </View>
         <Pressable
           onPress={onDismiss}
@@ -134,6 +140,42 @@ export function WaypointDetailSheet({
         <Text style={[styles.description, { color: colors.textPrimary }]} numberOfLines={2}>
           {displayWaypoint.description}
         </Text>
+      ) : null}
+
+      {/* Photo thumbnail (custom waypoints) — tap for full screen */}
+      {displayWaypoint.photoUri ? (
+        <>
+          <Pressable
+            onPress={() => setPhotoFullScreen(true)}
+            accessibilityRole="imagebutton"
+            accessibilityLabel="View waypoint photo full screen"
+            style={styles.photoThumbWrap}
+          >
+            <Image
+              source={{ uri: displayWaypoint.photoUri }}
+              style={[styles.photoThumb, { borderColor: colors.border }]}
+            />
+          </Pressable>
+          <Modal
+            visible={photoFullScreen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setPhotoFullScreen(false)}
+          >
+            <Pressable
+              style={styles.photoFullScreenBackdrop}
+              onPress={() => setPhotoFullScreen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close photo"
+            >
+              <Image
+                source={{ uri: displayWaypoint.photoUri }}
+                style={styles.photoFullScreen}
+                resizeMode="contain"
+              />
+            </Pressable>
+          </Modal>
+        </>
       ) : null}
 
       {/* A waypoint without a trail km can't be placed on the profile */}
@@ -254,6 +296,26 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginBottom: spacing.md,
     lineHeight: 20,
+  },
+  photoThumbWrap: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  photoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  photoFullScreenBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoFullScreen: {
+    width: '100%',
+    height: '100%',
   },
   profileButton: {
     borderWidth: 1,

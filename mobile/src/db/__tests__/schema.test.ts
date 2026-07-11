@@ -1,8 +1,8 @@
 import { migrateDatabase, SCHEMA_VERSION } from '../schema';
 
 describe('schema', () => {
-  it('has SCHEMA_VERSION set to 5', () => {
-    expect(SCHEMA_VERSION).toBe(5);
+  it('has SCHEMA_VERSION set to 6', () => {
+    expect(SCHEMA_VERSION).toBe(6);
   });
 
   it('runs all migrations on a fresh database', async () => {
@@ -18,10 +18,14 @@ describe('schema', () => {
     await migrateDatabase(mockDb as any);
 
     // Each migration runs 3 calls: BEGIN, migration SQL, COMMIT
-    expect(executedSql.length).toBe(5 * 3);
+    expect(executedSql.length).toBe(6 * 3);
 
-    // Migration 5 SQL is the 2nd call in the last group of 3 (BEGIN, SQL, COMMIT)
-    const migration5 = executedSql[executedSql.length - 2];
+    // Migration 6 SQL is the 2nd call in the last group of 3 (BEGIN, SQL, COMMIT)
+    const migration6 = executedSql[executedSql.length - 2];
+    expect(migration6).toContain('photo_uri');
+
+    // Migration 5 is the group before it
+    const migration5 = executedSql[executedSql.length - 5];
     expect(migration5).toContain('custom_waypoints');
     expect(migration5).toContain('km_position');
     expect(migration5).toContain('off_track_m');
@@ -51,9 +55,10 @@ describe('schema', () => {
 
     await migrateDatabase(mockDb as any);
 
-    // Should only run migration 5: BEGIN, SQL, COMMIT
-    expect(executedSql.length).toBe(3);
+    // Should only run migrations 5 and 6: two groups of BEGIN, SQL, COMMIT
+    expect(executedSql.length).toBe(6);
     expect(executedSql[1]).toContain('custom_waypoints');
+    expect(executedSql[4]).toContain('photo_uri');
   });
 
   it('stops at an explicit target version', async () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, StyleSheet, View, Text, Pressable } from 'react-native';
+import { Alert, AppState, Linking, StyleSheet, View, Text, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
@@ -12,12 +12,17 @@ import type { WaypointListItem } from '../../src/components/WaypointList';
 import { useLocation } from '../../src/hooks/useLocation';
 import { useOffTrailAlert } from '../../src/hooks/useOffTrailAlert';
 import { triggerLocationHaptic } from '../../src/components/haptics';
-import { TrailDataService } from '../../src/services/trail-data-service';
-import { PlanService, type Plan } from '../../src/services/plan-service';
+import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-data-service';
+import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
+import { markedWaypointName, accuracyPreamble } from '../../src/services/mark-location';
+import { AddWaypointSheet, type AddWaypointValues } from '../../src/components/AddWaypointSheet';
+import { UndoToast } from '../../src/components/UndoToast';
 import {
   createReversedTrail,
+  nearestTrackPointToLatLon,
   type Trail,
 } from '../../src/lib/trail-utils';
+import { PlanService, type Plan } from '../../src/services/plan-service';
 import {
   getNextWaypointsByType,
   calculateDistancesToWaypoints,
@@ -66,6 +71,7 @@ function formatSnoozeTime(until: Date): string {
   return `${h}:${m}`;
 }
 
+
 /**
  * Estimate remaining hiking hours for today's segment using simple distance scaling.
  * Uses the day's total Naismith estimate scaled to the remaining fraction.
@@ -89,6 +95,18 @@ export default function HikeScreen() {
   const [backgroundTracking, setBackgroundTracking] = useState(false);
   // Warning-state banner dismissal (snooze-lite: the status bar stays amber)
   const [warningDismissed, setWarningDismissed] = useState(false);
+  // Whether the displayed trail is reversed (plan SOBO or direction pref) —
+  // needed to convert active-direction km back to stored base-direction km.
+  const [isTrailReversed, setIsTrailReversed] = useState(false);
+  // Bump to reload the merged trail after a custom waypoint changes.
+  const [trailRefreshKey, setTrailRefreshKey] = useState(0);
+  // "Mark my location": row written first (write-first-edit-after), then the
+  // sheet opens prefilled and an undo toast covers accidental taps.
+  const [markedWaypoint, setMarkedWaypoint] = useState<CustomWaypoint | null>(null);
+  const [markToastVisible, setMarkToastVisible] = useState(false);
+  const [markSheetOpen, setMarkSheetOpen] = useState(false);
+  const [savingMarked, setSavingMarked] = useState(false);
+  const markingRef = useRef(false);
 
   const trackPoints = useMemo(() => trail?.track.points ?? [], [trail]);
   const { location, accuracy, error: locationError, isTracking, startTracking, stopTracking } =
@@ -191,17 +209,21 @@ export default function HikeScreen() {
           if (cancelled) return;
 
           // Use plan direction if available, otherwise fall back to direction preference
+          let reversed = false;
           if (plan?.direction === 'SOBO') {
             parsed = createReversedTrail(parsed);
+            reversed = true;
           } else if (!plan) {
             const prefsStr = await AsyncStorage.getItem(DIRECTION_PREF_KEY);
             const prefs = prefsStr ? JSON.parse(prefsStr) : {};
             if (prefs[trailId]) {
               parsed = createReversedTrail(parsed);
+              reversed = true;
             }
           }
 
           setTrail(parsed);
+          setIsTrailReversed(reversed);
           setActivePlan(plan);
           setLoading(false);
         } catch {
@@ -210,7 +232,8 @@ export default function HikeScreen() {
       }
       load();
       return () => { cancelled = true; };
-    }, []),
+      // trailRefreshKey re-runs the load after a custom waypoint add/edit/undo
+    }, [trailRefreshKey]),
   );
 
   // Compute plan days for the "today" section
@@ -316,6 +339,100 @@ export default function HikeScreen() {
     setShowSnoozeMenu(false);
   }, [snooze]);
 
+  // --- Mark my location (decision 4: write first, edit after) --------------
+  // The GPS fix is the valuable part; a form that can be backgrounded or
+  // abandoned must not lose it, so the row is inserted immediately and the
+  // sheet opens as an edit of the already-persisted waypoint.
+
+  const handleMarkLocation = useCallback(async () => {
+    const raw = location?.raw;
+    if (!raw || !trail || !activeTrailId) return;
+    if (markingRef.current) return;
+    markingRef.current = true;
+    try {
+      // Snapped km in the active direction: prefer the live snap, fall back
+      // to a direct nearest-point search against the loaded track.
+      let activeKm = location.trailKm;
+      let offTrackM = location.distanceFromTrail;
+      if (activeKm == null) {
+        const nearest = nearestTrackPointToLatLon(trail.track.points, raw.latitude, raw.longitude);
+        activeKm = nearest ? trail.track.points[nearest.index].dist : 0;
+        offTrackM = nearest?.distanceM ?? null;
+      }
+      const baseKm = isTrailReversed ? trail.track.totalDistance - activeKm : activeKm;
+
+      const service = await TrailDataService.create();
+      const row = await service.addCustomWaypoint({
+        trailId: activeTrailId,
+        name: markedWaypointName(),
+        type: 'poi',
+        lat: raw.latitude,
+        lon: raw.longitude,
+        ele: raw.altitude,
+        kmPosition: baseKm,
+        offTrackM,
+        description: accuracyPreamble(accuracy),
+      });
+      setMarkedWaypoint(row);
+      setMarkToastVisible(true);
+      setMarkSheetOpen(true);
+      setTrailRefreshKey(k => k + 1);
+    } catch (e) {
+      console.warn('Failed to mark location:', e);
+      Alert.alert('Mark failed', 'Could not save your location. Please try again.');
+    } finally {
+      markingRef.current = false;
+    }
+  }, [location, accuracy, trail, activeTrailId, isTrailReversed]);
+
+  const handleUndoMark = useCallback(async () => {
+    const row = markedWaypoint;
+    setMarkToastVisible(false);
+    setMarkSheetOpen(false);
+    setMarkedWaypoint(null);
+    if (!row) return;
+    try {
+      const service = await TrailDataService.create();
+      await service.deleteCustomWaypoint(row.id);
+      deleteWaypointPhoto(row.photoUri);
+      setTrailRefreshKey(k => k + 1);
+    } catch (e) {
+      console.warn('Failed to undo mark:', e);
+    }
+  }, [markedWaypoint]);
+
+  const handleSaveMarked = useCallback(async (values: AddWaypointValues) => {
+    const row = markedWaypoint;
+    if (!row) return;
+    setSavingMarked(true);
+    try {
+      const service = await TrailDataService.create();
+      await service.updateCustomWaypoint(row.id, {
+        name: values.name,
+        type: values.type,
+        description: values.description || null,
+        photoUri: values.photoUri,
+      });
+      if (row.photoUri && row.photoUri !== values.photoUri) {
+        deleteWaypointPhoto(row.photoUri);
+      }
+      setMarkSheetOpen(false);
+      setMarkedWaypoint(null);
+      setMarkToastVisible(false);
+      setTrailRefreshKey(k => k + 1);
+    } catch (e) {
+      console.warn('Failed to save marked waypoint:', e);
+      Alert.alert('Save failed', 'Could not save the waypoint. Please try again.');
+    } finally {
+      setSavingMarked(false);
+    }
+  }, [markedWaypoint]);
+
+  const handleDismissMarkSheet = useCallback(() => {
+    // Keeping the auto-named waypoint is fine — the fix was the point.
+    setMarkSheetOpen(false);
+  }, []);
+
   // No active trail — prompt user to select one
   if (!loading && !trail) {
     return (
@@ -370,6 +487,36 @@ export default function HikeScreen() {
             longitude={rawLocation.longitude}
           />
         </View>
+      )}
+
+      {/* Mark my location — the killer field action ("water here", "track
+          washed out") is one tap from the dashboard. ≥56 pt target; enabled
+          only with a GPS fix. */}
+      {trail && !showLocationError && (
+        <Pressable
+          onPress={handleMarkLocation}
+          disabled={!rawLocation}
+          style={[
+            styles.markButton,
+            {
+              backgroundColor: rawLocation ? colors.accent : colors.surface,
+              borderColor: rawLocation ? colors.accent : colors.border,
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Mark my location as a waypoint"
+          accessibilityState={{ disabled: !rawLocation }}
+        >
+          <Text style={styles.markButtonIcon}>📍</Text>
+          <Text
+            style={[
+              styles.markButtonText,
+              { color: rawLocation ? colors.textInverse : colors.textSecondary },
+            ]}
+          >
+            {rawLocation ? 'Mark my location' : 'Mark my location (waiting for GPS)'}
+          </Text>
+        </Pressable>
       )}
 
       {trail && showLocationError ? (
@@ -488,6 +635,42 @@ export default function HikeScreen() {
           </Pressable>
         </View>
       )}
+
+      {/* Edit sheet for the just-marked waypoint (write-first-edit-after) */}
+      <AddWaypointSheet
+        isOpen={markSheetOpen && markedWaypoint != null}
+        mode="edit"
+        kmPosition={
+          markedWaypoint && trail
+            ? (isTrailReversed
+                ? trail.track.totalDistance - markedWaypoint.kmPosition
+                : markedWaypoint.kmPosition)
+            : null
+        }
+        offTrackM={markedWaypoint?.offTrackM ?? null}
+        initialValues={
+          markedWaypoint
+            ? {
+                name: markedWaypoint.name,
+                type: markedWaypoint.type,
+                description: markedWaypoint.description ?? undefined,
+                photoUri: markedWaypoint.photoUri,
+              }
+            : null
+        }
+        onDismiss={handleDismissMarkSheet}
+        onSave={handleSaveMarked}
+        saving={savingMarked}
+      />
+
+      {/* Undo toast for an accidental "Mark my location" tap */}
+      <UndoToast
+        visible={markToastVisible}
+        message="Waypoint marked"
+        onUndo={handleUndoMark}
+        onDismiss={() => setMarkToastVisible(false)}
+        durationMs={5000}
+      />
     </View>
   );
 }
@@ -512,6 +695,24 @@ const styles = StyleSheet.create({
   sunriseRow: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
+  },
+  markButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 56,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+  },
+  markButtonIcon: {
+    fontSize: 18,
+  },
+  markButtonText: {
+    ...typography.body,
+    fontWeight: '700',
   },
   snoozeChip: {
     flexDirection: 'row',

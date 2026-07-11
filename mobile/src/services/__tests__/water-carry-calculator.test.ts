@@ -43,6 +43,18 @@ describe('extractWaterSources', () => {
     expect(extractWaterSources(wps)).toHaveLength(0);
   });
 
+  it('excludes the new registry types (hazard/lookout/junction) from water math', () => {
+    const wps = makeWaypoints([
+      { name: 'Cliff edge', type: 'hazard', km: 5 },
+      { name: 'Big View', type: 'lookout', km: 10 },
+      { name: 'Fork', type: 'junction', km: 15 },
+      { name: 'Creek', type: 'water', km: 20 },
+    ]);
+    const sources = extractWaterSources(wps);
+    expect(sources).toHaveLength(1);
+    expect(sources[0].name).toBe('Creek');
+  });
+
   it('sorts by km', () => {
     const wps = makeWaypoints([
       { name: 'Far', type: 'water', km: 40 },

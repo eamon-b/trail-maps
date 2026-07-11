@@ -1,0 +1,74 @@
+appId: com.trailcompanion.app
+tags:
+  - quarantine
+---
+# P1 PR A: "Mark my location" on the hike screen — one tap persists a waypoint
+# at the GPS position (write-first-edit-after), an undo toast covers accidental
+# taps, and the edit sheet opens prefilled.
+#
+# QUARANTINED (tag: quarantine) alongside custom-waypoint.yaml: relies on
+# setLocation + the GPS permission prompt, which is flaky on CI emulators.
+# Run manually with:
+#   ~/.maestro/bin/maestro test mobile/maestro/mark-location.yaml
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "View trail →"
+    timeout: 30000
+
+# Open the first trail's map once so it becomes the active trail
+- tapOn: "View trail →"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Open Map"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Open Map"
+- waitForAnimationToEnd
+
+# Put the device on the AAWT (track start, Walhalla end)
+- setLocation:
+    latitude: -37.941445
+    longitude: 146.451953
+
+# Back out to the tab bar and open Hike
+- pressKey: back
+- waitForAnimationToEnd
+- pressKey: back
+- waitForAnimationToEnd
+- tapOn: "Hike"
+- waitForAnimationToEnd
+
+# First run: grant the location permission
+- tapOn:
+    text: "While using the app"
+    optional: true
+
+# Wait for a fix — the button label drops the "(waiting for GPS)" suffix
+- extendedWaitUntil:
+    visible: "Mark my location"
+    timeout: 30000
+
+# One tap: waypoint persisted, edit sheet opens prefilled with "Marked HH:MM"
+- tapOn: "Mark my location"
+- extendedWaitUntil:
+    visible: "Edit Waypoint"
+    timeout: 10000
+- takeScreenshot: mark-location-sheet
+
+# Rename it and save
+- tapOn: "Waypoint name"
+- eraseText
+- inputText: "Water cache here"
+- hideKeyboard
+- tapOn: "Save"
+- waitForAnimationToEnd
+
+# The renamed waypoint reaches the datasheet (merged like any custom waypoint)
+- tapOn: "View trail datasheet"
+- scrollUntilVisible:
+    element:
+      text: "Water cache here"
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: mark-location-saved

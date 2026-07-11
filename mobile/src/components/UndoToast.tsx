@@ -21,10 +21,12 @@ interface UndoToastProps {
   onUndo: () => void;
   /** Called when the toast is dismissed (timeout or manual) */
   onDismiss: () => void;
+  /** Auto-dismiss delay in ms (defaults to durations.undoToast) */
+  durationMs?: number;
 }
 
-/** Undo toast with 3-second auto-dismiss */
-export function UndoToast({ visible, message, onUndo, onDismiss }: UndoToastProps) {
+/** Undo toast with auto-dismiss (3 s by default) */
+export function UndoToast({ visible, message, onUndo, onDismiss, durationMs }: UndoToastProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -35,14 +37,14 @@ export function UndoToast({ visible, message, onUndo, onDismiss }: UndoToastProp
       translateY.value = reduceMotion
         ? 0
         : withTiming(0, timingConfigs.slideIn);
-      const timer = setTimeout(onDismiss, durations.undoToast);
+      const timer = setTimeout(onDismiss, durationMs ?? durations.undoToast);
       return () => clearTimeout(timer);
     } else {
       translateY.value = reduceMotion
         ? 100
         : withTiming(100, timingConfigs.slideIn);
     }
-  }, [visible, translateY, reduceMotion, onDismiss]);
+  }, [visible, translateY, reduceMotion, onDismiss, durationMs]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

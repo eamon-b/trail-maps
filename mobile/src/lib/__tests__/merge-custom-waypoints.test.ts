@@ -152,3 +152,21 @@ describe('mergeCustomWaypoints', () => {
     expect(merged.waypoints[1].distance).toBe(30); // Camp: 40 - 10
   });
 });
+
+describe('mergeCustomWaypoints — offTrackM and photoUri passthrough', () => {
+  it('carries offTrackM and photoUri onto the merged waypoint', () => {
+    const merged = mergeCustomWaypoints(makeTrail(), [
+      makeCustom({ id: 'p', name: 'Off-track camp', offTrackM: 340, photoUri: '/doc/waypoint-photos/p.jpg' }),
+    ]);
+    const wp = merged.waypoints.find(w => w.id === 'custom-p')!;
+    expect(wp.offTrackM).toBe(340);
+    expect(wp.photoUri).toBe('/doc/waypoint-photos/p.jpg');
+  });
+
+  it('leaves them undefined when the row has none', () => {
+    const merged = mergeCustomWaypoints(makeTrail(), [makeCustom({ id: 'q' })]);
+    const wp = merged.waypoints.find(w => w.id === 'custom-q')!;
+    expect(wp.offTrackM).toBeUndefined();
+    expect(wp.photoUri).toBeUndefined();
+  });
+});

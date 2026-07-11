@@ -54,7 +54,14 @@
           "isIosBackgroundLocationEnabled": true
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Take a photo of a water source, campsite, or hazard to attach to your waypoint.",
+          "photosPermission": "Attach an existing photo to a waypoint you have added."
+        }
+      ]
     ],
     "extra": {
       "eas": {

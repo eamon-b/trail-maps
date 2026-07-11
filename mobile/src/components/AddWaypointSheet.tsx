@@ -1,24 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useTheme } from '../theme';
 import { radii, spacing, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { AppBottomSheet } from './AppBottomSheet';
-import { waypointEmojis } from './WaypointList';
+import { CREATABLE_WAYPOINT_TYPES, getWaypointEmoji, getWaypointLabel } from '../lib/waypoint-type-meta';
+import {
+  pickWaypointPhoto,
+  storeWaypointPhoto,
+  deleteWaypointPhoto,
+  type PhotoSource,
+} from '../services/waypoint-photo-service';
 import type { CustomWaypointType } from '../services/trail-data-service';
 
-const TYPE_OPTIONS: { type: CustomWaypointType; label: string }[] = [
-  { type: 'water', label: 'Water' },
-  { type: 'water-tank', label: 'Water tank' },
-  { type: 'campsite', label: 'Campsite' },
-  { type: 'poi', label: 'Point of interest' },
-];
+// Type chips offered by the form — the registry's creatable set.
+const TYPE_OPTIONS: { type: CustomWaypointType; label: string }[] =
+  CREATABLE_WAYPOINT_TYPES.map(type => ({ type, label: getWaypointLabel(type) }));
 
 export interface AddWaypointValues {
   name: string;
   type: CustomWaypointType;
   description: string;
+  /** Stored photo file URI, or null when no photo is attached */
+  photoUri: string | null;
 }
 
 interface AddWaypointSheetProps {
@@ -33,17 +38,25 @@ interface AddWaypointSheetProps {
   /** Metres from the pressed location to the trail, or null when unknown */
   offTrackM?: number | null;
   /** Prefill values when editing an existing custom waypoint */
-  initialValues?: { name: string; type: string; description?: string } | null;
+  initialValues?: { name: string; type: string; description?: string; photoUri?: string | null } | null;
   /** 'add' (default) shows Add copy; 'edit' shows Edit copy */
   mode?: 'add' | 'edit';
   /** Save is in flight — disables the Save button to prevent duplicate inserts */
   saving?: boolean;
+  /** Edit mode: called when "Move pin" is tapped (enters crosshair mode) */
+  onMovePin?: () => void;
+}
+
+/** Unique key for a stored photo file (URI, not name, is what's persisted). */
+function generatePhotoKey(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /**
- * Bottom sheet for creating or editing a custom waypoint (long-press on the
- * trail map). Renders its form inside the shared AppBottomSheet, opening larger
- * (65% / 90%) with keyboard-aware behavior for the text fields.
+ * Bottom sheet for creating or editing a custom waypoint (map long-press,
+ * toolbar "+" crosshair, or "Mark my location"). Renders its form inside the
+ * shared AppBottomSheet, opening larger (65% / 90%) with keyboard-aware
+ * behavior for the text fields.
  */
 export function AddWaypointSheet({
   isOpen,
@@ -54,12 +67,19 @@ export function AddWaypointSheet({
   initialValues,
   mode = 'add',
   saving = false,
+  onMovePin,
 }: AddWaypointSheetProps) {
   const { colors } = useTheme();
 
   const [name, setName] = useState('');
   const [type, setType] = useState<CustomWaypointType>('water');
   const [description, setDescription] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  // Photo files created during this open session. Owned by the sheet until a
+  // save hands the final one to the DB; the rest are deleted on close.
+  const newPhotoUrisRef = useRef<string[]>([]);
+  const savedRef = useRef(false);
 
   // (Re)seed the form on the closed → open transition only. Parents may
   // recreate the initialValues object every render, and reseeding while open
@@ -71,23 +91,74 @@ export function AddWaypointSheet({
       const initialType = TYPE_OPTIONS.find(o => o.type === initialValues?.type)?.type ?? 'water';
       setType(initialType);
       setDescription(initialValues?.description ?? '');
+      setPhotoUri(initialValues?.photoUri ?? null);
+      newPhotoUrisRef.current = [];
+      savedRef.current = false;
     }
     wasOpen.current = isOpen;
   }, [isOpen, initialValues]);
 
   const snapPoints = useMemo(() => ['65%', '90%'], []);
 
-  const canSave = name.trim().length > 0 && !saving;
+  const canSave = name.trim().length > 0 && !saving && !photoBusy;
 
   const handleSave = useCallback(() => {
     if (!canSave) return;
-    onSave({ name: name.trim(), type, description: description.trim() });
-  }, [canSave, onSave, name, type, description]);
+    savedRef.current = true;
+    // Files picked then replaced/removed during this session are unreferenced.
+    for (const uri of newPhotoUrisRef.current) {
+      if (uri !== photoUri) deleteWaypointPhoto(uri);
+    }
+    newPhotoUrisRef.current = [];
+    onSave({ name: name.trim(), type, description: description.trim(), photoUri });
+  }, [canSave, onSave, name, type, description, photoUri]);
+
+  // Wrap dismissal so photo files created this session but never saved are
+  // cleaned up (AppBottomSheet also fires this after a programmatic close —
+  // the savedRef/empty-list guards make it idempotent).
+  const handleDismiss = useCallback(() => {
+    if (!savedRef.current) {
+      for (const uri of newPhotoUrisRef.current) {
+        deleteWaypointPhoto(uri);
+      }
+      newPhotoUrisRef.current = [];
+    }
+    onDismiss();
+  }, [onDismiss]);
+
+  const addPhotoFrom = useCallback(async (source: PhotoSource) => {
+    setPhotoBusy(true);
+    try {
+      const picked = await pickWaypointPhoto(source);
+      if (picked) {
+        const uri = await storeWaypointPhoto(generatePhotoKey(), picked);
+        newPhotoUrisRef.current.push(uri);
+        setPhotoUri(uri);
+      }
+    } catch (e) {
+      console.warn('Failed to attach photo:', e);
+      Alert.alert('Photo failed', 'Could not attach the photo. Please try again.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }, []);
+
+  const handleAddPhoto = useCallback(() => {
+    Alert.alert('Add photo', undefined, [
+      { text: 'Take photo', onPress: () => { addPhotoFrom('camera'); } },
+      { text: 'Choose from library', onPress: () => { addPhotoFrom('library'); } },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [addPhotoFrom]);
+
+  const handleRemovePhoto = useCallback(() => {
+    setPhotoUri(null);
+  }, []);
 
   return (
     <AppBottomSheet
       isOpen={isOpen}
-      onDismiss={onDismiss}
+      onDismiss={handleDismiss}
       snapPoints={snapPoints}
       initialSnap={0}
       enableDynamicSizing={false}
@@ -138,7 +209,7 @@ export function AddWaypointSheet({
               accessibilityLabel={option.label}
               accessibilityState={{ selected }}
             >
-              <Text style={styles.typeEmoji}>{waypointEmojis[option.type] ?? waypointEmojis.poi}</Text>
+              <Text style={styles.typeEmoji}>{getWaypointEmoji(option.type)}</Text>
               <Text
                 style={[
                   styles.typeLabel,
@@ -167,6 +238,60 @@ export function AddWaypointSheet({
         ]}
       />
 
+      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Photo (optional)</Text>
+      {photoBusy ? (
+        <View style={styles.photoBusyRow}>
+          <ActivityIndicator size="small" color={colors.accent} />
+          <Text style={[styles.photoBusyText, { color: colors.textSecondary }]}>Processing photo…</Text>
+        </View>
+      ) : photoUri ? (
+        <View style={styles.photoRow}>
+          <Image
+            source={{ uri: photoUri }}
+            style={[styles.photoThumb, { borderColor: colors.border }]}
+            accessibilityLabel="Waypoint photo"
+          />
+          <View style={styles.photoActions}>
+            <Pressable
+              onPress={handleAddPhoto}
+              style={[styles.photoActionButton, { borderColor: colors.accent }]}
+              accessibilityRole="button"
+              accessibilityLabel="Replace photo"
+            >
+              <Text style={[styles.photoActionText, { color: colors.accent }]}>Replace</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleRemovePhoto}
+              style={[styles.photoActionButton, { borderColor: colors.alertRed }]}
+              accessibilityRole="button"
+              accessibilityLabel="Remove photo"
+            >
+              <Text style={[styles.photoActionText, { color: colors.alertRed }]}>Remove</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onPress={handleAddPhoto}
+          style={[styles.addPhotoButton, { borderColor: colors.border }]}
+          accessibilityRole="button"
+          accessibilityLabel="Add photo"
+        >
+          <Text style={[styles.addPhotoText, { color: colors.accent }]}>📷  Add photo</Text>
+        </Pressable>
+      )}
+
+      {mode === 'edit' && onMovePin && (
+        <Pressable
+          onPress={onMovePin}
+          style={[styles.movePinButton, { borderColor: colors.accent }]}
+          accessibilityRole="button"
+          accessibilityLabel="Move pin on the map"
+        >
+          <Text style={[styles.movePinText, { color: colors.accent }]}>Move pin</Text>
+        </Pressable>
+      )}
+
       <Pressable
         onPress={handleSave}
         disabled={!canSave}
@@ -184,7 +309,7 @@ export function AddWaypointSheet({
       </Pressable>
 
       <Pressable
-        onPress={onDismiss}
+        onPress={handleDismiss}
         style={styles.cancelButton}
         accessibilityRole="button"
         accessibilityLabel="Cancel"
@@ -242,6 +367,65 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     ...typography.caption,
+    fontWeight: '600',
+  },
+  photoBusyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: touchTarget.min,
+  },
+  photoBusyText: {
+    ...typography.caption,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  photoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  photoActions: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  photoActionButton: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoActionText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  addPhotoButton: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: radii.md,
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPhotoText: {
+    ...typography.body,
+    fontWeight: '600',
+  },
+  movePinButton: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  movePinText: {
+    ...typography.body,
     fontWeight: '600',
   },
   saveButton: {

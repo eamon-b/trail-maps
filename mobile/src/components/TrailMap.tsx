@@ -1,7 +1,9 @@
 import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
-import { isCustomWaypointId, type TrackPoint, type TrailWaypoint, type RouteVariant } from '../lib/trail-utils';
+import { findNearestByDistance, isCustomWaypointId, type TrackPoint, type TrailWaypoint, type RouteVariant } from '../lib/trail-utils';
+import { getWaypointColor } from '../lib/waypoint-type-meta';
+import { haversineDistance } from '@lib/distance';
 import { useTheme } from '../theme';
 import { spacing, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -11,35 +13,15 @@ MapLibreGL.setAccessToken(null);
 
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
-/** Color mapping for waypoint types on the map */
-const WAYPOINT_COLORS: Record<string, string> = {
-  campsite: '#4CAF50',
-  water: '#2196F3',
-  'water-tank': '#2196F3',
-  town: '#FF9800',
-  shelter: '#795548',
-  hut: '#795548',
-  accommodation: '#795548',
-  'caravan-park': '#795548',
-  mountain: '#607D8B',
-  summit: '#607D8B',
-  trailhead: '#9C27B0',
-  endpoint: '#9C27B0',
-  food: '#FF5722',
-  resupply: '#FF5722',
-  'road-crossing': '#757575',
-  'inlet-crossing': '#00BCD4',
-  beach: '#00BCD4',
-  poi: '#FFC107',
-  'side-trip': '#9C27B0',
-};
-
 /** Distinct marker color for user-created waypoints (see isCustomWaypointId) */
 const CUSTOM_WAYPOINT_COLOR = '#E91E63';
 
-function getWaypointColor(type: string): string {
-  return WAYPOINT_COLORS[type] ?? '#757575';
-}
+/**
+ * A custom waypoint whose true position is more than this many metres from
+ * its snapped track point gets a thin connector line from pin to track, so
+ * the raw pin and the km used by distance math can't silently disagree.
+ */
+const CONNECTOR_THRESHOLD_M = 25;
 
 interface LocationCoords {
   latitude: number;
@@ -95,9 +77,11 @@ export interface TrailMapProps {
   customPins?: { latitude: number; longitude: number; label: string; color?: string }[];
 }
 
-/** Imperative handle for one-shot camera actions (pan, fit). */
+/** Imperative handle for one-shot camera actions (pan, fit) and queries. */
 export interface TrailMapHandle {
   panTo: (latitude: number, longitude: number, zoomLevel?: number) => void;
+  /** Current map center as [latitude, longitude], or null if unavailable. */
+  getCenter: () => Promise<[number, number] | null>;
 }
 
 function buildTrailGeoJSON(points: TrackPoint[]) {
@@ -140,6 +124,40 @@ function buildWaypointsGeoJSON(waypoints: TrailWaypoint[]) {
       totalDistance: wp.totalDistance ?? 0,
     },
   }));
+  return { type: 'FeatureCollection' as const, features };
+}
+
+/**
+ * Connector lines from off-track custom waypoints to their snapped track
+ * point (decision 5: free-floating pins allowed, snap annotated). Drawn only
+ * when the stored off_track_m exceeds CONNECTOR_THRESHOLD_M.
+ */
+function buildConnectorGeoJSON(waypoints: TrailWaypoint[], trackPoints: TrackPoint[]) {
+  const features: GeoJSON.Feature[] = [];
+  if (trackPoints.length === 0) return null;
+  for (const wp of waypoints) {
+    if (!isCustomWaypointId(wp.id)) continue;
+    if ((wp.offTrackM ?? 0) <= CONNECTOR_THRESHOLD_M) continue;
+    if (wp.totalDistance == null) continue;
+    const idx = findNearestByDistance(trackPoints, wp.totalDistance);
+    const snapped = trackPoints[idx];
+    if (!snapped) continue;
+    // Guard against stale off_track_m (e.g. after a position edit): only draw
+    // when the pin really is away from the snapped point.
+    if (haversineDistance(wp.lat, wp.lon, snapped.lat, snapped.lon) <= CONNECTOR_THRESHOLD_M) continue;
+    features.push({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [wp.lon, wp.lat],
+          [snapped.lon, snapped.lat],
+        ],
+      },
+      properties: { id: wp.id },
+    });
+  }
+  if (features.length === 0) return null;
   return { type: 'FeatureCollection' as const, features };
 }
 
@@ -242,6 +260,13 @@ const customPinsCircleStyle = {
   circleStrokeWidth: 2,
 };
 
+const connectorLineStyle = {
+  lineColor: CUSTOM_WAYPOINT_COLOR,
+  lineWidth: 1.5,
+  lineOpacity: 0.7,
+  lineDasharray: [1, 1],
+};
+
 const userDotStyle = {
   circleRadius: 6,
   circleColor: '#2196F3',
@@ -320,6 +345,11 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
   const waypointsGeoJSON = useMemo(
     () => buildWaypointsGeoJSON(waypoints ?? []),
     [waypoints],
+  );
+
+  const connectorGeoJSON = useMemo(
+    () => buildConnectorGeoJSON(waypoints ?? [], trackPoints ?? []),
+    [waypoints, trackPoints],
   );
 
   const userLocationGeoJSON = useMemo(
@@ -466,6 +496,16 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
         zoomLevel,
         animationDuration: 500,
       });
+    },
+    getCenter: async () => {
+      try {
+        const center = await mapRef.current?.getCenter();
+        if (!center || center.length < 2) return null;
+        // MapLibre returns [lon, lat]
+        return [center[1], center[0]];
+      } catch {
+        return null;
+      }
     },
   }), []);
 
@@ -673,6 +713,16 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
             <MapLibreGL.LineLayer
               id="side-trips-layer"
               style={sideTripsLineStyle}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
+
+        {/* Connector lines from off-track custom pins to their snapped track point */}
+        {connectorGeoJSON && (
+          <MapLibreGL.ShapeSource id="waypoint-connectors" shape={connectorGeoJSON}>
+            <MapLibreGL.LineLayer
+              id="waypoint-connectors-layer"
+              style={connectorLineStyle}
             />
           </MapLibreGL.ShapeSource>
         )}

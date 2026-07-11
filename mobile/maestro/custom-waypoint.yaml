@@ -83,12 +83,37 @@ tags:
     timeout: 10000
 - assertVisible: "Edit waypoint"
 
-# Delete it and confirm via the system alert
+# Delete it — deletion is now immediate with an undo toast (P1 PR A);
+# exercise the undo round-trip, then delete for real and let the toast expire.
 - tapOn: "Delete waypoint"
 - extendedWaitUntil:
-    visible: "Delete"
+    visible: "Undo"
     timeout: 5000
-- tapOn: "Delete"
+- tapOn: "Undo"
+- waitForAnimationToEnd
+
+# Undo restored it — the detail sheet can be reached again via the datasheet
+- tapOn: "View waypoint datasheet"
+- scrollUntilVisible:
+    element:
+      text: "My spring"
+    direction: DOWN
+    timeout: 15000
+- tapOn: "My spring"
+- waitForAnimationToEnd
+- tapOn: "Show on map"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Delete waypoint"
+    timeout: 10000
+- tapOn: "Delete waypoint"
+- extendedWaitUntil:
+    visible: "Undo"
+    timeout: 5000
+# Let the 5 s undo window expire so the delete commits
+- extendedWaitUntil:
+    notVisible: "Undo"
+    timeout: 10000
 - waitForAnimationToEnd
 
 # Confirm the datasheet still renders after the delete round-trip.

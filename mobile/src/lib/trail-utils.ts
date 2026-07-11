@@ -9,6 +9,7 @@
 import type { TrailJson } from '../services/trail-loader';
 import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
 import { findNearestByDistance as nearestTrackIndex } from '@lib/track-geometry';
+import { haversineDistance as sharedHaversineDistance } from '@lib/distance';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,6 +52,10 @@ export interface TrailWaypoint {
   totalDescent?: number;
   /** Index into the track points array */
   trackIndex?: number;
+  /** Metres between the true lat/lon and the snapped track point (custom waypoints) */
+  offTrackM?: number;
+  /** File URI of an attached photo (custom waypoints only) */
+  photoUri?: string;
 }
 
 export interface RouteVariant {
@@ -165,6 +170,55 @@ export { reverseAlternates, transformSideTrips };
 // mobile imports keep working.
 export { findNearestByDistance } from '@lib/track-geometry';
 
+/**
+ * Find the track point nearest to an arbitrary lat/lon (coarse-then-refine
+ * scan, same approach as useLocation's snapping fallback). Returns the index
+ * into `points` and the distance to it in metres, or null for an empty track.
+ * Used by crosshair waypoint placement and "Move pin".
+ */
+export function nearestTrackPointToLatLon(
+  points: TrackPoint[],
+  lat: number,
+  lon: number,
+): { index: number; distanceM: number } | null {
+  if (points.length === 0) return null;
+
+  // Equirectangular approximation for the scan (cheap, monotonic with true
+  // distance at these scales); exact haversine for the returned distance.
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  const sq = (p: TrackPoint) => {
+    const dLat = p.lat - lat;
+    const dLon = (p.lon - lon) * cosLat;
+    return dLat * dLat + dLon * dLon;
+  };
+
+  let nearestIdx = 0;
+  let nearestSq = Infinity;
+  const step = Math.max(1, Math.floor(points.length / 500));
+  for (let i = 0; i < points.length; i += step) {
+    const d = sq(points[i]);
+    if (d < nearestSq) {
+      nearestSq = d;
+      nearestIdx = i;
+    }
+  }
+  const start = Math.max(0, nearestIdx - step);
+  const end = Math.min(points.length - 1, nearestIdx + step);
+  for (let i = start; i <= end; i++) {
+    const d = sq(points[i]);
+    if (d < nearestSq) {
+      nearestSq = d;
+      nearestIdx = i;
+    }
+  }
+
+  const nearest = points[nearestIdx];
+  return {
+    index: nearestIdx,
+    distanceM: sharedHaversineDistance(lat, lon, nearest.lat, nearest.lon),
+  };
+}
+
 /** Find a route variant by its key (e.g. "alternate-some-name"). */
 export function findVariantByKey(key: string, trail: Trail): RouteVariant | null {
   for (const v of trail.alternates || []) {
@@ -258,7 +312,9 @@ export interface CustomWaypointLike {
   lon: number;
   ele?: number | null;
   kmPosition: number;
+  offTrackM?: number | null;
   description?: string | null;
+  photoUri?: string | null;
 }
 
 /**
@@ -303,6 +359,8 @@ export function mergeCustomWaypoints(trail: Trail, custom: CustomWaypointLike[])
       ascent: 0,
       descent: 0,
       trackIndex,
+      offTrackM: row.offTrackM ?? undefined,
+      photoUri: row.photoUri ?? undefined,
     };
   });
 

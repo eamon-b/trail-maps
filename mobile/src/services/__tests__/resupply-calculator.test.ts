@@ -49,6 +49,18 @@ describe('extractResupplyPoints', () => {
     ]);
     expect(extractResupplyPoints(wps)).toHaveLength(0);
   });
+
+  it('excludes the new registry types (hazard/lookout/junction) from resupply math', () => {
+    const wps = makeWaypoints([
+      { name: 'Cliff edge', type: 'hazard', km: 5 },
+      { name: 'Big View', type: 'lookout', km: 10 },
+      { name: 'Fork', type: 'junction', km: 15 },
+      { name: 'Collie', type: 'town', km: 50 },
+    ]);
+    const points = extractResupplyPoints(wps);
+    expect(points).toHaveLength(1);
+    expect(points[0].name).toBe('Collie');
+  });
 });
 
 // ---------------------------------------------------------------------------

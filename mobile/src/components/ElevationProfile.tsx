@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, LayoutChangeEvent } from 'react-native';
 import { Canvas, Path, Skia, LinearGradient, vec, Line, Circle, Group, Rect } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { getMinMax, niceAxisTicks, findNearestByDistance, type TrackPoint, type TrailWaypoint } from '../lib/trail-utils';
+import { getWaypointColor } from '../lib/waypoint-type-meta';
 import { useTheme } from '../theme';
 import { spacing } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -29,15 +30,8 @@ interface ElevationProfileProps {
   compact?: boolean;
 }
 
-/** Color mapping for waypoint types on the profile */
-const WAYPOINT_PROFILE_COLORS: Record<string, string> = {
-  campsite: '#4CAF50',
-  water: '#2196F3',
-  'water-tank': '#2196F3',
-  town: '#FF9800',
-  shelter: '#795548',
-  hut: '#795548',
-};
+// Waypoint dot colors come from the shared type registry so the profile,
+// map markers, and form chips always agree.
 
 function samplePoints(points: TrackPoint[], count: number): TrackPoint[] {
   if (points.length <= count) return points;
@@ -156,7 +150,7 @@ export function ElevationProfile({
       if (wp.totalDistance != null && wp.elevation != null) {
         const x = PADDING.left + ((wp.totalDistance ?? 0) / maxDist) * chartWidth;
         const y = PADDING.top + chartHeight - (((wp.elevation ?? 0) - eleMin) / eleRange) * chartHeight;
-        const color = WAYPOINT_PROFILE_COLORS[wp.type] ?? '#757575';
+        const color = getWaypointColor(wp.type);
         acc.push({ x, y, color, id: wp.id });
       }
       return acc;
@@ -171,9 +165,9 @@ export function ElevationProfile({
     const wp = waypoints.find(w => w.id === focusedWaypointId);
     if (!wp || wp.totalDistance == null) return null;
     const x = PADDING.left + (wp.totalDistance / chartMetrics.maxDist) * chartMetrics.chartWidth;
-    const color = WAYPOINT_PROFILE_COLORS[wp.type] ?? colors.accent;
+    const color = getWaypointColor(wp.type);
     return { x, color };
-  }, [chartMetrics, focusedWaypointId, waypoints, colors.accent]);
+  }, [chartMetrics, focusedWaypointId, waypoints]);
 
   const currentPositionX = useMemo(() => {
     if (!chartMetrics || currentKm == null) return null;

@@ -3,25 +3,16 @@ import { FlatList, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-na
 import { useTheme } from '../theme';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
+import { WAYPOINT_TYPE_META } from '../lib/waypoint-type-meta';
 
-/** Emoji icons for waypoint types — leveraging existing 14 types from the web app */
-export const waypointEmojis: Record<string, string> = {
-  town: '🏘️',
-  hut: '🛖',
-  campsite: '⛺',
-  water: '💧',
-  'water-tank': '🚰',
-  shelter: '🏚️',
-  road: '🛣️',
-  trailhead: '🥾',
-  summit: '⛰️',
-  lookout: '👁️',
-  bridge: '🌉',
-  carpark: '🅿️',
-  information: 'ℹ️',
-  danger: '⚠️',
-  poi: '📍',
-};
+/**
+ * Emoji icons for waypoint types. Derived from the shared type registry
+ * (single source of truth); kept as a record export for back-compat with the
+ * many `waypointEmojis[type] ?? waypointEmojis.poi` call sites.
+ */
+export const waypointEmojis: Record<string, string> = Object.fromEntries(
+  Object.entries(WAYPOINT_TYPE_META).map(([type, meta]) => [type, meta.emoji]),
+);
 
 export interface WaypointListItem {
   id: string | number;

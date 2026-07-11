@@ -10,6 +10,7 @@ import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
 import { ElevationProfileDrawer } from '../../src/components/ElevationProfileDrawer';
 import { WaypointDetailSheet } from '../../src/components/WaypointDetailSheet';
 import { AddWaypointSheet, type AddWaypointValues } from '../../src/components/AddWaypointSheet';
+import { UndoToast } from '../../src/components/UndoToast';
 import { LocationStatusBar, type LocationState } from '../../src/components';
 import { useTheme } from '../../src/theme';
 import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
@@ -17,11 +18,13 @@ import { useLocation } from '../../src/hooks/useLocation';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
   findNearestByDistance,
+  nearestTrackPointToLatLon,
   customWaypointRowId,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
-import { TrailDataService } from '../../src/services/trail-data-service';
+import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-data-service';
+import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
 import { tileManager } from '../../src/services/tile-manager';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
@@ -43,6 +46,16 @@ interface PendingWaypoint {
 
 export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
+
+/**
+ * Crosshair placement mode: pan the map under a fixed center crosshair, then
+ * Confirm (decision 6 — re-drop instead of drag, which fights the pan gesture
+ * and the follow camera). Used both for the toolbar "+" create flow and the
+ * edit-mode "Move pin" flow.
+ */
+type CrosshairMode =
+  | { kind: 'create' }
+  | { kind: 'move'; waypoint: TrailWaypoint };
 
 // ---------------------------------------------------------------------------
 // Viewer reducer
@@ -125,6 +138,11 @@ export default function TrailViewerScreen() {
   // In-flight guard so a double-tap on Save can't insert the waypoint twice.
   const [savingWaypoint, setSavingWaypoint] = useState(false);
   const savingRef = useRef(false);
+  // Crosshair placement mode (toolbar "+" create, or edit-mode "Move pin")
+  const [crosshair, setCrosshair] = useState<CrosshairMode | null>(null);
+  // Deleted custom waypoint held for undo. Photo file deletion is deferred
+  // until the toast expires so undo restores the photo too.
+  const [deletedWaypoint, setDeletedWaypoint] = useState<CustomWaypoint | null>(null);
   const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId, drawerIndex, cameraMode } = viewer;
   const mapRef = useRef<TrailMapHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
@@ -331,7 +349,12 @@ export default function TrailViewerScreen() {
           name: values.name,
           type: values.type,
           description: values.description || null,
+          photoUri: values.photoUri,
         });
+        // A replaced/removed photo's old file is no longer referenced.
+        if (editingWaypoint.photoUri && editingWaypoint.photoUri !== values.photoUri) {
+          deleteWaypointPhoto(editingWaypoint.photoUri);
+        }
       } else if (pendingWaypoint) {
         await service.addCustomWaypoint({
           trailId: id,
@@ -343,6 +366,7 @@ export default function TrailViewerScreen() {
           kmPosition: pendingWaypoint.baseKm,
           offTrackM: pendingWaypoint.offTrackM,
           description: values.description || null,
+          photoUri: values.photoUri,
         });
       }
       closeWaypointSheet();
@@ -363,30 +387,131 @@ export default function TrailViewerScreen() {
     setEditingWaypoint(wp);
   }, []);
 
-  const handleDeleteWaypoint = useCallback((wp: TrailWaypoint) => {
-    Alert.alert(
-      'Delete waypoint',
-      `Delete "${wp.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const service = await TrailDataService.create();
-              await service.deleteCustomWaypoint(customWaypointRowId(wp.id));
-              dispatch({ type: 'deselect' });
-              await refreshCustomWaypoints();
-            } catch (e) {
-              console.warn('Failed to delete custom waypoint:', e);
-              Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
-            }
-          },
-        },
-      ],
-    );
+  // Delete is immediate with an undo toast (replaces the old confirm Alert —
+  // both safer and faster in the field). The full row is kept in memory and
+  // re-inserted with the same id on undo, so merged `custom-` references stay
+  // stable. Photo file deletion is deferred until the toast expires.
+  const handleDeleteWaypoint = useCallback(async (wp: TrailWaypoint) => {
+    try {
+      const service = await TrailDataService.create();
+      const rowId = customWaypointRowId(wp.id);
+      const row = await service.getCustomWaypoint(rowId);
+      await service.deleteCustomWaypoint(rowId);
+      dispatch({ type: 'deselect' });
+      setDeletedWaypoint(row);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to delete custom waypoint:', e);
+      Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
+    }
   }, [refreshCustomWaypoints]);
+
+  const handleUndoDelete = useCallback(async () => {
+    const row = deletedWaypoint;
+    setDeletedWaypoint(null);
+    if (!row) return;
+    try {
+      const service = await TrailDataService.create();
+      await service.restoreCustomWaypoint(row);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to restore custom waypoint:', e);
+      Alert.alert('Undo failed', 'Could not restore the waypoint.');
+    }
+  }, [deletedWaypoint, refreshCustomWaypoints]);
+
+  const handleDeleteToastDismiss = useCallback(() => {
+    // Toast expired without undo — the photo file is now orphaned.
+    if (deletedWaypoint?.photoUri) {
+      deleteWaypointPhoto(deletedWaypoint.photoUri);
+    }
+    setDeletedWaypoint(null);
+  }, [deletedWaypoint]);
+
+  // --- Crosshair placement (toolbar "+" create, edit-mode "Move pin") -------
+
+  const enterCreateCrosshair = useCallback(() => {
+    setPendingWaypoint(null);
+    setEditingWaypoint(null);
+    dispatch({ type: 'deselect' });
+    // Free the camera so a GPS tick can't drag the map out from under the
+    // crosshair while the user is lining up the spot.
+    dispatch({ type: 'userPanned' });
+    setCrosshair({ kind: 'create' });
+  }, []);
+
+  const handleMovePin = useCallback(() => {
+    const wp = editingWaypoint;
+    if (!wp) return;
+    setEditingWaypoint(null);
+    dispatch({ type: 'userPanned' });
+    setCrosshair({ kind: 'move', waypoint: wp });
+    // Start the crosshair on the pin being moved.
+    mapRef.current?.panTo(wp.lat, wp.lon);
+  }, [editingWaypoint]);
+
+  const cancelCrosshair = useCallback(() => {
+    const mode = crosshair;
+    setCrosshair(null);
+    // Cancelling a move returns to the edit sheet it came from.
+    if (mode?.kind === 'move') {
+      setEditingWaypoint(mode.waypoint);
+    }
+  }, [crosshair]);
+
+  const confirmCrosshair = useCallback(async () => {
+    const mode = crosshair;
+    const trail = activeTrail;
+    if (!mode || !trail) return;
+
+    const center = await mapRef.current?.getCenter();
+    if (!center) {
+      Alert.alert('Placement failed', 'Could not read the map position. Please try again.');
+      return;
+    }
+    const [lat, lon] = center;
+
+    // Snap against the full-resolution track (same as the long-press path).
+    const points = trail.track.points;
+    const nearest = nearestTrackPointToLatLon(points, lat, lon);
+    if (!nearest) return;
+    const trackPt = points[nearest.index];
+    const activeKm = trackPt.dist;
+    const offTrackM = nearest.distanceM;
+    // km_position is stored in the trail's base direction so the merge at the
+    // load boundary (which happens pre-reversal) places it correctly.
+    const baseKm = isReversed ? trail.track.totalDistance - activeKm : activeKm;
+
+    if (mode.kind === 'create') {
+      setCrosshair(null);
+      setPendingWaypoint({
+        lat,
+        lon,
+        ele: trackPt.ele ?? null,
+        baseKm,
+        activeKm,
+        offTrackM,
+      });
+      return;
+    }
+
+    // Move: persist the new position (lat/lon/ele/km/off-track together).
+    try {
+      const service = await TrailDataService.create();
+      await service.updateCustomWaypoint(customWaypointRowId(mode.waypoint.id), {
+        lat,
+        lon,
+        ele: trackPt.ele ?? null,
+        kmPosition: baseKm,
+        offTrackM,
+      });
+      setCrosshair(null);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to move custom waypoint:', e);
+      Alert.alert('Move failed', 'Could not move the waypoint. Please try again.');
+    }
+  }, [crosshair, activeTrail, isReversed, refreshCustomWaypoints]);
 
   if (contextLoading || (!activeTrail && !contextError)) {
     return (
@@ -457,6 +582,15 @@ export default function TrailViewerScreen() {
         </Pressable>
 
         <Pressable
+          onPress={enterCreateCrosshair}
+          style={styles.toolbarButton}
+          accessibilityLabel="Add waypoint"
+          accessibilityRole="button"
+        >
+          <Text style={[styles.toolbarButtonText, { color: colors.accent }]}>＋</Text>
+        </Pressable>
+
+        <Pressable
           onPress={() => {
             const params: Record<string, string> = { id: id! };
             if (currentKm != null) params.fromKm = currentKm.toFixed(1);
@@ -490,9 +624,45 @@ export default function TrailViewerScreen() {
             mapStyleOverride={offlineMapStyle}
             trackPoints={trackPoints}
             onVisibleBoundsChange={handleVisibleBoundsChange}
-            onLongPress={handleMapLongPress}
+            onLongPress={crosshair ? undefined : handleMapLongPress}
           />
         </MapErrorBoundary>
+
+        {/* Crosshair placement overlay — fixed center marker, pan the map
+            under it (decision 6). pointerEvents="none" on the crosshair so
+            map gestures pass through; only Confirm/Cancel capture touches. */}
+        {crosshair && (
+          <>
+            <View style={styles.crosshairOverlay} pointerEvents="none">
+              <Text style={[styles.crosshairGlyph, { color: colors.accent }]}>✛</Text>
+            </View>
+            <View style={[styles.crosshairChip, { backgroundColor: colors.surface, borderColor: colors.border }]} pointerEvents="none">
+              <Text style={[styles.crosshairChipText, { color: colors.textPrimary }]}>
+                {crosshair.kind === 'move'
+                  ? `Pan the map to reposition "${crosshair.waypoint.name}"`
+                  : 'Pan the map to place the waypoint'}
+              </Text>
+            </View>
+            <View style={styles.crosshairActions}>
+              <Pressable
+                onPress={cancelCrosshair}
+                style={[styles.crosshairButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel placement"
+              >
+                <Text style={[styles.crosshairButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmCrosshair}
+                style={[styles.crosshairButton, { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                accessibilityRole="button"
+                accessibilityLabel={crosshair.kind === 'move' ? 'Confirm new position' : 'Confirm waypoint position'}
+              >
+                <Text style={[styles.crosshairButtonText, { color: colors.textInverse }]}>Confirm</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Elevation profile drawer */}
@@ -534,12 +704,23 @@ export default function TrailViewerScreen() {
                 name: editingWaypoint.name,
                 type: editingWaypoint.type,
                 description: editingWaypoint.description,
+                photoUri: editingWaypoint.photoUri ?? null,
               }
             : null
         }
         onDismiss={closeWaypointSheet}
         onSave={handleSaveWaypoint}
         saving={savingWaypoint}
+        onMovePin={editingWaypoint ? handleMovePin : undefined}
+      />
+
+      {/* Undo toast for waypoint deletion (5 s window) */}
+      <UndoToast
+        visible={deletedWaypoint != null}
+        message={deletedWaypoint ? `Deleted "${deletedWaypoint.name}"` : ''}
+        onUndo={handleUndoDelete}
+        onDismiss={handleDeleteToastDismiss}
+        durationMs={5000}
       />
     </View>
   );
@@ -610,5 +791,53 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+  },
+  crosshairOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crosshairGlyph: {
+    fontSize: 36,
+    fontWeight: '300',
+    textShadowColor: '#fff',
+    textShadowRadius: 4,
+  },
+  crosshairChip: {
+    position: 'absolute',
+    top: spacing.lg,
+    alignSelf: 'center',
+    maxWidth: '85%',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 3,
+  },
+  crosshairChipText: {
+    ...typography.caption,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  crosshairActions: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    left: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  crosshairButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
+  crosshairButtonText: {
+    ...typography.body,
+    fontWeight: '700',
   },
 });

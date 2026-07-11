@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, ViewStyle } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -39,8 +40,9 @@ export function formatCoordinates(
 /**
  * Compact current-position readout for the hike dashboard.
  *
- * - Tap opens the OS share sheet with the coordinate string (for relaying
- *   position — expo-clipboard is not a dependency, so no direct copy).
+ * - Tap copies the coordinate string to the clipboard (with confirmation).
+ * - The share icon opens the OS share sheet (relaying position to rescue or
+ *   a mate over any messaging app).
  * - Long-press toggles between decimal degrees and DMS.
  */
 export function CoordinatesRow({ latitude, longitude, style }: CoordinatesRowProps) {
@@ -65,6 +67,15 @@ export function CoordinatesRow({ latitude, longitude, style }: CoordinatesRowPro
 
   const handlePress = useCallback(async () => {
     try {
+      await Clipboard.setStringAsync(coordText);
+      showFeedback('Copied');
+    } catch {
+      // Clipboard unavailable — nothing to do
+    }
+  }, [coordText, showFeedback]);
+
+  const handleShare = useCallback(async () => {
+    try {
       const result = await Share.share({ message: coordText });
       if (result.action === Share.sharedAction) {
         showFeedback('Shared');
@@ -86,7 +97,7 @@ export function CoordinatesRow({ latitude, longitude, style }: CoordinatesRowPro
       onLongPress={handleLongPress}
       style={[styles.row, { borderColor: colors.border }, style]}
       accessibilityRole="button"
-      accessibilityLabel={`Current coordinates ${coordText}. Tap to share, long press to change format.`}
+      accessibilityLabel={`Current coordinates ${coordText}. Tap to copy, long press to change format.`}
     >
       <Text style={styles.icon}>📍</Text>
       <Text
@@ -100,6 +111,15 @@ export function CoordinatesRow({ latitude, longitude, style }: CoordinatesRowPro
           {feedback}
         </Text>
       )}
+      <Pressable
+        onPress={handleShare}
+        style={styles.shareButton}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Share coordinates"
+      >
+        <Text style={[styles.shareIcon, { color: colors.accent }]}>↗</Text>
+      </Pressable>
     </Pressable>
   );
 }
@@ -125,5 +145,16 @@ const styles = StyleSheet.create({
   feedback: {
     ...typography.caption,
     marginLeft: 'auto',
+  },
+  shareButton: {
+    marginLeft: 'auto',
+    minWidth: 32,
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareIcon: {
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

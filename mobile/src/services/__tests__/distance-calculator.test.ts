@@ -208,6 +208,22 @@ describe('getNextWaypointsByType', () => {
     expect(result.shelter?.waypoint.name).toBe('Mountain Hut');
   });
 
+  it('never maps the new registry types (hazard/lookout/junction) to any NEXT slot', () => {
+    // A hazard between here and the next real water must not surface as
+    // "NEXT WATER" (or any other card) — decision 3 exclusion.
+    const waypoints = makeWaypoints([
+      { name: 'Cliff edge', type: 'hazard', km: 15 },
+      { name: 'Big View', type: 'lookout', km: 16 },
+      { name: 'Fork', type: 'junction', km: 17 },
+      { name: 'Real creek', type: 'water', km: 20 },
+    ]);
+    const result = getNextWaypointsByType(10, waypoints, trackPoints);
+    expect(result.water?.waypoint.name).toBe('Real creek');
+    expect(result.campsite).toBeUndefined();
+    expect(result.town).toBeUndefined();
+    expect(result.shelter).toBeUndefined();
+  });
+
   it('ignores unrecognized types', () => {
     const waypoints = makeWaypoints([
       { name: 'POI', type: 'poi', km: 20 },

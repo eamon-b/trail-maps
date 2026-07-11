@@ -174,7 +174,7 @@ export default function CreatePlanScreen() {
           keyboardType="numbers-and-punctuation"
         />
         {dateError && (
-          <Text style={[styles.dateError, { color: colors.alertRed ?? '#c00' }]}>
+          <Text style={[styles.dateError, { color: colors.danger }]}>
             {dateError}
           </Text>
         )}

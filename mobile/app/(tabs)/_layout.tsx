@@ -86,6 +86,7 @@ export default function TabLayout() {
 }
 
 function TabIcon({ label, color, size }: { label: string; color: string; size: number }) {
+  const { colors } = useTheme();
   return (
     <View style={{
       width: size,
@@ -95,7 +96,7 @@ function TabIcon({ label, color, size }: { label: string; color: string; size: n
       alignItems: 'center',
       justifyContent: 'center',
     }}>
-      <Text style={{ color: '#fff', fontSize: size * 0.5, fontWeight: 'bold' }}>
+      <Text style={{ color: colors.textInverse, fontSize: size * 0.5, fontWeight: 'bold' }}>
         {label}
       </Text>
     </View>

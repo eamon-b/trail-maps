@@ -394,7 +394,7 @@ export default function MeasureScreen() {
 
             {/* Mini elevation profile */}
             {segmentTrackPoints.length > 1 && (
-              <View style={styles.miniProfile}>
+              <View style={[styles.miniProfile, { borderTopColor: colors.border }]}>
                 <ElevationProfile
                   trackPoints={segmentTrackPoints}
                   waterSourceKms={segmentWaterKms}
@@ -405,7 +405,7 @@ export default function MeasureScreen() {
 
             {/* Waypoints between */}
             {result.waypointsBetween.length > 0 && (
-              <View style={styles.waypointsBetween}>
+              <View style={[styles.waypointsBetween, { borderTopColor: colors.border }]}>
                 <Text style={[styles.waypointsBetweenTitle, { color: colors.textPrimary }]}>
                   Waypoints Between ({result.waypointsBetween.length})
                 </Text>
@@ -606,13 +606,11 @@ const styles = StyleSheet.create({
   miniProfile: {
     marginTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(128,128,128,0.2)',
     paddingTop: spacing.md,
   },
   waypointsBetween: {
     marginTop: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(128,128,128,0.2)',
     paddingTop: spacing.md,
   },
   waypointsBetweenTitle: {

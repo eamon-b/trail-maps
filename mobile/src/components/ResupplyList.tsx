@@ -92,7 +92,7 @@ export function ResupplyList({ analysis, days }: ResupplyListProps) {
 
       {/* Resupply points with arrival days */}
       {dayCorrelation && dayCorrelation.length > 0 && (
-        <View style={styles.arrivalSection}>
+        <View style={[styles.arrivalSection, { borderBottomColor: colors.border }]}>
           {dayCorrelation.map((info, i) => (
             <View key={i} style={styles.arrivalRow}>
               <Text style={[styles.arrivalName, { color: colors.textPrimary }]}>
@@ -122,6 +122,7 @@ function GapRow({ gap, showFoodCalc, gramsPerDay }: { gap: ResupplyGap; showFood
     <View
       style={[
         styles.gapRow,
+        { borderBottomColor: colors.border },
         gap.isLong && { borderLeftColor: colors.alertAmber, borderLeftWidth: 3 },
       ]}
     >
@@ -203,7 +204,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingLeft: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#0001',
   },
   gapHeader: {
     flexDirection: 'row',
@@ -236,7 +236,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   arrivalRow: {
     flexDirection: 'row',

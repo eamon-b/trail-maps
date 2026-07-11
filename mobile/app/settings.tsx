@@ -248,7 +248,7 @@ export default function SettingsScreen() {
             style={styles.optionRow}
             accessibilityRole="button"
           >
-            <Text style={[styles.optionLabel, { color: '#c00' }]}>Reset App Data</Text>
+            <Text style={[styles.optionLabel, { color: colors.danger }]}>Reset App Data</Text>
           </Pressable>
         </View>
       </ScrollView>

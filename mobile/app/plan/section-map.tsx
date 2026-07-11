@@ -161,22 +161,22 @@ export default function SectionMapScreen() {
 
     if (mode === 'single' && selectedKm !== null) {
       const coords = findCoords(selectedKm);
-      pins.push({ ...coords, label: selectedName ?? `km ${selectedKm.toFixed(1)}`, color: '#4CAF50' });
+      pins.push({ ...coords, label: selectedName ?? `km ${selectedKm.toFixed(1)}`, color: colors.alertGreen });
     }
 
     if (mode === 'section') {
       if (startKm !== null) {
         const coords = findCoords(startKm);
-        pins.push({ ...coords, label: `Start: ${startName ?? `km ${startKm.toFixed(1)}`}`, color: '#4CAF50' });
+        pins.push({ ...coords, label: `Start: ${startName ?? `km ${startKm.toFixed(1)}`}`, color: colors.alertGreen });
       }
       if (endKm !== null) {
         const coords = findCoords(endKm);
-        pins.push({ ...coords, label: `End: ${endName ?? `km ${endKm.toFixed(1)}`}`, color: '#FF5722' });
+        pins.push({ ...coords, label: `End: ${endName ?? `km ${endKm.toFixed(1)}`}`, color: colors.alertRed });
       }
     }
 
     return pins;
-  }, [trail, mode, startKm, endKm, startName, endName, selectedKm, selectedName]);
+  }, [trail, mode, startKm, endKm, startName, endName, selectedKm, selectedName, colors]);
 
   // Highlighted segment
   const highlightedSegment = useMemo(() => {

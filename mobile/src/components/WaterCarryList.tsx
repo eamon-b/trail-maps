@@ -49,7 +49,7 @@ export function WaterCarryList({ analysis }: WaterCarryListProps) {
 
       {/* Sources with seasonal notes */}
       {analysis.sources.some(s => s.seasonalNote) && (
-        <View style={styles.seasonalSection}>
+        <View style={[styles.seasonalSection, { borderBottomColor: colors.border }]}>
           {analysis.sources
             .filter(s => s.seasonalNote)
             .map((source, i) => (
@@ -71,6 +71,7 @@ export function WaterCarryList({ analysis }: WaterCarryListProps) {
           key={i}
           style={[
             styles.gapRow,
+            { borderBottomColor: colors.border },
             gap.isDryStretch && { borderLeftColor: colors.alertAmber, borderLeftWidth: 3 },
           ]}
         >
@@ -119,7 +120,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingLeft: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#0001',
   },
   gapHeader: {
     flexDirection: 'row',
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   seasonalRow: {
     paddingVertical: spacing.xs,

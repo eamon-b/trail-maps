@@ -66,9 +66,9 @@ export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewP
       )}
 
       {/* Monthly table */}
-      <View style={styles.table}>
+      <View style={[styles.table, { borderTopColor: colors.border }]}>
         {/* Header row */}
-        <View style={styles.tableRow}>
+        <View style={[styles.tableRow, { borderBottomColor: colors.border }]}>
           <Text style={[styles.headerCell, styles.monthCell, { color: colors.textSecondary }]}>Month</Text>
           <Text style={[styles.headerCell, styles.tempCell, { color: colors.textSecondary }]}>Min</Text>
           <Text style={[styles.headerCell, styles.tempCell, { color: colors.textSecondary }]}>Max</Text>
@@ -83,6 +83,7 @@ export function ClimateOverview({ climate, planMonths, style }: ClimateOverviewP
               key={m.month}
               style={[
                 styles.tableRow,
+                { borderBottomColor: colors.border },
                 isHighlighted && { backgroundColor: colors.accentSubtle },
               ]}
             >
@@ -146,13 +147,11 @@ const styles = StyleSheet.create({
   },
   table: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
   },
   tableRow: {
     flexDirection: 'row',
     paddingVertical: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   headerCell: {
     ...typography.caption,

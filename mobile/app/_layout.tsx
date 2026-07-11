@@ -10,8 +10,27 @@ import { FocusedWaypointProvider } from '../src/theme/FocusedWaypointContext';
 import { TrailDataService } from '../src/services/trail-data-service';
 import { loadBundledTrails } from '../src/services/trail-loader';
 import { closeDatabase } from '../src/db/database';
+import { spacing, radii, touchTarget } from '../src/tokens/spacing';
+import { typography } from '../src/tokens/typography';
 
 export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={styles.flex}>
+      <ThemeProvider>
+        <BottomSheetProvider>
+          <FocusedWaypointProvider>
+            <ThemedStatusBar />
+            <RootContent />
+          </FocusedWaypointProvider>
+        </BottomSheetProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+/** Data initialization + themed loading/error screens, inside the providers */
+function RootContent() {
+  const { colors } = useTheme();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -50,10 +69,17 @@ export default function RootLayout() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Failed to initialize: {error}</Text>
-        <Pressable onPress={handleReset} style={styles.resetButton}>
-          <Text style={styles.resetText}>Reset App Data</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={[styles.error, { color: colors.danger }]}>
+          Failed to initialize: {error}
+        </Text>
+        <Pressable
+          onPress={handleReset}
+          style={[styles.resetButton, { backgroundColor: colors.danger }]}
+          accessibilityRole="button"
+          accessibilityLabel="Reset app data"
+        >
+          <Text style={[styles.resetText, { color: colors.dangerText }]}>Reset App Data</Text>
         </Pressable>
       </View>
     );
@@ -61,31 +87,24 @@ export default function RootLayout() {
 
   if (!ready) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loading}>Loading trail data...</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={[styles.loading, { color: colors.textSecondary }]}>
+          Loading trail data...
+        </Text>
       </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <BottomSheetProvider>
-          <FocusedWaypointProvider>
-            <ThemedStatusBar />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="trail" />
-              <Stack.Screen name="plan" />
-              <Stack.Screen name="import" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
-            </Stack>
-          </FocusedWaypointProvider>
-        </BottomSheetProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="trail" />
+      <Stack.Screen name="plan" />
+      <Stack.Screen name="import" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }
 
@@ -96,32 +115,33 @@ function ThemedStatusBar() {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   loading: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    ...typography.body,
+    marginTop: spacing.md,
   },
   error: {
-    fontSize: 16,
-    color: '#d32f2f',
+    ...typography.body,
     textAlign: 'center',
   },
   resetButton: {
-    marginTop: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#d32f2f',
-    borderRadius: 8,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    borderRadius: radii.md,
   },
   resetText: {
-    fontSize: 16,
-    color: '#fff',
+    ...typography.body,
     fontWeight: '600',
   },
 });

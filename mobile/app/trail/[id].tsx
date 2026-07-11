@@ -451,7 +451,7 @@ export default function TrailViewerScreen() {
           accessibilityLabel={isTracking ? 'Stop GPS tracking' : 'Start GPS tracking'}
           accessibilityRole="button"
         >
-          <Text style={[styles.gpsButtonText, { color: isTracking ? '#fff' : colors.accent }]}>
+          <Text style={[styles.gpsButtonText, { color: isTracking ? colors.textInverse : colors.accent }]}>
             GPS
           </Text>
         </Pressable>

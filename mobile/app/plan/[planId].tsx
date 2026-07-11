@@ -864,7 +864,7 @@ export default function PlanEditorScreen() {
           ) : (
             <>
               {versions.map((v) => (
-                <View key={v.id} style={styles.versionRow}>
+                <View key={v.id} style={[styles.versionRow, { borderBottomColor: colors.border }]}>
                   <Pressable
                     onPress={() => handleLoadVersion(v)}
                     style={styles.versionInfo}
@@ -884,7 +884,7 @@ export default function PlanEditorScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`Delete version ${v.name ?? 'Unnamed'}`}
                   >
-                    <Text style={[styles.versionDelete, { color: '#c00' }]}>Delete</Text>
+                    <Text style={[styles.versionDelete, { color: colors.danger }]}>Delete</Text>
                   </Pressable>
                 </View>
               ))}
@@ -908,7 +908,7 @@ export default function PlanEditorScreen() {
         animationType="fade"
         onRequestClose={() => setVersionNameModalOpen(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.scrim }]}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Save Version</Text>
             <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
@@ -1111,7 +1111,6 @@ const styles = StyleSheet.create({
     minHeight: touchTarget.min,
     paddingVertical: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   versionInfo: {
     flex: 1,
@@ -1131,7 +1130,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,

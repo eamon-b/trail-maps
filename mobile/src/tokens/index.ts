@@ -1,5 +1,6 @@
-export { palette } from './colors';
-export type { PaletteColor } from './colors';
+// NOTE: the raw `palette` is deliberately NOT re-exported. It is private to
+// the tokens directory — components consume theme-resolved semantic colors
+// via useTheme().colors, never raw palette values.
 
 export { resolveTheme, themeVariants, appModes, themeLabels, modeLabels } from './themes';
 export type { AppMode, ThemeVariant, ThemeColors } from './themes';

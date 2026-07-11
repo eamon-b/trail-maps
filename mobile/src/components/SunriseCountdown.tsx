@@ -88,7 +88,7 @@ export function SunriseCountdown({ latitude, longitude, style }: SunriseCountdow
   const day = isDaylight(sunTimes, now);
   const next = minutesToNextEvent(sunTimes, now);
   const urgent = day && next.minutesUntil <= 60;
-  const color = urgent ? (colors.alertAmber ?? '#FF9800') : colors.textSecondary;
+  const color = urgent ? colors.alertAmber : colors.textSecondary;
 
   return (
     <View
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   icon: {
-    fontSize: 12,
+    ...typography.caption,
   },
   text: {
     ...typography.caption,

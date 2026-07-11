@@ -298,8 +298,8 @@ export default function PlanScreen() {
         ? `Downloading ${downloadProgress.fileName} (${downloadProgress.fileIndex}/${downloadProgress.totalFiles})`
         : 'Starting download...';
       return (
-        <View style={styles.tileDownloadProgress}>
-          <View style={styles.tileRow}>
+        <View style={[styles.tileDownloadProgress, { borderTopColor: colors.border }]}>
+          <View style={[styles.tileRow, { borderTopColor: colors.border }]}>
             <ActivityIndicator size="small" color={colors.accent} />
             <Text style={[styles.tileText, { color: colors.textSecondary }]}>
               {progressLabel}
@@ -312,7 +312,7 @@ export default function PlanScreen() {
 
     if (downloadError && downloadError.trailId === item.id) {
       return (
-        <View style={styles.tileDownloadProgress}>
+        <View style={[styles.tileDownloadProgress, { borderTopColor: colors.border }]}>
           <Text style={[styles.tileText, { color: colors.alertRed }]}>
             Download failed: {downloadError.message}
           </Text>
@@ -345,7 +345,7 @@ export default function PlanScreen() {
 
     if (tileStatus.complete) {
       return (
-        <View style={styles.tileRow}>
+        <View style={[styles.tileRow, { borderTopColor: colors.border }]}>
           <Text style={[styles.tileText, { color: colors.accent }]}>
             Offline maps: {formatBytes(tileStatus.totalSizeBytes)}
           </Text>
@@ -363,7 +363,7 @@ export default function PlanScreen() {
     }
 
     return (
-      <View style={styles.tileRow}>
+      <View style={[styles.tileRow, { borderTopColor: colors.border }]}>
         <Text style={[styles.tileText, { color: colors.textSecondary }]}>
           No offline maps
         </Text>
@@ -461,7 +461,7 @@ export default function PlanScreen() {
 
             {/* Plans for this trail */}
             {plans[item.id] && plans[item.id].length > 0 && (
-              <View style={styles.plansSection}>
+              <View style={[styles.plansSection, { borderTopColor: colors.border }]}>
                 <Text style={[styles.plansLabel, { color: colors.textSecondary }]}>Plans</Text>
                 {plans[item.id].map((p) => (
                   <View key={p.id} style={styles.planRow}>
@@ -627,7 +627,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
   },
   downloadProgressBar: {
     marginTop: spacing.xs,
@@ -639,7 +638,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
     minHeight: touchTarget.min,
   },
   tileText: {
@@ -686,7 +684,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.08)',
   },
   plansLabel: {
     ...typography.caption,

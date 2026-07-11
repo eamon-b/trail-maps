@@ -64,7 +64,8 @@
           "cameraPermission": "Take a photo of a water source, campsite, or hazard to attach to your waypoint.",
           "photosPermission": "Attach an existing photo to a waypoint you have added."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

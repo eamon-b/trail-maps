@@ -300,8 +300,10 @@ const styles = StyleSheet.create({
   todayProgress: {
     marginTop: spacing.xs,
   },
+  // Field-critical progress numbers — ≥14pt (dataSmall), never caption
   todayProgressText: {
-    ...typography.caption,
+    ...typography.dataSmall,
+    fontWeight: '400',
     marginBottom: spacing.xs,
   },
   todayProgressBar: {
@@ -316,9 +318,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: spacing.xs,
   },
+  // Field-critical remaining-distance/ETA — ≥14pt (dataSmall)
   todayEtaText: {
-    ...typography.caption,
-    fontVariant: ['tabular-nums'],
+    ...typography.dataSmall,
+    fontWeight: '400',
   },
   waterCountdown: {
     marginTop: spacing.sm,

@@ -3,25 +3,16 @@ import { FlatList, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-na
 import { useTheme } from '../theme';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
+import { WAYPOINT_TYPE_META } from '../lib/waypoint-type-meta';
 
-/** Emoji icons for waypoint types — leveraging existing 14 types from the web app */
-export const waypointEmojis: Record<string, string> = {
-  town: '🏘️',
-  hut: '🛖',
-  campsite: '⛺',
-  water: '💧',
-  'water-tank': '🚰',
-  shelter: '🏚️',
-  road: '🛣️',
-  trailhead: '🥾',
-  summit: '⛰️',
-  lookout: '👁️',
-  bridge: '🌉',
-  carpark: '🅿️',
-  information: 'ℹ️',
-  danger: '⚠️',
-  poi: '📍',
-};
+/**
+ * Emoji icons for waypoint types. Derived from the shared type registry
+ * (single source of truth); kept as a record export for back-compat with the
+ * many `waypointEmojis[type] ?? waypointEmojis.poi` call sites.
+ */
+export const waypointEmojis: Record<string, string> = Object.fromEntries(
+  Object.entries(WAYPOINT_TYPE_META).map(([type, meta]) => [type, meta.emoji]),
+);
 
 export interface WaypointListItem {
   id: string | number;
@@ -31,6 +22,8 @@ export interface WaypointListItem {
   kmPosition?: number;
   /** Relative distance from current position */
   distanceAhead?: string;
+  /** Naismith ETA text (e.g. "~50 min") */
+  eta?: string;
 }
 
 interface WaypointListProps {
@@ -97,7 +90,7 @@ export function WaypointList({
               borderColor: isFocused ? colors.accent : 'transparent',
             },
           ]}
-          accessibilityLabel={`${emoji} ${item.name}${item.distanceAhead ? `, ${item.distanceAhead}` : ''}`}
+          accessibilityLabel={`${emoji} ${item.name}${item.distanceAhead ? `, ${item.distanceAhead}` : ''}${item.eta ? `, about ${item.eta.replace('~', '')}` : ''}`}
           accessibilityRole="button"
           accessibilityState={{ selected: isFocused }}
         >
@@ -114,6 +107,11 @@ export function WaypointList({
             >
               {item.name}
             </Text>
+            {item.eta && (
+              <Text style={[styles.eta, { color: colors.textSecondary }]}>
+                {item.eta}
+              </Text>
+            )}
           </View>
         </Pressable>
       );
@@ -187,6 +185,10 @@ const styles = StyleSheet.create({
   name: {
     ...typography.body,
     flex: 1,
+  },
+  eta: {
+    ...typography.caption,
+    fontVariant: ['tabular-nums'],
   },
   seeAllButton: {
     minHeight: touchTarget.min,

@@ -29,6 +29,8 @@ interface UseOffTrailAlertOptions {
 export interface UseOffTrailAlertResult {
   alertState: LocationState;
   alertDetail: string | undefined;
+  /** Bearing back to the nearest trail point (degrees), set while off trail */
+  bearingToTrail: number | null;
   isSnoozed: boolean;
   snoozeUntil: Date | null;
   snooze: (duration: SnoozeDuration) => void;
@@ -54,6 +56,7 @@ export function useOffTrailAlert(
 
   const [alertState, setAlertState] = useState<LocationState>('noGps');
   const [alertDetail, setAlertDetail] = useState<string | undefined>(undefined);
+  const [bearingToTrail, setBearingToTrail] = useState<number | null>(null);
   const [snoozeUntil, setSnoozeUntil] = useState<Date | null>(null);
 
   // Ring buffer for debounce: last N computed states
@@ -137,6 +140,7 @@ export function useOffTrailAlert(
         }
       }
 
+      setBearingToTrail(bearing);
       setAlertDetail(
         computeAlertDetail(
           effectiveState,
@@ -148,7 +152,7 @@ export function useOffTrailAlert(
     }
   }, [location, accuracy, enabled, thresholds, isSnoozed, trackPoints]);
 
-  return { alertState, alertDetail, isSnoozed, snoozeUntil, snooze, clearSnooze };
+  return { alertState, alertDetail, bearingToTrail, isSnoozed, snoozeUntil, snooze, clearSnooze };
 }
 
 /**

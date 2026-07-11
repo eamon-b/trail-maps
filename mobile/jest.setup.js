@@ -192,3 +192,24 @@ jest.mock('expo-battery', () => ({
 jest.mock('expo-document-picker', () => ({
   getDocumentAsync: jest.fn(() => Promise.resolve({ canceled: true, assets: null })),
 }));
+
+jest.mock('expo-clipboard', () => ({
+  setStringAsync: jest.fn(() => Promise.resolve(true)),
+  getStringAsync: jest.fn(() => Promise.resolve('')),
+}));
+
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true })),
+  launchCameraAsync: jest.fn(() => Promise.resolve({ canceled: true, assets: null })),
+  launchImageLibraryAsync: jest.fn(() => Promise.resolve({ canceled: true, assets: null })),
+}));
+
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn(() => Promise.resolve({ uri: '/mock/manipulated.jpg' })),
+  SaveFormat: { JPEG: 'jpeg' },
+}));
+
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+  shareAsync: jest.fn(() => Promise.resolve()),
+}));

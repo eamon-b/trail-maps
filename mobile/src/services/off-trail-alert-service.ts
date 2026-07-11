@@ -1,4 +1,5 @@
 import type { LocationState } from '../components/LocationStatusBar';
+import { bearingBetween, formatBearing } from '../lib/bearing';
 
 /** Preset threshold configurations */
 export type AlertThresholdPreset = 'tight' | 'normal' | 'loose';
@@ -92,13 +93,9 @@ export function computeAlertDetail(
   }
 }
 
-/** Format a bearing in degrees to a compass direction string (e.g. "247° WSW") */
-export function formatBearing(degrees: number): string {
-  const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-                'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  const idx = Math.round(degrees / 22.5) % 16;
-  return `${Math.round(degrees)}° ${dirs[idx]}`;
-}
+// Bearing math lives in the shared lib (src/lib/bearing.ts — P1 PR C); these
+// re-exports keep existing imports working.
+export { formatBearing } from '../lib/bearing';
 
 /**
  * Calculate bearing from a user position to a trail point.
@@ -110,22 +107,5 @@ export function getBearingToTrail(
   trailLat: number,
   trailLon: number,
 ): number {
-  const dLon = toRad(trailLon - userLon);
-  const lat1 = toRad(userLat);
-  const lat2 = toRad(trailLat);
-
-  const y = Math.sin(dLon) * Math.cos(lat2);
-  const x =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-
-  return (toDeg(Math.atan2(y, x)) + 360) % 360;
-}
-
-function toRad(deg: number): number {
-  return (deg * Math.PI) / 180;
-}
-
-function toDeg(rad: number): number {
-  return (rad * 180) / Math.PI;
+  return bearingBetween(userLat, userLon, trailLat, trailLon);
 }

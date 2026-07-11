@@ -12,6 +12,12 @@ export interface GpxWaypoint {
   ele: number;
   name: string;
   desc: string;
+  /**
+   * Explicit GPX `<type>` when the source file provides one (e.g. files
+   * exported by the mobile app). Consumers prefer it over name-based
+   * classification so an export→import round trip preserves the type.
+   */
+  type?: string;
 }
 
 export interface GpxSegment {

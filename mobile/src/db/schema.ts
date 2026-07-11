@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 7;
 
 const MIGRATIONS: Record<number, string> = {
   1: `
@@ -100,6 +100,39 @@ const MIGRATIONS: Record<number, string> = {
     CREATE INDEX IF NOT EXISTS idx_custom_waypoints_trail_id ON custom_waypoints(trail_id);
     ALTER TABLE trails ADD COLUMN climate_json TEXT;
     UPDATE schema_version SET version = 5;
+  `,
+  // Migration 6: optional photo attachment for custom waypoints (P1 PR A).
+  // Stores a file URI under FileSystem documentDirectory/waypoint-photos/;
+  // nullable, no backfill — existing waypoints simply have no photo.
+  6: `
+    ALTER TABLE custom_waypoints ADD COLUMN photo_uri TEXT;
+    UPDATE schema_version SET version = 6;
+  `,
+  // Migration 7: waypoint-sequence routes (P1 PR D). A route is a name plus
+  // an ordered list of legs. `waypoint_ref` holds a merged waypoint id
+  // (bundled positional `wp-N` or `custom-<rowid>`); `km_position` (trail
+  // base direction) is denormalized so legs survive waypoint deletion —
+  // rendered as "(deleted waypoint)" but the geometry keeps working. Bundled
+  // positional ids can shift on data-version bumps, which is exactly why the
+  // km fallback exists (see plan risk notes / 6b §2.0 stable-id work).
+  7: `
+    CREATE TABLE IF NOT EXISTS routes (
+      id TEXT PRIMARY KEY NOT NULL,
+      trail_id TEXT NOT NULL REFERENCES trails(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_routes_trail_id ON routes(trail_id);
+
+    CREATE TABLE IF NOT EXISTS route_legs (
+      route_id TEXT NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
+      seq INTEGER NOT NULL,
+      waypoint_ref TEXT,
+      km_position REAL NOT NULL,
+      PRIMARY KEY (route_id, seq)
+    );
+    UPDATE schema_version SET version = 7;
   `,
 };
 

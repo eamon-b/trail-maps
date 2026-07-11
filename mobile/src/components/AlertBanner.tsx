@@ -27,6 +27,8 @@ interface AlertBannerProps {
   onPress?: () => void;
   /** Called when the banner finishes hiding */
   onHidden?: () => void;
+  /** Optional trailing element (e.g. a BearingIndicator back to the trail) */
+  accessory?: React.ReactNode;
 }
 
 /**
@@ -34,7 +36,7 @@ interface AlertBannerProps {
  * Uses spring animation (damping: 15, stiffness: 150) per spec.
  * Components accept state as props — Part 5 implements detection logic.
  */
-export function AlertBanner({ visible, level, message, onPress, onHidden }: AlertBannerProps) {
+export function AlertBanner({ visible, level, message, onPress, onHidden, accessory }: AlertBannerProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -76,6 +78,7 @@ export function AlertBanner({ visible, level, message, onPress, onHidden }: Aler
       <Text style={[styles.message, { color: colors.textInverse }]} numberOfLines={2}>
         {message}
       </Text>
+      {accessory}
     </View>
   );
 

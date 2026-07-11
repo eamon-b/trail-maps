@@ -174,8 +174,66 @@ describe('TrailDataService custom waypoints', () => {
     expect(orphans).toHaveLength(0);
   });
 
-  it('exposes the four allowed picker types', () => {
-    expect([...CUSTOM_WAYPOINT_TYPES]).toEqual(['water', 'water-tank', 'campsite', 'poi']);
+  it('exposes the expanded creatable picker types from the registry', () => {
+    expect([...CUSTOM_WAYPOINT_TYPES]).toEqual([
+      'water', 'water-tank', 'campsite', 'shelter', 'town', 'lookout', 'junction', 'hazard', 'poi',
+    ]);
+  });
+
+  it('persists a hazard-typed waypoint end-to-end', async () => {
+    await service.addCustomWaypoint({
+      trailId: 'heysen', name: 'Washed-out crossing', type: 'hazard', lat: -35, lon: 138, kmPosition: 12,
+    });
+    const [row] = await service.getCustomWaypoints('heysen');
+    expect(row.type).toBe('hazard');
+  });
+
+  it('persists and updates photoUri (migration 6)', async () => {
+    const created = await service.addCustomWaypoint({
+      trailId: 'heysen', name: 'Tank', type: 'water-tank', lat: -35, lon: 138, kmPosition: 10,
+      photoUri: '/doc/waypoint-photos/a.jpg',
+    });
+    expect(created.photoUri).toBe('/doc/waypoint-photos/a.jpg');
+
+    let row = await service.getCustomWaypoint(created.id);
+    expect(row!.photoUri).toBe('/doc/waypoint-photos/a.jpg');
+
+    await service.updateCustomWaypoint(created.id, { photoUri: null });
+    row = await service.getCustomWaypoint(created.id);
+    expect(row!.photoUri).toBeNull();
+  });
+
+  it('updates position fields together (Move pin)', async () => {
+    const created = await service.addCustomWaypoint({
+      trailId: 'heysen', name: 'Misplaced', lat: -35, lon: 138, kmPosition: 10, offTrackM: 12,
+    });
+
+    await service.updateCustomWaypoint(created.id, {
+      lat: -35.5, lon: 138.5, ele: 300, kmPosition: 42.5, offTrackM: 250,
+    });
+
+    const row = await service.getCustomWaypoint(created.id);
+    expect(row).toMatchObject({
+      lat: -35.5, lon: 138.5, ele: 300, kmPosition: 42.5, offTrackM: 250,
+      name: 'Misplaced',
+    });
+  });
+
+  it('supports delete-then-undo via restoreCustomWaypoint with a stable id', async () => {
+    const created = await service.addCustomWaypoint({
+      trailId: 'heysen', name: 'Marked 14:05', type: 'poi', lat: -35, lon: 138,
+      kmPosition: 10, offTrackM: 5, description: '±120 m fix',
+      photoUri: '/doc/waypoint-photos/x.jpg',
+    });
+
+    // Delete (immediate, no confirm) …
+    await service.deleteCustomWaypoint(created.id);
+    expect(await service.getCustomWaypoint(created.id)).toBeNull();
+
+    // … then undo restores the exact row, same id and timestamps.
+    await service.restoreCustomWaypoint(created);
+    const restored = await service.getCustomWaypoint(created.id);
+    expect(restored).toEqual(created);
   });
 
   describe('getMergedTrail', () => {
@@ -249,5 +307,50 @@ describe('TrailDataService custom waypoints', () => {
     it('returns null for an unknown trail', async () => {
       expect(await service.getMergedTrail('does-not-exist')).toBeNull();
     });
+  });
+});
+
+describe('getAllCustomWaypoints (My data)', () => {
+  let db: TestDatabase;
+  let service: TrailDataService;
+
+  beforeEach(async () => {
+    db = await createMigratedTestDb();
+    service = new TrailDataService(db as any);
+    for (const [id, name] of [['heysen', 'Heysen Trail'], ['bibbulmun', 'Bibbulmun Track']] as const) {
+      await service.storeTrail({
+        id, name, shortName: id.slice(0, 2).toUpperCase(), region: null, lengthKm: 100,
+        metadataJson: null, dataVersion: null, isCustom: false, sourceFilename: null,
+      });
+    }
+  });
+
+  afterEach(async () => {
+    await db.closeAsync();
+  });
+
+  it('returns waypoints across trails, grouped by trail name then km', async () => {
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'H far', lat: -35, lon: 138, kmPosition: 90 });
+    await service.addCustomWaypoint({ trailId: 'bibbulmun', name: 'B tank', lat: -32, lon: 116, kmPosition: 20 });
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'H near', lat: -35, lon: 138, kmPosition: 5 });
+
+    const all = await service.getAllCustomWaypoints();
+    expect(all.map(w => w.name)).toEqual(['B tank', 'H near', 'H far']);
+    expect(all.map(w => w.trailName)).toEqual(['Bibbulmun Track', 'Heysen Trail', 'Heysen Trail']);
+  });
+
+  it('returns an empty list when there are no custom waypoints', async () => {
+    expect(await service.getAllCustomWaypoints()).toEqual([]);
+  });
+
+  it('surfaces trail-delete cascades: the deleted trail\'s waypoints vanish from My data', async () => {
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'H spring', lat: -35, lon: 138, kmPosition: 10 });
+    await service.addCustomWaypoint({ trailId: 'bibbulmun', name: 'B tank', lat: -32, lon: 116, kmPosition: 20 });
+
+    await service.deleteTrail('heysen');
+
+    const all = await service.getAllCustomWaypoints();
+    expect(all).toHaveLength(1);
+    expect(all[0].name).toBe('B tank');
   });
 });

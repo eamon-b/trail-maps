@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View, Pressable } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Image, Modal, Share, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { waypointEmojis } from './WaypointList';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { isCustomWaypointId, type TrailWaypoint } from '../lib/trail-utils';
+import { waypointsToGpx, waypointPlainText } from '../lib/gpx-writer';
+import { shareGpxFile, gpxFilename } from '../services/gpx-export-service';
 
 /** Height of the collapsed ElevationProfileDrawer (first snap point) */
 const ELEVATION_DRAWER_COLLAPSED = 80;
@@ -35,6 +37,7 @@ export function WaypointDetailSheet({
 }: WaypointDetailSheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const [photoFullScreen, setPhotoFullScreen] = useState(false);
   const translateY = useRef(new Animated.Value(300)).current;
   // Snapshot of what to render. Captured from the prop on open, cleared
   // only when the exit animation completes, so the view has content to
@@ -65,6 +68,43 @@ export function WaypointDetailSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoint, translateY]);
 
+  // Share as a single-<wpt> GPX file, or as a plain-text line for messaging
+  // apps ("Name — -35.12345, 148.98765 (km 42.3)").
+  const handleShare = useCallback(() => {
+    const wp = displayWaypoint;
+    if (!wp) return;
+    Alert.alert('Share waypoint', undefined, [
+      {
+        text: 'Share GPX file',
+        onPress: async () => {
+          try {
+            const gpx = waypointsToGpx([
+              {
+                name: wp.name,
+                lat: wp.lat,
+                lon: wp.lon,
+                ele: wp.elevation,
+                type: wp.type,
+                description: wp.description,
+              },
+            ], { name: wp.name });
+            await shareGpxFile(gpxFilename(wp.name), gpx);
+          } catch (e) {
+            console.warn('Failed to share waypoint GPX:', e);
+            Alert.alert('Share failed', 'Could not share the GPX file.');
+          }
+        },
+      },
+      {
+        text: 'Share as text',
+        onPress: () => {
+          Share.share({ message: waypointPlainText(wp) }).catch(() => {});
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [displayWaypoint]);
+
   if (!displayWaypoint) return null;
 
   const emoji = waypointEmojis[displayWaypoint.type] ?? waypointEmojis.poi ?? '📍';
@@ -89,7 +129,12 @@ export function WaypointDetailSheet({
           <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
             {displayWaypoint.name}
           </Text>
-          <Text style={[styles.type, { color: colors.textSecondary }]}>{displayWaypoint.type}</Text>
+          <Text style={[styles.type, { color: colors.textSecondary }]}>
+            {displayWaypoint.type}
+            {(displayWaypoint.offTrackM ?? 0) > 25
+              ? ` · ≈${Math.round(displayWaypoint.offTrackM!)} m off trail`
+              : ''}
+          </Text>
         </View>
         <Pressable
           onPress={onDismiss}
@@ -136,6 +181,42 @@ export function WaypointDetailSheet({
         </Text>
       ) : null}
 
+      {/* Photo thumbnail (custom waypoints) — tap for full screen */}
+      {displayWaypoint.photoUri ? (
+        <>
+          <Pressable
+            onPress={() => setPhotoFullScreen(true)}
+            accessibilityRole="imagebutton"
+            accessibilityLabel="View waypoint photo full screen"
+            style={styles.photoThumbWrap}
+          >
+            <Image
+              source={{ uri: displayWaypoint.photoUri }}
+              style={[styles.photoThumb, { borderColor: colors.border }]}
+            />
+          </Pressable>
+          <Modal
+            visible={photoFullScreen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setPhotoFullScreen(false)}
+          >
+            <Pressable
+              style={styles.photoFullScreenBackdrop}
+              onPress={() => setPhotoFullScreen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close photo"
+            >
+              <Image
+                source={{ uri: displayWaypoint.photoUri }}
+                style={styles.photoFullScreen}
+                resizeMode="contain"
+              />
+            </Pressable>
+          </Modal>
+        </>
+      ) : null}
+
       {/* A waypoint without a trail km can't be placed on the profile */}
       {onShowOnProfile && displayWaypoint.totalDistance != null && (
         <Pressable
@@ -149,6 +230,18 @@ export function WaypointDetailSheet({
           </Text>
         </Pressable>
       )}
+
+      {/* Share as GPX file or plain text */}
+      <Pressable
+        onPress={handleShare}
+        style={[styles.profileButton, styles.shareButton, { borderColor: colors.accent }]}
+        accessibilityLabel="Share waypoint"
+        accessibilityRole="button"
+      >
+        <Text style={[styles.profileButtonText, { color: colors.accent }]}>
+          Share waypoint
+        </Text>
+      </Pressable>
 
       {/* User-created waypoints can be edited or deleted */}
       {isCustom && (onEdit || onDelete) && (
@@ -255,11 +348,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     lineHeight: 20,
   },
+  photoThumbWrap: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  photoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  photoFullScreenBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoFullScreen: {
+    width: '100%',
+    height: '100%',
+  },
   profileButton: {
     borderWidth: 1,
     borderRadius: radii.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
+  },
+  shareButton: {
+    marginTop: spacing.sm,
   },
   profileButtonText: {
     ...typography.caption,

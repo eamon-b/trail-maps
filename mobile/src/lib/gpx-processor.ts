@@ -449,6 +449,19 @@ interface WaypointVisit {
  * Walks through track points and records a "visit" when the route passes
  * near a waypoint. Exit threshold is 3x entry threshold to prevent flickering.
  */
+/**
+ * Resolve a waypoint's type + display name. An explicit GPX `<type>` (e.g.
+ * from our own exports) wins over name-prefix classification, so an
+ * export→import round trip preserves the type and the untouched name.
+ */
+function resolveWaypointType(wp: GpxWaypoint): { type: string; cleanedName: string } {
+  if (wp.type) {
+    return { type: wp.type, cleanedName: wp.name.trim() };
+  }
+  const classification = classifyWaypoint(wp.name);
+  return { type: classification.type, cleanedName: classification.cleanedName };
+}
+
 function findWaypointVisits(
   waypoints: GpxWaypoint[],
   trackPoints: GpxPoint[],
@@ -476,11 +489,11 @@ function findWaypointVisits(
           existing.bestTrackIndex = trackIdx;
         }
         if (distance > exitThreshold) {
-          const classification = classifyWaypoint(wp.name);
+          const resolved = resolveWaypointType(wp);
           visits.push({
             waypoint: wp,
-            classifiedType: classification.type,
-            cleanedName: classification.cleanedName,
+            classifiedType: resolved.type,
+            cleanedName: resolved.cleanedName,
             trackIndex: existing.bestTrackIndex,
             distanceFromTrack: existing.bestDistance,
           });
@@ -495,11 +508,11 @@ function findWaypointVisits(
   // Handle waypoints still inside at end of track
   for (const [wpIdx, data] of activeProximity.entries()) {
     const wp = waypoints[wpIdx];
-    const classification = classifyWaypoint(wp.name);
+    const resolved = resolveWaypointType(wp);
     visits.push({
       waypoint: wp,
-      classifiedType: classification.type,
-      cleanedName: classification.cleanedName,
+      classifiedType: resolved.type,
+      cleanedName: resolved.cleanedName,
       trackIndex: data.bestTrackIndex,
       distanceFromTrack: data.bestDistance,
     });

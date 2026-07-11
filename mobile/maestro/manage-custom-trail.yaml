@@ -1,6 +1,7 @@
 appId: com.trailcompanion.app
 ---
-# Manage a custom trail: view details, verify management options
+# Manage a custom trail. Rename/delete moved to the Contribute tab's
+# "My data" surface (P1 PR E); the overview now points there.
 # Prerequisites: A custom trail must already be imported (steps are optional if not)
 
 - runFlow: shared/launch-dev.yaml
@@ -19,19 +20,12 @@ appId: com.trailcompanion.app
     optional: true
 - waitForAnimationToEnd
 
-# On the overview screen, verify custom trail management section
+# On the overview screen, verify the custom trail section + management hint
 - assertVisible:
     text: "CUSTOM TRAIL"
     optional: true
-
-# Verify Edit button is available for custom trails
 - assertVisible:
-    text: "Edit"
-    optional: true
-
-# Verify Delete Trail option is available
-- assertVisible:
-    text: "Delete Trail"
+    text: "Rename or delete this trail from the Contribute tab (My data)."
     optional: true
 
 # Go back to trail list (use Back button if on overview, otherwise already on list)
@@ -40,3 +34,17 @@ appId: com.trailcompanion.app
     optional: true
 - waitForAnimationToEnd
 - assertVisible: "Select a Trail"
+
+# The management home: Contribute tab -> My data
+- tapOn: "Contribute"
+- waitForAnimationToEnd
+- assertVisible: "My data"
+- assertVisible: "MY TRAILS"
+
+# Rename/Delete actions are present when a custom trail exists
+- assertVisible:
+    text: "Rename"
+    optional: true
+- assertVisible:
+    text: "Delete"
+    optional: true

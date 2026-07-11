@@ -17,6 +17,7 @@ import { type TrailWaypoint } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { calculateElevationBetween } from '@lib/track-geometry';
 import { waypointEmojis } from '../../src/components/WaypointList';
+import { getWaypointLabel } from '../../src/lib/waypoint-type-meta';
 import { DIRECTION_PREF_KEY } from './[id]';
 import { spacing, radii } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
@@ -29,13 +30,10 @@ interface WaypointRow {
   isPast: boolean;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  town: 'Town',
-  hut: 'Hut',
-  shelter: 'Shelter',
-  campsite: 'Camp',
-  trailhead: 'Trailhead',
-};
+// Types that show a secondary label under the waypoint name in the list.
+// Labels come from the shared registry; the set is limited to the types
+// where the label adds information a hiker scans for.
+const LABELLED_TYPES = new Set(['town', 'hut', 'shelter', 'campsite', 'trailhead', 'hazard', 'lookout', 'junction']);
 
 export default function DatasheetScreen() {
   const { id, fromKm } = useLocalSearchParams<{ id: string; fromKm?: string }>();
@@ -193,7 +191,7 @@ export default function DatasheetScreen() {
         renderItem={({ item }) => {
           const wp = item.waypoint;
           const emoji = waypointEmojis[wp.type] ?? waypointEmojis.poi ?? '📍';
-          const typeLabel = TYPE_LABELS[wp.type];
+          const typeLabel = LABELLED_TYPES.has(wp.type) ? getWaypointLabel(wp.type) : undefined;
           const dimmed = item.isPast;
           const rowKey = `${wp.name}-${wp.totalDistance ?? wp.lat}`;
           const isExpanded = expandedName === rowKey;

@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase } from '../db/database';
 import { TRAIL_DATA, type TrailJson } from './trail-loader';
 import { trailJsonToTrail, mergeCustomWaypoints, type Trail as ParsedTrail } from '../lib/trail-utils';
+import { CREATABLE_WAYPOINT_TYPES } from '../lib/waypoint-type-meta';
 
 export interface Trail {
   id: string;
@@ -29,9 +30,12 @@ export interface Waypoint {
   description: string | null;
 }
 
-/** Waypoint types users can pick when adding a custom waypoint. */
-export const CUSTOM_WAYPOINT_TYPES = ['water', 'water-tank', 'campsite', 'poi'] as const;
-export type CustomWaypointType = (typeof CUSTOM_WAYPOINT_TYPES)[number];
+/**
+ * Waypoint types users can pick when adding a custom waypoint. Derived from
+ * the WAYPOINT_TYPE_META registry (single source of truth for labels/colors).
+ */
+export const CUSTOM_WAYPOINT_TYPES: readonly string[] = CREATABLE_WAYPOINT_TYPES;
+export type CustomWaypointType = string;
 
 /**
  * A user-created waypoint. Stored in the dedicated `custom_waypoints` table
@@ -51,6 +55,8 @@ export interface CustomWaypoint {
   kmPosition: number;
   offTrackM: number | null;
   description: string | null;
+  /** File URI of the attached photo (documentDirectory/waypoint-photos/) */
+  photoUri: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,11 +72,12 @@ export type NewCustomWaypoint = {
   kmPosition: number;
   offTrackM?: number | null;
   description?: string | null;
+  photoUri?: string | null;
 };
 
 /** Fields of a custom waypoint that can be edited after creation. */
 export type CustomWaypointUpdate = Partial<
-  Pick<CustomWaypoint, 'name' | 'lat' | 'lon' | 'ele' | 'kmPosition' | 'offTrackM' | 'description'> & {
+  Pick<CustomWaypoint, 'name' | 'lat' | 'lon' | 'ele' | 'kmPosition' | 'offTrackM' | 'description' | 'photoUri'> & {
     type: CustomWaypointType;
   }
 >;
@@ -112,6 +119,7 @@ interface CustomWaypointRow {
   km_position: number;
   off_track_m: number | null;
   description: string | null;
+  photo_uri: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -144,6 +152,7 @@ function rowToCustomWaypoint(row: CustomWaypointRow): CustomWaypoint {
     kmPosition: row.km_position,
     offTrackM: row.off_track_m,
     description: row.description,
+    photoUri: row.photo_uri,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -377,28 +386,63 @@ export class TrailDataService {
   async addCustomWaypoint(wp: NewCustomWaypoint): Promise<CustomWaypoint> {
     const id = generateCustomWaypointId();
     const now = new Date().toISOString();
-    const type = wp.type ?? 'water';
-
-    await this.db.runAsync(
-      `INSERT INTO custom_waypoints (id, trail_id, name, type, lat, lon, ele, km_position, off_track_m, description, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, wp.trailId, wp.name, type, wp.lat, wp.lon, wp.ele ?? null, wp.kmPosition, wp.offTrackM ?? null, wp.description ?? null, now, now]
-    );
-
-    return {
+    const row: CustomWaypoint = {
       id,
       trailId: wp.trailId,
       name: wp.name,
-      type,
+      type: wp.type ?? 'water',
       lat: wp.lat,
       lon: wp.lon,
       ele: wp.ele ?? null,
       kmPosition: wp.kmPosition,
       offTrackM: wp.offTrackM ?? null,
       description: wp.description ?? null,
+      photoUri: wp.photoUri ?? null,
       createdAt: now,
       updatedAt: now,
     };
+    await this.insertCustomWaypointRow(row);
+    return row;
+  }
+
+  /**
+   * Re-insert a previously deleted custom waypoint row exactly as it was
+   * (same id and timestamps), so undo keeps merged `custom-` references and
+   * any route legs pointing at it stable.
+   */
+  async restoreCustomWaypoint(row: CustomWaypoint): Promise<void> {
+    await this.insertCustomWaypointRow(row);
+  }
+
+  private async insertCustomWaypointRow(row: CustomWaypoint): Promise<void> {
+    await this.db.runAsync(
+      `INSERT INTO custom_waypoints (id, trail_id, name, type, lat, lon, ele, km_position, off_track_m, description, photo_uri, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [row.id, row.trailId, row.name, row.type, row.lat, row.lon, row.ele, row.kmPosition, row.offTrackM, row.description, row.photoUri, row.createdAt, row.updatedAt]
+    );
+  }
+
+  /** Get a single custom waypoint by its row id, or null. */
+  async getCustomWaypoint(id: string): Promise<CustomWaypoint | null> {
+    const row = await this.db.getFirstAsync<CustomWaypointRow>(
+      'SELECT * FROM custom_waypoints WHERE id = ?',
+      [id]
+    );
+    return row ? rowToCustomWaypoint(row) : null;
+  }
+
+  /**
+   * All custom waypoints across every trail (the "My data" tab), with each
+   * trail's display name attached, grouped by trail then ordered along it.
+   */
+  async getAllCustomWaypoints(): Promise<(CustomWaypoint & { trailName: string })[]> {
+    const rows = await this.db.getAllAsync<CustomWaypointRow & { trail_name: string }>(
+      `SELECT cw.*, t.name AS trail_name
+       FROM custom_waypoints cw
+       JOIN trails t ON t.id = cw.trail_id
+       ORDER BY t.name, cw.km_position`
+    );
+    return rows.map(row => ({ ...rowToCustomWaypoint(row), trailName: row.trail_name }));
   }
 
   /** Get all custom waypoints for a trail, ordered along the trail. */
@@ -421,6 +465,7 @@ export class TrailDataService {
       kmPosition: 'km_position',
       offTrackM: 'off_track_m',
       description: 'description',
+      photoUri: 'photo_uri',
     };
 
     const setClauses: string[] = [];

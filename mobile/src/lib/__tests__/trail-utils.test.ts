@@ -9,6 +9,7 @@ import {
   createReversedTrail,
   trailJsonToTrail,
   findVariantByKey,
+  nearestTrackPointToLatLon,
   type TrackPoint,
   type Trail,
   type RouteVariant,
@@ -417,5 +418,33 @@ describe('createReversedTrail — id preservation', () => {
     expect(reversed.waypoints[1].name).toBe('B');
     expect(reversed.waypoints[2].id).toBe('wp-0');
     expect(reversed.waypoints[2].name).toBe('A');
+  });
+});
+
+describe('nearestTrackPointToLatLon', () => {
+  const points: TrackPoint[] = [];
+  // Straight north-south track along lon 138, from -35.0 to -35.9
+  for (let i = 0; i < 100; i++) {
+    points.push({ lat: -35 - i * 0.009, lon: 138, ele: 100 + i, dist: i });
+  }
+
+  it('finds the nearest point for an on-track location', () => {
+    const result = nearestTrackPointToLatLon(points, -35.045, 138);
+    expect(result).not.toBeNull();
+    expect(result!.index).toBe(5);
+    expect(result!.distanceM).toBeLessThan(10);
+  });
+
+  it('reports the distance for an off-track location', () => {
+    // ~0.01° of longitude at -35° ≈ 910 m
+    const result = nearestTrackPointToLatLon(points, -35.045, 138.01);
+    expect(result).not.toBeNull();
+    expect(result!.index).toBe(5);
+    expect(result!.distanceM).toBeGreaterThan(800);
+    expect(result!.distanceM).toBeLessThan(1000);
+  });
+
+  it('returns null for an empty track', () => {
+    expect(nearestTrackPointToLatLon([], -35, 138)).toBeNull();
   });
 });

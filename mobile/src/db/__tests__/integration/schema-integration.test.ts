@@ -179,6 +179,86 @@ describe('schema migrations', () => {
     await db.closeAsync();
   });
 
+  it('v5 → v6 preserves custom waypoints and adds photo_uri', async () => {
+    const db = createTestDatabase();
+
+    // Build a database at v5 with an existing custom waypoint
+    await migrateDatabase(db as any, 5);
+    await db.runAsync('INSERT INTO trails (id, name) VALUES (?, ?)', ['trail-1', 'Test Trail']);
+    await db.runAsync(
+      `INSERT INTO custom_waypoints (id, trail_id, name, type, lat, lon, km_position, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['cw-1', 'trail-1', 'My spring', 'water', -33.5, 115.5, 42.3, '2026-07-04', '2026-07-04']
+    );
+
+    // Upgrade to v6
+    await migrateDatabase(db as any);
+
+    const version = await db.getFirstAsync<{ version: number }>('SELECT version FROM schema_version');
+    expect(version!.version).toBe(SCHEMA_VERSION);
+
+    // Existing row preserved, photo_uri nullable with no backfill
+    const row = await db.getFirstAsync<{ name: string; photo_uri: string | null }>(
+      'SELECT name, photo_uri FROM custom_waypoints WHERE id = ?', ['cw-1']
+    );
+    expect(row!.name).toBe('My spring');
+    expect(row!.photo_uri).toBeNull();
+
+    // Column is writable
+    await db.runAsync('UPDATE custom_waypoints SET photo_uri = ? WHERE id = ?', ['/doc/waypoint-photos/cw-1.jpg', 'cw-1']);
+    const updated = await db.getFirstAsync<{ photo_uri: string }>(
+      'SELECT photo_uri FROM custom_waypoints WHERE id = ?', ['cw-1']
+    );
+    expect(updated!.photo_uri).toBe('/doc/waypoint-photos/cw-1.jpg');
+
+    await db.closeAsync();
+  });
+
+  it('v6 → v7 adds routes + route_legs with cascade wiring', async () => {
+    const db = createTestDatabase();
+
+    await migrateDatabase(db as any, 6);
+    await db.runAsync('INSERT INTO trails (id, name) VALUES (?, ?)', ['trail-1', 'Test Trail']);
+
+    // Upgrade to v7
+    await migrateDatabase(db as any);
+    const version = await db.getFirstAsync<{ version: number }>('SELECT version FROM schema_version');
+    expect(version!.version).toBe(SCHEMA_VERSION);
+
+    // Tables usable
+    await db.runAsync(
+      'INSERT INTO routes (id, trail_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ['r-1', 'trail-1', 'Lookout loop', '2026-07-11', '2026-07-11']
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-1', 0, 'wp-3', 12.5]
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-1', 1, null, 18.0]
+    );
+
+    // Deleting the route cascades to its legs
+    await db.runAsync('DELETE FROM routes WHERE id = ?', ['r-1']);
+    expect(await db.getAllAsync('SELECT * FROM route_legs')).toHaveLength(0);
+
+    // Deleting the trail cascades to routes (and transitively their legs)
+    await db.runAsync(
+      'INSERT INTO routes (id, trail_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ['r-2', 'trail-1', 'Water run', '2026-07-11', '2026-07-11']
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-2', 0, 'wp-1', 5]
+    );
+    await db.runAsync('DELETE FROM trails WHERE id = ?', ['trail-1']);
+    expect(await db.getAllAsync('SELECT * FROM routes')).toHaveLength(0);
+    expect(await db.getAllAsync('SELECT * FROM route_legs')).toHaveLength(0);
+
+    await db.closeAsync();
+  });
+
   it('custom_waypoints defaults type to water', async () => {
     const db = await createMigratedTestDb();
 

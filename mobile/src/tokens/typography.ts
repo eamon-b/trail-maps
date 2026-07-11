@@ -93,6 +93,17 @@ export const typography = {
 export type TypographyToken = keyof typeof typography;
 
 /**
+ * Emoji / text-glyph icon sizes — for icon-like text (chevrons, emoji markers,
+ * close ×), never body copy. Referencing these (fontSize: glyphSizes.md)
+ * satisfies the design-token lint rule, which bans raw numeric fontSize.
+ */
+export const glyphSizes = {
+  sm: 18,
+  md: 20,
+  lg: 22,
+} as const;
+
+/**
  * Global cap for OS font scaling: text grows up to 1.4× with the system
  * accessibility setting, then clamps so fixed layouts degrade gracefully
  * instead of clipping. Applied by AppText and the shared primitives.

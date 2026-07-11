@@ -10,6 +10,7 @@ import { MapErrorBoundary } from '../../src/components/MapErrorBoundary';
 import { ElevationProfileDrawer } from '../../src/components/ElevationProfileDrawer';
 import { WaypointDetailSheet } from '../../src/components/WaypointDetailSheet';
 import { AddWaypointSheet, type AddWaypointValues } from '../../src/components/AddWaypointSheet';
+import { UndoToast } from '../../src/components/UndoToast';
 import { LocationStatusBar, type LocationState } from '../../src/components';
 import { useTheme } from '../../src/theme';
 import { useFocusedWaypoint } from '../../src/theme/FocusedWaypointContext';
@@ -17,11 +18,25 @@ import { useLocation } from '../../src/hooks/useLocation';
 import { useTrailData } from '../../src/contexts/TrailDataContext';
 import {
   findNearestByDistance,
+  nearestTrackPointToLatLon,
   customWaypointRowId,
   type TrailWaypoint,
 } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
-import { TrailDataService } from '../../src/services/trail-data-service';
+import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-data-service';
+import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
+import {
+  RouteService,
+  assembleRouteMetrics,
+  resolveRoutePoints,
+  routeOverlayGeometry,
+  waypointToRoutePoint,
+  type Route,
+  type RouteLeg,
+} from '../../src/services/route-service';
+import { RoutePanel } from '../../src/components/RoutePanel';
+import { routeToGpx } from '../../src/lib/gpx-writer';
+import { shareGpxFile, gpxFilename } from '../../src/services/gpx-export-service';
 import { tileManager } from '../../src/services/tile-manager';
 import { useTileDownloads } from '../../src/hooks/useTileDownloads';
 import { spacing, radii } from '../../src/tokens/spacing';
@@ -44,6 +59,16 @@ interface PendingWaypoint {
 
 export const DIRECTION_PREF_KEY = 'trail_direction_prefs';
 export const ACTIVE_TRAIL_KEY = 'active_trail_id';
+
+/**
+ * Crosshair placement mode: pan the map under a fixed center crosshair, then
+ * Confirm (decision 6 — re-drop instead of drag, which fights the pan gesture
+ * and the follow camera). Used both for the toolbar "+" create flow and the
+ * edit-mode "Move pin" flow.
+ */
+type CrosshairMode =
+  | { kind: 'create' }
+  | { kind: 'move'; waypoint: TrailWaypoint };
 
 // ---------------------------------------------------------------------------
 // Viewer reducer
@@ -110,7 +135,7 @@ function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
 }
 
 export default function TrailViewerScreen() {
-  const { id, focusWaypointId } = useLocalSearchParams<{ id: string; focusWaypointId?: string }>();
+  const { id, focusWaypointId, routeId } = useLocalSearchParams<{ id: string; focusWaypointId?: string; routeId?: string }>();
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -126,6 +151,16 @@ export default function TrailViewerScreen() {
   // In-flight guard so a double-tap on Save can't insert the waypoint twice.
   const [savingWaypoint, setSavingWaypoint] = useState(false);
   const savingRef = useRef(false);
+  // Crosshair placement mode (toolbar "+" create, or edit-mode "Move pin")
+  const [crosshair, setCrosshair] = useState<CrosshairMode | null>(null);
+  // Deleted custom waypoint held for undo. Photo file deletion is deferred
+  // until the toast expires so undo restores the photo too.
+  const [deletedWaypoint, setDeletedWaypoint] = useState<CustomWaypoint | null>(null);
+  // Route builder: ordered waypoints tapped on the map (null = not building)
+  const [routeDraft, setRouteDraft] = useState<TrailWaypoint[] | null>(null);
+  const [savingRoute, setSavingRoute] = useState(false);
+  // Saved route being viewed (deep-linked via the routeId param)
+  const [routeView, setRouteView] = useState<{ route: Route; legs: RouteLeg[] } | null>(null);
   const { sheetWaypoint: selectedWaypoint, focusedId: focusedWaypointId, drawerIndex, cameraMode } = viewer;
   const mapRef = useRef<TrailMapHandle>(null);
   const [offlineMapStyle, setOfflineMapStyle] = useState<object | null>(null);
@@ -243,11 +278,66 @@ export default function TrailViewerScreen() {
     return selectedWaypoint.totalDistance - currentKm;
   }, [currentKm, selectedWaypoint]);
 
+  // Consume the routeId route param (deep link from My routes): load the
+  // saved route and show it on the map. Consumed once per param value.
+  const consumedRouteIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!routeId) return;
+    if (consumedRouteIdRef.current === routeId) return;
+    consumedRouteIdRef.current = routeId;
+    (async () => {
+      try {
+        const service = await RouteService.create();
+        const route = await service.getRoute(routeId);
+        if (!route) return;
+        const legs = await service.getRouteLegs(routeId);
+        setRouteDraft(null);
+        setRouteView({ route, legs });
+      } catch (e) {
+        console.warn('Failed to load route:', e);
+      }
+    })();
+  }, [routeId]);
+
+  // Resolve the viewed route's legs against the (direction-aware) trail
+  const routeViewPoints = useMemo(() => {
+    if (!routeView || !activeTrail) return null;
+    return resolveRoutePoints(activeTrail, routeView.legs, { reversed: isReversed });
+  }, [routeView, activeTrail, isReversed]);
+
+  // Builder points → resolved shape shared with the viewer
+  const routeDraftPoints = useMemo(() => {
+    if (!routeDraft) return null;
+    return routeDraft.map((wp, i) => waypointToRoutePoint(wp, i));
+  }, [routeDraft]);
+
+  const activeRoutePoints = routeDraftPoints ?? routeViewPoints;
+
+  const routeMetrics = useMemo(() => {
+    if (!activeTrail || !activeRoutePoints) return null;
+    return assembleRouteMetrics(activeTrail, activeRoutePoints);
+  }, [activeTrail, activeRoutePoints]);
+
+  const routeOverlay = useMemo(() => {
+    if (!activeRoutePoints || activeRoutePoints.length < 2) return null;
+    return routeOverlayGeometry(activeRoutePoints);
+  }, [activeRoutePoints]);
+
   // Handlers — each user intent is a single dispatch (+ at most a one-shot
   // imperative pan, which is fire-and-forget and never re-applied)
   const handleWaypointPress = useCallback((wp: TrailWaypoint) => {
+    // In route-builder mode a waypoint tap appends to the route instead of
+    // opening the detail sheet (consecutive duplicates ignored).
+    if (routeDraft) {
+      setRouteDraft(prev => {
+        if (!prev) return prev;
+        if (prev.length > 0 && prev[prev.length - 1].id === wp.id) return prev;
+        return [...prev, wp];
+      });
+      return;
+    }
     dispatch({ type: 'selectWaypoint', waypoint: wp });
-  }, []);
+  }, [routeDraft]);
 
   const handleDismissWaypoint = useCallback(() => {
     dispatch({ type: 'deselect' });
@@ -348,7 +438,12 @@ export default function TrailViewerScreen() {
           name: values.name,
           type: values.type,
           description: values.description || null,
+          photoUri: values.photoUri,
         });
+        // A replaced/removed photo's old file is no longer referenced.
+        if (editingWaypoint.photoUri && editingWaypoint.photoUri !== values.photoUri) {
+          deleteWaypointPhoto(editingWaypoint.photoUri);
+        }
       } else if (pendingWaypoint) {
         await service.addCustomWaypoint({
           trailId: id,
@@ -360,6 +455,7 @@ export default function TrailViewerScreen() {
           kmPosition: pendingWaypoint.baseKm,
           offTrackM: pendingWaypoint.offTrackM,
           description: values.description || null,
+          photoUri: values.photoUri,
         });
       }
       closeWaypointSheet();
@@ -380,30 +476,207 @@ export default function TrailViewerScreen() {
     setEditingWaypoint(wp);
   }, []);
 
-  const handleDeleteWaypoint = useCallback((wp: TrailWaypoint) => {
-    Alert.alert(
-      'Delete waypoint',
-      `Delete "${wp.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const service = await TrailDataService.create();
-              await service.deleteCustomWaypoint(customWaypointRowId(wp.id));
-              dispatch({ type: 'deselect' });
-              await refreshCustomWaypoints();
-            } catch (e) {
-              console.warn('Failed to delete custom waypoint:', e);
-              Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
-            }
-          },
-        },
-      ],
-    );
+  // Delete is immediate with an undo toast (replaces the old confirm Alert —
+  // both safer and faster in the field). The full row is kept in memory and
+  // re-inserted with the same id on undo, so merged `custom-` references stay
+  // stable. Photo file deletion is deferred until the toast expires.
+  const handleDeleteWaypoint = useCallback(async (wp: TrailWaypoint) => {
+    try {
+      const service = await TrailDataService.create();
+      const rowId = customWaypointRowId(wp.id);
+      const row = await service.getCustomWaypoint(rowId);
+      await service.deleteCustomWaypoint(rowId);
+      dispatch({ type: 'deselect' });
+      setDeletedWaypoint(row);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to delete custom waypoint:', e);
+      Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
+    }
   }, [refreshCustomWaypoints]);
+
+  const handleUndoDelete = useCallback(async () => {
+    const row = deletedWaypoint;
+    setDeletedWaypoint(null);
+    if (!row) return;
+    try {
+      const service = await TrailDataService.create();
+      await service.restoreCustomWaypoint(row);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to restore custom waypoint:', e);
+      Alert.alert('Undo failed', 'Could not restore the waypoint.');
+    }
+  }, [deletedWaypoint, refreshCustomWaypoints]);
+
+  const handleDeleteToastDismiss = useCallback(() => {
+    // Toast expired without undo — the photo file is now orphaned.
+    if (deletedWaypoint?.photoUri) {
+      deleteWaypointPhoto(deletedWaypoint.photoUri);
+    }
+    setDeletedWaypoint(null);
+  }, [deletedWaypoint]);
+
+  // --- Route builder (toolbar "Route" — P1 PR D) ----------------------------
+
+  const enterRouteBuilder = useCallback(() => {
+    setCrosshair(null);
+    setPendingWaypoint(null);
+    setEditingWaypoint(null);
+    setRouteView(null);
+    dispatch({ type: 'deselect' });
+    setRouteDraft([]);
+  }, []);
+
+  const exitRoutePanel = useCallback(() => {
+    setRouteDraft(null);
+    setRouteView(null);
+  }, []);
+
+  const handleRemoveRoutePoint = useCallback((index: number) => {
+    setRouteDraft(prev => (prev ? prev.filter((_, i) => i !== index) : prev));
+  }, []);
+
+  const handleMoveRoutePoint = useCallback((index: number, direction: -1 | 1) => {
+    setRouteDraft(prev => {
+      if (!prev) return prev;
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }, []);
+
+  const handleSaveRoute = useCallback(async (name: string) => {
+    const trail = activeTrail;
+    if (!id || !trail || !routeDraft || routeDraft.length < 2) return;
+    setSavingRoute(true);
+    try {
+      const service = await RouteService.create();
+      // km_position is stored in the trail's base direction (same convention
+      // as custom_waypoints) so it stays valid whichever way the trail is
+      // later displayed.
+      const legs = routeDraft.map(wp => {
+        const activeKm = wp.totalDistance ?? 0;
+        return {
+          waypointRef: wp.id,
+          kmPosition: isReversed ? trail.track.totalDistance - activeKm : activeKm,
+        };
+      });
+      const route = await service.createRoute(id, name, legs);
+      // Switch straight into viewing the saved route
+      const savedLegs = await service.getRouteLegs(route.id);
+      setRouteDraft(null);
+      setRouteView({ route, legs: savedLegs });
+    } catch (e) {
+      console.warn('Failed to save route:', e);
+      Alert.alert('Save failed', 'Could not save the route. Please try again.');
+    } finally {
+      setSavingRoute(false);
+    }
+  }, [id, activeTrail, routeDraft, isReversed]);
+
+  const handleExportRoute = useCallback(async () => {
+    if (!routeView || !routeViewPoints) return;
+    try {
+      const gpx = routeToGpx(
+        routeView.route.name,
+        routeViewPoints.map(pt => ({ lat: pt.lat, lon: pt.lon, ele: pt.ele, name: pt.name })),
+      );
+      await shareGpxFile(gpxFilename(routeView.route.name), gpx);
+    } catch (e) {
+      console.warn('Failed to export route:', e);
+      Alert.alert('Export failed', 'Could not export the GPX file.');
+    }
+  }, [routeView, routeViewPoints]);
+
+  // --- Crosshair placement (toolbar "+" create, edit-mode "Move pin") -------
+
+  const enterCreateCrosshair = useCallback(() => {
+    setPendingWaypoint(null);
+    setEditingWaypoint(null);
+    setRouteDraft(null);
+    setRouteView(null);
+    dispatch({ type: 'deselect' });
+    // Free the camera so a GPS tick can't drag the map out from under the
+    // crosshair while the user is lining up the spot.
+    dispatch({ type: 'userPanned' });
+    setCrosshair({ kind: 'create' });
+  }, []);
+
+  const handleMovePin = useCallback(() => {
+    const wp = editingWaypoint;
+    if (!wp) return;
+    setEditingWaypoint(null);
+    dispatch({ type: 'userPanned' });
+    setCrosshair({ kind: 'move', waypoint: wp });
+    // Start the crosshair on the pin being moved.
+    mapRef.current?.panTo(wp.lat, wp.lon);
+  }, [editingWaypoint]);
+
+  const cancelCrosshair = useCallback(() => {
+    const mode = crosshair;
+    setCrosshair(null);
+    // Cancelling a move returns to the edit sheet it came from.
+    if (mode?.kind === 'move') {
+      setEditingWaypoint(mode.waypoint);
+    }
+  }, [crosshair]);
+
+  const confirmCrosshair = useCallback(async () => {
+    const mode = crosshair;
+    const trail = activeTrail;
+    if (!mode || !trail) return;
+
+    const center = await mapRef.current?.getCenter();
+    if (!center) {
+      Alert.alert('Placement failed', 'Could not read the map position. Please try again.');
+      return;
+    }
+    const [lat, lon] = center;
+
+    // Snap against the full-resolution track (same as the long-press path).
+    const points = trail.track.points;
+    const nearest = nearestTrackPointToLatLon(points, lat, lon);
+    if (!nearest) return;
+    const trackPt = points[nearest.index];
+    const activeKm = trackPt.dist;
+    const offTrackM = nearest.distanceM;
+    // km_position is stored in the trail's base direction so the merge at the
+    // load boundary (which happens pre-reversal) places it correctly.
+    const baseKm = isReversed ? trail.track.totalDistance - activeKm : activeKm;
+
+    if (mode.kind === 'create') {
+      setCrosshair(null);
+      setPendingWaypoint({
+        lat,
+        lon,
+        ele: trackPt.ele ?? null,
+        baseKm,
+        activeKm,
+        offTrackM,
+      });
+      return;
+    }
+
+    // Move: persist the new position (lat/lon/ele/km/off-track together).
+    try {
+      const service = await TrailDataService.create();
+      await service.updateCustomWaypoint(customWaypointRowId(mode.waypoint.id), {
+        lat,
+        lon,
+        ele: trackPt.ele ?? null,
+        kmPosition: baseKm,
+        offTrackM,
+      });
+      setCrosshair(null);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to move custom waypoint:', e);
+      Alert.alert('Move failed', 'Could not move the waypoint. Please try again.');
+    }
+  }, [crosshair, activeTrail, isReversed, refreshCustomWaypoints]);
 
   if (contextLoading || (!activeTrail && !contextError)) {
     return (
@@ -490,6 +763,25 @@ export default function TrailViewerScreen() {
         </Pressable>
 
         <Pressable
+          onPress={enterCreateCrosshair}
+          style={styles.toolbarButton}
+          accessibilityLabel="Add waypoint"
+          accessibilityRole="button"
+        >
+          <Text style={[styles.toolbarButtonText, { color: colors.accent }]}>＋</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={routeDraft ? exitRoutePanel : enterRouteBuilder}
+          style={styles.toolbarButton}
+          accessibilityLabel={routeDraft ? 'Exit route builder' : 'Build a route'}
+          accessibilityRole="button"
+          accessibilityState={{ selected: routeDraft != null }}
+        >
+          <Text style={[styles.toolbarButtonText, { color: routeDraft ? colors.textPrimary : colors.accent }]}>⚑</Text>
+        </Pressable>
+
+        <Pressable
           onPress={() => {
             const params: Record<string, string> = { id: id! };
             if (currentKm != null) params.fromKm = currentKm.toFixed(1);
@@ -523,9 +815,46 @@ export default function TrailViewerScreen() {
             mapStyleOverride={offlineMapStyle}
             trackPoints={trackPoints}
             onVisibleBoundsChange={handleVisibleBoundsChange}
-            onLongPress={handleMapLongPress}
+            onLongPress={crosshair || routeDraft ? undefined : handleMapLongPress}
+            routeOverlay={routeOverlay}
           />
         </MapErrorBoundary>
+
+        {/* Crosshair placement overlay — fixed center marker, pan the map
+            under it (decision 6). pointerEvents="none" on the crosshair so
+            map gestures pass through; only Confirm/Cancel capture touches. */}
+        {crosshair && (
+          <>
+            <View style={styles.crosshairOverlay} pointerEvents="none">
+              <Text style={[styles.crosshairGlyph, { color: colors.accent }]}>✛</Text>
+            </View>
+            <View style={[styles.crosshairChip, { backgroundColor: colors.surface, borderColor: colors.border }]} pointerEvents="none">
+              <Text style={[styles.crosshairChipText, { color: colors.textPrimary }]}>
+                {crosshair.kind === 'move'
+                  ? `Pan the map to reposition "${crosshair.waypoint.name}"`
+                  : 'Pan the map to place the waypoint'}
+              </Text>
+            </View>
+            <View style={styles.crosshairActions}>
+              <Pressable
+                onPress={cancelCrosshair}
+                style={[styles.crosshairButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel placement"
+              >
+                <Text style={[styles.crosshairButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmCrosshair}
+                style={[styles.crosshairButton, { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                accessibilityRole="button"
+                accessibilityLabel={crosshair.kind === 'move' ? 'Confirm new position' : 'Confirm waypoint position'}
+              >
+                <Text style={[styles.crosshairButtonText, { color: colors.textInverse }]}>Confirm</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Elevation profile drawer */}
@@ -567,12 +896,39 @@ export default function TrailViewerScreen() {
                 name: editingWaypoint.name,
                 type: editingWaypoint.type,
                 description: editingWaypoint.description,
+                photoUri: editingWaypoint.photoUri ?? null,
               }
             : null
         }
         onDismiss={closeWaypointSheet}
         onSave={handleSaveWaypoint}
         saving={savingWaypoint}
+        onMovePin={editingWaypoint ? handleMovePin : undefined}
+      />
+
+      {/* Route builder / viewer panel (P1 PR D) */}
+      {activeRoutePoints && routeMetrics && (
+        <RoutePanel
+          mode={routeDraft ? 'build' : 'view'}
+          routeName={routeView?.route.name}
+          points={activeRoutePoints}
+          metrics={routeMetrics}
+          onRemovePoint={handleRemoveRoutePoint}
+          onMovePoint={handleMoveRoutePoint}
+          onSave={handleSaveRoute}
+          onExport={routeView ? handleExportRoute : undefined}
+          onClose={exitRoutePanel}
+          saving={savingRoute}
+        />
+      )}
+
+      {/* Undo toast for waypoint deletion (5 s window) */}
+      <UndoToast
+        visible={deletedWaypoint != null}
+        message={deletedWaypoint ? `Deleted "${deletedWaypoint.name}"` : ''}
+        onUndo={handleUndoDelete}
+        onDismiss={handleDeleteToastDismiss}
+        durationMs={5000}
       />
     </View>
   );
@@ -643,5 +999,53 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+  },
+  crosshairOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crosshairGlyph: {
+    fontSize: 36,
+    fontWeight: '300',
+    textShadowColor: '#fff',
+    textShadowRadius: 4,
+  },
+  crosshairChip: {
+    position: 'absolute',
+    top: spacing.lg,
+    alignSelf: 'center',
+    maxWidth: '85%',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 3,
+  },
+  crosshairChipText: {
+    ...typography.caption,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  crosshairActions: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    left: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  crosshairButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
+  crosshairButtonText: {
+    ...typography.body,
+    fontWeight: '700',
   },
 });

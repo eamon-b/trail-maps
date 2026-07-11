@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { spacing } from '../tokens/spacing';
@@ -8,6 +8,28 @@ import { WaypointCard } from './WaypointCard';
 import { WaypointList, WaypointListItem } from './WaypointList';
 import { Card, CardState } from './Card';
 import { WaterCountdown } from './WaterCountdown';
+import { BearingIndicator } from './BearingIndicator';
+
+/** A "NEXT X" card's data (id enables deep-linking to the waypoint on the map) */
+export interface NextWaypointData {
+  id?: string;
+  name: string;
+  distance: string;
+  elevation?: string;
+  /** Naismith ETA text (e.g. "~50 min") */
+  eta?: string;
+  /** Bearing from the current position to the waypoint, degrees from north */
+  bearing?: number;
+  /** One-line context note (e.g. the water description's first line) */
+  note?: string;
+}
+
+/** GPS course data that gates the bearing arrows (decision 8) */
+export interface GpsCourse {
+  heading: number | null;
+  speed: number | null;
+  fixTimestamp: number | null;
+}
 
 export interface DashboardData {
   /** Trail info */
@@ -16,11 +38,17 @@ export interface DashboardData {
   currentKm: number;
   totalKm: number;
 
-  /** Next waypoints by type (id enables deep-linking to the waypoint on the map) */
-  nextCampsite?: { id?: string; name: string; distance: string; elevation?: string };
-  nextWater?: { id?: string; name: string; distance: string };
-  nextTown?: { id?: string; name: string; distance: string; elevation?: string };
-  nextShelter?: { id?: string; name: string; distance: string };
+  /** Next waypoints by type */
+  nextCampsite?: NextWaypointData;
+  nextWater?: NextWaypointData;
+  nextTown?: NextWaypointData;
+  nextShelter?: NextWaypointData;
+
+  /** GPS course for the bearing arrows */
+  gpsCourse?: GpsCourse;
+
+  /** Naismith minutes to the next water source (time-to-water) */
+  nextWaterEtaMinutes?: number;
 
   /** Today's plan */
   today?: {
@@ -60,15 +88,20 @@ interface HikeDashboardProps {
 }
 
 /**
- * Format estimated arrival time: now + remainingHours → "HH:MM"
+ * Format estimated arrival time: now + remainingHours → "HH:MM".
+ * `nowMs` is passed in (not read inline) so the caller can recompute on an
+ * interval — a Date.now() at render silently goes stale during breaks.
  */
-function formatETA(remainingHours: number): string {
-  const arrivalMs = Date.now() + remainingHours * 3_600_000;
+function formatETA(remainingHours: number, nowMs: number): string {
+  const arrivalMs = nowMs + remainingHours * 3_600_000;
   const d = new Date(arrivalMs);
   const h = d.getHours().toString().padStart(2, '0');
   const m = d.getMinutes().toString().padStart(2, '0');
   return `${h}:${m}`;
 }
+
+/** Recompute interval for the day-level ETA */
+const ETA_TICK_MS = 60_000;
 
 /**
  * Glanceable Hike Dashboard layout.
@@ -90,8 +123,28 @@ export function HikeDashboard({
   const { colors } = useTheme();
   const [todayExpanded, setTodayExpanded] = useState(true);
 
+  // Recompute the day-level ETA on a 60 s interval — otherwise it freezes at
+  // whatever Date.now() was at the last GPS-driven render (e.g. during a
+  // lunch break) and silently lies.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), ETA_TICK_MS);
+    return () => clearInterval(timer);
+  }, []);
+
   const makeNextPress = (id?: string) =>
     onNextWaypointPress && id ? () => onNextWaypointPress(id) : undefined;
+
+  // Bearing arrows for the full-width cards (gated by GPS course validity)
+  const makeBearing = (next?: NextWaypointData) =>
+    next?.bearing != null && data?.gpsCourse ? (
+      <BearingIndicator
+        targetBearing={next.bearing}
+        heading={data.gpsCourse.heading}
+        speed={data.gpsCourse.speed}
+        fixTimestamp={data.gpsCourse.fixTimestamp}
+      />
+    ) : undefined;
 
   const isLoading = state === 'loading';
   const cardState: CardState = isLoading ? 'loading' : (gpsState === 'degraded' || gpsState === 'searching') ? 'degraded' : 'normal';
@@ -135,18 +188,24 @@ export function HikeDashboard({
         name={data?.nextCampsite?.name}
         distance={data?.nextCampsite?.distance}
         elevation={data?.nextCampsite?.elevation}
+        eta={data?.nextCampsite?.eta}
+        bearing={makeBearing(data?.nextCampsite)}
         emptyMessage="No campsites ahead on today's section"
         degradedMessage={degradedMsg}
         onPress={makeNextPress(data?.nextCampsite?.id)}
       />
 
-      {/* Next Water — full width, large text */}
+      {/* Next Water — full width, large text. The description's first line
+          (tank condition) is exactly what a hiker needs pre-tap. */}
       <WaypointCard
         state={cardState}
         label="NEXT WATER"
         icon="💧"
         name={data?.nextWater?.name}
         distance={data?.nextWater?.distance}
+        eta={data?.nextWater?.eta}
+        note={data?.nextWater?.note}
+        bearing={makeBearing(data?.nextWater)}
         emptyMessage="No water sources ahead on today's section"
         degradedMessage={degradedMsg}
         onPress={makeNextPress(data?.nextWater?.id)}
@@ -161,6 +220,7 @@ export function HikeDashboard({
           name={data?.nextTown?.name}
           distance={data?.nextTown?.distance}
           elevation={data?.nextTown?.elevation}
+          eta={data?.nextTown?.eta}
           compact
           emptyMessage="No towns ahead"
           degradedMessage={degradedMsg}
@@ -173,6 +233,7 @@ export function HikeDashboard({
           icon="🛖"
           name={data?.nextShelter?.name}
           distance={data?.nextShelter?.distance}
+          eta={data?.nextShelter?.eta}
           compact
           emptyMessage="No shelters ahead"
           degradedMessage={degradedMsg}
@@ -213,7 +274,8 @@ export function HikeDashboard({
                       style={styles.todayProgressBar}
                     />
                   </View>
-                  {/* Remaining distance + ETA */}
+                  {/* Remaining distance + ETA (honestly labelled: computed
+                      from the plan's Naismith pace, not the live pace) */}
                   {data.today.remainingHours != null && (
                     <View style={styles.todayEtaRow}>
                       <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
@@ -221,13 +283,18 @@ export function HikeDashboard({
                       </Text>
                       <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
                         {'ETA: '}
-                        {formatETA(data.today.remainingHours)}
+                        {formatETA(data.today.remainingHours, nowMs)}
+                        {' (at plan pace)'}
                       </Text>
                     </View>
                   )}
                   {/* Next water countdown */}
                   {data.nextWaterKm != null && (
-                    <WaterCountdown nextWaterKm={data.nextWaterKm} style={styles.waterCountdown} />
+                    <WaterCountdown
+                      nextWaterKm={data.nextWaterKm}
+                      etaMinutes={data.nextWaterEtaMinutes}
+                      style={styles.waterCountdown}
+                    />
                   )}
                 </View>
               )}
@@ -244,7 +311,7 @@ export function HikeDashboard({
       {/* No-plan today section: show water countdown when no plan is set */}
       {!data?.today && !isLoading && data?.nextWaterKm != null && (
         <Card state="normal" label="TODAY">
-          <WaterCountdown nextWaterKm={data.nextWaterKm} />
+          <WaterCountdown nextWaterKm={data.nextWaterKm} etaMinutes={data.nextWaterEtaMinutes} />
         </Card>
       )}
 

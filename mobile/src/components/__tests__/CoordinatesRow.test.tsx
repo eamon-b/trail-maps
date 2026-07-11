@@ -1,5 +1,6 @@
 import React from 'react';
 import { Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { CoordinatesRow, formatCoordinates } from '../CoordinatesRow';
 import { ThemeProvider } from '../../theme';
@@ -36,7 +37,20 @@ describe('CoordinatesRow', () => {
     });
   });
 
-  it('opens the share sheet with the coordinate string on tap', async () => {
+  it('copies the coordinate string to the clipboard on tap', async () => {
+    renderWithTheme(<CoordinatesRow latitude={-35.12345} longitude={148.98765} />);
+    await waitFor(() => {
+      expect(screen.getByText('-35.12345, 148.98765')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('-35.12345, 148.98765'));
+    await waitFor(() => {
+      expect(Clipboard.setStringAsync).toHaveBeenCalledWith('-35.12345, 148.98765');
+      expect(screen.getByText('Copied')).toBeTruthy();
+    });
+  });
+
+  it('opens the share sheet from the share icon', async () => {
     const shareSpy = jest
       .spyOn(Share, 'share')
       .mockResolvedValue({ action: Share.sharedAction, activityType: null });
@@ -46,7 +60,7 @@ describe('CoordinatesRow', () => {
       expect(screen.getByText('-35.12345, 148.98765')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText('-35.12345, 148.98765'));
+    fireEvent.press(screen.getByLabelText('Share coordinates'));
     await waitFor(() => {
       expect(shareSpy).toHaveBeenCalledWith({ message: '-35.12345, 148.98765' });
     });
@@ -71,7 +85,7 @@ describe('CoordinatesRow', () => {
     await waitFor(() => {
       expect(
         screen.getByLabelText(
-          'Current coordinates -35.12345, 148.98765. Tap to share, long press to change format.',
+          'Current coordinates -35.12345, 148.98765. Tap to copy, long press to change format.',
         ),
       ).toBeTruthy();
     });

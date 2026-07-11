@@ -39,6 +39,10 @@ export const palette = {
   orangeDark: '#E65100',
   orangeSubtle: '#FFF3E0',
 
+  // Temperature scale (climate cards)
+  deepOrange: '#FF5722',
+  deepOrangeLight: '#FF8A65',
+
   // Alert colors — light theme uses WCAG AA compliant (4.5:1 on white) variants
   alertGreenLight: '#188530',
   alertGreenDark: '#30D158',

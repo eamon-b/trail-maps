@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
-import { spacing, radii } from '../tokens/spacing';
+import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { SkeletonPlaceholder } from './SkeletonPlaceholder';
 
@@ -22,6 +22,8 @@ interface CardProps {
   style?: ViewStyle;
   /** Accessibility label for the entire card */
   accessibilityLabel?: string;
+  /** Makes the whole card a ≥44pt button when provided */
+  onPress?: () => void;
 }
 
 /** A card container that handles normal, loading, empty, and degraded states */
@@ -33,12 +35,14 @@ export function Card({
   degradedMessage,
   style,
   accessibilityLabel,
+  onPress,
 }: CardProps) {
   const { colors, highContrast } = useTheme();
 
   const defaultBorderWidth = highContrast ? 1.5 : StyleSheet.hairlineWidth;
   const cardStyle = [
     styles.card,
+    onPress ? styles.cardPressable : null,
     {
       backgroundColor: highContrast ? colors.background : colors.surface,
       borderColor: state === 'degraded' ? colors.alertAmber : colors.border,
@@ -47,12 +51,8 @@ export function Card({
     style,
   ];
 
-  return (
-    <View
-      style={cardStyle}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="summary"
-    >
+  const content = (
+    <>
       <Text
         style={[styles.label, { color: colors.textSecondary }]}
         accessibilityRole="header"
@@ -80,6 +80,29 @@ export function Card({
           {degradedMessage}
         </Text>
       )}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={cardStyle}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View
+      style={cardStyle}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="summary"
+    >
+      {content}
     </View>
   );
 }
@@ -121,6 +144,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
+  },
+  cardPressable: {
+    minHeight: touchTarget.min,
   },
   label: {
     ...typography.titleLarge,

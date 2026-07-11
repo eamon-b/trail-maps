@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     borderWidth: 1,
     marginRight: spacing.xs,
-    minHeight: touchTarget.min / 2,
+    minHeight: touchTarget.min,
     justifyContent: 'center',
   },
   tabText: {

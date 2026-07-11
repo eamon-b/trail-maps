@@ -3,7 +3,7 @@ import { Animated, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { waypointEmojis } from './WaypointList';
 import { useTheme } from '../theme';
-import { spacing, radii } from '../tokens/spacing';
+import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { isCustomWaypointId, type TrailWaypoint } from '../lib/trail-utils';
 
@@ -96,7 +96,6 @@ export function WaypointDetailSheet({
           style={styles.closeButton}
           accessibilityLabel="Dismiss waypoint info"
           accessibilityRole="button"
-          hitSlop={8}
         >
           <Text style={[styles.closeIcon, { color: colors.textSecondary }]}>✕</Text>
         </Pressable>
@@ -221,11 +220,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    // ≥44pt pressable area (glyph stays small; negative margin keeps the
+    // visual position near the card edge)
+    width: touchTarget.min,
+    height: touchTarget.min,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.sm,
+    marginLeft: spacing.xs,
+    marginRight: -spacing.sm,
+    marginVertical: -spacing.xs,
   },
   closeIcon: {
     fontSize: 18,

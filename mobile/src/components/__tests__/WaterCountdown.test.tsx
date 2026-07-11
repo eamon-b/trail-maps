@@ -25,7 +25,9 @@ describe('WaterCountdown', () => {
     const flatStyle = Array.isArray(textEl.props.style)
       ? Object.assign({}, ...textEl.props.style)
       : textEl.props.style;
-    expect(flatStyle.color).toBe('#4CAF50');
+    // Green comes from theme.colors.alertGreen (light theme: #188530), not a
+    // hardcoded literal — Night Red mode must stay red-shifted
+    expect(flatStyle.color).toBe('#188530');
   });
 
   it('renders distance text for medium distance (5-15 km)', async () => {
@@ -38,8 +40,7 @@ describe('WaterCountdown', () => {
       ? Object.assign({}, ...textEl.props.style)
       : textEl.props.style;
     // Amber color comes from theme.colors.alertAmber (light theme: #A84B00)
-    expect(flatStyle.color).not.toBe('#4CAF50');
-    expect(flatStyle.color).not.toBe('#F44336');
+    expect(flatStyle.color).toBe('#A84B00');
   });
 
   it('renders distance text for far water (> 15 km)', async () => {
@@ -52,7 +53,7 @@ describe('WaterCountdown', () => {
       ? Object.assign({}, ...textEl.props.style)
       : textEl.props.style;
     // Red color comes from theme.colors.alertRed (light theme: #D32F2F)
-    expect(flatStyle.color).not.toBe('#4CAF50');
+    expect(flatStyle.color).toBe('#D32F2F');
   });
 
   it('has correct accessibility label', async () => {

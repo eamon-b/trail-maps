@@ -18,9 +18,9 @@ interface ClimateCardProps {
 export function ClimateCard({ tempMin, tempMax, precipitation, rainyDays, style }: ClimateCardProps) {
   const { colors, highContrast } = useTheme();
 
-  // Temperature bar color: blue (cold) → green (mild) → red (hot)
+  // Temperature bar color: cold → mild → hot (theme-aware; red-shifted in Night Red)
   const avgTemp = (tempMin + tempMax) / 2;
-  const tempColor = avgTemp < 5 ? '#2196F3' : avgTemp < 20 ? '#4CAF50' : '#FF5722';
+  const tempColor = avgTemp < 5 ? colors.tempCold : avgTemp < 20 ? colors.tempMild : colors.tempHot;
 
   return (
     <View

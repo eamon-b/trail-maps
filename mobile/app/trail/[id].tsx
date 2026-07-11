@@ -109,7 +109,7 @@ function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
 }
 
 export default function TrailViewerScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, focusWaypointId } = useLocalSearchParams<{ id: string; focusWaypointId?: string }>();
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -173,6 +173,22 @@ export default function TrailViewerScreen() {
     }
     setPendingPan(null);
   }, [isFocused, pendingPan, activeTrail, setPendingPan]);
+
+  // Consume the focusWaypointId route param (deep link from the Hike
+  // dashboard): open the waypoint's detail sheet and pan the camera to it.
+  // Waypoint ids in the merged trail already carry the `custom-` prefix for
+  // user waypoints, so an exact id match covers both bundled and custom
+  // waypoints. Consumed once per param value; an unknown id is a no-op.
+  const consumedFocusIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusWaypointId || !activeTrail) return;
+    if (consumedFocusIdRef.current === focusWaypointId) return;
+    consumedFocusIdRef.current = focusWaypointId;
+    const wp = activeTrail.waypoints.find(w => w.id === focusWaypointId);
+    if (!wp) return; // waypoint not found — no focus, no crash
+    dispatch({ type: 'selectWaypoint', waypoint: wp });
+    mapRef.current?.panTo(wp.lat, wp.lon);
+  }, [focusWaypointId, activeTrail]);
 
   // GPS state for LocationStatusBar
   const locationState = useMemo((): LocationState => {

@@ -32,3 +32,4 @@ export { ClimateCard } from './ClimateCard';
 export { ClimateOverview } from './ClimateOverview';
 export { WaterCountdown } from './WaterCountdown';
 export { SunriseCountdown } from './SunriseCountdown';
+export { CoordinatesRow, formatCoordinates } from './CoordinatesRow';

@@ -73,7 +73,7 @@ export function AlertBanner({ visible, level, message, onPress, onHidden }: Aler
   const content = (
     <View style={styles.content}>
       <Text style={styles.icon}>{levelIcon}</Text>
-      <Text style={[styles.message, { color: '#FFFFFF' }]} numberOfLines={2}>
+      <Text style={[styles.message, { color: colors.textInverse }]} numberOfLines={2}>
         {message}
       </Text>
     </View>

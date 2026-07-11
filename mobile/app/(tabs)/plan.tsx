@@ -322,6 +322,7 @@ export default function PlanScreen() {
                 setDownloadError(null);
                 handleDownload(item.id, item.isCustom);
               }}
+              style={styles.tileActionButton}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Retry download"
@@ -330,6 +331,7 @@ export default function PlanScreen() {
             </Pressable>
             <Pressable
               onPress={() => setDownloadError(null)}
+              style={styles.tileActionButton}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Dismiss error"
@@ -349,6 +351,7 @@ export default function PlanScreen() {
           </Text>
           <Pressable
             onPress={() => handleDelete(item.id, item.name)}
+            style={styles.tileActionButton}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`Delete offline maps for ${item.name}`}
@@ -366,6 +369,7 @@ export default function PlanScreen() {
         </Text>
         <Pressable
           onPress={() => handleDownload(item.id, item.isCustom)}
+          style={styles.tileActionButton}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Download offline maps for ${item.name}`}
@@ -476,6 +480,7 @@ export default function PlanScreen() {
                     </Pressable>
                     <Pressable
                       onPress={() => handleDeletePlan(p.id, p.name)}
+                      style={styles.tileActionButton}
                       hitSlop={8}
                       accessibilityRole="button"
                       accessibilityLabel={`Delete plan ${p.name}`}
@@ -635,7 +640,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.08)',
-    minHeight: touchTarget.min / 2,
+    minHeight: touchTarget.min,
   },
   tileText: {
     ...typography.caption,
@@ -643,6 +648,10 @@ const styles = StyleSheet.create({
   tileAction: {
     ...typography.caption,
     fontWeight: '600',
+  },
+  tileActionButton: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -688,7 +697,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: touchTarget.min / 2,
+    minHeight: touchTarget.min,
     marginBottom: spacing.xs,
   },
   planInfo: {
@@ -707,7 +716,7 @@ const styles = StyleSheet.create({
   },
   newPlanButton: {
     marginTop: spacing.xs,
-    minHeight: touchTarget.min / 2,
+    minHeight: touchTarget.min,
     justifyContent: 'center',
   },
   newPlanText: {

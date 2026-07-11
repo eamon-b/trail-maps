@@ -14,6 +14,9 @@ interface WaterCountdownProps {
  * - Green: < 5 km
  * - Amber: 5–15 km
  * - Red: > 15 km
+ *
+ * All three thresholds resolve through the theme's alert colors so Night Red
+ * mode stays red-shifted.
  */
 export function WaterCountdown({ nextWaterKm, style }: WaterCountdownProps) {
   const { colors } = useTheme();
@@ -23,9 +26,9 @@ export function WaterCountdown({ nextWaterKm, style }: WaterCountdownProps) {
   }
 
   const color =
-    nextWaterKm < 5 ? '#4CAF50' :
-    nextWaterKm <= 15 ? (colors.alertAmber ?? '#FF9800') :
-    (colors.alertRed ?? '#F44336');
+    nextWaterKm < 5 ? colors.alertGreen :
+    nextWaterKm <= 15 ? colors.alertAmber :
+    colors.alertRed;
 
   return (
     <View style={[styles.container, style]} accessibilityLabel={`Next water source in ${nextWaterKm.toFixed(1)} kilometers`}>

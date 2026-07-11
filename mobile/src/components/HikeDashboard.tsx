@@ -16,11 +16,11 @@ export interface DashboardData {
   currentKm: number;
   totalKm: number;
 
-  /** Next waypoints by type */
-  nextCampsite?: { name: string; distance: string; elevation?: string };
-  nextWater?: { name: string; distance: string };
-  nextTown?: { name: string; distance: string; elevation?: string };
-  nextShelter?: { name: string; distance: string };
+  /** Next waypoints by type (id enables deep-linking to the waypoint on the map) */
+  nextCampsite?: { id?: string; name: string; distance: string; elevation?: string };
+  nextWater?: { id?: string; name: string; distance: string };
+  nextTown?: { id?: string; name: string; distance: string; elevation?: string };
+  nextShelter?: { id?: string; name: string; distance: string };
 
   /** Today's plan */
   today?: {
@@ -54,6 +54,8 @@ interface HikeDashboardProps {
   onSeeAllWaypoints?: () => void;
   /** Callback when a waypoint in the upcoming list is tapped */
   onWaypointSelect?: (waypoint: WaypointListItem) => void;
+  /** Callback when a "NEXT X" card is tapped (deep-link to the waypoint) */
+  onNextWaypointPress?: (waypointId: string) => void;
   style?: ViewStyle;
 }
 
@@ -82,10 +84,14 @@ export function HikeDashboard({
   gpsState = 'normal',
   onSeeAllWaypoints,
   onWaypointSelect,
+  onNextWaypointPress,
   style,
 }: HikeDashboardProps) {
   const { colors } = useTheme();
   const [todayExpanded, setTodayExpanded] = useState(true);
+
+  const makeNextPress = (id?: string) =>
+    onNextWaypointPress && id ? () => onNextWaypointPress(id) : undefined;
 
   const isLoading = state === 'loading';
   const cardState: CardState = isLoading ? 'loading' : (gpsState === 'degraded' || gpsState === 'searching') ? 'degraded' : 'normal';
@@ -131,6 +137,7 @@ export function HikeDashboard({
         elevation={data?.nextCampsite?.elevation}
         emptyMessage="No campsites ahead on today's section"
         degradedMessage={degradedMsg}
+        onPress={makeNextPress(data?.nextCampsite?.id)}
       />
 
       {/* Next Water — full width, large text */}
@@ -142,6 +149,7 @@ export function HikeDashboard({
         distance={data?.nextWater?.distance}
         emptyMessage="No water sources ahead on today's section"
         degradedMessage={degradedMsg}
+        onPress={makeNextPress(data?.nextWater?.id)}
       />
 
       {/* Next Town + Next Shelter — 2-column grid */}
@@ -157,6 +165,7 @@ export function HikeDashboard({
           emptyMessage="No towns ahead"
           degradedMessage={degradedMsg}
           style={styles.gridCard}
+          onPress={makeNextPress(data?.nextTown?.id)}
         />
         <WaypointCard
           state={cardState}
@@ -168,6 +177,7 @@ export function HikeDashboard({
           emptyMessage="No shelters ahead"
           degradedMessage={degradedMsg}
           style={styles.gridCard}
+          onPress={makeNextPress(data?.nextShelter?.id)}
         />
       </View>
 

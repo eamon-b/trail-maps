@@ -43,6 +43,7 @@ describe('Design Tokens — Themes', () => {
     'border', 'borderSubtle',
     'accent', 'accentSubtle', 'accentMuted', 'accentOnDark', 'accentOnLight',
     'alertGreen', 'alertAmber', 'alertRed',
+    'tempCold', 'tempMild', 'tempHot',
     'statusBarStyle',
   ];
 
@@ -89,6 +90,20 @@ describe('Design Tokens — Themes', () => {
       // All night red accents should contain 'FF' (red-heavy hex values)
       expect(theme.accent).toMatch(/^#[Ff]{2}/);
     }
+  });
+
+  it('night red temperature colors stay red-shifted (no blue/green channels dominating)', () => {
+    const theme = resolveTheme('nightRed', 'plan');
+    for (const key of ['tempCold', 'tempMild', 'tempHot'] as const) {
+      const hex = theme[key] as string;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      expect(r).toBeGreaterThan(g);
+      expect(r).toBeGreaterThan(b);
+    }
+    // The three temperature levels remain distinguishable
+    expect(new Set([theme.tempCold, theme.tempMild, theme.tempHot]).size).toBe(3);
   });
 
   it('each mode has distinct accent colors in light theme', () => {

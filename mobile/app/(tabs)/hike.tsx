@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, StyleSheet, View, Text, Pressable } from 'react-native';
+import { AppState, Linking, StyleSheet, View, Text, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
@@ -7,6 +7,7 @@ import { HikeDashboard, type DashboardData } from '../../src/components';
 import { LocationStatusBar } from '../../src/components/LocationStatusBar';
 import { AlertBanner } from '../../src/components/AlertBanner';
 import { SunriseCountdown } from '../../src/components/SunriseCountdown';
+import { CoordinatesRow } from '../../src/components/CoordinatesRow';
 import type { WaypointListItem } from '../../src/components/WaypointList';
 import { useLocation } from '../../src/hooks/useLocation';
 import { useOffTrailAlert } from '../../src/hooks/useOffTrailAlert';
@@ -26,7 +27,7 @@ import { computeDays } from '@lib/day-calculator';
 import type { StopData, ComputedDay } from '../../src/services/plan-calculator-types';
 import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
 import { ALERT_THRESHOLD_KEY, BACKGROUND_TRACKING_KEY } from '../settings';
-import { spacing, radii } from '../../src/tokens/spacing';
+import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 import type { LocationState } from '../../src/components/LocationStatusBar';
 import type { AlertThresholdPreset, SnoozeDuration } from '../../src/services/off-trail-alert-service';
@@ -48,12 +49,21 @@ function formatElevation(wd: WaypointDistance): string | undefined {
 }
 
 function toUpcomingList(distances: WaypointDistance[], limit: number): WaypointListItem[] {
-  return distances.slice(0, limit).map((wd, i) => ({
-    id: `${i}-${wd.waypoint.name}`,
+  return distances.slice(0, limit).map(wd => ({
+    // Real waypoint id (incl. the `custom-` prefix for user waypoints) so a
+    // tap can deep-link to this waypoint on the map.
+    id: wd.waypoint.id,
     name: wd.waypoint.name,
     type: wd.waypoint.type,
     distanceAhead: formatDistance(wd.trailDistanceKm),
   }));
+}
+
+/** Format a snooze expiry as HH:MM for the snooze chip */
+function formatSnoozeTime(until: Date): string {
+  const h = until.getHours().toString().padStart(2, '0');
+  const m = until.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 /**
@@ -77,9 +87,11 @@ export default function HikeScreen() {
   const [showSnoozeMenu, setShowSnoozeMenu] = useState(false);
   const [alertPreset, setAlertPreset] = useState<AlertThresholdPreset>('normal');
   const [backgroundTracking, setBackgroundTracking] = useState(false);
+  // Warning-state banner dismissal (snooze-lite: the status bar stays amber)
+  const [warningDismissed, setWarningDismissed] = useState(false);
 
   const trackPoints = useMemo(() => trail?.track.points ?? [], [trail]);
-  const { location, accuracy, isTracking, startTracking, stopTracking } =
+  const { location, accuracy, error: locationError, isTracking, startTracking, stopTracking } =
     useLocation(trackPoints, { background: backgroundTracking });
 
   // Track while the Hike tab is focused — the dashboard's distances are
@@ -110,7 +122,7 @@ export default function HikeScreen() {
   const currentKm = location?.trailKm ?? null;
 
   // Off-trail alert with debouncing and snooze
-  const { alertState, alertDetail, isSnoozed, snooze, clearSnooze } = useOffTrailAlert(
+  const { alertState, alertDetail, isSnoozed, snoozeUntil, snooze, clearSnooze } = useOffTrailAlert(
     location,
     accuracy,
     trackPoints,
@@ -124,6 +136,10 @@ export default function HikeScreen() {
     prevAlertState.current = alertState;
     if (alertState !== prev && (alertState === 'warning' || alertState === 'offTrail')) {
       triggerLocationHaptic(alertState);
+    }
+    // A dismissed warning banner comes back on the next warning episode
+    if (alertState !== 'warning') {
+      setWarningDismissed(false);
     }
   }, [alertState]);
 
@@ -251,17 +267,17 @@ export default function HikeScreen() {
       currentKm: km,
       totalKm: trail.track.totalDistance,
       nextCampsite: next.campsite
-        ? { name: next.campsite.waypoint.name, distance: formatDistance(next.campsite.trailDistanceKm), elevation: formatElevation(next.campsite) }
+        ? { id: next.campsite.waypoint.id, name: next.campsite.waypoint.name, distance: formatDistance(next.campsite.trailDistanceKm), elevation: formatElevation(next.campsite) }
         : undefined,
       nextWater: next.water
-        ? { name: next.water.waypoint.name, distance: formatDistance(next.water.trailDistanceKm) }
+        ? { id: next.water.waypoint.id, name: next.water.waypoint.name, distance: formatDistance(next.water.trailDistanceKm) }
         : undefined,
       nextWaterKm: next.water?.trailDistanceKm,
       nextTown: next.town
-        ? { name: next.town.waypoint.name, distance: formatDistance(next.town.trailDistanceKm), elevation: formatElevation(next.town) }
+        ? { id: next.town.waypoint.id, name: next.town.waypoint.name, distance: formatDistance(next.town.trailDistanceKm), elevation: formatElevation(next.town) }
         : undefined,
       nextShelter: next.shelter
-        ? { name: next.shelter.waypoint.name, distance: formatDistance(next.shelter.trailDistanceKm) }
+        ? { id: next.shelter.waypoint.id, name: next.shelter.waypoint.name, distance: formatDistance(next.shelter.trailDistanceKm) }
         : undefined,
       today,
       upcoming: toUpcomingList(allDistances, 8),
@@ -271,15 +287,27 @@ export default function HikeScreen() {
   const dashboardState = loading ? 'loading' : trail ? 'normal' : 'empty';
   const gpsState = accuracy === null ? 'searching' as const : accuracy > 100 ? 'degraded' as const : 'normal' as const;
 
-  const handleWaypointSelect = useCallback((wp: WaypointListItem) => {
+  // Deep-link to the tapped waypoint: the map viewer opens its detail sheet
+  // and pans to it via the focusWaypointId param.
+  const openWaypointOnMap = useCallback((waypointId: string) => {
     if (activeTrailId) {
-      router.push(`/trail/${activeTrailId}`);
+      router.push({
+        pathname: '/trail/[id]',
+        params: { id: activeTrailId, focusWaypointId: waypointId },
+      });
     }
   }, [activeTrailId, router]);
+
+  const handleWaypointSelect = useCallback((wp: WaypointListItem) => {
+    openWaypointOnMap(String(wp.id));
+  }, [openWaypointOnMap]);
 
   const handleAlertBannerPress = useCallback(() => {
     if (alertState === 'offTrail') {
       setShowSnoozeMenu(prev => !prev);
+    } else if (alertState === 'warning') {
+      // Dismiss the warning banner; the status bar stays amber
+      setWarningDismissed(true);
     }
   }, [alertState]);
 
@@ -302,14 +330,36 @@ export default function HikeScreen() {
 
   const rawLocation = location?.raw;
 
+  // Location failed to start (permission denied, provider error) and we have
+  // no fix to fall back to — the "Searching for GPS" card would be a dead end.
+  const showLocationError = !!locationError && !location;
+  const permissionDenied = !!locationError && locationError.toLowerCase().includes('permission');
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Location status bar — always visible when trail is loaded */}
       {trail && (
         <LocationStatusBar
           state={alertState}
-          detail={alertDetail}
+          detail={showLocationError
+            ? (permissionDenied ? 'Permission needed' : 'Location unavailable')
+            : alertDetail}
         />
+      )}
+
+      {/* Snooze indicator — persistent while alerts are snoozed, tap to resume */}
+      {trail && isSnoozed && snoozeUntil && (
+        <Pressable
+          onPress={clearSnooze}
+          style={[styles.snoozeChip, { backgroundColor: colors.surface, borderColor: colors.alertAmber }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Off-trail alerts snoozed until ${formatSnoozeTime(snoozeUntil)}. Tap to resume alerts.`}
+        >
+          <Text style={styles.snoozeChipIcon}>🔕</Text>
+          <Text style={[styles.snoozeChipText, { color: colors.textPrimary }]}>
+            Alerts snoozed until {formatSnoozeTime(snoozeUntil)} — tap to resume
+          </Text>
+        </Pressable>
       )}
 
       {/* Sunrise/sunset indicator */}
@@ -322,18 +372,61 @@ export default function HikeScreen() {
         </View>
       )}
 
-      <HikeDashboard
-        data={dashboardData}
-        state={dashboardState}
-        gpsState={gpsState}
-        onSeeAllWaypoints={() => {
-          if (activeTrailId) router.push(`/trail/${activeTrailId}`);
-        }}
-        onWaypointSelect={handleWaypointSelect}
-      />
+      {trail && showLocationError ? (
+        /* Location error state — explain the problem and offer a way out
+           instead of the eternal "Searching for GPS signal..." card */
+        <View style={styles.locationErrorContainer}>
+          <Text style={[styles.locationErrorTitle, { color: colors.textPrimary }]}>
+            {permissionDenied ? 'Location permission needed' : 'GPS unavailable'}
+          </Text>
+          <Text style={[styles.locationErrorBody, { color: colors.textSecondary }]}>
+            {permissionDenied
+              ? "Trail Companion can't show distances or off-trail alerts without access to your location. Allow location access in your device settings, then retry."
+              : `GPS tracking couldn't start: ${locationError}. Check that location services are enabled, then retry.`}
+          </Text>
+          <Pressable
+            onPress={() => { Linking.openSettings().catch(() => {}); }}
+            style={[styles.locationErrorButton, { backgroundColor: colors.accent }]}
+            accessibilityRole="button"
+            accessibilityLabel="Open device settings"
+          >
+            <Text style={[styles.locationErrorButtonText, { color: colors.textInverse }]}>
+              Open Settings
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => { startTracking(); }}
+            style={[styles.locationErrorButton, styles.locationErrorRetry, { borderColor: colors.accent }]}
+            accessibilityRole="button"
+            accessibilityLabel="Retry GPS tracking"
+          >
+            <Text style={[styles.locationErrorButtonText, { color: colors.accent }]}>
+              Retry
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <HikeDashboard
+          data={dashboardData}
+          state={dashboardState}
+          gpsState={gpsState}
+          onSeeAllWaypoints={() => {
+            if (activeTrailId) router.push(`/trail/${activeTrailId}`);
+          }}
+          onWaypointSelect={handleWaypointSelect}
+          onNextWaypointPress={openWaypointOnMap}
+        />
+      )}
 
-      {activeTrailId && (
+      {activeTrailId && !showLocationError && (
         <View style={styles.datasheetRow}>
+          {rawLocation && (
+            <CoordinatesRow
+              latitude={rawLocation.latitude}
+              longitude={rawLocation.longitude}
+              style={styles.coordinatesRow}
+            />
+          )}
           <Pressable
             onPress={() => {
               const km = currentKm ?? 0;
@@ -348,12 +441,17 @@ export default function HikeScreen() {
         </View>
       )}
 
-      {/* Off-trail alert banner (slides down from top) */}
+      {/* Off-trail / warning alert banner (slides down from top). Warning is
+          dismissible (snooze-lite); off-trail opens the snooze menu. */}
       {trail && (
         <AlertBanner
-          visible={alertState === 'offTrail' && !isSnoozed}
-          level="error"
-          message={alertDetail ? `Off trail — ${alertDetail}` : 'Off trail'}
+          visible={alertState === 'offTrail' || (alertState === 'warning' && !warningDismissed)}
+          level={alertState === 'offTrail' ? 'error' : 'warning'}
+          message={
+            alertState === 'offTrail'
+              ? (alertDetail ? `Off trail — ${alertDetail}` : 'Off trail')
+              : (alertDetail ? `Leaving trail — ${alertDetail} · tap to dismiss` : 'Leaving trail — tap to dismiss')
+          }
           onPress={handleAlertBannerPress}
           onHidden={() => setShowSnoozeMenu(false)}
         />
@@ -415,15 +513,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
   },
+  snoozeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: touchTarget.min,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+  },
+  snoozeChipIcon: {
+    fontSize: 14,
+  },
+  snoozeChipText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  locationErrorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  locationErrorTitle: {
+    ...typography.titleLarge,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  locationErrorBody: {
+    ...typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  locationErrorButton: {
+    minHeight: touchTarget.min,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  locationErrorRetry: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+  },
+  locationErrorButtonText: {
+    ...typography.body,
+    fontWeight: '700',
+  },
   datasheetRow: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
+  },
+  coordinatesRow: {
+    marginBottom: spacing.sm,
   },
   datasheetLink: {
     borderRadius: radii.lg,
     borderWidth: 1.5,
     paddingVertical: spacing.sm,
+    minHeight: touchTarget.min,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   datasheetLinkText: {
     ...typography.caption,
@@ -448,6 +600,8 @@ const styles = StyleSheet.create({
   snoozeOption: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   snoozeOptionText: {

@@ -24,6 +24,8 @@ interface WaypointCardProps {
   emptyMessage?: string;
   /** Message for degraded state */
   degradedMessage?: string;
+  /** Makes the card tappable (e.g. deep-link to the waypoint on the map) */
+  onPress?: () => void;
   /** Additional styles */
   style?: ViewStyle;
 }
@@ -39,6 +41,7 @@ export function WaypointCard({
   compact = false,
   emptyMessage,
   degradedMessage,
+  onPress,
   style,
 }: WaypointCardProps) {
   const { colors } = useTheme();
@@ -46,6 +49,9 @@ export function WaypointCard({
   const accessibilityLabel = state === 'normal' || state === 'degraded'
     ? `${label}: ${name ?? 'Unknown'}, ${distance ?? ''}${elevation ? `, ${elevation} elevation gain` : ''}`
     : undefined;
+
+  // Only make the card tappable when there is a waypoint to navigate to
+  const cardOnPress = state === 'normal' && name ? onPress : undefined;
 
   return (
     <Card
@@ -55,6 +61,7 @@ export function WaypointCard({
       degradedMessage={degradedMessage}
       style={style}
       accessibilityLabel={accessibilityLabel}
+      onPress={cardOnPress}
     >
       <View style={styles.content}>
         {icon && !compact && (

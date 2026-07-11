@@ -34,6 +34,11 @@ export interface ThemeColors {
   alertAmber: string;
   alertRed: string;
 
+  // Temperature scale (cold → mild → hot) for climate displays
+  tempCold: string;
+  tempMild: string;
+  tempHot: string;
+
   // Status bar
   statusBarStyle: 'light' | 'dark';
 }
@@ -148,6 +153,9 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.alertGreenLight,
     alertAmber: palette.alertAmberLight,
     alertRed: palette.alertRedLight,
+    tempCold: palette.blue,
+    tempMild: palette.green,
+    tempHot: palette.deepOrange,
     statusBarStyle: 'dark',
   },
   dark: {
@@ -162,6 +170,9 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.alertGreenDark,
     alertAmber: palette.alertAmberDark,
     alertRed: palette.alertRedDark,
+    tempCold: palette.blueLight,
+    tempMild: palette.greenLight,
+    tempHot: palette.deepOrangeLight,
     statusBarStyle: 'light',
   },
   oled: {
@@ -176,6 +187,9 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.alertGreenDark,
     alertAmber: palette.alertAmberDark,
     alertRed: palette.alertRedDark,
+    tempCold: palette.blueLight,
+    tempMild: palette.greenLight,
+    tempHot: palette.deepOrangeLight,
     statusBarStyle: 'light',
   },
   nightRed: {
@@ -190,6 +204,10 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     alertGreen: palette.nightAlertGreen,
     alertAmber: palette.nightAlertAmber,
     alertRed: palette.nightAlertRed,
+    // Red-shifted intensity ramp so Night Red stays red (dim → bright)
+    tempCold: palette.nightTextSecondary,
+    tempMild: palette.nightRedAccent,
+    tempHot: palette.nightAlertRed,
     statusBarStyle: 'light',
   },
 };

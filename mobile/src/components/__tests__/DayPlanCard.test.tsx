@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
 import { ThemeProvider } from '../../theme';
 import { DayPlanCard, DayPlanData } from '../DayPlanCard';
 
@@ -70,6 +70,47 @@ describe('DayPlanCard', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Show on map')).toBeTruthy();
     });
+  });
+
+  it('shows the ⋯ actions menu button and fires onOpenMenu', async () => {
+    const onOpenMenu = jest.fn();
+    renderWithTheme(<DayPlanCard data={baseData} onOpenMenu={onOpenMenu} />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Day 3 actions')).toBeTruthy();
+    });
+    fireEvent.press(screen.getByLabelText('Day 3 actions'));
+    expect(onOpenMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render the legacy merge/split arrow buttons', async () => {
+    renderWithTheme(<DayPlanCard data={baseData} onOpenMenu={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/DAY 3/)).toBeTruthy();
+    });
+    expect(screen.queryByLabelText('Merge with previous day')).toBeNull();
+    expect(screen.queryByLabelText('Split this day')).toBeNull();
+  });
+
+  it('shows the water/resupply strip and taps through', async () => {
+    const onResourcePress = jest.fn();
+    renderWithTheme(
+      <DayPlanCard
+        data={{ ...baseData, waterSources: 2 }}
+        resources={{ maxCarryKm: 18, hasResupply: true }}
+        onResourcePress={onResourcePress}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/2 water sources/)).toBeTruthy();
+    });
+    expect(screen.getByText(/carry 18 km/)).toBeTruthy();
+    expect(screen.getByText(/resupply/)).toBeTruthy();
+
+    fireEvent.press(screen.getByText(/carry 18 km/));
+    expect(onResourcePress).toHaveBeenCalledTimes(1);
   });
 
   it('has correct accessibility label with all data', async () => {

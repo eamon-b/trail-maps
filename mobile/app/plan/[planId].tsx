@@ -24,7 +24,8 @@ import {
 } from '../../src/lib/trail-utils';
 import { computeDays, addStop, removeStop } from '@lib/day-calculator';
 import type { StopData, SectionConfig, ComputedDay } from '../../src/services/plan-calculator-types';
-import { DayPlanCard, type DayPlanData } from '../../src/components/DayPlanCard';
+import { DayPlanCard, type DayPlanData, type DayResources } from '../../src/components/DayPlanCard';
+import { PressableRow } from '../../src/components/PressableRow';
 import { PlanSummaryCard } from '../../src/components/PlanSummaryCard';
 import { StopSelector } from '../../src/components/StopSelector';
 import { SectionSelector } from '../../src/components/SectionSelector';
@@ -89,6 +90,9 @@ export default function PlanEditorScreen() {
 
   // Split state
   const [splitDay, setSplitDay] = useState<ComputedDay | null>(null);
+
+  // Day-actions menu (⋯ on a day card)
+  const [menuDayIndex, setMenuDayIndex] = useState<number | null>(null);
 
   // Dashboard tabs
   const [activeTab, setActiveTab] = useState<DashboardTab>('days');
@@ -273,6 +277,25 @@ export default function PlanEditorScreen() {
     }
     return analyzeResupply(trail.waypoints, trail.track.totalDistance);
   }, [trail, section]);
+
+  // Per-day water-carry / resupply strip data
+  const dayResources = useMemo((): DayResources[] => {
+    return days.map((d) => {
+      let maxCarryKm: number | null = null;
+      if (waterAnalysis?.hasWaterData) {
+        for (const gap of waterAnalysis.gaps) {
+          // A gap that overlaps this day means the carry applies to it
+          if (gap.fromKm < d.endKm && gap.toKm > d.startKm) {
+            maxCarryKm = Math.max(maxCarryKm ?? 0, gap.distanceKm);
+          }
+        }
+      }
+      const hasResupply = !!resupplyAnalysis?.points.some(
+        (pt) => pt.km > d.startKm && pt.km <= d.endKm,
+      );
+      return { maxCarryKm, hasResupply };
+    });
+  }, [days, waterAnalysis, resupplyAnalysis]);
 
   // Selected stop kms for the selector
   const selectedStopKms = useMemo(() => {
@@ -477,6 +500,34 @@ export default function PlanEditorScreen() {
       },
     });
   }, [plan, stops, stopIndexEndingDay, router]);
+
+  // Day-actions menu handlers (labeled equivalents of the gesture shortcuts)
+  const menuDay = menuDayIndex != null ? days[menuDayIndex] : null;
+  const closeDayMenu = useCallback(() => setMenuDayIndex(null), []);
+
+  const handleMenuSplit = useCallback(() => {
+    if (menuDayIndex == null) return;
+    closeDayMenu();
+    handleSplit(menuDayIndex);
+  }, [menuDayIndex, closeDayMenu, handleSplit]);
+
+  const handleMenuMerge = useCallback(() => {
+    if (menuDayIndex == null) return;
+    closeDayMenu();
+    handleMergeUp(menuDayIndex);
+  }, [menuDayIndex, closeDayMenu, handleMergeUp]);
+
+  const handleMenuMove = useCallback(() => {
+    if (menuDayIndex == null) return;
+    closeDayMenu();
+    handleLongPressDay(menuDayIndex);
+  }, [menuDayIndex, closeDayMenu, handleLongPressDay]);
+
+  const handleMenuRemove = useCallback(() => {
+    if (menuDayIndex == null) return;
+    closeDayMenu();
+    handleRemove(menuDayIndex);
+  }, [menuDayIndex, closeDayMenu, handleRemove]);
 
   // Export handlers
   const handleExport = useCallback(() => {
@@ -697,11 +748,12 @@ export default function PlanEditorScreen() {
                 <DayPlanCard
                   data={dayToCardData(item)}
                   onRemove={index < days.length - 1 ? () => handleRemove(index) : undefined}
-                  onMergeUp={index > 0 ? () => handleMergeUp(index) : undefined}
-                  onSplit={() => handleSplit(index)}
+                  onOpenMenu={() => setMenuDayIndex(index)}
                   onShowOnMap={() => handleShowOnMap(index)}
                   onLongPress={index < days.length - 1 ? () => handleLongPressDay(index) : undefined}
                   climate={dayClimate[index]}
+                  resources={dayResources[index]}
+                  onResourcePress={() => setActiveTab('overview')}
                 />
               )}
             />
@@ -780,6 +832,61 @@ export default function PlanEditorScreen() {
           selectedStopKms={selectedStopKms}
           onToggleStop={handleToggleStop}
         />
+      </AppBottomSheet>
+
+      {/* Day actions menu (labeled verbs; gestures remain as shortcuts) */}
+      <AppBottomSheet
+        isOpen={menuDayIndex !== null}
+        onDismiss={closeDayMenu}
+        initialSnap={0}
+        snapPoints={['40%', '60%']}
+      >
+        {menuDay && menuDayIndex != null && (
+          <View>
+            <Text style={[styles.splitTitle, { color: colors.textPrimary }]}>
+              Day {menuDay.dayNumber}
+            </Text>
+            <Text style={[styles.splitSubtitle, { color: colors.textSecondary }]}>
+              {menuDay.startName} → {menuDay.endName}
+            </Text>
+            <PressableRow
+              onPress={handleMenuSplit}
+              accessibilityLabel={`Split day ${menuDay.dayNumber}`}
+              style={styles.menuRow}
+            >
+              <Text style={[styles.menuRowText, { color: colors.textPrimary }]}>Split day…</Text>
+            </PressableRow>
+            {menuDayIndex > 0 && (
+              <PressableRow
+                onPress={handleMenuMerge}
+                accessibilityLabel="Merge with previous day"
+                style={[styles.menuRow, { borderTopColor: colors.border }]}
+                bordered={false}
+              >
+                <Text style={[styles.menuRowText, { color: colors.textPrimary }]}>Merge with previous</Text>
+              </PressableRow>
+            )}
+            {menuDayIndex < days.length - 1 && (
+              <PressableRow
+                onPress={handleMenuMove}
+                accessibilityLabel="Move this day's stop on the map"
+                style={styles.menuRow}
+              >
+                <Text style={[styles.menuRowText, { color: colors.textPrimary }]}>Move stop…</Text>
+              </PressableRow>
+            )}
+            {menuDayIndex < days.length - 1 && (
+              <PressableRow
+                onPress={handleMenuRemove}
+                haptic="warning"
+                accessibilityLabel="Remove this day's stop"
+                style={styles.menuRow}
+              >
+                <Text style={[styles.menuRowText, { color: colors.danger }]}>Remove stop</Text>
+              </PressableRow>
+            )}
+          </View>
+        )}
       </AppBottomSheet>
 
       {/* Split selector bottom sheet */}
@@ -1046,6 +1153,13 @@ const styles = StyleSheet.create({
   fabText: {
     ...typography.body,
     fontWeight: '700',
+  },
+  menuRow: {
+    paddingHorizontal: spacing.sm,
+    borderTopWidth: 0,
+  },
+  menuRowText: {
+    ...typography.body,
   },
   splitTitle: {
     ...typography.titleLarge,

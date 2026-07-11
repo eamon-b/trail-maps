@@ -34,37 +34,48 @@ interface DayClimate {
   rainyDays: number;
 }
 
+/** Per-day water/resupply summary shown as a compact strip on the card */
+export interface DayResources {
+  /** Longest water carry (km) intersecting this day, or null when unknown */
+  maxCarryKm?: number | null;
+  /** Whether a resupply point (town/food) falls within this day */
+  hasResupply?: boolean;
+}
+
 interface DayPlanCardProps {
   data: DayPlanData;
   /** Called when card is swiped to remove */
   onRemove?: () => void;
-  /** Called when merge-up button is tapped */
-  onMergeUp?: () => void;
-  /** Called when split button is tapped */
-  onSplit?: () => void;
+  /** Called when the ⋯ menu button is tapped (opens the day action sheet) */
+  onOpenMenu?: () => void;
   /** Called when map pin button is tapped to show on map */
   onShowOnMap?: () => void;
   /** Called on long press to relocate stop */
   onLongPress?: () => void;
   /** Climate data for this day */
   climate?: DayClimate | null;
+  /** Water-carry / resupply summary for the strip */
+  resources?: DayResources;
+  /** Tap-through from the resource strip to the full water/resupply lists */
+  onResourcePress?: () => void;
   style?: ViewStyle;
 }
 
 /**
- * Day Plan card with gesture interactions:
- * - Drag reorder from ≡ handle only (not entire card)
+ * Day Plan card. Editing verbs live in a labeled ⋯ menu (opened via
+ * onOpenMenu); gestures remain as shortcuts:
  * - Swipe left past 40% to remove with snap-back if threshold not met
- * - Merge ↑ and Split ↓ buttons with 44×44pt touch targets
+ * - Long-press to relocate the stop on the map
  */
 export function DayPlanCard({
   data,
   onRemove,
-  onMergeUp,
-  onSplit,
+  onOpenMenu,
   onShowOnMap,
   onLongPress,
   climate,
+  resources,
+  onResourcePress,
   style,
 }: DayPlanCardProps) {
   const { colors, highContrast } = useTheme();
@@ -169,11 +180,20 @@ export function DayPlanCard({
           {distanceKm.toFixed(1)} km  +{ascentM}m/-{descentM}m{estimatedHours ? `  ~${estimatedHours}h` : ''}
         </Text>
 
-        {/* Water sources */}
-        {waterSources != null && waterSources > 0 && (
-          <Text style={[styles.waterText, { color: colors.textSecondary }]}>
-            💧 {waterSources} water source{waterSources > 1 ? 's' : ''}
-          </Text>
+        {/* Water / resupply strip — tap through to the full lists */}
+        {(waterSources != null || resources) && (
+          <Pressable
+            onPress={onResourcePress}
+            disabled={!onResourcePress}
+            accessibilityRole={onResourcePress ? 'button' : undefined}
+            accessibilityLabel={buildResourceLabel(waterSources, resources)}
+            accessibilityHint={onResourcePress ? 'Shows water and resupply details' : undefined}
+            style={styles.resourceStrip}
+          >
+            <Text style={[styles.waterText, { color: colors.textSecondary }]} numberOfLines={1}>
+              {buildResourceText(waterSources, resources)}
+            </Text>
+          </Pressable>
         )}
 
         {/* Climate data */}
@@ -200,30 +220,51 @@ export function DayPlanCard({
             </Pressable>
           )}
           <View style={{ flex: 1 }} />
-          {onMergeUp && (
+          {onOpenMenu && (
             <Pressable
-              onPress={onMergeUp}
+              onPress={onOpenMenu}
               style={styles.actionButton}
-              accessibilityLabel="Merge with previous day"
+              accessibilityLabel={`Day ${dayNumber} actions`}
               accessibilityRole="button"
+              accessibilityHint="Split, merge, move, or remove this day's stop"
             >
-              <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>↑</Text>
-            </Pressable>
-          )}
-          {onSplit && (
-            <Pressable
-              onPress={onSplit}
-              style={styles.actionButton}
-              accessibilityLabel="Split this day"
-              accessibilityRole="button"
-            >
-              <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>↓</Text>
+              <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>⋯</Text>
             </Pressable>
           )}
         </View>
       </Animated.View>
     </GestureDetector>
   );
+}
+
+function buildResourceText(waterSources?: number, resources?: DayResources): string {
+  const parts: string[] = [];
+  if (waterSources != null && waterSources > 0) {
+    parts.push(`💧 ${waterSources} water source${waterSources > 1 ? 's' : ''}`);
+  } else if (waterSources === 0 || resources?.maxCarryKm != null) {
+    parts.push('💧 no water');
+  }
+  if (resources?.maxCarryKm != null && resources.maxCarryKm > 0) {
+    parts.push(`carry ${resources.maxCarryKm.toFixed(0)} km`);
+  }
+  if (resources?.hasResupply) {
+    parts.push('🛒 resupply');
+  }
+  return parts.join('  ·  ');
+}
+
+function buildResourceLabel(waterSources?: number, resources?: DayResources): string {
+  const parts: string[] = [];
+  if (waterSources != null) {
+    parts.push(`${waterSources} water source${waterSources === 1 ? '' : 's'}`);
+  }
+  if (resources?.maxCarryKm != null && resources.maxCarryKm > 0) {
+    parts.push(`longest water carry ${resources.maxCarryKm.toFixed(0)} kilometers`);
+  }
+  if (resources?.hasResupply) {
+    parts.push('resupply available');
+  }
+  return parts.join(', ') || 'Water and resupply details';
 }
 
 const styles = StyleSheet.create({
@@ -257,9 +298,14 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     marginBottom: spacing.xs,
   },
-  waterText: {
-    ...typography.caption,
+  resourceStrip: {
     marginBottom: spacing.xs,
+    minHeight: spacing.xl,
+    justifyContent: 'center',
+  },
+  waterText: {
+    ...typography.dataSmall,
+    fontWeight: '400',
   },
   climateCard: {
     marginBottom: spacing.xs,

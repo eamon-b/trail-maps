@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, StyleSheet, Text, View, Pressable } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Image, Modal, Share, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { waypointEmojis } from './WaypointList';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { isCustomWaypointId, type TrailWaypoint } from '../lib/trail-utils';
+import { waypointsToGpx, waypointPlainText } from '../lib/gpx-writer';
+import { shareGpxFile, gpxFilename } from '../services/gpx-export-service';
 
 /** Height of the collapsed ElevationProfileDrawer (first snap point) */
 const ELEVATION_DRAWER_COLLAPSED = 80;
@@ -65,6 +67,43 @@ export function WaypointDetailSheet({
     // callbacks to re-trigger the effect while the animation is running.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoint, translateY]);
+
+  // Share as a single-<wpt> GPX file, or as a plain-text line for messaging
+  // apps ("Name — -35.12345, 148.98765 (km 42.3)").
+  const handleShare = useCallback(() => {
+    const wp = displayWaypoint;
+    if (!wp) return;
+    Alert.alert('Share waypoint', undefined, [
+      {
+        text: 'Share GPX file',
+        onPress: async () => {
+          try {
+            const gpx = waypointsToGpx([
+              {
+                name: wp.name,
+                lat: wp.lat,
+                lon: wp.lon,
+                ele: wp.elevation,
+                type: wp.type,
+                description: wp.description,
+              },
+            ], { name: wp.name });
+            await shareGpxFile(gpxFilename(wp.name), gpx);
+          } catch (e) {
+            console.warn('Failed to share waypoint GPX:', e);
+            Alert.alert('Share failed', 'Could not share the GPX file.');
+          }
+        },
+      },
+      {
+        text: 'Share as text',
+        onPress: () => {
+          Share.share({ message: waypointPlainText(wp) }).catch(() => {});
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [displayWaypoint]);
 
   if (!displayWaypoint) return null;
 
@@ -191,6 +230,18 @@ export function WaypointDetailSheet({
           </Text>
         </Pressable>
       )}
+
+      {/* Share as GPX file or plain text */}
+      <Pressable
+        onPress={handleShare}
+        style={[styles.profileButton, styles.shareButton, { borderColor: colors.accent }]}
+        accessibilityLabel="Share waypoint"
+        accessibilityRole="button"
+      >
+        <Text style={[styles.profileButtonText, { color: colors.accent }]}>
+          Share waypoint
+        </Text>
+      </Pressable>
 
       {/* User-created waypoints can be edited or deleted */}
       {isCustom && (onEdit || onDelete) && (
@@ -322,6 +373,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     paddingVertical: spacing.sm,
     alignItems: 'center',
+  },
+  shareButton: {
+    marginTop: spacing.sm,
   },
   profileButtonText: {
     ...typography.caption,

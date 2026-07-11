@@ -69,6 +69,9 @@ function parseWaypoint(wpt: Record<string, unknown>): GpxWaypoint {
     ele: safeFloat(wpt.ele),
     name: safeString(wpt.name),
     desc: safeString(wpt.desc),
+    // Explicit <type> (e.g. our own exports) — preferred over name-based
+    // classification downstream so round trips preserve the type.
+    ...(wpt.type != null && safeString(wpt.type) !== '' ? { type: safeString(wpt.type) } : {}),
   };
 }
 

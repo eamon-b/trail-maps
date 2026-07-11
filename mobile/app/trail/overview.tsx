@@ -28,6 +28,9 @@ import {
   type Datasheet,
 } from '../../src/services/datasheet-service';
 import { DIRECTION_PREF_KEY } from './[id]';
+import { waypointsToGpx, trailToGpx } from '../../src/lib/gpx-writer';
+import { shareGpxFile, gpxFilename } from '../../src/services/gpx-export-service';
+import type { CustomWaypoint } from '../../src/services/trail-data-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -66,6 +69,7 @@ export default function TrailOverviewScreen() {
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
   const [elevationFetch, setElevationFetch] = useState<'idle' | 'fetching' | 'error'>('idle');
+  const [customWaypoints, setCustomWaypoints] = useState<CustomWaypoint[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -77,6 +81,13 @@ export default function TrailOverviewScreen() {
         const prefs = prefsStr ? JSON.parse(prefsStr) : {};
         setIsReversed(!!prefs[id]);
       }).catch(() => {});
+
+      // The user's own waypoints on this trail (for GPX export)
+      import('../../src/services/trail-data-service')
+        .then(({ TrailDataService }) => TrailDataService.create())
+        .then(service => service.getCustomWaypoints(id))
+        .then(setCustomWaypoints)
+        .catch(() => setCustomWaypoints([]));
     }
   }, [id, loadTrail]);
 
@@ -158,6 +169,42 @@ export default function TrailOverviewScreen() {
         },
       ],
     );
+  }
+
+  // "Export my waypoints (GPX)" — the user's custom waypoints on this trail,
+  // via the OS share sheet. User data is never trapped in the app.
+  async function handleExportWaypoints() {
+    if (!trail || customWaypoints.length === 0) return;
+    try {
+      const gpx = waypointsToGpx(
+        customWaypoints.map(wp => ({
+          name: wp.name,
+          lat: wp.lat,
+          lon: wp.lon,
+          ele: wp.ele,
+          type: wp.type,
+          description: wp.description,
+          createdAt: wp.createdAt,
+        })),
+        { name: `${trail.config.name} — my waypoints` },
+      );
+      await shareGpxFile(gpxFilename(`${trail.config.name}-my-waypoints`), gpx);
+    } catch (e) {
+      console.warn('Failed to export waypoints:', e);
+      Alert.alert('Export failed', 'Could not export the GPX file.');
+    }
+  }
+
+  // "Export trail (GPX)" — the full custom trail (track + waypoints).
+  async function handleExportTrail() {
+    if (!trail) return;
+    try {
+      const gpx = trailToGpx(trail);
+      await shareGpxFile(gpxFilename(trail.config.name), gpx);
+    } catch (e) {
+      console.warn('Failed to export trail:', e);
+      Alert.alert('Export failed', 'Could not export the GPX file.');
+    }
   }
 
   function handleShareDatasheet() {
@@ -521,6 +568,37 @@ export default function TrailOverviewScreen() {
           </Text>
         </View>
 
+        {/* GPX export — user data is never trapped */}
+        {(customWaypoints.length > 0 || isCustom) && (
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GPX EXPORT</Text>
+            {customWaypoints.length > 0 && (
+              <Pressable
+                onPress={handleExportWaypoints}
+                style={[styles.exportButton, { borderColor: colors.accent }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Export my ${customWaypoints.length} waypoints as GPX`}
+              >
+                <Text style={[styles.exportButtonText, { color: colors.accent }]}>
+                  Export my waypoints (GPX) · {customWaypoints.length}
+                </Text>
+              </Pressable>
+            )}
+            {isCustom && (
+              <Pressable
+                onPress={handleExportTrail}
+                style={[styles.exportButton, { borderColor: colors.accent }]}
+                accessibilityRole="button"
+                accessibilityLabel="Export trail as GPX"
+              >
+                <Text style={[styles.exportButtonText, { color: colors.accent }]}>
+                  Export trail (GPX)
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {/* Data version */}
         {dataVersion && (
           <Text style={[styles.dataVersion, { color: colors.textSecondary }]}>
@@ -754,6 +832,18 @@ const styles = StyleSheet.create({
   offlineStatus: {
     ...typography.body,
     fontWeight: '500',
+  },
+  exportButton: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  exportButtonText: {
+    ...typography.body,
+    fontWeight: '600',
   },
   dataVersion: {
     ...typography.caption,

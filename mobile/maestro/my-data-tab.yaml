@@ -27,10 +27,11 @@ appId: com.trailcompanion.app
     direction: DOWN
     timeout: 10000
 
-# Honest v2 footer
+# Honest v2 footer — Maestro text must match the element's WHOLE text as a
+# regex, and this phrase sits mid-paragraph, so wrap it in wildcards.
 - scrollUntilVisible:
     element:
-      text: "coming in v2"
+      text: ".*coming in v2.*"
     direction: DOWN
     timeout: 10000
 - takeScreenshot: my-data-tab

@@ -124,6 +124,21 @@ describe('storeWaypointPhoto', () => {
       { compress: JPEG_QUALITY, format: 'jpeg' },
     );
   });
+
+  it('still caps width when dimensions are unknown (Android 0×0 providers)', async () => {
+    mockManipulateAsync.mockResolvedValue({ uri: '/tmp/manipulated.jpg' });
+
+    // width/height 0 → constrainDimensions can't decide, but the full-res
+    // image must not slip through: cap width, let the manipulator preserve
+    // aspect from the only edge given.
+    await storeWaypointPhoto('wp-3', { uri: '/tmp/picked.jpg', width: 0, height: 0 });
+
+    expect(mockManipulateAsync).toHaveBeenCalledWith(
+      '/tmp/picked.jpg',
+      [{ resize: { width: MAX_DIMENSION } }],
+      { compress: JPEG_QUALITY, format: 'jpeg' },
+    );
+  });
 });
 
 describe('deleteWaypointPhoto', () => {

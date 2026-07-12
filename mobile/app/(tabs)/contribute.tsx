@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -31,7 +32,8 @@ import {
   type Trail,
 } from '../../src/services/trail-data-service';
 import { deleteCustomTrail } from '../../src/services/custom-trail-service';
-import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
+import { useWaypointDeleteUndo } from '../../src/hooks/useWaypointDeleteUndo';
+import { ACTIVE_TRAIL_KEY } from '../trail/[id]';
 import {
   RouteService,
   resolveRoutePoints,
@@ -46,11 +48,21 @@ type MyWaypoint = CustomWaypoint & { trailName: string };
  * Swipe-left-to-delete wrapper for a My-waypoints row (same Pan-gesture
  * recipe as DayPlanCard's swipe-to-remove).
  */
-function SwipeableRow({ children, onSwipeDelete }: { children: React.ReactNode; onSwipeDelete: () => void }) {
+function SwipeableRow({ children, onSwipeDelete }: { children: React.ReactNode; onSwipeDelete: () => Promise<boolean> }) {
   const reduceMotion = useReduceMotion();
   const { width: screenWidth } = useWindowDimensions();
   const swipeThreshold = screenWidth * 0.4;
   const translateX = useSharedValue(0);
+
+  // Run the delete and, if it fails, spring the row back on-screen instead of
+  // leaving it stranded off the left edge (the delete's own catch used to
+  // swallow the failure with no visual recovery).
+  const runDelete = useCallback(async () => {
+    const ok = await onSwipeDelete();
+    if (!ok) {
+      translateX.value = reduceMotion ? 0 : withSpring(0, springConfigs.cardReorder);
+    }
+  }, [onSwipeDelete, reduceMotion, translateX]);
 
   const swipeGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -64,11 +76,11 @@ function SwipeableRow({ children, onSwipeDelete }: { children: React.ReactNode; 
       if (event.translationX < -swipeThreshold) {
         if (reduceMotion) {
           translateX.value = -screenWidth;
-          runOnJS(onSwipeDelete)();
+          runOnJS(runDelete)();
         } else {
           translateX.value = withTiming(-screenWidth, timingConfigs.slideIn, (finished) => {
             if (finished) {
-              runOnJS(onSwipeDelete)();
+              runOnJS(runDelete)();
             }
           });
         }
@@ -102,8 +114,6 @@ export default function MyDataScreen() {
   const [trails, setTrails] = useState<Trail[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [trailNamesById, setTrailNamesById] = useState<Record<string, string>>({});
-  // Deleted waypoint held for the undo toast (photo deletion deferred)
-  const [deletedWaypoint, setDeletedWaypoint] = useState<MyWaypoint | null>(null);
   // Inline rename state for custom trails
   const [renamingTrailId, setRenamingTrailId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -143,21 +153,9 @@ export default function MyDataScreen() {
     });
   }, [router]);
 
-  const handleDeleteWaypoint = useCallback(async (wp: MyWaypoint) => {
-    try {
-      const service = await TrailDataService.create();
-      await service.deleteCustomWaypoint(wp.id);
-      setDeletedWaypoint(wp);
-      await load();
-    } catch (e) {
-      console.warn('Failed to delete waypoint:', e);
-    }
-  }, [load]);
-
-  const handleUndoDeleteWaypoint = useCallback(async () => {
-    const wp = deletedWaypoint;
-    setDeletedWaypoint(null);
-    if (!wp) return;
+  // Delete-with-undo lifecycle (deferred photo cleanup, displacement, unmount
+  // and undo/expiry race) is centralised in the shared hook.
+  const restoreDeletedWaypoint = useCallback(async (wp: MyWaypoint) => {
     try {
       const service = await TrailDataService.create();
       const { trailName: _ignored, ...row } = wp;
@@ -166,14 +164,29 @@ export default function MyDataScreen() {
     } catch (e) {
       console.warn('Failed to restore waypoint:', e);
     }
-  }, [deletedWaypoint, load]);
+  }, [load]);
 
-  const handleWaypointDeleteToastDismiss = useCallback(() => {
-    if (deletedWaypoint?.photoUri) {
-      deleteWaypointPhoto(deletedWaypoint.photoUri);
+  const {
+    deleted: deletedWaypoint,
+    registerDeleted,
+    undo: handleUndoDeleteWaypoint,
+    expire: handleWaypointDeleteToastDismiss,
+  } = useWaypointDeleteUndo<MyWaypoint>(restoreDeletedWaypoint);
+
+  // Returns whether the delete succeeded so SwipeableRow can spring the row
+  // back on failure instead of leaving it stranded off-screen.
+  const handleDeleteWaypoint = useCallback(async (wp: MyWaypoint): Promise<boolean> => {
+    try {
+      const service = await TrailDataService.create();
+      await service.deleteCustomWaypoint(wp.id);
+      registerDeleted(wp);
+      await load();
+      return true;
+    } catch (e) {
+      console.warn('Failed to delete waypoint:', e);
+      return false;
     }
-    setDeletedWaypoint(null);
-  }, [deletedWaypoint]);
+  }, [load, registerDeleted]);
 
   const handleExportAllWaypoints = useCallback(async () => {
     if (waypoints.length === 0) return;
@@ -233,6 +246,13 @@ export default function MyDataScreen() {
           onPress: async () => {
             try {
               await deleteCustomTrail(trail.id);
+              // Clear the stored active-trail id if it pointed at this trail,
+              // so a cold start doesn't redirect into a "Trail not found"
+              // screen (the Hike tab already handles a null id gracefully).
+              const activeId = await AsyncStorage.getItem(ACTIVE_TRAIL_KEY);
+              if (activeId === trail.id) {
+                await AsyncStorage.removeItem(ACTIVE_TRAIL_KEY);
+              }
               await load();
             } catch (e) {
               console.warn('Failed to delete trail:', e);
@@ -335,7 +355,9 @@ export default function MyDataScreen() {
           </Text>
         ) : (
           waypointGroups.map(group => (
-            <View key={group.trailId} style={styles.group}>
+            // Key on the first waypoint's (globally unique) id as well as the
+            // trail id: robust even if two trails somehow share a name and id.
+            <View key={`${group.trailId}:${group.items[0].id}`} style={styles.group}>
               <Text style={[styles.groupTitle, { color: colors.textPrimary }]}>{group.trailName}</Text>
               {group.items.map(wp => (
                 <SwipeableRow key={wp.id} onSwipeDelete={() => handleDeleteWaypoint(wp)}>

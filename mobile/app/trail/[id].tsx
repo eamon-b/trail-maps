@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { View, StyleSheet, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haversineDistance } from '@lib/distance';
@@ -25,6 +25,7 @@ import {
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-data-service';
 import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
+import { useWaypointDeleteUndo } from '../../src/hooks/useWaypointDeleteUndo';
 import {
   RouteService,
   assembleRouteMetrics,
@@ -153,9 +154,6 @@ export default function TrailViewerScreen() {
   const savingRef = useRef(false);
   // Crosshair placement mode (toolbar "+" create, or edit-mode "Move pin")
   const [crosshair, setCrosshair] = useState<CrosshairMode | null>(null);
-  // Deleted custom waypoint held for undo. Photo file deletion is deferred
-  // until the toast expires so undo restores the photo too.
-  const [deletedWaypoint, setDeletedWaypoint] = useState<CustomWaypoint | null>(null);
   // Route builder: ordered waypoints tapped on the map (null = not building)
   const [routeDraft, setRouteDraft] = useState<TrailWaypoint[] | null>(null);
   const [savingRoute, setSavingRoute] = useState(false);
@@ -173,7 +171,7 @@ export default function TrailViewerScreen() {
       if (style) setOfflineMapStyle(style);
     }).catch(() => {});
   }, []);
-  const { downloadingTrailId, download: downloadTiles } = useTileDownloads(refreshOfflineStyle);
+  const { downloadingTrailId, downloadError, clearError, download: downloadTiles } = useTileDownloads(refreshOfflineStyle);
   const [trailIsCustom, setTrailIsCustom] = useState(false);
 
   // Active trail data (respects direction — recomputes when trail or direction changes)
@@ -235,12 +233,56 @@ export default function TrailViewerScreen() {
   useEffect(() => {
     if (!focusWaypointId || !activeTrail) return;
     if (consumedFocusIdRef.current === focusWaypointId) return;
-    consumedFocusIdRef.current = focusWaypointId;
     const wp = activeTrail.waypoints.find(w => w.id === focusWaypointId);
-    if (!wp) return; // waypoint not found — no focus, no crash
+    // Deep link may arrive before the target waypoint has been merged in (e.g.
+    // it was just created out-of-band on the Hike tab). Do NOT consume the
+    // param on a miss — let the effect retry once the focus-driven re-merge
+    // lands (activeTrail changes). Only mark consumed once found, which also
+    // preserves the "don't re-fire the sheet on every re-merge" guarantee.
+    if (!wp) return;
+    consumedFocusIdRef.current = focusWaypointId;
     dispatch({ type: 'selectWaypoint', waypoint: wp });
     mapRef.current?.panTo(wp.lat, wp.lon);
   }, [focusWaypointId, activeTrail]);
+
+  // Refresh custom waypoints whenever this screen regains focus. Waypoints can
+  // be written out-of-band while the screen is mounted-but-backgrounded (the
+  // Hike tab's "Mark location" writes straight to the DB; a deep link from My
+  // data brings this instance forward), and the context's loadTrail early-
+  // returns for an already-loaded id — so without this those writes never
+  // appear here. Cheap: the context re-merges against its pre-parsed base.
+  // Guarded so it never runs before the trail is loaded, and never overlaps
+  // itself. Read the loaded flag through a ref so the callback stays stable
+  // (a re-merge changes contextTrail, which must not itself re-trigger).
+  const trailLoadedRef = useRef(false);
+  trailLoadedRef.current = contextTrail != null;
+  const refreshingCustomRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!trailLoadedRef.current || refreshingCustomRef.current) return;
+      refreshingCustomRef.current = true;
+      refreshCustomWaypoints().finally(() => {
+        refreshingCustomRef.current = false;
+      });
+    }, [refreshCustomWaypoints]),
+  );
+
+  // Surface tile-download failures. Previously a failed download silently
+  // reverted the toolbar spinner to the ⭳ glyph with no feedback. Alert with a
+  // Retry so the user isn't left guessing, then clear the error so it fires
+  // once per failure.
+  useEffect(() => {
+    if (!downloadError || downloadError.trailId !== id) return;
+    clearError();
+    Alert.alert(
+      'Download failed',
+      downloadError.message || 'Could not download offline maps. Please try again.',
+      [
+        { text: 'Dismiss', style: 'cancel' },
+        { text: 'Retry', onPress: () => { if (id) downloadTiles(id, trailIsCustom); } },
+      ],
+    );
+  }, [downloadError, id, clearError, downloadTiles, trailIsCustom]);
 
   // GPS state for LocationStatusBar
   const locationState = useMemo((): LocationState => {
@@ -476,29 +518,9 @@ export default function TrailViewerScreen() {
     setEditingWaypoint(wp);
   }, []);
 
-  // Delete is immediate with an undo toast (replaces the old confirm Alert —
-  // both safer and faster in the field). The full row is kept in memory and
-  // re-inserted with the same id on undo, so merged `custom-` references stay
-  // stable. Photo file deletion is deferred until the toast expires.
-  const handleDeleteWaypoint = useCallback(async (wp: TrailWaypoint) => {
-    try {
-      const service = await TrailDataService.create();
-      const rowId = customWaypointRowId(wp.id);
-      const row = await service.getCustomWaypoint(rowId);
-      await service.deleteCustomWaypoint(rowId);
-      dispatch({ type: 'deselect' });
-      setDeletedWaypoint(row);
-      await refreshCustomWaypoints();
-    } catch (e) {
-      console.warn('Failed to delete custom waypoint:', e);
-      Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
-    }
-  }, [refreshCustomWaypoints]);
-
-  const handleUndoDelete = useCallback(async () => {
-    const row = deletedWaypoint;
-    setDeletedWaypoint(null);
-    if (!row) return;
+  // Delete-with-undo lifecycle (photo cleanup deferral, displacement, unmount
+  // and undo/expiry race) lives in the shared hook — see useWaypointDeleteUndo.
+  const restoreDeletedWaypoint = useCallback(async (row: CustomWaypoint) => {
     try {
       const service = await TrailDataService.create();
       await service.restoreCustomWaypoint(row);
@@ -507,15 +529,33 @@ export default function TrailViewerScreen() {
       console.warn('Failed to restore custom waypoint:', e);
       Alert.alert('Undo failed', 'Could not restore the waypoint.');
     }
-  }, [deletedWaypoint, refreshCustomWaypoints]);
+  }, [refreshCustomWaypoints]);
 
-  const handleDeleteToastDismiss = useCallback(() => {
-    // Toast expired without undo — the photo file is now orphaned.
-    if (deletedWaypoint?.photoUri) {
-      deleteWaypointPhoto(deletedWaypoint.photoUri);
+  const {
+    deleted: deletedWaypoint,
+    registerDeleted,
+    undo: handleUndoDelete,
+    expire: handleDeleteToastDismiss,
+  } = useWaypointDeleteUndo<CustomWaypoint>(restoreDeletedWaypoint);
+
+  // Delete is immediate with an undo toast (replaces the old confirm Alert —
+  // both safer and faster in the field). The full row is kept in memory and
+  // re-inserted with the same id on undo, so merged `custom-` references stay
+  // stable. Photo file deletion is deferred (handled by the hook).
+  const handleDeleteWaypoint = useCallback(async (wp: TrailWaypoint) => {
+    try {
+      const service = await TrailDataService.create();
+      const rowId = customWaypointRowId(wp.id);
+      const row = await service.getCustomWaypoint(rowId);
+      await service.deleteCustomWaypoint(rowId);
+      dispatch({ type: 'deselect' });
+      if (row) registerDeleted(row);
+      await refreshCustomWaypoints();
+    } catch (e) {
+      console.warn('Failed to delete custom waypoint:', e);
+      Alert.alert('Delete failed', 'Could not delete the waypoint. Please try again.');
     }
-    setDeletedWaypoint(null);
-  }, [deletedWaypoint]);
+  }, [refreshCustomWaypoints, registerDeleted]);
 
   // --- Route builder (toolbar "Route" — P1 PR D) ----------------------------
 

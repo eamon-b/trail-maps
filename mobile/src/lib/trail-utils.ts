@@ -192,23 +192,46 @@ export function nearestTrackPointToLatLon(
     return dLat * dLat + dLon * dLon;
   };
 
+  // Coarse scan: record every sampled index and its (squared) distance, plus
+  // the best seen so far.
+  const step = Math.max(1, Math.floor(points.length / 500));
+  const coarse: { idx: number; d2: number }[] = [];
+  let bestD2 = Infinity;
+  for (let i = 0; i < points.length; i += step) {
+    const d2 = sq(points[i]);
+    coarse.push({ idx: i, d2 });
+    if (d2 < bestD2) bestD2 = d2;
+  }
+
+  // Refine around EVERY coarse sample competitive with the best — not just the
+  // single closest. On switchbacks and out-and-backs two branches run close
+  // together, and the true-nearest point can sit beside a coarse sample that
+  // was marginally farther than another branch's sample; refining only around
+  // the single best sample then locks onto the wrong branch and persists a
+  // km_position that is kilometres off. Candidacy margin: within 2x the best
+  // distance, or the best distance + ~200 m, whichever is larger (the additive
+  // term keeps a near-parallel branch in play even when the best is on-track,
+  // where 2x of ~0 would exclude everything). The metric is the coarse squared
+  // equirectangular distance in degrees; 200 m is converted via the length of
+  // a degree of latitude. Competitive samples are few in practice, so the
+  // total refinement work stays bounded.
+  const absMarginDeg = 200 / 111_320; // ~200 m expressed in degrees
+  const bestDeg = Math.sqrt(bestD2);
+  const marginDeg = Math.max(2 * bestDeg, bestDeg + absMarginDeg);
+  const marginD2 = marginDeg * marginDeg;
+
   let nearestIdx = 0;
   let nearestSq = Infinity;
-  const step = Math.max(1, Math.floor(points.length / 500));
-  for (let i = 0; i < points.length; i += step) {
-    const d = sq(points[i]);
-    if (d < nearestSq) {
-      nearestSq = d;
-      nearestIdx = i;
-    }
-  }
-  const start = Math.max(0, nearestIdx - step);
-  const end = Math.min(points.length - 1, nearestIdx + step);
-  for (let i = start; i <= end; i++) {
-    const d = sq(points[i]);
-    if (d < nearestSq) {
-      nearestSq = d;
-      nearestIdx = i;
+  for (const { idx, d2 } of coarse) {
+    if (d2 > marginD2) continue;
+    const start = Math.max(0, idx - step);
+    const end = Math.min(points.length - 1, idx + step);
+    for (let i = start; i <= end; i++) {
+      const d = sq(points[i]);
+      if (d < nearestSq) {
+        nearestSq = d;
+        nearestIdx = i;
+      }
     }
   }
 

@@ -4,6 +4,7 @@ import {
   getWaypointColor,
   getWaypointEmoji,
   getWaypointLabel,
+  getWaypointPluralLabel,
 } from '../waypoint-type-meta';
 
 describe('WAYPOINT_TYPE_META registry', () => {
@@ -69,5 +70,14 @@ describe('WAYPOINT_TYPE_META registry', () => {
     expect(getWaypointEmoji('hut')).toBe('🛖');
     expect(getWaypointEmoji('lookout')).toBe('👁️');
     expect(getWaypointEmoji('poi')).toBe('📍');
+  });
+  it('pluralizes labels for counts contexts (overview waypoint summary)', () => {
+    expect(getWaypointPluralLabel('campsite')).toBe('Campsites');
+    expect(getWaypointPluralLabel('water')).toBe('Water sources');
+    expect(getWaypointPluralLabel('water-tank')).toBe('Water tanks');
+    expect(getWaypointPluralLabel('poi')).toBe('Points of interest');
+    expect(getWaypointPluralLabel('beach')).toBe('Beaches');
+    expect(getWaypointPluralLabel('food')).toBe('Food');
+    expect(getWaypointPluralLabel('mystery')).toBe('Mysterys');
   });
 });

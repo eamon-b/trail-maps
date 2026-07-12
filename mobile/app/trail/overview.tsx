@@ -19,7 +19,7 @@ import { getMinMax } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { useTileDownloads, formatBytes } from '../../src/hooks/useTileDownloads';
 import { getTrailTileStatus, type TrailTileStatus } from '../../src/services/tile-service';
-import { getWaypointLabel } from '../../src/lib/waypoint-type-meta';
+import { getWaypointPluralLabel } from '../../src/lib/waypoint-type-meta';
 import {
   generateDatasheet,
   hasElevationData,
@@ -98,7 +98,7 @@ export default function TrailOverviewScreen() {
     }
     return Object.entries(counts)
       .sort(([, a], [, b]) => b - a)
-      .map(([type, count]) => ({ type, label: getWaypointLabel(type), count }));
+      .map(([type, count]) => ({ type, label: getWaypointPluralLabel(type), count }));
   }, [activeTrail]);
 
   const datasheet: Datasheet | null = useMemo(() => {

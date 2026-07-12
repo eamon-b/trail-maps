@@ -145,6 +145,11 @@ export function parseGpx(xml: string): GpxData {
       return {
         name: safeString(trk.name),
         segments,
+        // Explicit track <type> (e.g. our own exports emit `side-trip` /
+        // `alternate`). Preserved so an export→import round trip keeps the
+        // variant kind of secondary tracks. Not part of the shared GpxTrack
+        // type, so consumers read it via a cast.
+        ...(trk.type != null && safeString(trk.type) !== '' ? { type: safeString(trk.type) } : {}),
       };
     }
   );

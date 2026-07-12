@@ -277,7 +277,9 @@ describe('processGpx', () => {
     expect(trail.track.points.length).toBe(4);
   });
 
-  it('keeps the first track as main and preserves secondary tracks as alternates', () => {
+  it('chains a contiguous second track into the main line', () => {
+    // "Part 1"/"Part 2" of one continuous recording: Part 2 starts ~140 m from
+    // where Part 1 ended, so it is a continuation, not a separate alternate.
     const xml = gpxWrap(`
       <trk><name>Part 1</name><trkseg>
         <trkpt lat="-33.0" lon="151.0"><ele>100</ele></trkpt>
@@ -290,10 +292,30 @@ describe('processGpx', () => {
     `);
 
     const { trail, warnings } = processGpx(xml);
-    // Main line is only the first <trk>; the second is not folded in
+    // Both tracks merged into one main line; nothing left as an alternate.
+    expect(trail.track.points.length).toBe(4);
+    expect(trail.alternates ?? []).toHaveLength(0);
+    expect(warnings.some((w) => w.type === 'alternates_preserved')).toBe(false);
+  });
+
+  it('keeps a divergent secondary track as an alternate', () => {
+    // A second track that does NOT continue from the first (far from its end)
+    // is preserved as a dashed alternate rather than folded into the main line.
+    const xml = gpxWrap(`
+      <trk><name>Main</name><trkseg>
+        <trkpt lat="-33.0" lon="151.0"><ele>100</ele></trkpt>
+        <trkpt lat="-33.001" lon="151.001"><ele>110</ele></trkpt>
+      </trkseg></trk>
+      <trk><name>Detour</name><trkseg>
+        <trkpt lat="-33.5" lon="151.5"><ele>120</ele></trkpt>
+        <trkpt lat="-33.501" lon="151.501"><ele>130</ele></trkpt>
+      </trkseg></trk>
+    `);
+
+    const { trail, warnings } = processGpx(xml);
     expect(trail.track.points.length).toBe(2);
     expect(trail.alternates).toHaveLength(1);
-    expect(trail.alternates![0].name).toBe('Part 2');
+    expect(trail.alternates![0].name).toBe('Detour');
     expect(trail.alternates![0].type).toBe('alternate');
     expect(trail.alternates![0].points).toHaveLength(2);
     expect(warnings.some((w) => w.type === 'alternates_preserved' && w.count === 1)).toBe(true);
@@ -417,6 +439,48 @@ describe('waypoint processing', () => {
     expect(trail.waypoints[1].totalDistance!).toBeLessThan(trail.waypoints[2].totalDistance!);
     // Segment distances should be positive
     expect(trail.waypoints[1].distance).toBeGreaterThan(0);
+  });
+
+  it('ignores an unknown third-party <type> and falls back to name classification', () => {
+    // OsmAnd writes the category ("Favorites") into <type>. Trusting it verbatim
+    // would skip the name classifier and drop this water source out of the
+    // water-carry calculator's allow-list.
+    const trackPts = [];
+    for (let i = 0; i < 50; i++) {
+      trackPts.push({ lat: -33.0 - i * 0.001, lon: 151.0, ele: 100 + i });
+    }
+    const xml = gpxWrap(`
+      ${makeTrackXml(trackPts)}
+      <wpt lat="-33.025" lon="151.0001">
+        <name>W Ephemeral Creek</name>
+        <type>Favorites</type>
+      </wpt>
+    `);
+
+    const { trail } = processGpx(xml, { waypointMaxDistance: 500 });
+    expect(trail.waypoints.length).toBe(1);
+    expect(trail.waypoints[0].type).toBe('water');
+    expect(trail.waypoints[0].name).toBe('Ephemeral Creek');
+  });
+
+  it('honors a <type> that matches a registry type', () => {
+    const trackPts = [];
+    for (let i = 0; i < 50; i++) {
+      trackPts.push({ lat: -33.0 - i * 0.001, lon: 151.0, ele: 100 + i });
+    }
+    const xml = gpxWrap(`
+      ${makeTrackXml(trackPts)}
+      <wpt lat="-33.025" lon="151.0001">
+        <name>Rockfall zone</name>
+        <type>hazard</type>
+      </wpt>
+    `);
+
+    const { trail } = processGpx(xml, { waypointMaxDistance: 500 });
+    expect(trail.waypoints.length).toBe(1);
+    expect(trail.waypoints[0].type).toBe('hazard');
+    // Registry <type> wins, so the name is preserved untouched.
+    expect(trail.waypoints[0].name).toBe('Rockfall zone');
   });
 });
 

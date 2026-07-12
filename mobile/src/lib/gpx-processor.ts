@@ -19,6 +19,7 @@ import type { GpxData, GpxPoint, GpxWaypoint } from '@lib/types';
 import { haversineDistance, haversineDistance3D } from '@lib/distance';
 import { classifyWaypoint } from '@lib/waypoint-classifier';
 import { parseGpx, validateFileSize, GpxParseError } from './gpx-parser';
+import { WAYPOINT_TYPE_META } from './waypoint-type-meta';
 import type { Trail, TrackPoint, TrailWaypoint } from './trail-utils';
 
 // ---------------------------------------------------------------------------
@@ -296,9 +297,40 @@ function deduplicateConsecutive(points: GpxPoint[]): { points: GpxPoint[]; remov
 
 const GAP_THRESHOLD_METERS = 500;
 
+/**
+ * Max end-to-start distance for a track to be treated as a continuation of the
+ * main line rather than a separate alternate route.
+ *
+ * Many recorders (Garmin Connect, some watches) emit one <trk> per day for a
+ * single continuous hike. Consecutive days start where the previous ended, but
+ * a camp-to-trail offset of a few hundred metres to ~1 km is common. 2 km is a
+ * deliberately generous threshold: it comfortably absorbs those camp offsets
+ * (4x the 500 m pause-split GAP_THRESHOLD_METERS, so the offset is still
+ * *recorded* as a gap) while staying well below the distance at which a genuine
+ * spur/loop/parallel alternate would rejoin. Continuations chain end-to-start
+ * only (a candidate's start near the current main END), so a parallel alternate
+ * that diverges from mid-trail — whose start sits near a MIDDLE main point, not
+ * the end — is not swallowed. The honest limitation: an alternate that happens
+ * to *start* within 2 km of the main line's end (e.g. an end-of-trail loop) is
+ * ambiguous and would be chained; the import preview's per-track include/exclude
+ * checklist lets the user correct that.
+ */
+const CONTINUITY_THRESHOLD_METERS = 2000;
+
+/**
+ * A leading track is treated as a throwaway "prologue" (e.g. a 3-point "Start
+ * marker" dropped before the real recording) — and therefore not used to anchor
+ * the main line — only when it is both tiny in absolute terms and an order of
+ * magnitude shorter than the longest track in the file.
+ */
+const PROLOGUE_MAX_POINTS = 10;
+const PROLOGUE_FRACTION = 0.05;
+
 interface AlternateCandidate {
   name: string;
   points: GpxPoint[];
+  /** Variant kind preserved from a secondary track's <type> (defaults to 'alternate'). */
+  kind: 'alternate' | 'side-trip';
 }
 
 interface MergeResult {
@@ -308,31 +340,116 @@ interface MergeResult {
   alternates: AlternateCandidate[];
 }
 
+/** A single track flattened for merge analysis, retaining its segments. */
+interface TrackUnit {
+  name: string;
+  /** Raw track <type>, if any (used to preserve the variant kind). */
+  rawType?: string;
+  /** Non-empty segments (pause-splits within the one track). */
+  segments: GpxPoint[][];
+  /** All segment points concatenated (for counting + endpoint lookup). */
+  points: GpxPoint[];
+}
+
+/** Map a raw track <type> to a known variant kind, defaulting to 'alternate'. */
+function variantKindFromType(rawType: string | undefined): 'alternate' | 'side-trip' {
+  return (rawType ?? '').trim().toLowerCase() === 'side-trip' ? 'side-trip' : 'alternate';
+}
+
 /**
  * Split GPX geometry into a main route and alternates.
  *
- * The main route is the FIRST <trk> (all its <trkseg>s merged — segments are
- * pause-splits of one recording, not separate routes). Every additional
- * <trk> and every <rte> is preserved as an alternate instead of being folded
- * into the main line (P2 decision 10 — the renderer already draws
- * alternates as dashed orange). Route-only files (e.g. AllTrails exports)
- * promote the first <rte> to the main route.
+ * The main line starts from an anchor track (normally the first non-empty
+ * <trk>; see prologue handling below) and then greedily absorbs any remaining
+ * track whose START lies within CONTINUITY_THRESHOLD_METERS of the current main
+ * END. This recovers the common "one <trk> per day" recording where days chain
+ * into a single continuous hike — days 2..N are merged into the main line (with
+ * a gap entry recorded per the pause-split handling) so their distance,
+ * elevation, and waypoints all count. Tracks that do NOT chain (genuine spurs,
+ * loops, parallel alternates that diverge mid-trail) stay as alternates — the
+ * renderer draws them dashed and the import preview offers include/exclude.
+ *
+ * Prologue handling: if the first track is trivially short relative to the
+ * longest track (a marker/prologue), the longest track anchors the main line
+ * instead, and the others chain onto it.
+ *
+ * Route-only files (e.g. AllTrails exports) promote the first <rte> to the main
+ * route; a <rte> alongside tracks stays an alternate (routes never chain).
  */
 function mergeTrackSegments(gpxData: GpxData): MergeResult {
   const allPoints: GpxPoint[] = [];
   const gaps: { afterIndex: number; distanceMeters: number }[] = [];
   const alternates: AlternateCandidate[] = [];
 
-  // Main route segments: the first non-empty track's segments, or the first
-  // route when the file has no tracks at all.
+  // Per-kind counters for unnamed fallback names (Track 1/2, Route 1/2).
+  let unnamedTrackCount = 0;
+  let unnamedRouteCount = 0;
+  const nameFor = (name: string | undefined, kind: 'track' | 'route'): string => {
+    if (name && name.trim().length > 0) return name;
+    return kind === 'track' ? `Track ${++unnamedTrackCount}` : `Route ${++unnamedRouteCount}`;
+  };
+
+  // Build track units from all non-empty tracks.
+  const trackUnits: TrackUnit[] = gpxData.tracks
+    .map((t) => {
+      const segments = t.segments.map((s) => s.points).filter((pts) => pts.length > 0);
+      return {
+        name: t.name,
+        rawType: (t as { type?: string }).type,
+        segments,
+        points: segments.flat(),
+      };
+    })
+    .filter((u) => u.points.length > 0);
+
   const mainSegments: GpxPoint[][] = [];
-  const firstTrack = gpxData.tracks.find((t) => t.segments.some((s) => s.points.length > 0));
   let firstRouteUsedAsMain = false;
 
-  if (firstTrack) {
-    for (const segment of firstTrack.segments) {
-      if (segment.points.length > 0) {
-        mainSegments.push(segment.points);
+  if (trackUnits.length > 0) {
+    // --- Choose the anchor track ---
+    let longestIdx = 0;
+    for (let i = 1; i < trackUnits.length; i++) {
+      if (trackUnits[i].points.length > trackUnits[longestIdx].points.length) longestIdx = i;
+    }
+    const firstCount = trackUnits[0].points.length;
+    const longestCount = trackUnits[longestIdx].points.length;
+    const firstIsPrologue =
+      longestIdx !== 0 &&
+      firstCount <= PROLOGUE_MAX_POINTS &&
+      firstCount < longestCount * PROLOGUE_FRACTION;
+    const anchorIdx = firstIsPrologue ? longestIdx : 0;
+
+    // --- Chain continuation tracks onto the main line (end-to-start) ---
+    for (const seg of trackUnits[anchorIdx].segments) mainSegments.push(seg);
+    const remaining = trackUnits
+      .map((u, i) => ({ u, i }))
+      .filter(({ i }) => i !== anchorIdx);
+
+    let extended = true;
+    while (extended && remaining.length > 0) {
+      extended = false;
+      const lastSeg = mainSegments[mainSegments.length - 1];
+      const mainEnd = lastSeg[lastSeg.length - 1];
+      for (let r = 0; r < remaining.length; r++) {
+        const candStart = remaining[r].u.points[0];
+        const d = haversineDistance(mainEnd.lat, mainEnd.lon, candStart.lat, candStart.lon);
+        if (d <= CONTINUITY_THRESHOLD_METERS) {
+          for (const seg of remaining[r].u.segments) mainSegments.push(seg);
+          remaining.splice(r, 1);
+          extended = true;
+          break;
+        }
+      }
+    }
+
+    // Tracks that did not chain remain alternates (in document order).
+    for (const { u } of remaining) {
+      if (u.points.length >= 2) {
+        alternates.push({
+          name: nameFor(u.name, 'track'),
+          points: u.points,
+          kind: variantKindFromType(u.rawType),
+        });
       }
     }
   } else {
@@ -343,21 +460,8 @@ function mergeTrackSegments(gpxData: GpxData): MergeResult {
     }
   }
 
-  // Everything else becomes an alternate candidate.
-  let unnamedCount = 0;
-  const nextName = (name: string | undefined, kind: string): string => {
-    if (name && name.trim().length > 0) return name;
-    unnamedCount++;
-    return `${kind} ${unnamedCount}`;
-  };
-
-  for (const track of gpxData.tracks) {
-    if (track === firstTrack) continue;
-    const points = track.segments.flatMap((s) => s.points);
-    if (points.length >= 2) {
-      alternates.push({ name: nextName(track.name, 'Alternate'), points });
-    }
-  }
+  // Routes never chain: the first route may be the main line (track-free
+  // files), every other route is an alternate.
   let skippedFirstRoute = false;
   for (const route of gpxData.routes) {
     if (firstRouteUsedAsMain && !skippedFirstRoute && route.points.length > 0) {
@@ -365,7 +469,7 @@ function mergeTrackSegments(gpxData: GpxData): MergeResult {
       continue;
     }
     if (route.points.length >= 2) {
-      alternates.push({ name: nextName(route.name, 'Route'), points: route.points });
+      alternates.push({ name: nameFor(route.name, 'route'), points: route.points, kind: 'alternate' });
     }
   }
 
@@ -414,7 +518,7 @@ function buildAlternateVariant(
 
   return {
     name: candidate.name,
-    type: 'alternate' as const,
+    type: candidate.kind,
     distance: Math.round(dist * 100) / 100,
     points,
   };
@@ -445,23 +549,32 @@ interface WaypointVisit {
 }
 
 /**
- * Find waypoint visits along the route using hysteresis-based snapping.
- * Walks through track points and records a "visit" when the route passes
- * near a waypoint. Exit threshold is 3x entry threshold to prevent flickering.
- */
-/**
- * Resolve a waypoint's type + display name. An explicit GPX `<type>` (e.g.
- * from our own exports) wins over name-prefix classification, so an
- * export→import round trip preserves the type and the untouched name.
+ * Resolve a waypoint's type + display name. An explicit GPX `<type>` is honored
+ * only when it matches a known type in the registry (case/whitespace
+ * normalized) — our own exports emit registry types, so an export→import round
+ * trip preserves the type and the untouched name. Third-party files, however,
+ * put arbitrary values in `<type>` (Garmin BaseCamp writes `user`; OsmAnd
+ * writes category names like `Favorites`). Trusting those verbatim would skip
+ * the name classifier and, e.g., leave a water source out of the water-carry
+ * calculator's allow-list. Unknown types therefore fall back to name-prefix
+ * classification.
  */
 function resolveWaypointType(wp: GpxWaypoint): { type: string; cleanedName: string } {
   if (wp.type) {
-    return { type: wp.type, cleanedName: wp.name.trim() };
+    const normalized = wp.type.trim().toLowerCase();
+    if (WAYPOINT_TYPE_META[normalized]) {
+      return { type: normalized, cleanedName: wp.name.trim() };
+    }
   }
   const classification = classifyWaypoint(wp.name);
   return { type: classification.type, cleanedName: classification.cleanedName };
 }
 
+/**
+ * Find waypoint visits along the route using hysteresis-based snapping.
+ * Walks through track points and records a "visit" when the route passes
+ * near a waypoint. Exit threshold is 3x entry threshold to prevent flickering.
+ */
 function findWaypointVisits(
   waypoints: GpxWaypoint[],
   trackPoints: GpxPoint[],

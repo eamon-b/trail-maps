@@ -65,6 +65,15 @@ describe('escapeXml', () => {
       'Tom &amp; Jerry&apos;s &lt;&quot;tank&quot;&gt;',
     );
   });
+
+  it('strips XML-illegal control characters but keeps tab/newline/CR', () => {
+    // A pasted bell (U+0007) and null (U+0000) would make strict parsers reject
+    // the document; they are dropped.
+    expect(escapeXml('Bell\u0007 and null\u0000 end')).toBe('Bell and null end');
+    expect(escapeXml('vtab\u000b ff\u000c us\u001f x')).toBe('vtab ff us x');
+    // Tab, LF, and CR are the only allowed C0 control characters — preserved.
+    expect(escapeXml('a\tb\nc\rd')).toBe('a\tb\nc\rd');
+  });
 });
 
 describe('waypointsToGpx', () => {
@@ -179,9 +188,10 @@ describe('round trip: export → parse → process', () => {
 
     const { trail: reimported } = processGpx(gpx, { trailName: 'Test Trail' });
 
-    // Track survives (the alternate is merged into the main route by the
-    // importer's MVP segment handling, so only a lower bound is asserted)
-    expect(reimported.track.points.length).toBeGreaterThanOrEqual(11);
+    // The main track (11 points) survives; the "High Route" alternate starts
+    // ~9 km from the main line's end, so it is not chained in and stays a
+    // separate alternate.
+    expect(reimported.track.points.length).toBe(11);
     expect(reimported.track.totalDistance).toBeGreaterThanOrEqual(10);
 
     // Waypoints keep their exported name and explicit <type> (no name-based
@@ -199,5 +209,34 @@ describe('round trip: export → parse → process', () => {
     const trailhead = reimported.waypoints.find(w => w.name === 'Trailhead');
     expect(trailhead).toBeDefined();
     expect(trailhead!.type).toBe('trailhead');
+  });
+
+  it('preserves the variant kind (side-trip vs alternate) across a round trip', () => {
+    const trail = makeTrail();
+    // Add a side trip whose start is far from the main line's end so it stays a
+    // separate variant rather than being chained into the main line.
+    trail.sideTrips = [
+      {
+        name: 'Summit Spur',
+        type: 'side-trip',
+        points: [
+          { lat: -35.2, lon: 138.2, ele: 300, dist: 0 },
+          { lat: -35.21, lon: 138.21, ele: 350, dist: 1.4 },
+        ],
+      },
+    ];
+
+    const gpx = trailToGpx(trail);
+    const { trail: reimported } = processGpx(gpx, { trailName: 'Test Trail' });
+
+    // The exporter writes <trk><type>side-trip</type>; the importer must read
+    // that back rather than flattening every secondary track to 'alternate'.
+    const spur = (reimported.alternates ?? []).find((a) => a.name === 'Summit Spur');
+    expect(spur).toBeDefined();
+    expect(spur!.type).toBe('side-trip');
+
+    const highRoute = (reimported.alternates ?? []).find((a) => a.name === 'High Route');
+    expect(highRoute).toBeDefined();
+    expect(highRoute!.type).toBe('alternate');
   });
 });

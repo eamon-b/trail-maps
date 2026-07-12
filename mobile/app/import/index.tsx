@@ -33,6 +33,7 @@ import {
   applyElevationToTrail,
 } from '../../src/services/elevation-service';
 import type { Trail } from '../../src/lib/trail-utils';
+import { getWaypointLabel } from '../../src/lib/waypoint-type-meta';
 
 type ImportStage = 'pick' | 'processing' | 'preview' | 'saving' | 'done' | 'error';
 
@@ -47,21 +48,6 @@ const PROCESSING_STAGES: Record<string, string> = {
   'Processing waypoints': 'Matching waypoints...',
   'Finalizing': 'Finalizing...',
   'Complete': 'Done!',
-};
-
-const WAYPOINT_TYPE_LABELS: Record<string, string> = {
-  campsite: 'Campsite',
-  water: 'Water',
-  'water-tank': 'Water Tank',
-  town: 'Town',
-  shelter: 'Shelter',
-  hut: 'Hut',
-  poi: 'Point of Interest',
-  road: 'Road Crossing',
-  trailhead: 'Trailhead',
-  endpoint: 'Endpoint',
-  food: 'Food',
-  resupply: 'Resupply',
 };
 
 function formatWarning(w: ProcessingWarning): string {
@@ -461,7 +447,7 @@ export default function ImportScreen() {
                     {wp.name}
                   </Text>
                   <Text style={[styles.waypointType, { color: colors.textSecondary }]}>
-                    {WAYPOINT_TYPE_LABELS[wp.type] || wp.type}
+                    {getWaypointLabel(wp.type)}
                   </Text>
                 </View>
               ))}

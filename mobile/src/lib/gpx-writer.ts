@@ -21,6 +21,10 @@ const GPX_CREATOR = 'Trail Companion';
 /** Escape the five XML special characters for element/attribute content. */
 export function escapeXml(value: string): string {
   return value
+    // Strip characters XML 1.0 forbids even when escaped (a pasted control
+    // char in a note would otherwise produce GPX that strict parsers reject).
+    // Tab (U+0009), LF (U+000A), and CR (U+000D) are the only allowed C0 chars.
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

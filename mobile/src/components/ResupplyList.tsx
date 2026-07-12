@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Card } from './Card';
+import { PressableRow } from './PressableRow';
 import type { ResupplyAnalysis, ResupplyGap } from '@lib/resupply-calculator';
 import { foodCarryForGap, correlateResupplyWithDays, DEFAULT_GRAMS_PER_DAY } from '@lib/resupply-calculator';
 import type { ComputedDay } from '../services/plan-calculator-types';
@@ -59,16 +60,15 @@ export function ResupplyList({ analysis, days }: ResupplyListProps) {
       </View>
 
       {/* Food calculator toggle */}
-      <Pressable
+      <PressableRow
         onPress={() => setShowFoodCalc(!showFoodCalc)}
         style={[styles.calcToggle, { borderColor: colors.border }]}
-        accessibilityRole="button"
         accessibilityLabel={showFoodCalc ? 'Hide food calculator' : 'Show food calculator'}
       >
         <Text style={[styles.calcToggleText, { color: colors.accent }]}>
           {showFoodCalc ? 'Hide' : 'Show'} food weight calculator
         </Text>
-      </Pressable>
+      </PressableRow>
 
       {showFoodCalc && (
         <View style={styles.calcRow}>

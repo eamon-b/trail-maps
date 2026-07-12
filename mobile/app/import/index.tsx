@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Pressable,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -16,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
-import { ProgressBar, ScreenHeader, TrailMap } from '../../src/components';
+import { PressableRow, ProgressBar, ScreenHeader, TrailMap } from '../../src/components';
 import {
   pickGpxFile,
   fetchGpxFromUrl,
@@ -266,24 +265,22 @@ export default function ImportScreen() {
             Import a trail from a GPX file on your device or from a URL.
           </Text>
 
-          <Pressable
+          <PressableRow
             style={[styles.pickButton, { backgroundColor: colors.accent }]}
             onPress={handlePickFile}
-            accessibilityRole="button"
             accessibilityLabel="Choose file from device"
           >
             <Text style={[styles.pickButtonText, { color: colors.textInverse }]}>Choose File</Text>
-          </Pressable>
+          </PressableRow>
 
-          <Pressable
-            style={[styles.urlToggle]}
+          <PressableRow
+            style={styles.urlToggle}
             onPress={() => setShowUrlInput(!showUrlInput)}
-            accessibilityRole="button"
           >
             <Text style={[styles.urlToggleText, { color: colors.accent }]}>
               {showUrlInput ? 'Hide URL import' : 'Import from URL'}
             </Text>
-          </Pressable>
+          </PressableRow>
 
           {showUrlInput && (
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -301,15 +298,14 @@ export default function ImportScreen() {
                   returnKeyType="go"
                   onSubmitEditing={handleUrlImport}
                 />
-                <Pressable
+                <PressableRow
                   style={[styles.urlFetchButton, { backgroundColor: colors.accent, opacity: urlInput.trim() ? 1 : 0.5 }]}
                   onPress={handleUrlImport}
                   disabled={!urlInput.trim()}
-                  accessibilityRole="button"
                   accessibilityLabel="Fetch GPX from URL"
                 >
                   <Text style={[styles.urlFetchText, { color: colors.textInverse }]}>Fetch</Text>
-                </Pressable>
+                </PressableRow>
               </View>
             </KeyboardAvoidingView>
           )}
@@ -330,13 +326,13 @@ export default function ImportScreen() {
             {progressStage || 'Starting...'}
           </Text>
           <ProgressBar progress={progressPercent} height={6} style={styles.processingProgress} />
-          <Pressable
+          <PressableRow
             style={[styles.cancelButton, { borderColor: colors.border }]}
             onPress={handleCancelProcessing}
-            accessibilityRole="button"
+            accessibilityLabel="Cancel"
           >
             <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-          </Pressable>
+          </PressableRow>
         </View>
       )}
 
@@ -403,7 +399,7 @@ export default function ImportScreen() {
               {result.trail.alternates.map((alt, i) => {
                 const included = !excludedAlternates.has(i);
                 return (
-                  <Pressable
+                  <PressableRow
                     key={`alt-${i}`}
                     onPress={() => toggleAlternate(i)}
                     style={styles.alternateRow}
@@ -428,7 +424,7 @@ export default function ImportScreen() {
                     <Text style={[styles.alternateMeta, { color: colors.textSecondary }]}>
                       {alt.distance != null ? `${alt.distance.toFixed(1)} km` : 'alternate'}
                     </Text>
-                  </Pressable>
+                  </PressableRow>
                 );
               })}
               <Text style={[styles.alternateHint, { color: colors.textSecondary }]}>
@@ -489,10 +485,9 @@ export default function ImportScreen() {
                         elevation profile.
                       </Text>
                     )}
-                    <Pressable
+                    <PressableRow
                       onPress={handleFetchElevation}
                       style={[styles.elevationFetchButton, { borderColor: colors.accent }]}
-                      accessibilityRole="button"
                       accessibilityLabel="Fetch elevation data"
                     >
                       <Text style={[styles.elevationFetchText, { color: colors.accent }]}>
@@ -500,7 +495,7 @@ export default function ImportScreen() {
                           ? 'Retry elevation fetch'
                           : 'Fetch elevation data (requires internet)'}
                       </Text>
-                    </Pressable>
+                    </PressableRow>
                   </>
                 )
               )}
@@ -509,7 +504,8 @@ export default function ImportScreen() {
 
           {/* Action buttons */}
           <View style={styles.actionButtons}>
-            <Pressable
+            <PressableRow
+              haptic="success"
               style={[
                 styles.importButton,
                 { backgroundColor: colors.accent },
@@ -517,21 +513,20 @@ export default function ImportScreen() {
               ]}
               onPress={handleSave}
               disabled={elevationFetch === 'fetching'}
-              accessibilityRole="button"
               accessibilityLabel="Import trail"
               accessibilityState={{ disabled: elevationFetch === 'fetching' }}
             >
               <Text style={[styles.importButtonText, { color: colors.textInverse }]}>
                 {elevationFetch === 'fetching' ? 'Waiting for elevation…' : 'Import'}
               </Text>
-            </Pressable>
-            <Pressable
+            </PressableRow>
+            <PressableRow
               style={[styles.cancelImportButton, { borderColor: colors.border }]}
               onPress={() => router.back()}
-              accessibilityRole="button"
+              accessibilityLabel="Cancel"
             >
               <Text style={[styles.cancelImportText, { color: colors.textSecondary }]}>Cancel</Text>
-            </Pressable>
+            </PressableRow>
           </View>
         </ScrollView>
       )}
@@ -552,20 +547,20 @@ export default function ImportScreen() {
               {error.suggestion}
             </Text>
           )}
-          <Pressable
+          <PressableRow
             style={[styles.retryButton, { backgroundColor: colors.accent }]}
             onPress={handleRetry}
-            accessibilityRole="button"
+            accessibilityLabel="Try again"
           >
             <Text style={[styles.retryButtonText, { color: colors.textInverse }]}>Try Again</Text>
-          </Pressable>
-          <Pressable
+          </PressableRow>
+          <PressableRow
             style={styles.errorBackButton}
             onPress={() => router.back()}
-            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Text style={[styles.errorBackText, { color: colors.textSecondary }]}>Go Back</Text>
-          </Pressable>
+          </PressableRow>
         </View>
       )}
     </View>

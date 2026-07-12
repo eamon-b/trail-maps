@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
 import type { TrailWaypoint } from '../lib/trail-utils';
+import { PressableRow } from './PressableRow';
 import { waypointEmojis } from './WaypointList';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -43,8 +44,9 @@ export function StopSelector({
       const gapKm = km - prevKm;
 
       return (
-        <Pressable
+        <PressableRow
           onPress={() => onToggleStop(item)}
+          haptic="selection"
           style={[
             styles.row,
             {
@@ -76,7 +78,7 @@ export function StopSelector({
           {isSelected && (
             <Text style={[styles.check, { color: colors.accent }]}>✓</Text>
           )}
-        </Pressable>
+        </PressableRow>
       );
     },
     [filtered, selectedStopKms, onToggleStop, colors, highContrast],

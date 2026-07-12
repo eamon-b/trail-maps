@@ -12,8 +12,32 @@ import type { LocationState } from './LocationStatusBar';
  */
 export type HapticType = 'selection' | 'success' | 'warning' | 'error';
 
+/**
+ * User preference gate. Haptics fire unless the user disables them in
+ * Settings ("Haptic feedback", default on). Hydrated once at app start from
+ * AsyncStorage (root layout) and updated live by the setting, so every call
+ * site — PressableRow and the raw triggerHaptic/triggerLocationHaptic callers
+ * — honours the preference for free.
+ *
+ * NOTE: deliberately independent of reduce-motion. Vibration is not motion;
+ * a user who reduces animation may still want tactile feedback, so the two
+ * preferences are kept separate.
+ */
+let hapticsEnabled = true;
+
+/** Update the global haptics-enabled preference (Settings toggle / app start). */
+export function setHapticsEnabled(enabled: boolean): void {
+  hapticsEnabled = enabled;
+}
+
+/** Current haptics-enabled preference (exposed mainly for tests). */
+export function getHapticsEnabled(): boolean {
+  return hapticsEnabled;
+}
+
 /** Fire a vocabulary haptic. Failures are swallowed (haptics are best-effort). */
 export async function triggerHaptic(type: HapticType): Promise<void> {
+  if (!hapticsEnabled) return;
   try {
     switch (type) {
       case 'selection':
@@ -41,6 +65,7 @@ export async function triggerHaptic(type: HapticType): Promise<void> {
 
 /** Fire haptic feedback for a given location state */
 export async function triggerLocationHaptic(state: LocationState): Promise<void> {
+  if (!hapticsEnabled) return;
   switch (state) {
     case 'onTrail':
     case 'noGps':

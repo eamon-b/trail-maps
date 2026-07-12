@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import * as Haptics from 'expo-haptics';
 import { ThemeProvider } from '../../theme';
 import { StopSelector } from '../StopSelector';
 import type { TrailWaypoint } from '../../lib/trail-utils';
@@ -23,6 +24,7 @@ describe('StopSelector', () => {
 
   beforeEach(() => {
     onToggleStop.mockClear();
+    jest.clearAllMocks();
   });
 
   it('renders all waypoints with names and km values', async () => {
@@ -80,6 +82,8 @@ describe('StopSelector', () => {
     fireEvent.press(screen.getByLabelText(/Camp Alpha/));
     expect(onToggleStop).toHaveBeenCalledTimes(1);
     expect(onToggleStop).toHaveBeenCalledWith(waypoints[0]);
+    // Selection tick on stop toggle (plan decision 5, via PressableRow).
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
   });
 
   it('filters by search text (case-insensitive)', async () => {

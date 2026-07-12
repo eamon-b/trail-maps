@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { View, ActivityIndicator, Text, Pressable, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,8 +10,31 @@ import { FocusedWaypointProvider } from '../src/theme/FocusedWaypointContext';
 import { TrailDataService } from '../src/services/trail-data-service';
 import { loadBundledTrails } from '../src/services/trail-loader';
 import { closeDatabase } from '../src/db/database';
+import { setHapticsEnabled } from '../src/components/haptics';
+import { HAPTIC_FEEDBACK_KEY } from './settings';
 import { spacing, radii, touchTarget } from '../src/tokens/spacing';
-import { typography } from '../src/tokens/typography';
+import { typography, MAX_FONT_SCALE } from '../src/tokens/typography';
+
+/**
+ * Global OS font-scale clamp (P2 plan decision 4: "clamp, don't disable").
+ * Every RN <Text>/<TextInput> in the app grows with the accessibility text
+ * size up to MAX_FONT_SCALE (1.4×) and then stops, so fixed/min-height rows
+ * degrade gracefully instead of clipping — without threading a prop through
+ * every component. AppText still sets maxFontSizeMultiplier explicitly for
+ * callers that want it spelled out; this just changes the default.
+ *
+ * RN 0.81 exposes no public API for a default maxFontSizeMultiplier, so we
+ * assign to the component's `defaultProps` at module scope. It's the
+ * documented-workaround mechanism; `defaultProps` isn't in RN's public types,
+ * hence the guarded cast. Runs once on first import (before any screen mounts).
+ */
+type DefaultableComponent = { defaultProps?: { maxFontSizeMultiplier?: number } };
+for (const Component of [Text, TextInput] as unknown as DefaultableComponent[]) {
+  Component.defaultProps = {
+    ...Component.defaultProps,
+    maxFontSizeMultiplier: MAX_FONT_SCALE,
+  };
+}
 
 export default function RootLayout() {
   return (
@@ -38,6 +61,11 @@ function RootContent() {
   useEffect(() => {
     async function init() {
       try {
+        // Hydrate the haptics preference before any UI can fire feedback.
+        // Absent (null) means default on; only an explicit 'false' disables.
+        const hapticPref = await AsyncStorage.getItem(HAPTIC_FEEDBACK_KEY);
+        setHapticsEnabled(hapticPref !== 'false');
+
         const service = await TrailDataService.create();
         await loadBundledTrails(service);
         setReady(true);

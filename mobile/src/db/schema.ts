@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 const MIGRATIONS: Record<number, string> = {
   1: `
@@ -133,6 +133,18 @@ const MIGRATIONS: Record<number, string> = {
       PRIMARY KEY (route_id, seq)
     );
     UPDATE schema_version SET version = 7;
+  `,
+  // Migration 8: tap-to-sketch route legs (P2 WS5.6, roadmap 18). A route leg
+  // point can now be a sketch point tapped anywhere on the map, not only an
+  // existing waypoint (decision 10: "sketching is additive geometry on a
+  // route, not a new editor"). `lat`/`lon` are nullable, no backfill:
+  //   - waypoint ref / on-track sketch → NULL (position derived from km)
+  //   - off-track sketch → the raw tap lat/lon (km denormalized to the nearest
+  //     track point so direction mirroring and ordering still work)
+  8: `
+    ALTER TABLE route_legs ADD COLUMN lat REAL;
+    ALTER TABLE route_legs ADD COLUMN lon REAL;
+    UPDATE schema_version SET version = 8;
   `,
 };
 

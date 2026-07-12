@@ -31,9 +31,11 @@ import {
   assembleRouteMetrics,
   resolveRoutePoints,
   routeOverlayGeometry,
-  waypointToRoutePoint,
+  draftItemToRoutePoint,
+  OFF_TRACK_LEG_THRESHOLD_M,
   type Route,
   type RouteLeg,
+  type RouteDraftItem,
 } from '../../src/services/route-service';
 import { RoutePanel } from '../../src/components/RoutePanel';
 import { routeToGpx } from '../../src/lib/gpx-writer';
@@ -154,8 +156,9 @@ export default function TrailViewerScreen() {
   const savingRef = useRef(false);
   // Crosshair placement mode (toolbar "+" create, or edit-mode "Move pin")
   const [crosshair, setCrosshair] = useState<CrosshairMode | null>(null);
-  // Route builder: ordered waypoints tapped on the map (null = not building)
-  const [routeDraft, setRouteDraft] = useState<TrailWaypoint[] | null>(null);
+  // Route builder: ordered items tapped on the map — existing waypoints or
+  // tap-to-sketch points (WS5.6) (null = not building)
+  const [routeDraft, setRouteDraft] = useState<RouteDraftItem[] | null>(null);
   const [savingRoute, setSavingRoute] = useState(false);
   // Saved route being viewed (deep-linked via the routeId param)
   const [routeView, setRouteView] = useState<{ route: Route; legs: RouteLeg[] } | null>(null);
@@ -347,10 +350,10 @@ export default function TrailViewerScreen() {
     return resolveRoutePoints(activeTrail, routeView.legs, { reversed: isReversed });
   }, [routeView, activeTrail, isReversed]);
 
-  // Builder points → resolved shape shared with the viewer
+  // Builder items → resolved shape shared with the viewer
   const routeDraftPoints = useMemo(() => {
     if (!routeDraft) return null;
-    return routeDraft.map((wp, i) => waypointToRoutePoint(wp, i));
+    return routeDraft.map((item, i) => draftItemToRoutePoint(item, i));
   }, [routeDraft]);
 
   const activeRoutePoints = routeDraftPoints ?? routeViewPoints;
@@ -361,7 +364,9 @@ export default function TrailViewerScreen() {
   }, [activeTrail, activeRoutePoints]);
 
   const routeOverlay = useMemo(() => {
-    if (!activeRoutePoints || activeRoutePoints.length < 2) return null;
+    // Even a single sketch point should show its marker, so build the overlay
+    // from one point up (spans/legs need pairs and stay empty until then).
+    if (!activeRoutePoints || activeRoutePoints.length < 1) return null;
     return routeOverlayGeometry(activeRoutePoints);
   }, [activeRoutePoints]);
 
@@ -373,8 +378,9 @@ export default function TrailViewerScreen() {
     if (routeDraft) {
       setRouteDraft(prev => {
         if (!prev) return prev;
-        if (prev.length > 0 && prev[prev.length - 1].id === wp.id) return prev;
-        return [...prev, wp];
+        const last = prev[prev.length - 1];
+        if (last && last.kind === 'waypoint' && last.waypoint.id === wp.id) return prev;
+        return [...prev, { kind: 'waypoint', waypoint: wp }];
       });
       return;
     }
@@ -389,11 +395,27 @@ export default function TrailViewerScreen() {
     dispatch({ type: 'userPanned' });
   }, []);
 
-  const handleMapPress = useCallback(() => {
+  const handleMapPress = useCallback((coord?: { latitude: number; longitude: number }) => {
+    // In route-build mode a tap on empty map (not on a waypoint) adds a
+    // tap-to-sketch point (WS5.6): snap to the track; a tap within the
+    // off-track threshold becomes an on-track point AT that km, a farther tap
+    // an off-track point at the raw tap location with the nearest km.
+    if (routeDraft && coord && activeTrail) {
+      const points = activeTrail.track.points;
+      const nearest = nearestTrackPointToLatLon(points, coord.latitude, coord.longitude);
+      if (!nearest) return;
+      const trackPt = points[nearest.index];
+      const offTrack = nearest.distanceM > OFF_TRACK_LEG_THRESHOLD_M;
+      const sketch = offTrack
+        ? { lat: coord.latitude, lon: coord.longitude, km: trackPt.dist, ele: trackPt.ele ?? null, offTrack: true }
+        : { lat: trackPt.lat, lon: trackPt.lon, km: trackPt.dist, ele: trackPt.ele ?? null, offTrack: false };
+      setRouteDraft(prev => (prev ? [...prev, { kind: 'sketch', sketch }] : prev));
+      return;
+    }
     if (selectedWaypoint) {
       dispatch({ type: 'deselect' });
     }
-  }, [selectedWaypoint]);
+  }, [routeDraft, activeTrail, selectedWaypoint]);
 
   const handleRecenter = useCallback(() => {
     dispatch({ type: 'recenter' });
@@ -596,12 +618,26 @@ export default function TrailViewerScreen() {
       const service = await RouteService.create();
       // km_position is stored in the trail's base direction (same convention
       // as custom_waypoints) so it stays valid whichever way the trail is
-      // later displayed.
-      const legs = routeDraft.map(wp => {
-        const activeKm = wp.totalDistance ?? 0;
+      // later displayed. Off-track sketch points additionally persist their raw
+      // lat/lon; on-track sketch points store lat/lon NULL (position derives
+      // from km), which is exactly the deleted-waypoint fallback shape.
+      const toBaseKm = (activeKm: number) =>
+        isReversed ? trail.track.totalDistance - activeKm : activeKm;
+      const legs = routeDraft.map(item => {
+        if (item.kind === 'waypoint') {
+          return {
+            waypointRef: item.waypoint.id,
+            kmPosition: toBaseKm(item.waypoint.totalDistance ?? 0),
+            lat: null,
+            lon: null,
+          };
+        }
+        const s = item.sketch;
         return {
-          waypointRef: wp.id,
-          kmPosition: isReversed ? trail.track.totalDistance - activeKm : activeKm,
+          waypointRef: null,
+          kmPosition: toBaseKm(s.km),
+          lat: s.offTrack ? s.lat : null,
+          lon: s.offTrack ? s.lon : null,
         };
       });
       const route = await service.createRoute(id, name, legs);

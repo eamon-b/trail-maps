@@ -17,6 +17,9 @@ const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 /** Distinct marker color for user-created waypoints (see isCustomWaypointId) */
 const CUSTOM_WAYPOINT_COLOR = '#E91E63';
 
+/** Distinct marker fill for tap-to-sketch route points (WS5.6) */
+const ROUTE_SKETCH_COLOR = '#3949AB';
+
 /**
  * Waypoints cluster only at or below this zoom — zoomed-out overview levels
  * where individual circles are unreadable anyway. At hiking zooms (labels
@@ -78,8 +81,10 @@ export interface TrailMapProps {
   isFollowingUser?: boolean;
   /** Called when user manually pans the map */
   onMapPan?: () => void;
-  /** Called when user taps an empty area of the map (not a waypoint) */
-  onMapPress?: () => void;
+  /** Called when user taps an empty area of the map (not a waypoint). The
+   * pressed coordinate is supplied so route-build mode can add a sketch point;
+   * callers that only need the "empty tap" signal can ignore it. */
+  onMapPress?: (coordinate?: { latitude: number; longitude: number }) => void;
   /** Called when user taps re-center button */
   onRecenter?: () => void;
   /** Current position along trail in km (for display chip) */
@@ -101,6 +106,9 @@ export interface TrailMapProps {
   routeOverlay?: {
     spans: { startKm: number; endKm: number }[];
     straightLegs: { from: [number, number]; to: [number, number] }[];
+    /** Distinct markers for tap-to-sketch points (WS5.6); waypoints already
+     * render their own markers via the waypoints source. */
+    sketchPoints?: { lat: number; lon: number; offTrack: boolean }[];
   } | null;
   /** Called on long press with the nearest trail coordinate (latitude/longitude
    * are snapped to the track; pressedLatitude/pressedLongitude are the raw
@@ -244,6 +252,21 @@ function buildStraightLegsGeoJSON(legs: { from: [number, number]; to: [number, n
   };
 }
 
+function buildRouteSketchPointsGeoJSON(pts: { lat: number; lon: number; offTrack: boolean }[]) {
+  if (pts.length === 0) return null;
+  return {
+    type: 'FeatureCollection' as const,
+    features: pts.map((p, i) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [p.lon, p.lat],
+      },
+      properties: { id: i, offTrack: p.offTrack },
+    })),
+  };
+}
+
 function buildCustomPinsGeoJSON(pins: { latitude: number; longitude: number; label: string; color?: string }[]) {
   const features = pins.map((pin, i) => ({
     type: 'Feature' as const,
@@ -335,6 +358,20 @@ const connectorLineStyle = {
   lineWidth: 1.5,
   lineOpacity: 0.7,
   lineDasharray: [1, 1],
+};
+
+// Small distinct diamond-ish node for tap-to-sketch route points. Off-track
+// sketches render hollow (white fill, colored ring) so they read differently
+// from the solid on-track nodes, echoing the dashed off-track leg lines.
+const routeSketchPointStyle = {
+  circleRadius: 5,
+  circleColor: [
+    'case',
+    ['get', 'offTrack'], '#ffffff',
+    ROUTE_SKETCH_COLOR,
+  ] as unknown as string,
+  circleStrokeColor: ROUTE_SKETCH_COLOR,
+  circleStrokeWidth: 2,
 };
 
 const userDotStyle = {
@@ -450,6 +487,11 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
   const routeStraightLegsGeoJSON = useMemo(() => {
     if (!routeOverlay) return null;
     return buildStraightLegsGeoJSON(routeOverlay.straightLegs);
+  }, [routeOverlay]);
+
+  const routeSketchPointsGeoJSON = useMemo(() => {
+    if (!routeOverlay?.sketchPoints) return null;
+    return buildRouteSketchPointsGeoJSON(routeOverlay.sketchPoints);
   }, [routeOverlay]);
 
   const accuracyRadius = useMemo(
@@ -668,6 +710,25 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
     [onLongPress, displayPoints],
   );
 
+  // Empty-map tap. MapLibre hands us a Point feature at the tapped location;
+  // forward its coordinate so route-build mode can drop a sketch point there.
+  // A tap that lands on a waypoint is consumed by the waypoints ShapeSource
+  // (handleWaypointPress) and never reaches here.
+  const handleMapPress = useCallback(
+    (feature: GeoJSON.Feature) => {
+      if (!onMapPress) return;
+      const coords = feature?.geometry?.type === 'Point'
+        ? (feature.geometry as GeoJSON.Point).coordinates
+        : null;
+      if (coords && coords.length >= 2) {
+        onMapPress({ latitude: coords[1], longitude: coords[0] });
+      } else {
+        onMapPress();
+      }
+    },
+    [onMapPress],
+  );
+
   const handleWaypointPress = useCallback(
     async (event: OnPressEvent) => {
       const feature = event.features?.[0];
@@ -791,7 +852,7 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
         mapStyle={mapStyleOverride ?? onlineStyle ?? STYLE_URL}
         logoEnabled={false}
         attributionEnabled={false}
-        onPress={onMapPress}
+        onPress={onMapPress ? handleMapPress : undefined}
         onRegionDidChange={handleRegionDidChange}
         onLongPress={onLongPress ? handleLongPress : undefined}
       >
@@ -845,6 +906,17 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
             <MapLibreGL.LineLayer
               id="route-straight-legs-layer"
               style={routeStraightLegStyle}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
+
+        {/* Route sketch points (tap-to-sketch, WS5.6) — distinct nodes for
+            points that aren't existing waypoints */}
+        {routeSketchPointsGeoJSON && (
+          <MapLibreGL.ShapeSource id="route-sketch-points" shape={routeSketchPointsGeoJSON}>
+            <MapLibreGL.CircleLayer
+              id="route-sketch-points-layer"
+              style={routeSketchPointStyle}
             />
           </MapLibreGL.ShapeSource>
         )}

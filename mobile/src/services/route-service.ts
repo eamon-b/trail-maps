@@ -50,16 +50,25 @@ export interface Route {
 export interface RouteLeg {
   routeId: string;
   seq: number;
-  /** Merged waypoint id (`wp-N` or `custom-…`), or null when unavailable */
+  /** Merged waypoint id (`wp-N` or `custom-…`), or null for a sketch point */
   waypointRef: string | null;
   /** Trail km in the BASE (as-stored) direction — the deletion fallback */
   kmPosition: number;
+  /**
+   * Off-track sketch point's true position (migration 8). NULL for waypoint
+   * refs and on-track sketch points, whose position is derived from `km`.
+   */
+  lat: number | null;
+  lon: number | null;
 }
 
 /** Input for one leg when creating a route. */
 export interface NewRouteLeg {
   waypointRef: string | null;
   kmPosition: number;
+  /** Off-track sketch point lat/lon; omit/null for waypoints + on-track sketch */
+  lat?: number | null;
+  lon?: number | null;
 }
 
 interface RouteRow {
@@ -75,6 +84,8 @@ interface RouteLegRow {
   seq: number;
   waypoint_ref: string | null;
   km_position: number;
+  lat: number | null;
+  lon: number | null;
 }
 
 function rowToRoute(row: RouteRow): Route {
@@ -112,8 +123,8 @@ export class RouteService {
       );
       for (let seq = 0; seq < legs.length; seq++) {
         await this.db.runAsync(
-          'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
-          [id, seq, legs[seq].waypointRef, legs[seq].kmPosition]
+          'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position, lat, lon) VALUES (?, ?, ?, ?, ?, ?)',
+          [id, seq, legs[seq].waypointRef, legs[seq].kmPosition, legs[seq].lat ?? null, legs[seq].lon ?? null]
         );
       }
       await this.db.execAsync('COMMIT');
@@ -152,6 +163,8 @@ export class RouteService {
       seq: r.seq,
       waypointRef: r.waypoint_ref,
       kmPosition: r.km_position,
+      lat: r.lat,
+      lon: r.lon,
     }));
   }
 
@@ -184,6 +197,12 @@ export interface ResolvedRoutePoint {
   offTrack: boolean;
   /** The referenced waypoint no longer exists — km fallback in use */
   deleted: boolean;
+  /**
+   * A tap-to-sketch point (WS5.6), not a tapped waypoint — rendered with its
+   * own distinct marker. On-track sketch points sit on the track at `km`;
+   * off-track ones keep their raw lat/lon and contribute straight-line legs.
+   */
+  sketch: boolean;
 }
 
 /**
@@ -197,7 +216,7 @@ export interface ResolvedRoutePoint {
  */
 export function resolveRoutePoints(
   trail: Trail,
-  legs: { seq: number; waypointRef: string | null; kmPosition: number }[],
+  legs: { seq: number; waypointRef: string | null; kmPosition: number; lat?: number | null; lon?: number | null }[],
   options?: { reversed?: boolean },
 ): ResolvedRoutePoint[] {
   const reversed = options?.reversed ?? false;
@@ -233,23 +252,47 @@ export function resolveRoutePoints(
           km: wp.totalDistance ?? 0,
           offTrack: (wp.offTrackM ?? 0) > OFF_TRACK_LEG_THRESHOLD_M,
           deleted: false,
+          sketch: false,
         };
       }
     }
 
-    // Fallback: the waypoint is gone (or its ref no longer trustworthy) —
-    // keep the geometry via the stored km.
+    // No usable waypoint. Distinguish two same-shaped cases by whether the leg
+    // ever named a waypoint:
+    //   - waypoint_ref set but unresolved → the waypoint is gone (or its
+    //     positional ref is no longer trustworthy): "(deleted waypoint)".
+    //   - waypoint_ref null → an intentional tap-to-sketch point (WS5.6):
+    //     "Point N". An off-track sketch carries its own lat/lon; an on-track
+    //     sketch is positioned from the stored km, exactly like the deletion
+    //     fallback.
+    const sketch = leg.waypointRef == null;
     const idx = findNearestByDistance(points, activeKm);
     const pt = points[idx];
+
+    if (sketch && leg.lat != null && leg.lon != null) {
+      return {
+        seq: leg.seq,
+        name: `Point ${leg.seq + 1}`,
+        lat: leg.lat,
+        lon: leg.lon,
+        ele: pt?.ele ?? null,
+        km: activeKm,
+        offTrack: true,
+        deleted: false,
+        sketch: true,
+      };
+    }
+
     return {
       seq: leg.seq,
-      name: '(deleted waypoint)',
+      name: sketch ? `Point ${leg.seq + 1}` : '(deleted waypoint)',
       lat: pt?.lat ?? 0,
       lon: pt?.lon ?? 0,
       ele: pt?.ele ?? null,
       km: activeKm,
       offTrack: false,
-      deleted: true,
+      deleted: !sketch,
+      sketch,
     };
   });
 }
@@ -346,6 +389,8 @@ export function assembleRouteMetrics(trail: Trail, points: ResolvedRoutePoint[])
 export function routeOverlayGeometry(points: ResolvedRoutePoint[]): {
   spans: { startKm: number; endKm: number }[];
   straightLegs: { from: [number, number]; to: [number, number] }[];
+  /** Marker positions for sketch points (waypoints already carry map markers) */
+  sketchPoints: { lat: number; lon: number; offTrack: boolean }[];
 } {
   const spans: { startKm: number; endKm: number }[] = [];
   const straightLegs: { from: [number, number]; to: [number, number] }[] = [];
@@ -363,7 +408,11 @@ export function routeOverlayGeometry(points: ResolvedRoutePoint[]): {
     }
   }
 
-  return { spans, straightLegs };
+  const sketchPoints = points
+    .filter(p => p.sketch)
+    .map(p => ({ lat: p.lat, lon: p.lon, offTrack: p.offTrack }));
+
+  return { spans, straightLegs, sketchPoints };
 }
 
 /** Convert a TrailWaypoint tapped in the builder into a resolved point. */
@@ -377,5 +426,53 @@ export function waypointToRoutePoint(wp: TrailWaypoint, seq: number): ResolvedRo
     km: wp.totalDistance ?? 0,
     offTrack: (wp.offTrackM ?? 0) > OFF_TRACK_LEG_THRESHOLD_M,
     deleted: false,
+    sketch: false,
   };
+}
+
+/**
+ * A tap-to-sketch point captured in the route builder (WS5.6). A tap that
+ * lands within OFF_TRACK_LEG_THRESHOLD_M of the track is on-track (lat/lon
+ * already snapped to the nearest track point); a farther tap is off-track and
+ * keeps its raw lat/lon while `km` denormalizes to the nearest track point so
+ * ordering and direction mirroring still work.
+ */
+export interface SketchPoint {
+  lat: number;
+  lon: number;
+  /** km along the trail in the ACTIVE (display) direction */
+  km: number;
+  ele: number | null;
+  offTrack: boolean;
+}
+
+/** Convert a builder sketch point into a resolved point. */
+export function sketchPointToRoutePoint(sketch: SketchPoint, seq: number): ResolvedRoutePoint {
+  return {
+    seq,
+    name: `Point ${seq + 1}`,
+    lat: sketch.lat,
+    lon: sketch.lon,
+    ele: sketch.ele,
+    km: sketch.km,
+    offTrack: sketch.offTrack,
+    deleted: false,
+    sketch: true,
+  };
+}
+
+/**
+ * One item in the route builder draft: a tapped waypoint or a sketch point
+ * (WS5.6). Sketching is additive geometry on the same ordered leg list, so
+ * both kinds share the builder's remove/reorder machinery.
+ */
+export type RouteDraftItem =
+  | { kind: 'waypoint'; waypoint: TrailWaypoint }
+  | { kind: 'sketch'; sketch: SketchPoint };
+
+/** Resolve a builder draft item to the shape shared with the viewer. */
+export function draftItemToRoutePoint(item: RouteDraftItem, seq: number): ResolvedRoutePoint {
+  return item.kind === 'waypoint'
+    ? waypointToRoutePoint(item.waypoint, seq)
+    : sketchPointToRoutePoint(item.sketch, seq);
 }

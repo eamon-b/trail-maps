@@ -11,6 +11,8 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '../theme';
 import { useReduceMotion } from '../theme/useReduceMotion';
 import { ClimateCard } from './ClimateCard';
+import { PressableRow } from './PressableRow';
+import { triggerHaptic } from './haptics';
 import { springConfigs, timingConfigs } from '../tokens/motion';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -113,6 +115,9 @@ export function DayPlanCard({
     })
     .onEnd((event) => {
       if (event.translationX < -swipeThreshold) {
+        // Past threshold — fire the destructive-swipe warning once at commit
+        // (in onEnd, so it fires per removal, not per frame), then animate out.
+        runOnJS(triggerHaptic)('warning');
         // Past threshold — animate out and remove
         if (reduceMotion) {
           translateX.value = -screenWidth;
@@ -210,26 +215,24 @@ export function DayPlanCard({
         {/* Action buttons row */}
         <View style={styles.actionsRow}>
           {onShowOnMap && (
-            <Pressable
+            <PressableRow
               onPress={onShowOnMap}
               style={styles.actionButton}
               accessibilityLabel="Show on map"
-              accessibilityRole="button"
             >
               <Text style={[styles.actionIcon, { color: colors.accent }]}>📍</Text>
-            </Pressable>
+            </PressableRow>
           )}
           <View style={{ flex: 1 }} />
           {onOpenMenu && (
-            <Pressable
+            <PressableRow
               onPress={onOpenMenu}
               style={styles.actionButton}
               accessibilityLabel={`Day ${dayNumber} actions`}
-              accessibilityRole="button"
               accessibilityHint="Split, merge, move, or remove this day's stop"
             >
               <Text style={[styles.actionIcon, { color: colors.textSecondary }]}>⋯</Text>
-            </Pressable>
+            </PressableRow>
           )}
         </View>
       </Animated.View>
@@ -317,8 +320,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   actionButton: {
+    // Fixed width keeps the icon buttons square; minHeight (not a fixed
+    // height) lets the glyph grow with the font-scale clamp without clipping.
     width: touchTarget.min,
-    height: touchTarget.min,
+    minHeight: touchTarget.min,
     alignItems: 'center',
     justifyContent: 'center',
   },

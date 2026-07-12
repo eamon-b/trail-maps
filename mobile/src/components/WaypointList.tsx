@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { FlatList, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
+import { PressableRow } from './PressableRow';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 import { WAYPOINT_TYPE_META } from '../lib/waypoint-type-meta';
@@ -81,7 +82,7 @@ export function WaypointList({
       const emoji = waypointEmojis[item.type] ?? waypointEmojis.poi;
 
       return (
-        <Pressable
+        <PressableRow
           onPress={() => onSelect?.(item)}
           style={[
             styles.row,
@@ -91,7 +92,6 @@ export function WaypointList({
             },
           ]}
           accessibilityLabel={`${emoji} ${item.name}${item.distanceAhead ? `, ${item.distanceAhead}` : ''}${item.eta ? `, about ${item.eta.replace('~', '')}` : ''}`}
-          accessibilityRole="button"
           accessibilityState={{ selected: isFocused }}
         >
           <Text style={styles.emoji}>{emoji}</Text>
@@ -113,7 +113,7 @@ export function WaypointList({
               </Text>
             )}
           </View>
-        </Pressable>
+        </PressableRow>
       );
     },
     [focusedId, colors, onSelect],
@@ -139,16 +139,15 @@ export function WaypointList({
         }}
       />
       {maxItems && waypoints.length > maxItems && onSeeAll && (
-        <Pressable
+        <PressableRow
           onPress={onSeeAll}
           style={[styles.seeAllButton, { borderColor: colors.border }]}
           accessibilityLabel="See all waypoints"
-          accessibilityRole="button"
         >
           <Text style={[styles.seeAllText, { color: colors.accent }]}>
             See all waypoints
           </Text>
-        </Pressable>
+        </PressableRow>
       )}
     </View>
   );

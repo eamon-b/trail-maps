@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   StyleSheet,
   Alert,
   KeyboardAvoidingView,
@@ -116,7 +115,7 @@ export default function CreatePlanScreen() {
 
         <Text style={[styles.label, { color: colors.textSecondary }]}>Direction</Text>
         <View style={styles.directionRow}>
-          <Pressable
+          <PressableRow
             onPress={() => setDirection('NOBO')}
             style={[
               styles.directionButton,
@@ -136,8 +135,8 @@ export default function CreatePlanScreen() {
             >
               NOBO
             </Text>
-          </Pressable>
-          <Pressable
+          </PressableRow>
+          <PressableRow
             onPress={() => setDirection('SOBO')}
             style={[
               styles.directionButton,
@@ -157,7 +156,7 @@ export default function CreatePlanScreen() {
             >
               SOBO
             </Text>
-          </Pressable>
+          </PressableRow>
         </View>
 
         <Text style={[styles.label, { color: colors.textSecondary }]}>
@@ -207,17 +206,17 @@ export default function CreatePlanScreen() {
 
       {/* Create button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
-        <Pressable
+        <PressableRow
           onPress={handleCreate}
           disabled={!canCreate}
+          haptic="success"
           style={[styles.createButton, { backgroundColor: colors.accent, opacity: canCreate ? 1 : 0.6 }]}
-          accessibilityRole="button"
           accessibilityLabel="Create plan"
         >
           <Text style={[styles.createText, { color: colors.textInverse }]}>
             {saving ? 'Creating...' : 'Create Plan'}
           </Text>
-        </Pressable>
+        </PressableRow>
       </View>
     </KeyboardAvoidingView>
   );

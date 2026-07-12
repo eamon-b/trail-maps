@@ -19,7 +19,7 @@ export type { AlertLevel } from './AlertBanner';
 export { LocationStatusBar } from './LocationStatusBar';
 export type { LocationState } from './LocationStatusBar';
 export { UndoToast } from './UndoToast';
-export { triggerLocationHaptic, triggerHaptic } from './haptics';
+export { triggerLocationHaptic, triggerHaptic, setHapticsEnabled, getHapticsEnabled } from './haptics';
 export type { HapticType } from './haptics';
 export { HikeDashboard } from './HikeDashboard';
 export type { DashboardData } from './HikeDashboard';

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, Modal, Share, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { waypointEmojis } from './WaypointList';
+import { PressableRow } from './PressableRow';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -136,14 +137,13 @@ export function WaypointDetailSheet({
               : ''}
           </Text>
         </View>
-        <Pressable
+        <PressableRow
           onPress={onDismiss}
           style={styles.closeButton}
           accessibilityLabel="Dismiss waypoint info"
-          accessibilityRole="button"
         >
           <Text style={[styles.closeIcon, { color: colors.textSecondary }]}>✕</Text>
-        </Pressable>
+        </PressableRow>
       </View>
 
       <View style={styles.stats}>
@@ -219,56 +219,53 @@ export function WaypointDetailSheet({
 
       {/* A waypoint without a trail km can't be placed on the profile */}
       {onShowOnProfile && displayWaypoint.totalDistance != null && (
-        <Pressable
+        <PressableRow
           onPress={() => onShowOnProfile(displayWaypoint)}
           style={[styles.profileButton, { borderColor: colors.accent }]}
           accessibilityLabel="Show on elevation profile"
-          accessibilityRole="button"
         >
           <Text style={[styles.profileButtonText, { color: colors.accent }]}>
             Show on elevation profile
           </Text>
-        </Pressable>
+        </PressableRow>
       )}
 
       {/* Share as GPX file or plain text */}
-      <Pressable
+      <PressableRow
         onPress={handleShare}
         style={[styles.profileButton, styles.shareButton, { borderColor: colors.accent }]}
         accessibilityLabel="Share waypoint"
-        accessibilityRole="button"
       >
         <Text style={[styles.profileButtonText, { color: colors.accent }]}>
           Share waypoint
         </Text>
-      </Pressable>
+      </PressableRow>
 
       {/* User-created waypoints can be edited or deleted */}
       {isCustom && (onEdit || onDelete) && (
         <View style={styles.customActions}>
           {onEdit && (
-            <Pressable
+            <PressableRow
               onPress={() => onEdit(displayWaypoint)}
               style={[styles.customActionButton, { borderColor: colors.accent }]}
               accessibilityLabel="Edit waypoint"
-              accessibilityRole="button"
             >
               <Text style={[styles.customActionText, { color: colors.accent }]}>
                 Edit waypoint
               </Text>
-            </Pressable>
+            </PressableRow>
           )}
           {onDelete && (
-            <Pressable
+            <PressableRow
               onPress={() => onDelete(displayWaypoint)}
+              haptic="warning"
               style={[styles.customActionButton, { borderColor: colors.alertRed }]}
               accessibilityLabel="Delete waypoint"
-              accessibilityRole="button"
             >
               <Text style={[styles.customActionText, { color: colors.alertRed }]}>
                 Delete waypoint
               </Text>
-            </Pressable>
+            </PressableRow>
           )}
         </View>
       )}
@@ -314,9 +311,10 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     // ≥44pt pressable area (glyph stays small; negative margin keeps the
-    // visual position near the card edge)
+    // visual position near the card edge). minHeight (not fixed height) lets
+    // the glyph grow with the font-scale clamp without clipping.
     width: touchTarget.min,
-    height: touchTarget.min,
+    minHeight: touchTarget.min,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: spacing.xs,

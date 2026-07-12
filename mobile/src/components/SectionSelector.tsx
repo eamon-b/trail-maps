@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -10,6 +9,7 @@ import {
 import { useTheme } from '../theme';
 import type { Trail, TrailWaypoint } from '../lib/trail-utils';
 import type { SectionConfig } from '../services/plan-calculator-types';
+import { PressableRow } from './PressableRow';
 import { waypointEmojis } from './WaypointList';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -196,7 +196,7 @@ export function SectionSelector({
             : km === endKm && item.name === endName;
 
         return (
-          <Pressable
+          <PressableRow
             onPress={() => handleSelectWaypoint(item, target)}
             style={[
               styles.row,
@@ -207,7 +207,6 @@ export function SectionSelector({
               },
             ]}
             accessibilityLabel={`${item.name}, ${km.toFixed(1)} km${isSelected ? ', selected' : ''}`}
-            accessibilityRole="button"
           >
             <Text style={styles.emoji}>{emoji}</Text>
             <View style={styles.rowContent}>
@@ -224,7 +223,7 @@ export function SectionSelector({
             {isSelected && (
               <Text style={[styles.check, { color: colors.accent }]}>✓</Text>
             )}
-          </Pressable>
+          </PressableRow>
         );
       };
       WaypointItem.displayName = 'WaypointItem';
@@ -249,7 +248,7 @@ export function SectionSelector({
 
       {/* Segmented toggle */}
       <View style={[styles.toggle, { borderColor: colors.border, borderWidth: hcBorder }]}>
-        <Pressable
+        <PressableRow
           onPress={() => setMode('full')}
           style={[
             styles.toggleOption,
@@ -257,7 +256,6 @@ export function SectionSelector({
               backgroundColor: mode === 'full' ? colors.accent : 'transparent',
             },
           ]}
-          accessibilityRole="button"
           accessibilityState={{ selected: mode === 'full' }}
           accessibilityLabel="Full Trail"
         >
@@ -269,8 +267,8 @@ export function SectionSelector({
           >
             Full Trail
           </Text>
-        </Pressable>
-        <Pressable
+        </PressableRow>
+        <PressableRow
           onPress={() => setMode('section')}
           style={[
             styles.toggleOption,
@@ -278,7 +276,6 @@ export function SectionSelector({
               backgroundColor: mode === 'section' ? colors.accent : 'transparent',
             },
           ]}
-          accessibilityRole="button"
           accessibilityState={{ selected: mode === 'section' }}
           accessibilityLabel="Section"
         >
@@ -293,7 +290,7 @@ export function SectionSelector({
           >
             Section
           </Text>
-        </Pressable>
+        </PressableRow>
       </View>
 
       {/* Section pickers (only when mode === 'section') */}
@@ -304,7 +301,7 @@ export function SectionSelector({
             <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>
               Start Point
             </Text>
-            <Pressable
+            <PressableRow
               onPress={() =>
                 setActivePicker(activePicker === 'start' ? null : 'start')
               }
@@ -318,7 +315,6 @@ export function SectionSelector({
                 },
               ]}
               accessibilityLabel={`Start point: ${startName}, km ${startKm.toFixed(1)}`}
-              accessibilityRole="button"
             >
               <Text
                 style={[styles.pickerValueText, { color: colors.textPrimary }]}
@@ -331,7 +327,7 @@ export function SectionSelector({
               >
                 km {startKm.toFixed(1)}
               </Text>
-            </Pressable>
+            </PressableRow>
 
             {activePicker === 'start' && (
               <View style={styles.pickerDropdown}>
@@ -400,7 +396,7 @@ export function SectionSelector({
             <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>
               End Point
             </Text>
-            <Pressable
+            <PressableRow
               onPress={() =>
                 setActivePicker(activePicker === 'end' ? null : 'end')
               }
@@ -414,7 +410,6 @@ export function SectionSelector({
                 },
               ]}
               accessibilityLabel={`End point: ${endName}, km ${endKm.toFixed(1)}`}
-              accessibilityRole="button"
             >
               <Text
                 style={[styles.pickerValueText, { color: colors.textPrimary }]}
@@ -427,7 +422,7 @@ export function SectionSelector({
               >
                 km {endKm.toFixed(1)}
               </Text>
-            </Pressable>
+            </PressableRow>
 
             {activePicker === 'end' && (
               <View style={styles.pickerDropdown}>
@@ -493,16 +488,15 @@ export function SectionSelector({
 
           {/* Select on map button */}
           {onSelectOnMap && (
-            <Pressable
+            <PressableRow
               onPress={onSelectOnMap}
               style={[styles.selectOnMapButton, { borderColor: colors.accent, borderWidth: hcBorder }]}
               accessibilityLabel="Select section on map"
-              accessibilityRole="button"
             >
               <Text style={[styles.selectOnMapText, { color: colors.accent }]}>
                 Select on Map
               </Text>
-            </Pressable>
+            </PressableRow>
           )}
         </View>
       )}
@@ -526,17 +520,16 @@ export function SectionSelector({
 
       {/* Action buttons */}
       <View style={styles.actions}>
-        <Pressable
+        <PressableRow
           onPress={onDismiss}
           style={[styles.button, styles.cancelButton, { borderColor: colors.border, borderWidth: hcBorder }]}
-          accessibilityRole="button"
           accessibilityLabel="Cancel"
         >
           <Text style={[styles.buttonText, { color: colors.textPrimary }]}>
             Cancel
           </Text>
-        </Pressable>
-        <Pressable
+        </PressableRow>
+        <PressableRow
           onPress={handleApply}
           disabled={!isValid}
           style={[
@@ -546,14 +539,13 @@ export function SectionSelector({
               backgroundColor: isValid ? colors.accent : colors.accentMuted,
             },
           ]}
-          accessibilityRole="button"
           accessibilityLabel="Apply section"
           accessibilityState={{ disabled: !isValid }}
         >
           <Text style={[styles.buttonText, { color: colors.textInverse }]}>
             Apply
           </Text>
-        </Pressable>
+        </PressableRow>
       </View>
     </View>
   );

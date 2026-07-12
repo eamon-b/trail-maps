@@ -6,7 +6,7 @@ import { useTheme } from '../src/theme';
 import type { ThemeVariant } from '../src/tokens/themes';
 import { spacing, touchTarget } from '../src/tokens/spacing';
 import { typography } from '../src/tokens/typography';
-import { Card, PressableRow, ScreenHeader } from '../src/components';
+import { Card, PressableRow, ScreenHeader, setHapticsEnabled } from '../src/components';
 import type { TrackingProfilePreference } from '../src/services/location-service';
 import { closeDatabase } from '../src/db/database';
 import { Paths, File } from 'expo-file-system';
@@ -14,6 +14,7 @@ import { Paths, File } from 'expo-file-system';
 export const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
 export const BACKGROUND_TRACKING_KEY = 'trail-companion:backgroundTracking';
 export const TRACKING_PROFILE_KEY = 'trail-companion:trackingProfile';
+export const HAPTIC_FEEDBACK_KEY = 'trail-companion:hapticFeedback';
 
 type AlertPreset = 'tight' | 'normal' | 'loose';
 
@@ -53,6 +54,7 @@ export default function SettingsScreen() {
   const [alertPreset, setAlertPreset] = useState<AlertPreset>('normal');
   const [backgroundTracking, setBackgroundTracking] = useState(false);
   const [trackingProfile, setTrackingProfile] = useState<TrackingProfilePreference>('auto');
+  const [hapticFeedback, setHapticFeedback] = useState(true);
 
   // Load persisted preferences
   useEffect(() => {
@@ -68,6 +70,10 @@ export default function SettingsScreen() {
       if (val === 'auto' || val === 'standard' || val === 'saver') {
         setTrackingProfile(val);
       }
+    });
+    AsyncStorage.getItem(HAPTIC_FEEDBACK_KEY).then((val) => {
+      // Absent (null) means default on; only an explicit 'false' disables.
+      setHapticFeedback(val !== 'false');
     });
   }, []);
 
@@ -86,6 +92,14 @@ export default function SettingsScreen() {
     setBackgroundTracking(next);
     await AsyncStorage.setItem(BACKGROUND_TRACKING_KEY, String(next));
   }, [backgroundTracking]);
+
+  const handleHapticFeedbackToggle = useCallback(async () => {
+    const next = !hapticFeedback;
+    setHapticFeedback(next);
+    // Update the live module-level gate immediately, then persist.
+    setHapticsEnabled(next);
+    await AsyncStorage.setItem(HAPTIC_FEEDBACK_KEY, String(next));
+  }, [hapticFeedback]);
 
   const currentThemeValue: ThemeVariant | 'system' = autoDarkMode ? 'system' : themeVariant;
 
@@ -208,6 +222,35 @@ export default function SettingsScreen() {
                 onValueChange={setHighContrast}
                 trackColor={{ true: colors.accentMuted }}
                 thumbColor={highContrast ? colors.accent : undefined}
+                importantForAccessibility="no"
+              />
+            </View>
+          </PressableRow>
+        </Card>
+
+        {/* Feedback Section */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
+          FEEDBACK
+        </Text>
+        <Card flush>
+          <PressableRow
+            onPress={handleHapticFeedbackToggle}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: hapticFeedback }}
+            style={styles.optionRow}
+          >
+            <View style={styles.optionRowInner}>
+              <View style={styles.optionInfo}>
+                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Haptic Feedback</Text>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  Vibration on taps, toggles, and alerts
+                </Text>
+              </View>
+              <Switch
+                value={hapticFeedback}
+                onValueChange={handleHapticFeedbackToggle}
+                trackColor={{ true: colors.accentMuted }}
+                thumbColor={hapticFeedback ? colors.accent : undefined}
                 importantForAccessibility="no"
               />
             </View>

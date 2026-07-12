@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useReduceMotion } from '../theme/useReduceMotion';
+import { PressableRow } from './PressableRow';
 import { timingConfigs, durations } from '../tokens/motion';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
@@ -72,14 +73,13 @@ export function UndoToast({ visible, message, onUndo, onDismiss, durationMs }: U
       <Text style={[styles.message, { color: colors.textPrimary }]} numberOfLines={1}>
         {message}
       </Text>
-      <Pressable
+      <PressableRow
         onPress={onUndo}
         style={[styles.undoButton, { backgroundColor: colors.accent }]}
         accessibilityLabel="Undo"
-        accessibilityRole="button"
       >
         <Text style={[styles.undoText, { color: colors.textInverse }]}>Undo</Text>
-      </Pressable>
+      </PressableRow>
     </Animated.View>
   );
 }

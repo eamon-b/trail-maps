@@ -142,6 +142,81 @@ describe('HikeDashboard ETA / bearing / time-to-water (P1 PR C)', () => {
       expect(screen.getAllByText('↑').length).toBeGreaterThan(0);
     });
   });
+
+  it('shows the elevation-gain figure on the NEXT WATER card', async () => {
+    const withWaterElevation: DashboardData = {
+      ...richData,
+      nextWater: { ...richData.nextWater!, elevation: '+120m' },
+    };
+    renderWithTheme(<HikeDashboard data={withWaterElevation} />);
+    await waitFor(() => {
+      expect(screen.getByText('+120m')).toBeTruthy();
+    });
+  });
+});
+
+describe('HikeDashboard TODAY collapse (header chevron only)', () => {
+  const todayData: DashboardData = {
+    trailName: 'TEST TRAIL',
+    direction: 'NOBO',
+    currentKm: 10,
+    totalKm: 100,
+    today: {
+      dayNumber: 2,
+      totalDays: 5,
+      startName: 'Alpha',
+      endName: 'Bravo',
+      distanceKm: 20,
+      ascentM: 500,
+      descentM: 300,
+      estimatedHours: 6,
+      completedKm: 10,
+      remainingHours: 3,
+    },
+  };
+
+  it('does NOT collapse when the card body is tapped', async () => {
+    renderWithTheme(<HikeDashboard data={todayData} gpsState="normal" />);
+    await waitFor(() => {
+      expect(screen.getByText('Alpha → Bravo')).toBeTruthy();
+    });
+
+    // The body is no longer a Pressable — tapping it must leave it expanded.
+    fireEvent.press(screen.getByText('Alpha → Bravo'));
+    expect(screen.getByText('Alpha → Bravo')).toBeTruthy();
+    expect(screen.queryByText('Tap the header to expand')).toBeNull();
+  });
+
+  it('collapses and expands when the header chevron row is tapped', async () => {
+    renderWithTheme(<HikeDashboard data={todayData} gpsState="normal" />);
+    const header = await screen.findByLabelText(/Collapse today section/);
+
+    fireEvent.press(header);
+    await waitFor(() => {
+      expect(screen.queryByText('Alpha → Bravo')).toBeNull();
+      expect(screen.getByText('Tap the header to expand')).toBeTruthy();
+    });
+
+    // Header label flips to "Expand …" and tapping again re-expands the body.
+    fireEvent.press(screen.getByLabelText(/Expand today section/));
+    await waitFor(() => {
+      expect(screen.getByText('Alpha → Bravo')).toBeTruthy();
+    });
+  });
+
+  it('exposes the expanded accessibility state on the header row', async () => {
+    renderWithTheme(<HikeDashboard data={todayData} gpsState="normal" />);
+    const header = await screen.findByLabelText(/Collapse today section/);
+    expect(header.props.accessibilityState).toEqual(
+      expect.objectContaining({ expanded: true }),
+    );
+
+    fireEvent.press(header);
+    const collapsed = await screen.findByLabelText(/Expand today section/);
+    expect(collapsed.props.accessibilityState).toEqual(
+      expect.objectContaining({ expanded: false }),
+    );
+  });
 });
 
 describe('HikeDashboard no-fix state (gpsState=searching)', () => {

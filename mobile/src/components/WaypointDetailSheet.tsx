@@ -372,7 +372,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radii.md,
     paddingVertical: spacing.sm,
+    minHeight: touchTarget.min,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   shareButton: {
     marginTop: spacing.sm,
@@ -391,7 +393,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radii.md,
     paddingVertical: spacing.sm,
+    minHeight: touchTarget.min,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   customActionText: {
     ...typography.caption,

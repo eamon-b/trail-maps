@@ -18,11 +18,23 @@ function toDms(value: number, axis: 'lat' | 'lon'): string {
   const hemisphere =
     axis === 'lat' ? (value >= 0 ? 'N' : 'S') : (value >= 0 ? 'E' : 'W');
   const abs = Math.abs(value);
-  const deg = Math.floor(abs);
+  let deg = Math.floor(abs);
   const minFloat = (abs - deg) * 60;
-  const min = Math.floor(minFloat);
-  const sec = (minFloat - min) * 60;
-  return `${deg}°${String(min).padStart(2, '0')}'${sec.toFixed(1)}" ${hemisphere}`;
+  let min = Math.floor(minFloat);
+  // Round seconds to the displayed precision (0.1") FIRST, then propagate the
+  // carry: without this, 35.999999 rounds to 35°59'60.0" instead of 36°00'00.0".
+  let sec = Math.round((minFloat - min) * 60 * 10) / 10;
+  if (sec >= 60) {
+    sec -= 60;
+    min += 1;
+  }
+  if (min >= 60) {
+    min -= 60;
+    deg += 1;
+  }
+  // Zero-pad seconds to match minutes (two integer digits): "00.0" .. "59.9".
+  const secStr = sec.toFixed(1).padStart(4, '0');
+  return `${deg}°${String(min).padStart(2, '0')}'${secStr}" ${hemisphere}`;
 }
 
 /** Format a coordinate pair in the given format (decimal = 5 dp). */
@@ -140,14 +152,17 @@ const styles = StyleSheet.create({
   coords: {
     ...typography.body,
     fontVariant: ['tabular-nums'],
-    flexShrink: 1,
+    // Grow to absorb all free space so the trailing feedback + share button
+    // pack at the right edge. When the "Copied" feedback appears/disappears
+    // the coords text flexes to accommodate it, so the share icon stays put
+    // (previously both feedback and shareButton had `marginLeft: auto`, which
+    // split the free space between them and made the icon jump).
+    flex: 1,
   },
   feedback: {
     ...typography.caption,
-    marginLeft: 'auto',
   },
   shareButton: {
-    marginLeft: 'auto',
     minWidth: 32,
     minHeight: touchTarget.min,
     alignItems: 'center',

@@ -93,7 +93,7 @@ export function RoutePanel({
 
       {mode === 'build' && points.length === 0 && (
         <Text style={[styles.hint, { color: colors.textSecondary }]}>
-          Tap waypoints on the map in the order you want to walk them.
+          Tap waypoints in the order you want to walk them, or tap anywhere on the map to add a detour point.
         </Text>
       )}
 

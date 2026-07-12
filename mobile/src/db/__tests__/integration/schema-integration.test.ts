@@ -259,6 +259,52 @@ describe('schema migrations', () => {
     await db.closeAsync();
   });
 
+  it('v7 → v8 preserves route legs and adds nullable lat/lon', async () => {
+    const db = createTestDatabase();
+
+    // Build a database at v7 with a route + legs (waypoint ref and km-only)
+    await migrateDatabase(db as any, 7);
+    await db.runAsync('INSERT INTO trails (id, name) VALUES (?, ?)', ['trail-1', 'Test Trail']);
+    await db.runAsync(
+      'INSERT INTO routes (id, trail_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      ['r-1', 'trail-1', 'Water run', '2026-07-11', '2026-07-11']
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-1', 0, 'wp-3', 12.5]
+    );
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position) VALUES (?, ?, ?, ?)',
+      ['r-1', 1, null, 18.0]
+    );
+
+    // Upgrade to v8
+    await migrateDatabase(db as any);
+    const version = await db.getFirstAsync<{ version: number }>('SELECT version FROM schema_version');
+    expect(version!.version).toBe(SCHEMA_VERSION);
+
+    // Existing legs preserved; lat/lon nullable with no backfill
+    const legs = await db.getAllAsync<{ seq: number; km_position: number; lat: number | null; lon: number | null }>(
+      'SELECT seq, km_position, lat, lon FROM route_legs WHERE route_id = ? ORDER BY seq', ['r-1']
+    );
+    expect(legs).toHaveLength(2);
+    expect(legs[0]).toMatchObject({ seq: 0, km_position: 12.5, lat: null, lon: null });
+    expect(legs[1]).toMatchObject({ seq: 1, km_position: 18.0, lat: null, lon: null });
+
+    // Off-track sketch leg is writable through the new columns
+    await db.runAsync(
+      'INSERT INTO route_legs (route_id, seq, waypoint_ref, km_position, lat, lon) VALUES (?, ?, ?, ?, ?, ?)',
+      ['r-1', 2, null, 20.0, -35.135, 138.01]
+    );
+    const sketch = await db.getFirstAsync<{ lat: number; lon: number }>(
+      'SELECT lat, lon FROM route_legs WHERE route_id = ? AND seq = 2', ['r-1']
+    );
+    expect(sketch!.lat).toBeCloseTo(-35.135, 5);
+    expect(sketch!.lon).toBeCloseTo(138.01, 5);
+
+    await db.closeAsync();
+  });
+
   it('custom_waypoints defaults type to water', async () => {
     const db = await createMigratedTestDb();
 

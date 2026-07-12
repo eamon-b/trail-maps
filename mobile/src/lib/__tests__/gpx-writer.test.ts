@@ -145,6 +145,23 @@ describe('routeToGpx', () => {
     expect(gpx.match(/<rtept /g)).toHaveLength(2);
     expect(gpx).toContain('<name>Trailhead</name>');
   });
+
+  it('emits sketch points at their given lat/lon, with or without a name', () => {
+    // A tap-to-sketch route (WS5.6): a named waypoint, a named on-track sketch
+    // ("Point 2"), and an unnamed point (no <name> element at all).
+    const gpx = routeToGpx('Detour', [
+      { lat: -35, lon: 138, ele: 100, name: 'Trailhead' },
+      { lat: -35.09, lon: 138, ele: 200, name: 'Point 2' },
+      { lat: -35.135, lon: 138.01, ele: null, name: null },
+    ]);
+    expect(gpx.match(/<rtept /g)).toHaveLength(3);
+    expect(gpx).toContain('<rtept lat="-35.09" lon="138">');
+    expect(gpx).toContain('<name>Point 2</name>');
+    // The unnamed off-track point keeps its true lat/lon and omits <name>/<ele>:
+    // it serializes as a self-contained rtept with no children.
+    expect(gpx).toContain('<rtept lat="-35.135" lon="138.01">\n    </rtept>');
+    expect(gpx).not.toContain('<name>null</name>');
+  });
 });
 
 describe('waypointPlainText', () => {

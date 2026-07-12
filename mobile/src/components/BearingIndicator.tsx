@@ -40,7 +40,9 @@ export function BearingIndicator({
   const { colors } = useTheme();
 
   const cardinal = cardinalDirection(targetBearing);
-  const useArrow = heading != null && isHeadingUsable(speed, fixTimestamp);
+  // `heading != null` also narrows heading to a number for relativeRotation
+  // below; isHeadingUsable additionally rejects the -1 "course unknown" value.
+  const useArrow = heading != null && isHeadingUsable(heading, speed, fixTimestamp);
 
   if (!useArrow) {
     return (

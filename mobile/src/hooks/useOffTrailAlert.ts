@@ -90,6 +90,25 @@ export function useOffTrailAlert(
     AsyncStorage.removeItem(SNOOZE_STORAGE_KEY);
   }, []);
 
+  // Clear the snooze the moment it expires, rather than waiting for the next
+  // GPS tick (which can be minutes away in battery-saver cadence). This drops
+  // the lingering snooze chip and un-caps alerts on time, and cleans up the
+  // persisted value on natural expiry.
+  useEffect(() => {
+    if (snoozeUntil == null) return;
+    const ms = snoozeUntil.getTime() - Date.now();
+    if (ms <= 0) {
+      setSnoozeUntil(null);
+      AsyncStorage.removeItem(SNOOZE_STORAGE_KEY);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSnoozeUntil(null);
+      AsyncStorage.removeItem(SNOOZE_STORAGE_KEY);
+    }, ms);
+    return () => clearTimeout(timer);
+  }, [snoozeUntil]);
+
   useEffect(() => {
     if (!enabled) {
       setAlertState('noGps');

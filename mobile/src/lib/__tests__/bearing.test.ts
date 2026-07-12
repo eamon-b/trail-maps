@@ -83,21 +83,40 @@ describe('isHeadingUsable (moving/stationary gating — decision 8)', () => {
   const now = 1_000_000;
 
   it('accepts a fresh fix while moving', () => {
-    expect(isHeadingUsable(1.4, now - 5_000, now)).toBe(true);
+    expect(isHeadingUsable(90, 1.4, now - 5_000, now)).toBe(true);
   });
 
   it('rejects standing still (speed ≤ 0.5 m/s)', () => {
-    expect(isHeadingUsable(0, now - 5_000, now)).toBe(false);
-    expect(isHeadingUsable(MIN_SPEED_FOR_HEADING_MS, now - 5_000, now)).toBe(false);
+    expect(isHeadingUsable(90, 0, now - 5_000, now)).toBe(false);
+    expect(isHeadingUsable(90, MIN_SPEED_FOR_HEADING_MS, now - 5_000, now)).toBe(false);
   });
 
   it('rejects unknown speed', () => {
-    expect(isHeadingUsable(null, now - 5_000, now)).toBe(false);
-    expect(isHeadingUsable(undefined, now - 5_000, now)).toBe(false);
+    expect(isHeadingUsable(90, null, now - 5_000, now)).toBe(false);
+    expect(isHeadingUsable(90, undefined, now - 5_000, now)).toBe(false);
   });
 
   it('rejects a stale fix (≥ 60 s old)', () => {
-    expect(isHeadingUsable(1.4, now - MAX_FIX_AGE_FOR_HEADING_MS, now)).toBe(false);
-    expect(isHeadingUsable(1.4, null, now)).toBe(false);
+    expect(isHeadingUsable(90, 1.4, now - MAX_FIX_AGE_FOR_HEADING_MS, now)).toBe(false);
+    expect(isHeadingUsable(90, 1.4, null, now)).toBe(false);
+  });
+
+  it('rejects the -1 "course unknown" heading even with a fresh moving fix', () => {
+    // expo-location reports coords.heading = -1 when course is unknown
+    // (common on Android): a fictitious ~359° arrow is worse than none.
+    expect(isHeadingUsable(-1, 1.4, now - 5_000, now)).toBe(false);
+  });
+
+  it('rejects a null/undefined heading', () => {
+    expect(isHeadingUsable(null, 1.4, now - 5_000, now)).toBe(false);
+    expect(isHeadingUsable(undefined, 1.4, now - 5_000, now)).toBe(false);
+  });
+
+  it('accepts heading 0 (due north is a valid course)', () => {
+    expect(isHeadingUsable(0, 1.4, now - 5_000, now)).toBe(true);
+  });
+
+  it('accepts a near-360 heading (359.9)', () => {
+    expect(isHeadingUsable(359.9, 1.4, now - 5_000, now)).toBe(true);
   });
 });

@@ -29,6 +29,11 @@ interface AlertBannerProps {
   onHidden?: () => void;
   /** Optional trailing element (e.g. a BearingIndicator back to the trail) */
   accessory?: React.ReactNode;
+  /**
+   * Accessibility hint for the tappable banner. Defaults to the snooze hint;
+   * callers can pass a state-appropriate hint (e.g. per alert level).
+   */
+  accessibilityHint?: string;
 }
 
 /**
@@ -36,8 +41,16 @@ interface AlertBannerProps {
  * Uses spring animation (damping: 15, stiffness: 150) per spec.
  * Components accept state as props — Part 5 implements detection logic.
  */
-export function AlertBanner({ visible, level, message, onPress, onHidden, accessory }: AlertBannerProps) {
-  const { colors } = useTheme();
+export function AlertBanner({
+  visible,
+  level,
+  message,
+  onPress,
+  onHidden,
+  accessory,
+  accessibilityHint = 'Tap to snooze alerts',
+}: AlertBannerProps) {
+  const { colors, highContrast } = useTheme();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-100);
@@ -52,14 +65,17 @@ export function AlertBanner({ visible, level, message, onPress, onHidden, access
       translateY.value = reduceMotion
         ? 0
         : withSpring(0, springConfigs.alertSlide);
+    } else if (reduceMotion) {
+      // No animation runs, so the withTiming completion callback never fires —
+      // invoke onHidden directly so banner state (e.g. snooze menu) is reset.
+      translateY.value = -100;
+      onHidden?.();
     } else {
-      translateY.value = reduceMotion
-        ? -100
-        : withTiming(-100, timingConfigs.slideIn, (finished) => {
-            if (finished && onHidden) {
-              runOnJS(onHidden)();
-            }
-          });
+      translateY.value = withTiming(-100, timingConfigs.slideIn, (finished) => {
+        if (finished && onHidden) {
+          runOnJS(onHidden)();
+        }
+      });
     }
   }, [visible, translateY, reduceMotion, onHidden]);
 
@@ -87,13 +103,16 @@ export function AlertBanner({ visible, level, message, onPress, onHidden, access
       style={[
         styles.container,
         { paddingTop: insets.top + spacing.sm, backgroundColor },
+        // High-contrast: add a strong border delineating the banner from the
+        // content behind it (mirrors Card's high-contrast treatment).
+        highContrast && { borderWidth: 1.5, borderColor: colors.textInverse },
         animatedStyle,
       ]}
       accessibilityRole="alert"
       accessibilityLabel={`${level} alert: ${message}`}
     >
       {onPress ? (
-        <Pressable onPress={onPress} accessibilityRole="button" accessibilityHint="Tap to snooze alerts">
+        <Pressable onPress={onPress} accessibilityRole="button" accessibilityHint={accessibilityHint}>
           {content}
         </Pressable>
       ) : (

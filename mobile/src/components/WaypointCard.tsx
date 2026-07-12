@@ -59,8 +59,10 @@ export function WaypointCard({
     ? `${label}: ${name ?? 'Unknown'}, ${distance ?? ''}${elevation ? `, ${elevation} elevation gain` : ''}${eta ? `, about ${eta.replace('~', '')}` : ''}`
     : undefined;
 
-  // Only make the card tappable when there is a waypoint to navigate to
-  const cardOnPress = state === 'normal' && name ? onPress : undefined;
+  // Tappable whenever there is a real waypoint target to open, regardless of
+  // GPS state — a degraded fix (poor accuracy under canopy) must not disable
+  // the deep-link tap. Undefined only when there's genuinely nothing to open.
+  const cardOnPress = name ? onPress : undefined;
 
   return (
     <Card

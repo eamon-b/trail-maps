@@ -64,14 +64,18 @@ export function relativeRotation(targetBearing: number, heading: number): number
 /**
  * Whether GPS course heading can be trusted (decision 8): heading from
  * expo-location is course-over-ground — valid while moving, garbage standing
- * still. Requires speed > 0.5 m/s and a fix younger than 60 s. When this is
- * false the UI must degrade to cardinal text, not show a stale arrow.
+ * still. Requires a real heading (>= 0; expo-location reports -1 when course
+ * is unknown, common on Android), speed > 0.5 m/s, and a fix younger than
+ * 60 s. When this is false the UI must degrade to cardinal text, not show a
+ * stale or fictitious arrow.
  */
 export function isHeadingUsable(
+  heading: number | null | undefined,
   speed: number | null | undefined,
   fixTimestamp: number | null | undefined,
   now: number = Date.now(),
 ): boolean {
+  if (heading == null || heading < 0) return false;
   if (speed == null || speed <= MIN_SPEED_FOR_HEADING_MS) return false;
   if (fixTimestamp == null) return false;
   return now - fixTimestamp < MAX_FIX_AGE_FOR_HEADING_MS;

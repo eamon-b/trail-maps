@@ -238,14 +238,16 @@ describe('Garmin Connect style (multi-track, Garmin extensions)', () => {
     expect(data.tracks[0].segments[0].points[0].ele).toBe(1200);
   });
 
-  it('keeps the first track as main and preserves the second as an alternate', () => {
-    const { trail } = processGpx(GARMIN_STYLE);
-    // Day 1 is the main line; Day 2 is preserved as an alternate the import
-    // preview can include/exclude (P2 decision 10)
-    expect(trail.track.points).toHaveLength(2);
-    expect(trail.alternates).toHaveLength(1);
-    expect(trail.alternates![0].name).toBe('Day 2 - Camp to Summit');
-    expect(trail.alternates![0].points).toHaveLength(2);
+  it('chains a contiguous multi-day recording into a single main line', () => {
+    const { trail, warnings } = processGpx(GARMIN_STYLE);
+    // Garmin Connect emits one <trk> per day. Day 2 starts ~150 m from where
+    // Day 1 ended, so the continuity heuristic merges both days into the main
+    // line (rather than stranding Day 2 as an alternate that contributes
+    // nothing to distance/elevation and drops its waypoints).
+    expect(trail.track.points).toHaveLength(4);
+    expect(trail.alternates ?? []).toHaveLength(0);
+    expect(warnings.some((w) => w.type === 'alternates_preserved')).toBe(false);
+    // The Day-1 camp waypoint is matched against the merged main line.
     expect(trail.waypoints).toHaveLength(1);
     expect(trail.waypoints[0].type).toBe('campsite');
   });

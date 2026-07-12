@@ -51,7 +51,7 @@ export function AppBottomSheet({
   keyboardBlurBehavior,
   keyboardShouldPersistTaps,
 }: AppBottomSheetProps) {
-  const { colors } = useTheme();
+  const { colors, highContrast } = useTheme();
   const { registerSheet } = useBottomSheetDismiss();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -103,8 +103,20 @@ export function AppBottomSheet({
       animateOnMount={!reduceMotion}
       keyboardBehavior={keyboardBehavior}
       keyboardBlurBehavior={keyboardBlurBehavior}
-      handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: colors.textSecondary }]}
-      backgroundStyle={[styles.background, { backgroundColor: colors.surface }]}
+      handleIndicatorStyle={[
+        styles.handleIndicator,
+        { backgroundColor: highContrast ? colors.textPrimary : colors.textSecondary },
+      ]}
+      backgroundStyle={[
+        styles.background,
+        {
+          // High contrast: solid background + a visible border, mirroring the
+          // Card primitive so the sheet edge reads clearly against content.
+          backgroundColor: highContrast ? colors.background : colors.surface,
+          borderColor: colors.border,
+          borderWidth: highContrast ? 1.5 : 0,
+        },
+      ]}
       style={styles.sheet}
     >
       <BottomSheetScrollView

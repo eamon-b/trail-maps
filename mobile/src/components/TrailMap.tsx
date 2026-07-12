@@ -1,6 +1,6 @@
 import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
-import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent } from '@maplibre/maplibre-react-native';
+import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent, type Expression } from '@maplibre/maplibre-react-native';
 import { findNearestByDistance, isCustomWaypointId, type TrackPoint, type TrailWaypoint, type RouteVariant } from '../lib/trail-utils';
 import { getWaypointColor } from '../lib/waypoint-type-meta';
 import { haversineDistance } from '@lib/distance';
@@ -25,10 +25,25 @@ const CUSTOM_WAYPOINT_COLOR = '#E91E63';
  */
 export const WAYPOINT_CLUSTER_MAX_ZOOM = 10;
 
-/** Whether waypoints are clustered at a given zoom level. */
-export function isClusteredZoom(zoom: number): boolean {
-  return zoom <= WAYPOINT_CLUSTER_MAX_ZOOM;
-}
+/**
+ * Zoom at which individual waypoint labels appear. Must stay above
+ * WAYPOINT_CLUSTER_MAX_ZOOM so clustering has already handed off to individual
+ * points before any of them are labelled.
+ */
+export const WAYPOINT_LABEL_MIN_ZOOM = 11;
+
+/**
+ * Layer filter selecting cluster bubbles (aggregated points carry a
+ * `point_count` feature property injected by supercluster).
+ */
+export const WAYPOINT_CLUSTER_FILTER: Expression = ['has', 'point_count'];
+
+/**
+ * Layer filter selecting individual (unclustered) waypoints — the exact
+ * negation of WAYPOINT_CLUSTER_FILTER, so every waypoint is drawn by exactly
+ * one of the two layers.
+ */
+export const WAYPOINT_INDIVIDUAL_FILTER: Expression = ['!', ['has', 'point_count']];
 
 /**
  * A custom waypoint whose true position is more than this many metres from
@@ -894,27 +909,27 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
             {/* Cluster bubbles + counts (tap to expand) */}
             <MapLibreGL.CircleLayer
               id="waypoints-clusters"
-              filter={['has', 'point_count']}
+              filter={WAYPOINT_CLUSTER_FILTER}
               style={clusterCircleStyle}
             />
             <MapLibreGL.SymbolLayer
               id="waypoints-cluster-counts"
-              filter={['has', 'point_count']}
+              filter={WAYPOINT_CLUSTER_FILTER}
               style={clusterCountStyle}
             />
 
             {/* Individual circles (unclustered points) */}
             <MapLibreGL.CircleLayer
               id="waypoints-circles"
-              filter={['!', ['has', 'point_count']]}
+              filter={WAYPOINT_INDIVIDUAL_FILTER}
               style={waypointCircleStyle}
             />
 
-            {/* Labels at zoom >= 11 */}
+            {/* Labels at hiking zooms only */}
             <MapLibreGL.SymbolLayer
               id="waypoints-labels"
-              minZoomLevel={11}
-              filter={['!', ['has', 'point_count']]}
+              minZoomLevel={WAYPOINT_LABEL_MIN_ZOOM}
+              filter={WAYPOINT_INDIVIDUAL_FILTER}
               style={symbolLabelStyle}
             />
           </MapLibreGL.ShapeSource>

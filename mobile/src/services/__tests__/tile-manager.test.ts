@@ -60,6 +60,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: true,
+      state: 'complete' as const,
       totalSizeBytes: 5000,
     });
 
@@ -70,6 +71,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: false,
+      state: 'absent' as const,
       totalSizeBytes: 0,
     });
 
@@ -81,6 +83,7 @@ describe('TileManager', () => {
       trailId: 'bibbulmun',
       files: [{ name: 'base.mbtiles' as const, exists: true, sizeBytes: 3000 }],
       complete: false,
+      state: 'absent' as const,
       totalSizeBytes: 3000,
     };
     mockGetStatus.mockReturnValue(status);
@@ -112,6 +115,7 @@ describe('TileManager', () => {
       trailId: id,
       files: [],
       complete: id === 'trail-1' || id === 'trail-3',
+      state: (id === 'trail-1' || id === 'trail-3' ? 'complete' : 'absent') as 'complete' | 'absent',
       totalSizeBytes: id === 'trail-1' ? 5000 : id === 'trail-3' ? 8000 : 0,
     }));
 
@@ -123,6 +127,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: false,
+      state: 'absent' as const,
       totalSizeBytes: 0,
     });
 
@@ -137,6 +142,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: true,
+      state: 'complete' as const,
       totalSizeBytes: 10000,
     });
 
@@ -172,6 +178,7 @@ describe('TileManager', () => {
       trailId: id,
       files: [],
       complete: true,
+      state: 'complete' as const,
       totalSizeBytes: id === 'trail-a' ? 4000 : 6000,
     }));
 

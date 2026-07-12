@@ -112,17 +112,38 @@ export interface TileFileStatus {
   sizeBytes: number;
 }
 
+/**
+ * Tri-state offline-tile readiness:
+ * - `complete` — all tiles present and, when a manifest with expected sizes is
+ *   available, every file's on-disk size matches. Safe to report "Offline maps ✓".
+ * - `partial`  — some tiles present but the set is incomplete, or a file's size
+ *   does not match the manifest (e.g. a download killed mid-file leaves a
+ *   truncated file). NOT safe to use offline; the UI should offer re-download.
+ * - `absent`   — no tiles on disk.
+ */
+export type TileStatusState = 'complete' | 'partial' | 'absent';
+
 export interface TrailTileStatus {
   trailId: string;
   files: TileFileStatus[];
-  /** true when all expected tile files are present */
+  /** Convenience flag equal to `state === 'complete'`. */
   complete: boolean;
+  /** Tri-state readiness (see TileStatusState). */
+  state: TileStatusState;
   totalSizeBytes: number;
   /** Version string from downloaded manifest, if available */
   version?: string;
 }
 
-/** Check on-disk status for a trail's tiles. */
+/**
+ * Check on-disk status for a trail's tiles.
+ *
+ * When a manifest is present (written by downloadTrailTiles before the download
+ * starts, so an interrupted download is detectable) the actual file sizes are
+ * verified against the manifest's expected sizes. A truncated or missing file
+ * reports `partial` rather than the old false-positive `complete`. Custom-trail
+ * grid downloads carry no manifest, so they fall back to a presence heuristic.
+ */
 export function getTrailTileStatus(trailId: string): TrailTileStatus {
   const dir = trailTilesDir(trailId);
   const files: TileFileStatus[] = TILE_FILES.map((name) => {
@@ -137,22 +158,40 @@ export function getTrailTileStatus(trailId: string): TrailTileStatus {
     return { name, exists: false, sizeBytes: 0 };
   });
 
-  const complete = files.every((f) => f.exists && f.sizeBytes > 0);
   const totalSizeBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
+  const anyPresent = files.some((f) => f.exists && f.sizeBytes > 0);
+  const allPresent = files.every((f) => f.exists && f.sizeBytes > 0);
 
-  // Read version from saved manifest
+  // Read the saved manifest for the version string and expected file sizes.
   let version: string | undefined;
+  let expectedSizes: Map<string, number> | null = null;
   const mf = manifestFile(trailId);
   if (mf.exists) {
     try {
-      const parsed = JSON.parse(mf.textSync());
+      const parsed = JSON.parse(mf.textSync()) as TileManifest;
       version = parsed.version;
+      if (Array.isArray(parsed.files) && parsed.files.length > 0) {
+        expectedSizes = new Map(parsed.files.map((f) => [f.name, f.size]));
+      }
     } catch {
       // corrupt manifest, ignore
     }
   }
 
-  return { trailId, files, complete, totalSizeBytes, version };
+  let state: TileStatusState;
+  if (expectedSizes) {
+    // Verify every expected tile is present at exactly its recorded size.
+    const verified = files.every((f) => {
+      const expected = expectedSizes!.get(f.name);
+      return expected != null && f.exists && f.sizeBytes === expected;
+    });
+    state = verified ? 'complete' : anyPresent ? 'partial' : 'absent';
+  } else {
+    // No manifest to verify against (custom grid downloads, legacy tiles).
+    state = allPresent ? 'complete' : anyPresent ? 'partial' : 'absent';
+  }
+
+  return { trailId, files, complete: state === 'complete', state, totalSizeBytes, version };
 }
 
 // ---------------------------------------------------------------------------
@@ -261,6 +300,11 @@ export async function downloadTrailTiles(
       expectedSizes.set(f.name, f.size);
       bytesTotal += f.size;
     }
+    // Persist the manifest up-front (before any file lands) so an interrupted
+    // download is detectable: getTrailTileStatus verifies on-disk sizes against
+    // these expected sizes and reports a truncated/missing file as 'partial'
+    // instead of a false-positive 'complete'.
+    manifestFile(trailId).write(JSON.stringify(manifest));
   }
 
   let bytesDownloaded = 0;
@@ -308,12 +352,8 @@ export async function downloadTrailTiles(
       throw new Error(detail);
     }
   }
-
-  // Save manifest to disk for version tracking
-  if (manifest) {
-    const mf = manifestFile(trailId);
-    mf.write(JSON.stringify(manifest));
-  }
+  // The manifest was written up-front (see above); once every file has landed
+  // at its expected size, getTrailTileStatus will report 'complete'.
 }
 
 /** Delete all downloaded tile files for a trail. */

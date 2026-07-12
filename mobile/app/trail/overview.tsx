@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,9 @@ import { useTrailData } from '../../src/contexts/TrailDataContext';
 import { backfillTrailElevation } from '../../src/services/elevation-service';
 import { getMinMax } from '../../src/lib/trail-utils';
 import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
-import { tileManager } from '../../src/services/tile-manager';
+import { useTileDownloads, formatBytes } from '../../src/hooks/useTileDownloads';
+import { getTrailTileStatus, type TrailTileStatus } from '../../src/services/tile-service';
+import { getWaypointLabel } from '../../src/lib/waypoint-type-meta';
 import {
   generateDatasheet,
   hasElevationData,
@@ -32,22 +34,6 @@ import type { CustomWaypoint } from '../../src/services/trail-data-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
-const WAYPOINT_TYPE_LABELS: Record<string, string> = {
-  campsite: 'Campsites',
-  water: 'Water sources',
-  'water-tank': 'Water tanks',
-  town: 'Towns',
-  shelter: 'Shelters',
-  hut: 'Huts',
-  poi: 'Points of interest',
-  road: 'Road crossings',
-  trailhead: 'Trailheads',
-};
-
-function formatLabel(type: string): string {
-  return WAYPOINT_TYPE_LABELS[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
-}
-
 function formatHours(hours: number): string {
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
@@ -61,16 +47,23 @@ export default function TrailOverviewScreen() {
   const insets = useSafeAreaInsets();
   const { trail, dbTrail, loading, error, loadTrail, reloadTrail } = useTrailData();
 
-  const [tilesDownloaded, setTilesDownloaded] = useState(false);
+  const [tileStatus, setTileStatus] = useState<TrailTileStatus | null>(null);
   const [datasheetExpanded, setDatasheetExpanded] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
   const [elevationFetch, setElevationFetch] = useState<'idle' | 'fetching' | 'error'>('idle');
   const [customWaypoints, setCustomWaypoints] = useState<CustomWaypoint[]>([]);
 
+  const refreshTileStatus = useCallback((tid: string) => {
+    setTileStatus(getTrailTileStatus(tid));
+  }, []);
+
+  const { downloadingTrailId, downloadProgress, downloadError, clearError, download, removeTiles } =
+    useTileDownloads(refreshTileStatus);
+
   useEffect(() => {
     if (id) {
       loadTrail(id);
-      setTilesDownloaded(tileManager.isTrailDownloaded(id));
+      setTileStatus(getTrailTileStatus(id));
 
       // Load saved direction preference
       AsyncStorage.getItem(DIRECTION_PREF_KEY).then(prefsStr => {
@@ -105,7 +98,7 @@ export default function TrailOverviewScreen() {
     }
     return Object.entries(counts)
       .sort(([, a], [, b]) => b - a)
-      .map(([type, count]) => ({ type, label: formatLabel(type), count }));
+      .map(([type, count]) => ({ type, label: getWaypointLabel(type), count }));
   }, [activeTrail]);
 
   const datasheet: Datasheet | null = useMemo(() => {
@@ -499,12 +492,62 @@ export default function TrailOverviewScreen() {
           </View>
         )}
 
-        {/* Offline maps status */}
+        {/* Offline maps — real download / retry affordance (P2 decision 9),
+            matching the hike row's states. */}
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>OFFLINE MAPS</Text>
-          <Text style={[styles.offlineStatus, { color: tilesDownloaded ? colors.alertGreen : colors.textSecondary }]}>
-            {tilesDownloaded ? 'Downloaded' : 'Not downloaded'}
-          </Text>
+          {downloadingTrailId === id ? (
+            <View style={styles.offlineRow}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={[styles.offlineStatus, { color: colors.textSecondary }]}>
+                {downloadProgress
+                  ? `Downloading maps… (${downloadProgress.fileIndex}/${downloadProgress.totalFiles})`
+                  : 'Downloading maps…'}
+              </Text>
+            </View>
+          ) : downloadError && downloadError.trailId === id ? (
+            <Pressable
+              onPress={() => { clearError(); if (id) download(id, isCustom); }}
+              style={[styles.exportButton, { borderColor: colors.alertRed }]}
+              accessibilityRole="button"
+              accessibilityLabel="Map download failed. Tap to retry."
+            >
+              <Text style={[styles.exportButtonText, { color: colors.alertRed }]}>
+                Map download failed — tap to retry
+              </Text>
+            </Pressable>
+          ) : tileStatus?.complete ? (
+            <View style={styles.offlineRow}>
+              <Text style={[styles.offlineStatus, { color: colors.alertGreen }]}>
+                Downloaded ✓ ({formatBytes(tileStatus.totalSizeBytes)})
+              </Text>
+              <Pressable
+                onPress={() => { if (id) removeTiles(id, activeTrail.config.name); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete offline maps for ${activeTrail.config.name}`}
+              >
+                <Text style={[styles.datasheetAction, { color: colors.alertRed }]}>Delete</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => { if (id) download(id, isCustom); }}
+              style={[styles.exportButton, { borderColor: colors.accent }]}
+              accessibilityRole="button"
+              accessibilityLabel={
+                tileStatus?.state === 'partial'
+                  ? 'Offline maps incomplete. Tap to finish downloading.'
+                  : 'Download offline maps'
+              }
+            >
+              <Text style={[styles.exportButtonText, { color: colors.accent }]}>
+                {tileStatus?.state === 'partial'
+                  ? 'Offline maps incomplete — re-download'
+                  : 'Download offline maps'}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {/* GPX export — user data is never trapped */}
@@ -741,6 +784,12 @@ const styles = StyleSheet.create({
   offlineStatus: {
     ...typography.body,
     fontWeight: '500',
+  },
+  offlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   exportButton: {
     borderWidth: 1,

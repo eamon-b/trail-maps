@@ -59,7 +59,11 @@ export function SectionSelector({
   onDismiss,
   onSelectOnMap,
 }: SectionSelectorProps) {
-  const { colors } = useTheme();
+  const { colors, highContrast } = useTheme();
+
+  // High-contrast border weights (mirrors the Card primitive's approach).
+  const hcBorder = highContrast ? 2 : 1;
+  const hcThin = highContrast ? 1.5 : StyleSheet.hairlineWidth;
 
   // Mode: "full" for entire trail, "section" for custom boundaries
   const [mode, setMode] = useState<Mode>(currentSection ? 'section' : 'full');
@@ -199,6 +203,7 @@ export function SectionSelector({
               {
                 backgroundColor: isSelected ? colors.accentSubtle : 'transparent',
                 borderColor: isSelected ? colors.accent : colors.border,
+                borderWidth: hcBorder,
               },
             ]}
             accessibilityLabel={`${item.name}, ${km.toFixed(1)} km${isSelected ? ', selected' : ''}`}
@@ -225,7 +230,7 @@ export function SectionSelector({
       WaypointItem.displayName = 'WaypointItem';
       return WaypointItem;
     },
-    [startKm, startName, endKm, endName, handleSelectWaypoint, colors],
+    [startKm, startName, endKm, endName, handleSelectWaypoint, colors, hcBorder],
   );
 
   // -------------------------------------------------------------------------
@@ -243,7 +248,7 @@ export function SectionSelector({
       </Text>
 
       {/* Segmented toggle */}
-      <View style={[styles.toggle, { borderColor: colors.border }]}>
+      <View style={[styles.toggle, { borderColor: colors.border, borderWidth: hcBorder }]}>
         <Pressable
           onPress={() => setMode('full')}
           style={[
@@ -309,6 +314,7 @@ export function SectionSelector({
                   borderColor:
                     activePicker === 'start' ? colors.accent : colors.border,
                   backgroundColor: colors.surface,
+                  borderWidth: hcBorder,
                 },
               ]}
               accessibilityLabel={`Start point: ${startName}, km ${startKm.toFixed(1)}`}
@@ -336,6 +342,7 @@ export function SectionSelector({
                       color: colors.textPrimary,
                       backgroundColor: colors.surface,
                       borderColor: colors.border,
+                      borderWidth: hcThin,
                     },
                   ]}
                   value={startSearch}
@@ -360,6 +367,7 @@ export function SectionSelector({
                         color: colors.textPrimary,
                         backgroundColor: colors.surface,
                         borderColor: colors.border,
+                        borderWidth: hcThin,
                       },
                     ]}
                     value={startKmText}
@@ -402,6 +410,7 @@ export function SectionSelector({
                   borderColor:
                     activePicker === 'end' ? colors.accent : colors.border,
                   backgroundColor: colors.surface,
+                  borderWidth: hcBorder,
                 },
               ]}
               accessibilityLabel={`End point: ${endName}, km ${endKm.toFixed(1)}`}
@@ -429,6 +438,7 @@ export function SectionSelector({
                       color: colors.textPrimary,
                       backgroundColor: colors.surface,
                       borderColor: colors.border,
+                      borderWidth: hcThin,
                     },
                   ]}
                   value={endSearch}
@@ -453,6 +463,7 @@ export function SectionSelector({
                         color: colors.textPrimary,
                         backgroundColor: colors.surface,
                         borderColor: colors.border,
+                        borderWidth: hcThin,
                       },
                     ]}
                     value={endKmText}
@@ -484,7 +495,7 @@ export function SectionSelector({
           {onSelectOnMap && (
             <Pressable
               onPress={onSelectOnMap}
-              style={[styles.selectOnMapButton, { borderColor: colors.accent }]}
+              style={[styles.selectOnMapButton, { borderColor: colors.accent, borderWidth: hcBorder }]}
               accessibilityLabel="Select section on map"
               accessibilityRole="button"
             >
@@ -497,7 +508,7 @@ export function SectionSelector({
       )}
 
       {/* Summary line */}
-      <View style={[styles.summary, { borderColor: colors.border }]}>
+      <View style={[styles.summary, { borderColor: colors.border, borderTopWidth: hcThin }]}>
         <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
           {mode === 'full' ? 'Total distance' : 'Section distance'}
         </Text>
@@ -517,7 +528,7 @@ export function SectionSelector({
       <View style={styles.actions}>
         <Pressable
           onPress={onDismiss}
-          style={[styles.button, styles.cancelButton, { borderColor: colors.border }]}
+          style={[styles.button, styles.cancelButton, { borderColor: colors.border, borderWidth: hcBorder }]}
           accessibilityRole="button"
           accessibilityLabel="Cancel"
         >

@@ -8,6 +8,7 @@
 
 const mockFiles: Record<string, { exists: boolean; size: number }> = {};
 const mockDirs: Record<string, { exists: boolean; deleted: boolean }> = {};
+const mockFileContents: Record<string, string> = {};
 
 // ---------------------------------------------------------------------------
 // Local mocks — the global jest.setup.js only provides readAsStringAsync /
@@ -31,6 +32,11 @@ jest.mock('expo-file-system', () => {
       get uri() { return uri; },
       get exists() { return mockFiles[uri]?.exists ?? false; },
       get size() { return mockFiles[uri]?.size ?? 0; },
+      textSync: jest.fn(() => mockFileContents[uri] ?? ''),
+      write: jest.fn((data: string) => {
+        mockFileContents[uri] = data;
+        mockFiles[uri] = { exists: true, size: data.length };
+      }),
     };
   });
 
@@ -99,6 +105,7 @@ import { Directory } from 'expo-file-system';
 beforeEach(() => {
   for (const key of Object.keys(mockFiles)) delete mockFiles[key];
   for (const key of Object.keys(mockDirs)) delete mockDirs[key];
+  for (const key of Object.keys(mockFileContents)) delete mockFileContents[key];
   jest.clearAllMocks();
 });
 
@@ -202,6 +209,85 @@ describe('getTrailTileStatus', () => {
     const status = getTrailTileStatus(TRAIL_ID);
 
     expect(status.totalSizeBytes).toBe(5_000_000);
+  });
+
+  // ----- state tri-state (absent / partial / complete) -----
+
+  function writeManifest(sizes: { base: number; contours: number }, version = 'v1') {
+    const manifest = {
+      trailId: TRAIL_ID,
+      version,
+      files: [
+        { name: 'base.mbtiles', size: sizes.base, sha256: 'a' },
+        { name: 'contours.mbtiles', size: sizes.contours, sha256: 'b' },
+      ],
+      totalSize: sizes.base + sizes.contours,
+      bounds: [0, 0, 0, 0],
+      zoomRange: [8, 14],
+    };
+    const key = fileKey('manifest.json');
+    mockFiles[key] = { exists: true, size: 1 };
+    mockFileContents[key] = JSON.stringify(manifest);
+  }
+
+  it('reports state "absent" and complete false when nothing is on disk', () => {
+    const status = getTrailTileStatus(TRAIL_ID);
+    expect(status.state).toBe('absent');
+    expect(status.complete).toBe(false);
+  });
+
+  it('verifies against the manifest: complete only when sizes match exactly', () => {
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 5_000_000 };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: 2_000_000 };
+    writeManifest({ base: 5_000_000, contours: 2_000_000 }, 'v3');
+
+    const status = getTrailTileStatus(TRAIL_ID);
+
+    expect(status.state).toBe('complete');
+    expect(status.complete).toBe(true);
+    expect(status.version).toBe('v3');
+  });
+
+  it('reports "partial" (not a false-positive complete) when a file is truncated vs the manifest', () => {
+    // App killed mid-download of contours: base is whole, contours truncated.
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 5_000_000 };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: 512 };
+    writeManifest({ base: 5_000_000, contours: 2_000_000 });
+
+    const status = getTrailTileStatus(TRAIL_ID);
+
+    expect(status.state).toBe('partial');
+    expect(status.complete).toBe(false);
+  });
+
+  it('reports "partial" when the manifest expects a file that is missing', () => {
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 5_000_000 };
+    writeManifest({ base: 5_000_000, contours: 2_000_000 });
+
+    const status = getTrailTileStatus(TRAIL_ID);
+
+    expect(status.state).toBe('partial');
+    expect(status.complete).toBe(false);
+  });
+
+  it('falls back to a presence heuristic with no manifest (custom grid downloads)', () => {
+    // Both files present, no manifest → treated as complete (best effort).
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 5_000_000 };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: 2_000_000 };
+
+    const status = getTrailTileStatus(TRAIL_ID);
+
+    expect(status.state).toBe('complete');
+    expect(status.complete).toBe(true);
+  });
+
+  it('reports "partial" with no manifest when only one file is present', () => {
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 5_000_000 };
+
+    const status = getTrailTileStatus(TRAIL_ID);
+
+    expect(status.state).toBe('partial');
+    expect(status.complete).toBe(false);
   });
 });
 

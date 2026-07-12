@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../theme';
 import { PressableRow } from './PressableRow';
 import { AppText } from './AppText';
@@ -47,6 +48,16 @@ export function OfflineReadinessRow({ trailId, onStatusChanged, style }: Offline
     return () => { cancelled = true; };
   }, [trailId]);
 
+  // Tab screens stay mounted, so tiles downloaded/deleted from another tab
+  // (e.g. Plan) would leave this row stale. Recompute whenever the screen
+  // regains focus. (Download/delete driven from this row already refresh via
+  // the useTileDownloads onStatusChanged callback above.)
+  useFocusEffect(
+    useCallback(() => {
+      setTileStatus(getTrailTileStatus(trailId));
+    }, [trailId]),
+  );
+
   const isDownloading = downloadingTrailId === trailId;
 
   if (!tileStatus) return null;
@@ -90,6 +101,25 @@ export function OfflineReadinessRow({ trailId, onStatusChanged, style }: Offline
           Offline maps ✓ (base + contours)
         </AppText>
       </View>
+    );
+  }
+
+  // A killed/truncated download leaves files on disk that don't match the
+  // manifest — honest partial state with a re-download affordance, never a ✓.
+  if (tileStatus.state === 'partial') {
+    return (
+      <PressableRow
+        onPress={() => download(trailId, isCustom)}
+        accessibilityLabel="Offline maps incomplete. Tap to finish downloading."
+        style={StyleSheet.flatten([styles.row, { borderColor: colors.alertAmber }, style])}
+      >
+        <View style={styles.downloadRow}>
+          <AppText style={[styles.text, { color: colors.alertAmber }]} numberOfLines={1}>
+            Offline maps incomplete
+          </AppText>
+          <AppText style={[styles.action, { color: colors.accent }]}>Re-download</AppText>
+        </View>
+      </PressableRow>
     );
   }
 

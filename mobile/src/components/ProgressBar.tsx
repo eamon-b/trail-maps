@@ -25,7 +25,7 @@ export function ProgressBar({
   height = 6,
   style,
 }: ProgressBarProps) {
-  const { colors } = useTheme();
+  const { colors, highContrast } = useTheme();
   const clampedProgress = Math.max(0, Math.min(1, progress));
   const percentText = `${Math.round(clampedProgress * 100)}%`;
 
@@ -50,7 +50,19 @@ export function ProgressBar({
           )}
         </View>
       )}
-      <View style={[styles.track, { height, backgroundColor: colors.border }]}>
+      <View
+        style={[
+          styles.track,
+          {
+            height,
+            backgroundColor: colors.border,
+            // High contrast: outline the track so the empty portion is
+            // delineated even when track and surface are close in tone.
+            borderWidth: highContrast ? 1 : 0,
+            borderColor: colors.textSecondary,
+          },
+        ]}
+      >
         <View
           style={[
             styles.fill,

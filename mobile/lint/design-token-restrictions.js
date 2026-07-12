@@ -54,9 +54,6 @@ const designTokenRestrictions = [
  * soon as its violations are cleared — additions require a justification.
  *
  * Remaining violations per file (as of the P2 design-system pass):
- * - ElevationProfile.tsx      — Skia canvas colors + axis-label sizes (needs a
- *                               chart palette pass; canvas colors are not RN styles)
- * - MapErrorBoundary.tsx      — class component without theme context access
  * - AlertBanner.tsx           — emoji icon fontSize
  * - CoordinatesRow.tsx        — monospace coordinate fontSize
  * - SectionSelector.tsx       — emoji/check glyph sizes
@@ -75,8 +72,6 @@ const designTokenRestrictions = [
  * - app/trail/overview.tsx    — owned by the P1 workstream (do not touch here)
  */
 const grandfatheredFiles = [
-  'src/components/ElevationProfile.tsx',
-  'src/components/MapErrorBoundary.tsx',
   'src/components/AlertBanner.tsx',
   'src/components/CoordinatesRow.tsx',
   'src/components/SectionSelector.tsx',

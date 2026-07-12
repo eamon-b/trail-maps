@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
@@ -29,8 +29,12 @@ interface RoutePanelProps {
 }
 
 function formatHours(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
+  // Round to whole minutes FIRST, then split, so a value that rounds up to a
+  // full 60 carries into the next hour instead of printing "60 min" or
+  // "1 h 60 min".
+  const totalMinutes = Math.round(hours * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
   if (h === 0) return `${m} min`;
   return m > 0 ? `${h} h ${m} min` : `${h} h`;
 }
@@ -54,6 +58,20 @@ export function RoutePanel({
 }: RoutePanelProps) {
   const { colors } = useTheme();
   const [name, setName] = useState('');
+
+  // The panel is not unmounted between routes — the parent renders it whenever
+  // a route is active and only flips `mode` (build → view on save, view →
+  // build when the next route starts). Component state therefore survives, so
+  // the entered name would otherwise carry from one route into the next
+  // build session and get saved onto it. Clear it whenever we (re-)enter build
+  // mode from a different mode, which is exactly the start of a fresh route.
+  const prevModeRef = useRef<RoutePanelProps['mode'] | null>(null);
+  useEffect(() => {
+    if (mode === 'build' && prevModeRef.current !== 'build') {
+      setName('');
+    }
+    prevModeRef.current = mode;
+  }, [mode]);
 
   const canSave = mode === 'build' && points.length >= 2 && name.trim().length > 0 && !saving;
 

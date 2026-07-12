@@ -17,7 +17,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase } from '../db/database';
 import { haversineDistance } from '@lib/distance';
 import { estimateHikingTime } from '@lib/day-calculator';
-import { findNearestByDistance, type Trail, type TrailWaypoint } from '../lib/trail-utils';
+import { findNearestByDistance, isCustomWaypointId, type Trail, type TrailWaypoint } from '../lib/trail-utils';
 import { measureBetweenPoints } from './measure-service';
 
 /**
@@ -26,6 +26,18 @@ import { measureBetweenPoints } from './measure-service';
  * says nothing about how you reach a genuinely off-trail spot.
  */
 export const OFF_TRACK_LEG_THRESHOLD_M = 200;
+
+/**
+ * How far a positional `wp-N` ref's resolved km may drift from the stored
+ * denormalized km before we distrust the ref. Bundled ids are assigned by
+ * array index (trail-utils `wp-${i}`, explicitly non-persistable) so a
+ * data-version bump that reorders waypoints can make a stored `wp-12` resolve
+ * to a *different* live waypoint — silently, since that waypoint still has
+ * deleted:false. Real trail waypoints sit far more than 0.3 km apart, so a
+ * genuine reorder lands well beyond this tolerance while the honest jitter of
+ * a re-snapped/re-simplified track for the SAME waypoint stays under it.
+ */
+export const POSITIONAL_REF_KM_TOLERANCE_KM = 0.3;
 
 export interface Route {
   id: string;
@@ -196,21 +208,37 @@ export function resolveRoutePoints(
       ? trail.waypoints.find(w => w.id === leg.waypointRef)
       : undefined;
 
+    // Stored km is base-direction; mirror it into the active (display)
+    // direction so it lines up with the live waypoint km and drives the
+    // fallback below.
+    const activeKm = reversed ? trail.track.totalDistance - leg.kmPosition : leg.kmPosition;
+
     if (wp) {
-      return {
-        seq: leg.seq,
-        name: wp.name,
-        lat: wp.lat,
-        lon: wp.lon,
-        ele: wp.elevation ?? null,
-        km: wp.totalDistance ?? 0,
-        offTrack: (wp.offTrackM ?? 0) > OFF_TRACK_LEG_THRESHOLD_M,
-        deleted: false,
-      };
+      // Guard positional refs against silent mis-resolution. `custom-…` ids
+      // are stable row references (and may be legitimately moved), so they
+      // always follow their live position. A bundled `wp-N` id, however, can
+      // point at a different waypoint after a data-version bump; if its live
+      // km has drifted from the denormalized km beyond tolerance, distrust the
+      // ref and degrade exactly like a deleted waypoint (km fallback below).
+      const usable =
+        isCustomWaypointId(wp.id) ||
+        Math.abs((wp.totalDistance ?? 0) - activeKm) <= POSITIONAL_REF_KM_TOLERANCE_KM;
+      if (usable) {
+        return {
+          seq: leg.seq,
+          name: wp.name,
+          lat: wp.lat,
+          lon: wp.lon,
+          ele: wp.elevation ?? null,
+          km: wp.totalDistance ?? 0,
+          offTrack: (wp.offTrackM ?? 0) > OFF_TRACK_LEG_THRESHOLD_M,
+          deleted: false,
+        };
+      }
     }
 
-    // Fallback: the waypoint is gone — keep the geometry via the stored km.
-    const activeKm = reversed ? trail.track.totalDistance - leg.kmPosition : leg.kmPosition;
+    // Fallback: the waypoint is gone (or its ref no longer trustworthy) —
+    // keep the geometry via the stored km.
     const idx = findNearestByDistance(points, activeKm);
     const pt = points[idx];
     return {
@@ -276,13 +304,23 @@ export function assembleRouteMetrics(trail: Trail, points: ResolvedRoutePoint[])
       };
     } else {
       const measured = measureBetweenPoints(trail, from.km, to.km);
+      // measureBetweenPoints normalizes to ascending km order, so its ascent /
+      // descent describe walking low-km → high-km. A leg walked backwards
+      // (to.km < from.km — e.g. the return leg of an out-and-back to a
+      // lookout) reverses that: the measured ascent is really descent and vice
+      // versa. Naismith time is direction-sensitive (descent is nearly free,
+      // ascent is not), so recompute the estimate from the corrected figures
+      // rather than reusing the wrong-direction hours.
+      const descending = to.km < from.km;
+      const ascentM = descending ? measured.descentM : measured.ascentM;
+      const descentM = descending ? measured.ascentM : measured.descentM;
       metric = {
         from,
         to,
         distanceKm: measured.distanceKm,
-        ascentM: measured.ascentM,
-        descentM: measured.descentM,
-        estimatedHours: measured.estimatedHours,
+        ascentM,
+        descentM,
+        estimatedHours: estimateHikingTime(measured.distanceKm, ascentM, descentM),
         waterSourceCount: measured.waterSourceCount,
         straightLine: false,
       };

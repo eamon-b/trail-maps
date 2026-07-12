@@ -290,4 +290,15 @@ describe('formatEtaMinutes', () => {
     expect(formatEtaMinutes(130)).toBe('~2 h 10 min');
     expect(formatEtaMinutes(120)).toBe('~2 h');
   });
+
+  it('carries a rounded-up 60 into the next hour (never "~60 min")', () => {
+    expect(formatEtaMinutes(59.9)).toBe('~1 h');
+    expect(formatEtaMinutes(60)).toBe('~1 h');
+    expect(formatEtaMinutes(58)).toBe('~1 h'); // 58 rounds to 60 → carries
+  });
+
+  it('carries a rounded-up minute part into the next hour above 60 min', () => {
+    expect(formatEtaMinutes(119.5)).toBe('~2 h'); // 119.5 rounds to 120
+    expect(formatEtaMinutes(118)).toBe('~2 h'); // 118 rounds to 120
+  });
 });

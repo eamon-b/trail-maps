@@ -24,12 +24,16 @@ export interface WaypointDistance {
  * and pace noise make anything finer a lie.
  */
 export function formatEtaMinutes(minutes: number): string {
-  if (minutes < 60) {
-    const rounded = Math.max(5, Math.round(minutes / 5) * 5);
+  // Round to the nearest 5 minutes (floored at 5) FIRST, then split into
+  // hours/minutes. Rounding before the hour split means a value that rounds up
+  // to a full 60 carries into the next hour instead of printing "~60 min" or
+  // "~2 h 60 min".
+  const rounded = Math.max(5, Math.round(minutes / 5) * 5);
+  if (rounded < 60) {
     return `~${rounded} min`;
   }
-  const h = Math.floor(minutes / 60);
-  const m = Math.round((minutes % 60) / 5) * 5;
+  const h = Math.floor(rounded / 60);
+  const m = rounded % 60;
   return m > 0 ? `~${h} h ${m} min` : `~${h} h`;
 }
 

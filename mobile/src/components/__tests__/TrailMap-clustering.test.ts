@@ -13,24 +13,34 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   },
 }));
 
-import { WAYPOINT_CLUSTER_MAX_ZOOM, isClusteredZoom } from '../TrailMap';
+import {
+  WAYPOINT_CLUSTER_MAX_ZOOM,
+  WAYPOINT_LABEL_MIN_ZOOM,
+  WAYPOINT_CLUSTER_FILTER,
+  WAYPOINT_INDIVIDUAL_FILTER,
+} from '../TrailMap';
 
-describe('waypoint clustering thresholds', () => {
-  it('clusters only at zoomed-out overview levels', () => {
-    expect(isClusteredZoom(4)).toBe(true);
-    expect(isClusteredZoom(8)).toBe(true);
-    expect(isClusteredZoom(WAYPOINT_CLUSTER_MAX_ZOOM)).toBe(true);
+describe('waypoint clustering config', () => {
+  it('cluster layer filters on the supercluster point_count property', () => {
+    // The ShapeSource injects `point_count` onto aggregated features; the
+    // cluster bubble + count layers must match exactly those.
+    expect(WAYPOINT_CLUSTER_FILTER).toEqual(['has', 'point_count']);
   });
 
-  it('never clusters at hiking zooms (labels gate at 11, follow zoom is 14)', () => {
-    expect(isClusteredZoom(WAYPOINT_CLUSTER_MAX_ZOOM + 1)).toBe(false);
-    expect(isClusteredZoom(11)).toBe(false);
-    expect(isClusteredZoom(14)).toBe(false);
-    expect(isClusteredZoom(18)).toBe(false);
+  it('individual layer filter is the exact negation of the cluster filter', () => {
+    // Every waypoint must be drawn by exactly one of the two layers — no
+    // double-draw, no gaps.
+    expect(WAYPOINT_INDIVIDUAL_FILTER).toEqual(['!', WAYPOINT_CLUSTER_FILTER]);
   });
 
-  it('cluster ceiling stays below the label gate so expanded points are labeled', () => {
-    // Labels render at zoom >= 11; clustering must hand off before that
-    expect(WAYPOINT_CLUSTER_MAX_ZOOM).toBeLessThan(11);
+  it('labels gate at the hiking-zoom threshold', () => {
+    expect(WAYPOINT_LABEL_MIN_ZOOM).toBe(11);
+  });
+
+  it('cluster ceiling stays below the label gate so expanded points are labelled', () => {
+    // Field-safety invariant: clustering must hand off to individual points
+    // before labels (and hiking zooms) begin, so the next water source or
+    // campsite can never be hidden inside a cluster bubble at hiking zoom.
+    expect(WAYPOINT_CLUSTER_MAX_ZOOM).toBeLessThan(WAYPOINT_LABEL_MIN_ZOOM);
   });
 });

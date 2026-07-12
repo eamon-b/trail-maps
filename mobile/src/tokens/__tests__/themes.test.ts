@@ -27,6 +27,21 @@ function relativeLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+/** Parse the r,g,b channels (0–255) from a #RRGGBB or rgba(r, g, b, a) color */
+function parseRgbChannels(color: string): [number, number, number] {
+  const rgba = color.match(/rgba?\(([^)]+)\)/);
+  if (rgba) {
+    const [r, g, b] = rgba[1].split(',').map((c) => parseInt(c.trim(), 10));
+    return [r, g, b];
+  }
+  const h = color.replace('#', '');
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ];
+}
+
 /** Compute WCAG contrast ratio between two hex colors */
 function contrastRatio(hex1: string, hex2: string): number {
   const l1 = relativeLuminance(hex1);
@@ -46,6 +61,9 @@ describe('Design Tokens — Themes', () => {
     'danger', 'dangerText', 'success', 'info',
     'waterOk', 'waterLow', 'waterCritical',
     'tempCold', 'tempMild', 'tempHot',
+    'chartGrid', 'chartLine', 'chartFillTop', 'chartFillBottom',
+    'chartCrosshair', 'chartWater', 'chartVisibleRange',
+    'chartHighlightFill', 'chartHighlightEdge',
     'scrim',
     'statusBarStyle',
   ];
@@ -123,6 +141,20 @@ describe('Design Tokens — Themes', () => {
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
+      expect(r).toBeGreaterThan(g);
+      expect(r).toBeGreaterThan(b);
+    }
+  });
+
+  it('night red keeps the elevation-chart chrome red-shifted (no green/blue dominating)', () => {
+    const theme = resolveTheme('nightRed', 'hike');
+    const chartKeys: (keyof ThemeColors)[] = [
+      'chartGrid', 'chartLine', 'chartFillTop', 'chartFillBottom',
+      'chartCrosshair', 'chartWater', 'chartVisibleRange',
+      'chartHighlightFill', 'chartHighlightEdge',
+    ];
+    for (const key of chartKeys) {
+      const [r, g, b] = parseRgbChannels(theme[key] as string);
       expect(r).toBeGreaterThan(g);
       expect(r).toBeGreaterThan(b);
     }

@@ -54,6 +54,26 @@ export interface ThemeColors {
   tempMild: string;
   tempHot: string;
 
+  // Elevation-profile / chart chrome. Routed through the theme so the Skia
+  // canvas adapts to dark/OLED and stays red-only under Night Red (a green
+  // elevation line or blue water dot would defeat dark adaptation).
+  /** Faint grid lines behind the profile */
+  chartGrid: string;
+  /** The elevation trace line */
+  chartLine: string;
+  /** Area fill under the trace — top (near the line) and bottom (near the axis) */
+  chartFillTop: string;
+  chartFillBottom: string;
+  /** Drag crosshair line */
+  chartCrosshair: string;
+  /** Water-source dots and the current-position line */
+  chartWater: string;
+  /** Visible-map-range highlight band */
+  chartVisibleRange: string;
+  /** Highlighted (day-segment) band fill and its edge lines */
+  chartHighlightFill: string;
+  chartHighlightEdge: string;
+
   /** Modal/backdrop scrim */
   scrim: string;
 
@@ -181,6 +201,15 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     tempCold: palette.blue,
     tempMild: palette.green,
     tempHot: palette.deepOrange,
+    chartGrid: palette.gray100,
+    chartLine: palette.green,
+    chartFillTop: 'rgba(76, 175, 80, 0.30)',
+    chartFillBottom: 'rgba(76, 175, 80, 0.02)',
+    chartCrosshair: 'rgba(0, 0, 0, 0.40)',
+    chartWater: palette.blue,
+    chartVisibleRange: 'rgba(33, 150, 243, 0.08)',
+    chartHighlightFill: 'rgba(103, 80, 164, 0.15)',
+    chartHighlightEdge: 'rgba(103, 80, 164, 0.60)',
     scrim: palette.scrim,
     statusBarStyle: 'dark',
   },
@@ -206,6 +235,15 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     tempCold: palette.blueLight,
     tempMild: palette.greenLight,
     tempHot: palette.deepOrangeLight,
+    chartGrid: palette.gray800,
+    chartLine: palette.greenLight,
+    chartFillTop: 'rgba(129, 199, 132, 0.28)',
+    chartFillBottom: 'rgba(129, 199, 132, 0.02)',
+    chartCrosshair: 'rgba(255, 255, 255, 0.50)',
+    chartWater: palette.blueLight,
+    chartVisibleRange: 'rgba(100, 181, 246, 0.12)',
+    chartHighlightFill: 'rgba(179, 157, 219, 0.20)',
+    chartHighlightEdge: 'rgba(179, 157, 219, 0.70)',
     scrim: palette.scrim,
     statusBarStyle: 'light',
   },
@@ -231,6 +269,15 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     tempCold: palette.blueLight,
     tempMild: palette.greenLight,
     tempHot: palette.deepOrangeLight,
+    chartGrid: palette.gray900,
+    chartLine: palette.greenLight,
+    chartFillTop: 'rgba(129, 199, 132, 0.28)',
+    chartFillBottom: 'rgba(129, 199, 132, 0.02)',
+    chartCrosshair: 'rgba(255, 255, 255, 0.50)',
+    chartWater: palette.blueLight,
+    chartVisibleRange: 'rgba(100, 181, 246, 0.12)',
+    chartHighlightFill: 'rgba(179, 157, 219, 0.20)',
+    chartHighlightEdge: 'rgba(179, 157, 219, 0.70)',
     scrim: palette.scrim,
     statusBarStyle: 'light',
   },
@@ -259,6 +306,17 @@ const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtl
     tempCold: palette.nightTextSecondary,
     tempMild: palette.nightRedAccent,
     tempHot: palette.nightAlertRed,
+    // Chart chrome stays red-only so the profile never emits green/blue light
+    // and undoes dark adaptation.
+    chartGrid: palette.nightBorder,
+    chartLine: palette.nightTextPrimary,
+    chartFillTop: 'rgba(255, 107, 107, 0.28)',
+    chartFillBottom: 'rgba(255, 107, 107, 0.02)',
+    chartCrosshair: 'rgba(255, 107, 107, 0.50)',
+    chartWater: palette.nightRedAccent,
+    chartVisibleRange: 'rgba(255, 82, 82, 0.10)',
+    chartHighlightFill: 'rgba(255, 82, 82, 0.15)',
+    chartHighlightEdge: 'rgba(255, 82, 82, 0.60)',
     scrim: palette.scrim,
     statusBarStyle: 'light',
   },

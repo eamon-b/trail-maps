@@ -23,7 +23,7 @@ export function StopSelector({
   selectedStopKms,
   onToggleStop,
 }: StopSelectorProps) {
-  const { colors } = useTheme();
+  const { colors, highContrast } = useTheme();
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -50,6 +50,7 @@ export function StopSelector({
             {
               backgroundColor: isSelected ? colors.accentSubtle : 'transparent',
               borderColor: isSelected ? colors.accent : colors.border,
+              borderWidth: highContrast ? 2 : 1,
             },
           ]}
           accessibilityLabel={`${item.name}, ${km.toFixed(1)} km${isSelected ? ', selected' : ''}`}
@@ -78,7 +79,7 @@ export function StopSelector({
         </Pressable>
       );
     },
-    [filtered, selectedStopKms, onToggleStop, colors],
+    [filtered, selectedStopKms, onToggleStop, colors, highContrast],
   );
 
   return (
@@ -94,6 +95,7 @@ export function StopSelector({
             color: colors.textPrimary,
             backgroundColor: colors.surface,
             borderColor: colors.border,
+            borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth,
           },
         ]}
         value={search}

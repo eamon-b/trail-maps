@@ -27,7 +27,7 @@ interface UndoToastProps {
 
 /** Undo toast with auto-dismiss (3 s by default) */
 export function UndoToast({ visible, message, onUndo, onDismiss, durationMs }: UndoToastProps) {
-  const { colors } = useTheme();
+  const { colors, highContrast } = useTheme();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(100);
@@ -60,6 +60,9 @@ export function UndoToast({ visible, message, onUndo, onDismiss, durationMs }: U
           bottom: insets.bottom + spacing.lg,
           backgroundColor: colors.surfaceElevated,
           borderColor: colors.border,
+          // High contrast: a stronger border than the default hairline so the
+          // floating toast is clearly bounded against whatever is behind it.
+          borderWidth: highContrast ? 1.5 : StyleSheet.hairlineWidth,
         },
         animatedStyle,
       ]}

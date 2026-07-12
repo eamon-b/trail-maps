@@ -266,7 +266,7 @@ export function ElevationProfile({
             key={i}
             p1={vec(line.x1, line.y1)}
             p2={vec(line.x2, line.y2)}
-            color="#e0e0e0"
+            color={colors.chartGrid}
             strokeWidth={0.5}
           />
         ))}
@@ -279,7 +279,7 @@ export function ElevationProfile({
           y={PADDING.top}
           width={visibleRangeRect.width}
           height={chartMetrics.chartHeight}
-          color="rgba(33, 150, 243, 0.08)"
+          color={colors.chartVisibleRange}
         />
       )}
 
@@ -291,18 +291,18 @@ export function ElevationProfile({
             y={PADDING.top}
             width={highlightedRect.width}
             height={chartMetrics.chartHeight}
-            color="rgba(103, 80, 164, 0.15)"
+            color={colors.chartHighlightFill}
           />
           <Line
             p1={vec(highlightedRect.x, PADDING.top)}
             p2={vec(highlightedRect.x, PADDING.top + chartMetrics.chartHeight)}
-            color="rgba(103, 80, 164, 0.6)"
+            color={colors.chartHighlightEdge}
             strokeWidth={1}
           />
           <Line
             p1={vec(highlightedRect.x + highlightedRect.width, PADDING.top)}
             p2={vec(highlightedRect.x + highlightedRect.width, PADDING.top + chartMetrics.chartHeight)}
-            color="rgba(103, 80, 164, 0.6)"
+            color={colors.chartHighlightEdge}
             strokeWidth={1}
           />
         </>
@@ -314,7 +314,7 @@ export function ElevationProfile({
           <LinearGradient
             start={vec(0, PADDING.top)}
             end={vec(0, PADDING.top + chartMetrics.chartHeight)}
-            colors={['rgba(76, 175, 80, 0.3)', 'rgba(76, 175, 80, 0.02)']}
+            colors={[colors.chartFillTop, colors.chartFillBottom]}
           />
         </Path>
       )}
@@ -323,7 +323,7 @@ export function ElevationProfile({
       {elevationPath && (
         <Path
           path={elevationPath}
-          color="#4CAF50"
+          color={colors.chartLine}
           style="stroke"
           strokeWidth={2}
           strokeCap="round"
@@ -364,7 +364,7 @@ export function ElevationProfile({
 
       {/* Water source dots */}
       {waterDots.map((dot, i) => (
-        <Circle key={`water-${i}`} cx={dot.x} cy={dot.y} r={3} color="#2196F3" />
+        <Circle key={`water-${i}`} cx={dot.x} cy={dot.y} r={3} color={colors.chartWater} />
       ))}
 
       {/* Current position vertical line */}
@@ -372,7 +372,7 @@ export function ElevationProfile({
         <Line
           p1={vec(currentPositionX, PADDING.top)}
           p2={vec(currentPositionX, PADDING.top + chartMetrics.chartHeight)}
-          color="#2196F3"
+          color={colors.chartWater}
           strokeWidth={2}
         />
       )}
@@ -382,7 +382,7 @@ export function ElevationProfile({
         <Line
           p1={vec(crosshair.x, PADDING.top)}
           p2={vec(crosshair.x, PADDING.top + chartMetrics.chartHeight)}
-          color="rgba(0,0,0,0.4)"
+          color={colors.chartCrosshair}
           strokeWidth={1}
         />
       )}
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   axisLabel: {
     position: 'absolute',
-    fontSize: 9,
+    fontSize: typography.caption.fontSize,
     fontVariant: ['tabular-nums'],
   },
   tooltip: {
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tooltipText: {
-    fontSize: 11,
+    fontSize: typography.caption.fontSize,
     fontVariant: ['tabular-nums'],
   },
 });

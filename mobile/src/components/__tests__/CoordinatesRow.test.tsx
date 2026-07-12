@@ -56,6 +56,12 @@ describe('formatCoordinates', () => {
   it('formats the origin (0, 0)', () => {
     expect(formatCoordinates(0, 0, 'dms')).toBe(`0°00'00.0" N 0°00'00.0" E`);
   });
+
+  it('formats UTM (MGA) with zone, band and padded easting/northing', () => {
+    expect(formatCoordinates(-33.8568, 151.2153, 'utm')).toBe(
+      '56H 334901E 6252289N',
+    );
+  });
 });
 
 describe('CoordinatesRow', () => {
@@ -106,6 +112,58 @@ describe('CoordinatesRow', () => {
     fireEvent(screen.getByText('-35.50000, 148.25000'), 'longPress');
     await waitFor(() => {
       expect(screen.getByText(`35°30'00.0" S 148°15'00.0" E`)).toBeTruthy();
+    });
+  });
+
+  it('cycles decimal -> DMS -> UTM -> decimal on long press', async () => {
+    renderWithTheme(
+      <CoordinatesRow latitude={-33.8568} longitude={151.2153} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('-33.85680, 151.21530')).toBeTruthy();
+    });
+
+    // decimal -> DMS
+    fireEvent(screen.getByText('-33.85680, 151.21530'), 'longPress');
+    await waitFor(() => {
+      expect(screen.getByText(`33°51'24.5" S 151°12'55.1" E`)).toBeTruthy();
+    });
+
+    // DMS -> UTM (MGA)
+    fireEvent(screen.getByText(`33°51'24.5" S 151°12'55.1" E`), 'longPress');
+    await waitFor(() => {
+      expect(screen.getByText('56H 334901E 6252289N')).toBeTruthy();
+      expect(screen.getByText('Format: UTM (MGA)')).toBeTruthy();
+    });
+
+    // UTM -> back to decimal
+    fireEvent(screen.getByText('56H 334901E 6252289N'), 'longPress');
+    await waitFor(() => {
+      expect(screen.getByText('-33.85680, 151.21530')).toBeTruthy();
+    });
+  });
+
+  it('copies the UTM string when UTM is the active format', async () => {
+    renderWithTheme(
+      <CoordinatesRow latitude={-33.8568} longitude={151.2153} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('-33.85680, 151.21530')).toBeTruthy();
+    });
+
+    // Cycle to UTM (two long presses: decimal -> DMS -> UTM).
+    fireEvent(screen.getByText('-33.85680, 151.21530'), 'longPress');
+    fireEvent(
+      await screen.findByText(`33°51'24.5" S 151°12'55.1" E`),
+      'longPress',
+    );
+
+    const utmNode = await screen.findByText('56H 334901E 6252289N');
+    fireEvent.press(utmNode);
+    await waitFor(() => {
+      expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+        '56H 334901E 6252289N',
+      );
     });
   });
 

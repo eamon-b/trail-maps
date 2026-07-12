@@ -4,8 +4,9 @@ import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
+import { formatUtm } from '../lib/utm';
 
-export type CoordinateFormat = 'decimal' | 'dms';
+export type CoordinateFormat = 'decimal' | 'dms' | 'utm';
 
 interface CoordinatesRowProps {
   latitude: number;
@@ -46,8 +47,20 @@ export function formatCoordinates(
   if (format === 'dms') {
     return `${toDms(latitude, 'lat')} ${toDms(longitude, 'lon')}`;
   }
+  if (format === 'utm') {
+    // UTM (MGA) — see the datum note in lib/utm.ts: WGS84 UTM, close enough to
+    // MGA2020 for rescue relay but not survey-grade.
+    return formatUtm(latitude, longitude);
+  }
   return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 }
+
+/** Human label for the active format, shown in the change-format feedback. */
+const FORMAT_LABELS: Record<CoordinateFormat, string> = {
+  decimal: 'decimal',
+  dms: 'DMS',
+  utm: 'UTM (MGA)',
+};
 
 /**
  * Compact current-position readout for the hike dashboard.
@@ -55,7 +68,8 @@ export function formatCoordinates(
  * - Tap copies the coordinate string to the clipboard (with confirmation).
  * - The share icon opens the OS share sheet (relaying position to rescue or
  *   a mate over any messaging app).
- * - Long-press toggles between decimal degrees and DMS.
+ * - Long-press cycles the format: decimal degrees -> DMS -> UTM (MGA) ->
+ *   decimal.
  */
 export function CoordinatesRow({ latitude, longitude, style }: CoordinatesRowProps) {
   const { colors } = useTheme();
@@ -98,9 +112,10 @@ export function CoordinatesRow({ latitude, longitude, style }: CoordinatesRowPro
   }, [coordText, showFeedback]);
 
   const handleLongPress = useCallback(() => {
-    const next: CoordinateFormat = format === 'decimal' ? 'dms' : 'decimal';
+    const cycle: CoordinateFormat[] = ['decimal', 'dms', 'utm'];
+    const next = cycle[(cycle.indexOf(format) + 1) % cycle.length];
     setFormat(next);
-    showFeedback(next === 'dms' ? 'Format: DMS' : 'Format: decimal');
+    showFeedback(`Format: ${FORMAT_LABELS[next]}`);
   }, [format, showFeedback]);
 
   return (

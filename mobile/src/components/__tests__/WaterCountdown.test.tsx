@@ -91,3 +91,24 @@ describe('WaterCountdown time-to-water', () => {
     });
   });
 });
+
+describe('WaterCountdown searching (no GPS fix)', () => {
+  it('shows the searching placeholder instead of a km-0 distance', async () => {
+    // Even with a (sentinel) distance present, searching wins so we never
+    // present a distance measured from the trail start as live data.
+    renderWithTheme(<WaterCountdown nextWaterKm={0} searching />);
+    await waitFor(() => {
+      expect(screen.getByText('Next water: searching for GPS…')).toBeTruthy();
+    });
+    expect(screen.queryByText('Next water: 0.0 km')).toBeNull();
+  });
+
+  it('has a descriptive accessibility label while searching', async () => {
+    renderWithTheme(<WaterCountdown nextWaterKm={null} searching />);
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText('Waiting for GPS to show the next water distance'),
+      ).toBeTruthy();
+    });
+  });
+});

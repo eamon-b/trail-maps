@@ -15,7 +15,7 @@ import { useOffTrailAlert } from '../../src/hooks/useOffTrailAlert';
 import { triggerLocationHaptic } from '../../src/components/haptics';
 import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-data-service';
 import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
-import { markedWaypointName, accuracyPreamble } from '../../src/services/mark-location';
+import { markedWaypointName, accuracyPreamble, isFixStale } from '../../src/services/mark-location';
 import { AddWaypointSheet, type AddWaypointValues } from '../../src/components/AddWaypointSheet';
 import { UndoToast } from '../../src/components/UndoToast';
 import {
@@ -37,9 +37,11 @@ import type { StopData, ComputedDay } from '../../src/services/plan-calculator-t
 import { ACTIVE_TRAIL_KEY, DIRECTION_PREF_KEY } from '../trail/[id]';
 import { ALERT_THRESHOLD_KEY, BACKGROUND_TRACKING_KEY, TRACKING_PROFILE_KEY } from '../settings';
 import {
-  resolveTrackingProfile,
-  setTrackingProfile,
+  setTrackingPreference,
+  getActiveProfile,
+  onProfileChange,
   type TrackingProfile,
+  type TrackingProfilePreference,
 } from '../../src/services/location-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
@@ -110,8 +112,13 @@ export default function HikeScreen() {
   const [alertPreset, setAlertPreset] = useState<AlertThresholdPreset>('normal');
   const [backgroundTracking, setBackgroundTracking] = useState(false);
   // Active tracking cadence — disclosed in the status line so a degraded fix
-  // rate (battery saver) is never mysterious.
-  const [activeProfile, setActiveProfile] = useState<TrackingProfile>('standard');
+  // rate (battery saver) is never mysterious. Seeded from the service and kept
+  // in sync via onProfileChange, so auto battery switches that happen while the
+  // screen is mounted are reflected here immediately.
+  const [activeProfile, setActiveProfile] = useState<TrackingProfile>(() => getActiveProfile());
+  // Ticks every 15 s so time-derived UI (the stale-fix guard on the Mark
+  // button) re-evaluates even when no new GPS fix is arriving.
+  const [nowMs, setNowMs] = useState(() => Date.now());
   // Warning-state banner dismissal (snooze-lite: the status bar stays amber)
   const [warningDismissed, setWarningDismissed] = useState(false);
   // Whether the displayed trail is reversed (plan SOBO or direction pref) —
@@ -158,6 +165,16 @@ export default function HikeScreen() {
 
   const currentKm = location?.trailKm ?? null;
 
+  // Keep the disclosed profile in sync with the running GPS session, including
+  // auto battery auto-switches that fire while this screen is mounted.
+  useEffect(() => onProfileChange(setActiveProfile), []);
+
+  // 15 s clock for the Mark button's stale-fix guard.
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 15000);
+    return () => clearInterval(t);
+  }, []);
+
   // Off-trail alert with debouncing and snooze
   const { alertState, alertDetail, bearingToTrail, isSnoozed, snoozeUntil, snooze, clearSnooze } = useOffTrailAlert(
     location,
@@ -198,14 +215,15 @@ export default function HikeScreen() {
             setBackgroundTracking(savedBackground === 'true');
           }
 
-          // Resolve + apply the tracking power profile (Auto checks battery)
+          // Apply the tracking power profile. For 'auto' the service resolves
+          // the battery level now and keeps watching for the rest of the
+          // session; onProfileChange keeps activeProfile in sync.
           const savedProfile = await AsyncStorage.getItem(TRACKING_PROFILE_KEY);
-          const pref = savedProfile === 'standard' || savedProfile === 'saver' ? savedProfile : 'auto';
-          const resolved = await resolveTrackingProfile(pref);
+          const pref: TrackingProfilePreference =
+            savedProfile === 'standard' || savedProfile === 'saver' ? savedProfile : 'auto';
           if (!cancelled) {
-            setActiveProfile(resolved);
             // Restarts a live watch when the cadence changed
-            setTrackingProfile(resolved).catch(() => {});
+            setTrackingPreference(pref).catch(() => {});
           }
 
           const trailId = await AsyncStorage.getItem(ACTIVE_TRAIL_KEY);
@@ -410,6 +428,10 @@ export default function HikeScreen() {
   const handleMarkLocation = useCallback(async () => {
     const raw = location?.raw;
     if (!raw || !trail || !activeTrailId) return;
+    // Guard against a stale fix: after an app resume or GPS loss the last fix
+    // can be hours old, so refuse to record a position we can't trust.
+    const fixAgeMs = Date.now() - raw.timestamp;
+    if (isFixStale(raw.timestamp)) return;
     if (markingRef.current) return;
     markingRef.current = true;
     try {
@@ -434,7 +456,7 @@ export default function HikeScreen() {
         ele: raw.altitude,
         kmPosition: baseKm,
         offTrackM,
-        description: accuracyPreamble(accuracy),
+        description: accuracyPreamble(accuracy, fixAgeMs),
       });
       setMarkedWaypoint(row);
       setMarkToastVisible(true);
@@ -509,6 +531,11 @@ export default function HikeScreen() {
   }
 
   const rawLocation = location?.raw;
+  // The last fix is too old to mark (e.g. after an app resume or GPS loss).
+  // Recomputed against nowMs so the button disables itself even while no new
+  // fix arrives.
+  const fixStale = !!rawLocation && isFixStale(rawLocation.timestamp, nowMs);
+  const canMark = !!rawLocation && !fixStale;
 
   // Location failed to start (permission denied, provider error) and we have
   // no fix to fall back to — the "Searching for GPS" card would be a dead end.
@@ -560,26 +587,30 @@ export default function HikeScreen() {
       {trail && !showLocationError && (
         <Pressable
           onPress={handleMarkLocation}
-          disabled={!rawLocation}
+          disabled={!canMark}
           style={[
             styles.markButton,
             {
-              backgroundColor: rawLocation ? colors.accent : colors.surface,
-              borderColor: rawLocation ? colors.accent : colors.border,
+              backgroundColor: canMark ? colors.accent : colors.surface,
+              borderColor: canMark ? colors.accent : colors.border,
             },
           ]}
           accessibilityRole="button"
           accessibilityLabel="Mark my location as a waypoint"
-          accessibilityState={{ disabled: !rawLocation }}
+          accessibilityState={{ disabled: !canMark }}
         >
           <Text style={styles.markButtonIcon}>📍</Text>
           <Text
             style={[
               styles.markButtonText,
-              { color: rawLocation ? colors.textInverse : colors.textSecondary },
+              { color: canMark ? colors.textInverse : colors.textSecondary },
             ]}
           >
-            {rawLocation ? 'Mark my location' : 'Mark my location (waiting for GPS)'}
+            {canMark
+              ? 'Mark my location'
+              : fixStale
+                ? 'Mark my location (GPS fix stale)'
+                : 'Mark my location (waiting for GPS)'}
           </Text>
         </Pressable>
       )}
@@ -668,6 +699,9 @@ export default function HikeScreen() {
           }
           onPress={handleAlertBannerPress}
           onHidden={() => setShowSnoozeMenu(false)}
+          accessibilityHint={
+            alertState === 'offTrail' ? 'Tap to snooze alerts' : 'Tap to dismiss'
+          }
           accessory={
             alertState === 'offTrail' && bearingToTrail != null && rawLocation ? (
               // Device-relative arrow back to the trail (upgrades the static
@@ -780,7 +814,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    minHeight: 56,
+    minHeight: touchTarget.field,
     marginHorizontal: spacing.lg,
     marginVertical: spacing.sm,
     borderRadius: radii.lg,

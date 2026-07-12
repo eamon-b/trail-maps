@@ -10,6 +10,11 @@ interface WaterCountdownProps {
   nextWaterKm: number | null;
   /** Naismith walking time to the water source in minutes, if known */
   etaMinutes?: number | null;
+  /**
+   * No GPS fix yet — the distance would be measured from the trail start
+   * (sentinel km 0), so show a searching placeholder instead of a live number.
+   */
+  searching?: boolean;
   style?: ViewStyle;
 }
 
@@ -22,8 +27,22 @@ interface WaterCountdownProps {
  * All three thresholds resolve through the theme's semantic water ramp so
  * Night Red mode stays red-shifted.
  */
-export function WaterCountdown({ nextWaterKm, etaMinutes, style }: WaterCountdownProps) {
+export function WaterCountdown({ nextWaterKm, etaMinutes, searching, style }: WaterCountdownProps) {
   const { colors } = useTheme();
+
+  if (searching) {
+    return (
+      <View
+        style={[styles.container, style]}
+        accessibilityLabel="Waiting for GPS to show the next water distance"
+      >
+        <AppText style={styles.icon}>💧</AppText>
+        <AppText style={[styles.text, { color: colors.textSecondary }]}>
+          Next water: searching for GPS…
+        </AppText>
+      </View>
+    );
+  }
 
   if (nextWaterKm == null) {
     return null;

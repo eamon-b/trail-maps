@@ -149,6 +149,12 @@ export function HikeDashboard({
   const isLoading = state === 'loading';
   const cardState: CardState = isLoading ? 'loading' : (gpsState === 'degraded' || gpsState === 'searching') ? 'degraded' : 'normal';
 
+  // No fix yet: currentKm is a sentinel 0, so position-relative readouts (water
+  // countdown, today progress/ETA, upcoming distances) would present distances
+  // measured from the trail start as if live. Show the searching treatment
+  // instead — 'degraded' means we still have a last-known km and is fine.
+  const gpsSearching = gpsState === 'searching';
+
   const degradedMsg = gpsState === 'searching'
     ? 'Searching for GPS signal...'
     : gpsState === 'degraded'
@@ -264,37 +270,47 @@ export function HikeDashboard({
                   <Text style={[styles.todayStats, { color: colors.textPrimary }]}>
                     {data.today.distanceKm.toFixed(1)} km  +{data.today.ascentM}m/-{data.today.descentM}m  ~{Math.floor(data.today.estimatedHours)}h {Math.round((data.today.estimatedHours % 1) * 60)}m
                   </Text>
-                  <View style={styles.todayProgress}>
+                  {/* Position-relative readouts are honest only once we have a
+                      fix; before then currentKm is a sentinel 0. */}
+                  {gpsSearching ? (
                     <Text style={[styles.todayProgressText, { color: colors.textSecondary }]}>
-                      Done: {data.today.completedKm.toFixed(1)} km ({data.today.distanceKm > 0 ? Math.round((data.today.completedKm / data.today.distanceKm) * 100) : 0}%)
+                      Waiting for GPS to show progress…
                     </Text>
-                    <ProgressBar
-                      progress={data.today.distanceKm > 0 ? data.today.completedKm / data.today.distanceKm : 0}
-                      height={4}
-                      style={styles.todayProgressBar}
-                    />
-                  </View>
-                  {/* Remaining distance + ETA (honestly labelled: computed
-                      from the plan's Naismith pace, not the live pace) */}
-                  {data.today.remainingHours != null && (
-                    <View style={styles.todayEtaRow}>
-                      <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
-                        {(data.today.distanceKm - data.today.completedKm).toFixed(1)} km remaining
-                      </Text>
-                      <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
-                        {'ETA: '}
-                        {formatETA(data.today.remainingHours, nowMs)}
-                        {' (at plan pace)'}
-                      </Text>
-                    </View>
-                  )}
-                  {/* Next water countdown */}
-                  {data.nextWaterKm != null && (
-                    <WaterCountdown
-                      nextWaterKm={data.nextWaterKm}
-                      etaMinutes={data.nextWaterEtaMinutes}
-                      style={styles.waterCountdown}
-                    />
+                  ) : (
+                    <>
+                      <View style={styles.todayProgress}>
+                        <Text style={[styles.todayProgressText, { color: colors.textSecondary }]}>
+                          Done: {data.today.completedKm.toFixed(1)} km ({data.today.distanceKm > 0 ? Math.round((data.today.completedKm / data.today.distanceKm) * 100) : 0}%)
+                        </Text>
+                        <ProgressBar
+                          progress={data.today.distanceKm > 0 ? data.today.completedKm / data.today.distanceKm : 0}
+                          height={4}
+                          style={styles.todayProgressBar}
+                        />
+                      </View>
+                      {/* Remaining distance + ETA (honestly labelled: computed
+                          from the plan's Naismith pace, not the live pace) */}
+                      {data.today.remainingHours != null && (
+                        <View style={styles.todayEtaRow}>
+                          <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
+                            {(data.today.distanceKm - data.today.completedKm).toFixed(1)} km remaining
+                          </Text>
+                          <Text style={[styles.todayEtaText, { color: colors.textSecondary }]}>
+                            {'ETA: '}
+                            {formatETA(data.today.remainingHours, nowMs)}
+                            {' (at plan pace)'}
+                          </Text>
+                        </View>
+                      )}
+                      {/* Next water countdown */}
+                      {data.nextWaterKm != null && (
+                        <WaterCountdown
+                          nextWaterKm={data.nextWaterKm}
+                          etaMinutes={data.nextWaterEtaMinutes}
+                          style={styles.waterCountdown}
+                        />
+                      )}
+                    </>
                   )}
                 </View>
               )}
@@ -308,21 +324,30 @@ export function HikeDashboard({
         </Card>
       )}
 
-      {/* No-plan today section: show water countdown when no plan is set */}
-      {!data?.today && !isLoading && data?.nextWaterKm != null && (
+      {/* No-plan today section: show water countdown when no plan is set. When
+          searching, the km-0 distance would be a lie — WaterCountdown shows the
+          searching treatment instead. */}
+      {!data?.today && !isLoading && (data?.nextWaterKm != null || gpsSearching) && (
         <Card state="normal" label="TODAY">
-          <WaterCountdown nextWaterKm={data.nextWaterKm} etaMinutes={data.nextWaterEtaMinutes} />
+          <WaterCountdown
+            nextWaterKm={data?.nextWaterKm ?? null}
+            etaMinutes={data?.nextWaterEtaMinutes}
+            searching={gpsSearching}
+          />
         </Card>
       )}
 
-      {/* UPCOMING waypoints */}
+      {/* UPCOMING waypoints. Distances are position-relative, so while
+          searching (no fix) we show the searching treatment rather than
+          distances measured from the trail start. */}
       {(data?.upcoming || isLoading) && (
         <Card
-          state={isLoading ? 'loading' : data?.upcoming?.length ? 'normal' : 'empty'}
+          state={isLoading ? 'loading' : gpsSearching ? 'degraded' : data?.upcoming?.length ? 'normal' : 'empty'}
           label="UPCOMING"
           emptyMessage="No waypoints ahead"
+          degradedMessage={gpsSearching ? 'Searching for GPS signal...' : undefined}
         >
-          {data?.upcoming && data.upcoming.length > 0 && (
+          {!gpsSearching && data?.upcoming && data.upcoming.length > 0 && (
             <WaypointList
               waypoints={data.upcoming}
               maxItems={5}

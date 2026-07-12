@@ -143,3 +143,63 @@ describe('HikeDashboard ETA / bearing / time-to-water (P1 PR C)', () => {
     });
   });
 });
+
+describe('HikeDashboard no-fix state (gpsState=searching)', () => {
+  // With no fix, currentKm is a sentinel 0 — the position-relative readouts
+  // must not present distances measured from the trail start as live data.
+  const searchingData: DashboardData = {
+    trailName: 'TEST TRAIL',
+    direction: 'NOBO',
+    currentKm: 0,
+    totalKm: 100,
+    nextWaterKm: 0.4,
+    nextWaterEtaMinutes: 6,
+    upcoming: [
+      { id: 'wp-1', name: 'Ridge Camp', type: 'campsite', distanceAhead: '0.2 km' },
+      { id: 'wp-2', name: 'Creek Tank', type: 'water', distanceAhead: '0.4 km' },
+    ],
+    today: {
+      dayNumber: 1,
+      totalDays: 3,
+      startName: 'Start',
+      endName: 'End',
+      distanceKm: 18,
+      ascentM: 400,
+      descentM: 200,
+      estimatedHours: 5,
+      completedKm: 0,
+      remainingHours: 5,
+    },
+  };
+
+  it('suppresses the km-0 today progress/ETA and shows a waiting note', async () => {
+    renderWithTheme(<HikeDashboard data={searchingData} gpsState="searching" />);
+    await waitFor(() => {
+      expect(screen.getByText('Waiting for GPS to show progress…')).toBeTruthy();
+    });
+    // No km-0-relative progress, ETA, or water number
+    expect(screen.queryByText(/Done: 0\.0 km/)).toBeNull();
+    expect(screen.queryByText(/at plan pace/)).toBeNull();
+    expect(screen.queryByText(/Next water: 0\.4 km/)).toBeNull();
+  });
+
+  it('does not render the upcoming distances while searching', async () => {
+    renderWithTheme(<HikeDashboard data={searchingData} gpsState="searching" />);
+    await waitFor(() => {
+      // UPCOMING card degrades to the searching message rather than listing
+      // distances measured from km 0.
+      expect(screen.getAllByText('Searching for GPS signal...').length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText('Ridge Camp')).toBeNull();
+    expect(screen.queryByText('Creek Tank')).toBeNull();
+  });
+
+  it('shows live position-relative data once a fix arrives (normal gpsState)', async () => {
+    const withFix: DashboardData = { ...searchingData, currentKm: 9, today: { ...searchingData.today!, completedKm: 4 } };
+    renderWithTheme(<HikeDashboard data={withFix} gpsState="normal" />);
+    await waitFor(() => {
+      expect(screen.getByText(/Done: 4\.0 km/)).toBeTruthy();
+    });
+    expect(screen.queryByText('Waiting for GPS to show progress…')).toBeNull();
+  });
+});

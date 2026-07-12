@@ -14,6 +14,7 @@ import {
   OFF_TRACK_LEG_THRESHOLD_M,
 } from '../route-service';
 import { routeToGpx } from '../../lib/gpx-writer';
+import { estimateHikingTime } from '@lib/day-calculator';
 import type { Trail, TrackPoint, TrailWaypoint } from '../../lib/trail-utils';
 
 // Mock trail-loader to avoid bundled asset imports (route-service pulls in
@@ -174,6 +175,41 @@ describe('resolveRoutePoints', () => {
     // Base km 5 on a 20 km trail = active km 15 when reversed
     expect(points[0].km).toBe(15);
   });
+
+  it('resolves a positional ref whose live km is within tolerance of the stored km', () => {
+    // wp-1 (Creek) lives at km 5; the stored km jittered to 5.2 by a track
+    // re-simplify — still the same waypoint, so it resolves normally.
+    const points = resolveRoutePoints(trail, [
+      { seq: 0, waypointRef: 'wp-1', kmPosition: 5.2 },
+    ]);
+    expect(points[0].deleted).toBe(false);
+    expect(points[0].name).toBe('Creek');
+    expect(points[0].km).toBe(5);
+  });
+
+  it('distrusts a positional ref whose live km diverges beyond tolerance (data-version bump)', () => {
+    // wp-1 (Creek) lives at km 5, but the leg was saved at km 12: a data
+    // refresh reordered waypoints so `wp-1` now points at a different spot.
+    // Degrade to the km fallback rather than silently using the wrong waypoint.
+    const points = resolveRoutePoints(trail, [
+      { seq: 0, waypointRef: 'wp-1', kmPosition: 12 },
+    ]);
+    expect(points[0].deleted).toBe(true);
+    expect(points[0].name).toBe('(deleted waypoint)');
+    expect(points[0].km).toBe(12);
+  });
+
+  it('trusts a custom ref even when its live km diverges (a moved pin, not a reorder)', () => {
+    // custom-off lives at km 15; the route was saved when it sat at km 2.
+    // Custom ids are stable row references, so we follow the live position and
+    // never fall back on the km divergence.
+    const points = resolveRoutePoints(trail, [
+      { seq: 0, waypointRef: 'custom-off', kmPosition: 2 },
+    ]);
+    expect(points[0].deleted).toBe(false);
+    expect(points[0].name).toBe('Off-track lookout');
+    expect(points[0].km).toBe(15);
+  });
 });
 
 describe('assembleRouteMetrics', () => {
@@ -194,6 +230,46 @@ describe('assembleRouteMetrics', () => {
     expect(metrics.legs[0].waterSourceCount).toBe(1); // Creek at km 5 (inclusive end)
     expect(metrics.totalKm).toBeCloseTo(10, 1);
     expect(metrics.totalHours).toBeGreaterThan(0);
+  });
+
+  it('swaps ascent/descent for a leg walked backwards and recomputes the time', () => {
+    // Camp (km 10, ele 200) back down to Creek (km 5, ele 150): a pure
+    // descent. measureBetweenPoints reports it ascending (gain +50), so the
+    // metric must flip it to descent and re-run Naismith for that direction.
+    const points = [
+      waypointToRoutePoint(trail.waypoints[2], 0), // Camp, km 10
+      waypointToRoutePoint(trail.waypoints[1], 1), // Creek, km 5 — return leg
+    ];
+    const leg = assembleRouteMetrics(trail, points).legs[0];
+
+    expect(leg.ascentM).toBeCloseTo(0, 0);
+    expect(leg.descentM).toBeCloseTo(50, 0);
+    expect(leg.estimatedHours).toBeCloseTo(estimateHikingTime(leg.distanceKm, 0, 50), 5);
+  });
+
+  it('leaves an ascending leg unchanged (matches the raw measurement)', () => {
+    const points = [
+      waypointToRoutePoint(trail.waypoints[1], 0), // Creek, km 5
+      waypointToRoutePoint(trail.waypoints[2], 1), // Camp, km 10 — climbing
+    ];
+    const leg = assembleRouteMetrics(trail, points).legs[0];
+
+    expect(leg.ascentM).toBeCloseTo(50, 0);
+    expect(leg.descentM).toBeCloseTo(0, 0);
+    expect(leg.estimatedHours).toBeCloseTo(estimateHikingTime(leg.distanceKm, 50, 0), 5);
+  });
+
+  it('mirrors gain/loss between the out and back legs of an out-and-back', () => {
+    const points = [
+      waypointToRoutePoint(trail.waypoints[1], 0), // km 5
+      waypointToRoutePoint(trail.waypoints[2], 1), // km 10
+      waypointToRoutePoint(trail.waypoints[1], 2), // back to km 5
+    ];
+    const [out, back] = assembleRouteMetrics(trail, points).legs;
+
+    expect(out.distanceKm).toBeCloseTo(back.distanceKm, 5);
+    expect(out.ascentM).toBeCloseTo(back.descentM, 5);
+    expect(out.descentM).toBeCloseTo(back.ascentM, 5);
   });
 
   it('makes legs touching an off-track point straight-line (flagged)', () => {

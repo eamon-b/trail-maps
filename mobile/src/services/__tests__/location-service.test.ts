@@ -24,6 +24,7 @@ jest.mock('expo-task-manager', () => ({
 
 jest.mock('expo-battery', () => ({
   getBatteryLevelAsync: jest.fn(),
+  addBatteryLevelListener: jest.fn(),
 }));
 
 import {
@@ -31,14 +32,33 @@ import {
   requestLocationPermission,
   startLocationTracking,
   stopLocationTracking,
+  startBackgroundTracking,
+  stopBackgroundTracking,
   setTrackingProfile,
+  setTrackingPreference,
   getActiveTrackingProfile,
+  getActiveProfile,
+  onProfileChange,
   resolveTrackingProfile,
   TRACKING_PROFILES,
 } from '../location-service';
 
 const mockLocation = require('expo-location');
 const mockBattery = require('expo-battery');
+const mockTaskManager = require('expo-task-manager');
+
+/** Let queued microtasks (async restart chains) settle. */
+const flush = () => new Promise((r) => setImmediate(r));
+
+// Safe defaults so any startLocationTracking() (which reconciles the auto
+// battery watcher) never trips over an undefined battery return, and reset the
+// module's profile/preference to a known baseline ('standard', explicit — no
+// auto battery listener) so tests don't leak the auto watcher into each other.
+beforeEach(async () => {
+  mockBattery.getBatteryLevelAsync.mockResolvedValue(0.8);
+  mockBattery.addBatteryLevelListener.mockReturnValue({ remove: jest.fn() });
+  await setTrackingPreference('standard');
+});
 
 // ---------------------------------------------------------------------------
 // subscribeToBackgroundLocation
@@ -266,5 +286,196 @@ describe('resolveTrackingProfile', () => {
     await expect(resolveTrackingProfile('auto')).resolves.toBe('standard');
     mockBattery.getBatteryLevelAsync.mockResolvedValue(-1);
     await expect(resolveTrackingProfile('auto')).resolves.toBe('standard');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Background profile restart (fix 1)
+// ---------------------------------------------------------------------------
+
+describe('setTrackingProfile background restart', () => {
+  afterEach(async () => {
+    await stopLocationTracking();
+    await stopBackgroundTracking();
+    await setTrackingProfile('standard');
+  });
+
+  it('restarts a running background session with the new profile, preserving subscribers and the notification', async () => {
+    mockTaskManager.isTaskRegisteredAsync.mockResolvedValue(true);
+    mockLocation.startLocationUpdatesAsync.mockResolvedValue(undefined);
+    mockLocation.stopLocationUpdatesAsync.mockResolvedValue(undefined);
+
+    await startBackgroundTracking();
+    // Subscribe AFTER start (start clears the subscriber set).
+    const bgCb = jest.fn();
+    subscribeToBackgroundLocation(bgCb);
+
+    mockLocation.startLocationUpdatesAsync.mockClear();
+    mockLocation.stopLocationUpdatesAsync.mockClear();
+
+    await setTrackingProfile('saver');
+
+    // Old task stopped, new one started with the saver cadence
+    expect(mockLocation.stopLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+    expect(mockLocation.startLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+    const opts = mockLocation.startLocationUpdatesAsync.mock.calls[0][1];
+    expect(opts.accuracy).toBe(TRACKING_PROFILES.saver.accuracy);
+    expect(opts.timeInterval).toBe(TRACKING_PROFILES.saver.timeInterval);
+    expect(opts.distanceInterval).toBe(TRACKING_PROFILES.saver.distanceInterval);
+    // Persistent-notification (foreground service) config preserved
+    expect(opts.foregroundService).toMatchObject({ notificationTitle: 'Trail Companion' });
+    expect(getActiveProfile()).toBe('saver');
+
+    // Subscriber survives the restart — a background tick still fans out
+    const taskCallback = mockTaskManager.defineTask.mock.calls[0][1];
+    await taskCallback({
+      data: {
+        locations: [
+          { coords: { latitude: 1, longitude: 2, altitude: 0, accuracy: 5, heading: 0, speed: 0 }, timestamp: 1 },
+        ],
+      },
+      error: null,
+    });
+    expect(bgCb).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Restart failure recovery (fix 3)
+// ---------------------------------------------------------------------------
+
+describe('setTrackingProfile restart failure recovery', () => {
+  afterEach(async () => {
+    await stopLocationTracking();
+    await setTrackingProfile('standard');
+  });
+
+  it('restores the previous-profile watch when the new-profile restart fails', async () => {
+    const remove1 = jest.fn();
+    const remove2 = jest.fn();
+    mockLocation.watchPositionAsync.mockReset();
+    mockLocation.watchPositionAsync
+      .mockResolvedValueOnce({ remove: remove1 }) // initial standard watch
+      .mockRejectedValueOnce(new Error('gps busy')) // saver restart fails
+      .mockResolvedValueOnce({ remove: remove2 }); // standard restore succeeds
+
+    const cb = jest.fn();
+    await startLocationTracking(cb);
+
+    await expect(setTrackingProfile('saver')).rejects.toThrow('gps busy');
+
+    // Old watch torn down before the failed restart
+    expect(remove1).toHaveBeenCalledTimes(1);
+    // The running session fell back to the previous (standard) profile so the
+    // disclosure never claims saver for a session not using saver options.
+    expect(getActiveProfile()).toBe('standard');
+
+    // The restored watch still feeds the subscriber (not stranded)
+    const emit = mockLocation.watchPositionAsync.mock.calls[2][1];
+    emit({ coords: { latitude: 1, longitude: 2, altitude: 0, accuracy: 5, heading: 0 }, timestamp: 1 });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves subscribers registered so the next start recovers when both restart profiles fail', async () => {
+    const remove1 = jest.fn();
+    const remove4 = jest.fn();
+    mockLocation.watchPositionAsync.mockReset();
+    mockLocation.watchPositionAsync
+      .mockResolvedValueOnce({ remove: remove1 }) // initial standard watch
+      .mockRejectedValueOnce(new Error('fail-saver')) // saver restart fails
+      .mockRejectedValueOnce(new Error('fail-restore')) // standard restore fails too
+      .mockResolvedValueOnce({ remove: remove4 }); // next start recovers
+
+    await startLocationTracking(jest.fn());
+    await expect(setTrackingProfile('saver')).rejects.toThrow();
+
+    // No live watch now, but the subscriber set was never cleared — a fresh
+    // start (app-foreground retry) creates a new watch rather than wedging.
+    await expect(startLocationTracking(jest.fn())).resolves.toBeUndefined();
+    expect(mockLocation.watchPositionAsync).toHaveBeenCalledTimes(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auto battery watcher (fix 2)
+// ---------------------------------------------------------------------------
+
+describe('auto battery watcher', () => {
+  afterEach(async () => {
+    await stopLocationTracking();
+    await setTrackingPreference('standard');
+  });
+
+  it('switches to saver below 30% and back to standard only above 35% (hysteresis) mid-session', async () => {
+    mockLocation.watchPositionAsync.mockReset();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: jest.fn() });
+    let batteryHandler: (e: { batteryLevel: number }) => void = () => {};
+    mockBattery.addBatteryLevelListener.mockImplementation((cb: (e: { batteryLevel: number }) => void) => {
+      batteryHandler = cb;
+      return { remove: jest.fn() };
+    });
+    mockBattery.getBatteryLevelAsync.mockResolvedValue(0.8);
+
+    await setTrackingPreference('auto');
+    await startLocationTracking(jest.fn());
+    await flush();
+
+    expect(mockBattery.addBatteryLevelListener).toHaveBeenCalledTimes(1);
+    expect(getActiveProfile()).toBe('standard');
+
+    // Drop below 30% → saver engages
+    batteryHandler({ batteryLevel: 0.25 });
+    await flush();
+    expect(getActiveProfile()).toBe('saver');
+
+    // Recover to 32% (inside the 30–35% band) → hysteresis keeps saver
+    batteryHandler({ batteryLevel: 0.32 });
+    await flush();
+    expect(getActiveProfile()).toBe('saver');
+
+    // Above 35% → back to standard
+    batteryHandler({ batteryLevel: 0.4 });
+    await flush();
+    expect(getActiveProfile()).toBe('standard');
+  });
+
+  it('notifies onProfileChange subscribers and detaches the listener when tracking stops', async () => {
+    mockLocation.watchPositionAsync.mockReset();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: jest.fn() });
+    const listenerRemove = jest.fn();
+    let batteryHandler: (e: { batteryLevel: number }) => void = () => {};
+    mockBattery.addBatteryLevelListener.mockImplementation((cb: (e: { batteryLevel: number }) => void) => {
+      batteryHandler = cb;
+      return { remove: listenerRemove };
+    });
+    mockBattery.getBatteryLevelAsync.mockResolvedValue(0.8);
+
+    const changes: string[] = [];
+    const unsub = onProfileChange((p) => changes.push(p));
+
+    await setTrackingPreference('auto');
+    await startLocationTracking(jest.fn());
+    await flush();
+
+    batteryHandler({ batteryLevel: 0.1 });
+    await flush();
+    expect(changes).toContain('saver');
+
+    await stopLocationTracking();
+    expect(listenerRemove).toHaveBeenCalled();
+    unsub();
+  });
+
+  it('does not attach a battery listener for an explicit (non-auto) profile', async () => {
+    mockLocation.watchPositionAsync.mockReset();
+    mockLocation.watchPositionAsync.mockResolvedValue({ remove: jest.fn() });
+    mockBattery.addBatteryLevelListener.mockClear();
+
+    await setTrackingPreference('saver');
+    await startLocationTracking(jest.fn());
+    await flush();
+
+    expect(getActiveProfile()).toBe('saver');
+    expect(mockBattery.addBatteryLevelListener).not.toHaveBeenCalled();
   });
 });

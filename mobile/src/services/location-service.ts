@@ -14,6 +14,13 @@ export type TrackingProfilePreference = 'auto' | TrackingProfile;
 /** Battery fraction below which 'auto' selects the saver profile */
 export const AUTO_SAVER_BATTERY_THRESHOLD = 0.3;
 
+/**
+ * Battery fraction at/above which 'auto' returns from saver to standard. Higher
+ * than the entry threshold so a level hovering around 30% can't flap the
+ * profile back and forth (hysteresis).
+ */
+export const AUTO_SAVER_EXIT_BATTERY_THRESHOLD = 0.35;
+
 interface ProfileOptions {
   accuracy: Location.LocationAccuracy;
   timeInterval: number;
@@ -37,9 +44,40 @@ export const TRACKING_PROFILES: Record<TrackingProfile, ProfileOptions> = {
 
 let activeProfile: TrackingProfile = 'standard';
 
+// Profile-change subscribers. The UI (hike status line) uses these so its
+// disclosure always reflects the profile the GPS session is *really* running —
+// including auto battery switches that happen while the screen is mounted.
+type ProfileChangeCallback = (profile: TrackingProfile) => void;
+const profileChangeListeners = new Set<ProfileChangeCallback>();
+// Last value the listeners were told about, so notifyProfileChange() only
+// fires on a net change (transient reverts during a failed restart collapse).
+let notifiedProfile: TrackingProfile = 'standard';
+
+function notifyProfileChange(): void {
+  if (notifiedProfile === activeProfile) return;
+  notifiedProfile = activeProfile;
+  for (const cb of profileChangeListeners) cb(activeProfile);
+}
+
 /** The profile the current/next tracking session runs with. */
 export function getActiveTrackingProfile(): TrackingProfile {
   return activeProfile;
+}
+
+/** Alias for getActiveTrackingProfile (the profile the running session uses). */
+export function getActiveProfile(): TrackingProfile {
+  return activeProfile;
+}
+
+/**
+ * Subscribe to active-profile changes (including auto battery auto-switches).
+ * Returns an unsubscribe function.
+ */
+export function onProfileChange(callback: ProfileChangeCallback): () => void {
+  profileChangeListeners.add(callback);
+  return () => {
+    profileChangeListeners.delete(callback);
+  };
 }
 
 /**
@@ -90,6 +128,10 @@ export const BACKGROUND_LOCATION_TASK = 'background-location-task';
 
 type BackgroundLocationCallback = (update: LocationUpdate) => void;
 const backgroundSubscribers = new Set<BackgroundLocationCallback>();
+// Whether a background location session is currently running. Tracked here
+// (not derived from TaskManager) so setTrackingProfile can synchronously decide
+// whether a background restart is needed.
+let backgroundActive = false;
 
 // Define the background task at module level (required by Expo)
 TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
@@ -182,14 +224,26 @@ export async function startLocationTracking(
   }
 
   await subscriptionStarting;
+  // A session is now running — engage the auto battery watcher if the user's
+  // preference is 'auto'.
+  reconcileAutoBattery();
 }
 
 /**
- * Switch the tracking profile. If a foreground watch is live, it restarts
- * with the new cadence — subscribers keep receiving updates uninterrupted.
+ * Switch the tracking profile. A live foreground watch and/or a running
+ * background session both restart with the new cadence — subscribers keep
+ * receiving updates uninterrupted.
+ *
+ * Restart failure is handled defensively: if the new-profile watch/task fails
+ * to start, we restore the previous profile so subscribers are never stranded
+ * without any watch. If that restore also fails, we leave subscribers
+ * registered with no live watch and rethrow — the next startLocationTracking()
+ * / app-foreground retry (see hike.tsx AppState listener) creates a fresh watch
+ * (startWatch clears subscriptionStarting on rejection so it isn't wedged).
  */
 export async function setTrackingProfile(profile: TrackingProfile): Promise<void> {
   if (profile === activeProfile) return;
+  const previous = activeProfile;
   activeProfile = profile;
 
   // Wait out an in-flight start so we don't race the subscription slot.
@@ -197,11 +251,49 @@ export async function setTrackingProfile(profile: TrackingProfile): Promise<void
     try { await subscriptionStarting; } catch { /* failed start — nothing to restart */ }
   }
 
+  let restartError: unknown = null;
+
+  // Restart a live foreground watch with the new cadence.
   if (subscription && foregroundSubscribers.size > 0) {
     subscription.remove();
     subscription = null;
-    await startWatch();
+    try {
+      await startWatch();
+    } catch (err) {
+      restartError = err;
+      // Restore a watch on the previous profile so subscribers keep getting
+      // fixes rather than being stranded.
+      activeProfile = previous;
+      try {
+        await startWatch();
+      } catch {
+        // Restore failed too — leave state clean for the next start attempt.
+      }
+    }
   }
+
+  // Restart a running background session (it runs independently of the
+  // foreground watch — see useLocation background mode — so a profile change
+  // is a silent no-op there without this). Skipped if the foreground restart
+  // already failed and reverted the profile.
+  if (backgroundActive && restartError == null) {
+    try {
+      await restartBackgroundWithActiveProfile();
+    } catch (err) {
+      restartError = err;
+      activeProfile = previous;
+      try {
+        await restartBackgroundWithActiveProfile();
+      } catch {
+        // Neither profile could restart the background task — mark it inactive
+        // so a later startBackgroundTracking() re-registers it.
+        backgroundActive = false;
+      }
+    }
+  }
+
+  notifyProfileChange();
+  if (restartError) throw restartError;
 }
 
 /**
@@ -221,6 +313,8 @@ export async function stopLocationTracking(
     subscription.remove();
     subscription = null;
   }
+  // Drop the auto battery watcher once nothing is tracking any more.
+  reconcileAutoBattery();
 }
 
 /** Get a single location fix */
@@ -251,11 +345,13 @@ export async function requestBackgroundPermission(): Promise<PermissionStatus> {
   return 'undetermined';
 }
 
-/** Start background location updates (survives screen lock) */
-export async function startBackgroundTracking(): Promise<void> {
-  await stopBackgroundTracking();
-
-  await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+/**
+ * Register the OS background updates with the active profile's cadence, keeping
+ * the persistent-notification (foreground service) config. Does NOT touch the
+ * subscriber set — used both for a fresh start and a profile restart.
+ */
+function startBackgroundUpdates(): Promise<void> {
+  return Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
     ...TRACKING_PROFILES[activeProfile],
     showsBackgroundLocationIndicator: true,
     foregroundService: {
@@ -263,7 +359,31 @@ export async function startBackgroundTracking(): Promise<void> {
       notificationBody: 'Tracking your hike',
       notificationColor: '#4CAF50',
     },
+  }).then(() => {
+    backgroundActive = true;
   });
+}
+
+/**
+ * Restart the background task with the current active profile without clearing
+ * subscribers — a background session keeps fanning out to its subscribers
+ * across a profile change.
+ */
+async function restartBackgroundWithActiveProfile(): Promise<void> {
+  const isRunning = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+  if (isRunning) {
+    await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+  }
+  await startBackgroundUpdates();
+}
+
+/** Start background location updates (survives screen lock) */
+export async function startBackgroundTracking(): Promise<void> {
+  await stopBackgroundTracking();
+  await startBackgroundUpdates();
+  // A background session is now running — engage the auto battery watcher if
+  // the user's preference is 'auto'.
+  reconcileAutoBattery();
 }
 
 /** Stop background location updates */
@@ -272,7 +392,10 @@ export async function stopBackgroundTracking(): Promise<void> {
   if (isRunning) {
     await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
   }
+  backgroundActive = false;
   backgroundSubscribers.clear();
+  // Drop the auto battery watcher once nothing is tracking any more.
+  reconcileAutoBattery();
 }
 
 /** Subscribe to location updates from the background task. Returns an unsubscribe function. */
@@ -283,4 +406,81 @@ export function subscribeToBackgroundLocation(
   return () => {
     backgroundSubscribers.delete(callback);
   };
+}
+
+// ---------------------------------------------------------------------------
+// Auto battery watcher
+//
+// 'Auto' can't be a one-shot check at session start — the settings copy
+// promises the saver "kicks in below 30%". While tracking is running AND the
+// preference is 'auto', we watch the battery level and switch profiles live,
+// with hysteresis (return to standard only above ~35%) so a level hovering
+// near 30% doesn't flap the cadence back and forth.
+// ---------------------------------------------------------------------------
+
+let trackingPreference: TrackingProfilePreference = 'auto';
+let batteryListener: Battery.Subscription | null = null;
+
+/** True while any foreground or background session is (being) tracked. */
+function trackingActive(): boolean {
+  return (
+    subscription != null ||
+    subscriptionStarting != null ||
+    foregroundSubscribers.size > 0 ||
+    backgroundActive
+  );
+}
+
+/** Apply the auto policy to a battery level (with hysteresis). */
+function handleBatteryLevel(level: number): void {
+  if (level < 0) return; // unknown — leave the current profile alone
+  if (activeProfile === 'saver') {
+    if (level >= AUTO_SAVER_EXIT_BATTERY_THRESHOLD) {
+      setTrackingProfile('standard').catch(() => {});
+    }
+  } else if (level < AUTO_SAVER_BATTERY_THRESHOLD) {
+    setTrackingProfile('saver').catch(() => {});
+  }
+}
+
+function removeBatteryListener(): void {
+  if (batteryListener) {
+    batteryListener.remove();
+    batteryListener = null;
+  }
+}
+
+/**
+ * Attach the battery listener exactly when it should be running (auto + a live
+ * session) and detach it otherwise. Idempotent — safe to call from any
+ * start/stop/preference transition.
+ */
+function reconcileAutoBattery(): void {
+  const shouldListen = trackingPreference === 'auto' && trackingActive();
+  if (shouldListen && !batteryListener) {
+    batteryListener = Battery.addBatteryLevelListener(({ batteryLevel }) => {
+      handleBatteryLevel(batteryLevel);
+    });
+    // The listener only fires on change, so seed it with the current level —
+    // a session that starts already-low must engage saver immediately.
+    Battery.getBatteryLevelAsync().then(handleBatteryLevel).catch(() => {});
+  } else if (!shouldListen && batteryListener) {
+    removeBatteryListener();
+  }
+}
+
+/**
+ * Apply the user's tracking-profile preference. For 'standard'/'saver' this is
+ * a fixed profile; for 'auto' it resolves the current battery level now and
+ * keeps watching for the rest of the session. Prefer this over calling
+ * resolveTrackingProfile + setTrackingProfile from the UI: it also owns the
+ * auto battery listener lifecycle.
+ */
+export async function setTrackingPreference(
+  preference: TrackingProfilePreference,
+): Promise<void> {
+  trackingPreference = preference;
+  const resolved = await resolveTrackingProfile(preference);
+  await setTrackingProfile(resolved);
+  reconcileAutoBattery();
 }

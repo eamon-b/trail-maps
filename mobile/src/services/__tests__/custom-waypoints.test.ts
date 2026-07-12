@@ -11,6 +11,13 @@ jest.mock('../trail-loader', () => ({
   TRAIL_DATA: {},
 }));
 
+// Spy the photo-file deletion so we can assert deleteTrail removes the files
+// for its cascaded custom waypoints without touching the real filesystem.
+const mockDeleteWaypointPhoto = jest.fn();
+jest.mock('../waypoint-photo-service', () => ({
+  deleteWaypointPhoto: (...args: unknown[]) => mockDeleteWaypointPhoto(...args),
+}));
+
 describe('TrailDataService custom waypoints', () => {
   let db: TestDatabase;
   let service: TrailDataService;
@@ -172,6 +179,26 @@ describe('TrailDataService custom waypoints', () => {
 
     const orphans = await db.getAllAsync('SELECT * FROM custom_waypoints');
     expect(orphans).toHaveLength(0);
+  });
+
+  it('deleting the trail removes the photo files of its cascaded waypoints', async () => {
+    mockDeleteWaypointPhoto.mockClear();
+    await service.addCustomWaypoint({
+      trailId: 'heysen', name: 'With photo', lat: -35, lon: 138, kmPosition: 10,
+      photoUri: '/doc/waypoint-photos/a.jpg',
+    });
+    await service.addCustomWaypoint({
+      trailId: 'heysen', name: 'Also photo', lat: -35, lon: 138, kmPosition: 20,
+      photoUri: '/doc/waypoint-photos/b.jpg',
+    });
+    // A waypoint without a photo must not produce a delete call.
+    await service.addCustomWaypoint({ trailId: 'heysen', name: 'No photo', lat: -35, lon: 138, kmPosition: 30 });
+
+    await service.deleteTrail('heysen');
+
+    expect(mockDeleteWaypointPhoto).toHaveBeenCalledWith('/doc/waypoint-photos/a.jpg');
+    expect(mockDeleteWaypointPhoto).toHaveBeenCalledWith('/doc/waypoint-photos/b.jpg');
+    expect(mockDeleteWaypointPhoto).toHaveBeenCalledTimes(2);
   });
 
   it('exposes the expanded creatable picker types from the registry', () => {

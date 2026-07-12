@@ -447,4 +447,29 @@ describe('nearestTrackPointToLatLon', () => {
   it('returns null for an empty track', () => {
     expect(nearestTrackPointToLatLon([], -35, 138)).toBeNull();
   });
+
+  it('snaps to the true-nearest branch on an out-and-back (not the coarsely-closer one)', () => {
+    // 1000 points → coarse step = floor(1000/500) = 2, so odd indices are
+    // never sampled. Everything sits far away except a crafted hairpin near
+    // the query where two branches run close together.
+    const query = { lat: -35.0, lon: 138.001 };
+    const track: TrackPoint[] = [];
+    for (let i = 0; i < 1000; i++) {
+      track.push({ lat: -40, lon: 130, ele: 0, dist: i }); // far filler
+    }
+    // Branch A: an EVEN coarse sample that is the single closest sample (~91 m).
+    track[100] = { lat: -35.0, lon: 138.0, ele: 0, dist: 100 };
+    // Branch B (the true-nearest branch): its closest point is at an ODD index
+    // (~46 m) that the coarse scan skips; its neighbouring EVEN samples (~96 m)
+    // are farther than branch A's sample, so the old "refine around the single
+    // best sample" logic would miss it entirely and return index 100.
+    track[699] = { lat: -35.0, lon: 138.0015, ele: 0, dist: 699 };
+    track[698] = { lat: -35.0, lon: 138.00205, ele: 0, dist: 698 };
+    track[700] = { lat: -35.0, lon: 138.00205, ele: 0, dist: 700 };
+
+    const result = nearestTrackPointToLatLon(track, query.lat, query.lon);
+    expect(result).not.toBeNull();
+    expect(result!.index).toBe(699);
+    expect(result!.distanceM).toBeLessThan(60); // ~46 m; branch A would be ~91 m
+  });
 });

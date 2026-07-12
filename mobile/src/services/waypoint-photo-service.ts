@@ -80,7 +80,14 @@ export async function storeWaypointPhoto(
   waypointId: string,
   picked: { uri: string; width: number; height: number },
 ): Promise<string> {
-  const resize = constrainDimensions(picked.width, picked.height);
+  // Some Android content providers report 0×0 dimensions. Without a known
+  // size constrainDimensions can't decide, so cap width at MAX_DIMENSION and
+  // let expo-image-manipulator preserve aspect (it scales height when only
+  // width is given) — otherwise the full-resolution image slips through.
+  const resize =
+    picked.width > 0 && picked.height > 0
+      ? constrainDimensions(picked.width, picked.height)
+      : { width: MAX_DIMENSION };
   const manipulated = await manipulateAsync(
     picked.uri,
     resize ? [{ resize }] : [],

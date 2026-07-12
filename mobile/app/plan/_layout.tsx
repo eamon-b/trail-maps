@@ -5,9 +5,8 @@ export default function PlanLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="create" />
       <Stack.Screen name="[planId]" />
-      <Stack.Screen name="map" />
       <Stack.Screen name="measure" />
-      <Stack.Screen name="section-map" />
+      <Stack.Screen name="point-picker" />
     </Stack>
   );
 }

@@ -3,6 +3,7 @@ import { getDatabase } from '../db/database';
 import { TRAIL_DATA, type TrailJson } from './trail-loader';
 import { trailJsonToTrail, mergeCustomWaypoints, type Trail as ParsedTrail } from '../lib/trail-utils';
 import { CREATABLE_WAYPOINT_TYPES } from '../lib/waypoint-type-meta';
+import { deleteWaypointPhoto } from './waypoint-photo-service';
 
 export interface Trail {
   id: string;
@@ -227,7 +228,18 @@ export class TrailDataService {
   }
 
   async deleteTrail(id: string): Promise<void> {
+    // The FK cascade drops this trail's custom_waypoints rows but NOT the
+    // photo files those rows point at. Collect the photo URIs first, delete
+    // the trail, then best-effort remove the files — a file error must never
+    // fail the delete (deleteWaypointPhoto already swallows its own errors).
+    const photoRows = await this.db.getAllAsync<{ photo_uri: string | null }>(
+      'SELECT photo_uri FROM custom_waypoints WHERE trail_id = ? AND photo_uri IS NOT NULL',
+      [id]
+    );
     await this.db.runAsync('DELETE FROM trails WHERE id = ?', [id]);
+    for (const row of photoRows) {
+      deleteWaypointPhoto(row.photo_uri);
+    }
   }
 
   async storeWaypoints(trailId: string, waypoints: Omit<Waypoint, 'id' | 'trailId'>[]): Promise<void> {
@@ -437,10 +449,14 @@ export class TrailDataService {
    */
   async getAllCustomWaypoints(): Promise<(CustomWaypoint & { trailName: string })[]> {
     const rows = await this.db.getAllAsync<CustomWaypointRow & { trail_name: string }>(
+      // Order by t.id after t.name so two trails that share a display name
+      // stay contiguous (never interleaved) — otherwise the consecutive-group
+      // loop in the My-data screen would emit two groups with the same trail
+      // id and React would see duplicate keys.
       `SELECT cw.*, t.name AS trail_name
        FROM custom_waypoints cw
        JOIN trails t ON t.id = cw.trail_id
-       ORDER BY t.name, cw.km_position`
+       ORDER BY t.name, t.id, cw.km_position`
     );
     return rows.map(row => ({ ...rowToCustomWaypoint(row), trailName: row.trail_name }));
   }

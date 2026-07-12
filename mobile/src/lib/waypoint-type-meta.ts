@@ -23,6 +23,11 @@ export interface WaypointTypeMeta {
   type: string;
   /** Human-readable label ("Water tank") */
   label: string;
+  /**
+   * Plural label for counts contexts ("Water sources"). Only set where the
+   * default `label + 's'` pluralization is wrong or the noun is uncountable.
+   */
+  pluralLabel?: string;
   /** Emoji used in lists, sheets, and chips */
   emoji: string;
   /** Marker color on the map and elevation profile */
@@ -33,7 +38,7 @@ export interface WaypointTypeMeta {
 
 const META: WaypointTypeMeta[] = [
   // --- Creatable set (decision 3 in plans/usability-p1-field-features.md) ---
-  { type: 'water', label: 'Water', emoji: '💧', color: '#2196F3', creatable: true },
+  { type: 'water', label: 'Water', pluralLabel: 'Water sources', emoji: '💧', color: '#2196F3', creatable: true },
   { type: 'water-tank', label: 'Water tank', emoji: '🚰', color: '#2196F3', creatable: true },
   { type: 'campsite', label: 'Campsite', emoji: '⛺', color: '#4CAF50', creatable: true },
   { type: 'shelter', label: 'Shelter', emoji: '🏚️', color: '#795548', creatable: true },
@@ -43,25 +48,25 @@ const META: WaypointTypeMeta[] = [
   // Alert-amber family: must read as a warning on the map, distinct from the
   // blue/green resource markers.
   { type: 'hazard', label: 'Hazard', emoji: '⚠️', color: '#FF8F00', creatable: true },
-  { type: 'poi', label: 'Point of interest', emoji: '📍', color: '#FFC107', creatable: true },
+  { type: 'poi', label: 'Point of interest', pluralLabel: 'Points of interest', emoji: '📍', color: '#FFC107', creatable: true },
 
   // --- Bundled-data / classifier types (display only) ---
   { type: 'hut', label: 'Hut', emoji: '🛖', color: '#795548', creatable: false },
-  { type: 'accommodation', label: 'Accommodation', emoji: '🛖', color: '#795548', creatable: false },
+  { type: 'accommodation', label: 'Accommodation', pluralLabel: 'Accommodation', emoji: '🛖', color: '#795548', creatable: false },
   { type: 'caravan-park', label: 'Caravan park', emoji: '🛖', color: '#795548', creatable: false },
   { type: 'mountain', label: 'Mountain', emoji: '⛰️', color: '#607D8B', creatable: false },
   { type: 'summit', label: 'Summit', emoji: '⛰️', color: '#607D8B', creatable: false },
   { type: 'trailhead', label: 'Trailhead', emoji: '🥾', color: '#9C27B0', creatable: false },
   { type: 'endpoint', label: 'Endpoint', emoji: '🥾', color: '#9C27B0', creatable: false },
-  { type: 'food', label: 'Food', emoji: '🍽️', color: '#FF5722', creatable: false },
-  { type: 'resupply', label: 'Resupply', emoji: '🛒', color: '#FF5722', creatable: false },
+  { type: 'food', label: 'Food', pluralLabel: 'Food', emoji: '🍽️', color: '#FF5722', creatable: false },
+  { type: 'resupply', label: 'Resupply', pluralLabel: 'Resupply', emoji: '🛒', color: '#FF5722', creatable: false },
   { type: 'road', label: 'Road crossing', emoji: '🛣️', color: '#757575', creatable: false },
   { type: 'road-crossing', label: 'Road crossing', emoji: '🛣️', color: '#757575', creatable: false },
   { type: 'inlet-crossing', label: 'Inlet crossing', emoji: '🌉', color: '#00BCD4', creatable: false },
-  { type: 'beach', label: 'Beach', emoji: '🏖️', color: '#00BCD4', creatable: false },
+  { type: 'beach', label: 'Beach', pluralLabel: 'Beaches', emoji: '🏖️', color: '#00BCD4', creatable: false },
   { type: 'bridge', label: 'Bridge', emoji: '🌉', color: '#757575', creatable: false },
   { type: 'carpark', label: 'Car park', emoji: '🅿️', color: '#757575', creatable: false },
-  { type: 'information', label: 'Information', emoji: 'ℹ️', color: '#757575', creatable: false },
+  { type: 'information', label: 'Information', pluralLabel: 'Information', emoji: 'ℹ️', color: '#757575', creatable: false },
   { type: 'danger', label: 'Danger', emoji: '⚠️', color: '#FF8F00', creatable: false },
   { type: 'side-trip', label: 'Side trip', emoji: '📍', color: '#9C27B0', creatable: false },
 ];
@@ -92,4 +97,15 @@ export function getWaypointLabel(type: string): string {
   const meta = WAYPOINT_TYPE_META[type];
   if (meta) return meta.label;
   return type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : type;
+}
+
+/**
+ * Plural label for counts contexts (the trail-overview waypoint summary:
+ * "Campsites 12", "Water sources 8"). Uses the registry's explicit
+ * pluralLabel where set, otherwise the singular label + 's'.
+ */
+export function getWaypointPluralLabel(type: string): string {
+  const meta = WAYPOINT_TYPE_META[type];
+  if (meta) return meta.pluralLabel ?? `${meta.label}s`;
+  return `${getWaypointLabel(type)}s`;
 }

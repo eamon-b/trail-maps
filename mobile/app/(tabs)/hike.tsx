@@ -17,6 +17,8 @@ import { TrailDataService, type CustomWaypoint } from '../../src/services/trail-
 import { deleteWaypointPhoto } from '../../src/services/waypoint-photo-service';
 import { markedWaypointName, accuracyPreamble, isFixStale } from '../../src/services/mark-location';
 import { AddWaypointSheet, type AddWaypointValues } from '../../src/components/AddWaypointSheet';
+import { AppBottomSheet } from '../../src/components/AppBottomSheet';
+import { PressableRow } from '../../src/components/PressableRow';
 import { UndoToast } from '../../src/components/UndoToast';
 import {
   createReversedTrail,
@@ -45,6 +47,7 @@ import {
 } from '../../src/services/location-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
+import { durations } from '../../src/tokens/motion';
 import type { LocationState } from '../../src/components/LocationStatusBar';
 import type { AlertThresholdPreset, SnoozeDuration } from '../../src/services/off-trail-alert-service';
 
@@ -54,6 +57,15 @@ const SNOOZE_OPTIONS: { label: string; value: SnoozeDuration }[] = [
   { label: '30 min', value: '30min' },
   { label: '1 hour', value: '60min' },
 ];
+
+/**
+ * Extra drift (metres) required before the warning haptic re-fires while the
+ * alert stays in 'warning'. 50 m is comfortably above GPS jitter (fixes worse
+ * than 200 m accuracy are already suppressed upstream) and gives a handful of
+ * nudges across the ~300 m-wide warning band without buzzing on every fix — so
+ * a hiker who missed the first buzz still gets prompted as they keep drifting.
+ */
+const WARNING_REPEAT_M = 50;
 
 function formatDistance(km: number): string {
   return `${km.toFixed(1)} km`;
@@ -126,6 +138,12 @@ export default function HikeScreen() {
   const [isTrailReversed, setIsTrailReversed] = useState(false);
   // Bump to reload the merged trail after a custom waypoint changes.
   const [trailRefreshKey, setTrailRefreshKey] = useState(0);
+  // "Plan updated" cue: plan/direction edits made in another tab only take
+  // effect when Hike regains focus, so a brief non-blocking chip announces the
+  // silent reload. Skipped on first load (no prior signature to compare).
+  const [planUpdatedCue, setPlanUpdatedCue] = useState(false);
+  const lastPlanSignatureRef = useRef<string | null>(null);
+  const planCueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // "Mark my location": row written first (write-first-edit-after), then the
   // sheet opens prefilled and an undo toast covers accidental taps.
   const [markedWaypoint, setMarkedWaypoint] = useState<CustomWaypoint | null>(null);
@@ -175,6 +193,11 @@ export default function HikeScreen() {
     return () => clearInterval(t);
   }, []);
 
+  // Clear the "plan updated" auto-hide timer on unmount.
+  useEffect(() => () => {
+    if (planCueTimerRef.current) clearTimeout(planCueTimerRef.current);
+  }, []);
+
   // Off-trail alert with debouncing and snooze
   const { alertState, alertDetail, bearingToTrail, isSnoozed, snoozeUntil, snooze, clearSnooze } = useOffTrailAlert(
     location,
@@ -183,19 +206,43 @@ export default function HikeScreen() {
     { thresholdPreset: alertPreset, enabled: !!trail },
   );
 
-  // Haptic feedback when state escalates to warning or offTrail
+  // Haptic feedback when state escalates to warning or offTrail. While the
+  // state *stays* 'warning', re-fire the haptic on continued worsening so a
+  // fatigued hiker who missed the first buzz keeps getting nudged. This
+  // piggybacks on the existing location updates (distanceFromTrail changes) —
+  // no new timer, no extra battery cost.
   const prevAlertState = useRef<LocationState>('noGps');
+  // Distance-from-trail at the last warning haptic; drives the repeat and is
+  // reset (null) whenever we leave the warning state.
+  const lastWarningHapticM = useRef<number | null>(null);
+  const distanceFromTrail = location?.distanceFromTrail ?? null;
   useEffect(() => {
     const prev = prevAlertState.current;
     prevAlertState.current = alertState;
-    if (alertState !== prev && (alertState === 'warning' || alertState === 'offTrail')) {
+
+    const entered =
+      alertState !== prev && (alertState === 'warning' || alertState === 'offTrail');
+    if (entered) {
       triggerLocationHaptic(alertState);
+      // Seed the repeat baseline on entry into warning.
+      if (alertState === 'warning') lastWarningHapticM.current = distanceFromTrail;
+    } else if (alertState === 'warning' && distanceFromTrail != null) {
+      // Same warning episode: re-fire only on a genuine +WARNING_REPEAT_M
+      // increase since the last haptic. Never on stable or improving distance.
+      const last = lastWarningHapticM.current;
+      if (last != null && distanceFromTrail - last >= WARNING_REPEAT_M) {
+        triggerLocationHaptic('warning');
+        lastWarningHapticM.current = distanceFromTrail;
+      }
     }
-    // A dismissed warning banner comes back on the next warning episode
+
+    // Leaving warning resets both the dismissed banner (comes back on the next
+    // warning episode) and the repeat-haptic baseline.
     if (alertState !== 'warning') {
       setWarningDismissed(false);
+      lastWarningHapticM.current = null;
     }
-  }, [alertState]);
+  }, [alertState, distanceFromTrail]);
 
   // Load the active trail — reload when tab regains focus
   useFocusEffect(
@@ -273,6 +320,27 @@ export default function HikeScreen() {
           setIsTrailReversed(reversed);
           setActivePlan(plan);
           setLoading(false);
+
+          // Detect a plan/direction change since the last focus and flash a
+          // cue. The signature covers everything that changes today's numbers:
+          // which plan is active, its direction/start date/stops, and the
+          // resolved travel direction. A custom-waypoint reload (trailRefreshKey)
+          // leaves this unchanged, so it never fires a spurious cue.
+          const signature = [
+            plan?.id ?? 'none',
+            plan?.direction ?? '',
+            plan?.startDate ?? '',
+            plan?.stopsJson ?? '',
+            reversed ? 'rev' : 'fwd',
+          ].join('|');
+          if (lastPlanSignatureRef.current !== null && lastPlanSignatureRef.current !== signature) {
+            setPlanUpdatedCue(true);
+            if (planCueTimerRef.current) clearTimeout(planCueTimerRef.current);
+            // Auto-hide after a few seconds. Plain conditional render + timeout
+            // (no animation), so it is reduce-motion-safe by construction.
+            planCueTimerRef.current = setTimeout(() => setPlanUpdatedCue(false), durations.undoToast);
+          }
+          lastPlanSignatureRef.current = signature;
         } catch {
           if (!cancelled) setLoading(false);
         }
@@ -356,6 +424,7 @@ export default function HikeScreen() {
             id: next.water.waypoint.id,
             name: next.water.waypoint.name,
             distance: formatDistance(next.water.trailDistanceKm),
+            elevation: formatElevation(next.water),
             eta: formatEtaMinutes(next.water.etaMinutes),
             bearing: bearingTo(next.water),
             note: descriptionFirstLine(next.water.waypoint.description),
@@ -377,6 +446,7 @@ export default function HikeScreen() {
             id: next.shelter.waypoint.id,
             name: next.shelter.waypoint.name,
             distance: formatDistance(next.shelter.trailDistanceKm),
+            elevation: formatElevation(next.shelter),
             eta: formatEtaMinutes(next.shelter.etaMinutes),
           }
         : undefined,
@@ -571,6 +641,20 @@ export default function HikeScreen() {
         </Pressable>
       )}
 
+      {/* "Plan updated" cue — plan/direction changed in another tab and the
+          dashboard silently reloaded on refocus. Non-blocking, auto-fades. */}
+      {trail && planUpdatedCue && (
+        <View
+          style={[styles.planCue, { backgroundColor: colors.accentSubtle, borderColor: colors.accent }]}
+          accessibilityRole="alert"
+          accessibilityLabel="Plan updated"
+        >
+          <Text style={[styles.planCueText, { color: colors.accent }]}>
+            Plan updated
+          </Text>
+        </View>
+      )}
+
       {/* Sunrise/sunset indicator */}
       {trail && rawLocation && (
         <View style={styles.sunriseRow}>
@@ -717,37 +801,40 @@ export default function HikeScreen() {
         />
       )}
 
-      {/* Snooze menu — shown when off-trail banner is tapped */}
-      {showSnoozeMenu && alertState === 'offTrail' && (
-        <View style={[styles.snoozeMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.snoozeTitle, { color: colors.textPrimary }]}>
-            Snooze alerts for:
-          </Text>
-          {SNOOZE_OPTIONS.map(opt => (
-            <Pressable
-              key={opt.value}
-              onPress={() => handleSnooze(opt.value)}
-              style={[styles.snoozeOption, { borderTopColor: colors.border }]}
-              accessibilityRole="button"
-              accessibilityLabel={`Snooze off-trail alerts for ${opt.label}`}
-            >
-              <Text style={[styles.snoozeOptionText, { color: colors.textPrimary }]}>
-                {opt.label}
-              </Text>
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={() => setShowSnoozeMenu(false)}
-            style={[styles.snoozeOption, { borderTopColor: colors.border }]}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel snooze"
+      {/* Snooze menu — the app-standard AppBottomSheet, anchored to the safe
+          area (replaces the old fixed top:80 overlay). Opened by tapping the
+          off-trail banner; closes on selection or dismiss. */}
+      <AppBottomSheet
+        isOpen={showSnoozeMenu && alertState === 'offTrail'}
+        onDismiss={() => setShowSnoozeMenu(false)}
+        initialSnap={0}
+        snapPoints={['45%', '60%']}
+      >
+        <Text style={[styles.snoozeTitle, { color: colors.textPrimary }]}>
+          Snooze alerts for:
+        </Text>
+        {SNOOZE_OPTIONS.map(opt => (
+          <PressableRow
+            key={opt.value}
+            onPress={() => handleSnooze(opt.value)}
+            accessibilityLabel={`Snooze off-trail alerts for ${opt.label}`}
+            style={styles.snoozeOption}
           >
-            <Text style={[styles.snoozeOptionText, { color: colors.textSecondary }]}>
-              Cancel
+            <Text style={[styles.snoozeOptionText, { color: colors.textPrimary }]}>
+              {opt.label}
             </Text>
-          </Pressable>
-        </View>
-      )}
+          </PressableRow>
+        ))}
+        <PressableRow
+          onPress={() => setShowSnoozeMenu(false)}
+          accessibilityLabel="Cancel snooze"
+          style={styles.snoozeOption}
+        >
+          <Text style={[styles.snoozeOptionText, { color: colors.textSecondary }]}>
+            Cancel
+          </Text>
+        </PressableRow>
+      </AppBottomSheet>
 
       {/* Edit sheet for the just-marked waypoint (write-first-edit-after) */}
       <AddWaypointSheet
@@ -898,30 +985,27 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '700',
   },
-  snoozeMenu: {
-    position: 'absolute',
-    top: 80,
-    left: spacing.lg,
-    right: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    zIndex: 200,
-    overflow: 'hidden',
-  },
   snoozeTitle: {
-    ...typography.caption,
-    fontWeight: '700',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    ...typography.titleLarge,
+    marginBottom: spacing.sm,
   },
+  // PressableRow supplies the ≥44pt min-height and vertical centring.
   snoozeOption: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.sm,
   },
   snoozeOptionText: {
     ...typography.body,
+  },
+  planCue: {
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  planCueText: {
+    ...typography.caption,
+    fontWeight: '700',
   },
 });

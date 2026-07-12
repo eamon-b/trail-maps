@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { spacing } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { typography, glyphSizes } from '../tokens/typography';
 import { ProgressBar } from './ProgressBar';
 import { WaypointCard } from './WaypointCard';
 import { WaypointList, WaypointListItem } from './WaypointList';
 import { Card, CardState } from './Card';
 import { WaterCountdown } from './WaterCountdown';
 import { BearingIndicator } from './BearingIndicator';
+import { PressableRow } from './PressableRow';
 
 /** A "NEXT X" card's data (id enables deep-linking to the waypoint on the map) */
 export interface NextWaypointData {
@@ -209,6 +210,7 @@ export function HikeDashboard({
         icon="💧"
         name={data?.nextWater?.name}
         distance={data?.nextWater?.distance}
+        elevation={data?.nextWater?.elevation}
         eta={data?.nextWater?.eta}
         note={data?.nextWater?.note}
         bearing={makeBearing(data?.nextWater)}
@@ -239,6 +241,7 @@ export function HikeDashboard({
           icon="🛖"
           name={data?.nextShelter?.name}
           distance={data?.nextShelter?.distance}
+          elevation={data?.nextShelter?.elevation}
           eta={data?.nextShelter?.eta}
           compact
           emptyMessage="No shelters ahead"
@@ -250,20 +253,40 @@ export function HikeDashboard({
 
       {/* === BELOW THE FOLD === */}
 
-      {/* TODAY section — collapsible */}
+      {/* TODAY section — collapsible. The card BODY is no longer pressable;
+          only the header chevron row toggles collapse, so a tap near the
+          water countdown (which now lives inside the body) can't accidentally
+          collapse the card. The loading skeleton keeps Card's own label. */}
       {(data?.today || isLoading) && (
         <Card
           state={isLoading ? 'loading' : 'normal'}
-          label={`TODAY${data?.today ? ` (Day ${data.today.dayNumber} of ${data.today.totalDays})` : ''}`}
+          label={isLoading ? 'TODAY' : undefined}
         >
           {data?.today && (
-            <Pressable
-              onPress={() => setTodayExpanded(!todayExpanded)}
-              accessibilityLabel={todayExpanded ? 'Collapse today section' : 'Expand today section'}
-              accessibilityRole="button"
-            >
+            <>
+              {/* Header chevron row — the sole collapse toggle. ≥44pt target
+                  (PressableRow), selection-tick haptic (PressableRow default),
+                  and a proper expanded accessibility state. */}
+              <PressableRow
+                onPress={() => setTodayExpanded(!todayExpanded)}
+                accessibilityLabel={
+                  todayExpanded
+                    ? `Collapse today section, day ${data.today.dayNumber} of ${data.today.totalDays}`
+                    : `Expand today section, day ${data.today.dayNumber} of ${data.today.totalDays}`
+                }
+                accessibilityState={{ expanded: todayExpanded }}
+                style={styles.todayHeader}
+              >
+                <Text style={[styles.todayHeaderLabel, { color: colors.textSecondary }]}>
+                  {`TODAY (Day ${data.today.dayNumber} of ${data.today.totalDays})`}
+                </Text>
+                <Text style={[styles.todayChevron, { color: colors.textSecondary }]}>
+                  {todayExpanded ? '▾' : '▸'}
+                </Text>
+              </PressableRow>
+
               {todayExpanded && (
-                <View>
+                <View style={styles.todayBody}>
                   <Text style={[styles.todayRoute, { color: colors.textPrimary }]}>
                     {data.today.startName} → {data.today.endName}
                   </Text>
@@ -316,10 +339,10 @@ export function HikeDashboard({
               )}
               {!todayExpanded && (
                 <Text style={[styles.todayCollapsed, { color: colors.textSecondary }]}>
-                  Tap to expand
+                  Tap the header to expand
                 </Text>
               )}
-            </Pressable>
+            </>
           )}
         </Card>
       )}
@@ -378,6 +401,21 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     flex: 1,
+  },
+  todayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  // Matches Card's section-label treatment (titleLarge / textSecondary).
+  todayHeaderLabel: {
+    ...typography.titleLarge,
+  },
+  todayChevron: {
+    fontSize: glyphSizes.md,
+  },
+  todayBody: {
+    marginTop: spacing.sm,
   },
   todayRoute: {
     ...typography.body,

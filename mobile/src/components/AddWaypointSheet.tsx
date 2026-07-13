@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } fr
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useTheme } from '../theme';
 import { radii, spacing, touchTarget } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 import { AppBottomSheet } from './AppBottomSheet';
 import { CREATABLE_WAYPOINT_TYPES, getWaypointEmoji, getWaypointLabel } from '../lib/waypoint-type-meta';
 import {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     minHeight: touchTarget.min,
   },
   typeEmoji: {
-    fontSize: 16,
+    fontSize: glyphSizes.sm,
   },
   typeLabel: {
     ...typography.caption,

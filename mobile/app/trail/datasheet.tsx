@@ -18,9 +18,10 @@ import { useDirectionalTrail } from '../../src/hooks/useDirectionalTrail';
 import { calculateElevationBetween } from '@lib/track-geometry';
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { getWaypointLabel } from '../../src/lib/waypoint-type-meta';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DIRECTION_PREF_KEY } from './[id]';
 import { spacing, radii } from '../../src/tokens/spacing';
-import { typography } from '../../src/tokens/typography';
+import { glyphSizes, typography } from '../../src/tokens/typography';
 
 interface WaypointRow {
   waypoint: TrailWaypoint;
@@ -131,16 +132,11 @@ export default function DatasheetScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Fixed header */}
-      <View style={[styles.header, { paddingTop: insets.top + spacing.sm, borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} style={styles.backRow} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={[styles.backArrow, { color: colors.accent }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.accent }]}>Back</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-          {activeTrail.config.name} — Datasheet
-        </Text>
-      </View>
+      <ScreenHeader
+        title={`${activeTrail.config.name} — Datasheet`}
+        onBack={() => router.back()}
+        variant="surface"
+      />
 
       <FlatList
         data={visibleRows}
@@ -310,28 +306,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  backArrow: {
-    fontSize: 22,
-    fontWeight: '600',
-  },
   backLabel: {
     ...typography.body,
     fontWeight: '600',
-  },
-  headerTitle: {
-    ...typography.titleSmall,
-    marginBottom: spacing.xs,
   },
   listHeader: {
     paddingHorizontal: spacing.lg,
@@ -397,7 +374,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   emoji: {
-    fontSize: 20,
+    fontSize: glyphSizes.md,
     width: 28,
     textAlign: 'center',
   },

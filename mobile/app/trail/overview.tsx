@@ -31,6 +31,7 @@ import { DIRECTION_PREF_KEY } from './[id]';
 import { waypointsToGpx, trailToGpx } from '../../src/lib/gpx-writer';
 import { shareGpxFile, gpxFilename } from '../../src/services/gpx-export-service';
 import type { CustomWaypoint } from '../../src/services/trail-data-service';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
 import { typography } from '../../src/tokens/typography';
 
@@ -230,15 +231,10 @@ export default function TrailOverviewScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Trail overview" onBack={() => router.back()} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.xxl }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: spacing.lg, paddingBottom: insets.bottom + spacing.xxl }]}
       >
-        {/* Back button */}
-        <Pressable onPress={() => router.back()} style={styles.backRow} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={[styles.backArrow, { color: colors.accent }]}>←</Text>
-          <Text style={[styles.backLabel, { color: colors.accent }]}>Back</Text>
-        </Pressable>
-
         {/* Trail name (rename/delete moved to the My data tab — P1 PR E) */}
         <View style={styles.nameRow}>
           <Text style={[styles.trailName, { color: colors.textPrimary }]}>{activeTrail.config.name}</Text>
@@ -658,20 +654,6 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: spacing.lg,
   },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  backArrow: {
-    fontSize: 22,
-    fontWeight: '600',
-  },
-  backLabel: {
-    ...typography.body,
-    fontWeight: '600',
-  },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -883,14 +865,13 @@ const styles = StyleSheet.create({
     textAlign: 'right' as const,
   },
   dsCellHeader: {
-    fontSize: 10,
-    fontWeight: '600' as const,
+    ...typography.titleSmall,
   },
   dsCellValue: {
-    fontSize: 12,
+    ...typography.caption,
     fontVariant: ['tabular-nums'] as const,
   },
   dsSectionName: {
-    fontSize: 12,
+    ...typography.caption,
   },
 });

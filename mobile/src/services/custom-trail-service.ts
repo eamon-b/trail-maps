@@ -7,9 +7,9 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { TrailDataService } from './trail-data-service';
+import { deleteTrailTiles } from './tile-service';
 import type { TrailJson } from './trail-loader';
 import { processGpxAsync, type ProcessingOptions, type ProcessingResult, type ProcessingWarning, GpxParseError } from '../lib/gpx-processor';
-import type { Trail as DisplayTrail } from '../lib/trail-utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -292,6 +292,16 @@ export async function saveCustomTrail(
 export async function deleteCustomTrail(trailId: string): Promise<void> {
   const service = await TrailDataService.create();
   await service.deleteTrail(trailId);
+  // Tile files live outside SQLite and are not covered by the trail FK
+  // cascade. Remove them after the database delete so My Data cannot leave a
+  // large, unreachable offline-map directory behind.
+  try {
+    deleteTrailTiles(trailId);
+  } catch (error) {
+    // The trail is already gone; surface a diagnostic without making callers
+    // report that the database deletion itself failed.
+    console.warn(`Failed to delete offline maps for ${trailId}:`, error);
+  }
 }
 
 // ---------------------------------------------------------------------------

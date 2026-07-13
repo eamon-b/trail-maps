@@ -12,7 +12,7 @@ import { useTheme } from '../theme';
 import { useReduceMotion } from '../theme/useReduceMotion';
 import { springConfigs, timingConfigs } from '../tokens/motion';
 import { spacing } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 
 export type AlertLevel = 'info' | 'warning' | 'error';
 
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   icon: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
   },
   message: {
     ...typography.body,

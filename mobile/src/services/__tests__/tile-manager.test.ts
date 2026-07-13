@@ -1,4 +1,12 @@
 // Variables prefixed with "mock" are accessible inside jest.mock factories
+import { TileManager } from '../tile-manager';
+import {
+  getTrailTileStatus,
+  deleteTrailTiles,
+  provisionGlyphs,
+  buildTopoStyle,
+} from '../tile-service';
+
 const mockDirExists = jest.fn(() => false);
 const mockDirList = jest.fn((): unknown[] => []);
 
@@ -31,14 +39,6 @@ jest.mock('../tile-service', () => ({
   provisionGlyphs: jest.fn().mockResolvedValue('/mock/fonts'),
   buildTopoStyle: jest.fn().mockReturnValue({ version: 8, layers: [] }),
 }));
-
-import { TileManager } from '../tile-manager';
-import {
-  getTrailTileStatus,
-  deleteTrailTiles,
-  provisionGlyphs,
-  buildTopoStyle,
-} from '../tile-service';
 
 const mockGetStatus = getTrailTileStatus as jest.MockedFunction<typeof getTrailTileStatus>;
 const mockDelete = deleteTrailTiles as jest.MockedFunction<typeof deleteTrailTiles>;
@@ -101,6 +101,7 @@ describe('TileManager', () => {
   it('getDownloadedTrails filters to complete trails when directory exists', () => {
     mockDirExists.mockReturnValue(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- construct the hoisted filesystem mock
     const { Directory } = require('expo-file-system');
     const dir1 = new Directory();
     Object.defineProperty(dir1, 'name', { value: 'trail-1' });
@@ -166,6 +167,7 @@ describe('TileManager', () => {
   it('getTotalStorageUsed sums sizes across all downloaded trails', () => {
     mockDirExists.mockReturnValue(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- construct the hoisted filesystem mock
     const { Directory } = require('expo-file-system');
     const dir1 = new Directory();
     Object.defineProperty(dir1, 'name', { value: 'trail-a' });

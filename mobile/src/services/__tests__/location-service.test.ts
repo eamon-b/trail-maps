@@ -1,3 +1,19 @@
+import {
+  subscribeToBackgroundLocation,
+  requestLocationPermission,
+  startLocationTracking,
+  stopLocationTracking,
+  startBackgroundTracking,
+  stopBackgroundTracking,
+  setTrackingProfile,
+  setTrackingPreference,
+  getActiveTrackingProfile,
+  getActiveProfile,
+  onProfileChange,
+  resolveTrackingProfile,
+  TRACKING_PROFILES,
+} from '../location-service';
+
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: jest.fn(),
   getForegroundPermissionsAsync: jest.fn(),
@@ -27,25 +43,11 @@ jest.mock('expo-battery', () => ({
   addBatteryLevelListener: jest.fn(),
 }));
 
-import {
-  subscribeToBackgroundLocation,
-  requestLocationPermission,
-  startLocationTracking,
-  stopLocationTracking,
-  startBackgroundTracking,
-  stopBackgroundTracking,
-  setTrackingProfile,
-  setTrackingPreference,
-  getActiveTrackingProfile,
-  getActiveProfile,
-  onProfileChange,
-  resolveTrackingProfile,
-  TRACKING_PROFILES,
-} from '../location-service';
-
+/* eslint-disable @typescript-eslint/no-require-imports -- access hoisted Jest module mocks */
 const mockLocation = require('expo-location');
 const mockBattery = require('expo-battery');
 const mockTaskManager = require('expo-task-manager');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 /** Let queued microtasks (async restart chains) settle. */
 const flush = () => new Promise((r) => setImmediate(r));
@@ -87,6 +89,44 @@ describe('subscribeToBackgroundLocation', () => {
     // Calling unsubscribe again should be a safe no-op
     expect(() => unsub1()).not.toThrow();
     expect(() => unsub2()).not.toThrow();
+  });
+
+  it('preserves a subscriber registered before background tracking starts', async () => {
+    mockTaskManager.isTaskRegisteredAsync.mockResolvedValue(false);
+    mockLocation.startLocationUpdatesAsync.mockResolvedValue(undefined);
+
+    const callback = jest.fn();
+    const unsubscribe = subscribeToBackgroundLocation(callback);
+    await startBackgroundTracking();
+
+    const taskCallback = mockTaskManager.defineTask.mock.calls[0][1];
+    await taskCallback({
+      data: {
+        locations: [
+          {
+            coords: {
+              latitude: -35.3,
+              longitude: 149.1,
+              altitude: 600,
+              accuracy: 8,
+              heading: 90,
+              speed: 1.2,
+            },
+            timestamp: 123,
+          },
+        ],
+      },
+      error: null,
+    });
+
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      latitude: -35.3,
+      longitude: 149.1,
+      timestamp: 123,
+    }));
+
+    unsubscribe();
+    await stopBackgroundTracking();
   });
 });
 
@@ -305,10 +345,9 @@ describe('setTrackingProfile background restart', () => {
     mockLocation.startLocationUpdatesAsync.mockResolvedValue(undefined);
     mockLocation.stopLocationUpdatesAsync.mockResolvedValue(undefined);
 
-    await startBackgroundTracking();
-    // Subscribe AFTER start (start clears the subscriber set).
     const bgCb = jest.fn();
     subscribeToBackgroundLocation(bgCb);
+    await startBackgroundTracking();
 
     mockLocation.startLocationUpdatesAsync.mockClear();
     mockLocation.stopLocationUpdatesAsync.mockClear();

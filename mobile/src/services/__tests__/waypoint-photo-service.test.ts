@@ -6,6 +6,15 @@
 // In-memory fake for the expo-file-system File/Directory API. Everything is
 // defined inside the factory (jest.mock is hoisted above class declarations);
 // the test reaches the file map via the __files escape hatch.
+import {
+  constrainDimensions,
+  pickWaypointPhoto,
+  storeWaypointPhoto,
+  deleteWaypointPhoto,
+  MAX_DIMENSION,
+  JPEG_QUALITY,
+} from '../waypoint-photo-service';
+
 jest.mock('expo-file-system', () => {
   const files = new Map<string, { exists: boolean }>();
 
@@ -55,15 +64,6 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: (...args: unknown[]) => mockLaunchCamera(...args),
   launchImageLibraryAsync: (...args: unknown[]) => mockLaunchLibrary(...args),
 }));
-
-import {
-  constrainDimensions,
-  pickWaypointPhoto,
-  storeWaypointPhoto,
-  deleteWaypointPhoto,
-  MAX_DIMENSION,
-  JPEG_QUALITY,
-} from '../waypoint-photo-service';
 
 const mockFiles: Map<string, { exists: boolean }> = jest.requireMock('expo-file-system').__files;
 

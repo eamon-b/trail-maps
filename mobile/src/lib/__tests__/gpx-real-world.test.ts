@@ -67,7 +67,7 @@ describe('Gaia GPS style', () => {
   });
 
   it('processes end-to-end', () => {
-    const { trail, warnings } = processGpx(GAIA_STYLE);
+    const { trail } = processGpx(GAIA_STYLE);
     expect(trail.track.points).toHaveLength(3);
     expect(trail.waypoints).toHaveLength(1);
     expect(trail.waypoints[0].type).toBe('water');

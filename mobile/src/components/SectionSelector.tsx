@@ -12,7 +12,7 @@ import type { SectionConfig } from '../services/plan-calculator-types';
 import { PressableRow } from './PressableRow';
 import { waypointEmojis } from './WaypointList';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   emoji: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
     width: 28,
     textAlign: 'center',
   },
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   check: {
-    fontSize: 20,
+    fontSize: glyphSizes.md,
     fontWeight: '700',
     marginLeft: spacing.sm,
   },

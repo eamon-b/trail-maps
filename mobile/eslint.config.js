@@ -1,10 +1,7 @@
 // https://docs.expo.dev/guides/using-eslint/
 const { defineConfig } = require('eslint/config');
 const expoConfig = require("eslint-config-expo/flat");
-const {
-  designTokenRestrictions,
-  grandfatheredFiles,
-} = require('./lint/design-token-restrictions');
+const { designTokenRestrictions } = require('./lint/design-token-restrictions');
 
 module.exports = defineConfig([
   expoConfig,
@@ -27,13 +24,6 @@ module.exports = defineConfig([
           message: 'The raw palette is private to src/tokens. Use useTheme().colors instead.',
         }],
       }],
-    },
-  },
-  // Burn-down list (see lint/design-token-restrictions.js for per-file notes).
-  {
-    files: grandfatheredFiles,
-    rules: {
-      'no-restricted-syntax': ['warn', ...designTokenRestrictions],
     },
   },
 ]);

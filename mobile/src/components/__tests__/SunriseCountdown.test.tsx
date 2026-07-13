@@ -51,7 +51,7 @@ describe('SunriseCountdown', () => {
   });
 
   it('updates on a 60-second timer tick', async () => {
-    const { rerender } = renderWithTheme(
+    renderWithTheme(
       <SunriseCountdown latitude={LAT} longitude={LON} />,
     );
     // Timer fires after 60s — just ensure no crash on tick

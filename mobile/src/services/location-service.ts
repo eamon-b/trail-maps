@@ -379,8 +379,10 @@ async function restartBackgroundWithActiveProfile(): Promise<void> {
 
 /** Start background location updates (survives screen lock) */
 export async function startBackgroundTracking(): Promise<void> {
-  await stopBackgroundTracking();
-  await startBackgroundUpdates();
+  // Restart only the OS task. Do not call the public stop helper here: that
+  // also clears the subscriber set, including the callback useLocation adds
+  // immediately before starting the task.
+  await restartBackgroundWithActiveProfile();
   // A background session is now running — engage the auto battery watcher if
   // the user's preference is 'auto'.
   reconcileAutoBattery();

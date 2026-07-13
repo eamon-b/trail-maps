@@ -46,7 +46,7 @@ import {
   type TrackingProfilePreference,
 } from '../../src/services/location-service';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
-import { typography } from '../../src/tokens/typography';
+import { glyphSizes, typography } from '../../src/tokens/typography';
 import { durations } from '../../src/tokens/motion';
 import type { LocationState } from '../../src/components/LocationStatusBar';
 import type { AlertThresholdPreset, SnoozeDuration } from '../../src/services/off-trail-alert-service';
@@ -247,6 +247,9 @@ export default function HikeScreen() {
   // Load the active trail — reload when tab regains focus
   useFocusEffect(
     useCallback(() => {
+      // This state value is intentionally a reload signal rather than data
+      // consumed by the callback body.
+      void trailRefreshKey;
       let cancelled = false;
       async function load() {
         try {
@@ -908,7 +911,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   markButtonIcon: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
   },
   markButtonText: {
     ...typography.body,
@@ -927,7 +930,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   snoozeChipIcon: {
-    fontSize: 14,
+    fontSize: glyphSizes.xs,
   },
   snoozeChipText: {
     ...typography.caption,

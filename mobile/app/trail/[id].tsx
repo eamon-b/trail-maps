@@ -43,7 +43,7 @@ import { shareGpxFile, gpxFilename } from '../../src/services/gpx-export-service
 import { tileManager } from '../../src/services/tile-manager';
 import { useTileDownloads } from '../../src/hooks/useTileDownloads';
 import { spacing, radii } from '../../src/tokens/spacing';
-import { typography } from '../../src/tokens/typography';
+import { glyphSizes, typography } from '../../src/tokens/typography';
 
 /** A long-pressed location pending confirmation in the AddWaypointSheet. */
 interface PendingWaypoint {
@@ -902,7 +902,7 @@ export default function TrailViewerScreen() {
         {crosshair && (
           <>
             <View style={styles.crosshairOverlay} pointerEvents="none">
-              <Text style={[styles.crosshairGlyph, { color: colors.accent }]}>✛</Text>
+              <Text style={[styles.crosshairGlyph, { color: colors.accent, textShadowColor: colors.textInverse }]}>✛</Text>
             </View>
             <View style={[styles.crosshairChip, { backgroundColor: colors.surface, borderColor: colors.border }]} pointerEvents="none">
               <Text style={[styles.crosshairChipText, { color: colors.textPrimary }]}>
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toolbarButtonText: {
-    fontSize: 22,
+    fontSize: glyphSizes.lg,
     fontWeight: '600',
   },
   toolbarCenter: {
@@ -1082,9 +1082,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   crosshairGlyph: {
-    fontSize: 36,
+    fontSize: glyphSizes.hero,
     fontWeight: '300',
-    textShadowColor: '#fff',
     textShadowRadius: 4,
   },
   crosshairChip: {

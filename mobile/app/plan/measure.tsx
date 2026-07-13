@@ -15,7 +15,7 @@ import {
 import { waypointEmojis } from '../../src/components/WaypointList';
 import { ElevationProfile } from '../../src/components/ElevationProfile';
 import { spacing, radii, touchTarget } from '../../src/tokens/spacing';
-import { typography } from '../../src/tokens/typography';
+import { glyphSizes, typography } from '../../src/tokens/typography';
 
 export default function MeasureScreen() {
   const params = useLocalSearchParams<Record<string, string>>();
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   waypointEmoji: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
     width: 28,
     textAlign: 'center',
   },
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   check: {
-    fontSize: 20,
+    fontSize: glyphSizes.md,
     fontWeight: '700',
     marginLeft: spacing.sm,
   },
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   betweenEmoji: {
-    fontSize: 14,
+    fontSize: glyphSizes.xs,
     width: 24,
     textAlign: 'center',
   },

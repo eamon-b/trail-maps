@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { spacing } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 import { Card, CardState, StatDisplay } from './Card';
 
 interface WaypointCardProps {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   icon: {
-    fontSize: 24,
+    fontSize: glyphSizes.xl,
   },
   info: {
     flex: 1,

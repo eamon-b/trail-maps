@@ -5,12 +5,12 @@
  */
 import { renderHook, act } from '@testing-library/react-native';
 
+import { useWaypointDeleteUndo } from '../useWaypointDeleteUndo';
+
 const mockDeletePhoto = jest.fn();
 jest.mock('../../services/waypoint-photo-service', () => ({
   deleteWaypointPhoto: (...args: unknown[]) => mockDeletePhoto(...args),
 }));
-
-import { useWaypointDeleteUndo } from '../useWaypointDeleteUndo';
 
 type Row = { id: string; photoUri?: string | null };
 const rowA: Row = { id: 'a', photoUri: '/p/a.jpg' };

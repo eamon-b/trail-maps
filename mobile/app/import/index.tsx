@@ -31,7 +31,6 @@ import {
   dropNullElevationSamples,
   applyElevationToTrail,
 } from '../../src/services/elevation-service';
-import type { Trail } from '../../src/lib/trail-utils';
 import { getWaypointLabel } from '../../src/lib/waypoint-type-meta';
 
 type ImportStage = 'pick' | 'processing' | 'preview' | 'saving' | 'done' | 'error';
@@ -201,7 +200,7 @@ export default function ImportScreen() {
     try {
       // Excluded alternates are dropped at save time
       const toSave = { ...result, trail: previewTrail };
-      const importResult = await saveCustomTrail(toSave, trailName, sourceFilename);
+      await saveCustomTrail(toSave, trailName, sourceFilename);
       setStage('done');
       // Navigate back and let the plan screen refresh
       Alert.alert('Trail Imported', `"${trailName}" has been imported successfully.`, [

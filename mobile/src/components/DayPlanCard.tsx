@@ -15,7 +15,7 @@ import { PressableRow } from './PressableRow';
 import { triggerHaptic } from './haptics';
 import { springConfigs, timingConfigs } from '../tokens/motion';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 
 export interface DayPlanData {
   dayNumber: number;
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionIcon: {
-    fontSize: 22,
+    fontSize: glyphSizes.lg,
     fontWeight: '700',
   },
 });

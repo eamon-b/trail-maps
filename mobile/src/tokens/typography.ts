@@ -98,9 +98,13 @@ export type TypographyToken = keyof typeof typography;
  * satisfies the design-token lint rule, which bans raw numeric fontSize.
  */
 export const glyphSizes = {
+  xs: 14,
   sm: 18,
   md: 20,
   lg: 22,
+  xl: 24,
+  xxl: 28,
+  hero: 36,
 } as const;
 
 /**

@@ -5,7 +5,7 @@ import { waypointEmojis } from './WaypointList';
 import { PressableRow } from './PressableRow';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 import { isCustomWaypointId, type TrailWaypoint } from '../lib/trail-utils';
 import { waypointsToGpx, waypointPlainText } from '../lib/gpx-writer';
 import { shareGpxFile, gpxFilename } from '../services/gpx-export-service';
@@ -202,7 +202,7 @@ export function WaypointDetailSheet({
             onRequestClose={() => setPhotoFullScreen(false)}
           >
             <Pressable
-              style={styles.photoFullScreenBackdrop}
+              style={[styles.photoFullScreenBackdrop, { backgroundColor: colors.scrim }]}
               onPress={() => setPhotoFullScreen(false)}
               accessibilityRole="button"
               accessibilityLabel="Close photo"
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: glyphSizes.xxl,
     marginRight: spacing.sm,
   },
   headerText: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     marginVertical: -spacing.xs,
   },
   closeIcon: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
     fontWeight: '600',
   },
   stats: {
@@ -358,7 +358,6 @@ const styles = StyleSheet.create({
   },
   photoFullScreenBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
   },

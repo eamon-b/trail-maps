@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme';
 import { Card } from './Card';
 import type { WaterCarryAnalysis } from '@lib/water-carry-calculator';
-import { spacing, radii } from '../tokens/spacing';
+import { spacing } from '../tokens/spacing';
 import { typography } from '../tokens/typography';
 
 interface WaterCarryListProps {

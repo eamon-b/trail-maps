@@ -7,7 +7,7 @@ import { haversineDistance } from '@lib/distance';
 import { useTheme } from '../theme';
 import { useReduceMotion } from '../theme/useReduceMotion';
 import { spacing, radii } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 import { getOnlineStyleWithContours } from '../services/online-style-service';
 
 MapLibreGL.setAccessToken(null);
@@ -1135,6 +1135,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   recenterIcon: {
-    fontSize: 22,
+    fontSize: glyphSizes.lg,
   },
 });

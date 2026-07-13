@@ -3,7 +3,7 @@ import { Pressable, Share, StyleSheet, Text, ViewStyle } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../theme';
 import { spacing, radii, touchTarget } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 import { formatUtm } from '../lib/utm';
 
 export type CoordinateFormat = 'decimal' | 'dms' | 'utm';
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   icon: {
-    fontSize: 14,
+    fontSize: typography.dataSmall.fontSize,
   },
   coords: {
     ...typography.body,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   shareIcon: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
     fontWeight: '700',
   },
 });

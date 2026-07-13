@@ -6,6 +6,17 @@
 // Mock state shared between File / Directory mocks and the tests
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Imports — after mocks are set up
+// ---------------------------------------------------------------------------
+
+import {
+  buildTopoStyle,
+  getTrailTileStatus,
+  deleteTrailTiles,
+} from '../tile-service';
+import { Directory } from 'expo-file-system';
+
 const mockFiles: Record<string, { exists: boolean; size: number }> = {};
 const mockDirs: Record<string, { exists: boolean; deleted: boolean }> = {};
 const mockFileContents: Record<string, string> = {};
@@ -88,17 +99,6 @@ jest.mock('expo-asset', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Imports — after mocks are set up
-// ---------------------------------------------------------------------------
-
-import {
-  buildTopoStyle,
-  getTrailTileStatus,
-  deleteTrailTiles,
-} from '../tile-service';
-import { Directory } from 'expo-file-system';
-
-// ---------------------------------------------------------------------------
 // Reset mock state between tests
 // ---------------------------------------------------------------------------
 
@@ -146,7 +146,7 @@ describe('buildTopoStyle', () => {
 
   it('has expected layer types: background, fill, line, symbol', () => {
     const style = buildTopoStyle(TRAIL_ID, GLYPHS_PATH) as Record<string, unknown>;
-    const layers = style.layers as Array<{ id: string; type: string }>;
+    const layers = style.layers as { id: string; type: string }[];
 
     expect(Array.isArray(layers)).toBe(true);
     expect(layers.length).toBeGreaterThan(0);

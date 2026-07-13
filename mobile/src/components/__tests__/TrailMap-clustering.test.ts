@@ -1,5 +1,12 @@
 // TrailMap calls MapLibreGL.setAccessToken at module scope; the global mock
 // nests everything under a non-esModule shape, so provide a proper default.
+import {
+  WAYPOINT_CLUSTER_MAX_ZOOM,
+  WAYPOINT_LABEL_MIN_ZOOM,
+  WAYPOINT_CLUSTER_FILTER,
+  WAYPOINT_INDIVIDUAL_FILTER,
+} from '../TrailMap';
+
 jest.mock('@maplibre/maplibre-react-native', () => ({
   __esModule: true,
   default: {
@@ -12,13 +19,6 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
     SymbolLayer: 'SymbolLayer',
   },
 }));
-
-import {
-  WAYPOINT_CLUSTER_MAX_ZOOM,
-  WAYPOINT_LABEL_MIN_ZOOM,
-  WAYPOINT_CLUSTER_FILTER,
-  WAYPOINT_INDIVIDUAL_FILTER,
-} from '../TrailMap';
 
 describe('waypoint clustering config', () => {
   it('cluster layer filters on the supercluster point_count property', () => {

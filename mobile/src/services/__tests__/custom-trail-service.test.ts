@@ -1,6 +1,11 @@
-import { processGpxFile, processGpxContent, saveCustomTrail, type ImportError } from '../custom-trail-service';
-import { TrailDataService } from '../trail-data-service';
-import type { ProcessingResult } from '../../lib/gpx-processor';
+import {
+  deleteCustomTrail,
+  processGpxFile,
+  processGpxContent,
+  saveCustomTrail,
+  type ImportError,
+} from '../custom-trail-service';
+import { deleteTrailTiles } from '../tile-service';
 
 // Mock expo modules
 jest.mock('expo-document-picker', () => ({
@@ -8,6 +13,9 @@ jest.mock('expo-document-picker', () => ({
 }));
 jest.mock('expo-file-system', () => ({
   readAsStringAsync: jest.fn(),
+}));
+jest.mock('../tile-service', () => ({
+  deleteTrailTiles: jest.fn(),
 }));
 
 // Mock the database
@@ -81,6 +89,7 @@ describe('processGpxContent', () => {
 });
 
 describe('processGpxFile', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- access the hoisted Jest module mock
   const FileSystem = require('expo-file-system');
 
   beforeEach(() => {
@@ -150,5 +159,13 @@ describe('saveCustomTrail', () => {
     const import2 = await saveCustomTrail(result, 'Same Name', 'test2.gpx');
 
     expect(import1.trailId).not.toBe(import2.trailId);
+  });
+});
+
+describe('deleteCustomTrail', () => {
+  it('removes offline tile files after deleting the database row', async () => {
+    await deleteCustomTrail('custom-test-trail');
+
+    expect(deleteTrailTiles).toHaveBeenCalledWith('custom-test-trail');
   });
 });

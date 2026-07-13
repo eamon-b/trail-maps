@@ -5,7 +5,7 @@ import type { TrailWaypoint } from '../lib/trail-utils';
 import { PressableRow } from './PressableRow';
 import { waypointEmojis } from './WaypointList';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 
 interface StopSelectorProps {
   waypoints: TrailWaypoint[];
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   emoji: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
     width: 28,
     textAlign: 'center',
   },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   check: {
-    fontSize: 20,
+    fontSize: glyphSizes.md,
     fontWeight: '700',
     marginLeft: spacing.sm,
   },

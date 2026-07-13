@@ -233,7 +233,7 @@ describe('processGpx', () => {
     const points = makeLinearTrail(20);
     const xml = gpxWrap(makeTrackXml(points));
 
-    const { trail, warnings } = processGpx(xml);
+    const { trail } = processGpx(xml);
 
     expect(trail.config.name).toBe('Test Track');
     expect(trail.track.points.length).toBe(20);

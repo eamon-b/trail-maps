@@ -17,7 +17,7 @@ import { tileManager } from '../../src/services/tile-manager';
 import { useTileDownloads, formatBytes } from '../../src/hooks/useTileDownloads';
 import { TrailCard, type TrailWithTiles } from '../../src/components/plan/TrailCard';
 import { spacing, touchTarget } from '../../src/tokens/spacing';
-import { typography } from '../../src/tokens/typography';
+import { glyphSizes, typography } from '../../src/tokens/typography';
 
 /**
  * Trail-list shell for the Plan tab (WS4 structural split): browsing,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   header: {
     ...typography.titleLarge,
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
   },
   measureButton: {
     minHeight: touchTarget.min,

@@ -5,7 +5,7 @@
  * building MapLibre style JSON with correct mbtiles:// source URLs and
  * local glyph paths, and cleaning up downloaded tiles.
  */
-import { File, Directory, Paths } from 'expo-file-system';
+import { File, Directory } from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import type { TileManifest } from '@lib/types';
 import {
@@ -366,10 +366,8 @@ export function deleteTrailTiles(trailId: string): void {
 // MapLibre style builder
 // ---------------------------------------------------------------------------
 
-/* eslint-disable @typescript-eslint/no-require-imports */
 // Single source of truth: scripts/topo-style.json, copied to mobile/assets/
 const TOPO_STYLE_TEMPLATE = require('../../assets/topo-style.json');
-/* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
  * Build a MapLibre style JSON object for rendering a trail's offline tiles.

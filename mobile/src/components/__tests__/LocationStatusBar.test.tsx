@@ -8,7 +8,7 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 describe('LocationStatusBar', () => {
-  const allStates: Array<{ state: LocationState; label: string; icon: string }> = [
+  const allStates: { state: LocationState; label: string; icon: string }[] = [
     { state: 'onTrail', label: 'On trail', icon: '✓' },
     { state: 'noGps', label: 'No GPS', icon: '⊘' },
     { state: 'drifting', label: 'Drifting', icon: '~' },
@@ -61,7 +61,7 @@ describe('LocationStatusBar', () => {
   });
 
   it('has accessibilityRole="alert"', async () => {
-    const { toJSON } = renderWithTheme(<LocationStatusBar state="onTrail" />);
+    renderWithTheme(<LocationStatusBar state="onTrail" />);
 
     await waitFor(() => {
       expect(screen.getByText('On trail')).toBeTruthy();

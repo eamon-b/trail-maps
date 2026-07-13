@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 import { PressableRow } from './PressableRow';
 import { spacing, touchTarget, radii } from '../tokens/spacing';
-import { typography } from '../tokens/typography';
+import { glyphSizes, typography } from '../tokens/typography';
 import { WAYPOINT_TYPE_META } from '../lib/waypoint-type-meta';
 
 /**
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   emoji: {
-    fontSize: 18,
+    fontSize: glyphSizes.sm,
     width: 28,
     textAlign: 'center',
   },

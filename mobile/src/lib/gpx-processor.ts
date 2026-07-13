@@ -16,7 +16,7 @@
  */
 
 import type { GpxData, GpxPoint, GpxWaypoint } from '@lib/types';
-import { haversineDistance, haversineDistance3D } from '@lib/distance';
+import { haversineDistance } from '@lib/distance';
 import { classifyWaypoint } from '@lib/waypoint-classifier';
 import { parseGpx, validateFileSize, GpxParseError } from './gpx-parser';
 import { WAYPOINT_TYPE_META } from './waypoint-type-meta';

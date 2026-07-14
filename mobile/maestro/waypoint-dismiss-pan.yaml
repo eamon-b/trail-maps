@@ -8,18 +8,11 @@ appId: com.trailcompanion.app
 # covered by hike-live-distance.yaml plus manual `adb emu geo fix` checks.
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "View Map"
     timeout: 30000
 
 # Open the first trail (AAWT) and its map
-- tapOn: "View trail →"
-- waitForAnimationToEnd
-- scrollUntilVisible:
-    element:
-      text: "Open Map"
-    direction: DOWN
-    timeout: 10000
-- tapOn: "Open Map"
+- tapOn: "View Map"
 - waitForAnimationToEnd
 
 # Select a waypoint via datasheet → "Show on map"

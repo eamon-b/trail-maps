@@ -5,18 +5,11 @@ appId: com.trailcompanion.app
 # dashboard always measured from km 0 — issue #6, Phase 1).
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "View Map"
     timeout: 30000
 
 # Open the first trail's map once so it becomes the active trail
-- tapOn: "View trail →"
-- waitForAnimationToEnd
-- scrollUntilVisible:
-    element:
-      text: "Open Map"
-    direction: DOWN
-    timeout: 10000
-- tapOn: "Open Map"
+- tapOn: "View Map"
 - waitForAnimationToEnd
 
 # Put the device on the AAWT (track start, Walhalla end)
@@ -25,8 +18,6 @@ appId: com.trailcompanion.app
     longitude: 146.451953
 
 # Back out to the tab bar and open Hike
-- pressKey: back
-- waitForAnimationToEnd
 - pressKey: back
 - waitForAnimationToEnd
 - tapOn: "Hike"

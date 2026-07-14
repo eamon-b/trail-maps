@@ -7,30 +7,40 @@
 #   2. Authenticate: wrangler login
 #
 # Usage:
-#   ./scripts/upload-tiles.sh                  # Upload all trails
+#   ./scripts/upload-tiles.sh                  # Upload all per-trail files (not national contours)
 #   ./scripts/upload-tiles.sh bibbulmun        # Upload one trail
 #   ./scripts/upload-tiles.sh --grid           # Upload all grid tiles
 #   ./scripts/upload-tiles.sh --grid E114_S34  # Upload one grid cell
 #   ./scripts/upload-tiles.sh --contours       # Upload australia-contours.pmtiles
+#   ./scripts/upload-tiles.sh --verify-contours # Check the Worker can read the archive
 #
 # The script reads from public/data/tiles/ (the build output directory)
 # and uploads to the aus-map-data R2 bucket.
 
 set -euo pipefail
 
-BUCKET="aus-map-data"
-TILES_DIR="public/data/tiles"
+BUCKET="${R2_BUCKET:-aus-map-data}"
+TILES_DIR="${TILES_DIR:-public/data/tiles}"
 GRID_DIR="$TILES_DIR/grid"
+CONTOUR_LOCAL_FILENAME="australia-contours.pmtiles"
+CONTOUR_OBJECT_KEY="contours/australia.pmtiles"
+CONTOUR_WORKER_URL="${CONTOUR_WORKER_URL:-https://contour-tiles.aus-map-data.workers.dev}"
 
-if ! command -v wrangler &> /dev/null; then
-  echo "Error: wrangler CLI not found. Install with: npm install -g wrangler"
-  exit 1
-fi
+require_command() {
+  local command_name="$1"
+  local install_hint="$2"
+  if ! command -v "$command_name" &> /dev/null; then
+    echo "Error: $command_name not found. $install_hint"
+    exit 1
+  fi
+}
 
-if [ ! -d "$TILES_DIR" ]; then
-  echo "Error: $TILES_DIR does not exist. Run build:tiles first."
-  exit 1
-fi
+require_tiles_dir() {
+  if [ ! -d "$TILES_DIR" ]; then
+    echo "Error: $TILES_DIR does not exist. Run build:tiles first."
+    exit 1
+  fi
+}
 
 upload_file() {
   local src="$1"
@@ -38,6 +48,7 @@ upload_file() {
   local content_type="$3"
   local cache_control="$4"
 
+  require_command "wrangler" "Install it with: npm install -g wrangler"
   echo "  Uploading $dest ($content_type)"
   wrangler r2 object put "$BUCKET/$dest" \
     --remote \
@@ -49,6 +60,8 @@ upload_file() {
 upload_trail() {
   local trail_id="$1"
   local trail_dir="$TILES_DIR/$trail_id"
+
+  require_tiles_dir
 
   if [ ! -d "$trail_dir" ]; then
     echo "Error: No tiles found for trail '$trail_id' at $trail_dir"
@@ -119,6 +132,8 @@ upload_grid_cell() {
 upload_grid() {
   local specific_cell="${1:-}"
 
+  require_tiles_dir
+
   if [ ! -d "$GRID_DIR" ]; then
     echo "Error: $GRID_DIR does not exist. Run build-grid-tiles first."
     exit 1
@@ -149,47 +164,96 @@ upload_grid() {
 
 # wrangler `r2 object put` rejects uploads over ~300MiB; the Australia contour
 # PMTiles is several GB, so it must go through an S3-compatible multipart
-# client. We use rclone with a remote named "r2" (S3 provider = Cloudflare).
-RCLONE_REMOTE="r2"
-WRANGLER_MAX_BYTES=$((300 * 1024 * 1024))
+# client. RCLONE_REMOTE selects the Cloudflare S3 remote (defaults to "r2").
+RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
+WRANGLER_MAX_BYTES="${WRANGLER_MAX_BYTES:-$((300 * 1024 * 1024))}"
+
+validate_contour_archive() {
+  local pmtiles_file="$1"
+  local magic
+
+  # PMTiles v3 begins with the ASCII bytes "PMTiles" followed by version 3.
+  magic=$(od -An -tx1 -N8 "$pmtiles_file" | tr -d ' \n')
+  if [ "$magic" != "504d54696c657303" ]; then
+    echo "Error: $pmtiles_file is not a valid PMTiles v3 archive."
+    exit 1
+  fi
+}
+
+verify_contours() {
+  require_command "curl" "Install curl, then retry."
+
+  local health_url="${CONTOUR_WORKER_URL%/}/health"
+  local body
+  if ! body=$(curl --silent --show-error --fail-with-body "$health_url"); then
+    echo "Error: the contour Worker did not confirm the R2 archive at $CONTOUR_OBJECT_KEY."
+    if [ -n "$body" ]; then
+      echo "Worker response: $body"
+    fi
+    echo "Check that RCLONE_REMOTE points to the same Cloudflare account as $CONTOUR_WORKER_URL."
+    return 1
+  fi
+
+  if [[ ! "$body" =~ \"ok\"[[:space:]]*:[[:space:]]*true ]]; then
+    echo "Error: unexpected contour Worker health response: $body"
+    return 1
+  fi
+
+  echo "Verified: $CONTOUR_WORKER_URL can read $BUCKET/$CONTOUR_OBJECT_KEY"
+}
 
 upload_contours() {
-  local pmtiles_file="$TILES_DIR/australia-contours.pmtiles"
+  require_tiles_dir
+
+  local pmtiles_file="$TILES_DIR/$CONTOUR_LOCAL_FILENAME"
 
   if [ ! -f "$pmtiles_file" ]; then
     echo "Error: $pmtiles_file not found. Run build-contours-australia first."
     exit 1
   fi
 
+  validate_contour_archive "$pmtiles_file"
+
   local size
   size=$(wc -c < "$pmtiles_file")
 
   if [ "$size" -le "$WRANGLER_MAX_BYTES" ]; then
     echo "Uploading contour PMTiles via wrangler..."
-    upload_file "$pmtiles_file" "contours/australia.pmtiles" \
+    upload_file "$pmtiles_file" "$CONTOUR_OBJECT_KEY" \
       "application/octet-stream" \
       "public, max-age=2592000"
   else
     echo "Contour PMTiles is $((size / 1024 / 1024))MB — over wrangler's 300MiB limit."
+    echo "R2 destination: ${RCLONE_REMOTE}:$BUCKET/$CONTOUR_OBJECT_KEY"
+    echo "The rclone remote must belong to the same account as $CONTOUR_WORKER_URL."
     if command -v rclone &> /dev/null && rclone listremotes | grep -q "^${RCLONE_REMOTE}:"; then
+      echo "Checking object access without requesting bucket-management permissions..."
+      if ! rclone lsf --s3-no-check-bucket --max-depth 1 "${RCLONE_REMOTE}:$BUCKET" > /dev/null; then
+        echo "Error: rclone cannot access the existing $BUCKET bucket."
+        echo "Check the remote endpoint and that the token has Object Read & Write access to this bucket."
+        exit 1
+      fi
       echo "Uploading via rclone (multipart)..."
-      rclone copyto --progress --s3-chunk-size 64M \
-        "$pmtiles_file" "${RCLONE_REMOTE}:$BUCKET/contours/australia.pmtiles"
+      rclone copyto --progress --s3-no-check-bucket \
+        --s3-upload-cutoff 64M --s3-chunk-size 64M \
+        "$pmtiles_file" "${RCLONE_REMOTE}:$BUCKET/$CONTOUR_OBJECT_KEY"
     else
       cat <<EOF
 No rclone remote named "${RCLONE_REMOTE}" found. To upload files this large:
   1. Create an R2 API token (S3 credentials) in the Cloudflare dashboard:
      R2 > Manage R2 API Tokens > Create (Object Read & Write on $BUCKET)
-  2. Configure rclone:
-       rclone config create ${RCLONE_REMOTE} s3 provider=Cloudflare \\
-         access_key_id=<key> secret_access_key=<secret> \\
-         endpoint=https://<account-id>.r2.cloudflarestorage.com
-  3. Re-run: npm run upload:tiles -- --contours
+  2. Run "rclone config" and create a uniquely named S3 remote using:
+       provider: Cloudflare
+       endpoint: https://<owning-account-id>.r2.cloudflarestorage.com
+       advanced option no_check_bucket: true
+  3. Re-run with that remote name:
+       RCLONE_REMOTE=<remote-name> npm run upload:tiles -- --contours
 EOF
       exit 1
     fi
   fi
-  echo "Done: contours/australia.pmtiles"
+  verify_contours
+  echo "Done: $CONTOUR_OBJECT_KEY"
 }
 
 # --- Main dispatch ---
@@ -201,12 +265,15 @@ if [ $# -ge 1 ] && [ "$1" = "--grid" ]; then
 elif [ $# -ge 1 ] && [ "$1" = "--contours" ]; then
   # Contour PMTiles mode
   upload_contours
+elif [ $# -ge 1 ] && [ "$1" = "--verify-contours" ]; then
+  verify_contours
 elif [ $# -ge 1 ]; then
   # Upload specific trail(s)
   for trail_id in "$@"; do
     upload_trail "$trail_id"
   done
 else
+  require_tiles_dir
   # Upload all trails
   for trail_dir in "$TILES_DIR"/*/; do
     [ -d "$trail_dir" ] || continue
@@ -216,6 +283,9 @@ else
     upload_trail "$trail_id"
   done
   upload_root_manifest
+  echo ""
+  echo "Note: the Australia-wide online contour archive is a separate upload."
+  echo "Run: npm run upload:tiles -- --contours"
 fi
 
 echo ""

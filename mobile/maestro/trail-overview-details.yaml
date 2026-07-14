@@ -7,7 +7,7 @@ appId: com.trailcompanion.app
     timeout: 30000
 
 # Open first trail
-- tapOn: "View trail →"
+- tapOn: "Trail details"
 - waitForAnimationToEnd
 
 # Wait for trail data to load

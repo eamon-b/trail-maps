@@ -7,7 +7,13 @@
  * The PMTiles file is stored in R2 at: contours/australia.pmtiles
  */
 
-import { Compression, PMTiles, RangeResponse, Source } from 'pmtiles';
+import {
+  EtagMismatch,
+  PMTiles,
+  RangeResponse,
+  ResolvedValueCache,
+  Source,
+} from 'pmtiles';
 
 interface Env {
   TILES_BUCKET: R2Bucket;
@@ -45,8 +51,14 @@ class R2Source implements Source {
 
   async getBytes(
     offset: number,
-    length: number
+    length: number,
+    signal?: AbortSignal,
+    expectedEtag?: string
   ): Promise<RangeResponse> {
+    if (signal?.aborted) {
+      throw new Error('Tile range request was aborted');
+    }
+
     const obj = await this.bucket.get(this.key, {
       range: { offset, length },
     });
@@ -55,7 +67,19 @@ class R2Source implements Source {
       throw new Error(`R2 object not found: ${this.key}`);
     }
 
+    if (expectedEtag && obj.etag !== expectedEtag) {
+      throw new EtagMismatch(
+        `R2 object changed while reading ${this.key}: expected ${expectedEtag}, got ${obj.etag}`
+      );
+    }
+
     const data = await obj.arrayBuffer();
+    if (data.byteLength !== length) {
+      throw new Error(
+        `Incomplete R2 range for ${this.key}: requested ${length} bytes at ${offset}, received ${data.byteLength}`
+      );
+    }
+
     return {
       data: data,
       etag: obj.etag,
@@ -71,9 +95,61 @@ let pmtilesInstance: PMTiles | null = null;
 function getPMTiles(bucket: R2Bucket): PMTiles {
   if (!pmtilesInstance) {
     const source = new R2Source(bucket, PMTILES_KEY);
-    pmtilesInstance = new PMTiles(source);
+    // Cloudflare Workers cannot reuse pending I/O promises across requests.
+    // ResolvedValueCache stores only completed values and is the cache PMTiles
+    // provides specifically for runtimes with that restriction.
+    pmtilesInstance = new PMTiles(source, new ResolvedValueCache());
   }
   return pmtilesInstance;
+}
+
+async function healthResponse(request: Request, env: Env): Promise<Response> {
+  const headers = {
+    ...corsHeaders(env),
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+  };
+
+  try {
+    const object = await env.TILES_BUCKET.head(PMTILES_KEY);
+    if (!object) {
+      return new Response(
+        request.method === 'HEAD' ? null : JSON.stringify({ ok: false, error: 'Contour archive not found' }),
+        { status: 503, headers }
+      );
+    }
+
+    const header = await getPMTiles(env.TILES_BUCKET).getHeader();
+    const body = {
+      ok: true,
+      archive: {
+        key: PMTILES_KEY,
+        size: object.size,
+        etag: object.etag,
+      },
+      tiles: {
+        minZoom: header.minZoom,
+        maxZoom: header.maxZoom,
+        minLon: header.minLon,
+        minLat: header.minLat,
+        maxLon: header.maxLon,
+        maxLat: header.maxLat,
+      },
+    };
+
+    return new Response(request.method === 'HEAD' ? null : JSON.stringify(body), {
+      status: 200,
+      headers,
+    });
+  } catch (error) {
+    pmtilesInstance = null;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Contour health check failed: ${message}`);
+    return new Response(
+      request.method === 'HEAD' ? null : JSON.stringify({ ok: false, error: message }),
+      { status: 503, headers }
+    );
+  }
 }
 
 /**
@@ -107,6 +183,10 @@ export default {
     }
 
     const url = new URL(request.url);
+    if (url.pathname === '/health') {
+      return healthResponse(request, env);
+    }
+
     const tile = parseTilePath(url.pathname);
 
     if (!tile) {
@@ -145,12 +225,9 @@ export default {
         'Cache-Control': 'public, max-age=86400',
       };
 
-      // Tell the client the tile is gzip-compressed if PMTiles says so
-      if (header.tileCompression === Compression.Gzip) {
-        responseHeaders['Content-Encoding'] = 'gzip';
-      }
-
-      return new Response(tileData.data, {
+      // PMTiles.getZxy() has already decompressed the tile payload, so do not
+      // attach the archive's Content-Encoding to these response bytes.
+      return new Response(request.method === 'HEAD' ? null : tileData.data, {
         status: 200,
         headers: responseHeaders,
       });

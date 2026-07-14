@@ -8,7 +8,7 @@ appId: com.trailcompanion.app
 
 # Wait for trail list to render (data loads async from SQLite)
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "View Map"
     timeout: 15000
 
 # Verify trail list rendered with trail name
@@ -23,7 +23,7 @@ appId: com.trailcompanion.app
 - waitForAnimationToEnd
 
 # Open first trail
-- tapOn: "View trail →"
+- tapOn: "View Map"
 - waitForAnimationToEnd
 
 # Go back

@@ -14,27 +14,52 @@ Australian long-distance hiking app built with Expo SDK 54, React Native, and Ma
 ```bash
 cd mobile
 npm install
-npx expo prebuild       # Generate native projects from config
 ```
+
+`expo prebuild` is only needed for a local native build. EAS generates the
+native project in the cloud, so it is not part of the normal setup or daily
+development loop.
 
 ## Development
 
 ```bash
-# Start Metro dev server (interactive — needs a human)
-npx expo start --dev-client
+# From the repository root: start Metro for an installed development client
+npm run phone
 
-# Build a development client (first time or after native dependency changes)
-eas build --profile development --platform ios
-eas build --profile development --platform android
+# Or, from mobile/
+npm start
 ```
+
+Build and install a development client the first time, and again after native
+dependencies, Expo plugins, permissions, or app configuration change:
+
+```bash
+# Android physical device
+cd mobile
+npx eas-cli build --profile development --platform android
+
+# iPhone physical device (register it before the first build)
+npx eas-cli device:create
+npx eas-cli build --profile development-device --platform ios
+```
+
+The `development` iOS profile targets the simulator; use
+`development-device` for a physical iPhone.
 
 ## Testing
 
 ```bash
-npm test                # Run all Jest tests
-npm run test:watch      # Watch mode
-npm run typecheck       # TypeScript type checking
+# From the repository root: web + mobile tests, lint, and type checking
+npm run check
+
+# Mobile-only commands, from mobile/
+npm test
+npm run test:watch
+npm run typecheck
 ```
+
+See [TESTING.md](./TESTING.md) for the phone workflow, release checklist, and
+troubleshooting steps.
 
 ## Project Structure
 

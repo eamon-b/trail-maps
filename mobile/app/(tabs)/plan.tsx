@@ -180,7 +180,8 @@ export default function PlanScreen() {
             isDownloading={downloadingTrailId === item.id}
             downloadProgress={downloadProgress}
             downloadError={downloadError}
-            onOpen={() => router.push({ pathname: '/trail/overview', params: { id: item.id } })}
+            onViewMap={() => router.push({ pathname: '/trail/[id]', params: { id: item.id } })}
+            onViewDetails={() => router.push({ pathname: '/trail/overview', params: { id: item.id } })}
             onCreatePlan={() => router.push({ pathname: '/plan/create', params: { trailId: item.id, trailName: item.name } })}
             onOpenPlan={(p) => router.push({ pathname: '/plan/[planId]', params: { planId: p.id, trailId: item.id } })}
             onDeletePlan={(p) => handleDeletePlan(p.id, p.name)}
@@ -231,8 +232,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   headerActions: {
     flexDirection: 'row',

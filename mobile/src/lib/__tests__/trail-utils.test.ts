@@ -14,7 +14,7 @@ import {
   type Trail,
   type RouteVariant,
 } from '../trail-utils';
-import type { TrailJson } from '../../services/trail-loader';
+import type { TrailJson } from '../../services/trail-assets';
 
 function makePoints(distances: number[]): TrackPoint[] {
   return distances.map((d, i) => ({ lat: -33 + i * 0.01, lon: 115 + i * 0.01, ele: 100 + i * 10, dist: d }));

@@ -3,11 +3,11 @@ appId: com.trailcompanion.app
 # Full navigation flow: trail list → overview → map → back → back
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "Trail details"
     timeout: 30000
 
 # Open first trail overview
-- tapOn: "View trail →"
+- tapOn: "Trail details"
 - waitForAnimationToEnd
 - scrollUntilVisible:
     element:

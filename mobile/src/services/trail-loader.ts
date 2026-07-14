@@ -1,5 +1,8 @@
 import { TrailDataService, type Trail } from './trail-data-service';
 import { registerClimateData, type ClimateData } from './climate-service';
+import { TRAIL_DATA } from './trail-assets';
+
+export type { TrailJson } from './trail-assets';
 
 interface TrailIndex {
   id: string;
@@ -9,50 +12,7 @@ interface TrailIndex {
   dataVersion?: string;
 }
 
-export interface TrailJson {
-  config: {
-    id: string;
-    name: string;
-    shortName: string;
-    region: string;
-    lengthKm: number;
-    direction: { default: string; reversed: string };
-    [key: string]: unknown;
-  };
-  waypoints: {
-    name: string;
-    lat: number;
-    lon: number;
-    type: string;
-    description?: string;
-    elevation?: number;
-    distance?: number;
-    totalDistance?: number;
-    ascent?: number;
-    descent?: number;
-    totalAscent?: number;
-    totalDescent?: number;
-  }[];
-  track: {
-    points: { lat: number; lon: number; ele: number; dist: number }[];
-    displayPoints: { lat: number; lon: number; ele: number; dist: number }[];
-    totalDistance: number;
-    totalAscent: number;
-    totalDescent: number;
-  };
-  [key: string]: unknown;
-}
-
-// Metro resolves require() for JSON files to the parsed object at build time
 const trailIndex: TrailIndex[] = require('../../assets/trails/index.json');
-export const TRAIL_DATA: Record<string, TrailJson> = {
-  aawt: require('../../assets/trails/aawt.json'),
-  'hume-and-hovell': require('../../assets/trails/hume-and-hovell.json'),
-  bibbulmun: require('../../assets/trails/bibbulmun.json'),
-  cape_to_cape: require('../../assets/trails/cape_to_cape.json'),
-  heysen: require('../../assets/trails/heysen.json'),
-  larapinta: require('../../assets/trails/larapinta.json'),
-};
 
 export async function loadBundledTrails(service: TrailDataService): Promise<void> {
   const index = trailIndex;

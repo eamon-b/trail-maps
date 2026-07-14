@@ -8,7 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { TrailDataService } from './trail-data-service';
 import { deleteTrailTiles } from './tile-service';
-import type { TrailJson } from './trail-loader';
+import type { TrailJson } from './trail-assets';
 import { processGpxAsync, type ProcessingOptions, type ProcessingResult, type ProcessingWarning, GpxParseError } from '../lib/gpx-processor';
 
 // ---------------------------------------------------------------------------

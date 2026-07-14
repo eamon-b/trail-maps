@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase } from '../db/database';
-import { TRAIL_DATA, type TrailJson } from './trail-loader';
+import { TRAIL_DATA, type TrailJson } from './trail-assets';
 import { trailJsonToTrail, mergeCustomWaypoints, type Trail as ParsedTrail } from '../lib/trail-utils';
 import { CREATABLE_WAYPOINT_TYPES } from '../lib/waypoint-type-meta';
 import { deleteWaypointPhoto } from './waypoint-photo-service';

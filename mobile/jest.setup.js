@@ -13,6 +13,9 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   },
   default: {
     setAccessToken: jest.fn(),
+    Logger: {
+      setLogCallback: jest.fn(),
+    },
   },
 }));
 

@@ -16,6 +16,7 @@ function getContourTileUrl(): string | undefined {
 let cachedStyle: object | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CONTOUR_HEALTH_TIMEOUT_MS = 2500;
 
 // Font available in Liberty style
 const LIBERTY_FONT = 'Noto Sans Regular';
@@ -131,6 +132,77 @@ async function fetchLibertyStyle(): Promise<Record<string, unknown>> {
   return style as Record<string, unknown>;
 }
 
+function cloneStyle(style: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...style,
+    sources: { ...(style.sources as Record<string, unknown>) },
+    layers: [...(style.layers as object[])],
+  };
+}
+
+/**
+ * Contours are an optional enhancement. Check the archive before adding its
+ * source so a missing/corrupt R2 object cannot make MapLibre repeatedly request
+ * failing tiles while the user pans.
+ */
+async function isContourServiceHealthy(contourTileUrl: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), CONTOUR_HEALTH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${contourTileUrl.replace(/\/$/, '')}/health`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    if (!response.ok) return false;
+
+    const body = await response.json() as { ok?: boolean };
+    return body.ok === true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function injectContours(
+  style: Record<string, unknown>,
+  contourTileUrl: string,
+): Record<string, unknown> {
+  const cloned = cloneStyle(style);
+  const sources = cloned.sources as Record<string, unknown>;
+  sources.contour = {
+    type: 'vector',
+    tiles: [`${contourTileUrl.replace(/\/$/, '')}/contours/{z}/{x}/{y}.pbf`],
+    minzoom: 9,
+    maxzoom: 15,
+  };
+
+  const layers = cloned.layers as { id: string }[];
+  const insertIndex = findContourInsertIndex(layers);
+  layers.splice(insertIndex, 0, ...(getContourLayers() as { id: string }[]));
+  return cloned;
+}
+
+/**
+ * Resolve the complete online style in JavaScript before mounting MapLibre.
+ * Passing a URL first and replacing it with a style object later forces a
+ * native style reload while the map is live, which can terminate the native
+ * renderer on some devices. This function also returns the plain Liberty
+ * style when contours are not configured.
+ */
+export async function getOnlineMapStyle(): Promise<object> {
+  const contourTileUrl = getContourTileUrl();
+  const [style, contoursHealthy] = await Promise.all([
+    fetchLibertyStyle(),
+    contourTileUrl ? isContourServiceHealthy(contourTileUrl) : Promise.resolve(false),
+  ]);
+
+  return contourTileUrl && contoursHealthy
+    ? injectContours(style, contourTileUrl)
+    : cloneStyle(style);
+}
+
 /**
  * Get the Liberty style with contour tile source and layers injected.
  * Returns a complete MapLibre style object ready for use.
@@ -143,26 +215,7 @@ export async function getOnlineStyleWithContours(): Promise<object | null> {
     return null;
   }
 
-  const style = await fetchLibertyStyle();
-
-  // Clone sources and layers so we don't mutate the cached style object
-  // (trailing slash in the env var would yield //contours/... which the
-  // worker's path regex rejects)
-  const sources = { ...(style.sources as Record<string, unknown>) };
-  sources.contour = {
-    type: 'vector',
-    tiles: [`${contourTileUrl.replace(/\/$/, '')}/contours/{z}/{x}/{y}.pbf`],
-    minzoom: 9,
-    maxzoom: 15,
-  };
-
-  // Inject contour layers at the right position
-  const layers = [...(style.layers as { id: string }[])];
-  const insertIndex = findContourInsertIndex(layers);
-  const contourLayers = getContourLayers();
-  layers.splice(insertIndex, 0, ...(contourLayers as { id: string }[]));
-
-  return { ...style, sources, layers };
+  return injectContours(await fetchLibertyStyle(), contourTileUrl);
 }
 
 /**

@@ -2,8 +2,8 @@ import { createMigratedTestDb } from '../../../db/__tests__/test-helpers';
 import { TrailDataService } from '../../trail-data-service';
 import type { TestDatabase } from '../../../db/__tests__/sqlite-test-adapter';
 
-// Mock trail-loader to avoid bundled asset imports
-jest.mock('../../trail-loader', () => ({
+// Mock trail-assets to avoid bundled asset imports
+jest.mock('../../trail-assets', () => ({
   TRAIL_DATA: {},
 }));
 

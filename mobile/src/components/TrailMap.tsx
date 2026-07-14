@@ -1,6 +1,6 @@
 import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
-import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent, type Expression } from '@maplibre/maplibre-react-native';
+import { ActivityIndicator, StyleSheet, View, Text, Pressable } from 'react-native';
+import MapLibreGL, { type CameraRef, type MapViewRef, type OnPressEvent, type Expression, type RegionPayload } from '@maplibre/maplibre-react-native';
 import { findNearestByDistance, isCustomWaypointId, type TrackPoint, type TrailWaypoint, type RouteVariant } from '../lib/trail-utils';
 import { getWaypointColor } from '../lib/waypoint-type-meta';
 import { haversineDistance } from '@lib/distance';
@@ -8,11 +8,46 @@ import { useTheme } from '../theme';
 import { useReduceMotion } from '../theme/useReduceMotion';
 import { spacing, radii } from '../tokens/spacing';
 import { glyphSizes, typography } from '../tokens/typography';
-import { getOnlineStyleWithContours } from '../services/online-style-service';
+import { getOnlineMapStyle } from '../services/online-style-service';
 
 MapLibreGL.setAccessToken(null);
 
-const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+interface MapLogEvent {
+  level: string;
+  message: string;
+  tag?: string;
+}
+
+/** A missing optional contour tile must not become an Expo error overlay. */
+export function isContourTileLoadFailure(log: MapLogEvent): boolean {
+  return log.message.includes('Failed to load tile') && log.message.includes('source contour');
+}
+
+let hasWarnedAboutContourTiles = false;
+MapLibreGL.Logger.setLogCallback((log: MapLogEvent) => {
+  if (!isContourTileLoadFailure(log)) return false;
+
+  if (!hasWarnedAboutContourTiles) {
+    console.warn('Contour overlay is temporarily unavailable; the trail map remains usable.');
+    hasWarnedAboutContourTiles = true;
+  }
+  return true;
+});
+
+/** Local style used when the online style document cannot be fetched. Keeping
+ * the native renderer on a valid object lets the trail overlays remain usable
+ * and avoids a native crash when a remote style URL is unreachable. */
+const FALLBACK_MAP_STYLE = {
+  version: 8 as const,
+  sources: {},
+  layers: [
+    {
+      id: 'fallback-background',
+      type: 'background' as const,
+      paint: { 'background-color': '#E8ECE6' },
+    },
+  ],
+};
 
 /** Distinct marker color for user-created waypoints (see isCustomWaypointId) */
 const CUSTOM_WAYPOINT_COLOR = '#E91E63';
@@ -395,6 +430,37 @@ function computeBounds(points: TrackPoint[]): { ne: [number, number]; sw: [numbe
   };
 }
 
+type VisibleBounds = RegionPayload['visibleBounds'];
+
+/** Convert the bounds already supplied by MapLibre's region event into the
+ * visible distance range. Kept pure so panning never needs a second native
+ * bridge call and the boundary handling can be regression-tested. */
+export function calculateVisibleTrackRange(
+  points: TrackPoint[],
+  bounds: VisibleBounds | null | undefined,
+): [number, number] | null {
+  if (!bounds || bounds.length < 2) return null;
+  const [ne, sw] = bounds;
+  if (!ne || !sw || ne.length < 2 || sw.length < 2) return null;
+  const [maxLon, maxLat] = ne;
+  const [minLon, minLat] = sw;
+  if (![minLon, minLat, maxLon, maxLat].every(Number.isFinite)) return null;
+
+  let minKm = Infinity;
+  let maxKm = -Infinity;
+  for (const point of points) {
+    if (!Number.isFinite(point.lat) || !Number.isFinite(point.lon) || !Number.isFinite(point.dist)) continue;
+    const longitudeVisible = minLon <= maxLon
+      ? point.lon >= minLon && point.lon <= maxLon
+      : point.lon >= minLon || point.lon <= maxLon;
+    if (point.lat >= minLat && point.lat <= maxLat && longitudeVisible) {
+      if (point.dist < minKm) minKm = point.dist;
+      if (point.dist > maxKm) maxKm = point.dist;
+    }
+  }
+  return minKm <= maxKm ? [minKm, maxKm] : null;
+}
+
 // memo: parents re-render on every GPS tick and drawer move; the map only
 // needs to re-render when its own (mostly memoized) props change.
 export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function TrailMap({
@@ -424,10 +490,20 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
   // Fetch online style with contour overlay when no offline style is set
   const [onlineStyle, setOnlineStyle] = useState<object | null>(null);
   useEffect(() => {
-    if (!mapStyleOverride) {
-      getOnlineStyleWithContours().then(setOnlineStyle).catch(() => {});
-    }
+    if (mapStyleOverride) return;
+    let cancelled = false;
+    setOnlineStyle(null);
+    getOnlineMapStyle()
+      .then((style) => {
+        if (!cancelled) setOnlineStyle(style);
+      })
+      .catch((error) => {
+        console.warn('Failed to load online map style; using trail-only map:', error);
+        if (!cancelled) setOnlineStyle(FALLBACK_MAP_STYLE);
+      });
+    return () => { cancelled = true; };
   }, [mapStyleOverride]);
+  const resolvedMapStyle = mapStyleOverride ?? onlineStyle;
 
   // Match overlay text font to the active base style's available glyphs.
   // Liberty (online) serves Noto Sans; our offline style bundles Open Sans.
@@ -759,61 +835,10 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
     [onWaypointPress, waypoints, reduceMotion],
   );
 
-  // One-handed/gloved zoom: camera zoom ±1 with animation (reduce-motion aware)
-  const handleZoom = useCallback(async (delta: number) => {
-    try {
-      const zoom = await mapRef.current?.getZoom();
-      if (zoom == null || !cameraRef.current) return;
-      cameraRef.current.zoomTo(zoom + delta, reduceMotion ? 0 : 300);
-    } catch {
-      // getZoom can fail during init — ignore
-    }
-  }, [reduceMotion]);
-
-  const regionChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Clear the debounce timer on unmount to prevent state updates after cleanup
-  useEffect(() => {
-    return () => {
-      if (regionChangeTimer.current) {
-        clearTimeout(regionChangeTimer.current);
-      }
-    };
-  }, []);
-
-  const handleRegionDidChange = useCallback(() => {
-    if (!onVisibleBoundsChange || !trackPoints || trackPoints.length === 0 || !mapRef.current) return;
-    // Debounce to avoid excessive state updates during rapid pans
-    if (regionChangeTimer.current) clearTimeout(regionChangeTimer.current);
-    regionChangeTimer.current = setTimeout(async () => {
-      try {
-        if (!mapRef.current) return;
-        const bounds = await mapRef.current.getVisibleBounds();
-        if (!bounds || bounds.length < 2) return;
-        // bounds is [[neLon, neLat], [swLon, swLat]]
-        const [ne, sw] = bounds;
-        const minLon = sw[0], maxLon = ne[0];
-        const minLat = sw[1], maxLat = ne[1];
-
-        // Find the km range of track points within the visible bounds
-        let minKm = Infinity;
-        let maxKm = -Infinity;
-        // Sample for efficiency
-        const step = Math.max(1, Math.floor(trackPoints.length / 200));
-        for (let i = 0; i < trackPoints.length; i += step) {
-          const p = trackPoints[i];
-          if (p.lat >= minLat && p.lat <= maxLat && p.lon >= minLon && p.lon <= maxLon) {
-            if (p.dist < minKm) minKm = p.dist;
-            if (p.dist > maxKm) maxKm = p.dist;
-          }
-        }
-        if (minKm <= maxKm) {
-          onVisibleBoundsChange(minKm, maxKm);
-        }
-      } catch {
-        // getVisibleBounds can fail during init
-      }
-    }, 150);
+  const handleRegionDidChange = useCallback((event: GeoJSON.Feature<GeoJSON.Point, RegionPayload>) => {
+    if (!onVisibleBoundsChange || !trackPoints || trackPoints.length === 0) return;
+    const range = calculateVisibleTrackRange(trackPoints, event.properties?.visibleBounds);
+    if (range) onVisibleBoundsChange(range[0], range[1]);
   }, [onVisibleBoundsChange, trackPoints]);
 
   const showRecenter = !isFollowingUser && userLocation != null;
@@ -840,6 +865,15 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
     }
   }, [onMapPan]);
 
+  if (!resolvedMapStyle) {
+    return (
+      <View style={[styles.mapLoading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="small" color={colors.accent} />
+        <Text style={[styles.mapLoadingText, { color: colors.textSecondary }]}>Loading map…</Text>
+      </View>
+    );
+  }
+
   return (
     <View
       style={styles.container}
@@ -847,13 +881,15 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
       onTouchMove={isFollowingUser ? handleTouchMove : undefined}
     >
       <MapLibreGL.MapView
+        key={mapStyleOverride ? 'offline-map' : 'online-map'}
         ref={mapRef}
         style={styles.map}
-        mapStyle={mapStyleOverride ?? onlineStyle ?? STYLE_URL}
+        mapStyle={resolvedMapStyle}
         logoEnabled={false}
         attributionEnabled={false}
         onPress={onMapPress ? handleMapPress : undefined}
         onRegionDidChange={handleRegionDidChange}
+        regionDidChangeDebounceTime={150}
         onLongPress={onLongPress ? handleLongPress : undefined}
       >
         <MapLibreGL.Camera
@@ -1035,26 +1071,6 @@ export const TrailMap = memo(forwardRef<TrailMapHandle, TrailMapProps>(function 
         </View>
       )}
 
-      {/* Zoom buttons — one-handed/gloved essential */}
-      <View style={styles.zoomControls}>
-        <Pressable
-          onPress={() => handleZoom(1)}
-          style={[styles.zoomButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          accessibilityLabel="Zoom in"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.zoomIcon, { color: colors.textPrimary }]}>+</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => handleZoom(-1)}
-          style={[styles.zoomButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          accessibilityLabel="Zoom out"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.zoomIcon, { color: colors.textPrimary }]}>−</Text>
-        </Pressable>
-      </View>
-
       {/* Re-center button */}
       {showRecenter && (
         <Pressable
@@ -1077,6 +1093,15 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  mapLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  mapLoadingText: {
+    ...typography.bodySmall,
+  },
   kmChip: {
     position: 'absolute',
     top: spacing.lg,
@@ -1095,28 +1120,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
-  },
-  zoomControls: {
-    position: 'absolute',
-    top: '35%',
-    right: spacing.lg,
-    gap: spacing.sm,
-  },
-  zoomButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  zoomIcon: {
-    ...typography.displaySmall,
   },
   recenterButton: {
     position: 'absolute',

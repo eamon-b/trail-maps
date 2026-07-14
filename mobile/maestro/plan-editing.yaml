@@ -3,7 +3,7 @@ appId: com.trailcompanion.app
 # Verify plan creation and basic editing flow
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "View Map"
     timeout: 30000
 
 # Open plan creation for first trail

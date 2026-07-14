@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../theme';
 import { Card } from '../Card';
 import { ProgressBar } from '../ProgressBar';
@@ -12,7 +13,7 @@ import {
   type TileDownloadError,
 } from '../../hooks/useTileDownloads';
 import { spacing, radii, touchTarget } from '../../tokens/spacing';
-import { typography } from '../../tokens/typography';
+import { glyphSizes, typography } from '../../tokens/typography';
 
 export interface TrailWithTiles extends Trail {
   tileStatus: TrailTileStatus;
@@ -30,7 +31,8 @@ interface TrailCardProps {
   isDownloading: boolean;
   downloadProgress: TileDownloadProgress | null;
   downloadError: TileDownloadError | null;
-  onOpen: () => void;
+  onViewMap: () => void;
+  onViewDetails: () => void;
   onCreatePlan: () => void;
   onOpenPlan: (plan: Plan) => void;
   onDeletePlan: (plan: Plan) => void;
@@ -48,7 +50,8 @@ export function TrailCard({
   isDownloading,
   downloadProgress,
   downloadError,
-  onOpen,
+  onViewMap,
+  onViewDetails,
   onCreatePlan,
   onOpenPlan,
   onDeletePlan,
@@ -154,7 +157,6 @@ export function TrailCard({
     <Card
       style={styles.card}
       accessibilityLabel={`${trail.name}${trail.region ? `, ${trail.region}` : ''}${trail.lengthKm ? `, ${trail.lengthKm} kilometers` : ''}`}
-      onPress={onOpen}
     >
       <View style={styles.trailNameRow}>
         <Text style={[styles.trailName, { color: colors.textPrimary }]}>{trail.name}</Text>
@@ -212,18 +214,36 @@ export function TrailCard({
       )}
 
       <Pressable
-        onPress={onCreatePlan}
-        style={styles.newPlanButton}
+        onPress={onViewMap}
+        style={[styles.viewMapButton, { backgroundColor: colors.accent }]}
         accessibilityRole="button"
-        accessibilityLabel={`Create new plan for ${trail.name}`}
+        accessibilityLabel={`View map for ${trail.name}`}
       >
-        <Text style={[styles.newPlanText, { color: colors.accent }]}>+ New Plan</Text>
+        <Ionicons name="map-outline" size={glyphSizes.md} color={colors.textInverse} />
+        <Text style={[styles.viewMapText, { color: colors.textInverse }]}>View Map</Text>
+        <Ionicons name="arrow-forward" size={glyphSizes.md} color={colors.textInverse} />
       </Pressable>
       <View style={styles.cardFooter}>
-        <Text style={[styles.viewTrail, { color: colors.accent }]}>View trail →</Text>
+        <Pressable
+          onPress={onViewDetails}
+          style={styles.secondaryAction}
+          accessibilityRole="button"
+          accessibilityLabel={`View details for ${trail.name}`}
+        >
+          <Text style={[styles.secondaryActionText, { color: colors.accent }]}>Trail details</Text>
+        </Pressable>
+        <Pressable
+          onPress={onCreatePlan}
+          style={styles.secondaryAction}
+          accessibilityRole="button"
+          accessibilityLabel={`Create new plan for ${trail.name}`}
+        >
+          <Text style={[styles.secondaryActionText, { color: colors.accent }]}>+ New Plan</Text>
+        </Pressable>
         {trail.isCustom && (
           <Pressable
             onPress={onDeleteCustomTrail}
+            style={styles.secondaryAction}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`Delete custom trail ${trail.name}`}
@@ -308,9 +328,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.sm,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
-  viewTrail: {
+  viewMapButton: {
+    minHeight: touchTarget.field,
+    marginTop: spacing.md,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  viewMapText: {
+    ...typography.body,
+    flex: 1,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  secondaryAction: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  secondaryActionText: {
     ...typography.caption,
     fontWeight: '600',
   },
@@ -344,14 +387,5 @@ const styles = StyleSheet.create({
   },
   planMeta: {
     ...typography.caption,
-  },
-  newPlanButton: {
-    marginTop: spacing.xs,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  newPlanText: {
-    ...typography.caption,
-    fontWeight: '600',
   },
 });

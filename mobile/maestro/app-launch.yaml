@@ -10,5 +10,5 @@ appId: com.trailcompanion.app
 - assertVisible: "Contribute"
 # Verify trail data loaded from SQLite
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "View Map"
     timeout: 15000

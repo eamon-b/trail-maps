@@ -6,7 +6,7 @@
  * calculations used by the elevation profile and GPS snapping.
  */
 
-import type { TrailJson } from '../services/trail-loader';
+import type { TrailJson } from '../services/trail-assets';
 import { reverseAlternates, transformSideTrips } from '@lib/variant-reverse';
 import { findNearestByDistance as nearestTrackIndex } from '@lib/track-geometry';
 import { haversineDistance as sharedHaversineDistance } from '@lib/distance';

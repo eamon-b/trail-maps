@@ -1,4 +1,5 @@
 import {
+  getOnlineMapStyle,
   getOnlineStyleWithContours,
   clearStyleCache,
 } from '../online-style-service';
@@ -31,9 +32,17 @@ const CONTOUR_URL = 'https://contour-tiles.example.workers.dev';
 beforeEach(() => {
   clearStyleCache();
   process.env.EXPO_PUBLIC_CONTOUR_TILE_URL = CONTOUR_URL;
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve(JSON.parse(JSON.stringify(MOCK_LIBERTY_STYLE))),
+  global.fetch = jest.fn().mockImplementation((url: string) => {
+    if (url === `${CONTOUR_URL}/health`) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+      });
+    }
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(JSON.parse(JSON.stringify(MOCK_LIBERTY_STYLE))),
+    });
   });
 });
 
@@ -137,5 +146,49 @@ describe('getOnlineStyleWithContours', () => {
     clearStyleCache();
     await getOnlineStyleWithContours();
     expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('getOnlineMapStyle', () => {
+  it('resolves the Liberty style object even when contours are not configured', async () => {
+    delete process.env.EXPO_PUBLIC_CONTOUR_TILE_URL;
+
+    const style = (await getOnlineMapStyle()) as Record<string, unknown>;
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://tiles.openfreemap.org/styles/liberty',
+    );
+    expect(style.version).toBe(8);
+    expect((style.sources as Record<string, unknown>).contour).toBeUndefined();
+  });
+
+  it('resolves one complete style object with contours when configured', async () => {
+    const style = (await getOnlineMapStyle()) as Record<string, unknown>;
+    const sources = style.sources as Record<string, unknown>;
+    const layerIds = (style.layers as { id: string }[]).map((layer) => layer.id);
+
+    expect(sources.contour).toBeDefined();
+    expect(layerIds).toContain('contour-regular');
+    expect(layerIds).toContain('contour-label');
+  });
+
+  it('keeps the base map but omits contours when the archive health check fails', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === `${CONTOUR_URL}/health`) {
+        return Promise.resolve({ ok: false });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(JSON.parse(JSON.stringify(MOCK_LIBERTY_STYLE))),
+      });
+    });
+
+    const style = (await getOnlineMapStyle()) as Record<string, unknown>;
+    const sources = style.sources as Record<string, unknown>;
+    const layerIds = (style.layers as { id: string }[]).map((layer) => layer.id);
+
+    expect(sources.contour).toBeUndefined();
+    expect(layerIds).not.toContain('contour-regular');
+    expect(layerIds).toContain('road_minor');
   });
 });

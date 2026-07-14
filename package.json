@@ -5,6 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check": "npm run check:web && npm run check:mobile",
+    "check:web": "npm test && npm run lint",
+    "check:mobile": "npm --prefix mobile test -- --runInBand && npm --prefix mobile run typecheck && npm --prefix mobile run lint",
+    "phone": "npm --prefix mobile start",
+    "phone:android:usb": "adb reverse tcp:8081 tcp:8081 && npm --prefix mobile start -- --localhost",
     "build": "npm run fetch:climate && npm run build:trails && tsc && vite build",
     "build:trails": "tsx scripts/build-trails.ts",
     "fetch:climate": "tsx scripts/fetch-climate.ts",

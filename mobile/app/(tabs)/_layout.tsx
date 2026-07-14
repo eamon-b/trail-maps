@@ -52,6 +52,7 @@ export default function TabLayout() {
           name="plan"
           options={{
             title: 'Plan',
+            headerShown: false,
             tabBarActiveTintColor: resolveTheme(themeVariant, 'plan').accent,
             headerTintColor: resolveTheme(themeVariant, 'plan').accent,
             tabBarIcon: ({ color, size, focused }) => (
@@ -85,4 +86,3 @@ export default function TabLayout() {
     </View>
   );
 }
-

@@ -3,11 +3,11 @@ appId: com.trailcompanion.app
 # Verify trail overview datasheet section and dedicated datasheet screen
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "Trail details"
     timeout: 30000
 
 # Open first trail overview
-- tapOn: "View trail →"
+- tapOn: "Trail details"
 - waitForAnimationToEnd
 
 # Wait for trail data to load

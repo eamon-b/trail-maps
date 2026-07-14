@@ -11,7 +11,7 @@
 
 import { trailJsonToTrail, type Trail, type TrackPoint, type TrailWaypoint } from '../lib/trail-utils';
 import { calculateSegmentStats } from '../lib/gpx-processor';
-import type { TrailJson } from './trail-loader';
+import type { TrailJson } from './trail-assets';
 import { TrailDataService } from './trail-data-service';
 
 const ELEVATION_ENDPOINT = 'https://api.open-meteo.com/v1/elevation';

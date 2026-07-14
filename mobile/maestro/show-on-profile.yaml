@@ -8,18 +8,11 @@ appId: com.trailcompanion.app
 # markers render inside the MapLibre GL canvas and can't be targeted by text.
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "View trail →"
+    visible: "View Map"
     timeout: 30000
 
 # Open the first trail (AAWT) and its map
-- tapOn: "View trail →"
-- waitForAnimationToEnd
-- scrollUntilVisible:
-    element:
-      text: "Open Map"
-    direction: DOWN
-    timeout: 10000
-- tapOn: "Open Map"
+- tapOn: "View Map"
 - waitForAnimationToEnd
 
 # Select a waypoint via datasheet → "Show on map"

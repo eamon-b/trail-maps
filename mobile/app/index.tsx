@@ -1,10 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../src/theme';
+import { spacing, typography } from '../src/tokens';
 
 export default function GuideListScreen() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>My Guides</Text>
-      <Text style={styles.subtitle}>Guides will appear here.</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>My Guides</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        Guides will appear here.
+      </Text>
     </View>
   );
 }
@@ -14,14 +19,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    ...typography.displayLarge,
   },
   subtitle: {
-    fontSize: 14,
-    opacity: 0.6,
+    ...typography.bodySmall,
   },
 });

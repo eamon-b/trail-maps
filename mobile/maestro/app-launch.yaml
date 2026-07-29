@@ -1,0 +1,7 @@
+appId: com.tracknotes.app
+---
+# Verify the app launches and reaches the guide list.
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "My Guides"
+    timeout: 30000

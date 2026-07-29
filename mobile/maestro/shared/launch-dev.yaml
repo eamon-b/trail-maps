@@ -1,4 +1,4 @@
-appId: com.trailcompanion.app
+appId: com.tracknotes.app
 ---
 # Shared launch flow for dev builds.
 # Dev builds show the Expo Dev Launcher on plain `am start`, so we use
@@ -6,17 +6,15 @@ appId: com.trailcompanion.app
 #
 # We clearState to guarantee a clean home screen (the app persists
 # navigation state, so stopApp alone can resume on a random screen).
-# Trail data reloads from bundled JSON in ~10-20s.
 - clearState
-- openLink: "exp+trail-maps://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
+- openLink: "exp+tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
 # The dev menu welcome ("Continue" button) always appears after clearState.
 # Wait for it, then dismiss with back press.
 - extendedWaitUntil:
     visible: "Continue"
     timeout: 60000
 - pressKey: back
-# After dismissing, wait for the app to finish loading trail data
-# and reach the home screen.
+# After dismissing, wait for the app to reach the guide list.
 - extendedWaitUntil:
-    visible: "Select a Trail"
+    visible: "My Guides"
     timeout: 60000

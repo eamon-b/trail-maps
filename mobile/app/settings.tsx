@@ -1,9 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../src/theme';
+import { spacing, typography } from '../src/tokens';
 
 export default function SettingsScreen() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.container}>
-      <Text style={styles.subtitle}>Units, direction, and account settings will live here.</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        Units, direction, and account settings will live here.
+      </Text>
     </View>
   );
 }
@@ -13,11 +18,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
   subtitle: {
-    fontSize: 14,
-    opacity: 0.6,
+    ...typography.bodySmall,
     textAlign: 'center',
   },
 });

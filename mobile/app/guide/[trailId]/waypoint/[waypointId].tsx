@@ -25,6 +25,8 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { useTheme } from '../../../../src/theme';
@@ -48,6 +50,11 @@ import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favor
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
 import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
+import {
+  selectedPhotoFromResult,
+  hasComposerContent,
+  type SelectedPhoto,
+} from '../../../../src/features/comments/photo-upload';
 import { isApiConfigured } from '../../../../src/api/client';
 import {
   deleteOwnComment,
@@ -85,6 +92,7 @@ export default function WaypointDetailScreen() {
   const toggleFavorite = useFavoritesStore((s) => s.toggle);
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!commentWaypointId) {
@@ -207,6 +215,7 @@ export default function WaypointDetailScreen() {
               key={c.id}
               comment={c}
               isMine={!!session && c.authorId === session.userId}
+              onOpenPhoto={setViewerUri}
               onDelete={async () => {
                 await deleteOwnComment({ id: c.id, source: c.source });
                 await load();
@@ -223,21 +232,56 @@ export default function WaypointDetailScreen() {
           <Composer
             waypointType={waypoint.type}
             registered={identityStatus === 'registered'}
-            onSubmit={async ({ text, waterStatus, displayName }) => {
+            onSubmit={async ({ text, waterStatus, photo, displayName }) => {
               let activeSession = session;
               if (!activeSession) {
                 if (!displayName) return; // guarded by the composer prompt
                 activeSession = await useIdentityStore.getState().register(displayName);
               }
               await submitComment(
-                { trailId, waypointId: commentWaypointId, text, waterStatus, session: activeSession },
+                { trailId, waypointId: commentWaypointId, text, waterStatus, photo, session: activeSession },
               );
               await load();
             }}
           />
         )}
       </ScrollView>
+
+      <PhotoViewer uri={viewerUri} onClose={() => setViewerUri(null)} />
     </KeyboardAvoidingView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Full-screen photo viewer
+// ---------------------------------------------------------------------------
+
+function PhotoViewer({ uri, onClose }: { uri: string | null; onClose: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Modal
+      visible={uri !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        style={[styles.viewerBackdrop, { backgroundColor: colors.scrim }]}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close photo"
+      >
+        {uri ? (
+          <Image
+            source={{ uri }}
+            style={styles.viewerImage}
+            contentFit="contain"
+            cachePolicy="disk"
+            accessibilityIgnoresInvertColors
+          />
+        ) : null}
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -297,20 +341,61 @@ function WaterBadge({ status }: { status: WaterStatus }) {
   );
 }
 
+function PhotoThumbnails({
+  urls,
+  onOpen,
+}: {
+  urls: string[];
+  onOpen: (uri: string) => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.thumbRow}
+    >
+      {urls.map((uri, i) => (
+        <Pressable
+          key={`${uri}-${i}`}
+          onPress={() => onOpen(uri)}
+          accessibilityRole="imagebutton"
+          accessibilityLabel={`Open photo ${i + 1}`}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          <Image
+            source={{ uri }}
+            style={[styles.thumb, { backgroundColor: colors.surface }]}
+            contentFit="cover"
+            cachePolicy="disk"
+            transition={120}
+            accessibilityIgnoresInvertColors
+          />
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
 function CommentItem({
   comment,
   isMine,
+  onOpenPhoto,
   onDelete,
   onRetry,
 }: {
   comment: CommentWithSyncState;
   isMine: boolean;
+  onOpenPhoto: (uri: string) => void;
   onDelete: () => void | Promise<void>;
   onRetry: () => void | Promise<void>;
 }) {
   const { colors } = useTheme();
   const pending = comment.outboxStatus === 'pending' || comment.outboxStatus === 'sending';
   const failed = comment.outboxStatus === 'failed';
+  const photoFailed = comment.photoUploadStatus === 'failed';
+  const photoPending =
+    comment.photoUploadStatus === 'pending' || comment.photoUploadStatus === 'sending';
 
   return (
     <View style={[styles.comment, { borderColor: colors.border }]}>
@@ -332,6 +417,18 @@ function CommentItem({
       {comment.body ? (
         <Text style={[styles.body, { color: colors.textPrimary }]}>{comment.body}</Text>
       ) : null}
+
+      {comment.photoUrls.length > 0 && (
+        <PhotoThumbnails urls={comment.photoUrls} onOpen={onOpenPhoto} />
+      )}
+
+      {(photoPending || photoFailed) && (
+        <Text
+          style={[styles.statusText, { color: photoFailed ? colors.danger : colors.textSecondary }]}
+        >
+          {photoFailed ? 'Photo failed to upload' : 'Uploading photo…'}
+        </Text>
+      )}
 
       {(pending || failed) && (
         <View style={styles.statusRow}>
@@ -370,6 +467,7 @@ function CommentItem({
 interface SubmitArgs {
   text: string | null;
   waterStatus: WaterStatus | null;
+  photo: SelectedPhoto | null;
   displayName?: string;
 }
 
@@ -386,11 +484,34 @@ function Composer({
   const showWater = isWaterFamily(waypointType);
   const [text, setText] = useState('');
   const [waterStatus, setWaterStatus] = useState<WaterStatus | null>(null);
+  const [photo, setPhoto] = useState<SelectedPhoto | null>(null);
   const [busy, setBusy] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
 
-  const hasContent = text.trim().length > 0 || waterStatus !== null;
+  const hasContent = hasComposerContent({ text, waterStatus, photo });
+
+  const pickFromLibrary = useCallback(async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      allowsMultipleSelection: false,
+      base64: false,
+    });
+    const selected = selectedPhotoFromResult(result);
+    if (selected) setPhoto(selected);
+  }, []);
+
+  const takePhoto = useCallback(async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return;
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+      base64: false,
+    });
+    const selected = selectedPhotoFromResult(result);
+    if (selected) setPhoto(selected);
+  }, []);
 
   const finish = useCallback(
     async (displayName?: string) => {
@@ -399,15 +520,17 @@ function Composer({
         await onSubmit({
           text: text.trim().length > 0 ? text.trim() : null,
           waterStatus,
+          photo,
           displayName,
         });
         setText('');
         setWaterStatus(null);
+        setPhoto(null);
       } finally {
         setBusy(false);
       }
     },
-    [onSubmit, text, waterStatus],
+    [onSubmit, text, waterStatus, photo],
   );
 
   const handleSubmit = useCallback(() => {
@@ -457,6 +580,53 @@ function Composer({
         multiline
         editable={!busy}
       />
+
+      {photo ? (
+        <View style={styles.photoChip}>
+          <Image
+            source={{ uri: photo.uri }}
+            style={[styles.photoChipImage, { backgroundColor: colors.background }]}
+            contentFit="cover"
+            cachePolicy="disk"
+            accessibilityIgnoresInvertColors
+          />
+          <Pressable
+            onPress={() => setPhoto(null)}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel="Remove photo"
+            hitSlop={spacing.sm}
+            style={[styles.photoChipRemove, { backgroundColor: colors.scrim }]}
+          >
+            <Text style={[styles.photoChipRemoveIcon, { color: colors.textInverse }]}>×</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.photoActions}>
+          <Pressable
+            onPress={() => void pickFromLibrary()}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel="Add photo from library"
+            hitSlop={spacing.xs}
+            style={[styles.photoButton, { borderColor: colors.border }]}
+          >
+            <Text style={[styles.photoButtonIcon, { color: colors.accent }]}>🖼</Text>
+            <Text style={[styles.photoButtonText, { color: colors.textSecondary }]}>Photo</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void takePhoto()}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel="Take a photo"
+            hitSlop={spacing.xs}
+            style={[styles.photoButton, { borderColor: colors.border }]}
+          >
+            <Text style={[styles.photoButtonIcon, { color: colors.accent }]}>📷</Text>
+            <Text style={[styles.photoButtonText, { color: colors.textSecondary }]}>Camera</Text>
+          </Pressable>
+        </View>
+      )}
 
       <Pressable
         onPress={handleSubmit}
@@ -581,6 +751,38 @@ const styles = StyleSheet.create({
   statusText: { ...typography.caption },
   actionLink: { ...typography.titleSmall },
   deleteAffordance: { alignSelf: 'flex-start', paddingTop: spacing.xs },
+
+  thumbRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
+  thumb: { width: 76, height: 76, borderRadius: radii.md },
+
+  viewerBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  viewerImage: { width: '100%', height: '100%' },
+
+  photoActions: { flexDirection: 'row', gap: spacing.sm },
+  photoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  photoButtonIcon: { ...typography.dataSmall },
+  photoButtonText: { ...typography.dataSmall, fontWeight: '600' },
+  photoChip: { alignSelf: 'flex-start' },
+  photoChipImage: { width: 88, height: 88, borderRadius: radii.md },
+  photoChipRemove: {
+    position: 'absolute',
+    top: -spacing.xs,
+    right: -spacing.xs,
+    width: 24,
+    height: 24,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoChipRemoveIcon: { ...typography.titleSmall, lineHeight: 20 },
 
   composer: {
     borderWidth: StyleSheet.hairlineWidth,

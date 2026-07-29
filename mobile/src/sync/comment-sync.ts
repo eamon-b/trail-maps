@@ -22,7 +22,7 @@
  * bumps them.
  */
 
-import type { PutCommentRequest, WaterStatus } from '@lib/comments-api-types';
+import type { PhotoContentType, PutCommentRequest, WaterStatus } from '@lib/comments-api-types';
 import { isSyncTombstone } from '@lib/comments-api-types';
 import { getDatabase } from '../db/database';
 import type { SqlDatabase } from '../db/sql-database';
@@ -33,7 +33,31 @@ import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/clien
 import * as commentsApi from '../api/comments';
 import { getSession, type Session } from '../api/auth';
 import { uuidv4 } from '../api/uuid';
+import type { SelectedPhoto } from '../features/comments/photo-upload';
 import { emitSyncChange } from './sync-events';
+
+/** Payload persisted for a `kind='photo'` outbox row. */
+export interface PhotoOutboxPayload {
+  /** The comment this photo attaches to; the upload is gated on its confirm. */
+  commentId: string;
+  /** Local URI the upload reads bytes from. */
+  localUri: string;
+  contentType: PhotoContentType;
+}
+
+/** Read raw bytes from a local (`file://` / `content://`) URI for upload. */
+export type ReadBytes = (uri: string) => Promise<Uint8Array>;
+
+/**
+ * Default byte reader: RN's `fetch` resolves local file/content URIs, and
+ * `arrayBuffer()` gives us the raw bytes to POST. Injectable so tests avoid the
+ * filesystem entirely.
+ */
+async function defaultReadBytes(uri: string): Promise<Uint8Array> {
+  const res = await fetch(uri);
+  const buf = await res.arrayBuffer();
+  return new Uint8Array(buf);
+}
 
 const BACKOFF_BASE_MS = 30_000;
 const BACKOFF_MAX_MS = 60 * 60 * 1000;
@@ -62,6 +86,8 @@ export interface SyncDeps {
   getSessionFn?: () => Promise<Session | null>;
   /** Manual retry: ignore the backoff window and attempt every queued item. */
   force?: boolean;
+  /** Test seam for reading photo bytes from a local URI. */
+  readBytes?: ReadBytes;
 }
 
 async function resolveDb(deps: SyncDeps): Promise<SqlDatabase> {
@@ -132,6 +158,7 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
         waterStatus: entry.waterStatus,
         observedAt: entry.observedAt,
         createdAt: entry.createdAt,
+        photoUrls: entry.photoUrls,
       });
       if (entry.waypointId) changedWaypoints.add(entry.waypointId);
     }
@@ -162,8 +189,35 @@ export interface DrainResult {
   failed: number;
 }
 
+// Drains must not overlap: listPending includes stale 'sending' rows (crash
+// recovery), so two concurrent drains would both pick up an in-flight photo
+// row and double-upload it (photo POSTs append; only comment PUTs are
+// idempotent). Concurrent callers coalesce onto the active drain, and one
+// follow-up drain runs afterwards so work enqueued mid-drain isn't stranded
+// until the next external trigger.
+let activeDrain: Promise<DrainResult> | null = null;
+let followUpRequested = false;
+
 /** Drain the outbox FIFO against the API. See module docs for semantics. */
 export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
+  if (activeDrain) {
+    followUpRequested = true;
+    return activeDrain;
+  }
+  activeDrain = (async () => {
+    let result = await drainOutboxNow(deps);
+    while (followUpRequested) {
+      followUpRequested = false;
+      result = await drainOutboxNow(deps);
+    }
+    return result;
+  })().finally(() => {
+    activeDrain = null;
+  });
+  return activeDrain;
+}
+
+async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   const baseUrl = deps.baseUrl ?? getBaseUrl();
   if (!baseUrl) return { outcome: 'unconfigured', sent: 0, failed: 0 };
 
@@ -177,6 +231,7 @@ export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
     fetchImpl: deps.fetchImpl,
     token: session.token,
   };
+  const readBytes = deps.readBytes ?? defaultReadBytes;
 
   const items = await outboxRepo.listPending(db);
   let sent = 0;
@@ -195,14 +250,48 @@ export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
     return { outcome, sent, failed };
   };
 
-  for (const item of items) {
+  // Photos gated on a not-yet-confirmed comment in the first pass. A second
+  // pass re-checks them so a comment+photo composed together lands in ONE
+  // drain, deterministically — regardless of outbox ordering or clock ticks.
+  const gatedPhotos: typeof items = [];
+
+  const processItems = async (
+    list: typeof items,
+    collectGated: boolean,
+  ): Promise<DrainResult | null> => {
+  for (const item of list) {
     if (!deps.force && !isDrainable(item, nowMs)) continue;
+
+    // A photo can only be attached once its comment exists server-side. Gate the
+    // upload on the comment row being `source='server'` (the PUT confirmed);
+    // until then leave the photo row pending — do NOT mark it sending or charge
+    // an attempt. The second pass picks up photos whose comment confirmed during
+    // this drain; this check is the correctness guarantee, not the ordering.
+    if (item.kind === 'photo') {
+      const { commentId } = JSON.parse(item.payloadJson) as PhotoOutboxPayload;
+      const comment = await commentsRepo.getById(db, commentId);
+      if (!comment || comment.source !== 'server') {
+        if (collectGated) gatedPhotos.push(item);
+        continue;
+      }
+    }
+
     await outboxRepo.markSending(db, item.id);
 
     try {
       if (item.kind === 'delete') {
         await commentsApi.deleteComment(ctx, item.id);
         await commentsRepo.deleteById(db, item.id);
+      } else if (item.kind === 'photo') {
+        const payload = JSON.parse(item.payloadJson) as PhotoOutboxPayload;
+        const bytes = await readBytes(payload.localUri);
+        const res = await commentsApi.uploadCommentPhoto(
+          ctx,
+          payload.commentId,
+          bytes,
+          payload.contentType,
+        );
+        await commentsRepo.setPhotoUrls(db, payload.commentId, res.photoUrls);
       } else {
         const payload = JSON.parse(item.payloadJson) as PutCommentRequest;
         const server = await commentsApi.putComment(ctx, item.id, payload);
@@ -244,6 +333,15 @@ export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
       return finish('offline');
     }
   }
+  return null;
+  };
+
+  const early = await processItems(items, true);
+  if (early) return early;
+  if (gatedPhotos.length > 0) {
+    const late = await processItems(gatedPhotos, false);
+    if (late) return late;
+  }
 
   return finish(sent > 0 || failed > 0 ? 'drained' : 'idle');
 }
@@ -259,6 +357,8 @@ export interface SubmitCommentInput {
   waterStatus?: WaterStatus | null;
   observedAt?: string | null;
   session: Session;
+  /** Optional photo to attach; uploaded after the comment itself confirms. */
+  photo?: SelectedPhoto | null;
 }
 
 export interface SubmitCommentResult {
@@ -286,6 +386,8 @@ export async function submitComment(
   const waterStatus = input.waterStatus ?? null;
   const observedAt = input.observedAt ?? null;
 
+  const photo = input.photo ?? null;
+
   await commentsRepo.insertLocalComment(db, {
     id,
     trailId: input.trailId,
@@ -296,6 +398,9 @@ export async function submitComment(
     waterStatus,
     observedAt,
     createdAt,
+    // Optimistic local preview: show the picked image immediately; the upload
+    // replaces this with the server URL on success.
+    photoUrls: photo ? [photo.uri] : undefined,
   });
 
   const payload: PutCommentRequest = {
@@ -313,6 +418,26 @@ export async function submitComment(
     payload,
     createdAt,
   });
+
+  if (photo) {
+    // Same createdAt as the comment: the drain's photo gate + its second pass
+    // guarantee comment-then-photo within one drain, so no clock-tick ordering
+    // hack is needed (a +1ms timestamp made the row ineligible when the drain
+    // ran within the same millisecond).
+    const photoPayload: PhotoOutboxPayload = {
+      commentId: id,
+      localUri: photo.uri,
+      contentType: photo.contentType,
+    };
+    await outboxRepo.enqueue(db, {
+      id: uuidv4(),
+      kind: 'photo',
+      trailId: input.trailId,
+      waypointId: input.waypointId,
+      payload: photoPayload,
+      createdAt,
+    });
+  }
 
   const drain = await drainOutbox({
     ...deps,

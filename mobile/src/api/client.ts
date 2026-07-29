@@ -74,6 +74,47 @@ export function isApiConfigured(): boolean {
   return getBaseUrl() !== undefined;
 }
 
+/** A `fetch`-shaped response, structurally what both the global and mocks return. */
+type ResponseLike = {
+  ok: boolean;
+  status: number;
+  statusText?: string;
+  text: () => Promise<string>;
+};
+
+/**
+ * Decode a response body as JSON, mapping non-2xx statuses to `ApiError`.
+ * Shared by the JSON and raw-bytes request paths. Returns `undefined` for 204s.
+ */
+async function decodeResponse<T>(response: ResponseLike): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const raw = await response.text();
+  let parsed: unknown;
+  if (raw.length > 0) {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // A body that isn't JSON on an error status is still an error.
+      if (!response.ok) {
+        throw new ApiError(response.status, 'http_error', raw || response.statusText || '');
+      }
+      throw new ApiError(response.status, 'invalid_response', 'Response body was not valid JSON');
+    }
+  }
+
+  if (!response.ok) {
+    const errBody = parsed as ApiErrorBody | undefined;
+    const code = errBody?.error?.code ?? 'http_error';
+    const message = errBody?.error?.message ?? response.statusText ?? 'Request failed';
+    throw new ApiError(response.status, code, message);
+  }
+
+  return parsed as T;
+}
+
 /**
  * Issue a request and decode JSON. Throws `NetworkError` on transport failure
  * and `ApiError` on any non-2xx response. Returns `undefined` for 204s.
@@ -98,30 +139,44 @@ export async function apiRequest<T>(path: string, options: RequestOptions): Prom
     throw new NetworkError(`Request to ${path} failed to reach the server`, cause);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
+  return decodeResponse<T>(response);
+}
+
+export interface RawRequestOptions extends RequestConfig {
+  method?: 'POST' | 'PUT';
+  /** Raw request bytes sent verbatim as the body. */
+  body: Uint8Array | ArrayBuffer;
+  /** Value for the `Content-Type` header (e.g. `image/jpeg`). */
+  contentType: string;
+}
+
+/**
+ * Issue a request whose body is raw bytes (not JSON) under an explicit
+ * `Content-Type`, decoding a JSON response. Used by the photo-upload endpoint,
+ * which takes the image bytes directly. Same error contract as `apiRequest`.
+ */
+export async function apiRequestRaw<T>(path: string, options: RawRequestOptions): Promise<T> {
+  const { baseUrl, token, fetchImpl, signal, method = 'POST', body, contentType } = options;
+  const doFetch = fetchImpl ?? fetch;
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': contentType,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let response: Response;
+  try {
+    response = await doFetch(`${baseUrl}${path}`, {
+      method,
+      headers,
+      // RN's fetch accepts a typed-array/ArrayBuffer body; cast for the DOM types.
+      body: body as unknown as BodyInit,
+      signal,
+    });
+  } catch (cause) {
+    throw new NetworkError(`Request to ${path} failed to reach the server`, cause);
   }
 
-  const raw = await response.text();
-  let parsed: unknown;
-  if (raw.length > 0) {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      // A body that isn't JSON on an error status is still an error.
-      if (!response.ok) {
-        throw new ApiError(response.status, 'http_error', raw || response.statusText);
-      }
-      throw new ApiError(response.status, 'invalid_response', 'Response body was not valid JSON');
-    }
-  }
-
-  if (!response.ok) {
-    const errBody = parsed as ApiErrorBody | undefined;
-    const code = errBody?.error?.code ?? 'http_error';
-    const message = errBody?.error?.message ?? response.statusText ?? 'Request failed';
-    throw new ApiError(response.status, code, message);
-  }
-
-  return parsed as T;
+  return decodeResponse<T>(response);
 }

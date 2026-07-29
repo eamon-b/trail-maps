@@ -12,10 +12,12 @@ import type {
   BulkSyncResponse,
   FeedComment,
   FeedResponse,
+  PhotoContentType,
   PutCommentRequest,
   SyncEntry,
+  UploadCommentPhotoResponse,
 } from '@lib/comments-api-types';
-import { apiRequest, type FetchLike } from './client';
+import { apiRequest, apiRequestRaw, type FetchLike } from './client';
 
 export interface ApiContext {
   baseUrl: string;
@@ -113,6 +115,31 @@ export async function putComment(
     method: 'PUT',
     body: payload,
   });
+}
+
+/**
+ * Attach a photo to an existing comment. The body is the RAW image bytes under
+ * the given `image/jpeg` | `image/webp` content type (owner-only, Bearer auth).
+ * 201 → the new URL plus the comment's full photo list. The comment must already
+ * exist server-side, so callers upload only after its PUT has confirmed.
+ */
+export async function uploadCommentPhoto(
+  ctx: ApiContext,
+  id: string,
+  bytes: Uint8Array | ArrayBuffer,
+  contentType: PhotoContentType,
+): Promise<UploadCommentPhotoResponse> {
+  return apiRequestRaw<UploadCommentPhotoResponse>(
+    `/v1/comments/${encodeURIComponent(id)}/photos`,
+    {
+      baseUrl: ctx.baseUrl,
+      fetchImpl: ctx.fetchImpl,
+      token: ctx.token,
+      method: 'POST',
+      body: bytes,
+      contentType,
+    },
+  );
 }
 
 /** Soft-delete a comment (owner or admin). 204 on success; idempotent. */

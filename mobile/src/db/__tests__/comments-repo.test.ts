@@ -137,6 +137,71 @@ describe('comments-repo', () => {
     expect(list[0].outboxAttempts).toBe(0);
   });
 
+  it('persists photo_urls_json on a server upsert and reads it back', async () => {
+    const d = await db();
+    await commentsRepo.upsertServerComment(
+      d,
+      serverInput({ id: 'p1', photoUrls: ['https://cdn/a.jpg', 'https://cdn/b.jpg'] }),
+    );
+    const row = await commentsRepo.getById(d, 'p1');
+    expect(row?.photoUrls).toEqual(['https://cdn/a.jpg', 'https://cdn/b.jpg']);
+  });
+
+  it('defaults photoUrls to an empty array when absent', async () => {
+    const d = await db();
+    await commentsRepo.upsertServerComment(d, serverInput({ id: 'p2' }));
+    expect((await commentsRepo.getById(d, 'p2'))?.photoUrls).toEqual([]);
+  });
+
+  it('keeps a local-preview photo list when a later server upsert carries none', async () => {
+    const d = await db();
+    await commentsRepo.insertLocalComment(d, {
+      id: 'p3',
+      trailId: TRAIL,
+      waypointId: WP,
+      authorId: 'user-1',
+      authorName: 'Me',
+      body: 'pic',
+      waterStatus: null,
+      observedAt: null,
+      createdAt: '2026-01-05T00:00:00.000Z',
+      photoUrls: ['file:///local.jpg'],
+    });
+    // A trail pull returns the confirmed comment before the photo finished
+    // uploading (no photoUrls yet) — the optimistic preview must survive.
+    await commentsRepo.upsertServerComment(d, serverInput({ id: 'p3', photoUrls: undefined }));
+    expect((await commentsRepo.getById(d, 'p3'))?.photoUrls).toEqual(['file:///local.jpg']);
+
+    // Once the server has the photo, its list wins.
+    await commentsRepo.upsertServerComment(d, serverInput({ id: 'p3', photoUrls: ['https://cdn/x.jpg'] }));
+    expect((await commentsRepo.getById(d, 'p3'))?.photoUrls).toEqual(['https://cdn/x.jpg']);
+  });
+
+  it('setPhotoUrls overwrites the stored list', async () => {
+    const d = await db();
+    await commentsRepo.upsertServerComment(d, serverInput({ id: 'p4' }));
+    await commentsRepo.setPhotoUrls(d, 'p4', ['https://cdn/one.jpg']);
+    expect((await commentsRepo.getById(d, 'p4'))?.photoUrls).toEqual(['https://cdn/one.jpg']);
+  });
+
+  it('folds a pending photo-upload outbox row onto the comment as photoUploadStatus', async () => {
+    const d = await db();
+    await commentsRepo.upsertServerComment(d, serverInput({ id: 'withphoto' }));
+    await outboxRepo.enqueue(d, {
+      id: 'photo-1',
+      kind: 'photo',
+      trailId: TRAIL,
+      waypointId: WP,
+      payload: { commentId: 'withphoto', localUri: 'file:///a.jpg', contentType: 'image/jpeg' },
+    });
+    let list = await commentsRepo.listByWaypoint(d, TRAIL, WP);
+    expect(list.find((c) => c.id === 'withphoto')?.photoUploadStatus).toBe('pending');
+
+    await outboxRepo.markFailed(d, 'photo-1', '413: too big');
+    list = await commentsRepo.listByWaypoint(d, TRAIL, WP);
+    expect(list.find((c) => c.id === 'withphoto')?.photoUploadStatus).toBe('failed');
+  });
+
   it('rejects an invalid water_status via the CHECK constraint', async () => {
     const d = await db();
     await expectDbRejection(() =>

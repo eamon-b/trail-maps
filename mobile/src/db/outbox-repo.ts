@@ -1,6 +1,9 @@
 /**
  * Outbox repository — the durable FIFO queue of pending writes (comment
- * creates and deletes) that the sync layer drains against the API.
+ * creates, deletes, and photo uploads) that the sync layer drains against the
+ * API. `kind='photo'` rows carry `{ commentId, localUri, contentType }` and are
+ * gated by the drain until their comment row is server-confirmed (see
+ * `sync/comment-sync`).
  *
  * The outbox holds only un-acknowledged work: a row is removed the moment its
  * write is confirmed. `attempts` / `last_error` drive the retry backoff and the
@@ -11,7 +14,7 @@
 
 import type { SqlDatabase } from './sql-database';
 
-export type OutboxKind = 'comment' | 'delete';
+export type OutboxKind = 'comment' | 'delete' | 'photo';
 export type OutboxStatus = 'pending' | 'sending' | 'failed';
 
 export interface OutboxItem {

@@ -1,5 +1,6 @@
 import type { BulkSyncResponse } from '@lib/comments-api-types';
-import { listTrailComments, listWaypointComments, putComment } from '../comments';
+import { listTrailComments, listWaypointComments, putComment, uploadCommentPhoto } from '../comments';
+import { ApiError } from '../client';
 
 function jsonFetch(pages: unknown[]) {
   let call = 0;
@@ -90,5 +91,40 @@ describe('comments API', () => {
     expect(url).toContain('/v1/comments/cid');
     expect(init.method).toBe('PUT');
     expect(init.headers.Authorization).toBe('Bearer tok');
+  });
+
+  it('POSTs raw photo bytes with the image content type and auth', async () => {
+    const fetchImpl = jsonFetch([
+      { photoUrl: 'https://cdn/a.jpg', photoUrls: ['https://cdn/a.jpg'] },
+    ]);
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+    const out = await uploadCommentPhoto(
+      { baseUrl: BASE, fetchImpl, token: 'tok' },
+      'cid',
+      bytes,
+      'image/jpeg',
+    );
+    expect(out.photoUrls).toEqual(['https://cdn/a.jpg']);
+    const [url, init] = (fetchImpl as jest.Mock).mock.calls[0];
+    expect(url).toBe('https://api.test/v1/comments/cid/photos');
+    expect(init.method).toBe('POST');
+    expect(init.headers['Content-Type']).toBe('image/jpeg');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(init.body).toBe(bytes); // raw bytes, not JSON-stringified
+  });
+
+  it('maps a 413 photo upload to an ApiError with the server code', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 413,
+      statusText: 'Payload Too Large',
+      text: async () => JSON.stringify({ error: { code: 'photo_too_large', message: 'too big' } }),
+    })) as unknown as typeof fetch;
+    await expect(
+      uploadCommentPhoto({ baseUrl: BASE, fetchImpl, token: 'tok' }, 'cid', new Uint8Array([1]), 'image/jpeg'),
+    ).rejects.toMatchObject({ status: 413, code: 'photo_too_large' });
+    await expect(
+      uploadCommentPhoto({ baseUrl: BASE, fetchImpl, token: 'tok' }, 'cid', new Uint8Array([1]), 'image/jpeg'),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 });

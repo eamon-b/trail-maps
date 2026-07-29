@@ -292,6 +292,205 @@ describe('deleteOwnComment', () => {
   });
 });
 
+async function seedServerCommentWithPhoto(
+  d: SqlDatabase,
+  commentId: string,
+  photoId: string,
+  createdAt = '2026-01-01T00:00:00Z',
+) {
+  await commentsRepo.upsertServerComment(d, {
+    id: commentId,
+    trailId: 'aawt',
+    waypointId: 'w_1',
+    displayName: 'Me',
+    text: 'hi',
+    waterStatus: null,
+    observedAt: null,
+    createdAt,
+  });
+  await outboxRepo.enqueue(d, {
+    id: photoId,
+    kind: 'photo',
+    trailId: 'aawt',
+    waypointId: 'w_1',
+    payload: { commentId, localUri: 'file:///a.jpg', contentType: 'image/jpeg' },
+    createdAt,
+  });
+}
+
+const PHOTO_OK = {
+  status: 201,
+  body: { photoUrl: 'https://cdn/a.jpg', photoUrls: ['https://cdn/a.jpg'] },
+};
+const readBytes = jest.fn(async () => new Uint8Array([1, 2, 3]));
+
+describe('pullTrail photo persistence', () => {
+  it('persists photoUrls from a synced comment', async () => {
+    const d = await db();
+    const fetchImpl = scriptedFetch([
+      {
+        body: {
+          comments: [feedComment('ph', { photoUrls: ['https://cdn/x.jpg'] })],
+          nextCursor: null,
+          syncedAt: 'T1',
+        },
+      },
+    ]);
+    await pullTrail('aawt', { db: d, baseUrl: BASE, fetchImpl });
+    expect((await commentsRepo.getById(d, 'ph'))?.photoUrls).toEqual(['https://cdn/x.jpg']);
+  });
+});
+
+describe('drainOutbox photo uploads', () => {
+  beforeEach(() => readBytes.mockClear());
+
+  it('does NOT send a photo while its comment is still local, then sends once confirmed', async () => {
+    const d = await db();
+    // Local (unconfirmed) comment + a photo row pointing at it. No comment outbox
+    // row, so the photo is the only pending item.
+    await commentsRepo.insertLocalComment(d, {
+      id: 'c1',
+      trailId: 'aawt',
+      waypointId: 'w_1',
+      authorId: 'u1',
+      authorName: 'Me',
+      body: 'hi',
+      waterStatus: null,
+      observedAt: null,
+      createdAt: '2026-01-01T00:00:00Z',
+      photoUrls: ['file:///a.jpg'],
+    });
+    await outboxRepo.enqueue(d, {
+      id: 'p1',
+      kind: 'photo',
+      trailId: 'aawt',
+      waypointId: 'w_1',
+      payload: { commentId: 'c1', localUri: 'file:///a.jpg', contentType: 'image/jpeg' },
+      createdAt: '2026-01-01T00:00:00Z',
+    });
+
+    const fetchImpl = scriptedFetch([PHOTO_OK]);
+    const res1 = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, readBytes });
+    // Gated: no upload attempted, no bytes read, row stays pending.
+    expect(res1.sent).toBe(0);
+    expect(readBytes).not.toHaveBeenCalled();
+    expect((fetchImpl as jest.Mock).mock.calls).toHaveLength(0);
+    expect((await outboxRepo.getById(d, 'p1'))?.status).toBe('pending');
+    expect((await commentsRepo.getById(d, 'c1'))?.photoUrls).toEqual(['file:///a.jpg']);
+
+    // Confirm the comment server-side; now the photo is sendable.
+    await commentsRepo.confirmServer(d, 'c1', {
+      displayName: 'Me',
+      text: 'hi',
+      waterStatus: null,
+      observedAt: null,
+      createdAt: '2026-01-01T00:00:00Z',
+    });
+    const res2 = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, readBytes });
+    expect(res2).toMatchObject({ outcome: 'drained', sent: 1 });
+    expect(readBytes).toHaveBeenCalledWith('file:///a.jpg');
+    expect(await outboxRepo.count(d)).toBe(0);
+    expect((await commentsRepo.getById(d, 'c1'))?.photoUrls).toEqual(['https://cdn/a.jpg']);
+  });
+
+  it('merges returned photoUrls and emits a sync change on 201', async () => {
+    const d = await db();
+    await seedServerCommentWithPhoto(d, 'c2', 'p2');
+    const fetchImpl = scriptedFetch([PHOTO_OK]);
+    const changes: SyncChange[] = [];
+    const stop = onSyncChange((c) => changes.push(c));
+    const res = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, readBytes });
+    stop();
+    expect(res).toMatchObject({ outcome: 'drained', sent: 1 });
+    expect((await commentsRepo.getById(d, 'c2'))?.photoUrls).toEqual(['https://cdn/a.jpg']);
+    expect(changes).toEqual([{ trailId: 'aawt', waypointIds: ['w_1'] }]);
+  });
+
+  it.each([
+    [413, 'photo_too_large'],
+    [409, 'too_many_photos'],
+    [415, 'unsupported_media_type'],
+  ])('marks a photo failed on %s and keeps it visible', async (status, code) => {
+    const d = await db();
+    await seedServerCommentWithPhoto(d, 'c3', 'p3');
+    const fetchImpl = scriptedFetch([{ status, body: { error: { code, message: 'no' } } }]);
+    const res = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, readBytes });
+    expect(res).toMatchObject({ outcome: 'drained', sent: 0, failed: 1 });
+    const item = await outboxRepo.getById(d, 'p3');
+    expect(item?.status).toBe('failed');
+    expect(item?.attempts).toBe(1);
+  });
+
+  it('stops the drain and leaves the photo pending on a network error', async () => {
+    const d = await db();
+    await seedServerCommentWithPhoto(d, 'c4', 'p4');
+    const fetchImpl = scriptedFetch([{ throw: true }]);
+    const res = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, readBytes });
+    expect(res.outcome).toBe('offline');
+    expect((await outboxRepo.getById(d, 'p4'))?.status).toBe('pending');
+  });
+
+  it('pauses the queue on a 401 during photo upload', async () => {
+    const d = await db();
+    await seedServerCommentWithPhoto(d, 'c5', 'p5');
+    const fetchImpl = scriptedFetch([
+      { status: 401, body: { error: { code: 'unauthorized', message: 'no' } } },
+    ]);
+    const res = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, readBytes });
+    expect(res.outcome).toBe('unauthorized');
+    expect((await outboxRepo.getById(d, 'p5'))?.status).toBe('pending');
+  });
+});
+
+describe('submitComment with a photo', () => {
+  beforeEach(() => readBytes.mockClear());
+
+  it('shows an optimistic preview, then confirms the comment and uploads the photo', async () => {
+    const d = await db();
+    // Comment PUT (201) then photo POST (201).
+    const fetchImpl = scriptedFetch([{ status: 201, body: feedComment('any', { text: 'note' }) }, PHOTO_OK]);
+    const { id, drain } = await submitComment(
+      {
+        trailId: 'aawt',
+        waypointId: 'w_1',
+        text: 'note',
+        session: SESSION,
+        photo: { uri: 'file:///pic.jpg', contentType: 'image/jpeg' },
+      },
+      { db: d, baseUrl: BASE, fetchImpl, readBytes },
+    );
+    expect(drain.outcome).toBe('drained');
+    expect(drain.sent).toBe(2); // comment + photo
+    const row = await commentsRepo.getById(d, id);
+    expect(row?.source).toBe('server');
+    expect(row?.photoUrls).toEqual(['https://cdn/a.jpg']);
+    expect(await outboxRepo.count(d)).toBe(0);
+    expect(readBytes).toHaveBeenCalledWith('file:///pic.jpg');
+  });
+
+  it('keeps the local preview and queues the photo when offline', async () => {
+    const d = await db();
+    const fetchImpl = scriptedFetch([{ throw: true }]);
+    const { id, drain } = await submitComment(
+      {
+        trailId: 'aawt',
+        waypointId: 'w_1',
+        text: 'note',
+        session: SESSION,
+        photo: { uri: 'file:///pic.jpg', contentType: 'image/jpeg' },
+      },
+      { db: d, baseUrl: BASE, fetchImpl, readBytes },
+    );
+    expect(drain.outcome).toBe('offline');
+    const row = await commentsRepo.getById(d, id);
+    expect(row?.source).toBe('local');
+    expect(row?.photoUrls).toEqual(['file:///pic.jpg']); // optimistic preview
+    // Comment + photo both queued; the photo never read bytes (comment blocked).
+    expect(await outboxRepo.count(d)).toBe(2);
+    expect(readBytes).not.toHaveBeenCalled();
+  });
+});
+
 describe('sync-change emission', () => {
   function collect(): { changes: SyncChange[]; stop: () => void } {
     const changes: SyncChange[] = [];
@@ -327,5 +526,42 @@ describe('sync-change emission', () => {
     await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn });
     stop();
     expect(changes).toEqual([]);
+  });
+});
+
+describe('drain concurrency', () => {
+  it('coalesces overlapping drains so a photo uploads exactly once', async () => {
+    const d = await db();
+    await seedServerCommentWithPhoto(d, 'conc', 'ph-conc');
+
+    // Photo POST blocks until we release it, holding drain #1 open while
+    // drain #2 is invoked. Without the mutex, #2 would also pick up the
+    // in-flight 'sending' photo row and double-upload it.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const fetchImpl = jest.fn(async () => {
+      await gate;
+      return {
+        ok: true,
+        status: 201,
+        statusText: '',
+        text: async () =>
+          JSON.stringify({ photoUrl: 'https://cdn/a.jpg', photoUrls: ['https://cdn/a.jpg'] }),
+      };
+    }) as unknown as typeof fetch;
+
+    const deps = { db: d, baseUrl: BASE, fetchImpl, readBytes, getSessionFn };
+    const first = drainOutbox(deps);
+    const second = drainOutbox(deps); // overlaps; must coalesce, not re-list
+    release();
+    const [r1, r2] = await Promise.all([first, second]);
+
+    expect(r1).toEqual(r2);
+    // Exactly one photo POST despite two drain calls (the coalesced follow-up
+    // drain finds an empty outbox and sends nothing).
+    expect((fetchImpl as unknown as jest.Mock).mock.calls.length).toBe(1);
+    const row = await commentsRepo.getById(d, 'conc');
+    expect(row?.photoUrls).toEqual(['https://cdn/a.jpg']);
+    expect(await outboxRepo.count(d)).toBe(0);
   });
 });

@@ -19,6 +19,9 @@ import type { SqlDatabase } from './sql-database';
 
 export type CommentSource = 'server' | 'local';
 
+/** Photo-outbox status folded onto a comment (worst of its pending photos). */
+export type PhotoUploadStatus = 'pending' | 'sending' | 'failed';
+
 /** A comment row as consumed by the UI. */
 export interface CommentRecord {
   id: string;
@@ -31,6 +34,12 @@ export interface CommentRecord {
   observedAt: string | null;
   createdAt: string;
   source: CommentSource;
+  /**
+   * Attached photo URLs in upload order. For a server row these are public R2
+   * URLs; for an optimistic local row they may be a local `file://` URI shown as
+   * a preview until the upload replaces it with the server URL.
+   */
+  photoUrls: string[];
 }
 
 /** A comment row joined with any pending/failed outbox state. */
@@ -39,6 +48,8 @@ export interface CommentWithSyncState extends CommentRecord {
   outboxStatus: 'pending' | 'sending' | 'failed' | null;
   outboxAttempts: number | null;
   outboxLastError: string | null;
+  /** Worst status of any pending/failed photo upload for this comment, else null. */
+  photoUploadStatus: PhotoUploadStatus | null;
 }
 
 /** Normalized server comment (from the feed or the bulk/delta sync). */
@@ -51,6 +62,8 @@ export interface ServerCommentInput {
   waterStatus: WaterStatus | null;
   observedAt: string | null;
   createdAt: string;
+  /** Photo URLs from the feed/sync; omitted when the comment has none. */
+  photoUrls?: string[];
 }
 
 /** A locally-composed, not-yet-synced comment. */
@@ -64,6 +77,8 @@ export interface LocalCommentInput {
   waterStatus: WaterStatus | null;
   observedAt: string | null;
   createdAt: string;
+  /** Optional local preview URI(s) for a photo attached before it uploads. */
+  photoUrls?: string[];
 }
 
 interface CommentRow {
@@ -77,12 +92,32 @@ interface CommentRow {
   observed_at: string | null;
   created_at: string;
   source: CommentSource;
+  photo_urls_json: string | null;
 }
 
 interface CommentJoinRow extends CommentRow {
   outbox_status: 'pending' | 'sending' | 'failed' | null;
   outbox_attempts: number | null;
   outbox_last_error: string | null;
+  photo_upload_status: PhotoUploadStatus | null;
+}
+
+/** Parse the stored photo_urls_json blob into a string array (never throws). */
+function parsePhotoUrls(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (Array.isArray(parsed)) return parsed.filter((u): u is string => typeof u === 'string');
+  } catch {
+    // Corrupt blob — treat as no photos.
+  }
+  return [];
+}
+
+/** Serialize a photo URL list for storage, or null when empty. */
+function serializePhotoUrls(urls: string[] | undefined): string | null {
+  if (!urls || urls.length === 0) return null;
+  return JSON.stringify(urls);
 }
 
 function toRecord(row: CommentRow): CommentRecord {
@@ -97,6 +132,7 @@ function toRecord(row: CommentRow): CommentRecord {
     observedAt: row.observed_at,
     createdAt: row.created_at,
     source: row.source,
+    photoUrls: parsePhotoUrls(row.photo_urls_json),
   };
 }
 
@@ -112,8 +148,8 @@ export async function upsertServerComment(
   await db.runAsync(
     `INSERT INTO comments
        (id, trail_id, waypoint_id, author_id, author_name, body,
-        water_status, observed_at, created_at, source)
-     VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, 'server')
+        water_status, observed_at, created_at, source, photo_urls_json)
+     VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, 'server', ?)
      ON CONFLICT(id) DO UPDATE SET
        trail_id = excluded.trail_id,
        waypoint_id = excluded.waypoint_id,
@@ -122,7 +158,11 @@ export async function upsertServerComment(
        water_status = excluded.water_status,
        observed_at = excluded.observed_at,
        created_at = excluded.created_at,
-       source = 'server'`,
+       source = 'server',
+       -- Keep an existing (possibly local-preview) list when the server row
+       -- carries none yet, so an optimistic thumbnail survives the confirm→
+       -- upload window; adopt the server's list the moment it has one.
+       photo_urls_json = COALESCE(excluded.photo_urls_json, comments.photo_urls_json)`,
     [
       input.id,
       input.trailId,
@@ -132,8 +172,21 @@ export async function upsertServerComment(
       input.waterStatus,
       input.observedAt,
       input.createdAt,
+      serializePhotoUrls(input.photoUrls),
     ],
   );
+}
+
+/** Overwrite a comment's photo URL list (e.g. the server's list after upload). */
+export async function setPhotoUrls(
+  db: SqlDatabase,
+  id: string,
+  photoUrls: string[],
+): Promise<void> {
+  await db.runAsync('UPDATE comments SET photo_urls_json = ? WHERE id = ?', [
+    serializePhotoUrls(photoUrls),
+    id,
+  ]);
 }
 
 /** Apply a server tombstone: drop the mirrored row entirely. */
@@ -149,8 +202,8 @@ export async function insertLocalComment(
   await db.runAsync(
     `INSERT INTO comments
        (id, trail_id, waypoint_id, author_id, author_name, body,
-        water_status, observed_at, created_at, source)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'local')`,
+        water_status, observed_at, created_at, source, photo_urls_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'local', ?)`,
     [
       input.id,
       input.trailId,
@@ -161,6 +214,7 @@ export async function insertLocalComment(
       input.waterStatus,
       input.observedAt,
       input.createdAt,
+      serializePhotoUrls(input.photoUrls),
     ],
   );
 }
@@ -208,11 +262,24 @@ export async function listByWaypoint(
   trailId: string,
   waypointId: string,
 ): Promise<CommentWithSyncState[]> {
+  // Photo uploads live in the outbox under kind='photo', keyed by their own id
+  // with the owning comment id in the JSON payload. Fold the worst status of a
+  // comment's photo rows onto it (failed > sending > pending) for a badge.
   const rows = await db.getAllAsync<CommentJoinRow>(
     `SELECT c.*,
             o.status AS outbox_status,
             o.attempts AS outbox_attempts,
-            o.last_error AS outbox_last_error
+            o.last_error AS outbox_last_error,
+            (SELECT p.status
+               FROM outbox p
+              WHERE p.kind = 'photo'
+                AND json_extract(p.payload_json, '$.commentId') = c.id
+              ORDER BY CASE p.status
+                         WHEN 'failed' THEN 0
+                         WHEN 'sending' THEN 1
+                         ELSE 2
+                       END
+              LIMIT 1) AS photo_upload_status
        FROM comments c
        LEFT JOIN outbox o ON o.id = c.id AND o.kind = 'comment'
       WHERE c.trail_id = ? AND c.waypoint_id = ?
@@ -224,6 +291,7 @@ export async function listByWaypoint(
     outboxStatus: row.outbox_status,
     outboxAttempts: row.outbox_attempts,
     outboxLastError: row.outbox_last_error,
+    photoUploadStatus: row.photo_upload_status,
   }));
 }
 

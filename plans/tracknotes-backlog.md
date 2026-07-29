@@ -25,6 +25,7 @@ Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this fil
 - [ ] **Near-duplicate waypoint dedupe** — AAWT has pairs like "Talbot Hut Site" twice ~100 m apart (source-data trait, predates rebuild). Dedupe in `scripts/build-trails.ts`; mind the waypoint-ID registry (retired IDs keep their comments).
 
 ## Tech debt / infra
+- [ ] **Photo-upload idempotency server-side** — the client drain mutex prevents double-uploads, but the POST itself appends blindly; an idempotency key (e.g. content hash per comment) would be defense in depth.
 - [ ] **MapLibre RN + Expo SDK upgrade** — pinned at the proven 10.4.x / SDK 54 combo; upgrade deliberately as its own task.
 - [ ] **Custom domain for workers** — `*.workers.dev` URLs are baked into shipped builds (same trade-off as the contour worker); a custom domain decouples them.
 - [ ] **Comment-feed pagination UI** — the per-waypoint feed endpoint paginates; the detail screen currently renders the full cached set (fine at hobby scale).

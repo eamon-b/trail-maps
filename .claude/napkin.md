@@ -25,6 +25,8 @@
    Do instead: for secure randomness use `globalThis.expo.uuidv4` (native, always present via expo-modules-core) as the RN path — see mobile/src/api/uuid.ts; never Math.random.
 9. **[2026-07-30] Local comments-API E2E without cloud auth**
    Do instead: `wrangler dev` in workers/comments-api (migrate local first), `adb reverse tcp:8787 tcp:8787`, `EXPO_PUBLIC_API_BASE_URL=http://localhost:8787` in mobile/.env.local, restart Metro (EXPO_PUBLIC_* is inlined at bundle time). Airplane mode does NOT cut adb-reverse loopback — simulate offline by killing wrangler dev.
+10. **[2026-07-30] Changing database_id in wrangler.toml resets which LOCAL D1 wrangler uses**
+   Do instead: local state is keyed by the id — after pasting a production id, re-run `migrate:local` and expect an empty local DB (old data still on disk under .wrangler/state/v3/d1; registered device tokens vanish → app 401s and pauses its outbox).
 
 ## Domain Behavior Guardrails
 1. **[2026-07-29] Waypoint IDs are registry-pinned — never regenerate them ad hoc**

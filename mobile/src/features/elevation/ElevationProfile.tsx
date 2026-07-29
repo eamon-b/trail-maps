@@ -29,15 +29,17 @@ import {
 } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
+import { type DistanceUnit } from '@lib/format-distance';
 import { useReduceMotion, useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
-import { getMinMax, niceAxisTicks } from './axis';
+import { distanceAxisTicks, elevationAxis, getMinMax, type AxisTick } from './axis';
 import {
   buildLodLevels,
   selectLodLevel,
   type ProfilePoint,
 } from './lod';
 import {
+  buildProfileMarkers,
   clampWindow,
   hitTestMarkers,
   nearestPointByKm,
@@ -49,6 +51,9 @@ import { waypointColor } from './waypoint-category';
 const PADDING = { top: spacing.md, right: spacing.md, bottom: spacing.xl, left: spacing.xxl };
 /** Touch radius (px) for waypoint hit-testing. */
 const WAYPOINT_TOUCH_RADIUS = 22;
+/** Marker dot radius (px): standard vs. favorited (slightly larger). */
+const MARKER_RADIUS = 4;
+const FAVORITE_MARKER_RADIUS = 6;
 /** Max window state pushes per second while a gesture is active. */
 const WINDOW_THROTTLE_MS = 33;
 
@@ -73,6 +78,10 @@ export interface ElevationProfileProps {
   totalKm: number;
   /** Waypoints to mark on the trace. */
   waypoints?: ProfileWaypoint[];
+  /** Starred waypoint ids — drawn larger, in the favorite color. */
+  favoriteIds?: ReadonlySet<string>;
+  /** Display unit for the axis labels + scrub readout. */
+  unit: DistanceUnit;
   /** Controlled visible window [startKm, endKm]. */
   window: KmWindow;
   /** Reports a new visible window (pan/zoom). */
@@ -88,8 +97,8 @@ export interface ElevationProfileProps {
 interface PlotMetrics {
   eleMin: number;
   eleRange: number;
-  eleTicks: number[];
-  distTicks: number[];
+  eleTicks: AxisTick[];
+  distTicks: AxisTick[];
   chartWidth: number;
   chartHeight: number;
   span: number;
@@ -99,6 +108,8 @@ export function ElevationProfile({
   points,
   totalKm,
   waypoints,
+  favoriteIds,
+  unit,
   window,
   onWindowChange,
   currentKm,
@@ -118,6 +129,8 @@ export function ElevationProfile({
   const chartWidth = size.width - PADDING.left - PADDING.right;
   const chartHeight = size.height - PADDING.top - PADDING.bottom;
   const left = PADDING.left;
+  /** Elevation unit suffix for the y-axis (feet for imperial users). */
+  const eleSuffix = unit === 'mi' ? 'ft' : 'm';
 
   // --- LOD: precompute once, pick per zoom (no per-frame resampling) --------
   const lod = useMemo(() => buildLodLevels(points), [points]);
@@ -146,13 +159,13 @@ export function ElevationProfile({
   const metrics = useMemo<PlotMetrics | null>(() => {
     if (windowedPoints.length === 0 || chartWidth <= 0 || chartHeight <= 0) return null;
     const { min: minEle, max: maxEle } = getMinMax(windowedPoints.map((p) => p.ele));
-    const eleTicks = niceAxisTicks(minEle, maxEle, 4);
-    const distTicks = niceAxisTicks(window.startKm, window.endKm, 5);
-    const eleMin = eleTicks.length > 0 ? Math.min(minEle, eleTicks[0]) : minEle;
-    const eleMax = eleTicks.length > 0 ? Math.max(maxEle, eleTicks[eleTicks.length - 1]) : maxEle;
-    const eleRange = eleMax - eleMin || 1;
-    return { eleMin, eleRange, eleTicks, distTicks, chartWidth, chartHeight, span };
-  }, [windowedPoints, chartWidth, chartHeight, window.startKm, window.endKm, span]);
+    // Ticks are nice in the display unit (m / ft, km / mi) but positioned in the
+    // chart's native domain (metres / km) so the pixel mapping below is unit-agnostic.
+    const ele = elevationAxis(minEle, maxEle, unit, 4);
+    const distTicks = distanceAxisTicks(window.startKm, window.endKm, unit, 5);
+    const eleRange = ele.max - ele.min || 1;
+    return { eleMin: ele.min, eleRange, eleTicks: ele.ticks, distTicks, chartWidth, chartHeight, span };
+  }, [windowedPoints, chartWidth, chartHeight, window.startKm, window.endKm, span, unit]);
 
   const clampX = useCallback(
     (x: number) => Math.max(left, Math.min(left + chartWidth, x)),
@@ -194,29 +207,35 @@ export function ElevationProfile({
   // --- Waypoint marker pixel positions -------------------------------------
   const markers = useMemo(() => {
     if (!metrics || !waypoints) return [];
-    const { eleMin, eleRange } = metrics;
-    const out: { id: string; x: number; y: number; color: string }[] = [];
-    for (const wp of waypoints) {
-      if (wp.totalDistance == null) continue;
-      if (wp.totalDistance < window.startKm || wp.totalDistance > window.endKm) continue;
-      const x = left + ((wp.totalDistance - window.startKm) / span) * chartWidth;
-      const ele = wp.elevation ?? eleMin;
-      const y = PADDING.top + chartHeight - ((ele - eleMin) / eleRange) * chartHeight;
-      out.push({ id: wp.id, x, y, color: waypointColor(wp.type, colors) });
-    }
-    return out;
-  }, [metrics, waypoints, window.startKm, window.endKm, span, left, chartWidth, chartHeight, colors]);
+    return buildProfileMarkers(
+      waypoints,
+      {
+        startKm: window.startKm,
+        endKm: window.endKm,
+        left,
+        chartWidth,
+        top: PADDING.top,
+        chartHeight,
+        eleMin: metrics.eleMin,
+        eleRange: metrics.eleRange,
+      },
+      (wp) =>
+        favoriteIds?.has(wp.id)
+          ? { color: colors.waypointFavorite, radius: FAVORITE_MARKER_RADIUS }
+          : { color: waypointColor(wp.type, colors), radius: MARKER_RADIUS },
+    );
+  }, [metrics, waypoints, favoriteIds, window.startKm, window.endKm, left, chartWidth, chartHeight, colors]);
 
   const gridLines = useMemo(() => {
     if (!metrics) return [];
     const { eleMin, eleRange, eleTicks, distTicks } = metrics;
     const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
     for (const tick of eleTicks) {
-      const y = PADDING.top + chartHeight - ((tick - eleMin) / eleRange) * chartHeight;
+      const y = PADDING.top + chartHeight - ((tick.pos - eleMin) / eleRange) * chartHeight;
       lines.push({ x1: left, y1: y, x2: left + chartWidth, y2: y });
     }
     for (const tick of distTicks) {
-      const x = xOf(tick);
+      const x = xOf(tick.pos);
       lines.push({ x1: x, y1: PADDING.top, x2: x, y2: PADDING.top + chartHeight });
     }
     return lines;
@@ -413,7 +432,7 @@ export function ElevationProfile({
           )}
 
           {markers.map((m) => (
-            <Circle key={m.id} cx={m.x} cy={m.y} r={4} color={m.color} />
+            <Circle key={m.id} cx={m.x} cy={m.y} r={m.radius} color={m.color} />
           ))}
 
           {currentPositionX != null && (
@@ -446,13 +465,14 @@ export function ElevationProfile({
       <View style={styles.yLabels} pointerEvents="none">
         {metrics.eleTicks.map((tick) => {
           const y =
-            PADDING.top + chartHeight - ((tick - metrics.eleMin) / metrics.eleRange) * chartHeight;
+            PADDING.top + chartHeight - ((tick.pos - metrics.eleMin) / metrics.eleRange) * chartHeight;
           return (
             <Text
-              key={`y-${tick}`}
+              key={`y-${tick.pos}`}
               style={[styles.axisLabel, { color: colors.textSecondary, top: y - 6, left: 0 }]}
             >
-              {Math.round(tick)}m
+              {tick.label}
+              {eleSuffix}
             </Text>
           );
         })}
@@ -460,13 +480,13 @@ export function ElevationProfile({
       <View style={styles.xLabels} pointerEvents="none">
         {metrics.distTicks.map((tick) => (
           <Text
-            key={`x-${tick}`}
+            key={`x-${tick.pos}`}
             style={[
               styles.axisLabel,
-              { color: colors.textSecondary, left: xOf(tick) - 12, bottom: 0 },
+              { color: colors.textSecondary, left: xOf(tick.pos) - 12, bottom: 0 },
             ]}
           >
-            {Math.round(tick)}
+            {tick.label}
           </Text>
         ))}
       </View>

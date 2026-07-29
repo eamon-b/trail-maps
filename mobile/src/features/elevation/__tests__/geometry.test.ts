@@ -1,9 +1,11 @@
 import {
+  buildProfileMarkers,
   clampWindow,
   hitTestMarkers,
   nearestPointByKm,
   xToKm,
   MIN_WINDOW_KM,
+  type MarkerPlot,
 } from '../geometry';
 
 describe('clampWindow', () => {
@@ -93,5 +95,70 @@ describe('xToKm', () => {
     expect(xToKm(44, window, layout)).toBeCloseTo(10, 6);
     expect(xToKm(344, window, layout)).toBeCloseTo(40, 6);
     expect(xToKm(194, window, layout)).toBeCloseTo(25, 6);
+  });
+});
+
+describe('buildProfileMarkers', () => {
+  // A 100 px wide plot over a 0–100 km window, elevation domain 0–1000 m.
+  const plot: MarkerPlot = {
+    startKm: 0,
+    endKm: 100,
+    left: 0,
+    chartWidth: 100,
+    top: 0,
+    chartHeight: 200,
+    eleMin: 0,
+    eleRange: 1000,
+  };
+  const resolve = (wp: { id: string }) =>
+    wp.id === 'fav' ? { color: 'FAV', radius: 6 } : { color: 'STD', radius: 4 };
+
+  it('places markers at their km/elevation pixel positions', () => {
+    const markers = buildProfileMarkers(
+      [{ id: 'a', type: 'water', totalDistance: 50, elevation: 500 }],
+      plot,
+      resolve,
+    );
+    expect(markers).toHaveLength(1);
+    // 50 km → x=50; 500 m → y = top + height - (500/1000)*height = 100.
+    expect(markers[0].x).toBeCloseTo(50, 6);
+    expect(markers[0].y).toBeCloseTo(100, 6);
+  });
+
+  it('drops markers outside the window or without a distance', () => {
+    const markers = buildProfileMarkers(
+      [
+        { id: 'before', type: 'water', totalDistance: -5, elevation: 100 },
+        { id: 'after', type: 'water', totalDistance: 150, elevation: 100 },
+        { id: 'nodist', type: 'water', elevation: 100 },
+        { id: 'in', type: 'water', totalDistance: 25, elevation: 100 },
+      ],
+      plot,
+      resolve,
+    );
+    expect(markers.map((m) => m.id)).toEqual(['in']);
+  });
+
+  it('applies resolved color + radius (favorite emphasis)', () => {
+    const markers = buildProfileMarkers(
+      [
+        { id: 'fav', type: 'camp', totalDistance: 10, elevation: 0 },
+        { id: 'std', type: 'camp', totalDistance: 20, elevation: 0 },
+      ],
+      plot,
+      resolve,
+    );
+    expect(markers[0]).toMatchObject({ id: 'fav', color: 'FAV', radius: 6 });
+    expect(markers[1]).toMatchObject({ id: 'std', color: 'STD', radius: 4 });
+  });
+
+  it('falls back to the floor when elevation is missing', () => {
+    const markers = buildProfileMarkers(
+      [{ id: 'a', type: 'water', totalDistance: 50 }],
+      plot,
+      resolve,
+    );
+    // ele = eleMin (0) → y at the plot floor (top + height = 200).
+    expect(markers[0].y).toBeCloseTo(200, 6);
   });
 });

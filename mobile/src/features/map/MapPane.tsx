@@ -7,12 +7,13 @@
  * and overlays out of the render-heavy map component.
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useDownloadsStore } from '../../state/downloads-store';
+import { useFavoritesStore } from '../../state/favorites-store';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { GuideMap, type GuideMapHandle } from './GuideMap';
@@ -26,6 +27,9 @@ export function MapPane() {
   const download = useDownloadsStore((s) => s.byTrail[trailId]);
   const source = resolveStyleSource(download?.state);
   const offline = source === 'offline';
+
+  const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
+  const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
 
   const { position, accuracy, status, start } = useGuidePositionContext();
 
@@ -62,6 +66,7 @@ export function MapPane() {
           waypoints={waypoints}
           currentPosition={position}
           accuracy={accuracy}
+          favoriteIds={favoriteSet}
           onWaypointTap={onWaypointTap}
         />
       </MapErrorBoundary>

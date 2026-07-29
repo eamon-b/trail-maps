@@ -33,9 +33,23 @@ describe('matchesFamily', () => {
     expect(matchesFamily('junction', 'shelter')).toBe(false);
   });
 
-  it('exposes exactly the five chips', () => {
+  it('the favorites family is an id-based cut, not a type-based one', () => {
+    // Type is irrelevant; only the isFavorite flag decides.
+    expect(matchesFamily('water', 'favorites', true)).toBe(true);
+    expect(matchesFamily('water', 'favorites', false)).toBe(false);
+    expect(matchesFamily('junction', 'favorites', true)).toBe(true);
+  });
+
+  it('type-based families ignore the isFavorite flag', () => {
+    expect(matchesFamily('water', 'water', false)).toBe(true);
+    expect(matchesFamily('campsite', 'water', true)).toBe(false);
+    expect(matchesFamily('anything', 'all', false)).toBe(true);
+  });
+
+  it('exposes exactly the six chips (favorites second)', () => {
     expect(FILTER_FAMILIES.map((f) => f.value)).toEqual([
       'all',
+      'favorites',
       'water',
       'camp',
       'town',

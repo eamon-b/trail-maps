@@ -97,6 +97,66 @@ export function hitTestMarkers(
   return bestId;
 }
 
+/** A waypoint the profile can mark on the trace. */
+export interface ProfileMarkerInput {
+  id: string;
+  type: string;
+  totalDistance?: number;
+  elevation?: number;
+}
+
+/** A resolved marker in pixel space, with its paint (color + radius). */
+export interface ProfileMarker {
+  id: string;
+  x: number;
+  y: number;
+  color: string;
+  radius: number;
+}
+
+/** The plot geometry a marker is placed into (all px, plus the km window). */
+export interface MarkerPlot {
+  startKm: number;
+  endKm: number;
+  /** Left inset (px) where the plot area starts. */
+  left: number;
+  /** Plot area width (px). */
+  chartWidth: number;
+  /** Top inset (px) of the plot area. */
+  top: number;
+  /** Plot area height (px). */
+  chartHeight: number;
+  /** Elevation-domain minimum (metres) mapped to the plot floor. */
+  eleMin: number;
+  /** Elevation-domain span (metres); must be non-zero. */
+  eleRange: number;
+}
+
+/**
+ * Place waypoint markers on the elevation trace. Pure so favorite emphasis and
+ * windowing are unit-testable without Skia: markers outside the window (or with
+ * no distance) are dropped, and `resolve` supplies each marker's color + radius
+ * so the caller routes favorite/category colors through the theme.
+ */
+export function buildProfileMarkers(
+  waypoints: ProfileMarkerInput[],
+  plot: MarkerPlot,
+  resolve: (wp: ProfileMarkerInput) => { color: string; radius: number },
+): ProfileMarker[] {
+  const span = Math.max(plot.endKm - plot.startKm, 1e-6);
+  const out: ProfileMarker[] = [];
+  for (const wp of waypoints) {
+    if (wp.totalDistance == null) continue;
+    if (wp.totalDistance < plot.startKm || wp.totalDistance > plot.endKm) continue;
+    const x = plot.left + ((wp.totalDistance - plot.startKm) / span) * plot.chartWidth;
+    const ele = wp.elevation ?? plot.eleMin;
+    const y = plot.top + plot.chartHeight - ((ele - plot.eleMin) / plot.eleRange) * plot.chartHeight;
+    const { color, radius } = resolve(wp);
+    out.push({ id: wp.id, x, y, color, radius });
+  }
+  return out;
+}
+
 /** A track point carrying at least distance + elevation. */
 export interface DistEle {
   dist: number;

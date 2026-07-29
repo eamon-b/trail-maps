@@ -1,4 +1,4 @@
-import { getMinMax, niceAxisTicks } from '../axis';
+import { distanceAxisTicks, elevationAxis, getMinMax, niceAxisTicks } from '../axis';
 
 describe('getMinMax', () => {
   it('returns 0/0 for an empty array', () => {
@@ -44,5 +44,41 @@ describe('niceAxisTicks', () => {
       // no long fractional tails
       expect(t).toBeCloseTo(Math.round(t * 1e6) / 1e6, 9);
     }
+  });
+});
+
+describe('distanceAxisTicks', () => {
+  it('labels km ticks in km, positioned in km', () => {
+    const ticks = distanceAxisTicks(0, 100, 'km', 5);
+    expect(ticks.map((t) => t.label)).toEqual(['0', '20', '40', '60', '80', '100']);
+    expect(ticks.map((t) => t.pos)).toEqual([0, 20, 40, 60, 80, 100]);
+  });
+
+  it('labels nice miles but keeps positions in km', () => {
+    // ~161 km ≈ 100 mi → nice mi ticks 0/20/40/60/80/100 at their km offsets.
+    const ticks = distanceAxisTicks(0, 160.9344, 'mi', 5);
+    expect(ticks.map((t) => t.label)).toEqual(['0', '20', '40', '60', '80', '100']);
+    // 20 mi sits at 32.19 km, 100 mi at 160.93 km.
+    expect(ticks[1].pos).toBeCloseTo(32.187, 2);
+    expect(ticks[ticks.length - 1].pos).toBeCloseTo(160.934, 2);
+  });
+});
+
+describe('elevationAxis', () => {
+  it('produces metre ticks and a padded metre domain for metric', () => {
+    const axis = elevationAxis(90, 410, 'km', 4);
+    expect(axis.ticks.map((t) => t.label)).toEqual(['100', '200', '300', '400']);
+    expect(axis.ticks.map((t) => t.pos)).toEqual([100, 200, 300, 400]);
+    // Domain pads out to enclose the data extremes.
+    expect(axis.min).toBe(90);
+    expect(axis.max).toBe(410);
+  });
+
+  it('labels feet but positions ticks in metres for imperial', () => {
+    // 0–320 m ≈ 0–1050 ft → nice ft ticks 0/200/400/600/800/1000.
+    const axis = elevationAxis(0, 320, 'mi', 4);
+    expect(axis.ticks.map((t) => t.label)).toEqual(['0', '200', '400', '600', '800', '1000']);
+    // 1000 ft → 304.8 m.
+    expect(axis.ticks[axis.ticks.length - 1].pos).toBeCloseTo(304.8, 1);
   });
 });

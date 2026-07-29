@@ -102,11 +102,15 @@ export function waypointFeatureId(wp: MapWaypoint, index: number): string {
  *  - a top-level `id` (the stable waypoint id) so MapLibre keeps identity
  *    across cluster/label re-layouts and tap events resolve back to it;
  *  - a `color` property (resolved from the theme via `colorForType`) so a
- *    single data-driven CircleLayer can paint every category correctly.
+ *    single data-driven CircleLayer can paint every category correctly;
+ *  - a `favorite` boolean (true when the id is in `favoriteIds`) so the same
+ *    CircleLayer can enlarge/ring starred markers via a `case` paint
+ *    expression, without a second source or breaking clustering.
  */
 export function buildWaypointCollection(
   waypoints: MapWaypoint[],
   colorForType: (type: string) => string,
+  favoriteIds?: ReadonlySet<string>,
 ): FeatureCollection<Point> {
   const features: Feature<Point>[] = waypoints.map((wp, i) => {
     const id = waypointFeatureId(wp, i);
@@ -122,6 +126,7 @@ export function buildWaypointCollection(
         name: wp.name,
         type: wp.type,
         color: colorForType(wp.type),
+        favorite: favoriteIds?.has(id) ?? false,
       },
     };
   });

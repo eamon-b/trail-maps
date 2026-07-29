@@ -10,12 +10,16 @@
 import { formatDistance, type DistanceUnit } from '@lib/format-distance';
 import { categoryToken, type WaypointColorToken } from '../elevation/waypoint-category';
 
-/** Filter families surfaced as chips. 'all' shows every waypoint. */
-export type WaypointFamily = 'all' | 'water' | 'camp' | 'town' | 'shelter';
+/**
+ * Filter families surfaced as chips. 'all' shows every waypoint; 'favorites'
+ * shows only starred waypoints (an id-based, not type-based, cut).
+ */
+export type WaypointFamily = 'all' | 'favorites' | 'water' | 'camp' | 'town' | 'shelter';
 
 /** The chips, in display order. */
 export const FILTER_FAMILIES: { value: WaypointFamily; label: string }[] = [
   { value: 'all', label: 'All' },
+  { value: 'favorites', label: 'Favorites' },
   { value: 'water', label: 'Water' },
   { value: 'camp', label: 'Camp' },
   { value: 'town', label: 'Town' },
@@ -38,9 +42,14 @@ export function familyForType(type: string): Exclude<WaypointFamily, 'all'> | 'o
   return TOKEN_TO_FAMILY[categoryToken(type)] ?? 'other';
 }
 
-/** Whether a waypoint type is shown under the given family filter. */
-export function matchesFamily(type: string, family: WaypointFamily): boolean {
+/**
+ * Whether a waypoint is shown under the given family filter. `isFavorite` is
+ * only consulted for the 'favorites' family (an id-based cut); the type-based
+ * families ignore it.
+ */
+export function matchesFamily(type: string, family: WaypointFamily, isFavorite = false): boolean {
   if (family === 'all') return true;
+  if (family === 'favorites') return isFavorite;
   return familyForType(type) === family;
 }
 

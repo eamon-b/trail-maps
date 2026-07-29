@@ -130,6 +130,8 @@ export interface GuideMapProps {
   currentPosition?: { lat: number; lon: number } | null;
   /** GPS accuracy in metres — sizes the puck's accuracy circle. */
   accuracy?: number | null;
+  /** Starred waypoint ids — enlarged and ringed in the favorite color. */
+  favoriteIds?: ReadonlySet<string>;
   /** Tapped waypoint's stable id. */
   onWaypointTap?: (id: string) => void;
 }
@@ -145,6 +147,7 @@ export const GuideMap = memo(
       waypoints,
       currentPosition,
       accuracy,
+      favoriteIds,
       onWaypointTap,
     },
     ref,
@@ -196,8 +199,9 @@ export const GuideMap = memo(
       [sideTrips],
     );
     const waypointCollection = useMemo(
-      () => buildWaypointCollection(waypoints ?? [], (type) => waypointColor(type, colors)),
-      [waypoints, colors],
+      () =>
+        buildWaypointCollection(waypoints ?? [], (type) => waypointColor(type, colors), favoriteIds),
+      [waypoints, colors, favoriteIds],
     );
 
     // --- User-location puck ------------------------------------------------
@@ -287,14 +291,17 @@ export const GuideMap = memo(
       [colors.info],
     );
 
+    // Favorited markers read as a data-driven `case` on the feature's
+    // `favorite` flag: a larger circle ringed in the theme favorite color, so a
+    // single CircleLayer paints both states and clustering is untouched.
     const waypointCircleStyle = useMemo(
       () => ({
-        circleRadius: 5,
+        circleRadius: ['case', ['get', 'favorite'], 7, 5] as unknown as number,
         circleColor: ['get', 'color'] as unknown as string,
-        circleStrokeColor: MARKER_STROKE,
-        circleStrokeWidth: 1.5,
+        circleStrokeColor: ['case', ['get', 'favorite'], colors.waypointFavorite, MARKER_STROKE] as unknown as string,
+        circleStrokeWidth: ['case', ['get', 'favorite'], 3, 1.5] as unknown as number,
       }),
-      [],
+      [colors.waypointFavorite],
     );
 
     const clusterCircleStyle = useMemo(

@@ -33,6 +33,7 @@ import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/clien
 import * as commentsApi from '../api/comments';
 import { getSession, type Session } from '../api/auth';
 import { uuidv4 } from '../api/uuid';
+import { emitSyncChange } from './sync-events';
 
 const BACKOFF_BASE_MS = 30_000;
 const BACKOFF_MAX_MS = 60 * 60 * 1000;
@@ -117,6 +118,7 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
   }
 
   let applied = 0;
+  const changedWaypoints = new Set<string>();
   for (const entry of result.entries) {
     if (isSyncTombstone(entry)) {
       await commentsRepo.applyTombstone(db, entry.id);
@@ -131,11 +133,14 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
         observedAt: entry.observedAt,
         createdAt: entry.createdAt,
       });
+      if (entry.waypointId) changedWaypoints.add(entry.waypointId);
     }
     applied += 1;
   }
 
   await writeSince(db, trailId, result.syncedAt);
+  // Nudge any mounted feed for this trail to re-read the freshly-applied rows.
+  if (applied > 0) emitSyncChange({ trailId, waypointIds: [...changedWaypoints] });
   return { outcome: 'pulled', applied, syncedAt: result.syncedAt };
 }
 
@@ -177,6 +182,19 @@ export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
   let sent = 0;
   let failed = 0;
 
+  // Track what changed so a single event fires on the way out (whether the
+  // drain finished cleanly or bailed early), nudging any mounted feed to re-read.
+  const changedWaypoints = new Set<string>();
+  let changedTrail: string | undefined;
+  const noteChange = (item: { trailId: string | null; waypointId: string | null }) => {
+    if (item.waypointId) changedWaypoints.add(item.waypointId);
+    if (item.trailId) changedTrail = item.trailId;
+  };
+  const finish = (outcome: DrainOutcome): DrainResult => {
+    if (sent > 0) emitSyncChange({ trailId: changedTrail, waypointIds: [...changedWaypoints] });
+    return { outcome, sent, failed };
+  };
+
   for (const item of items) {
     if (!deps.force && !isDrainable(item, nowMs)) continue;
     await outboxRepo.markSending(db, item.id);
@@ -197,20 +215,22 @@ export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
         });
       }
       await outboxRepo.remove(db, item.id);
+      noteChange(item);
       sent += 1;
     } catch (e) {
       if (e instanceof NetworkError) {
         await outboxRepo.markPending(db, item.id);
-        return { outcome: 'offline', sent, failed };
+        return finish('offline');
       }
       if (e instanceof ApiError && e.status === 401) {
         await outboxRepo.markPending(db, item.id);
-        return { outcome: 'unauthorized', sent, failed };
+        return finish('unauthorized');
       }
       if (e instanceof ApiError && e.status === 404 && item.kind === 'delete') {
         // Already gone server-side — the delete is a no-op success.
         await commentsRepo.deleteById(db, item.id);
         await outboxRepo.remove(db, item.id);
+        noteChange(item);
         sent += 1;
         continue;
       }
@@ -221,11 +241,11 @@ export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
       }
       // 5xx / unknown — retryable transient; stop and try again later.
       await outboxRepo.markPending(db, item.id);
-      return { outcome: 'offline', sent, failed };
+      return finish('offline');
     }
   }
 
-  return { outcome: sent > 0 || failed > 0 ? 'drained' : 'idle', sent, failed };
+  return finish(sent > 0 || failed > 0 ? 'drained' : 'idle');
 }
 
 // ---------------------------------------------------------------------------

@@ -11,7 +11,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { formatDistance } from '@lib/format-distance';
+import { formatDistance, formatElevation } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
@@ -46,8 +46,11 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
 
   const data = useMemo(
-    () => orderedWaypoints(trail).filter((w) => matchesFamily(w.type, family)),
-    [trail, family],
+    () =>
+      orderedWaypoints(trail).filter((w, i) =>
+        matchesFamily(w.type, family, favoriteSet.has(waypointKey(w, i))),
+      ),
+    [trail, family, favoriteSet],
   );
 
   const openWaypoint = useCallback(
@@ -130,6 +133,13 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
         ItemSeparatorComponent={() => (
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
         )}
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            {family === 'favorites'
+              ? 'No favorites yet. Tap the heart on a waypoint to save it here.'
+              : 'No waypoints match this filter.'}
+          </Text>
+        }
         // scrollToIndex can fire before variable-height rows are measured; nudge
         // to an offset estimate, then retry once layout settles.
         onScrollToIndexFailed={(info) => {
@@ -219,7 +229,7 @@ function WaypointRow({
         )}
         {waypoint.elevation != null && (
           <Text style={[styles.elevation, { color: colors.textSecondary }]}>
-            {Math.round(waypoint.elevation)} m
+            {formatElevation(waypoint.elevation, units)}
           </Text>
         )}
       </View>
@@ -250,6 +260,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+  },
+  emptyText: {
+    ...typography.bodySmall,
+    paddingVertical: spacing.xl,
+    textAlign: 'center',
   },
   separator: {
     height: StyleSheet.hairlineWidth,

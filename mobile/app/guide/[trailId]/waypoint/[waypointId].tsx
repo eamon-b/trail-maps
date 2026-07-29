@@ -25,7 +25,7 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { formatDistance } from '@lib/format-distance';
+import { formatDistance, formatElevation } from '@lib/format-distance';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { useTheme } from '../../../../src/theme';
 import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
@@ -55,6 +55,7 @@ import {
   retryOutbox,
   submitComment,
 } from '../../../../src/sync/comment-sync';
+import { onSyncChange } from '../../../../src/sync/sync-events';
 
 export default function WaypointDetailScreen() {
   const { trailId, waypointId } = useLocalSearchParams<{
@@ -113,6 +114,16 @@ export default function WaypointDetailScreen() {
     };
   }, [load, trailId]);
 
+  // A background drain/pull that changes rows (e.g. flips this comment
+  // local→server) emits here; re-read so the mounted feed reflects it without
+  // waiting for a refocus. Feeds are small, so re-query on any event for this
+  // trail (or an unscoped one).
+  useEffect(() => {
+    return onSyncChange((change) => {
+      if (change.trailId == null || change.trailId === trailId) void load();
+    });
+  }, [load, trailId]);
+
   if (!waypoint) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
@@ -167,7 +178,7 @@ export default function WaypointDetailScreen() {
         <View style={styles.stats}>
           <Stat label="Distance" value={formatDistance(km, units)} />
           {waypoint.elevation != null && (
-            <Stat label="Elevation" value={`${Math.round(waypoint.elevation)} m`} />
+            <Stat label="Elevation" value={formatElevation(waypoint.elevation, units)} />
           )}
           {signed && signed.direction !== 'here' && (
             <Stat

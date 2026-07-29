@@ -85,6 +85,7 @@ describe('ElevationProfile', () => {
   const baseProps = {
     points: makePoints(300),
     totalKm: 100,
+    unit: 'km' as const,
     window: { startKm: 0, endKm: 100 },
     waypoints: [
       { id: 'w1', type: 'water', totalDistance: 25, elevation: 120 },
@@ -112,6 +113,7 @@ describe('ElevationProfile', () => {
         <ElevationProfile
           points={[]}
           totalKm={0}
+          unit="km"
           window={{ startKm: 0, endKm: 0 }}
           onWindowChange={jest.fn()}
         />,
@@ -126,6 +128,23 @@ describe('ElevationProfile', () => {
     act(() => {
       root = TestRenderer.create(
         <ElevationProfile {...baseProps} currentKm={40} onWindowChange={jest.fn()} />,
+      );
+    });
+    layoutAll(root);
+    expect(root.toJSON()).toBeTruthy();
+    act(() => root.unmount());
+  });
+
+  it('renders favorited markers (imperial units) without throwing', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = TestRenderer.create(
+        <ElevationProfile
+          {...baseProps}
+          unit="mi"
+          favoriteIds={new Set(['w1'])}
+          onWindowChange={jest.fn()}
+        />,
       );
     });
     layoutAll(root);

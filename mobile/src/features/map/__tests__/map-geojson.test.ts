@@ -90,6 +90,18 @@ describe('buildWaypointCollection', () => {
   it('returns an empty collection for no waypoints', () => {
     expect(buildWaypointCollection([], colorForType).features).toEqual([]);
   });
+
+  it('defaults every feature to favorite:false when no set is given', () => {
+    const fc = buildWaypointCollection(waypoints, colorForType);
+    expect(fc.features.map((f) => f.properties!.favorite)).toEqual([false, false, false]);
+  });
+
+  it('flags features whose id is in the favorite set', () => {
+    const favoriteIds = new Set(['w_camp', 'Legacy-2']);
+    const fc = buildWaypointCollection(waypoints, colorForType, favoriteIds);
+    // Keyed by the same stable feature id (bundled id, or name+index fallback).
+    expect(fc.features.map((f) => f.properties!.favorite)).toEqual([false, true, true]);
+  });
 });
 
 describe('trailCameraBounds', () => {

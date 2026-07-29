@@ -9,10 +9,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { formatDistance } from '@lib/format-distance';
+import { formatDistance, formatElevation } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
+import { useFavoritesStore } from '../../state/favorites-store';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { orderedWaypoints } from '../guide/guide-trail';
@@ -27,6 +28,8 @@ export function ElevationPane() {
   const { trail, trailId } = useGuide();
   const { currentKm } = useGuidePositionContext();
   const units = useSettingsStore((s) => s.units);
+  const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
+  const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
   const router = useRouter();
 
   const totalKm = trail.track.totalDistance || 0;
@@ -84,7 +87,7 @@ export function ElevationPane() {
         >
           {readout ? (
             <Text style={[styles.chipText, { color: colors.textPrimary }]}>
-              {formatDistance(readout.km, units)} · {Math.round(readout.ele)} m
+              {formatDistance(readout.km, units)} · {formatElevation(readout.ele, units)}
             </Text>
           ) : (
             <Text style={[styles.chipHint, { color: colors.textSecondary }]}>
@@ -114,6 +117,8 @@ export function ElevationPane() {
           points={points}
           totalKm={totalKm}
           waypoints={waypoints}
+          favoriteIds={favoriteSet}
+          unit={units}
           currentKm={currentKm}
           window={window}
           onWindowChange={setWindow}

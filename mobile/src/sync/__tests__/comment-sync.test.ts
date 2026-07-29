@@ -11,6 +11,7 @@ import {
   pullTrail,
   submitComment,
 } from '../comment-sync';
+import { onSyncChange, type SyncChange } from '../sync-events';
 
 const BASE = 'https://api.test';
 const SESSION: Session = { userId: 'u1', token: 'tok', displayName: 'Me' };
@@ -288,5 +289,43 @@ describe('deleteOwnComment', () => {
     expect(res?.outcome).toBe('drained');
     expect(await commentsRepo.getById(d, 'S')).toBeNull();
     expect(await outboxRepo.count(d)).toBe(0);
+  });
+});
+
+describe('sync-change emission', () => {
+  function collect(): { changes: SyncChange[]; stop: () => void } {
+    const changes: SyncChange[] = [];
+    const stop = onSyncChange((c) => changes.push(c));
+    return { changes, stop };
+  }
+
+  it('emits after a drain that flips rows to server', async () => {
+    const d = await db();
+    await seedLocal(d, 'm1');
+    const fetchImpl = scriptedFetch([{ status: 201, body: feedComment('m1') }]);
+    const { changes, stop } = collect();
+    await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+    stop();
+    expect(changes).toEqual([{ trailId: 'aawt', waypointIds: ['w_1'] }]);
+  });
+
+  it('emits after a pull that applied rows', async () => {
+    const d = await db();
+    const fetchImpl = scriptedFetch([
+      { body: { comments: [feedComment('a')], nextCursor: null, syncedAt: 'T1' } },
+    ]);
+    const { changes, stop } = collect();
+    await pullTrail('aawt', { db: d, baseUrl: BASE, fetchImpl });
+    stop();
+    expect(changes).toEqual([{ trailId: 'aawt', waypointIds: ['w_1'] }]);
+  });
+
+  it('does not emit when a drain sends nothing', async () => {
+    const d = await db();
+    const fetchImpl = scriptedFetch([]);
+    const { changes, stop } = collect();
+    await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+    stop();
+    expect(changes).toEqual([]);
   });
 });

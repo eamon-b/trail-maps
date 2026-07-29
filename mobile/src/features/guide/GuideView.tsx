@@ -9,11 +9,11 @@
  */
 
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme';
-import { spacing, typography } from '../../tokens';
-import { useDownloadsStore } from '../../state/downloads-store';
+import { spacing } from '../../tokens';
 import { ElevationPane } from '../elevation/ElevationPane';
+import { MapPane } from '../map/MapPane';
 import { useGuide } from './GuideContext';
 import { SegmentedControl } from './SegmentedControl';
 import { WaypointListPane } from './WaypointListPane';
@@ -64,30 +64,6 @@ function FrozenPane({ active, children }: { active: boolean; children: React.Rea
   );
 }
 
-function MapPane() {
-  const { colors } = useTheme();
-  const { trailId } = useGuide();
-  const download = useDownloadsStore((s) => s.byTrail[trailId]);
-  const complete = download?.state === 'complete';
-
-  return (
-    <View style={[styles.placeholder, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.placeholderTitle, { color: colors.textPrimary }]}>Map</Text>
-      <Text
-        style={[
-          styles.placeholderStatus,
-          { color: complete ? colors.downloadDone : colors.textSecondary },
-        ]}
-      >
-        {complete ? 'Offline maps ready' : 'Online — no offline maps downloaded'}
-      </Text>
-      <Text style={[styles.placeholderHint, { color: colors.textSecondary }]}>
-        The interactive map lands after the first on-device boot.
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -100,23 +76,5 @@ const styles = StyleSheet.create({
   },
   hidden: {
     display: 'none',
-  },
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.sm,
-  },
-  placeholderTitle: {
-    ...typography.displaySmall,
-  },
-  placeholderStatus: {
-    ...typography.dataSmall,
-    textAlign: 'center',
-  },
-  placeholderHint: {
-    ...typography.bodySmall,
-    textAlign: 'center',
   },
 });

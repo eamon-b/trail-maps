@@ -13,6 +13,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
 import { useDownloadsStore } from '../../state/downloads-store';
+import { ElevationPane } from '../elevation/ElevationPane';
 import { useGuide } from './GuideContext';
 import { SegmentedControl } from './SegmentedControl';
 import { WaypointListPane } from './WaypointListPane';
@@ -82,18 +83,6 @@ function MapPane() {
       </Text>
       <Text style={[styles.placeholderHint, { color: colors.textSecondary }]}>
         The interactive map lands after the first on-device boot.
-      </Text>
-    </View>
-  );
-}
-
-function ElevationPane() {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.placeholder, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.placeholderTitle, { color: colors.textPrimary }]}>Elevation</Text>
-      <Text style={[styles.placeholderHint, { color: colors.textSecondary }]}>
-        Elevation profile coming soon.
       </Text>
     </View>
   );

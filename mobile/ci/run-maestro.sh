@@ -42,7 +42,7 @@ adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 # Dev builds show a launcher UI on plain `am start`; the deep link tells
 # the dev client to auto-connect to the Metro bundler.
 adb shell am start -a android.intent.action.VIEW \
-  -d "exp+tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" \
+  -d "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" \
   com.tracknotes.app
 
 APP_READY=false

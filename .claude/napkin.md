@@ -17,6 +17,10 @@
    Do instead: always run expo/eas commands from `mobile/`; if a root `app.json` appears, delete it.
 5. **[2026-07-29] DB constraint tests flake with `.rejects.toThrow()` on the better-sqlite3 adapter**
    Do instead: use `expectDbRejection` from `mobile/src/db/__tests__/test-helpers.ts`.
+6. **[2026-07-29] Dev-client deep link scheme is `tracknotes://`, NOT `exp+tracknotes://`**
+   Do instead: launch with `adb shell am start -a android.intent.action.VIEW -d "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" com.tracknotes.app`.
+7. **[2026-07-29] Dev-menu "Continue" overlay appears only on first launch per install, not per clearState**
+   Do instead: in Maestro flows, wait for it with `optional: true` + conditional `runFlow` dismissal (see maestro/shared/launch-dev.yaml).
 
 ## Domain Behavior Guardrails
 1. **[2026-07-29] Waypoint IDs are registry-pinned — never regenerate them ad hoc**

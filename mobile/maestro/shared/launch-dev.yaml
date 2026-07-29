@@ -7,14 +7,20 @@ appId: com.tracknotes.app
 # We clearState to guarantee a clean home screen (the app persists
 # navigation state, so stopApp alone can resume on a random screen).
 - clearState
-- openLink: "exp+tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
-# The dev menu welcome ("Continue" button) always appears after clearState.
-# Wait for it, then dismiss with back press.
+- openLink: "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
+# The dev menu welcome ("Continue" button) appears on the first launch
+# after install — but not on every clearState — so dismiss it only if
+# it shows up.
 - extendedWaitUntil:
     visible: "Continue"
-    timeout: 60000
-- pressKey: back
-# After dismissing, wait for the app to reach the guide list.
+    timeout: 20000
+    optional: true
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - pressKey: back
+# Wait for the app to reach the guide list.
 - extendedWaitUntil:
     visible: "My Guides"
     timeout: 60000

@@ -8,6 +8,11 @@ import { classifyTracks, combineTracksGeographically } from '../src/lib/track-cl
 import { classifyWaypoint } from '../src/lib/waypoint-classifier.js';
 import { escapeHtml, escapeJsString } from '../src/lib/escape.js';
 import type { TrackClassificationConfig, GpxPoint as LibGpxPoint } from '../src/lib/types.js';
+import {
+  assignWaypointIds,
+  stringifyRegistry,
+  type WaypointRegistry,
+} from './lib/waypoint-ids.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -88,6 +93,7 @@ interface GpxPoint {
 }
 
 interface Waypoint {
+  id?: string;             // stable id assigned from the committed registry
   name: string;
   lat: number;
   lon: number;
@@ -113,6 +119,7 @@ interface WaypointVisit {
 }
 
 interface VariantWaypoint {
+  id?: string;             // stable id, shared with the same waypoint on the main route
   name: string;
   type: string;
   lat: number;
@@ -178,6 +185,7 @@ const SCRIPTS_DIR = path.dirname(
 );
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '..');
 const DATA_DIR = path.join(PROJECT_ROOT, 'data/trails');
+const WAYPOINT_IDS_PATH = path.join(PROJECT_ROOT, 'data/waypoint-ids.json');
 const OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/generated');
 const TRAIL_PAGES_DIR = path.join(PROJECT_ROOT, 'src/web/trails');
 const TRAIL_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'trail-template.html');
@@ -599,6 +607,7 @@ function enrichVariantWaypoints(
       const trackPoint = variant.points[visit.trackIndex];
 
       variantWaypoints.push({
+        id: visit.waypoint.id,
         name: visit.waypoint.name,
         type: visit.waypoint.type,
         lat: visit.waypoint.lat,
@@ -819,7 +828,7 @@ function validateTrailDirectory(trailDir: string): { errors: string[]; needsAuto
   return { errors, needsAutoConfig };
 }
 
-async function processTrail(trailDir: string, autoGenConfig: boolean = false): Promise<ProcessedTrail> {
+async function processTrail(trailDir: string, registry: WaypointRegistry, autoGenConfig: boolean = false): Promise<ProcessedTrail> {
   const configPath = path.join(trailDir, 'trail.json');
 
   // Find GPX file
@@ -1006,6 +1015,17 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
   // Update config with calculated distance
   config.lengthKm = Math.round(totalDistance * 10) / 10;
 
+  // Assign stable ids from the committed registry BEFORE splitting the
+  // waypoint list into on-trail / off-trail / variant views. Enriched,
+  // off-trail, and variant waypoints all spread or copy from these same
+  // source objects, so mutating `id` here propagates the id to every place a
+  // waypoint surfaces in the generated JSON (so a comment follows the
+  // waypoint regardless of which view a user is looking at).
+  const waypointIds = assignWaypointIds(config.id, waypoints, registry);
+  waypoints.forEach((wp, i) => {
+    wp.id = waypointIds[i];
+  });
+
   // Enrich waypoints with distance and elevation data
   const waypointMaxDist = config.waypointMaxDistance ?? 500;
   const enrichedWaypoints = enrichWaypoints(waypoints, mainRoutePoints, waypointMaxDist);
@@ -1191,6 +1211,17 @@ async function main() {
 
   console.log('All trails validated successfully.\n');
 
+  // Load the committed waypoint-id registry (deterministic mint + registry).
+  let waypointRegistry: WaypointRegistry = {};
+  if (fs.existsSync(WAYPOINT_IDS_PATH)) {
+    try {
+      waypointRegistry = JSON.parse(fs.readFileSync(WAYPOINT_IDS_PATH, 'utf-8'));
+    } catch (e) {
+      console.error(`Failed to parse ${WAYPOINT_IDS_PATH}: ${e instanceof Error ? e.message : 'parse error'}`);
+      process.exit(1);
+    }
+  }
+
   const trailIndex: { id: string; name: string; shortName: string; lengthKm: number }[] = [];
 
   for (const trailDir of trailDirs) {
@@ -1199,7 +1230,7 @@ async function main() {
     console.log(`Processing: ${trailId}${needsAutoGen ? ' (auto-generating config)' : ''}`);
 
     try {
-      const processed = await processTrail(trailDir, needsAutoGen);
+      const processed = await processTrail(trailDir, waypointRegistry, needsAutoGen);
 
       // Write processed data
       const outputPath = path.join(OUTPUT_DIR, `${processed.config.id}.json`);
@@ -1229,6 +1260,12 @@ async function main() {
   const indexPath = path.join(OUTPUT_DIR, 'index.json');
   fs.writeFileSync(indexPath, JSON.stringify(trailIndex, null, 2));
   console.log(`\nTrail index written to ${indexPath}`);
+
+  // Write the (append-only) waypoint-id registry back, deterministically
+  // sorted for stable git diffs.
+  fs.writeFileSync(WAYPOINT_IDS_PATH, stringifyRegistry(waypointRegistry));
+  const registryCount = Object.values(waypointRegistry).reduce((sum, e) => sum + e.length, 0);
+  console.log(`Waypoint-id registry written to ${WAYPOINT_IDS_PATH} (${registryCount} entries)`);
 }
 
 main().catch(console.error);

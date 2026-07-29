@@ -1,0 +1,4949 @@
+{
+  "aawt": [
+    {
+      "id": "w_00176641",
+      "name": "Howitt Creek",
+      "type": "water",
+      "lat": -37.17886133528973,
+      "lon": 146.64824402734064
+    },
+    {
+      "id": "w_00191a0a",
+      "name": "High Plains Creek",
+      "type": "water",
+      "lat": -36.926905475014074,
+      "lon": 147.2279998956175
+    },
+    {
+      "id": "w_002030e0",
+      "name": "Mt Hotham",
+      "type": "town",
+      "lat": -36.99204,
+      "lon": 147.14913
+    },
+    {
+      "id": "w_014e6a06",
+      "name": "Happy Jacks Creek",
+      "type": "water",
+      "lat": -36.01123588559375,
+      "lon": 148.53998519903826
+    },
+    {
+      "id": "w_018874da",
+      "name": "Wilkinson's Creek Campsite",
+      "type": "campsite",
+      "lat": -36.440548742647486,
+      "lon": 148.2629907626575
+    },
+    {
+      "id": "w_0247ab67",
+      "name": "Whites River Hut",
+      "type": "hut",
+      "lat": -36.29987387376888,
+      "lon": 148.38577443787727
+    },
+    {
+      "id": "w_052b0278",
+      "name": "Ghost Gully Camping Area",
+      "type": "campsite",
+      "lat": -35.692730617351934,
+      "lon": 148.5918566060564
+    },
+    {
+      "id": "w_0552367d",
+      "name": "Nine Mile Creek",
+      "type": "water",
+      "lat": -35.960621612587865,
+      "lon": 148.48087451185464
+    },
+    {
+      "id": "w_056dc132",
+      "name": "Cope Hut",
+      "type": "hut",
+      "lat": -36.90738,
+      "lon": 147.29367
+    },
+    {
+      "id": "w_06812cbf",
+      "name": "Thomson Bridge Campground",
+      "type": "campsite",
+      "lat": -37.957271896580004,
+      "lon": 146.42000601033013
+    },
+    {
+      "id": "w_0b7beb2d",
+      "name": "Mackays Hut",
+      "type": "hut",
+      "lat": -36.0889002974755,
+      "lon": 148.46441833005525
+    },
+    {
+      "id": "w_0bb1e0d4",
+      "name": "Cave Creek",
+      "type": "water",
+      "lat": -35.62480191282599,
+      "lon": 148.68448631904613
+    },
+    {
+      "id": "w_0bdcbf10",
+      "name": "Opera House",
+      "type": "hut",
+      "lat": -36.38740939734627,
+      "lon": 148.27464021005272
+    },
+    {
+      "id": "w_0d5727ee",
+      "name": "Spargo Hut",
+      "type": "hut",
+      "lat": -36.98185702882733,
+      "lon": 147.16295907418825
+    },
+    {
+      "id": "w_0fecf167",
+      "name": "Four Mile Hut",
+      "type": "hut",
+      "lat": -35.9297670563222,
+      "lon": 148.47833680558713
+    },
+    {
+      "id": "w_100e5e3e",
+      "name": "Happys Hut",
+      "type": "hut",
+      "lat": -36.01166760234601,
+      "lon": 148.53936113609467
+    },
+    {
+      "id": "w_101183da",
+      "name": "Omeo",
+      "type": "town",
+      "lat": -37.09913,
+      "lon": 147.59397
+    },
+    {
+      "id": "w_10a02b66",
+      "name": "Langford Gap Hut",
+      "type": "hut",
+      "lat": -36.88478924730906,
+      "lon": 147.3215456126571
+    },
+    {
+      "id": "w_10e581c2",
+      "name": "Mt Wills Hut",
+      "type": "hut",
+      "lat": -36.81144078954513,
+      "lon": 147.47397094120848
+    },
+    {
+      "id": "w_128a877d",
+      "name": "Goodradigbee River",
+      "type": "water",
+      "lat": -35.6752958933788,
+      "lon": 148.7613523234628
+    },
+    {
+      "id": "w_1290a628",
+      "name": "Chance Creek",
+      "type": "water",
+      "lat": -35.85040519116122,
+      "lon": 148.53024655701506
+    },
+    {
+      "id": "w_13909982",
+      "name": "Tantangara Creek",
+      "type": "water",
+      "lat": -35.81873128325527,
+      "lon": 148.56481520721024
+    },
+    {
+      "id": "w_1563456f",
+      "name": "bobs hut",
+      "type": "water",
+      "lat": -37.62583,
+      "lon": 146.38022
+    },
+    {
+      "id": "w_159ea872",
+      "name": "Dead Horse Ck",
+      "type": "water",
+      "lat": -36.81392,
+      "lon": 148.04321
+    },
+    {
+      "id": "w_15a792cc",
+      "name": "Rock Shelter",
+      "type": "campsite",
+      "lat": -37.83588,
+      "lon": 146.30436
+    },
+    {
+      "id": "w_1645d5d1",
+      "name": "Bogong Creek Saddle",
+      "type": "campsite",
+      "lat": -36.77074,
+      "lon": 147.28004
+    },
+    {
+      "id": "w_16abb09e",
+      "name": "Johnies Top",
+      "type": "water-tank",
+      "lat": -36.74955,
+      "lon": 147.83461
+    },
+    {
+      "id": "w_16b2a783",
+      "name": "Little Bimberi Creek",
+      "type": "water",
+      "lat": -35.67316237021498,
+      "lon": 148.82706481020747
+    },
+    {
+      "id": "w_19d06a12",
+      "name": "Langford West Aqueduct 1",
+      "type": "water",
+      "lat": -36.9056,
+      "lon": 147.29939
+    },
+    {
+      "id": "w_1a8229dd",
+      "name": "Cootapatamba Hut",
+      "type": "hut",
+      "lat": -36.47750934181792,
+      "lon": 148.25611164103708
+    },
+    {
+      "id": "w_1bd54e79",
+      "name": "Johnston Hut",
+      "type": "hut",
+      "lat": -36.848610180672054,
+      "lon": 147.3513653435696
+    },
+    {
+      "id": "w_1e2f836d",
+      "name": "Tantangara Creek",
+      "type": "water",
+      "lat": -35.75401,
+      "lon": 148.56147
+    },
+    {
+      "id": "w_1fac6e47",
+      "name": "Twins Track",
+      "type": "water",
+      "lat": -37.01997,
+      "lon": 147.06039
+    },
+    {
+      "id": "w_2121963c",
+      "name": "Orroral River",
+      "type": "water",
+      "lat": -35.62092213578576,
+      "lon": 148.95107900691613
+    },
+    {
+      "id": "w_21693fed",
+      "name": "Cascade Hut",
+      "type": "hut",
+      "lat": -36.583206830559895,
+      "lon": 148.25765468738683
+    },
+    {
+      "id": "w_21799a69",
+      "name": "Oldfields Hut",
+      "type": "hut",
+      "lat": -35.67754210840997,
+      "lon": 148.75508169687745
+    },
+    {
+      "id": "w_22444fe9",
+      "name": "Near Mt Speculation",
+      "type": "campsite",
+      "lat": -37.124,
+      "lon": 146.64942
+    },
+    {
+      "id": "w_2271e3d2",
+      "name": "McKeahnies Creek",
+      "type": "water",
+      "lat": -36.06936248689083,
+      "lon": 148.52318488072532
+    },
+    {
+      "id": "w_22a67673",
+      "name": "Speculation Rd",
+      "type": "water",
+      "lat": -37.11892,
+      "lon": 146.66448
+    },
+    {
+      "id": "w_2328b1c7",
+      "name": "Rock Shelter",
+      "type": "campsite",
+      "lat": -37.83646164984719,
+      "lon": 146.30210234059146
+    },
+    {
+      "id": "w_23f5a73a",
+      "name": "Pond Creek 2",
+      "type": "water",
+      "lat": -35.6252,
+      "lon": 148.88101
+    },
+    {
+      "id": "w_243f2dde",
+      "name": "Langford Gap",
+      "type": "water",
+      "lat": -36.88416,
+      "lon": 147.32113
+    },
+    {
+      "id": "w_255458b4",
+      "name": "Limestone Creek",
+      "type": "water",
+      "lat": -36.82848872871022,
+      "lon": 148.0725245756081
+    },
+    {
+      "id": "w_26c04569",
+      "name": "Morass Ck (Treat - Farmland)",
+      "type": "water",
+      "lat": -36.79685,
+      "lon": 147.69888
+    },
+    {
+      "id": "w_2771b2db",
+      "name": "South Selwyn",
+      "type": "water-tank",
+      "lat": -37.05065,
+      "lon": 146.89651
+    },
+    {
+      "id": "w_2a331f75",
+      "name": "Morris Creek",
+      "type": "water",
+      "lat": -35.674498763682955,
+      "lon": 148.66209605982104
+    },
+    {
+      "id": "w_2b8b4dba",
+      "name": "O'Sheas Mill Site",
+      "type": "campsite",
+      "lat": -37.92480786158686,
+      "lon": 146.38463596021253
+    },
+    {
+      "id": "w_2c119080",
+      "name": "Selwyn Track",
+      "type": "campsite",
+      "lat": -37.08886,
+      "lon": 146.82526
+    },
+    {
+      "id": "w_2eb3fd64",
+      "name": "Mountain Monarchs",
+      "type": "campsite",
+      "lat": -37.898192646712246,
+      "lon": 146.34620848955228
+    },
+    {
+      "id": "w_2f7bc0b0",
+      "name": "Snowy River 2",
+      "type": "water",
+      "lat": -36.4581,
+      "lon": 148.2937
+    },
+    {
+      "id": "w_2f90197e",
+      "name": "Buckwong Hut",
+      "type": "hut",
+      "lat": -36.7421,
+      "lon": 148.00735
+    },
+    {
+      "id": "w_3072c4bb",
+      "name": "Camp Creek",
+      "type": "water",
+      "lat": -36.75325003319168,
+      "lon": 147.33653423363728
+    },
+    {
+      "id": "w_31a45293",
+      "name": "Valentines Hut",
+      "type": "hut",
+      "lat": -36.22679997837732,
+      "lon": 148.371688411092
+    },
+    {
+      "id": "w_31cbbe82",
+      "name": "Murrumbidgee River",
+      "type": "water",
+      "lat": -35.746610536749586,
+      "lon": 148.55986311486546
+    },
+    {
+      "id": "w_3231517e",
+      "name": "Big River 1",
+      "type": "campsite",
+      "lat": -36.78786,
+      "lon": 147.33692
+    },
+    {
+      "id": "w_333db8a4",
+      "name": "Diggers Creek",
+      "type": "water",
+      "lat": -36.09461521290172,
+      "lon": 148.45707116713538
+    },
+    {
+      "id": "w_36687f96",
+      "name": "Cascade Creek 1",
+      "type": "water",
+      "lat": -36.58252,
+      "lon": 148.25995
+    },
+    {
+      "id": "w_38fbcc63",
+      "name": "Limestone Caves and Hut",
+      "type": "hut",
+      "lat": -36.85491521218009,
+      "lon": 148.05375714147354
+    },
+    {
+      "id": "w_39285cdd",
+      "name": "Cope Saddle Hut",
+      "type": "hut",
+      "lat": -36.92190609143369,
+      "lon": 147.2612185932373
+    },
+    {
+      "id": "w_399de7a7",
+      "name": "East Riley Rd",
+      "type": "water-tank",
+      "lat": -37.07569,
+      "lon": 146.8299
+    },
+    {
+      "id": "w_3c99a282",
+      "name": "Chesters Yard",
+      "type": "campsite",
+      "lat": -37.2368372880213,
+      "lon": 146.59645231954192
+    },
+    {
+      "id": "w_3e3fb00d",
+      "name": "Bogong Creek Saddle",
+      "type": "campsite",
+      "lat": -36.771025118522736,
+      "lon": 147.2780183301928
+    },
+    {
+      "id": "w_3ed1c0c3",
+      "name": "Nobs Track",
+      "type": "water",
+      "lat": -37.28926,
+      "lon": 146.52024
+    },
+    {
+      "id": "w_40722ae5",
+      "name": "Brocks Rd",
+      "type": "campsite",
+      "lat": -37.21573,
+      "lon": 146.60604
+    },
+    {
+      "id": "w_409951ea",
+      "name": "Murray Gap Trail",
+      "type": "water",
+      "lat": -35.68447,
+      "lon": 148.80429
+    },
+    {
+      "id": "w_42a846ec",
+      "name": "Selwyn Creek Road",
+      "type": "campsite",
+      "lat": -37.04083120504632,
+      "lon": 146.94849522917576
+    },
+    {
+      "id": "w_43fa9f06",
+      "name": "Bimberi Creek",
+      "type": "water",
+      "lat": -35.65912357660643,
+      "lon": 148.8301912778747
+    },
+    {
+      "id": "w_44d4a5fd",
+      "name": "Derrick Hut",
+      "type": "hut",
+      "lat": -36.97123206941397,
+      "lon": 147.16064451703977
+    },
+    {
+      "id": "w_460c8b0c",
+      "name": "Whitelaw Hut Site",
+      "type": "campsite",
+      "lat": -37.80207,
+      "lon": 146.26075
+    },
+    {
+      "id": "w_466f1382",
+      "name": "Blue Jacket Campsite",
+      "type": "campsite",
+      "lat": -37.665032221482804,
+      "lon": 146.30998090621802
+    },
+    {
+      "id": "w_479fb77e",
+      "name": "Tantangara Creek",
+      "type": "water",
+      "lat": -35.75411329805604,
+      "lon": 148.56179021340327
+    },
+    {
+      "id": "w_47d92b0c",
+      "name": "Camp Creek",
+      "type": "water",
+      "lat": -37.12058555548551,
+      "lon": 146.648626442404
+    },
+    {
+      "id": "w_4bf2fa0b",
+      "name": "The Twins",
+      "type": "water-tank",
+      "lat": -37.0284,
+      "lon": 147.0394
+    },
+    {
+      "id": "w_4d8bfc63",
+      "name": "Tumut River",
+      "type": "water",
+      "lat": -36.15085756816558,
+      "lon": 148.3701754287785
+    },
+    {
+      "id": "w_4e42de30",
+      "name": "Taylors Crossing Campsite",
+      "type": "campsite",
+      "lat": -36.82635988599439,
+      "lon": 147.65936532792838
+    },
+    {
+      "id": "w_4ef31bcc",
+      "name": "Grey Mare Hut",
+      "type": "water",
+      "lat": -36.21161,
+      "lon": 148.33737
+    },
+    {
+      "id": "w_4fa3636a",
+      "name": "Langford West Aqueduct 2",
+      "type": "water",
+      "lat": -36.89901,
+      "lon": 147.31097
+    },
+    {
+      "id": "w_50f15165",
+      "name": "Munyang River",
+      "type": "water",
+      "lat": -36.29955842224825,
+      "lon": 148.38576885629988
+    },
+    {
+      "id": "w_511fa42f",
+      "name": "Back Flat Creek",
+      "type": "water",
+      "lat": -36.21253034323286,
+      "lon": 148.3454080861586
+    },
+    {
+      "id": "w_5201f2f1",
+      "name": "Boundary Creek",
+      "type": "water",
+      "lat": -35.69158265677931,
+      "lon": 148.59140279149307
+    },
+    {
+      "id": "w_53bd0a46",
+      "name": "Buenba Flat South #1",
+      "type": "campsite",
+      "lat": -36.70246751310095,
+      "lon": 147.91954728122562
+    },
+    {
+      "id": "w_5445ab41",
+      "name": "Stronarchs Campsite",
+      "type": "campsite",
+      "lat": -37.74752144741015,
+      "lon": 146.2162742609386
+    },
+    {
+      "id": "w_56397749",
+      "name": "Youngs Hut",
+      "type": "hut",
+      "lat": -36.951701597103906,
+      "lon": 147.2150784300415
+    },
+    {
+      "id": "w_5690f0a9",
+      "name": "Disappointment Ridge Hut",
+      "type": "hut",
+      "lat": -36.32637788290125,
+      "lon": 148.41418419073906
+    },
+    {
+      "id": "w_59a5dc47",
+      "name": "Tyers River East",
+      "type": "water",
+      "lat": -37.92505705821561,
+      "lon": 146.38403083667748
+    },
+    {
+      "id": "w_5a16e979",
+      "name": "Macalister Springs",
+      "type": "water",
+      "lat": -37.17213833098715,
+      "lon": 146.67074778830423
+    },
+    {
+      "id": "w_5b29deff",
+      "name": "Cleve Cole Hut",
+      "type": "hut",
+      "lat": -36.755908110981494,
+      "lon": 147.3273031249753
+    },
+    {
+      "id": "w_5d8570cf",
+      "name": "Booroomba Creek 1",
+      "type": "water",
+      "lat": -35.56376,
+      "lon": 148.99968
+    },
+    {
+      "id": "w_5dde2c99",
+      "name": "Fiddlers Green",
+      "type": "campsite",
+      "lat": -37.61636738898938,
+      "lon": 146.38461499554248
+    },
+    {
+      "id": "w_61282266",
+      "name": "Millers Hut",
+      "type": "hut",
+      "lat": -35.70589632190359,
+      "lon": 148.57791504638936
+    },
+    {
+      "id": "w_6252a410",
+      "name": "Thomson River",
+      "type": "water",
+      "lat": -37.70622336143519,
+      "lon": 146.26965468171542
+    },
+    {
+      "id": "w_63f905fa",
+      "name": "Cowombat Flat Tk 2",
+      "type": "water",
+      "lat": -36.84013,
+      "lon": 148.12609
+    },
+    {
+      "id": "w_641dfbfa",
+      "name": "Eucumbene River",
+      "type": "water",
+      "lat": -35.866762183777865,
+      "lon": 148.49995911155906
+    },
+    {
+      "id": "w_64766767",
+      "name": "Schlink Hut",
+      "type": "hut",
+      "lat": -36.275072639864284,
+      "lon": 148.38513547343527
+    },
+    {
+      "id": "w_64ace111",
+      "name": "South Selwyn",
+      "type": "water-tank",
+      "lat": -37.0508,
+      "lon": 146.89674
+    },
+    {
+      "id": "w_64c3cb5a",
+      "name": "Low Saddle",
+      "type": "campsite",
+      "lat": -37.33345,
+      "lon": 146.44256
+    },
+    {
+      "id": "w_6569e958",
+      "name": "Twins Track 2",
+      "type": "campsite",
+      "lat": -37.02714,
+      "lon": 147.05001
+    },
+    {
+      "id": "w_65a1b65c",
+      "name": "Barneys Creek",
+      "type": "water",
+      "lat": -36.053533301813786,
+      "lon": 148.53300451148655
+    },
+    {
+      "id": "w_68963ecd",
+      "name": "Bogong Creek Trib",
+      "type": "water",
+      "lat": -36.51542,
+      "lon": 148.25372
+    },
+    {
+      "id": "w_69ba7f83",
+      "name": "O' Keefes Hut",
+      "type": "hut",
+      "lat": -36.12369859286997,
+      "lon": 148.40260533159065
+    },
+    {
+      "id": "w_6ae71876",
+      "name": "Barry Saddle",
+      "type": "water-tank",
+      "lat": -37.10956,
+      "lon": 146.7637
+    },
+    {
+      "id": "w_6bcdd5a3",
+      "name": "Barry Saddle Campsite",
+      "type": "campsite",
+      "lat": -37.109432223698775,
+      "lon": 146.7639872468017
+    },
+    {
+      "id": "w_6cb5818f",
+      "name": "Pounds Creek Trib",
+      "type": "water",
+      "lat": -36.37628,
+      "lon": 148.33351
+    },
+    {
+      "id": "w_6d75df8f",
+      "name": "Middle Ridge Rd",
+      "type": "campsite",
+      "lat": -37.42652,
+      "lon": 146.41025
+    },
+    {
+      "id": "w_6eb22ab8",
+      "name": "Near Mt Whitelaw",
+      "type": "campsite",
+      "lat": -37.7916,
+      "lon": 146.24023
+    },
+    {
+      "id": "w_6fb2b724",
+      "name": "Black River",
+      "type": "water",
+      "lat": -37.53666134064127,
+      "lon": 146.40041543755285
+    },
+    {
+      "id": "w_6fbc75bf",
+      "name": "Broken Dam Hut",
+      "type": "hut",
+      "lat": -35.952799275989165,
+      "lon": 148.49880136524686
+    },
+    {
+      "id": "w_72246685",
+      "name": "Buenba Creek",
+      "type": "water",
+      "lat": -36.70284747510316,
+      "lon": 147.91937268450957
+    },
+    {
+      "id": "w_72c22192",
+      "name": "Bob's Hut",
+      "type": "hut",
+      "lat": -37.62575599424605,
+      "lon": 146.38052590546147
+    },
+    {
+      "id": "w_72d65596",
+      "name": "Hellfire Creek Campsite",
+      "type": "campsite",
+      "lat": -37.18835335598899,
+      "lon": 146.63051103355463
+    },
+    {
+      "id": "w_744e1c0a",
+      "name": "Talbot Hut Site",
+      "type": "campsite",
+      "lat": -37.87145634475613,
+      "lon": 146.34553526331027
+    },
+    {
+      "id": "w_7628cc94",
+      "name": "Orroral Homestead",
+      "type": "hut",
+      "lat": -35.63917293956674,
+      "lon": 148.9613291512021
+    },
+    {
+      "id": "w_76602783",
+      "name": "Wallaces Hut",
+      "type": "hut",
+      "lat": -36.89646511663624,
+      "lon": 147.30718321066126
+    },
+    {
+      "id": "w_76d23735",
+      "name": "Consett Stephen Pass",
+      "type": "campsite",
+      "lat": -36.34035,
+      "lon": 148.36127
+    },
+    {
+      "id": "w_7916d161",
+      "name": "Macalister Springs",
+      "type": "water",
+      "lat": -37.1713696893553,
+      "lon": 146.66987250479266
+    },
+    {
+      "id": "w_79a1d5a6",
+      "name": "T Spur",
+      "type": "water",
+      "lat": -36.75586,
+      "lon": 147.34316
+    },
+    {
+      "id": "w_7a238df6",
+      "name": "Gurrangorambla Creek",
+      "type": "water",
+      "lat": -35.69006852381328,
+      "lon": 148.7317518411938
+    },
+    {
+      "id": "w_7a2fa81b",
+      "name": "Tin Mine Creek",
+      "type": "water",
+      "lat": -36.70359817678166,
+      "lon": 148.23661938205018
+    },
+    {
+      "id": "w_7aecad8d",
+      "name": "Dairymans Creek",
+      "type": "water",
+      "lat": -35.72898661800892,
+      "lon": 148.5542122223068
+    },
+    {
+      "id": "w_7def2e75",
+      "name": "Witzes Hut",
+      "type": "hut",
+      "lat": -35.81163611679567,
+      "lon": 148.5834138291607
+    },
+    {
+      "id": "w_7fa86e17",
+      "name": "Munyang River",
+      "type": "water",
+      "lat": -36.32649757398905,
+      "lon": 148.41244842968447
+    },
+    {
+      "id": "w_7ff46a9e",
+      "name": "Gill Creek",
+      "type": "water",
+      "lat": -36.81189863180403,
+      "lon": 147.54392155397167
+    },
+    {
+      "id": "w_8189a28c",
+      "name": "Bogong Creek",
+      "type": "water",
+      "lat": -36.10955599950444,
+      "lon": 148.40705322244935
+    },
+    {
+      "id": "w_87007c41",
+      "name": "Hellfire Creek",
+      "type": "water",
+      "lat": -37.18981972011491,
+      "lon": 146.62956872117135
+    },
+    {
+      "id": "w_89010617",
+      "name": "Sawpit Creek",
+      "type": "water",
+      "lat": -35.61717,
+      "lon": 148.89398
+    },
+    {
+      "id": "w_8ac1d596",
+      "name": "Big River",
+      "type": "water",
+      "lat": -36.78814560697842,
+      "lon": 147.33677645193444
+    },
+    {
+      "id": "w_8d5c13c2",
+      "name": "Bally Creek 1",
+      "type": "water",
+      "lat": -35.70553,
+      "lon": 148.57856
+    },
+    {
+      "id": "w_8e7404ad",
+      "name": "Pilot Creek",
+      "type": "water",
+      "lat": -36.78931,
+      "lon": 148.17054
+    },
+    {
+      "id": "w_90877460",
+      "name": "Thomson River",
+      "type": "water",
+      "lat": -37.69869757102227,
+      "lon": 146.25528828899513
+    },
+    {
+      "id": "w_9094a9d6",
+      "name": "Booroomba Creek 2",
+      "type": "water",
+      "lat": -35.55714,
+      "lon": 149.00697
+    },
+    {
+      "id": "w_911ac820",
+      "name": "Dip Creek 2",
+      "type": "water",
+      "lat": -35.66818,
+      "lon": 148.60089
+    },
+    {
+      "id": "w_912169cb",
+      "name": "Four Mile Creek",
+      "type": "water",
+      "lat": -35.92989624548116,
+      "lon": 148.47882692869283
+    },
+    {
+      "id": "w_926fb2a7",
+      "name": "Cowombat Flat Tk 1",
+      "type": "water",
+      "lat": -36.8763,
+      "lon": 148.09706
+    },
+    {
+      "id": "w_935a025a",
+      "name": "Anton Anderson Saddle",
+      "type": "campsite",
+      "lat": -36.37634,
+      "lon": 148.33151
+    },
+    {
+      "id": "w_9477c1b5",
+      "name": "Langford East Aqueduct",
+      "type": "water",
+      "lat": -36.87899,
+      "lon": 147.33088
+    },
+    {
+      "id": "w_94f45afe",
+      "name": "Middle Ridge Rd 2",
+      "type": "water",
+      "lat": -37.44382,
+      "lon": 146.39731
+    },
+    {
+      "id": "w_95a2b35d",
+      "name": "Dunns Flat Creek 2",
+      "type": "water",
+      "lat": -35.67942,
+      "lon": 148.78603
+    },
+    {
+      "id": "w_95f930c0",
+      "name": "Duane Creek",
+      "type": "water",
+      "lat": -36.80958346880974,
+      "lon": 147.33006518293652
+    },
+    {
+      "id": "w_972a26a3",
+      "name": "Wilkinsons Creek",
+      "type": "water",
+      "lat": -36.44029684696387,
+      "lon": 148.2629420516548
+    },
+    {
+      "id": "w_9aba3a4e",
+      "name": "Mt Selwyn Creek",
+      "type": "water",
+      "lat": -37.0430236000608,
+      "lon": 146.9530481356739
+    },
+    {
+      "id": "w_9fba7475",
+      "name": "Camp Creek",
+      "type": "water",
+      "lat": -37.11964013806988,
+      "lon": 146.6489910257609
+    },
+    {
+      "id": "w_9fdf6d99",
+      "name": "Thredbo River 2",
+      "type": "water",
+      "lat": -36.52262,
+      "lon": 148.26413
+    },
+    {
+      "id": "w_a09e997d",
+      "name": "Adaminaby",
+      "type": "town",
+      "lat": -35.99667,
+      "lon": 148.77383
+    },
+    {
+      "id": "w_a2dd4430",
+      "name": "Doubtful Creek",
+      "type": "water",
+      "lat": -36.10754510897745,
+      "lon": 148.43069170699908
+    },
+    {
+      "id": "w_a4ba20b2",
+      "name": "Thredbo River 1",
+      "type": "water",
+      "lat": -36.53767,
+      "lon": 148.27684
+    },
+    {
+      "id": "w_a4d33f40",
+      "name": "Cotter Gap Campsite",
+      "type": "campsite",
+      "lat": -35.62542,
+      "lon": 148.88123
+    },
+    {
+      "id": "w_a58b8962",
+      "name": "Pretty Valley Ck Trib",
+      "type": "water",
+      "lat": -36.91621,
+      "lon": 147.27827
+    },
+    {
+      "id": "w_a606f3a6",
+      "name": "Pocket Ck",
+      "type": "water",
+      "lat": -35.67918,
+      "lon": 148.73813
+    },
+    {
+      "id": "w_a916cd47",
+      "name": "Dickie Cooper Creek 2",
+      "type": "water",
+      "lat": -36.27504,
+      "lon": 148.38629
+    },
+    {
+      "id": "w_a9b5ab88",
+      "name": "Glen Wills wilderness retreat",
+      "type": "waypoint",
+      "lat": -36.84926,
+      "lon": 147.50497
+    },
+    {
+      "id": "w_acd5a313",
+      "name": "Pond Creek 1",
+      "type": "water",
+      "lat": -35.6338,
+      "lon": 148.85528
+    },
+    {
+      "id": "w_ad459021",
+      "name": "Tin Hut",
+      "type": "hut",
+      "lat": -36.264736668746096,
+      "lon": 148.42393633741722
+    },
+    {
+      "id": "w_ae9e919d",
+      "name": "Dibbins Hut",
+      "type": "hut",
+      "lat": -36.94727,
+      "lon": 147.18547
+    },
+    {
+      "id": "w_aea3ff7d",
+      "name": "Mawsons Hut",
+      "type": "hut",
+      "lat": -36.2219886015864,
+      "lon": 148.40333495371144
+    },
+    {
+      "id": "w_afd602f5",
+      "name": "Buckwong Hut",
+      "type": "hut",
+      "lat": -36.74284913039935,
+      "lon": 148.00579491355975
+    },
+    {
+      "id": "w_b010e191",
+      "name": "Low Saddle Rd",
+      "type": "water",
+      "lat": -37.32792,
+      "lon": 146.44317
+    },
+    {
+      "id": "w_b05ccf04",
+      "name": "Derschkos Hut",
+      "type": "hut",
+      "lat": -36.14232650407961,
+      "lon": 148.35298850322138
+    },
+    {
+      "id": "w_b1b29731",
+      "name": "Buckwong Creek",
+      "type": "water",
+      "lat": -36.74202844440648,
+      "lon": 148.00690428669267
+    },
+    {
+      "id": "w_b26df4e5",
+      "name": "Ropers Hut",
+      "type": "hut",
+      "lat": -36.81020170511386,
+      "lon": 147.33142439262497
+    },
+    {
+      "id": "w_b3bffe54",
+      "name": "Mt Murray Campsite",
+      "type": "campsite",
+      "lat": -37.06548748337436,
+      "lon": 146.99154990215393
+    },
+    {
+      "id": "w_b403445f",
+      "name": "Diamantina Hut",
+      "type": "hut",
+      "lat": -36.97650672791907,
+      "lon": 147.1217691982443
+    },
+    {
+      "id": "w_b4bf950e",
+      "name": "Black River",
+      "type": "water",
+      "lat": -37.53728,
+      "lon": 146.39985
+    },
+    {
+      "id": "w_b510b8ae",
+      "name": "Ingeegoodbee River",
+      "type": "water",
+      "lat": -36.699622968169045,
+      "lon": 148.2504143768051
+    },
+    {
+      "id": "w_b52df981",
+      "name": "Big River 2",
+      "type": "campsite",
+      "lat": -36.78825,
+      "lon": 147.33693
+    },
+    {
+      "id": "w_b56a1e68",
+      "name": "Long Plain Homestead",
+      "type": "hut",
+      "lat": -35.69730335380731,
+      "lon": 148.53762676386773
+    },
+    {
+      "id": "w_b607deef",
+      "name": "Fitzgerald Hut",
+      "type": "hut",
+      "lat": -36.876207341806285,
+      "lon": 147.3652148069715
+    },
+    {
+      "id": "w_b6411721",
+      "name": "Twins Track 1",
+      "type": "campsite",
+      "lat": -37.02839,
+      "lon": 147.03928
+    },
+    {
+      "id": "w_b6d0a029",
+      "name": "Kelly Hut",
+      "type": "hut",
+      "lat": -36.87398762776543,
+      "lon": 147.37171213260146
+    },
+    {
+      "id": "w_b902046f",
+      "name": "Tooma River",
+      "type": "water",
+      "lat": -36.16570370185897,
+      "lon": 148.35605852726184
+    },
+    {
+      "id": "w_ba94e335",
+      "name": "Cowombat Flat",
+      "type": "campsite",
+      "lat": -36.79494,
+      "lon": 148.17122
+    },
+    {
+      "id": "w_baa71afa",
+      "name": "Viking Saddle",
+      "type": "campsite",
+      "lat": -37.11533528602554,
+      "lon": 146.71052516553135
+    },
+    {
+      "id": "w_babf4ec7",
+      "name": "Big River Rd",
+      "type": "water",
+      "lat": -36.79823,
+      "lon": 147.4457
+    },
+    {
+      "id": "w_bb6df7a5",
+      "name": "Nobs Track",
+      "type": "water",
+      "lat": -37.29578,
+      "lon": 146.48109
+    },
+    {
+      "id": "w_bd9f9e69",
+      "name": "Honeysuckle Campground",
+      "type": "campsite",
+      "lat": -35.58359,
+      "lon": 148.97556
+    },
+    {
+      "id": "w_be558f86",
+      "name": "Dibbins Hut",
+      "type": "hut",
+      "lat": -36.94863746280532,
+      "lon": 147.18226262056635
+    },
+    {
+      "id": "w_be8f685d",
+      "name": "Claire Creek",
+      "type": "water",
+      "lat": -36.83461564342947,
+      "lon": 148.0718363403763
+    },
+    {
+      "id": "w_c0412b2e",
+      "name": "Mushroom Rocks",
+      "type": "campsite",
+      "lat": -37.88528252261561,
+      "lon": 146.3553748519169
+    },
+    {
+      "id": "w_c04801c8",
+      "name": "Middle Ridge Rd 1",
+      "type": "water",
+      "lat": -37.46339,
+      "lon": 146.39774
+    },
+    {
+      "id": "w_c0755009",
+      "name": "Cairn Creek Hut",
+      "type": "hut",
+      "lat": -36.77573216324814,
+      "lon": 147.30330529521652
+    },
+    {
+      "id": "w_c1602095",
+      "name": "Thredbo",
+      "type": "town",
+      "lat": -36.50406,
+      "lon": 148.3064
+    },
+    {
+      "id": "w_c21445c6",
+      "name": "Pockets Hut",
+      "type": "hut",
+      "lat": -35.65775730835439,
+      "lon": 148.72867877677868
+    },
+    {
+      "id": "w_c28efa5b",
+      "name": "Catherine Saddle",
+      "type": "campsite",
+      "lat": -37.114120505179145,
+      "lon": 146.6603736648813
+    },
+    {
+      "id": "w_c2dad473",
+      "name": "Cascade Creek 2",
+      "type": "water",
+      "lat": -36.57577,
+      "lon": 148.25229
+    },
+    {
+      "id": "w_c365c405",
+      "name": "Cascade Trail",
+      "type": "water",
+      "lat": -36.61014,
+      "lon": 148.25533
+    },
+    {
+      "id": "w_c377feac",
+      "name": "Cotter River",
+      "type": "water",
+      "lat": -35.64814177143277,
+      "lon": 148.83147588537716
+    },
+    {
+      "id": "w_c3e9517c",
+      "name": "Talbot Hut Site",
+      "type": "campsite",
+      "lat": -37.87185,
+      "lon": 146.34511
+    },
+    {
+      "id": "w_c3fefd3f",
+      "name": "Big River",
+      "type": "water",
+      "lat": -36.77656166696106,
+      "lon": 147.28123212469208
+    },
+    {
+      "id": "w_c4a62291",
+      "name": "Horse Camp Hut",
+      "type": "hut",
+      "lat": -36.33142119425425,
+      "lon": 148.3962042430821
+    },
+    {
+      "id": "w_c5ed487e",
+      "name": "Sawpit Creek",
+      "type": "water",
+      "lat": -35.61714200226657,
+      "lon": 148.89365485760487
+    },
+    {
+      "id": "w_c5ee11fd",
+      "name": "Georges Creek",
+      "type": "water",
+      "lat": -35.55475768857246,
+      "lon": 149.02402522327864
+    },
+    {
+      "id": "w_c674312f",
+      "name": "Bill Jones Hut",
+      "type": "hut",
+      "lat": -35.65067002691996,
+      "lon": 148.66480529272096
+    },
+    {
+      "id": "w_c6ee8493",
+      "name": "Jordan River",
+      "type": "water",
+      "lat": -37.655344115438886,
+      "lon": 146.2964549692804
+    },
+    {
+      "id": "w_c976732e",
+      "name": "Thomson River Campsite",
+      "type": "campsite",
+      "lat": -37.71378261203295,
+      "lon": 146.27650140375854
+    },
+    {
+      "id": "w_cb2e8628",
+      "name": "Magpie Flat Campground",
+      "type": "campsite",
+      "lat": -35.621541846883446,
+      "lon": 148.68036573526322
+    },
+    {
+      "id": "w_cc1e80df",
+      "name": "Thomson River",
+      "type": "water",
+      "lat": -37.71394268137085,
+      "lon": 146.27614812712955
+    },
+    {
+      "id": "w_cd77f64a",
+      "name": "Chesters Yard",
+      "type": "campsite",
+      "lat": -37.23672,
+      "lon": 146.59655
+    },
+    {
+      "id": "w_d06306a3",
+      "name": "Corner Creek",
+      "type": "water",
+      "lat": -36.700246797218426,
+      "lon": 147.87327480927843
+    },
+    {
+      "id": "w_d32594f1",
+      "name": "Murrays Hut Site",
+      "type": "campsite",
+      "lat": -37.045385564127756,
+      "lon": 146.9952632322693
+    },
+    {
+      "id": "w_d495c839",
+      "name": "Dickie Cooper Creek 3",
+      "type": "water",
+      "lat": -36.25651,
+      "lon": 148.37834
+    },
+    {
+      "id": "w_d52acf87",
+      "name": "Ryder's Huts",
+      "type": "hut",
+      "lat": -36.93178643519124,
+      "lon": 147.2610501841789
+    },
+    {
+      "id": "w_d6b5f96f",
+      "name": "Falls Creek",
+      "type": "town",
+      "lat": -36.86343,
+      "lon": 147.28227
+    },
+    {
+      "id": "w_d970cf4e",
+      "name": "Bally Creek 2",
+      "type": "water",
+      "lat": -35.69818,
+      "lon": 148.57178
+    },
+    {
+      "id": "w_d9c03630",
+      "name": "Broken Dam Creek",
+      "type": "water",
+      "lat": -35.95332005815553,
+      "lon": 148.49752502894728
+    },
+    {
+      "id": "w_dabc7c8b",
+      "name": "Buckwong Track",
+      "type": "water",
+      "lat": -36.74392,
+      "lon": 147.99912
+    },
+    {
+      "id": "w_dbbb750e",
+      "name": "Mitta Mitta River",
+      "type": "water",
+      "lat": -36.82641079805878,
+      "lon": 147.65993764875893
+    },
+    {
+      "id": "w_dd25d452",
+      "name": "Brooks Hut",
+      "type": "hut",
+      "lat": -36.03015599167835,
+      "lon": 148.51967708218996
+    },
+    {
+      "id": "w_dda5e4ef",
+      "name": "Rumpff Saddle",
+      "type": "campsite",
+      "lat": -37.43264509517917,
+      "lon": 146.40061324477733
+    },
+    {
+      "id": "w_df6636cf",
+      "name": "Cope Hut",
+      "type": "hut",
+      "lat": -36.90667046188608,
+      "lon": 147.29257508734372
+    },
+    {
+      "id": "w_dfd0a81d",
+      "name": "Tibeaudo Creek",
+      "type": "water",
+      "lat": -36.090001917566696,
+      "lon": 148.46648245197565
+    },
+    {
+      "id": "w_e4ee0516",
+      "name": "Whitelaw Hut Site",
+      "type": "campsite",
+      "lat": -37.802371053535104,
+      "lon": 146.26023475398495
+    },
+    {
+      "id": "w_e5cbc0d2",
+      "name": "Hainsworth Hut",
+      "type": "hut",
+      "lat": -35.67115616330342,
+      "lon": 148.60142676547704
+    },
+    {
+      "id": "w_e6505f12",
+      "name": "Bulley Creek",
+      "type": "water",
+      "lat": -36.8533108303109,
+      "lon": 148.10921431771033
+    },
+    {
+      "id": "w_e69be09b",
+      "name": "Dunns Flat Creek 1",
+      "type": "water",
+      "lat": -35.6758,
+      "lon": 148.7765
+    },
+    {
+      "id": "w_e6c9658d",
+      "name": "Jordan River",
+      "type": "water",
+      "lat": -37.66484964627952,
+      "lon": 146.31112776968718
+    },
+    {
+      "id": "w_e749a67a",
+      "name": "Vallejo Gantner Hut",
+      "type": "hut",
+      "lat": -37.17213732877336,
+      "lon": 146.67038732994672
+    },
+    {
+      "id": "w_e96c2d61",
+      "name": "Viking Saddle",
+      "type": "campsite",
+      "lat": -37.11369,
+      "lon": 146.71275
+    },
+    {
+      "id": "w_ead9cfca",
+      "name": "Dip Creek 1",
+      "type": "water",
+      "lat": -35.67116,
+      "lon": 148.6016
+    },
+    {
+      "id": "w_edb1e5c8",
+      "name": "Snowy River 1",
+      "type": "water",
+      "lat": -36.47736,
+      "lon": 148.27589
+    },
+    {
+      "id": "w_ee81cc0f",
+      "name": "Seventeen Flat Creek",
+      "type": "water",
+      "lat": -35.647083160811945,
+      "lon": 148.6873839577421
+    },
+    {
+      "id": "w_ef93114e",
+      "name": "Edmonson Hut",
+      "type": "hut",
+      "lat": -36.848203828396166,
+      "lon": 147.33281098426815
+    },
+    {
+      "id": "w_f09437eb",
+      "name": "Blowhard Hut",
+      "type": "hut",
+      "lat": -36.99054201502381,
+      "lon": 147.1129587631299
+    },
+    {
+      "id": "w_f187fb42",
+      "name": "Four Mile Ck",
+      "type": "water",
+      "lat": -36.82507,
+      "lon": 147.62623
+    },
+    {
+      "id": "w_f20e91c6",
+      "name": "Tumut River Trib",
+      "type": "water",
+      "lat": -36.1343,
+      "lon": 148.38966
+    },
+    {
+      "id": "w_f38d0c89",
+      "name": "Yorkies Creek",
+      "type": "water",
+      "lat": -35.696687795902285,
+      "lon": 148.53711760361696
+    },
+    {
+      "id": "w_f3cd5b68",
+      "name": "Murray River",
+      "type": "water",
+      "lat": -36.79495987556257,
+      "lon": 148.17141954334954
+    },
+    {
+      "id": "w_f674898b",
+      "name": "low saddle road 2",
+      "type": "water",
+      "lat": -37.3234,
+      "lon": 146.43889
+    },
+    {
+      "id": "w_f70a4978",
+      "name": "Hut Creek",
+      "type": "water",
+      "lat": -36.123183935370896,
+      "lon": 148.4026739562649
+    },
+    {
+      "id": "w_f874b459",
+      "name": "Grey Mare Hut",
+      "type": "water",
+      "lat": -36.21206074401668,
+      "lon": 148.33824706567094
+    },
+    {
+      "id": "w_f929176a",
+      "name": "Seamans Hut",
+      "type": "hut",
+      "lat": -36.450109651633475,
+      "lon": 148.28277339281894
+    },
+    {
+      "id": "w_fb477287",
+      "name": "Old Currango Homestead",
+      "type": "hut",
+      "lat": -35.69018997134289,
+      "lon": 148.66436659224556
+    },
+    {
+      "id": "w_fbeed8e6",
+      "name": "Tin Mine Huts",
+      "type": "hut",
+      "lat": -36.699981128014706,
+      "lon": 148.25064406842543
+    },
+    {
+      "id": "w_fd245dde",
+      "name": "Dickie Cooper Creek 1",
+      "type": "water",
+      "lat": -36.28524,
+      "lon": 148.38724
+    },
+    {
+      "id": "w_fd92107b",
+      "name": "Kennedys Hut",
+      "type": "hut",
+      "lat": -36.81618201770562,
+      "lon": 147.65780924850975
+    },
+    {
+      "id": "w_febc680c",
+      "name": "Bullocks Hill Trail",
+      "type": "water",
+      "lat": -35.8008,
+      "lon": 148.5792
+    },
+    {
+      "id": "w_ffe2ac93",
+      "name": "Witzes Hut",
+      "type": "hut",
+      "lat": -35.8101,
+      "lon": 148.58766
+    }
+  ],
+  "bibbulmun": [
+    {
+      "id": "w_01004440",
+      "name": "Wilson Inlet (risky crossing if flowing)",
+      "type": "inlet-crossing",
+      "lat": -35.02605,
+      "lon": 117.33046
+    },
+    {
+      "id": "w_012fc955",
+      "name": "Kalamunda MTB park",
+      "type": "food",
+      "lat": -31.96497,
+      "lon": 116.10679
+    },
+    {
+      "id": "w_04f58448",
+      "name": "Hewitt's Hill Campsite",
+      "type": "campsite",
+      "lat": -31.95798,
+      "lon": 116.1292
+    },
+    {
+      "id": "w_07fbb620",
+      "name": "Parry Beach (paid)",
+      "type": "campsite",
+      "lat": -35.03915712175282,
+      "lon": 117.15996956696142
+    },
+    {
+      "id": "w_08207378",
+      "name": "Greens Island? (non-bibb)",
+      "type": "campsite",
+      "lat": -34.19941,
+      "lon": 115.94432
+    },
+    {
+      "id": "w_0b648a94",
+      "name": "Shelly Beach (non-bibb)",
+      "type": "campsite",
+      "lat": -35.105070267111984,
+      "lon": 117.62703740431566
+    },
+    {
+      "id": "w_0dc56575",
+      "name": "Nullaki Campsite",
+      "type": "campsite",
+      "lat": -35.03863514252559,
+      "lon": 117.4550172002886
+    },
+    {
+      "id": "w_0e50da43",
+      "name": "Ginger Creek",
+      "type": "campsite",
+      "lat": -32.56834,
+      "lon": 116.44422
+    },
+    {
+      "id": "w_125cb15d",
+      "name": "Rame Head Campsite",
+      "type": "campsite",
+      "lat": -35.045708168792395,
+      "lon": 116.86058259158467
+    },
+    {
+      "id": "w_1a7c6b2c",
+      "name": "Albany",
+      "type": "town",
+      "lat": -35.02288,
+      "lon": 117.88335
+    },
+    {
+      "id": "w_22dd9e01",
+      "name": "Gloucester Tree",
+      "type": "poi",
+      "lat": -34.44797,
+      "lon": 116.05678
+    },
+    {
+      "id": "w_25402ab3",
+      "name": "Gregory Brook campsite",
+      "type": "campsite",
+      "lat": -33.98250377872235,
+      "lon": 115.937983668329
+    },
+    {
+      "id": "w_2a184480",
+      "name": "Beraking Campsite",
+      "type": "campsite",
+      "lat": -32.0609,
+      "lon": 116.29762
+    },
+    {
+      "id": "w_2d1372b1",
+      "name": "Dwelingup",
+      "type": "town",
+      "lat": -32.713562754758286,
+      "lon": 116.06133808525206
+    },
+    {
+      "id": "w_341ecfc2",
+      "name": "Walpole",
+      "type": "town",
+      "lat": -34.97587,
+      "lon": 116.73249
+    },
+    {
+      "id": "w_39205f30",
+      "name": "Mt Dale",
+      "type": "campsite",
+      "lat": -32.13589,
+      "lon": 116.29768
+    },
+    {
+      "id": "w_3d04d500",
+      "name": "Swamp Oak Campsite",
+      "type": "campsite",
+      "lat": -32.78105079083427,
+      "lon": 116.11765623092651
+    },
+    {
+      "id": "w_40279bd8",
+      "name": "Dookanelly Campsite",
+      "type": "campsite",
+      "lat": -32.95843,
+      "lon": 116.2152
+    },
+    {
+      "id": "w_411e59f7",
+      "name": "Beavis Campsite",
+      "type": "campsite",
+      "lat": -34.311995337904484,
+      "lon": 115.84091824004146
+    },
+    {
+      "id": "w_45669674",
+      "name": "Tom road campsite",
+      "type": "campsite",
+      "lat": -34.16437487956443,
+      "lon": 115.91348648071289
+    },
+    {
+      "id": "w_45856e78",
+      "name": "Warren Campsite",
+      "type": "campsite",
+      "lat": -34.508823255557594,
+      "lon": 116.09761021858544
+    },
+    {
+      "id": "w_461973da",
+      "name": "Brookton Campsite",
+      "type": "campsite",
+      "lat": -32.18636133436321,
+      "lon": 116.29825150998778
+    },
+    {
+      "id": "w_507a5399",
+      "name": "Torbay Campsite",
+      "type": "campsite",
+      "lat": -35.079045655075376,
+      "lon": 117.646918184607
+    },
+    {
+      "id": "w_5373331a",
+      "name": "Boat harbour campsite",
+      "type": "campsite",
+      "lat": -35.03318,
+      "lon": 117.06794
+    },
+    {
+      "id": "w_56045bcd",
+      "name": "Yabberup Campsite",
+      "type": "campsite",
+      "lat": -33.46371957581418,
+      "lon": 116.07757475265596
+    },
+    {
+      "id": "w_569f8c31",
+      "name": "Chadora",
+      "type": "campsite",
+      "lat": -32.759004956796566,
+      "lon": 116.23842007325476
+    },
+    {
+      "id": "w_56ed070d",
+      "name": "Mundaring Weir hotel",
+      "type": "food",
+      "lat": -31.95205,
+      "lon": 116.16759
+    },
+    {
+      "id": "w_57dadd26",
+      "name": "Collie",
+      "type": "town",
+      "lat": -33.35906303665846,
+      "lon": 116.14954198981883
+    },
+    {
+      "id": "w_58492f3f",
+      "name": "Denmark",
+      "type": "town",
+      "lat": -34.97002531498242,
+      "lon": 117.36867995925952
+    },
+    {
+      "id": "w_5b9ae2c1",
+      "name": "Cosy Corner (non-bibb)",
+      "type": "campsite",
+      "lat": -35.060085068432116,
+      "lon": 117.6465460999091
+    },
+    {
+      "id": "w_65c040a4",
+      "name": "Boarding House campsite",
+      "type": "campsite",
+      "lat": -34.28024822884286,
+      "lon": 115.93251120802377
+    },
+    {
+      "id": "w_69984f1d",
+      "name": "Grimwade Campsite",
+      "type": "campsite",
+      "lat": -33.65687667745331,
+      "lon": 116.02516435107198
+    },
+    {
+      "id": "w_6d5a8aa6",
+      "name": "Tree Top Walk",
+      "type": "poi",
+      "lat": -34.97835,
+      "lon": 116.89369
+    },
+    {
+      "id": "w_6d9cbefd",
+      "name": "Balingup",
+      "type": "town",
+      "lat": -33.786231154121346,
+      "lon": 115.98431214757659
+    },
+    {
+      "id": "w_6da6b772",
+      "name": "Mumbullup Pub",
+      "type": "food",
+      "lat": -33.52828,
+      "lon": 116.11252
+    },
+    {
+      "id": "w_70a537b3",
+      "name": "Blackwood camp",
+      "type": "campsite",
+      "lat": -33.87688204302544,
+      "lon": 115.96544828403981
+    },
+    {
+      "id": "w_7bc6c7fd",
+      "name": "Muttonbird Campsite",
+      "type": "campsite",
+      "lat": -35.04419155770872,
+      "lon": 117.72422614259958
+    },
+    {
+      "id": "w_7bde6dd8",
+      "name": "Mt Cooke Campsite",
+      "type": "campsite",
+      "lat": -32.4023,
+      "lon": 116.29491
+    },
+    {
+      "id": "w_7c242c0f",
+      "name": "Mt Wells",
+      "type": "campsite",
+      "lat": -32.699085003185296,
+      "lon": 116.33620262145996
+    },
+    {
+      "id": "w_7ec14a80",
+      "name": "William bay campsite",
+      "type": "campsite",
+      "lat": -35.01652325778124,
+      "lon": 117.23822386075095
+    },
+    {
+      "id": "w_8208b89c",
+      "name": "Albany Highway",
+      "type": "campsite",
+      "lat": -32.56151863550377,
+      "lon": 116.42716046698939
+    },
+    {
+      "id": "w_827a02b9",
+      "name": "Lake Maringup Campsite",
+      "type": "campsite",
+      "lat": -34.829847271197345,
+      "lon": 116.19215470692939
+    },
+    {
+      "id": "w_841eb18d",
+      "name": "Harris Dam campsite",
+      "type": "campsite",
+      "lat": -33.24426063412231,
+      "lon": 116.16104385076545
+    },
+    {
+      "id": "w_85a52eae",
+      "name": "Broackman Highway",
+      "type": "campsite",
+      "lat": -34.007560802456894,
+      "lon": 115.93149181223008
+    },
+    {
+      "id": "w_88aa033f",
+      "name": "Possum Springs Campsite",
+      "type": "campsite",
+      "lat": -33.061935390828346,
+      "lon": 116.29621499814989
+    },
+    {
+      "id": "w_8bc16e54",
+      "name": "Peaceful Bay",
+      "type": "town",
+      "lat": -35.03854091144046,
+      "lon": 116.9277763155844
+    },
+    {
+      "id": "w_8bfc21c9",
+      "name": "Sandpatch Campsite",
+      "type": "campsite",
+      "lat": -35.072757479437,
+      "lon": 117.81984597938245
+    },
+    {
+      "id": "w_8e97eefb",
+      "name": "Parry Inlet",
+      "type": "inlet-crossing",
+      "lat": -35.03062,
+      "lon": 117.16138
+    },
+    {
+      "id": "w_910756dc",
+      "name": "Mount Clare",
+      "type": "campsite",
+      "lat": -34.9981263483095,
+      "lon": 116.64572954177856
+    },
+    {
+      "id": "w_92d0bdd1",
+      "name": "Northcliffe",
+      "type": "town",
+      "lat": -34.633868753624164,
+      "lon": 116.12497329711914
+    },
+    {
+      "id": "w_93b31a1e",
+      "name": "Pemberton",
+      "type": "town",
+      "lat": -34.44471589727349,
+      "lon": 116.03495509813483
+    },
+    {
+      "id": "w_9a957877",
+      "name": "White Horse",
+      "type": "campsite",
+      "lat": -32.60907582443261,
+      "lon": 116.33600913345086
+    },
+    {
+      "id": "w_a1a66e95",
+      "name": "Beedelup Campsite",
+      "type": "campsite",
+      "lat": -34.411937639446855,
+      "lon": 115.87705822111215
+    },
+    {
+      "id": "w_abffd746",
+      "name": "Donnelly River Village",
+      "type": "town",
+      "lat": -34.10259049599674,
+      "lon": 115.97763153798965
+    },
+    {
+      "id": "w_ac5bfadb",
+      "name": "Schafer Campsite",
+      "type": "campsite",
+      "lat": -34.55485328092829,
+      "lon": 116.17613609407123
+    },
+    {
+      "id": "w_aca8b71c",
+      "name": "West Cape Howe Campsite",
+      "type": "campsite",
+      "lat": -35.08222873580975,
+      "lon": 117.55776042297754
+    },
+    {
+      "id": "w_b785b2a4",
+      "name": "Woolbales",
+      "type": "campsite",
+      "lat": -34.94430038557663,
+      "lon": 116.56589152683388
+    },
+    {
+      "id": "w_bba497f9",
+      "name": "Nerang Campsite",
+      "type": "campsite",
+      "lat": -32.46151,
+      "lon": 116.37747
+    },
+    {
+      "id": "w_c0d04450",
+      "name": "Yourdamung Campsite",
+      "type": "campsite",
+      "lat": -33.19038823667784,
+      "lon": 116.26764018098956
+    },
+    {
+      "id": "w_c12c3909",
+      "name": "Monadnocks Campsite",
+      "type": "campsite",
+      "lat": -32.32914,
+      "lon": 116.2399
+    },
+    {
+      "id": "w_c25989e4",
+      "name": "Giants Campsite",
+      "type": "campsite",
+      "lat": -34.97379874751538,
+      "lon": 116.90340802018922
+    },
+    {
+      "id": "w_c26919f6",
+      "name": "Can hitch from here",
+      "type": "waypoint",
+      "lat": -35.00085,
+      "lon": 117.51622
+    },
+    {
+      "id": "w_c7eaf696",
+      "name": "Mt Chance Campsite",
+      "type": "campsite",
+      "lat": -34.83315440232727,
+      "lon": 116.51010058933738
+    },
+    {
+      "id": "w_cb987df8",
+      "name": "Noggenup Campsite",
+      "type": "campsite",
+      "lat": -33.56497746137847,
+      "lon": 116.09881686093384
+    },
+    {
+      "id": "w_cd19e56d",
+      "name": "Sout Coast highway",
+      "type": "road-crossing",
+      "lat": -34.99417,
+      "lon": 116.90583
+    },
+    {
+      "id": "w_d0e33bd6",
+      "name": "Helena Campsite",
+      "type": "campsite",
+      "lat": -31.9818,
+      "lon": 116.24853
+    },
+    {
+      "id": "w_d620b9d7",
+      "name": "Waalegh Campsite",
+      "type": "campsite",
+      "lat": -32.01420328245943,
+      "lon": 116.25754533195582
+    },
+    {
+      "id": "w_d6f5853b",
+      "name": "Canoe crossing",
+      "type": "inlet-crossing",
+      "lat": -35.00757,
+      "lon": 116.96387
+    },
+    {
+      "id": "w_d7ea31e1",
+      "name": "Torbay Inlet",
+      "type": "inlet-crossing",
+      "lat": -35.04516,
+      "lon": 117.67625
+    },
+    {
+      "id": "w_d80fb0ed",
+      "name": "Willow springs",
+      "type": "campsite",
+      "lat": -34.04674740516123,
+      "lon": 115.92593672097028
+    },
+    {
+      "id": "w_db3c8d31",
+      "name": "Long Point",
+      "type": "campsite",
+      "lat": -35.01983662549648,
+      "lon": 116.5842573124299
+    },
+    {
+      "id": "w_e249b628",
+      "name": "Murray Campsite",
+      "type": "campsite",
+      "lat": -32.86794975428092,
+      "lon": 116.13866626591684
+    },
+    {
+      "id": "w_e90a862e",
+      "name": "Canning Campsite",
+      "type": "campsite",
+      "lat": -32.24221,
+      "lon": 116.25485
+    },
+    {
+      "id": "w_ec52ce46",
+      "name": "Dog Pool campsite",
+      "type": "campsite",
+      "lat": -34.76358196686181,
+      "lon": 116.37612607695657
+    },
+    {
+      "id": "w_ec8412df",
+      "name": "Ball Creek Campsite",
+      "type": "campsite",
+      "lat": -31.95018,
+      "lon": 116.19846
+    },
+    {
+      "id": "w_ef2a8f05",
+      "name": "Brookton Highway",
+      "type": "road-crossing",
+      "lat": -32.20295,
+      "lon": 116.29415
+    },
+    {
+      "id": "w_f84f600f",
+      "name": "Gardner Campsite",
+      "type": "campsite",
+      "lat": -34.720384086489915,
+      "lon": 116.17977892735917
+    },
+    {
+      "id": "w_ff19f4f4",
+      "name": "Franklin River Campsite",
+      "type": "campsite",
+      "lat": -34.95012943365928,
+      "lon": 116.81158929832955
+    }
+  ],
+  "cape_to_cape": [
+    {
+      "id": "w_048ddf7c",
+      "name": "Smiths Beach Start (1.7km)",
+      "type": "beach",
+      "lat": -33.66133,
+      "lon": 115.01246
+    },
+    {
+      "id": "w_077cff01",
+      "name": "Deepdene Campsite",
+      "type": "campsite",
+      "lat": -34.27161,
+      "lon": 115.04903
+    },
+    {
+      "id": "w_1042b1df",
+      "name": "Gracetown",
+      "type": "town",
+      "lat": -33.86418,
+      "lon": 114.98864
+    },
+    {
+      "id": "w_1823e0c7",
+      "name": "Kilcarnup Beach Start (2.1km)",
+      "type": "beach",
+      "lat": -33.9612,
+      "lon": 114.98327
+    },
+    {
+      "id": "w_1aa84d7e",
+      "name": "Mount Duckworth Campsite",
+      "type": "campsite",
+      "lat": -33.61584,
+      "lon": 115.02727
+    },
+    {
+      "id": "w_236ca161",
+      "name": "Canal Rocks",
+      "type": "poi",
+      "lat": -33.66945,
+      "lon": 114.99558
+    },
+    {
+      "id": "w_2f9a4e45",
+      "name": "Prevelly",
+      "type": "town",
+      "lat": -33.97728,
+      "lon": 114.99349
+    },
+    {
+      "id": "w_3e042ac7",
+      "name": "Sugarloaf Rock",
+      "type": "poi",
+      "lat": -33.55958,
+      "lon": 115.0052
+    },
+    {
+      "id": "w_3e1dc6db",
+      "name": "Cape Naturaliste Lighthouse",
+      "type": "poi",
+      "lat": -33.53736,
+      "lon": 115.01885
+    },
+    {
+      "id": "w_455abc29",
+      "name": "Cape Leeuwin Lighthouse",
+      "type": "poi",
+      "lat": -34.3754,
+      "lon": 115.13615
+    },
+    {
+      "id": "w_45c70cb4",
+      "name": "Redgate Beach Start (2.3km)",
+      "type": "beach",
+      "lat": -34.03794,
+      "lon": 114.99973
+    },
+    {
+      "id": "w_4c97face",
+      "name": "Hamelin Bay Beach Start (6.5km)",
+      "type": "beach",
+      "lat": -34.22057,
+      "lon": 115.0286
+    },
+    {
+      "id": "w_4ec1d492",
+      "name": "Hamelin Bay",
+      "type": "poi",
+      "lat": -34.2216,
+      "lon": 115.03088
+    },
+    {
+      "id": "w_5495b8d6",
+      "name": "Kilcarnup Beach End (2.1km)",
+      "type": "beach",
+      "lat": -33.94667,
+      "lon": 114.99296
+    },
+    {
+      "id": "w_5be983d4",
+      "name": "Injidup Beach End (0.8km)",
+      "type": "beach",
+      "lat": -33.69345,
+      "lon": 114.99253
+    },
+    {
+      "id": "w_64f09073",
+      "name": "Hamelin Bay Beach End (6.5km)",
+      "type": "beach",
+      "lat": -34.16688,
+      "lon": 115.03092
+    },
+    {
+      "id": "w_7209018a",
+      "name": "Moses Rock Campsite",
+      "type": "campsite",
+      "lat": -33.77889,
+      "lon": 114.99717
+    },
+    {
+      "id": "w_808bb2ce",
+      "name": "Point Rd Campsite",
+      "type": "campsite",
+      "lat": -34.09255,
+      "lon": 115.01712
+    },
+    {
+      "id": "w_888629a6",
+      "name": "Contos Campsite",
+      "type": "campsite",
+      "lat": -34.08352,
+      "lon": 115.01543
+    },
+    {
+      "id": "w_946d76a3",
+      "name": "Yallingup",
+      "type": "town",
+      "lat": -33.63954,
+      "lon": 115.02626
+    },
+    {
+      "id": "w_9863ffae",
+      "name": "Quinninup Falls",
+      "type": "poi",
+      "lat": -33.74621,
+      "lon": 114.9953
+    },
+    {
+      "id": "w_9866af0f",
+      "name": "Redgate Beach End (2.3km)",
+      "type": "beach",
+      "lat": -34.01866,
+      "lon": 115.00132
+    },
+    {
+      "id": "w_b76d9ab6",
+      "name": "Margaret River Mouth",
+      "type": "poi",
+      "lat": -33.9713,
+      "lon": 114.98688
+    },
+    {
+      "id": "w_bd275418",
+      "name": "Deepdene Beach End (5.5km)",
+      "type": "beach",
+      "lat": -34.27053,
+      "lon": 115.03654
+    },
+    {
+      "id": "w_bf7909d4",
+      "name": "Ellensbrook Homestead",
+      "type": "poi",
+      "lat": -33.91039,
+      "lon": 114.99146
+    },
+    {
+      "id": "w_cd183495",
+      "name": "Deepdene Beach Start (5.5km)",
+      "type": "beach",
+      "lat": -34.30347,
+      "lon": 115.0804
+    },
+    {
+      "id": "w_daacc724",
+      "name": "Boranup Forest",
+      "type": "poi",
+      "lat": -34.11824,
+      "lon": 115.04603
+    },
+    {
+      "id": "w_ea44b5aa",
+      "name": "Smiths Beach End (1.7km)",
+      "type": "beach",
+      "lat": -33.64945,
+      "lon": 115.02251
+    },
+    {
+      "id": "w_fdbbdbbb",
+      "name": "Injidup Beach Start (0.8km)",
+      "type": "beach",
+      "lat": -33.69921,
+      "lon": 114.98839
+    },
+    {
+      "id": "w_ff9ac775",
+      "name": "Ellensbrook Campsite",
+      "type": "campsite",
+      "lat": -33.91303,
+      "lon": 115.00106
+    }
+  ],
+  "heysen": [
+    {
+      "id": "w_00c67cb1",
+      "name": "Baderloo ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -33.41913,
+      "lon": 138.53596
+    },
+    {
+      "id": "w_00dae8b4",
+      "name": "Austral Inn Hotel",
+      "type": "accommodation",
+      "lat": -32.346215,
+      "lon": 138.041157
+    },
+    {
+      "id": "w_010a2412",
+      "name": "Hallett Railway Station",
+      "type": "hut",
+      "lat": -33.420815,
+      "lon": 138.89216599999997
+    },
+    {
+      "id": "w_01564388",
+      "name": "Huppatz Hut",
+      "type": "hut",
+      "lat": -33.86515,
+      "lon": 138.93116800000007
+    },
+    {
+      "id": "w_01f47758",
+      "name": "Morse Cottage",
+      "type": "accommodation",
+      "lat": -33.685879,
+      "lon": 138.94085500000006
+    },
+    {
+      "id": "w_024d082e",
+      "name": "Georgetown",
+      "type": "town",
+      "lat": -33.359676,
+      "lon": 138.392517
+    },
+    {
+      "id": "w_02587cc0",
+      "name": "Wildongoleechie Hotel",
+      "type": "accommodation",
+      "lat": -33.4102,
+      "lon": 138.88998
+    },
+    {
+      "id": "w_025c6ba9",
+      "name": "Hawks Nest Tank",
+      "type": "water",
+      "lat": -32.603056,
+      "lon": 138.06305599999996
+    },
+    {
+      "id": "w_0551d8a0",
+      "name": "Tinjella Hut (adjacent to Jacks Paddock)",
+      "type": "hut",
+      "lat": -35.231319,
+      "lon": 138.68505900000002
+    },
+    {
+      "id": "w_064ed5f7",
+      "name": "Transcontinental Hotel",
+      "type": "accommodation",
+      "lat": -32.346015,
+      "lon": 138.04040499999996
+    },
+    {
+      "id": "w_0967358d",
+      "name": "Alpana Station",
+      "type": "accommodation",
+      "lat": -31.12967,
+      "lon": 138.68488
+    },
+    {
+      "id": "w_09782bce",
+      "name": "The Old Homestead & Shearer’s Quarters",
+      "type": "accommodation",
+      "lat": -32.29715,
+      "lon": 137.98371900000006
+    },
+    {
+      "id": "w_0b873c07",
+      "name": "Tanunda",
+      "type": "town",
+      "lat": -34.526428,
+      "lon": 138.95707700000003
+    },
+    {
+      "id": "w_0c0b61f1",
+      "name": "Tourilie Gorge hut",
+      "type": "campsite",
+      "lat": -33.40944,
+      "lon": 139.11376
+    },
+    {
+      "id": "w_0c57e230",
+      "name": "Chalks Campground",
+      "type": "hut",
+      "lat": -34.73803,
+      "lon": 138.9597
+    },
+    {
+      "id": "w_0c6e6f5f",
+      "name": "Wirrabara Hotel",
+      "type": "accommodation",
+      "lat": -33.033102,
+      "lon": 138.26852499999995
+    },
+    {
+      "id": "w_0db1fe34",
+      "name": "Melrose Caravan Park and Campground",
+      "type": "caravan-park",
+      "lat": -32.82513,
+      "lon": 138.18685
+    },
+    {
+      "id": "w_11665626",
+      "name": "Myponga",
+      "type": "town",
+      "lat": -35.39083,
+      "lon": 138.46344999999997
+    },
+    {
+      "id": "w_12de8609",
+      "name": "Prairie Hotel",
+      "type": "accommodation",
+      "lat": -31.1328,
+      "lon": 138.39740000000006
+    },
+    {
+      "id": "w_12f8e4ba",
+      "name": "Burra Heritage Cottages",
+      "type": "accommodation",
+      "lat": -33.668169,
+      "lon": 138.93071299999997
+    },
+    {
+      "id": "w_13327a81",
+      "name": "North Laura Hotel",
+      "type": "accommodation",
+      "lat": -33.178108,
+      "lon": 138.29923800000006
+    },
+    {
+      "id": "w_15e10335",
+      "name": "Parachilna Gorge Trailhead",
+      "type": "trailhead",
+      "lat": -31.135407,
+      "lon": 138.529761
+    },
+    {
+      "id": "w_17a2c408",
+      "name": "Flinders Ranges Motel",
+      "type": "accommodation",
+      "lat": -32.347388,
+      "lon": 138.03767800000003
+    },
+    {
+      "id": "w_17e91abb",
+      "name": "Stony Creek ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.704715,
+      "lon": 138.09202800000003
+    },
+    {
+      "id": "w_18100965",
+      "name": "Parachilna Gorge Camping",
+      "type": "campsite",
+      "lat": -31.134614,
+      "lon": 138.529181
+    },
+    {
+      "id": "w_19dc110d",
+      "name": "Kurri Ngawanthi / Creek ‘walk in’ site",
+      "type": "hut",
+      "lat": -35.6165758726,
+      "lon": 138.39553047690003
+    },
+    {
+      "id": "w_1a768a74",
+      "name": "The Retreat",
+      "type": "accommodation",
+      "lat": -34.995526,
+      "lon": 138.74231099999997
+    },
+    {
+      "id": "w_1c2612f7",
+      "name": "Crystal Brook",
+      "type": "town",
+      "lat": -33.352264,
+      "lon": 138.207092
+    },
+    {
+      "id": "w_1c3d0573",
+      "name": "Hotel Central Riverton",
+      "type": "accommodation",
+      "lat": -34.15951,
+      "lon": 138.74706000000003
+    },
+    {
+      "id": "w_1ce32055",
+      "name": "Sugargum Dam ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.790304,
+      "lon": 138.10735899999997
+    },
+    {
+      "id": "w_1f8900f9",
+      "name": "Farmview Retreat",
+      "type": "accommodation",
+      "lat": -35.42718,
+      "lon": 138.42575999999997
+    },
+    {
+      "id": "w_2054b331",
+      "name": "Acraman Campground",
+      "type": "campsite",
+      "lat": -31.411524,
+      "lon": 138.560425
+    },
+    {
+      "id": "w_21eb96f8",
+      "name": "Nungawurtina Hut (Alpana Station)",
+      "type": "accommodation",
+      "lat": -31.147594,
+      "lon": 138.62548800000002
+    },
+    {
+      "id": "w_22920dd1",
+      "name": "Youngoona Campsite",
+      "type": "campsite",
+      "lat": -31.331224,
+      "lon": 138.65649400000007
+    },
+    {
+      "id": "w_231ad523",
+      "name": "Wozza’s B&B",
+      "type": "accommodation",
+      "lat": -32.82603,
+      "lon": 138.18735100000004
+    },
+    {
+      "id": "w_232a40bb",
+      "name": "Mt Crawford Forest Information Centre",
+      "type": "water",
+      "lat": -34.714056,
+      "lon": 138.945741
+    },
+    {
+      "id": "w_24d49c80",
+      "name": "Longhill ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.755444,
+      "lon": 138.07118200000002
+    },
+    {
+      "id": "w_25b66c0e",
+      "name": "Hawker",
+      "type": "town",
+      "lat": -31.888472,
+      "lon": 138.42114300000003
+    },
+    {
+      "id": "w_269eb313",
+      "name": "Blickinstal",
+      "type": "accommodation",
+      "lat": -34.534702,
+      "lon": 138.96898299999998
+    },
+    {
+      "id": "w_26aa4c98",
+      "name": "Hahndorf Resort",
+      "type": "accommodation",
+      "lat": -35.02291,
+      "lon": 138.79933
+    },
+    {
+      "id": "w_273b2eb2",
+      "name": "Aroona campground",
+      "type": "campsite",
+      "lat": -31.277761,
+      "lon": 138.58038299999998
+    },
+    {
+      "id": "w_27ca0270",
+      "name": "Mt Compass township camp site at oval",
+      "type": "campsite",
+      "lat": -35.348412,
+      "lon": 138.61984299999995
+    },
+    {
+      "id": "w_27d4013c",
+      "name": "Hallelujah Hideaway",
+      "type": "accommodation",
+      "lat": -33.949129,
+      "lon": 139.02621999999997
+    },
+    {
+      "id": "w_28963eec",
+      "name": "Riverton Caravan Park",
+      "type": "caravan-park",
+      "lat": -34.1544,
+      "lon": 138.75895000000003
+    },
+    {
+      "id": "w_28e9f112",
+      "name": "Wilpena Resort",
+      "type": "accommodation",
+      "lat": -31.528069,
+      "lon": 138.606354
+    },
+    {
+      "id": "w_295f4a99",
+      "name": "Heysen Hideaway",
+      "type": "accommodation",
+      "lat": -34.95318,
+      "lon": 138.71905000000004
+    },
+    {
+      "id": "w_29e361d9",
+      "name": "Cape Jervis Holiday Units",
+      "type": "accommodation",
+      "lat": -35.603263,
+      "lon": 138.10727499999996
+    },
+    {
+      "id": "w_2acda080",
+      "name": "Cladich Pavilions",
+      "type": "accommodation",
+      "lat": -35.010822,
+      "lon": 138.73663399999998
+    },
+    {
+      "id": "w_2ef7082c",
+      "name": "Cape Jervis Accommodation & Caravan Park",
+      "type": "accommodation",
+      "lat": -35.605685,
+      "lon": 138.12926400000003
+    },
+    {
+      "id": "w_2f8080c2",
+      "name": "Mt Lofty Summit cafe",
+      "type": "poi",
+      "lat": -34.974113,
+      "lon": 138.70899199999997
+    },
+    {
+      "id": "w_32a07bf2",
+      "name": "Barossa Vista",
+      "type": "accommodation",
+      "lat": -34.5291817,
+      "lon": 138.95042450000005
+    },
+    {
+      "id": "w_32b969ff",
+      "name": "Outback Chapmanton Motor Inn",
+      "type": "accommodation",
+      "lat": -31.88627,
+      "lon": 138.424484
+    },
+    {
+      "id": "w_32f93999",
+      "name": "Taralee Orchards",
+      "type": "accommodation",
+      "lat": -33.090248,
+      "lon": 138.19574
+    },
+    {
+      "id": "w_32faf0e6",
+      "name": "Hawker Hotel Motel",
+      "type": "accommodation",
+      "lat": -31.886471,
+      "lon": 138.42068599999993
+    },
+    {
+      "id": "w_33bcba8a",
+      "name": "Mount Brown Bush Camp",
+      "type": "campsite",
+      "lat": -32.525533,
+      "lon": 138.035704
+    },
+    {
+      "id": "w_3753da0b",
+      "name": "Inman Valley town campsite",
+      "type": "campsite",
+      "lat": -35.493793,
+      "lon": 138.45774400000005
+    },
+    {
+      "id": "w_37952977",
+      "name": "Barossa Backpackers",
+      "type": "accommodation",
+      "lat": -34.526809,
+      "lon": 138.964295
+    },
+    {
+      "id": "w_37b9b2d5",
+      "name": "Whistling Trig Tank",
+      "type": "campsite",
+      "lat": -33.45448,
+      "lon": 138.71905
+    },
+    {
+      "id": "w_3816eeba",
+      "name": "The olde Hamilton shop B&B",
+      "type": "accommodation",
+      "lat": -34.2181,
+      "lon": 138.87797
+    },
+    {
+      "id": "w_3a0f6bed",
+      "name": "Aldgate",
+      "type": "town",
+      "lat": -35.015114,
+      "lon": 138.73616000000004
+    },
+    {
+      "id": "w_3a4b2997",
+      "name": "Cobbler Hill Camp Site",
+      "type": "campsite",
+      "lat": -35.647533,
+      "lon": 138.17350799999997
+    },
+    {
+      "id": "w_3ac34e6b",
+      "name": "Quorn Caravan Park",
+      "type": "caravan-park",
+      "lat": -32.34356,
+      "lon": 138.04011
+    },
+    {
+      "id": "w_3af0f071",
+      "name": "Rossiters Hut",
+      "type": "hut",
+      "lat": -34.59117,
+      "lon": 138.99589200000003
+    },
+    {
+      "id": "w_3be34ab5",
+      "name": "Webb Gap",
+      "type": "campsite",
+      "lat": -33.97808,
+      "lon": 138.96057
+    },
+    {
+      "id": "w_3d1dc7a7",
+      "name": "Kings Beach Road trailhead (Victor Harbor 5 km east)",
+      "type": "trailhead",
+      "lat": -35.59875,
+      "lon": 138.58431
+    },
+    {
+      "id": "w_3d8a9223",
+      "name": "Curnows Hut",
+      "type": "hut",
+      "lat": -33.32476,
+      "lon": 138.54806499999995
+    },
+    {
+      "id": "w_3e2e0271",
+      "name": "Horseshoe Top-End Homestead & Campsites",
+      "type": "accommodation",
+      "lat": -32.4213837,
+      "lon": 138.37794410000004
+    },
+    {
+      "id": "w_41aa0f8f",
+      "name": "Lochnagar Barossa",
+      "type": "accommodation",
+      "lat": -34.5116092,
+      "lon": 138.9652936
+    },
+    {
+      "id": "w_41f1b560",
+      "name": "Black Jack Hut",
+      "type": "hut",
+      "lat": -33.522121,
+      "lon": 139.04092400000002
+    },
+    {
+      "id": "w_425a6e39",
+      "name": "Mt Arden South ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.16675,
+      "lon": 137.97467
+    },
+    {
+      "id": "w_4284ec33",
+      "name": "Wirrealpa Station Cottage",
+      "type": "accommodation",
+      "lat": -31.12654,
+      "lon": 138.96352000000002
+    },
+    {
+      "id": "w_42c19940",
+      "name": "North Star Inn",
+      "type": "accommodation",
+      "lat": -32.827011,
+      "lon": 138.18684099999996
+    },
+    {
+      "id": "w_42d53919",
+      "name": "Pear Tree Hollow",
+      "type": "accommodation",
+      "lat": -35.50646,
+      "lon": 138.41675
+    },
+    {
+      "id": "w_4382f414",
+      "name": "Yanyanna Hut",
+      "type": "hut",
+      "lat": -31.40321,
+      "lon": 138.59390299999995
+    },
+    {
+      "id": "w_43aa71eb",
+      "name": "Wilkatana Station",
+      "type": "accommodation",
+      "lat": -32.165135,
+      "lon": 137.86404900000002
+    },
+    {
+      "id": "w_444ebc13",
+      "name": "Forest Gate Cottage",
+      "type": "accommodation",
+      "lat": -35.2145,
+      "lon": 138.70005000000003
+    },
+    {
+      "id": "w_44b86e82",
+      "name": "Heysen’s Rest Bed & Breakfast",
+      "type": "accommodation",
+      "lat": -35.4189,
+      "lon": 138.43820000000005
+    },
+    {
+      "id": "w_45a922a3",
+      "name": "Rocky Paddock Campground",
+      "type": "campsite",
+      "lat": -34.71742,
+      "lon": 138.94088
+    },
+    {
+      "id": "w_46694968",
+      "name": "Mount Lofty House",
+      "type": "accommodation",
+      "lat": -34.9867207,
+      "lon": 138.70949470000005
+    },
+    {
+      "id": "w_480bdf77",
+      "name": "Hallett",
+      "type": "town",
+      "lat": -33.411472,
+      "lon": 138.89271499999995
+    },
+    {
+      "id": "w_48af1b86",
+      "name": "Quorn",
+      "type": "town",
+      "lat": -32.345833,
+      "lon": 138.04046600000004
+    },
+    {
+      "id": "w_48efa918",
+      "name": "Mylor",
+      "type": "town",
+      "lat": -35.0422,
+      "lon": 138.76007900000002
+    },
+    {
+      "id": "w_4b0d5205",
+      "name": "Summertown",
+      "type": "town",
+      "lat": -34.959648,
+      "lon": 138.73092700000007
+    },
+    {
+      "id": "w_4ddbe35f",
+      "name": "Goat Square Cottages",
+      "type": "accommodation",
+      "lat": -34.5237552,
+      "lon": 138.9547629
+    },
+    {
+      "id": "w_5062515b",
+      "name": "Calabrinda Creek ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.01296,
+      "lon": 138.25705
+    },
+    {
+      "id": "w_5080de9a",
+      "name": "A Little Pug Cottage at Melrose",
+      "type": "accommodation",
+      "lat": -32.8267185,
+      "lon": 138.18943049999996
+    },
+    {
+      "id": "w_5344f125",
+      "name": "Flairville on Heysen",
+      "type": "accommodation",
+      "lat": -33.359583,
+      "lon": 138.500453
+    },
+    {
+      "id": "w_53ab3c7c",
+      "name": "Old Mt Bryan East School",
+      "type": "hut",
+      "lat": -33.408642,
+      "lon": 139.01831100000004
+    },
+    {
+      "id": "w_54059587",
+      "name": "Marschalls Hut",
+      "type": "hut",
+      "lat": -34.168823,
+      "lon": 138.83136000000002
+    },
+    {
+      "id": "w_557f2087",
+      "name": "Mylor Oval tank",
+      "type": "water",
+      "lat": -35.042375,
+      "lon": 138.76130799999999
+    },
+    {
+      "id": "w_55a36e15",
+      "name": "Beetaloo ‘walk-in’ site (Southern Boundary Track)",
+      "type": "campsite",
+      "lat": -33.19035,
+      "lon": 138.188624
+    },
+    {
+      "id": "w_56bc59b8",
+      "name": "Cape Jervis",
+      "type": "town",
+      "lat": -35.603771,
+      "lon": 138.10687299999995
+    },
+    {
+      "id": "w_56d7af5e",
+      "name": "Mt Compass Caravan Park",
+      "type": "caravan-park",
+      "lat": -35.36077,
+      "lon": 138.61382
+    },
+    {
+      "id": "w_571d76df",
+      "name": "Endilloe Lodge Bed & Breakfast",
+      "type": "accommodation",
+      "lat": -32.326402,
+      "lon": 138.04920100000004
+    },
+    {
+      "id": "w_57397e6d",
+      "name": "Jewel of the Valley",
+      "type": "accommodation",
+      "lat": -34.5232003,
+      "lon": 138.959562
+    },
+    {
+      "id": "w_57ce9409",
+      "name": "Great Northern Lodge",
+      "type": "accommodation",
+      "lat": -32.346146,
+      "lon": 138.04303000000004
+    },
+    {
+      "id": "w_5b74cd4b",
+      "name": "Spalding Escape",
+      "type": "accommodation",
+      "lat": -33.498496,
+      "lon": 138.61041999999998
+    },
+    {
+      "id": "w_5c952f28",
+      "name": "Broadview homestead",
+      "type": "accommodation",
+      "lat": -32.52118,
+      "lon": 138.05735000000004
+    },
+    {
+      "id": "w_5cdf6af5",
+      "name": "Camping at Greenock Oval",
+      "type": "campsite",
+      "lat": -34.457802,
+      "lon": 138.92842300000007
+    },
+    {
+      "id": "w_5d96d963",
+      "name": "Wandallah Creek ‘Walk in’ Shelter",
+      "type": "hut",
+      "lat": -33.611561,
+      "lon": 138.993791
+    },
+    {
+      "id": "w_5dc453f8",
+      "name": "Waitpinga camp site",
+      "type": "hut",
+      "lat": -35.62774,
+      "lon": 138.49986
+    },
+    {
+      "id": "w_613317dc",
+      "name": "Kookaburra Creek Bush Retreat",
+      "type": "accommodation",
+      "lat": -32.75359,
+      "lon": 138.15734
+    },
+    {
+      "id": "w_623efa4d",
+      "name": "Crystal Brook Caravan Park",
+      "type": "caravan-park",
+      "lat": -33.34714,
+      "lon": 138.20049
+    },
+    {
+      "id": "w_624896fd",
+      "name": "The Racecourse Camp",
+      "type": "campsite",
+      "lat": -32.80104,
+      "lon": 138.14063
+    },
+    {
+      "id": "w_64050645",
+      "name": "Burra Creek Gorge Reserve (Worlds End)",
+      "type": "campsite",
+      "lat": -33.831139,
+      "lon": 139.044037
+    },
+    {
+      "id": "w_647ba9c6",
+      "name": "Waukarie Creek/Mt Brown North ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.46237,
+      "lon": 138.00732
+    },
+    {
+      "id": "w_64909c66",
+      "name": "Old School House",
+      "type": "hut",
+      "lat": -34.683683,
+      "lon": 138.96687299999996
+    },
+    {
+      "id": "w_663bca99",
+      "name": "Mayo Hut",
+      "type": "hut",
+      "lat": -31.754693,
+      "lon": 138.40784499999995
+    },
+    {
+      "id": "w_67467050",
+      "name": "Mount Remarkable Hotel Motel",
+      "type": "accommodation",
+      "lat": -32.825824,
+      "lon": 138.18800999999996
+    },
+    {
+      "id": "w_680e9539",
+      "name": "Alma’s Hem Amphitheatre",
+      "type": "campsite",
+      "lat": -35.5008,
+      "lon": 138.4891
+    },
+    {
+      "id": "w_69980790",
+      "name": "Warren Gorge",
+      "type": "campsite",
+      "lat": -32.187222,
+      "lon": 138.01074199999994
+    },
+    {
+      "id": "w_6af99f81",
+      "name": "Wilmington",
+      "type": "town",
+      "lat": -32.649349,
+      "lon": 138.09750399999996
+    },
+    {
+      "id": "w_6b179a0d",
+      "name": "Kersbrook",
+      "type": "town",
+      "lat": -34.783005,
+      "lon": 138.85150099999998
+    },
+    {
+      "id": "w_70950a93",
+      "name": "Pigeon Bore",
+      "type": "water",
+      "lat": -31.239925,
+      "lon": 138.557727
+    },
+    {
+      "id": "w_721d0707",
+      "name": "Doughboy Reserve",
+      "type": "campsite",
+      "lat": -32.896671,
+      "lon": 138.237524
+    },
+    {
+      "id": "w_73eb3717",
+      "name": "Hamilton",
+      "type": "town",
+      "lat": -34.21386,
+      "lon": 138.8818
+    },
+    {
+      "id": "w_75f895c6",
+      "name": "Wirrabara",
+      "type": "town",
+      "lat": -33.032898,
+      "lon": 138.26875300000006
+    },
+    {
+      "id": "w_760acd80",
+      "name": "Ridgetop Retreats",
+      "type": "accommodation",
+      "lat": -35.6058,
+      "lon": 138.23400000000004
+    },
+    {
+      "id": "w_761bb655",
+      "name": "Goondooloo Cottage",
+      "type": "accommodation",
+      "lat": -35.6303,
+      "lon": 138.1961
+    },
+    {
+      "id": "w_7acab284",
+      "name": "Tanunda Hotel Apartments",
+      "type": "accommodation",
+      "lat": -34.5261467,
+      "lon": 138.95770319999997
+    },
+    {
+      "id": "w_7b57a5f3",
+      "name": "Sir John Franklin Hotel",
+      "type": "accommodation",
+      "lat": -34.340979,
+      "lon": 138.91513399999997
+    },
+    {
+      "id": "w_7c4dd996",
+      "name": "Paxton Square Cottages",
+      "type": "accommodation",
+      "lat": -33.6804545,
+      "lon": 138.940114
+    },
+    {
+      "id": "w_7c61fc3b",
+      "name": "Glenburn Cottage",
+      "type": "accommodation",
+      "lat": -35.6057,
+      "lon": 138.24170000000004
+    },
+    {
+      "id": "w_7c9a0d0c",
+      "name": "The Dutchman Hut",
+      "type": "hut",
+      "lat": -32.296364,
+      "lon": 137.98272700000007
+    },
+    {
+      "id": "w_7e187a2a",
+      "name": "Blinman",
+      "type": "town",
+      "lat": -31.0954,
+      "lon": 138.67880000000002
+    },
+    {
+      "id": "w_7e2e886f",
+      "name": "Kapunda Tourist Park",
+      "type": "caravan-park",
+      "lat": -34.337333,
+      "lon": 138.90879599999994
+    },
+    {
+      "id": "w_7f467df1",
+      "name": "McKinley’s Rest",
+      "type": "accommodation",
+      "lat": -32.346276,
+      "lon": 138.04260899999997
+    },
+    {
+      "id": "w_7f93d59a",
+      "name": "Aldgate Lodge",
+      "type": "accommodation",
+      "lat": -35.017144,
+      "lon": 138.73925099999997
+    },
+    {
+      "id": "w_800568d1",
+      "name": "Goat Rock ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.777756,
+      "lon": 138.135488
+    },
+    {
+      "id": "w_809aec41",
+      "name": "Newland Hill ‘bench’",
+      "type": "poi",
+      "lat": -35.587724,
+      "lon": 138.56801199999995
+    },
+    {
+      "id": "w_81f27de0",
+      "name": "Mt Little Station",
+      "type": "accommodation",
+      "lat": -31.73373,
+      "lon": 138.39856
+    },
+    {
+      "id": "w_82a87596",
+      "name": "Mt Elm ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -31.90712,
+      "lon": 138.33304
+    },
+    {
+      "id": "w_83a8f54b",
+      "name": "Cape Jervis Trailhead",
+      "type": "trailhead",
+      "lat": -35.6063,
+      "lon": 138.09547399999997
+    },
+    {
+      "id": "w_843382b5",
+      "name": "Eyre Depot",
+      "type": "campsite",
+      "lat": -32.23472,
+      "lon": 137.93245
+    },
+    {
+      "id": "w_84d4dc85",
+      "name": "Burra Motor Inn",
+      "type": "accommodation",
+      "lat": -33.6789601,
+      "lon": 138.93624410000007
+    },
+    {
+      "id": "w_84dd5e38",
+      "name": "Parachilna",
+      "type": "town",
+      "lat": -31.1328,
+      "lon": 138.39740000000006
+    },
+    {
+      "id": "w_85eb1c33",
+      "name": "Trig Campground",
+      "type": "hut",
+      "lat": -35.65261,
+      "lon": 138.21692
+    },
+    {
+      "id": "w_86032707",
+      "name": "Smith Hill",
+      "type": "campsite",
+      "lat": -34.06708,
+      "lon": 138.96028
+    },
+    {
+      "id": "w_866ca50b",
+      "name": "Alligator Lodge",
+      "type": "accommodation",
+      "lat": -32.72546,
+      "lon": 138.08305399999995
+    },
+    {
+      "id": "w_88a3da5f",
+      "name": "Wonoka Station",
+      "type": "accommodation",
+      "lat": -31.78079,
+      "lon": 138.39288
+    },
+    {
+      "id": "w_8a67a214",
+      "name": "Spalding Oval",
+      "type": "campsite",
+      "lat": -33.49962,
+      "lon": 138.60574999999994
+    },
+    {
+      "id": "w_8cbf45f2",
+      "name": "Bridgewater",
+      "type": "town",
+      "lat": -35.00975,
+      "lon": 138.75886500000001
+    },
+    {
+      "id": "w_8cdc414e",
+      "name": "Woodhouse Activity Centre",
+      "type": "campsite",
+      "lat": -34.986656,
+      "lon": 138.73736600000007
+    },
+    {
+      "id": "w_8e56a5fc",
+      "name": "Blue House, Myponga",
+      "type": "accommodation",
+      "lat": -35.39384,
+      "lon": 138.46011999999996
+    },
+    {
+      "id": "w_90e6cbb2",
+      "name": "Marrabel ‘Walk-in’ site",
+      "type": "campsite",
+      "lat": -34.139612,
+      "lon": 138.87835100000007
+    },
+    {
+      "id": "w_919fff9c",
+      "name": "Riverton Hotel",
+      "type": "accommodation",
+      "lat": -34.15808,
+      "lon": 138.74712
+    },
+    {
+      "id": "w_9234141a",
+      "name": "Wendy’s at Wattle Park, Flinders Ranges",
+      "type": "accommodation",
+      "lat": -32.968908,
+      "lon": 138.11442799999998
+    },
+    {
+      "id": "w_92b405f9",
+      "name": "Old Telegraph Station Bed and Breakfast",
+      "type": "accommodation",
+      "lat": -34.4579053,
+      "lon": 138.92960010000002
+    },
+    {
+      "id": "w_94970080",
+      "name": "Savings Bank of South Australia – Old Quorn Branch",
+      "type": "accommodation",
+      "lat": -32.346579,
+      "lon": 138.041968
+    },
+    {
+      "id": "w_9555e0ce",
+      "name": "Mt Compass",
+      "type": "town",
+      "lat": -35.348831,
+      "lon": 138.62115500000004
+    },
+    {
+      "id": "w_96dafb81",
+      "name": "Trezona Campsite",
+      "type": "campsite",
+      "lat": -31.331059,
+      "lon": 138.62748699999997
+    },
+    {
+      "id": "w_96e1d8a9",
+      "name": "Mt Cone Tank (Water Location Only)",
+      "type": "water",
+      "lat": -35.3951773502,
+      "lon": 138.5605230305
+    },
+    {
+      "id": "w_99b44500",
+      "name": "Old Shed – Main Camp – Caroona Creek Conservation Park",
+      "type": "hut",
+      "lat": -33.44786,
+      "lon": 139.14079
+    },
+    {
+      "id": "w_9a98f75c",
+      "name": "Argadells",
+      "type": "caravan-park",
+      "lat": -32.13985,
+      "lon": 138.03784
+    },
+    {
+      "id": "w_9bca3df9",
+      "name": "Catninga Shed",
+      "type": "hut",
+      "lat": -32.51787,
+      "lon": 138.00792
+    },
+    {
+      "id": "w_9d29f990",
+      "name": "Chookarloo Campground",
+      "type": "campsite",
+      "lat": -35.203808,
+      "lon": 138.71498099999997
+    },
+    {
+      "id": "w_9e2647e1",
+      "name": "Apartments on Fiedler",
+      "type": "accommodation",
+      "lat": -34.527965,
+      "lon": 138.95629299999996
+    },
+    {
+      "id": "w_9ee831ee",
+      "name": "Country Bakehouse Accommodation",
+      "type": "accommodation",
+      "lat": -33.49822,
+      "lon": 138.60821999999996
+    },
+    {
+      "id": "w_9f4c59f3",
+      "name": "Red Range ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -31.68107,
+      "lon": 138.50477
+    },
+    {
+      "id": "w_9fe17da8",
+      "name": "Spear Creek Holiday Park",
+      "type": "accommodation",
+      "lat": -32.56992,
+      "lon": 137.9896
+    },
+    {
+      "id": "w_9ffd4a36",
+      "name": "Worlds End ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -33.81897,
+      "lon": 139.04646
+    },
+    {
+      "id": "w_a14f01b0",
+      "name": "The Manna of Hahndorf",
+      "type": "accommodation",
+      "lat": -35.0320454,
+      "lon": 138.81145289999995
+    },
+    {
+      "id": "w_a5e68e4b",
+      "name": "Compass Country Cabins",
+      "type": "accommodation",
+      "lat": -35.36943333,
+      "lon": 138.64131670000006
+    },
+    {
+      "id": "w_a778dbb5",
+      "name": "Tanunda Cottages",
+      "type": "accommodation",
+      "lat": -34.5197503,
+      "lon": 138.96584789999997
+    },
+    {
+      "id": "w_a7961ea5",
+      "name": "Lights Hummocks Reserve",
+      "type": "campsite",
+      "lat": -34.2852,
+      "lon": 138.87373
+    },
+    {
+      "id": "w_a7fb4133",
+      "name": "Hahndorf Motel",
+      "type": "accommodation",
+      "lat": -35.0297882,
+      "lon": 138.81035780000002
+    },
+    {
+      "id": "w_a80b99a7",
+      "name": "Moolooloo Station",
+      "type": "accommodation",
+      "lat": -31.074108,
+      "lon": 138.62274200000002
+    },
+    {
+      "id": "w_a9f99a33",
+      "name": "Sunset Ridge Accommodation",
+      "type": "accommodation",
+      "lat": -31.868966,
+      "lon": 138.38564299999996
+    },
+    {
+      "id": "w_ab245cf6",
+      "name": "Buckaringa North ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -32.06044,
+      "lon": 138.09572
+    },
+    {
+      "id": "w_ab49154b",
+      "name": "Inman Valley",
+      "type": "town",
+      "lat": -35.493382,
+      "lon": 138.45831299999998
+    },
+    {
+      "id": "w_aba67fdf",
+      "name": "Melrose",
+      "type": "town",
+      "lat": -32.826843,
+      "lon": 138.18688999999995
+    },
+    {
+      "id": "w_aba8b351",
+      "name": "Hahndorf Oak Tree Cottages",
+      "type": "accommodation",
+      "lat": -35.0296793,
+      "lon": 138.80986800000005
+    },
+    {
+      "id": "w_ac31d872",
+      "name": "Angorichina Tourist Village",
+      "type": "accommodation",
+      "lat": -31.12644,
+      "lon": 138.56107
+    },
+    {
+      "id": "w_ad54d6a8",
+      "name": "Meaney’s Rest",
+      "type": "accommodation",
+      "lat": -31.886756,
+      "lon": 138.42229399999997
+    },
+    {
+      "id": "w_aecdaa67",
+      "name": "Fromms Farm",
+      "type": "hut",
+      "lat": -34.72469,
+      "lon": 138.96555
+    },
+    {
+      "id": "w_af3e11f1",
+      "name": "Grays Hut",
+      "type": "hut",
+      "lat": -32.800521,
+      "lon": 138.13758499999994
+    },
+    {
+      "id": "w_b03eb0e3",
+      "name": "Hahndorf House",
+      "type": "accommodation",
+      "lat": -35.0318991,
+      "lon": 138.81054589999997
+    },
+    {
+      "id": "w_b04b3186",
+      "name": "Arkaba Stockyard tank",
+      "type": "water",
+      "lat": -31.616321,
+      "lon": 138.49239999999998
+    },
+    {
+      "id": "w_b05c73de",
+      "name": "Norton Summit",
+      "type": "town",
+      "lat": -34.92335,
+      "lon": 138.72423333329994
+    },
+    {
+      "id": "w_b12f2df8",
+      "name": "Lavender Cottage",
+      "type": "accommodation",
+      "lat": -33.6819468,
+      "lon": 138.9418177
+    },
+    {
+      "id": "w_b24a5fb6",
+      "name": "Cudlee Creek",
+      "type": "town",
+      "lat": -34.839745,
+      "lon": 138.81664999999998
+    },
+    {
+      "id": "w_b3b79b9f",
+      "name": "Aroona Hut",
+      "type": "water",
+      "lat": -31.277617,
+      "lon": 138.57910200000003
+    },
+    {
+      "id": "w_b3fdda1b",
+      "name": "Riverton",
+      "type": "town",
+      "lat": -34.1592834,
+      "lon": 138.74743239999998
+    },
+    {
+      "id": "w_b44ca17e",
+      "name": "Griffiths Retreat and Cottage",
+      "type": "accommodation",
+      "lat": -33.671874,
+      "lon": 138.926155
+    },
+    {
+      "id": "w_b5fb287d",
+      "name": "Cudlee Creek Restaurant Tavern and Caravan Park",
+      "type": "caravan-park",
+      "lat": -34.83982,
+      "lon": 138.81707299999994
+    },
+    {
+      "id": "w_b7644849",
+      "name": "Rocky Creek Hut & ‘Walk in’ site",
+      "type": "hut",
+      "lat": -35.146038,
+      "lon": 138.73872400000005
+    },
+    {
+      "id": "w_b87391f4",
+      "name": "Wilderness Cabin, Horseshoe Range",
+      "type": "accommodation",
+      "lat": -32.414348,
+      "lon": 138.3537761
+    },
+    {
+      "id": "w_b960d6f7",
+      "name": "Hayley’s House BnB Riverton",
+      "type": "accommodation",
+      "lat": -34.16108,
+      "lon": 138.74691000000007
+    },
+    {
+      "id": "w_ba586ff7",
+      "name": "Bethany Reserve",
+      "type": "hut",
+      "lat": -34.542641,
+      "lon": 138.98255900000004
+    },
+    {
+      "id": "w_bb0bb2dc",
+      "name": "Quorn Brewers Cottages",
+      "type": "accommodation",
+      "lat": -32.3412333,
+      "lon": 138.03743869999994
+    },
+    {
+      "id": "w_bc550aab",
+      "name": "Centennial Drive",
+      "type": "hut",
+      "lat": -34.69939,
+      "lon": 138.960785
+    },
+    {
+      "id": "w_bd21dbf0",
+      "name": "Barossa Motel",
+      "type": "accommodation",
+      "lat": -34.5149886,
+      "lon": 138.97167880000006
+    },
+    {
+      "id": "w_bd5470da",
+      "name": "Rawnsley Park Station",
+      "type": "accommodation",
+      "lat": -31.645199,
+      "lon": 138.58145100000002
+    },
+    {
+      "id": "w_be4d28bb",
+      "name": "Wuldi Krikin Ngawanthi / Eagle Waterhole ‘walk-in’ site",
+      "type": "hut",
+      "lat": -35.64685,
+      "lon": 138.19241669999997
+    },
+    {
+      "id": "w_beb039db",
+      "name": "Pichi Richi Park",
+      "type": "caravan-park",
+      "lat": -32.4299,
+      "lon": 137.97063
+    },
+    {
+      "id": "w_beb5c113",
+      "name": "Deep Creek Homestead",
+      "type": "accommodation",
+      "lat": -35.616671,
+      "lon": 138.25695900000005
+    },
+    {
+      "id": "w_bf2c754a",
+      "name": "Caroona Creek ‘walk-in’ site",
+      "type": "hut",
+      "lat": -33.449757,
+      "lon": 139.119681
+    },
+    {
+      "id": "w_c04ed919",
+      "name": "Cape Jervis Tavern",
+      "type": "accommodation",
+      "lat": -35.604111,
+      "lon": 138.10794799999996
+    },
+    {
+      "id": "w_c300cbdf",
+      "name": "Parachilna Gorge ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -31.1393,
+      "lon": 138.5312
+    },
+    {
+      "id": "w_c3b1c9a2",
+      "name": "Catninga B&B",
+      "type": "accommodation",
+      "lat": -32.514,
+      "lon": 137.97540000000004
+    },
+    {
+      "id": "w_c5211608",
+      "name": "Oscars Barossa",
+      "type": "accommodation",
+      "lat": -34.5246204,
+      "lon": 138.9632289
+    },
+    {
+      "id": "w_c5484f7d",
+      "name": "Melrose Holiday Units",
+      "type": "accommodation",
+      "lat": -32.824386,
+      "lon": 138.1914948
+    },
+    {
+      "id": "w_c73fcb48",
+      "name": "Arkaba Conservancy",
+      "type": "accommodation",
+      "lat": -31.7313,
+      "lon": 138.50419999999997
+    },
+    {
+      "id": "w_c9e6b917",
+      "name": "Murray Town",
+      "type": "town",
+      "lat": -32.936972,
+      "lon": 138.24043800000004
+    },
+    {
+      "id": "w_cbb4c496",
+      "name": "Marrabel",
+      "type": "town",
+      "lat": -34.14106,
+      "lon": 138.87771599999996
+    },
+    {
+      "id": "w_cbc850a9",
+      "name": "Bowman Hut & ‘walk-in’ site",
+      "type": "hut",
+      "lat": -33.331406,
+      "lon": 138.23844899999995
+    },
+    {
+      "id": "w_ccfca739",
+      "name": "Barossa Weintal Resort",
+      "type": "accommodation",
+      "lat": -34.5125969,
+      "lon": 138.9757929
+    },
+    {
+      "id": "w_ce369dc6",
+      "name": "Tiverina Park",
+      "type": "accommodation",
+      "lat": -33.444856,
+      "lon": 138.851404
+    },
+    {
+      "id": "w_ce43e9bd",
+      "name": "Flinders Family Getaway",
+      "type": "accommodation",
+      "lat": -32.829364,
+      "lon": 138.189256
+    },
+    {
+      "id": "w_ce96eb39",
+      "name": "Go-Cart Track Shelter",
+      "type": "campsite",
+      "lat": -33.051029,
+      "lon": 138.146744
+    },
+    {
+      "id": "w_cf5386d5",
+      "name": "Robinson Hill ‘walk-in’ site",
+      "type": "campsite",
+      "lat": -35.51733,
+      "lon": 138.48574
+    },
+    {
+      "id": "w_cf6d016c",
+      "name": "Prince of Wales Hotel",
+      "type": "accommodation",
+      "lat": -34.338811,
+      "lon": 138.916747
+    },
+    {
+      "id": "w_d6bc3ad3",
+      "name": "Burra Hotel",
+      "type": "accommodation",
+      "lat": -33.6814318,
+      "lon": 138.93887589999997
+    },
+    {
+      "id": "w_d6cbd9b9",
+      "name": "Bundaleer Sport & Recreation Grounds",
+      "type": "campsite",
+      "lat": -33.278305,
+      "lon": 138.57298000000003
+    },
+    {
+      "id": "w_d6d1bbcb",
+      "name": "Hiskeys Hut",
+      "type": "hut",
+      "lat": -33.35432542,
+      "lon": 138.36132499999997
+    },
+    {
+      "id": "w_d72b6c8c",
+      "name": "Yapari Ngawanthi / Cliffs ‘walk-in’ site",
+      "type": "hut",
+      "lat": -35.630357936,
+      "lon": 138.25761359199998
+    },
+    {
+      "id": "w_d77430fa",
+      "name": "Corinium Roman Villa",
+      "type": "accommodation",
+      "lat": -35.516509,
+      "lon": 138.41114800000003
+    },
+    {
+      "id": "w_d7843d94",
+      "name": "Stony Creek Bush Camp Caravan Park",
+      "type": "caravan-park",
+      "lat": -32.6479,
+      "lon": 138.13477
+    },
+    {
+      "id": "w_d7d02f6a",
+      "name": "The Scrub Campsite",
+      "type": "campsite",
+      "lat": -35.52426,
+      "lon": 138.51369999999997
+    },
+    {
+      "id": "w_d80be5bc",
+      "name": "Ippinitchie Campground",
+      "type": "campsite",
+      "lat": -33.06691,
+      "lon": 138.230545
+    },
+    {
+      "id": "w_dd3e5efa",
+      "name": "Cleland Cottage (formerly Mt Lofty Cottage YHA)",
+      "type": "accommodation",
+      "lat": -34.974304,
+      "lon": 138.70622300000002
+    },
+    {
+      "id": "w_dd6ccd38",
+      "name": "Spalding Hotel",
+      "type": "accommodation",
+      "lat": -33.49796,
+      "lon": 138.60804
+    },
+    {
+      "id": "w_ddbf354c",
+      "name": "Burra Caravan Park",
+      "type": "caravan-park",
+      "lat": -33.67936,
+      "lon": 138.93814
+    },
+    {
+      "id": "w_dee5e4c4",
+      "name": "Beautiful Valley Caravan Park",
+      "type": "caravan-park",
+      "lat": -32.66116,
+      "lon": 138.1082
+    },
+    {
+      "id": "w_e0ae188d",
+      "name": "Hahndorf",
+      "type": "town",
+      "lat": -35.0296666667,
+      "lon": 138.81078333330004
+    },
+    {
+      "id": "w_e1e73ddc",
+      "name": "White Park Tank",
+      "type": "water",
+      "lat": -33.010321309089534,
+      "lon": 138.15617044212559
+    },
+    {
+      "id": "w_e20e0df0",
+      "name": "Stables Inn Motel",
+      "type": "accommodation",
+      "lat": -35.0307519,
+      "lon": 138.81098629999997
+    },
+    {
+      "id": "w_e382acc1",
+      "name": "Victor Harbor",
+      "type": "town",
+      "lat": -35.553921,
+      "lon": 138.62298599999997
+    },
+    {
+      "id": "w_e5c299a1",
+      "name": "Spalding",
+      "type": "town",
+      "lat": -33.499035,
+      "lon": 138.60762
+    },
+    {
+      "id": "w_e78a9769",
+      "name": "Oldham House B&B",
+      "type": "accommodation",
+      "lat": -34.33917,
+      "lon": 138.91927999999996
+    },
+    {
+      "id": "w_e90489ef",
+      "name": "Murray Town campsite",
+      "type": "campsite",
+      "lat": -32.93577,
+      "lon": 138.240728
+    },
+    {
+      "id": "w_e9197479",
+      "name": "Wilcolo campground",
+      "type": "campsite",
+      "lat": -31.489465,
+      "lon": 138.57044999999994
+    },
+    {
+      "id": "w_e9772159",
+      "name": "Hawker Caravan Park",
+      "type": "caravan-park",
+      "lat": -31.88764,
+      "lon": 138.42621
+    },
+    {
+      "id": "w_ebe3a7cc",
+      "name": "Scotts Shelter",
+      "type": "hut",
+      "lat": -34.759902,
+      "lon": 138.906659
+    },
+    {
+      "id": "w_ed9f406e",
+      "name": "Miriam’s Cottage",
+      "type": "accommodation",
+      "lat": -34.5198492,
+      "lon": 138.9607317
+    },
+    {
+      "id": "w_eec758f5",
+      "name": "Hahndorf Old Mill",
+      "type": "accommodation",
+      "lat": -35.0297124,
+      "lon": 138.81017569999995
+    },
+    {
+      "id": "w_ef4d5138",
+      "name": "Tanunda Caravan & Tourist Park",
+      "type": "caravan-park",
+      "lat": -34.5318586,
+      "lon": 138.9499197
+    },
+    {
+      "id": "w_f088ebe3",
+      "name": "Burnslea Log Cabin",
+      "type": "accommodation",
+      "lat": -35.043423,
+      "lon": 138.76007900000002
+    },
+    {
+      "id": "w_f1db2a42",
+      "name": "Middlesight Water Hut",
+      "type": "hut",
+      "lat": -31.345465,
+      "lon": 138.63790900000004
+    },
+    {
+      "id": "w_f358f4a0",
+      "name": "Kapunda",
+      "type": "town",
+      "lat": -34.339077,
+      "lon": 138.91667200000006
+    },
+    {
+      "id": "w_f3a2f4ea",
+      "name": "Blinman Hotel",
+      "type": "accommodation",
+      "lat": -31.0938728,
+      "lon": 138.6778954
+    },
+    {
+      "id": "w_f3a315b2",
+      "name": "The Carriages",
+      "type": "accommodation",
+      "lat": -33.411914,
+      "lon": 138.89234399999998
+    },
+    {
+      "id": "w_f4e6e3c9",
+      "name": "Burra",
+      "type": "town",
+      "lat": -33.682087,
+      "lon": 138.938675
+    },
+    {
+      "id": "w_f5aa217a",
+      "name": "Woodcutters Cottage (formerly Old Kuitpo Youth Hostel)",
+      "type": "accommodation",
+      "lat": -35.22989,
+      "lon": 138.68515
+    },
+    {
+      "id": "w_f65c67d1",
+      "name": "Wilpena Caravan Park",
+      "type": "caravan-park",
+      "lat": -31.52668,
+      "lon": 138.60387
+    },
+    {
+      "id": "w_f694954f",
+      "name": "Cudlee Creek North ‘walk-in’ site (Grandpa’s)",
+      "type": "campsite",
+      "lat": -34.86686,
+      "lon": 138.8226
+    },
+    {
+      "id": "w_f6a01b19",
+      "name": "Natunyuru Ngawanthi / Sand Dunes ‘walk-in’ camp site",
+      "type": "hut",
+      "lat": -35.626415,
+      "lon": 138.50996099999998
+    },
+    {
+      "id": "w_f6ff09a5",
+      "name": "Tapanappa Camp Site",
+      "type": "campsite",
+      "lat": -35.633266,
+      "lon": 138.259857
+    },
+    {
+      "id": "w_f8611294",
+      "name": "Cartapo Creek Hobby Farm",
+      "type": "campsite",
+      "lat": -33.423845,
+      "lon": 138.89929600000005
+    },
+    {
+      "id": "w_f862bab0",
+      "name": "Hallett Camping at the Recreation Ground",
+      "type": "campsite",
+      "lat": -33.408488,
+      "lon": 138.89040999999997
+    },
+    {
+      "id": "w_f968253e",
+      "name": "Quandong Apartments",
+      "type": "accommodation",
+      "lat": -32.346805,
+      "lon": 138.04157399999997
+    },
+    {
+      "id": "w_fbbbcb7c",
+      "name": "Greenock",
+      "type": "town",
+      "lat": -34.457493,
+      "lon": 138.927094
+    },
+    {
+      "id": "w_fc16c71e",
+      "name": "Amble at Hahndorf",
+      "type": "accommodation",
+      "lat": -35.026697,
+      "lon": 138.80536499999994
+    },
+    {
+      "id": "w_fef350de",
+      "name": "Burra Bed & Breakfast",
+      "type": "accommodation",
+      "lat": -33.679307,
+      "lon": 138.94219099999998
+    }
+  ],
+  "hume-and-hovell": [
+    {
+      "id": "w_0467a95e",
+      "name": "Wymah road end",
+      "type": "road-crossing",
+      "lat": -35.98718131420836,
+      "lon": 147.14743080588303
+    },
+    {
+      "id": "w_05619db9",
+      "name": "snowy mountains highway",
+      "type": "road-crossing",
+      "lat": -35.36511,
+      "lon": 148.28422
+    },
+    {
+      "id": "w_0ea9676b",
+      "name": "Billy Grace reserve",
+      "type": "campsite",
+      "lat": -35.13887,
+      "lon": 148.68156
+    },
+    {
+      "id": "w_1e7ca666",
+      "name": "Tumut valley holiday park",
+      "type": "caravan-park",
+      "lat": -35.34205,
+      "lon": 148.24542
+    },
+    {
+      "id": "w_2b576c8d",
+      "name": "Wymah road start",
+      "type": "road-crossing",
+      "lat": -35.9837,
+      "lon": 147.22794
+    },
+    {
+      "id": "w_30a54c45",
+      "name": "lake Hume turnoff",
+      "type": "caravan-park",
+      "lat": -35.99059,
+      "lon": 147.15283
+    },
+    {
+      "id": "w_3251395d",
+      "name": "Hovell tree",
+      "type": "endpoint",
+      "lat": -36.08474,
+      "lon": 146.90821
+    },
+    {
+      "id": "w_34b4e2f1",
+      "name": "Mundaroo camp",
+      "type": "campsite",
+      "lat": -35.81663,
+      "lon": 147.84785
+    },
+    {
+      "id": "w_35fe2997",
+      "name": "Tin mines",
+      "type": "campsite",
+      "lat": -35.85969,
+      "lon": 147.47718
+    },
+    {
+      "id": "w_3668bb18",
+      "name": "table top park actual",
+      "type": "campsite",
+      "lat": -35.97442,
+      "lon": 147.04525
+    },
+    {
+      "id": "w_3908730d",
+      "name": "Windy point",
+      "type": "campsite",
+      "lat": -35.49599,
+      "lon": 148.24186
+    },
+    {
+      "id": "w_40fbf879",
+      "name": "Tumbarumba",
+      "type": "town",
+      "lat": -35.77667,
+      "lon": 148.00998
+    },
+    {
+      "id": "w_4cf83e0b",
+      "name": "C? Bowna rest area",
+      "type": "campsite",
+      "lat": -35.95236,
+      "lon": 147.10393
+    },
+    {
+      "id": "w_4f55061e",
+      "name": "Barrois camp",
+      "type": "campsite",
+      "lat": -35.28101,
+      "lon": 148.53731
+    },
+    {
+      "id": "w_5035e9d5",
+      "name": "Henry Angel Flat",
+      "type": "trailhead",
+      "lat": -35.82506,
+      "lon": 148.06137
+    },
+    {
+      "id": "w_54de1796",
+      "name": "Yass caravan park",
+      "type": "caravan-park",
+      "lat": -34.83386,
+      "lon": 148.90848
+    },
+    {
+      "id": "w_55db99d3",
+      "name": "Micalong creek",
+      "type": "campsite",
+      "lat": -35.24652,
+      "lon": 148.57478
+    },
+    {
+      "id": "w_62879a43",
+      "name": "CLOSED C - Ben Smith campsite",
+      "type": "campsite",
+      "lat": -35.58431,
+      "lon": 148.28045
+    },
+    {
+      "id": "w_66f41d32",
+      "name": "Browns creek",
+      "type": "campsite",
+      "lat": -35.45133,
+      "lon": 148.24131
+    },
+    {
+      "id": "w_6804d5ad",
+      "name": "Tunnel road",
+      "type": "road-crossing",
+      "lat": -35.90536,
+      "lon": 147.31809
+    },
+    {
+      "id": "w_6af21e38",
+      "name": "Cafe and takeaway",
+      "type": "food",
+      "lat": -36.0436,
+      "lon": 146.99014
+    },
+    {
+      "id": "w_76fbcba2",
+      "name": "Log bridge creek",
+      "type": "campsite",
+      "lat": -35.17074,
+      "lon": 148.60243
+    },
+    {
+      "id": "w_778b2c24",
+      "name": "table top park",
+      "type": "campsite",
+      "lat": -35.97533,
+      "lon": 147.04083
+    },
+    {
+      "id": "w_8a843bdc",
+      "name": "The captain camp",
+      "type": "campsite",
+      "lat": -34.87649,
+      "lon": 148.71697
+    },
+    {
+      "id": "w_8b042405",
+      "name": "Yellowin camp",
+      "type": "campsite",
+      "lat": -35.53922,
+      "lon": 148.23189
+    },
+    {
+      "id": "w_a73a9b3d",
+      "name": "Restaurant area",
+      "type": "food",
+      "lat": -36.08103,
+      "lon": 146.91811
+    },
+    {
+      "id": "w_abca0163",
+      "name": "Wee Jasper",
+      "type": "town",
+      "lat": -35.10993,
+      "lon": 148.67279
+    },
+    {
+      "id": "w_b6e4705c",
+      "name": "Paddys river dam",
+      "type": "campsite",
+      "lat": -35.71631,
+      "lon": 148.16744
+    },
+    {
+      "id": "w_bb19d698",
+      "name": "Cooma Cottage",
+      "type": "endpoint",
+      "lat": -34.86308,
+      "lon": 148.94818
+    },
+    {
+      "id": "w_bbb3637c",
+      "name": "The Hole",
+      "type": "campsite",
+      "lat": -35.38557,
+      "lon": 148.45647
+    },
+    {
+      "id": "w_c18b2dee",
+      "name": "Lankeys creek",
+      "type": "campsite",
+      "lat": -35.81178,
+      "lon": 147.64745
+    },
+    {
+      "id": "w_c393582e",
+      "name": "Buddong falls",
+      "type": "campsite",
+      "lat": -35.64283,
+      "lon": 148.24556
+    },
+    {
+      "id": "w_c5ffc94f",
+      "name": "Fitzpatrick Trackhead",
+      "type": "trailhead",
+      "lat": -35.13873,
+      "lon": 148.67418
+    },
+    {
+      "id": "w_cc5807a7",
+      "name": "Buddong hut",
+      "type": "campsite",
+      "lat": -35.64341,
+      "lon": 148.22014
+    },
+    {
+      "id": "w_cd629136",
+      "name": "Lake Hume Holiday park",
+      "type": "caravan-park",
+      "lat": -35.99617,
+      "lon": 147.15004
+    },
+    {
+      "id": "w_d2a0bdf8",
+      "name": "Tooma road",
+      "type": "road-crossing",
+      "lat": -35.82818,
+      "lon": 148.06102
+    },
+    {
+      "id": "w_d33dcd27",
+      "name": "Talbingo",
+      "type": "town",
+      "lat": -35.58123,
+      "lon": 148.29654
+    },
+    {
+      "id": "w_d3cc6a7f",
+      "name": "reflections Burrinjuck holiday park",
+      "type": "caravan-park",
+      "lat": -34.98076,
+      "lon": 148.62356
+    },
+    {
+      "id": "w_d7f3dcf9",
+      "name": "Blowering camp",
+      "type": "campsite",
+      "lat": -35.40207,
+      "lon": 148.23938
+    },
+    {
+      "id": "w_dc3338aa",
+      "name": "Thomas Boyd trackhead",
+      "type": "trailhead",
+      "lat": -35.37303,
+      "lon": 148.41629
+    },
+    {
+      "id": "w_e34a01ce",
+      "name": "Lake Mannus road",
+      "type": "road-crossing",
+      "lat": -35.77922,
+      "lon": 147.94454
+    },
+    {
+      "id": "w_e8b9bf53",
+      "name": "Mannus campsite",
+      "type": "campsite",
+      "lat": -35.77907,
+      "lon": 147.94122
+    },
+    {
+      "id": "w_eae5f76f",
+      "name": "Brindabella road",
+      "type": "road-crossing",
+      "lat": -35.28989,
+      "lon": 148.53599
+    },
+    {
+      "id": "w_f1d70ad9",
+      "name": "Junction camp",
+      "type": "campsite",
+      "lat": -35.78773,
+      "lon": 148.09433
+    },
+    {
+      "id": "w_f65adcad",
+      "name": "Samual Bollard",
+      "type": "campsite",
+      "lat": -35.89899,
+      "lon": 147.32892
+    },
+    {
+      "id": "w_fadc709c",
+      "name": "Mannus lake",
+      "type": "campsite",
+      "lat": -35.81177,
+      "lon": 147.98004
+    },
+    {
+      "id": "w_fe7d1507",
+      "name": "Paddys river dam actual",
+      "type": "campsite",
+      "lat": -35.71255,
+      "lon": 148.16708
+    },
+    {
+      "id": "w_fe919aa9",
+      "name": "Crown rest site",
+      "type": "waypoint",
+      "lat": -34.82554,
+      "lon": 148.76889
+    }
+  ],
+  "larapinta": [
+    {
+      "id": "w_013ce1c7",
+      "name": "Finke River",
+      "type": "campsite",
+      "lat": -23.65819,
+      "lon": 132.67881
+    },
+    {
+      "id": "w_03479f8e",
+      "name": "Hugh Gorge",
+      "type": "water-tank",
+      "lat": -23.70309,
+      "lon": 133.25907
+    },
+    {
+      "id": "w_05e13503",
+      "name": "Ellery Creek Trailhead",
+      "type": "trailhead",
+      "lat": -23.77966,
+      "lon": 133.07295
+    },
+    {
+      "id": "w_09fe6506",
+      "name": "Rocky Bar Gap",
+      "type": "campsite",
+      "lat": -23.60877,
+      "lon": 132.60258
+    },
+    {
+      "id": "w_0d0eb8e6",
+      "name": "Kiosk: Standley Chasm",
+      "type": "food",
+      "lat": -23.72181,
+      "lon": 133.47014
+    },
+    {
+      "id": "w_0d9926c6",
+      "name": "Ormiston Gorge",
+      "type": "campsite",
+      "lat": -23.63223,
+      "lon": 132.72667
+    },
+    {
+      "id": "w_0f2e1a6f",
+      "name": "Simpsons Gap",
+      "type": "campsite",
+      "lat": -23.67876,
+      "lon": 133.71752
+    },
+    {
+      "id": "w_15ab1436",
+      "name": "Wallaby Gap",
+      "type": "water-tank",
+      "lat": -23.66822,
+      "lon": 133.79502
+    },
+    {
+      "id": "w_1cf09005",
+      "name": "4/5 Junction",
+      "type": "campsite",
+      "lat": -23.71808,
+      "lon": 133.34829
+    },
+    {
+      "id": "w_20e85086",
+      "name": "Simpons Gap Trailhead",
+      "type": "trailhead",
+      "lat": -23.68053,
+      "lon": 133.71761
+    },
+    {
+      "id": "w_2bbddefe",
+      "name": "Finke River Trailhead",
+      "type": "trailhead",
+      "lat": -23.65942,
+      "lon": 132.67879
+    },
+    {
+      "id": "w_2c14e5b2",
+      "name": "Jay Creek",
+      "type": "water-tank",
+      "lat": -23.66383,
+      "lon": 133.5378
+    },
+    {
+      "id": "w_314d25b4",
+      "name": "Kiosk: Ormiston Gorge",
+      "type": "food",
+      "lat": -23.63231,
+      "lon": 132.72676
+    },
+    {
+      "id": "w_3a02aaa7",
+      "name": "George Creek",
+      "type": "campsite",
+      "lat": -23.63299,
+      "lon": 132.7148
+    },
+    {
+      "id": "w_3dc49b64",
+      "name": "Ormiston Gorge",
+      "type": "campsite",
+      "lat": -23.63213,
+      "lon": 132.72675
+    },
+    {
+      "id": "w_3e493bbe",
+      "name": "Finke River",
+      "type": "campsite",
+      "lat": -23.65813,
+      "lon": 132.67858
+    },
+    {
+      "id": "w_3fe92e09",
+      "name": "Stuart's Pass",
+      "type": "campsite",
+      "lat": -23.71327,
+      "lon": 133.37741
+    },
+    {
+      "id": "w_409f844e",
+      "name": "Rocky Gully",
+      "type": "campsite",
+      "lat": -23.7588,
+      "lon": 133.16812
+    },
+    {
+      "id": "w_4e43a0ad",
+      "name": "Serpentine Gorge Trailhead",
+      "type": "trailhead",
+      "lat": -23.75965,
+      "lon": 132.97875
+    },
+    {
+      "id": "w_4f29a5cf",
+      "name": "Serpentine Chalet Dam",
+      "type": "campsite",
+      "lat": -23.72728,
+      "lon": 132.91015
+    },
+    {
+      "id": "w_51223d01",
+      "name": "R: Ellery Creek",
+      "type": "resupply",
+      "lat": -23.77945,
+      "lon": 133.07294
+    },
+    {
+      "id": "w_58d2a239",
+      "name": "R: Serpentine Gorge",
+      "type": "resupply",
+      "lat": -23.75953,
+      "lon": 132.97895
+    },
+    {
+      "id": "w_5b17238e",
+      "name": "Rocky Gully",
+      "type": "campsite",
+      "lat": -23.75874,
+      "lon": 133.168
+    },
+    {
+      "id": "w_6580bb42",
+      "name": "Hugh Gorge",
+      "type": "water-tank",
+      "lat": -23.70319,
+      "lon": 133.25883
+    },
+    {
+      "id": "w_670e1459",
+      "name": "Mt Giles Lookout",
+      "type": "campsite",
+      "lat": -23.679,
+      "lon": 132.82239
+    },
+    {
+      "id": "w_67abb4ad",
+      "name": "Standley Chasm",
+      "type": "campsite",
+      "lat": -23.72192,
+      "lon": 133.46994
+    },
+    {
+      "id": "w_706b8959",
+      "name": "Jay Creek Trailhead",
+      "type": "trailhead",
+      "lat": -23.66448,
+      "lon": 133.5379
+    },
+    {
+      "id": "w_766c3fd2",
+      "name": "Redbank Gorge Trailhead",
+      "type": "trailhead",
+      "lat": -23.57739,
+      "lon": 132.51831
+    },
+    {
+      "id": "w_7833c0da",
+      "name": "Standley Chasm",
+      "type": "campsite",
+      "lat": -23.72189,
+      "lon": 133.47015
+    },
+    {
+      "id": "w_7d1c866d",
+      "name": "Rocky Bar Gap",
+      "type": "campsite",
+      "lat": -23.60863,
+      "lon": 132.60276
+    },
+    {
+      "id": "w_839266d5",
+      "name": "Ormiston Gorge Trailhead",
+      "type": "trailhead",
+      "lat": -23.63242,
+      "lon": 132.72657
+    },
+    {
+      "id": "w_8a913bc3",
+      "name": "Telegraph Station Trailhead",
+      "type": "trailhead",
+      "lat": -23.67089,
+      "lon": 133.8852
+    },
+    {
+      "id": "w_8bfa58d2",
+      "name": "Standley Chasm Trailhead",
+      "type": "trailhead",
+      "lat": -23.72501,
+      "lon": 133.46935
+    },
+    {
+      "id": "w_93f929d7",
+      "name": "Redbank",
+      "type": "campsite",
+      "lat": -23.57678,
+      "lon": 132.51959
+    },
+    {
+      "id": "w_a565dcc6",
+      "name": "Ellery Creek South",
+      "type": "campsite",
+      "lat": -23.77931,
+      "lon": 133.0731
+    },
+    {
+      "id": "w_a672f71f",
+      "name": "Alice Springs Telegraph Station",
+      "type": "water-tank",
+      "lat": -23.67085,
+      "lon": 133.88505
+    },
+    {
+      "id": "w_a7b5c8c4",
+      "name": "Serpentine Chalet Dam Trailhead",
+      "type": "trailhead",
+      "lat": -23.72736,
+      "lon": 132.91015
+    },
+    {
+      "id": "w_aa151485",
+      "name": "Counts Point",
+      "type": "campsite",
+      "lat": -23.72486,
+      "lon": 132.93289
+    },
+    {
+      "id": "w_aca7b106",
+      "name": "Millers Flat",
+      "type": "campsite",
+      "lat": -23.69382,
+      "lon": 133.49315
+    },
+    {
+      "id": "w_ae1352c0",
+      "name": "Wallaby Gap",
+      "type": "water-tank",
+      "lat": -23.66833,
+      "lon": 133.79496
+    },
+    {
+      "id": "w_b1668fab",
+      "name": "Ellery Creek North",
+      "type": "campsite",
+      "lat": -23.77986,
+      "lon": 133.07269
+    },
+    {
+      "id": "w_b268c8fc",
+      "name": "Ghost Gum Flat",
+      "type": "campsite",
+      "lat": -23.72926,
+      "lon": 133.21964
+    },
+    {
+      "id": "w_b3354342",
+      "name": "4/5 Junction",
+      "type": "campsite",
+      "lat": -23.71848,
+      "lon": 133.34817
+    },
+    {
+      "id": "w_b6428184",
+      "name": "Simpsons Gap",
+      "type": "campsite",
+      "lat": -23.68005,
+      "lon": 133.71653
+    },
+    {
+      "id": "w_b6e87871",
+      "name": "Redbank Gorge",
+      "type": "water-tank",
+      "lat": -23.5775,
+      "lon": 132.51864
+    },
+    {
+      "id": "w_c65a691f",
+      "name": "Hill Top",
+      "type": "campsite",
+      "lat": -23.60638,
+      "lon": 132.63712
+    },
+    {
+      "id": "w_ca5efda1",
+      "name": "Ellery Creek North",
+      "type": "campsite",
+      "lat": -23.77276,
+      "lon": 133.07277
+    },
+    {
+      "id": "w_cdc52d70",
+      "name": "Serpentine Gorge, Larapinta Trail campsite",
+      "type": "water-tank",
+      "lat": -23.75941,
+      "lon": 132.97931
+    },
+    {
+      "id": "w_d03870da",
+      "name": "Mulga Camp",
+      "type": "water-tank",
+      "lat": -23.66467,
+      "lon": 133.61306
+    },
+    {
+      "id": "w_d8163d57",
+      "name": "Brinkley Bluff",
+      "type": "campsite",
+      "lat": -23.71069,
+      "lon": 133.39194
+    },
+    {
+      "id": "w_dd6e26d4",
+      "name": "R: Standley Chasm",
+      "type": "resupply",
+      "lat": -23.72185,
+      "lon": 133.47
+    },
+    {
+      "id": "w_dfe1bb40",
+      "name": "Hugh Gorge Junction",
+      "type": "campsite",
+      "lat": -23.67871,
+      "lon": 133.27206
+    },
+    {
+      "id": "w_e0a5c31e",
+      "name": "Hugh Gorge Trailhead",
+      "type": "trailhead",
+      "lat": -23.70228,
+      "lon": 133.25918
+    },
+    {
+      "id": "w_e4cceadd",
+      "name": "Waterfall Gorge",
+      "type": "campsite",
+      "lat": -23.687,
+      "lon": 132.82523
+    },
+    {
+      "id": "w_e7667f46",
+      "name": "R: Ormiston Gorge",
+      "type": "resupply",
+      "lat": -23.63211,
+      "lon": 132.7269
+    },
+    {
+      "id": "w_ee5920ee",
+      "name": "Serpentine Chalet Dam",
+      "type": "campsite",
+      "lat": -23.72719,
+      "lon": 132.91019
+    },
+    {
+      "id": "w_f131389e",
+      "name": "Jay Creek",
+      "type": "water-tank",
+      "lat": -23.66398,
+      "lon": 133.53768
+    },
+    {
+      "id": "w_f283c631",
+      "name": "Fringe Lily Creek",
+      "type": "campsite",
+      "lat": -23.69154,
+      "lon": 133.3006
+    },
+    {
+      "id": "w_f3cc6bef",
+      "name": "Mulga Camp",
+      "type": "water-tank",
+      "lat": -23.66473,
+      "lon": 133.61289
+    },
+    {
+      "id": "w_fceaac4b",
+      "name": "Serpentine Gorge",
+      "type": "campsite",
+      "lat": -23.75484,
+      "lon": 132.98086
+    }
+  ]
+}

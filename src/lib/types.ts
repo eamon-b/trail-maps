@@ -7,6 +7,12 @@ export interface GpxPoint {
 }
 
 export interface GpxWaypoint {
+  /**
+   * Stable waypoint id assigned by the build pipeline from the committed
+   * registry (`data/waypoint-ids.json`). Absent for freshly-parsed GPX that
+   * has not been through id assignment.
+   */
+  id?: string;
   lat: number;
   lon: number;
   ele: number;

@@ -53,6 +53,19 @@ export default function GuideLayout() {
                   <Text style={[styles.icon, { color: colors.accentText }]}>⋔</Text>
                 </Pressable>
                 <Pressable
+                  accessibilityLabel="Plan"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/guide/[trailId]/plan',
+                      params: { trailId },
+                    })
+                  }
+                  style={styles.headerButton}
+                  hitSlop={spacing.sm}
+                >
+                  <Text style={[styles.icon, { color: colors.accentText }]}>▤</Text>
+                </Pressable>
+                <Pressable
                   accessibilityLabel="Offline maps"
                   onPress={() =>
                     router.push({
@@ -79,6 +92,7 @@ export default function GuideLayout() {
         />
         <Stack.Screen name="downloads" options={{ title: 'Offline maps' }} />
         <Stack.Screen name="routes" options={{ title: 'Routes' }} />
+        <Stack.Screen name="plan" options={{ title: 'Plan' }} />
         {/* Title is overridden with the waypoint name from within the screen. */}
         <Stack.Screen name="waypoint/[waypointId]" options={{ title: 'Waypoint' }} />
       </Stack>

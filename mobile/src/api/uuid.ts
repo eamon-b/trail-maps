@@ -6,11 +6,15 @@
  * random source — a colliding id would silently drop or misattribute a comment.
  * `Math.random()` is explicitly not acceptable here.
  *
- * Source of randomness: the Web Crypto `crypto.getRandomValues`, which Expo's
- * runtime polyfills globally (SDK 52+) and Node provides natively in the test
- * environment. We deliberately do NOT fall back to a weak PRNG — if no secure
- * source exists we throw, so a broken environment fails loudly rather than
- * minting guessable ids.
+ * Sources of randomness, in order:
+ * 1. Web Crypto `crypto.getRandomValues` — Node provides it natively in the
+ *    test environment (and some RN runtimes polyfill it).
+ * 2. The Expo runtime's native `globalThis.expo.uuidv4` (what
+ *    expo-modules-core's own `uuid.v4()` calls) — present in every Expo app,
+ *    needed because Hermes ships no Web Crypto without the expo-crypto module.
+ * We deliberately do NOT fall back to a weak PRNG — if no secure source exists
+ * we throw, so a broken environment fails loudly rather than minting guessable
+ * ids.
  */
 
 const HEX: string[] = [];
@@ -22,6 +26,12 @@ for (let i = 0; i < 256; i++) {
 export function uuidv4(): string {
   const g = globalThis.crypto;
   if (!g || typeof g.getRandomValues !== 'function') {
+    const nativeUuidv4 = (
+      globalThis as { expo?: { uuidv4?: () => string } }
+    ).expo?.uuidv4;
+    if (typeof nativeUuidv4 === 'function') {
+      return nativeUuidv4().toLowerCase();
+    }
     throw new Error('Secure random source unavailable; cannot mint a comment id');
   }
   const b = new Uint8Array(16);

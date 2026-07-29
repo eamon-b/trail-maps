@@ -80,3 +80,20 @@ export async function createComment(
 export function url(path: string): string {
   return `${BASE}${path}`;
 }
+
+/** POST raw image bytes to a comment's photo endpoint. */
+export async function uploadPhoto(
+  device: Device,
+  commentId: string,
+  body: BodyInit,
+  contentType = 'image/jpeg'
+): Promise<Response> {
+  return SELF.fetch(url(`/v1/comments/${commentId}/photos`), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${device.token}`,
+      'Content-Type': contentType,
+    },
+    body,
+  });
+}

@@ -16,6 +16,7 @@ import {
   getWaypointFeed,
   putComment,
 } from './comments';
+import { uploadCommentPhoto } from './photos';
 
 /** Split a pathname into decoded, non-empty segments. */
 function segments(pathname: string): string[] {
@@ -59,6 +60,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       const id = rest[1];
       if (method === 'PUT') return await putComment(request, env, ctx, id);
       if (method === 'DELETE') return await deleteComment(request, env, ctx, id);
+      return methodNotAllowed();
+    }
+
+    // /v1/comments/:id/photos
+    if (rest.length === 3 && rest[0] === 'comments' && rest[2] === 'photos') {
+      if (method === 'POST') return await uploadCommentPhoto(request, env, ctx, rest[1]);
       return methodNotAllowed();
     }
 

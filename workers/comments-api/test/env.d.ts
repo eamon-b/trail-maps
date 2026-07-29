@@ -9,6 +9,8 @@ declare global {
   namespace Cloudflare {
     interface Env {
       DB: D1Database;
+      PHOTOS: R2Bucket;
+      PHOTOS_PUBLIC_BASE: string;
       TEST_MIGRATIONS: D1Migration[];
     }
   }

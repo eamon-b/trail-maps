@@ -69,6 +69,27 @@ export interface PutCommentRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Comments — photo attachments
+// ---------------------------------------------------------------------------
+
+/**
+ * Image MIME types accepted by `POST /v1/comments/:id/photos`. The request body
+ * is the raw image bytes (not multipart / not JSON) with one of these as its
+ * `Content-Type`; any other type is rejected 415.
+ */
+export type PhotoContentType = 'image/jpeg' | 'image/webp';
+
+/**
+ * 201 response from `POST /v1/comments/:id/photos`.
+ * `photoUrl` is the URL of the just-uploaded photo; `photoUrls` is the comment's
+ * full photo list (existing + new), in upload order.
+ */
+export interface UploadCommentPhotoResponse {
+  photoUrl: string;
+  photoUrls: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Comments — read (feed / sync / admin)
 // ---------------------------------------------------------------------------
 
@@ -84,6 +105,11 @@ export interface FeedComment {
   waterStatus: WaterStatus | null;
   observedAt: string | null;
   createdAt: string;
+  /**
+   * Full public R2 URLs of attached photos, in upload order. Omitted (undefined)
+   * when the comment has no photos.
+   */
+  photoUrls?: string[];
 }
 
 /** GET per-waypoint feed response. */
@@ -106,6 +132,11 @@ export interface SyncComment {
   observedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Full public R2 URLs of attached photos, in upload order. Omitted (undefined)
+   * when the comment has no photos.
+   */
+  photoUrls?: string[];
   deleted?: false;
 }
 

@@ -6,6 +6,7 @@
 import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { requireAdmin, requireUser } from './auth';
+import { deleteCommentPhotos, parsePhotoUrls } from './photos';
 import {
   assertClientCommentId,
   clampObservedAt,
@@ -37,7 +38,7 @@ const ADMIN_DEFAULT_LIMIT = 100;
 const ADMIN_MAX_LIMIT = 500;
 
 /** A row as stored in the `comments` table. */
-interface CommentRow {
+export interface CommentRow {
   id: string;
   trail_id: string;
   waypoint_id: string;
@@ -49,6 +50,7 @@ interface CommentRow {
   updated_at: string;
   deleted_at: string | null;
   deleted_by: 'owner' | 'admin' | null;
+  photo_urls_json: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +85,7 @@ function toFeedComment(row: CommentRow, displayName: string): FeedComment {
     waterStatus: row.water_status,
     observedAt: row.observed_at,
     createdAt: row.created_at,
+    photoUrls: parsePhotoUrls(row.photo_urls_json),
   };
 }
 
@@ -212,6 +215,12 @@ export async function deleteComment(
     .bind(now, deletedBy, now, id)
     .run();
 
+  // Tombstoned comments must not leak images: best-effort R2 cleanup off the
+  // response path. Already-cached client URLs may 404 afterwards — that's fine.
+  if (row.photo_urls_json !== null) {
+    ctx.waitUntil(deleteCommentPhotos(env, id));
+  }
+
   return noContent();
 }
 
@@ -329,6 +338,7 @@ export async function getBulkSync(request: Request, env: Env, trailId: string): 
       observedAt: row.observed_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      photoUrls: parsePhotoUrls(row.photo_urls_json),
     };
   });
 

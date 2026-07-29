@@ -15,8 +15,16 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: './wrangler.toml' },
         miniflare: {
-          // Test-only binding so the setup file can apply the migrations.
-          bindings: { TEST_MIGRATIONS: migrations },
+          // Test-only bindings: migrations array for the setup file, plus a
+          // deterministic public base so photo-URL assertions don't depend on
+          // the production r2.dev host.
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            PHOTOS_PUBLIC_BASE: 'https://photos.test',
+          },
+          // Local R2 bucket backing the PHOTOS binding (wrangler.toml declares
+          // the binding; this provisions its miniflare-local store for tests).
+          r2Buckets: { PHOTOS: 'aus-map-data' },
         },
       }),
     ],

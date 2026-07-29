@@ -34,6 +34,8 @@ import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
 import { useSettingsStore } from '../../../../src/state/settings-store';
 import { useGuide } from '../../../../src/features/guide/GuideContext';
 import { useGuidePositionContext } from '../../../../src/features/guide/GuidePositionContext';
+import { ShareIconButton } from '../../../../src/features/share/ShareIconButton';
+import { useCheckInShare } from '../../../../src/features/share/use-check-in-share';
 import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
 import { waypointColor } from '../../../../src/features/elevation/waypoint-category';
 import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
@@ -72,7 +74,8 @@ export default function WaypointDetailScreen() {
   const { colors } = useTheme();
   const { trail } = useGuide();
   const units = useSettingsStore((s) => s.units);
-  const { currentKm } = useGuidePositionContext();
+  const { currentKm, position, status } = useGuidePositionContext();
+  const shareCheckIn = useCheckInShare();
 
   const waypoint = useMemo(() => {
     const list = orderedWaypoints(trail);
@@ -169,10 +172,40 @@ export default function WaypointDetailScreen() {
                 {waypoint.type}
               </Text>
             </View>
-            <FavoriteHeart
-              filled={isFav}
-              onPress={() => void toggleFavorite(trailId, waypointId)}
-            />
+            <View style={styles.heroActions}>
+              <ShareIconButton
+                color={colors.textSecondary}
+                accessibilityLabel="Share check-in"
+                onPress={() => {
+                  const hasFix =
+                    (status === 'fix' || status === 'off-trail') && position != null;
+                  void shareCheckIn({
+                    trailName: trail.config.name,
+                    totalKm: trail.track.totalDistance,
+                    units,
+                    waypoint: {
+                      name: waypoint.name,
+                      km,
+                      lat: waypoint.lat,
+                      lon: waypoint.lon,
+                    },
+                    gps:
+                      hasFix && position != null && currentKm != null
+                        ? {
+                            lat: position.lat,
+                            lon: position.lon,
+                            currentKm,
+                            offTrail: status === 'off-trail',
+                          }
+                        : null,
+                  });
+                }}
+              />
+              <FavoriteHeart
+                filled={isFav}
+                onPress={() => void toggleFavorite(trailId, waypointId)}
+              />
+            </View>
           </View>
           <Text style={[styles.name, { color: colors.textPrimary }]}>{waypoint.name}</Text>
           {waypoint.description ? (
@@ -697,6 +730,7 @@ const styles = StyleSheet.create({
 
   hero: { gap: spacing.sm },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   typeChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

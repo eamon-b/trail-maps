@@ -24,6 +24,8 @@ import {
   getNextWaypointsByType,
   type WaypointDistance,
 } from '../../services/distance-calculator';
+import { ShareIconButton } from '../share/ShareIconButton';
+import { useCheckInShare } from '../share/use-check-in-share';
 import { useGuide } from './GuideContext';
 import { orderedWaypoints } from './guide-trail';
 import { useGuidePositionContext } from './GuidePositionContext';
@@ -32,7 +34,8 @@ export function DistanceStrip() {
   const { colors } = useTheme();
   const { trail } = useGuide();
   const units = useSettingsStore((s) => s.units);
-  const { status, currentKm, offTrailMeters, start } = useGuidePositionContext();
+  const { status, currentKm, offTrailMeters, position, start } = useGuidePositionContext();
+  const shareCheckIn = useCheckInShare();
 
   const chips = useMemo(() => {
     if (currentKm == null) return [];
@@ -86,37 +89,72 @@ export function DistanceStrip() {
     );
   }
 
-  // --- Have a fix: chips (off-trail leads with its own chip) ---------------
+  // --- Have a fix: scrollable chips + a pinned share button ----------------
+  // The share button lives OUTSIDE the horizontal scroll so it stays reachable
+  // no matter how far the chips run. It only renders here (status fix/off-trail),
+  // so a usable position is guaranteed when shared.
+  const canShare = position != null && currentKm != null;
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.host}
-      contentContainerStyle={styles.scrollContent}
-    >
-      {status === 'off-trail' && offTrailMeters != null && (
-        <View style={[styles.chip, { backgroundColor: colors.warning, borderColor: colors.warning }]}>
-          <Text style={[styles.chipValue, { color: colors.warningText }]}>
-            {Math.round(offTrailMeters)} m off trail
-          </Text>
+    <View style={styles.fixRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.host}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {status === 'off-trail' && offTrailMeters != null && (
+          <View style={[styles.chip, { backgroundColor: colors.warning, borderColor: colors.warning }]}>
+            <Text style={[styles.chipValue, { color: colors.warningText }]}>
+              {Math.round(offTrailMeters)} m off trail
+            </Text>
+          </View>
+        )}
+        {chips.map((chip) => (
+          <View
+            key={chip.key}
+            style={[styles.chip, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+          >
+            <Text style={[styles.chipLabel, { color: colors.textSecondary }]}>{chip.label}</Text>
+            <Text style={[styles.chipValue, { color: colors.textPrimary }]}>{chip.value}</Text>
+          </View>
+        ))}
+      </ScrollView>
+      {canShare && (
+        <View style={styles.shareSlot}>
+          <ShareIconButton
+            color={colors.accent}
+            onPress={() =>
+              void shareCheckIn({
+                trailName: trail.config.name,
+                totalKm: trail.track.totalDistance,
+                units,
+                gps: {
+                  lat: position.lat,
+                  lon: position.lon,
+                  currentKm,
+                  offTrail: status === 'off-trail',
+                },
+              })
+            }
+          />
         </View>
       )}
-      {chips.map((chip) => (
-        <View
-          key={chip.key}
-          style={[styles.chip, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
-        >
-          <Text style={[styles.chipLabel, { color: colors.textSecondary }]}>{chip.label}</Text>
-          <Text style={[styles.chipValue, { color: colors.textPrimary }]}>{chip.value}</Text>
-        </View>
-      ))}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fixRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   host: {
     flexGrow: 0,
+    flexShrink: 1,
+  },
+  shareSlot: {
+    paddingRight: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   scrollContent: {
     flexDirection: 'row',

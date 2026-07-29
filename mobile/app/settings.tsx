@@ -1,14 +1,29 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../src/theme';
 import { spacing, typography } from '../src/tokens';
+import { SegmentedControl } from '../src/features/guide/SegmentedControl';
+import { useSettingsStore, type Units } from '../src/state/settings-store';
+
+const UNIT_OPTIONS = [
+  { value: 'km' as const, label: 'Kilometres' },
+  { value: 'mi' as const, label: 'Miles' },
+];
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
+  const units = useSettingsStore((s) => s.units);
+  const setUnits = useSettingsStore((s) => s.setUnits);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        Units, direction, and account settings will live here.
-      </Text>
+      <View style={styles.section}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Units</Text>
+        <SegmentedControl<Units>
+          options={UNIT_OPTIONS}
+          value={units}
+          onChange={setUnits}
+        />
+      </View>
     </View>
   );
 }
@@ -16,12 +31,13 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
+    padding: spacing.lg,
+    gap: spacing.xl,
   },
-  subtitle: {
-    ...typography.bodySmall,
-    textAlign: 'center',
+  section: {
+    gap: spacing.sm,
+  },
+  label: {
+    ...typography.titleLarge,
   },
 });

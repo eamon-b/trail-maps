@@ -17,6 +17,8 @@ function ThemedStack() {
       >
         <Stack.Screen name="index" options={{ title: 'Tracknotes' }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        {/* Guide group renders its own nested Stack (header + provider). */}
+        <Stack.Screen name="guide/[trailId]" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={colors.statusBarStyle} />
     </>

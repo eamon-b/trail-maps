@@ -74,7 +74,14 @@
       "expo-sqlite",
       "expo-font",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Take a photo of a water source, campsite, or hazard to attach to your comment.",
+          "photosPermission": "Attach an existing photo to a comment."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

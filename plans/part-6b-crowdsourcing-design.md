@@ -1,5 +1,13 @@
 # Part 6b: Crowd-Sourcing Design (v2.1)
 
+> **⚠️ SUPERSEDED (2026-07-30)** by the Tracknotes rebuild: live post-moderated
+> comments shipped on **Cloudflare Workers + D1** (`workers/comments-api/`) with
+> anonymous device-token auth — not the Supabase pre-moderation/fold model designed
+> here. This document's stable-waypoint-ID prerequisite (§2.0), client-UUID
+> idempotency, `observed_at` clamping, and water-freshness ranking (§2.3) were
+> adopted; its backend choice, moderation queue, and build-time folding were not.
+> See `plans/tracknotes-backlog.md` and the rebuild plan for current direction.
+
 > **Status:** Design complete — no code in this PR. Implementation is a future phase.
 >
 > **Supersedes** the open questions in `part-6-community-features.md` (backend choice,

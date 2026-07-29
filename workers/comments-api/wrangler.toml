@@ -1,0 +1,18 @@
+name = "farout-comments"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+# Serve on the account's workers.dev subdomain:
+#   https://farout-comments.<account-subdomain>.workers.dev
+# Deploy with: npm run deploy (requires `wrangler login`).
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "farout-comments"
+# TODO: replace with the real database_id printed by
+#   wrangler d1 create farout-comments --location oc
+# (Oceania region — keep the data close to the Australian userbase).
+# This placeholder is fine for `wrangler dev` and vitest (local D1), but a
+# remote deploy will fail until the real id is pasted in here.
+database_id = "00000000-0000-0000-0000-000000000000"

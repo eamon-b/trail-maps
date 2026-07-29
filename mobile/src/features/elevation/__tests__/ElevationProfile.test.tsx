@@ -31,6 +31,7 @@ jest.mock('@shopify/react-native-skia', () => {
     Path: container,
     Line: leaf,
     Circle: leaf,
+    Rect: leaf,
     LinearGradient: leaf,
     vec: (x: number, y: number) => ({ x, y }),
     Skia: { Path: { Make: () => makePath() } },
@@ -128,6 +129,25 @@ describe('ElevationProfile', () => {
     act(() => {
       root = TestRenderer.create(
         <ElevationProfile {...baseProps} currentKm={40} onWindowChange={jest.fn()} />,
+      );
+    });
+    layoutAll(root);
+    expect(root.toJSON()).toBeTruthy();
+    act(() => root.unmount());
+  });
+
+  it('renders active-route highlight bands without throwing', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = TestRenderer.create(
+        <ElevationProfile
+          {...baseProps}
+          highlightRanges={[
+            { startKm: 10, endKm: 40 },
+            { startKm: 70, endKm: 90 },
+          ]}
+          onWindowChange={jest.fn()}
+        />,
       );
     });
     layoutAll(root);

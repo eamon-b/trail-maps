@@ -52,3 +52,73 @@ describe('schema v1', () => {
     );
   });
 });
+
+describe('schema v2 — routes', () => {
+  async function seedRoute(db: Awaited<ReturnType<typeof createMigratedTestDb>>) {
+    await db.runAsync(
+      `INSERT INTO routes (id, trail_id, name, total_km, ascent_m, descent_m, created_at, updated_at)
+       VALUES ('rt1', 'larapinta', 'Day 1', 12.3, 400, 200, '2026-07-29T00:00:00Z', '2026-07-29T00:00:00Z')`
+    );
+  }
+
+  it('creates the routes + route_points tables', async () => {
+    const db = await createMigratedTestDb();
+    const rows = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
+    );
+    const tables = rows.map((r) => r.name);
+    expect(tables).toContain('routes');
+    expect(tables).toContain('route_points');
+  });
+
+  it('rejects a route_point with an invalid kind', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await expectDbRejection(() =>
+      db.runAsync(
+        "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'wander', -23, 133, 0)"
+      )
+    );
+  });
+
+  it('accepts snap (with km) and sketch (km NULL) points', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+    );
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 1, 'sketch', -23.6, 133.3, NULL)"
+    );
+    const rows = await db.getAllAsync<{ seq: number }>(
+      "SELECT seq FROM route_points WHERE route_id = 'rt1' ORDER BY seq"
+    );
+    expect(rows.map((r) => r.seq)).toEqual([0, 1]);
+  });
+
+  it('rejects duplicate (route_id, seq)', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+    );
+    await expectDbRejection(() =>
+      db.runAsync(
+        "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+      )
+    );
+  });
+
+  it('cascades route_points when a route is deleted (FK on)', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+    );
+    await db.runAsync("DELETE FROM routes WHERE id = 'rt1'");
+    const rows = await db.getAllAsync<{ seq: number }>(
+      "SELECT seq FROM route_points WHERE route_id = 'rt1'"
+    );
+    expect(rows).toHaveLength(0);
+  });
+});

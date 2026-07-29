@@ -24,6 +24,7 @@ import {
   LinearGradient,
   Line,
   Path,
+  Rect,
   Skia,
   vec,
 } from '@shopify/react-native-skia';
@@ -86,6 +87,11 @@ export interface ElevationProfileProps {
   window: KmWindow;
   /** Reports a new visible window (pan/zoom). */
   onWindowChange: (window: KmWindow) => void;
+  /**
+   * On-trail km ranges to shade as translucent bands (e.g. an active custom
+   * route's trail spans). Clipped to the visible window.
+   */
+  highlightRanges?: { startKm: number; endKm: number }[];
   /** Current GPS position (km) — draws the position marker. */
   currentKm?: number | null;
   /** Tap on a waypoint marker. */
@@ -112,6 +118,7 @@ export function ElevationProfile({
   unit,
   window,
   onWindowChange,
+  highlightRanges,
   currentKm,
   onWaypointTap,
   onScrub,
@@ -240,6 +247,20 @@ export function ElevationProfile({
     }
     return lines;
   }, [metrics, left, chartWidth, chartHeight, xOf]);
+
+  // Translucent bands for highlighted km ranges (active route's trail spans),
+  // clipped to the visible window. `xOf` clamps to the plot edges.
+  const highlightBands = useMemo(() => {
+    if (!metrics || !highlightRanges || highlightRanges.length === 0) return [];
+    const bands: { x: number; width: number }[] = [];
+    for (const r of highlightRanges) {
+      if (r.endKm < window.startKm || r.startKm > window.endKm) continue;
+      const x1 = xOf(Math.max(r.startKm, window.startKm));
+      const x2 = xOf(Math.min(r.endKm, window.endKm));
+      if (x2 > x1) bands.push({ x: x1, width: x2 - x1 });
+    }
+    return bands;
+  }, [metrics, highlightRanges, window.startKm, window.endKm, xOf]);
 
   const currentPositionX = useMemo(() => {
     if (currentKm == null || currentKm < window.startKm || currentKm > window.endKm) return null;
@@ -409,6 +430,18 @@ export function ElevationProfile({
               />
             ))}
           </Group>
+
+          {/* Active-route highlight bands (behind the trace + fill). */}
+          {highlightBands.map((b, i) => (
+            <Rect
+              key={`hl-${i}`}
+              x={b.x}
+              y={PADDING.top}
+              width={b.width}
+              height={chartHeight}
+              color={colors.chartFillTop}
+            />
+          ))}
 
           {fillPath && (
             <Path path={fillPath}>

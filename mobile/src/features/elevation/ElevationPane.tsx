@@ -17,6 +17,8 @@ import { useFavoritesStore } from '../../state/favorites-store';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { orderedWaypoints } from '../guide/guide-trail';
+import { useRoutesStore } from '../routes/routes-store';
+import { routeHighlightRanges, type RouteTrackPoint } from '../routes/route-geometry';
 import { ElevationProfile, type ProfileReadout, type ProfileWaypoint } from './ElevationProfile';
 import type { KmWindow } from './geometry';
 import type { ProfilePoint } from './lod';
@@ -44,6 +46,16 @@ export function ElevationPane() {
         elevation: wp.elevation,
       })),
     [trail],
+  );
+
+  // Active custom route → shade its on-trail spans on the profile.
+  const activePoints = useRoutesStore((s) => s.activePointsByTrail[trailId]);
+  const highlightRanges = useMemo(
+    () =>
+      activePoints && activePoints.length > 0
+        ? routeHighlightRanges(activePoints, points as RouteTrackPoint[])
+        : undefined,
+    [activePoints, points],
   );
 
   const [window, setWindow] = useState<KmWindow>({ startKm: 0, endKm: totalKm });
@@ -122,6 +134,7 @@ export function ElevationPane() {
           currentKm={currentKm}
           window={window}
           onWindowChange={setWindow}
+          highlightRanges={highlightRanges}
           onWaypointTap={onWaypointTap}
           onScrub={setReadout}
         />

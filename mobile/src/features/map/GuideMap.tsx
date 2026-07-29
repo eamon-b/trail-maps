@@ -134,7 +134,32 @@ export interface GuideMapProps {
   favoriteIds?: ReadonlySet<string>;
   /** Tapped waypoint's stable id. */
   onWaypointTap?: (id: string) => void;
+  /**
+   * Custom-route overlay (the active saved route, or the in-progress builder
+   * route). Mixed geometry: LineString features (`straight` property → dashed)
+   * for legs, plus optional Point features (route vertices) for the builder.
+   */
+  routeOverlay?: GeoJSON.FeatureCollection;
+  /** In builder mode, map taps report a coordinate via `onMapPress`. */
+  builderMode?: boolean;
+  /** A raw map tap (lat/lon) while in builder mode. */
+  onMapPress?: (lat: number, lon: number) => void;
 }
+
+// Route-overlay layer filters: split the single mixed ShapeSource into
+// on-trail spans (solid), straight/off-trail legs (dashed), and builder
+// vertices (dots) by geometry type + the `straight` property.
+const ROUTE_SPAN_FILTER = [
+  'all',
+  ['==', ['geometry-type'], 'LineString'],
+  ['!=', ['get', 'straight'], true],
+] as Expression;
+const ROUTE_STRAIGHT_FILTER = [
+  'all',
+  ['==', ['geometry-type'], 'LineString'],
+  ['==', ['get', 'straight'], true],
+] as Expression;
+const ROUTE_VERTEX_FILTER = ['==', ['geometry-type'], 'Point'] as Expression;
 
 export const GuideMap = memo(
   forwardRef<GuideMapHandle, GuideMapProps>(function GuideMap(
@@ -149,6 +174,9 @@ export const GuideMap = memo(
       accuracy,
       favoriteIds,
       onWaypointTap,
+      routeOverlay,
+      builderMode,
+      onMapPress,
     },
     ref,
   ) {
@@ -291,6 +319,43 @@ export const GuideMap = memo(
       [colors.info],
     );
 
+    // Custom route overlay — a distinct warning/amber hue that reads clearly
+    // above the green trail line and blue side-trips. On-trail spans are solid
+    // and heavier than the trail; off-trail legs are dashed so they are never
+    // read as trail-accurate; builder vertices are amber dots.
+    const routeSpanStyle = useMemo(
+      () => ({
+        lineColor: colors.warning,
+        lineWidth: 4,
+        lineOpacity: 0.95,
+        lineCap: 'round' as const,
+        lineJoin: 'round' as const,
+      }),
+      [colors.warning],
+    );
+
+    const routeStraightStyle = useMemo(
+      () => ({
+        lineColor: colors.warning,
+        lineWidth: 3,
+        lineOpacity: 0.9,
+        lineCap: 'round' as const,
+        lineJoin: 'round' as const,
+        lineDasharray: [1.5, 1.5],
+      }),
+      [colors.warning],
+    );
+
+    const routeVertexStyle = useMemo(
+      () => ({
+        circleRadius: 5,
+        circleColor: colors.warning,
+        circleStrokeColor: MARKER_STROKE,
+        circleStrokeWidth: 2,
+      }),
+      [colors.warning],
+    );
+
     // Favorited markers read as a data-driven `case` on the feature's
     // `favorite` flag: a larger circle ringed in the theme favorite color, so a
     // single CircleLayer paints both states and clustering is untouched.
@@ -390,6 +455,20 @@ export const GuideMap = memo(
       [onWaypointTap],
     );
 
+    // In builder mode, every map tap adds a route point (waypoint selection is
+    // suppressed below so taps flow through to the raw coordinate).
+    const handleMapPress = useCallback(
+      (feature: GeoJSON.Feature) => {
+        if (!builderMode || !onMapPress) return;
+        const geom = feature.geometry;
+        if (geom?.type === 'Point') {
+          const [lon, lat] = geom.coordinates;
+          onMapPress(lat, lon);
+        }
+      },
+      [builderMode, onMapPress],
+    );
+
     if (!resolvedStyle) {
       return (
         <View style={[styles.loading, { backgroundColor: colors.background }]}>
@@ -407,6 +486,7 @@ export const GuideMap = memo(
         logoEnabled={false}
         attributionEnabled={false}
         compassEnabled
+        onPress={builderMode ? handleMapPress : undefined}
       >
         <Camera ref={cameraRef} defaultSettings={cameraDefaultSettings} />
 
@@ -431,12 +511,31 @@ export const GuideMap = memo(
           </ShapeSource>
         )}
 
+        {/* Custom route overlay (active route or in-progress builder), above
+            the trail line: solid on-trail spans, dashed off-trail legs, dots
+            for builder vertices. */}
+        {routeOverlay && routeOverlay.features.length > 0 && (
+          <ShapeSource id="guide-route" shape={routeOverlay}>
+            <LineLayer id="guide-route-spans" filter={ROUTE_SPAN_FILTER} style={routeSpanStyle} />
+            <LineLayer
+              id="guide-route-straight"
+              filter={ROUTE_STRAIGHT_FILTER}
+              style={routeStraightStyle}
+            />
+            <CircleLayer
+              id="guide-route-vertices"
+              filter={ROUTE_VERTEX_FILTER}
+              style={routeVertexStyle}
+            />
+          </ShapeSource>
+        )}
+
         {/* Waypoint markers — clustered at overview zooms, labelled at hiking zooms */}
         {waypointCollection.features.length > 0 && (
           <ShapeSource
             id="guide-waypoints"
             shape={waypointCollection}
-            onPress={handleWaypointPress}
+            onPress={builderMode ? undefined : handleWaypointPress}
             hitbox={{ width: 30, height: 30 }}
             cluster
             clusterRadius={40}

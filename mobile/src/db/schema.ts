@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 // Fresh v1 schema for Tracknotes. Waypoints and track geometry stay in the
 // bundled trail JSON — SQLite holds only per-guide state, the comment cache,
@@ -72,6 +72,49 @@ const MIGRATIONS: Record<number, string> = {
     );
 
     INSERT INTO schema_version (version) VALUES (1);
+  `,
+
+  // Migration 2: FarOut-style custom routes (Phase 7). A route is a name plus
+  // an ordered list of tapped points over the bundled trail. Route stats
+  // (total_km / ascent_m / descent_m) are DENORMALIZED onto the route row at
+  // save time so listing a route never re-resolves geometry against the trail
+  // JSON. `route_points` stores the ordered vertices: a 'snap' point sits on
+  // the trail (carrying its trail `km`, the active-direction cumulative
+  // distance at save time); a 'sketch' point is an off-trail tap (km NULL).
+  // Legs derive from consecutive points — snap→snap follows the track, any leg
+  // touching a sketch point is a straight line.
+  //
+  // Waypoints are referenced only implicitly (a snap point is just a trail
+  // position), so there is no waypoint FK to break on data-version bumps —
+  // routes reference stable trail geometry (km + lat/lon), not positional
+  // waypoint ids. Tracknotes has no `trails` table (trail data is bundled
+  // JSON), so `trail_id` is a plain scoping column, exactly like `favorites`.
+  2: `
+    CREATE TABLE IF NOT EXISTS routes (
+      id TEXT PRIMARY KEY NOT NULL,
+      trail_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      total_km REAL NOT NULL DEFAULT 0,
+      ascent_m REAL NOT NULL DEFAULT 0,
+      descent_m REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_routes_trail
+      ON routes(trail_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS route_points (
+      route_id TEXT NOT NULL REFERENCES routes(id) ON DELETE CASCADE,
+      seq INTEGER NOT NULL,
+      kind TEXT NOT NULL CHECK (kind IN ('snap', 'sketch')),
+      lat REAL NOT NULL,
+      lon REAL NOT NULL,
+      km REAL,
+      PRIMARY KEY (route_id, seq)
+    );
+
+    UPDATE schema_version SET version = 2;
   `,
 };
 

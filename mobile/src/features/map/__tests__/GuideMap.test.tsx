@@ -149,4 +149,34 @@ describe('GuideMap', () => {
     expect(sourceIds).toContain('guide-trail-line');
     expect(sourceIds).toContain('guide-waypoints');
   });
+
+  it('renders the route overlay source when a routeOverlay is supplied', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const routeOverlay: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: [[138, -35], [139, -34]] },
+          properties: { straight: false },
+        },
+      ],
+    };
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          routeOverlay={routeOverlay}
+        />,
+      );
+    });
+    await flush();
+    const sourceIds = tree.root
+      .findAll((n) => nodeType(n) === 'ShapeSource')
+      .map((n) => n.props.id);
+    expect(sourceIds).toContain('guide-route');
+  });
 });

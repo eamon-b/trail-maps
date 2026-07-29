@@ -10,9 +10,4 @@ workers_dev = true
 [[d1_databases]]
 binding = "DB"
 database_name = "farout-comments"
-# TODO: replace with the real database_id printed by
-#   wrangler d1 create farout-comments --location oc
-# (Oceania region — keep the data close to the Australian userbase).
-# This placeholder is fine for `wrangler dev` and vitest (local D1), but a
-# remote deploy will fail until the real id is pasted in here.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "2d1504b2-13c4-422b-829b-af3a3536a5bd"

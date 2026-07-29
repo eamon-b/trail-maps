@@ -12,6 +12,7 @@ import { useTheme } from '../../../src/theme';
 import { glyphSizes, spacing } from '../../../src/tokens';
 import { getTrailIndexEntry } from '../../../src/services/trail-loader';
 import { GuideProvider } from '../../../src/features/guide/GuideContext';
+import { GuidePositionProvider } from '../../../src/features/guide/GuidePositionContext';
 
 export default function GuideLayout() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
@@ -21,6 +22,9 @@ export default function GuideLayout() {
 
   return (
     <GuideProvider trailId={trailId}>
+      {/* Hoisted so the index panes AND the waypoint detail screen share one
+          GPS session (distance-from-me / ETA on the detail screen). */}
+      <GuidePositionProvider>
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.accent },
@@ -61,7 +65,10 @@ export default function GuideLayout() {
           }}
         />
         <Stack.Screen name="downloads" options={{ title: 'Offline maps' }} />
+        {/* Title is overridden with the waypoint name from within the screen. */}
+        <Stack.Screen name="waypoint/[waypointId]" options={{ title: 'Waypoint' }} />
       </Stack>
+      </GuidePositionProvider>
     </GuideProvider>
   );
 }

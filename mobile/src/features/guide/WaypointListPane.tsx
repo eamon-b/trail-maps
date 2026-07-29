@@ -10,11 +10,14 @@
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
+import { useFavoritesStore } from '../../state/favorites-store';
 import type { TrailJson } from '../../services/trail-loader';
+import { useGuide } from './GuideContext';
 import { orderedWaypoints } from './guide-trail';
 import { useGuidePositionContext } from './GuidePositionContext';
 import {
@@ -26,16 +29,35 @@ import {
 
 type Waypoint = TrailJson['waypoints'][number];
 
+function waypointKey(w: Waypoint, index: number): string {
+  return w.id ?? `${w.name}-${index}`;
+}
+
 export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const { colors } = useTheme();
+  const { trailId } = useGuide();
+  const router = useRouter();
   const units = useSettingsStore((s) => s.units);
   const { currentKm } = useGuidePositionContext();
+  const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const [family, setFamily] = useState<WaypointFamily>('all');
   const listRef = useRef<FlatList<Waypoint>>(null);
+
+  const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
 
   const data = useMemo(
     () => orderedWaypoints(trail).filter((w) => matchesFamily(w.type, family)),
     [trail, family],
+  );
+
+  const openWaypoint = useCallback(
+    (id: string) => {
+      router.push({
+        pathname: '/guide/[trailId]/waypoint/[waypointId]',
+        params: { trailId, waypointId: id },
+      });
+    },
+    [router, trailId],
   );
 
   // First row at/after the hiker — the scroll-to-me target within the filter.
@@ -84,12 +106,27 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
       <FlatList
         ref={listRef}
         data={data}
-        keyExtractor={(w, i) => w.id ?? `${w.name}-${i}`}
+        keyExtractor={waypointKey}
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
-        renderItem={({ item }) => (
-          <WaypointRow waypoint={item} units={units} currentKm={currentKm} />
-        )}
+        renderItem={({ item, index }) => {
+          const id = waypointKey(item, index);
+          return (
+            <Pressable
+              onPress={() => openWaypoint(id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${item.name}`}
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <WaypointRow
+                waypoint={item}
+                units={units}
+                currentKm={currentKm}
+                favorite={favoriteSet.has(id)}
+              />
+            </Pressable>
+          );
+        }}
         ItemSeparatorComponent={() => (
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
         )}
@@ -131,10 +168,12 @@ function WaypointRow({
   waypoint,
   units,
   currentKm,
+  favorite,
 }: {
   waypoint: Waypoint;
   units: 'km' | 'mi';
   currentKm: number | null;
+  favorite: boolean;
 }) {
   const { colors } = useTheme();
   const wpKm = waypoint.totalDistance ?? 0;
@@ -149,9 +188,19 @@ function WaypointRow({
         <Text style={[styles.type, { color: colors.accent }]} numberOfLines={1}>
           {waypoint.type}
         </Text>
-        <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
-          {waypoint.name}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
+            {waypoint.name}
+          </Text>
+          {favorite && (
+            <Text
+              accessibilityLabel="Favorite"
+              style={[styles.favoriteBadge, { color: colors.waypointFavorite }]}
+            >
+              ♥
+            </Text>
+          )}
+        </View>
       </View>
       <View style={styles.rowMeta}>
         {signed ? (
@@ -217,6 +266,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  favoriteBadge: {
+    fontSize: glyphSizes.xs,
+  },
   rowMeta: {
     alignItems: 'flex-end',
     gap: spacing.xs,
@@ -226,6 +283,7 @@ const styles = StyleSheet.create({
   },
   name: {
     ...typography.body,
+    flexShrink: 1,
   },
   distance: {
     ...typography.dataSmall,

@@ -5,20 +5,21 @@
  * `display: 'none'` and `pointerEvents="none"` so switching is instant and no
  * pane loses its scroll position or re-runs expensive work.
  *
- * A single `GuidePositionProvider` wraps the whole view so the distance strip,
- * the map puck, the elevation marker, and the list distances all read one GPS
- * session in lockstep.
+ * A single `GuidePositionProvider` (hoisted to the guide navigator's `_layout`)
+ * feeds the distance strip, the map puck, the elevation marker, the list
+ * distances, and the waypoint detail screen from one GPS session in lockstep.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { spacing } from '../../tokens';
+import { useFavoritesStore } from '../../state/favorites-store';
+import { useCommentSync } from '../../sync/connectivity';
 import { ElevationPane } from '../elevation/ElevationPane';
 import { MapPane } from '../map/MapPane';
 import { DirectionToggle } from './DirectionToggle';
 import { DistanceStrip } from './DistanceStrip';
-import { GuidePositionProvider } from './GuidePositionContext';
 import { SegmentedControl } from './SegmentedControl';
 import { WaypointListPane } from './WaypointListPane';
 import { useGuide } from './GuideContext';
@@ -33,34 +34,39 @@ const OPTIONS = [
 
 export function GuideView() {
   const { colors } = useTheme();
-  const { trail } = useGuide();
+  const { trail, trailId } = useGuide();
   const [pane, setPane] = useState<PaneKey>('map');
 
+  // Hydrate favorite hearts for the list badges, and run comment sync in the
+  // background (drain outbox + pull delta on open / reconnect / foreground).
+  useEffect(() => {
+    void useFavoritesStore.getState().hydrate(trailId);
+  }, [trailId]);
+  useCommentSync(trailId);
+
   return (
-    <GuidePositionProvider>
-      <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <View style={styles.segmented}>
-            <SegmentedControl options={OPTIONS} value={pane} onChange={setPane} />
-          </View>
-          <DirectionToggle />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <View style={styles.segmented}>
+          <SegmentedControl options={OPTIONS} value={pane} onChange={setPane} />
         </View>
-
-        <DistanceStrip />
-
-        <View style={styles.panes}>
-          <FrozenPane active={pane === 'map'}>
-            <MapPane />
-          </FrozenPane>
-          <FrozenPane active={pane === 'elevation'}>
-            <ElevationPane />
-          </FrozenPane>
-          <FrozenPane active={pane === 'list'}>
-            <WaypointListPane trail={trail} />
-          </FrozenPane>
-        </View>
+        <DirectionToggle />
       </View>
-    </GuidePositionProvider>
+
+      <DistanceStrip />
+
+      <View style={styles.panes}>
+        <FrozenPane active={pane === 'map'}>
+          <MapPane />
+        </FrozenPane>
+        <FrozenPane active={pane === 'elevation'}>
+          <ElevationPane />
+        </FrozenPane>
+        <FrozenPane active={pane === 'list'}>
+          <WaypointListPane trail={trail} />
+        </FrozenPane>
+      </View>
+    </View>
   );
 }
 

@@ -7,8 +7,9 @@
  * and overlays out of the render-heavy map component.
  */
 
-import React, { useMemo, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useDownloadsStore } from '../../state/downloads-store';
@@ -29,6 +30,7 @@ export function MapPane() {
   const { position, accuracy, status, start } = useGuidePositionContext();
 
   const mapRef = useRef<GuideMapHandle>(null);
+  const router = useRouter();
 
   // Alternates/side trips live on the trail JSON but sit behind the loose
   // index signature on TrailJson, so widen to the map's structural shapes.
@@ -37,8 +39,15 @@ export function MapPane() {
   const waypoints = trail.waypoints as MapWaypoint[];
   const displayPoints = trail.track.displayPoints;
 
-  // TODO(waypoint detail): route to the datasheet, mirroring the elevation pane.
-  const onWaypointTap = useMemo(() => (_id: string) => {}, []);
+  const onWaypointTap = useCallback(
+    (id: string) => {
+      router.push({
+        pathname: '/guide/[trailId]/waypoint/[waypointId]',
+        params: { trailId, waypointId: id },
+      });
+    },
+    [router, trailId],
+  );
 
   return (
     <View style={styles.root}>

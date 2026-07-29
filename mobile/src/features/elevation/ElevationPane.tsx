@@ -8,6 +8,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
@@ -23,9 +24,10 @@ const ZOOM_EPSILON_KM = 0.01;
 
 export function ElevationPane() {
   const { colors } = useTheme();
-  const { trail } = useGuide();
+  const { trail, trailId } = useGuide();
   const { currentKm } = useGuidePositionContext();
   const units = useSettingsStore((s) => s.units);
+  const router = useRouter();
 
   const totalKm = trail.track.totalDistance || 0;
   const points = trail.track.displayPoints as ProfilePoint[];
@@ -50,8 +52,15 @@ export function ElevationPane() {
     setWindow({ startKm: 0, endKm: totalKm });
   }, [totalKm]);
 
-  // TODO(navigate to waypoint detail) — wire to the datasheet route.
-  const onWaypointTap = useCallback((_id: string) => {}, []);
+  const onWaypointTap = useCallback(
+    (id: string) => {
+      router.push({
+        pathname: '/guide/[trailId]/waypoint/[waypointId]',
+        params: { trailId, waypointId: id },
+      });
+    },
+    [router, trailId],
+  );
 
   if (points.length === 0) {
     return (

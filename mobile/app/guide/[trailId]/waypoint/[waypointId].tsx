@@ -1,0 +1,617 @@
+/**
+ * Waypoint detail screen.
+ *
+ * Resolves the tapped waypoint from the active guide, then layers on the
+ * offline-first comments client: a newest-first feed (server rows + optimistic
+ * local rows with "waiting to send" / "failed" affordances), a composer with
+ * water-flow chips for water-family waypoints, an inline display-name prompt for
+ * first-time posters, and a favorite heart backed by the local favorites store.
+ *
+ * The feed reads straight from SQLite (so it renders instantly and offline);
+ * mount kicks a background pull + drain and re-reads when they land.
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { formatDistance } from '@lib/format-distance';
+import type { WaterStatus } from '@lib/comments-api-types';
+import { useTheme } from '../../../../src/theme';
+import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
+import { useSettingsStore } from '../../../../src/state/settings-store';
+import { useGuide } from '../../../../src/features/guide/GuideContext';
+import { useGuidePositionContext } from '../../../../src/features/guide/GuidePositionContext';
+import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
+import { waypointColor } from '../../../../src/features/elevation/waypoint-category';
+import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
+import {
+  WATER_STATUS_OPTIONS,
+  estimateEtaMinutes,
+  formatEta,
+  isWaterFamily,
+  relativeDate,
+  waterStatusMeta,
+} from '../../../../src/features/guide/waypoint-detail';
+import { useIdentityStore } from '../../../../src/state/identity-store';
+import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
+import { getDatabase } from '../../../../src/db/database';
+import * as commentsRepo from '../../../../src/db/comments-repo';
+import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
+import { isApiConfigured } from '../../../../src/api/client';
+import {
+  deleteOwnComment,
+  pullTrail,
+  retryOutbox,
+  submitComment,
+} from '../../../../src/sync/comment-sync';
+
+export default function WaypointDetailScreen() {
+  const { trailId, waypointId } = useLocalSearchParams<{
+    trailId: string;
+    waypointId: string;
+  }>();
+  const { colors } = useTheme();
+  const { trail } = useGuide();
+  const units = useSettingsStore((s) => s.units);
+  const { currentKm } = useGuidePositionContext();
+
+  const waypoint = useMemo(() => {
+    const list = orderedWaypoints(trail);
+    return (
+      list.find((w, i) => (w.id ?? `${w.name}-${i}`) === waypointId) ??
+      list.find((w) => w.id === waypointId) ??
+      null
+    );
+  }, [trail, waypointId]);
+
+  // Comments key on the stable waypoint id; waypoints without one can't sync.
+  const commentWaypointId = waypoint?.id ?? null;
+
+  const identityStatus = useIdentityStore((s) => s.status);
+  const session = useIdentityStore((s) => s.session);
+  const isFav = useFavoritesStore(selectIsFavorite(trailId, waypointId));
+  const toggleFavorite = useFavoritesStore((s) => s.toggle);
+
+  const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
+
+  const load = useCallback(async () => {
+    if (!commentWaypointId) {
+      setComments([]);
+      return;
+    }
+    const db = await getDatabase();
+    setComments(await commentsRepo.listByWaypoint(db, trailId, commentWaypointId));
+  }, [trailId, commentWaypointId]);
+
+  // Hydrate identity + favorites, load the cached feed, then pull in the
+  // background and re-read.
+  useEffect(() => {
+    void useIdentityStore.getState().hydrate();
+    void useFavoritesStore.getState().hydrate(trailId);
+  }, [trailId]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      await load();
+      const res = await pullTrail(trailId);
+      if (active && res.outcome === 'pulled') await load();
+    })();
+    return () => {
+      active = false;
+    };
+  }, [load, trailId]);
+
+  if (!waypoint) {
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ title: 'Waypoint' }} />
+        <Text style={[styles.notFoundTitle, { color: colors.textPrimary }]}>
+          Waypoint not found
+        </Text>
+      </View>
+    );
+  }
+
+  const marker = waypointColor(waypoint.type, colors);
+  const km = waypoint.totalDistance ?? 0;
+  const deltaKm = currentKm != null ? km - currentKm : null;
+  const signed = deltaKm != null ? formatSignedDistance(deltaKm, units) : null;
+  const etaLabel =
+    deltaKm != null && deltaKm > 0 ? formatEta(estimateEtaMinutes(deltaKm)) : null;
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <Stack.Screen options={{ title: waypoint.name }} />
+      <ScrollView
+        style={[styles.flex, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Hero header */}
+        <View style={styles.hero}>
+          <View style={styles.heroTop}>
+            <View style={[styles.typeChip, { backgroundColor: marker }]}>
+              <Text style={[styles.typeChipText, { color: colors.textInverse }]} numberOfLines={1}>
+                {waypoint.type}
+              </Text>
+            </View>
+            <FavoriteHeart
+              filled={isFav}
+              onPress={() => void toggleFavorite(trailId, waypointId)}
+            />
+          </View>
+          <Text style={[styles.name, { color: colors.textPrimary }]}>{waypoint.name}</Text>
+          {waypoint.description ? (
+            <Text style={[styles.description, { color: colors.textSecondary }]}>
+              {waypoint.description}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Stats row */}
+        <View style={styles.stats}>
+          <Stat label="Distance" value={formatDistance(km, units)} />
+          {waypoint.elevation != null && (
+            <Stat label="Elevation" value={`${Math.round(waypoint.elevation)} m`} />
+          )}
+          {signed && signed.direction !== 'here' && (
+            <Stat
+              label={signed.direction === 'ahead' ? 'Ahead' : 'Behind'}
+              value={etaLabel ? `${signed.label.replace(/ (ahead|behind)$/, '')} · ${etaLabel}` : signed.label}
+            />
+          )}
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        {/* Comments */}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Comments</Text>
+
+        {!isApiConfigured() ? (
+          <EmptyNote text="Comments are unavailable — no server is configured for this build." />
+        ) : !commentWaypointId ? (
+          <EmptyNote text="Comments aren’t supported for this waypoint." />
+        ) : comments === null ? (
+          <ActivityIndicator style={styles.loader} color={colors.accent} />
+        ) : comments.length === 0 ? (
+          <EmptyNote text="No comments yet. Be the first to leave a note." />
+        ) : (
+          comments.map((c) => (
+            <CommentItem
+              key={c.id}
+              comment={c}
+              isMine={!!session && c.authorId === session.userId}
+              onDelete={async () => {
+                await deleteOwnComment({ id: c.id, source: c.source });
+                await load();
+              }}
+              onRetry={async () => {
+                await retryOutbox();
+                await load();
+              }}
+            />
+          ))
+        )}
+
+        {isApiConfigured() && commentWaypointId && (
+          <Composer
+            waypointType={waypoint.type}
+            registered={identityStatus === 'registered'}
+            onSubmit={async ({ text, waterStatus, displayName }) => {
+              let activeSession = session;
+              if (!activeSession) {
+                if (!displayName) return; // guarded by the composer prompt
+                activeSession = await useIdentityStore.getState().register(displayName);
+              }
+              await submitComment(
+                { trailId, waypointId: commentWaypointId, text, waterStatus, session: activeSession },
+              );
+              await load();
+            }}
+          />
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Favorite heart
+// ---------------------------------------------------------------------------
+
+function FavoriteHeart({ filled, onPress }: { filled: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={filled ? 'Remove from favorites' : 'Add to favorites'}
+      accessibilityState={{ selected: filled }}
+      hitSlop={spacing.sm}
+      style={({ pressed }) => [styles.heart, pressed && styles.pressed]}
+    >
+      <Text style={[styles.heartIcon, { color: filled ? colors.waypointFavorite : colors.textSecondary }]}>
+        {filled ? '♥' : '♡'}
+      </Text>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stat chip
+// ---------------------------------------------------------------------------
+
+function Stat({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.stat, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: colors.textPrimary }]}>{value}</Text>
+    </View>
+  );
+}
+
+function EmptyNote({ text }: { text: string }) {
+  const { colors } = useTheme();
+  return <Text style={[styles.emptyNote, { color: colors.textSecondary }]}>{text}</Text>;
+}
+
+// ---------------------------------------------------------------------------
+// Comment row
+// ---------------------------------------------------------------------------
+
+function WaterBadge({ status }: { status: WaterStatus }) {
+  const { colors } = useTheme();
+  const meta = waterStatusMeta(status);
+  const color = colors[meta.colorToken];
+  return (
+    <View style={[styles.waterBadge, { borderColor: color }]}>
+      <Text style={[styles.waterBadgeText, { color }]}>{meta.label}</Text>
+    </View>
+  );
+}
+
+function CommentItem({
+  comment,
+  isMine,
+  onDelete,
+  onRetry,
+}: {
+  comment: CommentWithSyncState;
+  isMine: boolean;
+  onDelete: () => void | Promise<void>;
+  onRetry: () => void | Promise<void>;
+}) {
+  const { colors } = useTheme();
+  const pending = comment.outboxStatus === 'pending' || comment.outboxStatus === 'sending';
+  const failed = comment.outboxStatus === 'failed';
+
+  return (
+    <View style={[styles.comment, { borderColor: colors.border }]}>
+      <View style={styles.commentHead}>
+        <Text style={[styles.author, { color: colors.textPrimary }]} numberOfLines={1}>
+          {comment.authorName ?? 'Anonymous'}
+        </Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>
+          {relativeDate(comment.createdAt, Date.now())}
+        </Text>
+      </View>
+
+      {comment.waterStatus && (
+        <View style={styles.badgeRow}>
+          <WaterBadge status={comment.waterStatus} />
+        </View>
+      )}
+
+      {comment.body ? (
+        <Text style={[styles.body, { color: colors.textPrimary }]}>{comment.body}</Text>
+      ) : null}
+
+      {(pending || failed) && (
+        <View style={styles.statusRow}>
+          <Text
+            style={[styles.statusText, { color: failed ? colors.danger : colors.textSecondary }]}
+          >
+            {failed ? 'Failed to send' : 'Waiting to send…'}
+          </Text>
+          {failed && (
+            <Pressable onPress={onRetry} accessibilityRole="button" hitSlop={spacing.xs}>
+              <Text style={[styles.actionLink, { color: colors.accent }]}>Retry</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      {isMine && (
+        <Pressable
+          onPress={onDelete}
+          accessibilityRole="button"
+          accessibilityLabel="Delete comment"
+          hitSlop={spacing.xs}
+          style={styles.deleteAffordance}
+        >
+          <Text style={[styles.actionLink, { color: colors.danger }]}>Delete</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Composer
+// ---------------------------------------------------------------------------
+
+interface SubmitArgs {
+  text: string | null;
+  waterStatus: WaterStatus | null;
+  displayName?: string;
+}
+
+function Composer({
+  waypointType,
+  registered,
+  onSubmit,
+}: {
+  waypointType: string;
+  registered: boolean;
+  onSubmit: (args: SubmitArgs) => Promise<void>;
+}) {
+  const { colors } = useTheme();
+  const showWater = isWaterFamily(waypointType);
+  const [text, setText] = useState('');
+  const [waterStatus, setWaterStatus] = useState<WaterStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+
+  const hasContent = text.trim().length > 0 || waterStatus !== null;
+
+  const finish = useCallback(
+    async (displayName?: string) => {
+      setBusy(true);
+      try {
+        await onSubmit({
+          text: text.trim().length > 0 ? text.trim() : null,
+          waterStatus,
+          displayName,
+        });
+        setText('');
+        setWaterStatus(null);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onSubmit, text, waterStatus],
+  );
+
+  const handleSubmit = useCallback(() => {
+    if (!hasContent || busy) return;
+    if (!registered) {
+      setPromptOpen(true);
+      return;
+    }
+    void finish();
+  }, [hasContent, busy, registered, finish]);
+
+  return (
+    <View style={[styles.composer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+      {showWater && (
+        <View style={styles.waterChips}>
+          {WATER_STATUS_OPTIONS.map((status) => {
+            const meta = waterStatusMeta(status);
+            const color = colors[meta.colorToken];
+            const active = waterStatus === status;
+            return (
+              <Pressable
+                key={status}
+                onPress={() => setWaterStatus(active ? null : status)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={[
+                  styles.waterChip,
+                  { borderColor: color },
+                  active && { backgroundColor: color },
+                ]}
+              >
+                <Text style={[styles.waterChipText, { color: active ? colors.textInverse : color }]}>
+                  {meta.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      <TextInput
+        style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
+        placeholder={showWater ? 'Add a note or water report…' : 'Add a note…'}
+        placeholderTextColor={colors.textSecondary}
+        value={text}
+        onChangeText={setText}
+        multiline
+        editable={!busy}
+      />
+
+      <Pressable
+        onPress={handleSubmit}
+        disabled={!hasContent || busy}
+        accessibilityRole="button"
+        accessibilityLabel="Post comment"
+        style={[
+          styles.submit,
+          { backgroundColor: hasContent && !busy ? colors.accent : colors.accentMuted },
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator color={colors.accentText} />
+        ) : (
+          <Text style={[styles.submitText, { color: colors.accentText }]}>Post</Text>
+        )}
+      </Pressable>
+
+      <Modal visible={promptOpen} transparent animationType="fade" onRequestClose={() => setPromptOpen(false)}>
+        <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Choose a display name</Text>
+            <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
+              Shown next to your comments. You can change it later in settings.
+            </Text>
+            <TextInput
+              style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
+              placeholder="e.g. Trail Ghost"
+              placeholderTextColor={colors.textSecondary}
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              autoFocus
+              maxLength={40}
+            />
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setPromptOpen(false)}
+                accessibilityRole="button"
+                style={styles.modalButton}
+              >
+                <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  const name = nameDraft.trim();
+                  if (name.length === 0) return;
+                  setPromptOpen(false);
+                  void finish(name);
+                }}
+                accessibilityRole="button"
+                style={[styles.modalButton, styles.modalSave, { backgroundColor: colors.accent }]}
+              >
+                <Text style={[styles.submitText, { color: colors.accentText }]}>Save &amp; post</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  notFoundTitle: { ...typography.displaySmall },
+
+  hero: { gap: spacing.sm },
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  typeChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    maxWidth: '70%',
+  },
+  typeChipText: { ...typography.dataSmall, textTransform: 'capitalize' },
+  name: { ...typography.displaySmall },
+  description: { ...typography.body },
+
+  heart: { padding: spacing.xs },
+  heartIcon: { fontSize: glyphSizes.xxl },
+  pressed: { opacity: 0.6 },
+
+  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  stat: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.xs,
+    minWidth: 90,
+  },
+  statLabel: { ...typography.caption },
+  statValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
+
+  divider: { height: StyleSheet.hairlineWidth },
+  sectionTitle: { ...typography.titleLarge },
+  emptyNote: { ...typography.bodySmall, paddingVertical: spacing.md },
+  loader: { paddingVertical: spacing.lg },
+
+  comment: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  commentHead: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+  author: { ...typography.titleSmall, flexShrink: 1 },
+  date: { ...typography.caption },
+  badgeRow: { flexDirection: 'row' },
+  body: { ...typography.body },
+  waterBadge: {
+    alignSelf: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  waterBadgeText: { ...typography.caption, fontWeight: '600' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  statusText: { ...typography.caption },
+  actionLink: { ...typography.titleSmall },
+  deleteAffordance: { alignSelf: 'flex-start', paddingTop: spacing.xs },
+
+  composer: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  waterChips: { flexDirection: 'row', gap: spacing.sm },
+  waterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  waterChipText: { ...typography.dataSmall, fontWeight: '600' },
+  input: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.sm,
+    padding: spacing.md,
+    minHeight: 64,
+    ...typography.body,
+    textAlignVertical: 'top',
+  },
+  submit: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radii.sm,
+    minHeight: 44,
+  },
+  submitText: { ...typography.titleSmall },
+
+  modalBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  modalCard: { width: '100%', borderRadius: radii.lg, padding: spacing.lg, gap: spacing.md },
+  modalTitle: { ...typography.titleLarge },
+  modalHint: { ...typography.bodySmall },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
+  modalButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm,
+  },
+  modalSave: { minWidth: 44, alignItems: 'center' },
+});

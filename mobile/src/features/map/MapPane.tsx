@@ -10,9 +10,10 @@
 import React, { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../theme';
-import { radii, spacing, typography } from '../../tokens';
+import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useDownloadsStore } from '../../state/downloads-store';
 import { useGuide } from '../guide/GuideContext';
+import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { GuideMap, type GuideMapHandle } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import { resolveStyleSource } from './map-style';
@@ -24,6 +25,8 @@ export function MapPane() {
   const download = useDownloadsStore((s) => s.byTrail[trailId]);
   const source = resolveStyleSource(download?.state);
   const offline = source === 'offline';
+
+  const { position, accuracy, status, start } = useGuidePositionContext();
 
   const mapRef = useRef<GuideMapHandle>(null);
 
@@ -48,6 +51,8 @@ export function MapPane() {
           alternates={alternates}
           sideTrips={sideTrips}
           waypoints={waypoints}
+          currentPosition={position}
+          accuracy={accuracy}
           onWaypointTap={onWaypointTap}
         />
       </MapErrorBoundary>
@@ -64,6 +69,27 @@ export function MapPane() {
           {offline ? 'Offline maps ready' : 'Online'}
         </Text>
       </View>
+
+      {/* Center on me: pan to the GPS fix, or start GPS if not yet tracking */}
+      <Pressable
+        onPress={() => (position ? mapRef.current?.centerOnMe() : start())}
+        accessibilityRole="button"
+        accessibilityLabel={position ? 'Center map on my location' : 'Show my location'}
+        style={({ pressed }) => [
+          styles.centerOnMe,
+          { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text
+          style={[
+            styles.buttonIcon,
+            { color: position ? colors.gps : colors.textSecondary },
+          ]}
+        >
+          {status === 'acquiring' ? '⋯' : '⦿'}
+        </Text>
+      </Pressable>
 
       {/* Recenter: re-fit the camera to the trail bounds */}
       <Pressable
@@ -118,8 +144,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  centerOnMe: {
+    position: 'absolute',
+    bottom: spacing.xl + 44 + spacing.sm,
+    right: spacing.lg,
+    width: 44,
+    height: 44,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   recenterIcon: {
     ...typography.titleLarge,
+  },
+  buttonIcon: {
+    fontSize: glyphSizes.lg,
   },
   pressed: {
     opacity: 0.6,

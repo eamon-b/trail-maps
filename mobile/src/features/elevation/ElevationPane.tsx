@@ -13,6 +13,7 @@ import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
 import { useGuide } from '../guide/GuideContext';
+import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { orderedWaypoints } from '../guide/guide-trail';
 import { ElevationProfile, type ProfileReadout, type ProfileWaypoint } from './ElevationProfile';
 import type { KmWindow } from './geometry';
@@ -23,6 +24,7 @@ const ZOOM_EPSILON_KM = 0.01;
 export function ElevationPane() {
   const { colors } = useTheme();
   const { trail } = useGuide();
+  const { currentKm } = useGuidePositionContext();
   const units = useSettingsStore((s) => s.units);
 
   const totalKm = trail.track.totalDistance || 0;
@@ -103,6 +105,7 @@ export function ElevationPane() {
           points={points}
           totalKm={totalKm}
           waypoints={waypoints}
+          currentKm={currentKm}
           window={window}
           onWindowChange={setWindow}
           onWaypointTap={onWaypointTap}

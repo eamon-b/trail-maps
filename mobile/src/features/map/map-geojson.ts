@@ -127,3 +127,41 @@ export function buildWaypointCollection(
   });
   return { type: 'FeatureCollection', features };
 }
+
+/**
+ * Single-point feature for the user-location puck. Carries the fix's accuracy
+ * (metres) so the accuracy-circle layer can size itself in map pixels.
+ */
+export function buildUserLocationGeoJSON(
+  lat: number,
+  lon: number,
+  accuracy: number | null,
+): Feature<Point> {
+  return {
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [lon, lat] },
+    properties: { accuracy: accuracy ?? 0 },
+  };
+}
+
+/**
+ * MapLibre zoom-interpolated expression converting a fix's accuracy (metres,
+ * read from the feature's `accuracy` property) into a screen-pixel circle
+ * radius, clamped to [2, 200] px. With `circlePitchAlignment: 'map'` the circle
+ * sits on the map plane; radius is still in pixels at the current zoom, so we
+ * precompute pixels-per-metre at each discrete zoom.
+ *
+ *   metresPerPixel(z) = cos(lat) · 40075017 / (256 · 2^z)
+ *   pixelsPerMetre(z) = 256 · 2^z / (cos(lat) · 40075017)
+ */
+export function accuracyCircleRadiusExpression(latDegrees: number): unknown[] {
+  const latRad = (latDegrees * Math.PI) / 180;
+  const cosLat = Math.cos(latRad);
+  const base = 256 / (cosLat * 40075017);
+  const stops: unknown[] = [];
+  for (let z = 5; z <= 20; z++) {
+    const ppm = base * Math.pow(2, z);
+    stops.push(z, ['min', 200, ['max', 2, ['*', ['get', 'accuracy'], ppm]]]);
+  }
+  return ['interpolate', ['linear'], ['zoom'], ...stops];
+}

@@ -45,7 +45,9 @@ import { tileManager } from '../../services/tile-manager';
 import { getOnlineMapStyle } from '../../services/online-style-service';
 import { waypointColor } from '../elevation/waypoint-category';
 import {
+  accuracyCircleRadiusExpression,
   buildTrailLine,
+  buildUserLocationGeoJSON,
   buildVariantCollection,
   buildWaypointCollection,
   trailCameraBounds,
@@ -88,6 +90,12 @@ MapLibreGL.Logger.setLogCallback((log: { level: string; message: string; tag?: s
 const MARKER_STROKE = '#ffffff';
 const LABEL_TEXT = '#1a1a1a';
 const LABEL_HALO = '#ffffff';
+/** Puck ring/dot stroke against the basemap (paint prop, not an RN style). */
+const PUCK_STROKE = '#ffffff';
+/** Zoom below which the accuracy circle is hidden (unreadable at overview). */
+const ACCURACY_CIRCLE_MIN_ZOOM = 8;
+/** Only draw the accuracy circle when the fix is this uncertain (metres). */
+const ACCURACY_CIRCLE_MIN_METERS = 20;
 
 /** Waypoints cluster only at/below this zoom (unreadable overview levels). */
 export const WAYPOINT_CLUSTER_MAX_ZOOM = 10;
@@ -102,6 +110,8 @@ const CAMERA_PADDING = { top: 48, right: 32, bottom: 48, left: 32 };
 export interface GuideMapHandle {
   /** Re-fit the camera to the full trail bounds. */
   recenter: () => void;
+  /** Center + zoom the camera on the current GPS position (no-op without one). */
+  centerOnMe: () => void;
 }
 
 export interface GuideMapProps {
@@ -116,15 +126,27 @@ export interface GuideMapProps {
   sideTrips?: MapVariant[];
   /** Waypoint markers. */
   waypoints?: MapWaypoint[];
-  /** Current GPS position — plumbed for a later phase; no puck is drawn yet. */
+  /** Current GPS position — draws the user-location puck when present. */
   currentPosition?: { lat: number; lon: number } | null;
+  /** GPS accuracy in metres — sizes the puck's accuracy circle. */
+  accuracy?: number | null;
   /** Tapped waypoint's stable id. */
   onWaypointTap?: (id: string) => void;
 }
 
 export const GuideMap = memo(
   forwardRef<GuideMapHandle, GuideMapProps>(function GuideMap(
-    { trailId, styleSource, displayPoints, alternates, sideTrips, waypoints, onWaypointTap },
+    {
+      trailId,
+      styleSource,
+      displayPoints,
+      alternates,
+      sideTrips,
+      waypoints,
+      currentPosition,
+      accuracy,
+      onWaypointTap,
+    },
     ref,
   ) {
     const { colors } = useTheme();
@@ -178,6 +200,19 @@ export const GuideMap = memo(
       [waypoints, colors],
     );
 
+    // --- User-location puck ------------------------------------------------
+    const userLocationFeature = useMemo(
+      () =>
+        currentPosition
+          ? buildUserLocationGeoJSON(currentPosition.lat, currentPosition.lon, accuracy ?? null)
+          : null,
+      [currentPosition, accuracy],
+    );
+    const accuracyRadius = useMemo(
+      () => accuracyCircleRadiusExpression(currentPosition?.lat ?? -33),
+      [currentPosition?.lat],
+    );
+
     // --- Camera ------------------------------------------------------------
     const bounds = useMemo(() => trailCameraBounds(displayPoints), [displayPoints]);
 
@@ -204,8 +239,16 @@ export const GuideMap = memo(
           if (!bounds) return;
           cameraRef.current?.fitBounds(bounds.ne, bounds.sw, CAMERA_PADDING.top, 500);
         },
+        centerOnMe: () => {
+          if (!currentPosition) return;
+          cameraRef.current?.setCamera({
+            centerCoordinate: [currentPosition.lon, currentPosition.lat],
+            zoomLevel: 14,
+            animationDuration: 500,
+          });
+        },
       }),
-      [bounds],
+      [bounds, currentPosition],
     );
 
     // --- Layer paint (theme-routed line colors, data-driven marker colors) --
@@ -290,6 +333,29 @@ export const GuideMap = memo(
         textAllowOverlap: false,
       }),
       [labelFont],
+    );
+
+    const userDotStyle = useMemo(
+      () => ({
+        circleRadius: 6,
+        circleColor: colors.gps,
+        circleStrokeColor: PUCK_STROKE,
+        circleStrokeWidth: 2,
+      }),
+      [colors.gps],
+    );
+
+    const userAccuracyStyle = useMemo(
+      () => ({
+        circleRadius: accuracyRadius as unknown as number,
+        circleColor: colors.gps,
+        circleOpacity: 0.12,
+        circleStrokeColor: colors.gps,
+        circleStrokeOpacity: 0.35,
+        circleStrokeWidth: 1,
+        circlePitchAlignment: 'map' as const,
+      }),
+      [accuracyRadius, colors.gps],
     );
 
     // --- Interaction -------------------------------------------------------
@@ -386,6 +452,20 @@ export const GuideMap = memo(
               filter={INDIVIDUAL_FILTER}
               style={labelStyle}
             />
+          </ShapeSource>
+        )}
+
+        {/* User-location puck: accuracy circle (when uncertain) + dot */}
+        {userLocationFeature && (
+          <ShapeSource id="guide-user-location" shape={userLocationFeature}>
+            {(accuracy ?? 0) > ACCURACY_CIRCLE_MIN_METERS && (
+              <CircleLayer
+                id="guide-user-accuracy"
+                minZoomLevel={ACCURACY_CIRCLE_MIN_ZOOM}
+                style={userAccuracyStyle}
+              />
+            )}
+            <CircleLayer id="guide-user-dot" style={userDotStyle} />
           </ShapeSource>
         )}
       </MapView>

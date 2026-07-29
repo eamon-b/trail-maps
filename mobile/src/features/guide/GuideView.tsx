@@ -1,11 +1,13 @@
 /**
  * The guide three-pane shell: a segmented control switches Map | Elevation |
- * List. All three panes stay mounted; inactive panes are frozen with
+ * List, with a direction toggle beside it and a shared GPS "what's next" strip
+ * above the panes. All three panes stay mounted; inactive panes are frozen with
  * `display: 'none'` and `pointerEvents="none"` so switching is instant and no
  * pane loses its scroll position or re-runs expensive work.
  *
- * Phase 1: Map and Elevation are themed placeholders. The List pane is real.
- * The MapLibre map lands after the first on-device boot (see notes below).
+ * A single `GuidePositionProvider` wraps the whole view so the distance strip,
+ * the map puck, the elevation marker, and the list distances all read one GPS
+ * session in lockstep.
  */
 
 import React, { useState } from 'react';
@@ -14,9 +16,12 @@ import { useTheme } from '../../theme';
 import { spacing } from '../../tokens';
 import { ElevationPane } from '../elevation/ElevationPane';
 import { MapPane } from '../map/MapPane';
-import { useGuide } from './GuideContext';
+import { DirectionToggle } from './DirectionToggle';
+import { DistanceStrip } from './DistanceStrip';
+import { GuidePositionProvider } from './GuidePositionContext';
 import { SegmentedControl } from './SegmentedControl';
 import { WaypointListPane } from './WaypointListPane';
+import { useGuide } from './GuideContext';
 
 type PaneKey = 'map' | 'elevation' | 'list';
 
@@ -32,23 +37,30 @@ export function GuideView() {
   const [pane, setPane] = useState<PaneKey>('map');
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <SegmentedControl options={OPTIONS} value={pane} onChange={setPane} />
-      </View>
+    <GuidePositionProvider>
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <View style={styles.header}>
+          <View style={styles.segmented}>
+            <SegmentedControl options={OPTIONS} value={pane} onChange={setPane} />
+          </View>
+          <DirectionToggle />
+        </View>
 
-      <View style={styles.panes}>
-        <FrozenPane active={pane === 'map'}>
-          <MapPane />
-        </FrozenPane>
-        <FrozenPane active={pane === 'elevation'}>
-          <ElevationPane />
-        </FrozenPane>
-        <FrozenPane active={pane === 'list'}>
-          <WaypointListPane trail={trail} />
-        </FrozenPane>
+        <DistanceStrip />
+
+        <View style={styles.panes}>
+          <FrozenPane active={pane === 'map'}>
+            <MapPane />
+          </FrozenPane>
+          <FrozenPane active={pane === 'elevation'}>
+            <ElevationPane />
+          </FrozenPane>
+          <FrozenPane active={pane === 'list'}>
+            <WaypointListPane trail={trail} />
+          </FrozenPane>
+        </View>
       </View>
-    </View>
+    </GuidePositionProvider>
   );
 }
 
@@ -69,7 +81,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     padding: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  segmented: {
+    flex: 1,
   },
   panes: {
     flex: 1,

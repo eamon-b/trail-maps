@@ -1,0 +1,108 @@
+import type { SQLiteDatabase } from 'expo-sqlite';
+
+const SCHEMA_VERSION = 1;
+
+// Fresh v1 schema for Tracknotes. Waypoints and track geometry stay in the
+// bundled trail JSON — SQLite holds only per-guide state, the comment cache,
+// and the offline outbox.
+const MIGRATIONS: Record<number, string> = {
+  1: `
+    CREATE TABLE IF NOT EXISTS guides (
+      id TEXT PRIMARY KEY NOT NULL,
+      data_version TEXT,
+      direction TEXT NOT NULL DEFAULT 'default',
+      tiles_downloaded INTEGER NOT NULL DEFAULT 0,
+      comments_synced_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+      trail_id TEXT NOT NULL,
+      waypoint_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (trail_id, waypoint_id)
+    );
+
+    -- Local mirror of server comments plus optimistic local rows.
+    -- id is the server/client-minted UUID; rows composed offline carry
+    -- source='local' until the outbox drain replaces them with the
+    -- server-confirmed row.
+    CREATE TABLE IF NOT EXISTS comments (
+      id TEXT PRIMARY KEY NOT NULL,
+      trail_id TEXT NOT NULL,
+      waypoint_id TEXT NOT NULL,
+      author_id TEXT,
+      author_name TEXT,
+      body TEXT,
+      water_status TEXT CHECK (water_status IN ('flowing', 'low', 'dry')),
+      observed_at TEXT,
+      created_at TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'server' CHECK (source IN ('server', 'local')),
+      photo_urls_json TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_comments_wp
+      ON comments(waypoint_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_comments_trail ON comments(trail_id);
+
+    CREATE TABLE IF NOT EXISTS outbox (
+      id TEXT PRIMARY KEY NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'comment',
+      trail_id TEXT,
+      waypoint_id TEXT,
+      payload_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      attempts INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'sending', 'failed'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status, created_at);
+
+    CREATE TABLE IF NOT EXISTS sync_state (
+      trail_id TEXT PRIMARY KEY NOT NULL,
+      comments_cursor TEXT,
+      last_synced_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version INTEGER NOT NULL
+    );
+
+    INSERT INTO schema_version (version) VALUES (1);
+  `,
+};
+
+export async function migrateDatabase(
+  db: SQLiteDatabase,
+  targetVersion: number = SCHEMA_VERSION,
+): Promise<void> {
+  const versionRow = await db.getFirstAsync<{ version: number }>(
+    'SELECT version FROM schema_version'
+  ).catch(() => null);
+
+  const currentVersion = versionRow?.version ?? 0;
+
+  if (currentVersion >= targetVersion) {
+    return;
+  }
+
+  for (let v = currentVersion + 1; v <= targetVersion; v++) {
+    const migration = MIGRATIONS[v];
+    if (!migration) {
+      throw new Error(`Missing migration for version ${v}`);
+    }
+    await db.execAsync('BEGIN');
+    try {
+      await db.execAsync(migration);
+      await db.execAsync('COMMIT');
+    } catch (e) {
+      await db.execAsync('ROLLBACK');
+      throw e;
+    }
+  }
+}
+
+export { SCHEMA_VERSION };

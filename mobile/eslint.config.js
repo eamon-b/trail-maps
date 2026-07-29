@@ -8,6 +8,13 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*', 'android/*', 'ios/*', '.expo/*'],
   },
+  // jest.setup.js runs inside Jest, where `jest` is a global.
+  {
+    files: ['jest.setup.js'],
+    languageOptions: {
+      globals: { jest: 'readonly' },
+    },
+  },
   // Design-token enforcement: no raw colors / numeric font sizes in styles.
   // Disabling requires a justification comment, e.g.
   //   // eslint-disable-next-line no-restricted-syntax -- MapLibre expression, not an RN style

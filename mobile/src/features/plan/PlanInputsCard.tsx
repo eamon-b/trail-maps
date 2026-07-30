@@ -43,7 +43,10 @@ export function PlanInputsCard(props: PlanInputsCardProps) {
   const { options, startIdx, endIdx, dailyHours, pace, units } = props;
   const start = options[startIdx];
   const end = options[endIdx];
-  const isFullTrail = startIdx === 0 && endIdx === options.length - 1;
+  // With fewer than two options there is no section to narrow, so the reset chip
+  // is meaningless — and endIdx (0) !== options.length - 1 (-1 for an empty set)
+  // would otherwise render it spuriously. Treat any degenerate set as full trail.
+  const isFullTrail = options.length < 2 || (startIdx === 0 && endIdx === options.length - 1);
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>

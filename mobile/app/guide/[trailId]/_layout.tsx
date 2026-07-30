@@ -41,6 +41,7 @@ export default function GuideLayout() {
               <View style={styles.headerActions}>
                 <Pressable
                   accessibilityLabel="Routes"
+                  accessibilityRole="button"
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/routes',
@@ -54,6 +55,7 @@ export default function GuideLayout() {
                 </Pressable>
                 <Pressable
                   accessibilityLabel="Plan"
+                  accessibilityRole="button"
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/plan',
@@ -67,6 +69,7 @@ export default function GuideLayout() {
                 </Pressable>
                 <Pressable
                   accessibilityLabel="Offline maps"
+                  accessibilityRole="button"
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/downloads',
@@ -80,6 +83,7 @@ export default function GuideLayout() {
                 </Pressable>
                 <Pressable
                   accessibilityLabel="Settings"
+                  accessibilityRole="button"
                   onPress={() => router.push('/settings')}
                   style={styles.headerButton}
                   hitSlop={spacing.sm}

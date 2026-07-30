@@ -39,21 +39,39 @@ function press(tree: ReactTestRenderer, accessibilityLabel: string): void {
   act(() => (target.props.onPress as () => void)());
 }
 
-describe('PlanInputsCard', () => {
-  const baseProps = {
-    options,
-    startIdx: 0,
-    endIdx: 2,
-    dailyHours: 8,
-    pace: 'average' as const,
-    units: 'km' as const,
-    onStartIdx: jest.fn(),
-    onEndIdx: jest.fn(),
-    onDailyHours: jest.fn(),
-    onPace: jest.fn(),
-    onResetSection: jest.fn(),
-  };
+function findByLabel(tree: ReactTestRenderer, accessibilityLabel: string) {
+  return tree.root.findAll(
+    (n) => n.props.accessibilityLabel === accessibilityLabel && typeof n.props.onPress === 'function',
+  );
+}
 
+function isDisabled(tree: ReactTestRenderer, accessibilityLabel: string): boolean {
+  return findByLabel(tree, accessibilityLabel)[0].props.disabled === true;
+}
+
+function render(props: Partial<React.ComponentProps<typeof PlanInputsCard>>): ReactTestRenderer {
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = TestRenderer.create(<PlanInputsCard {...baseProps} {...props} />);
+  });
+  return tree;
+}
+
+const baseProps = {
+  options,
+  startIdx: 0,
+  endIdx: 2,
+  dailyHours: 8,
+  pace: 'average' as const,
+  units: 'km' as const,
+  onStartIdx: jest.fn(),
+  onEndIdx: jest.fn(),
+  onDailyHours: jest.fn(),
+  onPace: jest.fn(),
+  onResetSection: jest.fn(),
+};
+
+describe('PlanInputsCard', () => {
   it('renders the section boundaries, pace options and daily hours', () => {
     let tree!: ReactTestRenderer;
     act(() => {
@@ -84,5 +102,44 @@ describe('PlanInputsCard', () => {
     });
     press(tree, 'More daily hours');
     expect(onDailyHours).toHaveBeenCalledWith(9);
+  });
+
+  it('disables the start ▶ when start is adjacent to end (startIdx === endIdx - 1)', () => {
+    // options len 3: start=1, end=2 -> start cannot advance into/past end.
+    const tree = render({ startIdx: 1, endIdx: 2 });
+    expect(isDisabled(tree, 'Next Start')).toBe(true);
+    expect(isDisabled(tree, 'Previous Start')).toBe(false);
+  });
+
+  it('disables the end ◀ when end is adjacent to start (endIdx === startIdx + 1)', () => {
+    const tree = render({ startIdx: 0, endIdx: 1 });
+    expect(isDisabled(tree, 'Previous End')).toBe(true);
+    expect(isDisabled(tree, 'Next End')).toBe(false);
+  });
+
+  it('disables outer steppers at the trail termini', () => {
+    const tree = render({ startIdx: 0, endIdx: 2 });
+    expect(isDisabled(tree, 'Previous Start')).toBe(true); // start at first option
+    expect(isDisabled(tree, 'Next End')).toBe(true); // end at last option
+  });
+
+  it('shows the Full trail reset chip and fires onResetSection when narrowed', () => {
+    const onResetSection = jest.fn();
+    // Not full trail (endIdx 1 !== last index 2), so the chip renders.
+    const tree = render({ startIdx: 0, endIdx: 1, onResetSection });
+    expect(findByLabel(tree, 'Reset to full trail')).toHaveLength(1);
+    press(tree, 'Reset to full trail');
+    expect(onResetSection).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the reset chip when the section is the full trail', () => {
+    const tree = render({ startIdx: 0, endIdx: 2 });
+    expect(findByLabel(tree, 'Reset to full trail')).toHaveLength(0);
+  });
+
+  it('hides the reset chip for a degenerate option set (< 2 options)', () => {
+    const single: WaypointOption[] = [{ id: 'only', name: 'Only', km: 0, type: 'trailhead' }];
+    const tree = render({ options: single, startIdx: 0, endIdx: 0 });
+    expect(findByLabel(tree, 'Reset to full trail')).toHaveLength(0);
   });
 });

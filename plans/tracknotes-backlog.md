@@ -16,12 +16,16 @@ Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this fil
 - [ ] **Display-name rename UI** — `PATCH /v1/me` exists; add the settings field.
 - [ ] **Waypoint descriptions enrichment** — bundled data has almost none; serve curated descriptions from the backend over the comment sync channel rather than authoring into `public/data/`.
 
+## Design divergences awaiting Eamon's review
+- [ ] **Header glyph vs overflow menu (Phases 7 + 8)** — the master plan specifies an *overflow-menu "Plan" entry*; instead both Phase 7 (Routes ⋔) and Phase 8 (Plan ▤) shipped as always-visible inline header glyphs, making four header actions (⋔ ▤ ⤓ ⚙) beside the guide title. Consistent with each other but divergent from the plan, and React Navigation truncates the *title*, not the buttons, so long guide names (e.g. "Hume & Hovell") get squeezed on narrow screens. Decide: keep the four glyphs, or fold Routes + Plan (and maybe Downloads) into a single ⋯ overflow menu.
+
 ## Verification gaps
 - [ ] **Offline tile download E2E** — untested end-to-end. Add `EXPO_PUBLIC_TILE_BASE_URL` to `mobile/.env.local`, download Cape to Cape, verify the `mbtiles://` offline style renders in airplane mode (the map remount on style-source flip is tested in Jest only).
 - [ ] **Dark theme visual QA** — themes are WCAG-checked arithmetically but never eyeballed on device.
 - [ ] **iOS smoke test** — all E2E tooling is Android; run an EAS iOS build and hand-check before any TestFlight.
 
 ## Data quality
+- [ ] **Duplicate waypoint IDs in larapinta.json** — three id pairs (`w_93f929d7` "Redbank", `w_766c3fd2` "Redbank Gorge Trailhead", `w_b6e87871` "Redbank Gorge") appear twice each; React logs duplicate-key warnings from `ElevationProfile` markers (keyed by `wp.id`) whenever the Larapinta guide renders (found 2026-07-31, pre-existing — not from the Phase 8 fixes). Root-cause in the `waypoint-ids.ts` registry matching (two source waypoints should either dedupe or build-error); mind the append-only registry when fixing.
 - [ ] **Near-duplicate waypoint dedupe** — AAWT has pairs like "Talbot Hut Site" twice ~100 m apart (source-data trait, predates rebuild). Dedupe in `scripts/build-trails.ts`; mind the waypoint-ID registry (retired IDs keep their comments).
 
 ## Tech debt / infra

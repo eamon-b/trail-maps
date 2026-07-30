@@ -59,7 +59,7 @@ export function ResupplyCard({
           </View>
           <Text style={[styles.stats, { color: colors.textSecondary }]}>
             {formatDistance(leg.gap.distanceKm, units)} · {formatDays(leg.gap.estimatedDays)} ·{' '}
-            {formatFoodWeight(leg.food.weightKg)} food
+            {formatFoodWeight(leg.food.weightKg, units)} food
           </Text>
         </View>
       ))}

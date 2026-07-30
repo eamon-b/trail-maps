@@ -35,7 +35,9 @@ export interface WaypointDistance<W extends DistanceWaypoint = DistanceWaypoint>
   elevationLoss: number;
   /**
    * Naismith walking time from the current position, in minutes
-   * (distance / 4 km/h + ascent / 600 m/h + Tranter descent correction).
+   * (distance / baseKmh + ascent / 600 m/h + Tranter descent correction).
+   * `baseKmh` is the per-trail pace preference (Slow 3 / Average 4 / Fast 5),
+   * defaulting to 4 km/h when the hiker has never set a pace.
    */
   etaMinutes: number;
 }
@@ -68,6 +70,7 @@ export function calculateDistancesToWaypoints<W extends DistanceWaypoint>(
   currentKm: number,
   waypoints: readonly W[],
   trackPoints: readonly ElevationPoint[],
+  baseKmh = 4,
 ): WaypointDistance<W>[] {
   const upcoming = waypoints.filter((wp) => (wp.totalDistance ?? 0) > currentKm);
 
@@ -81,7 +84,7 @@ export function calculateDistancesToWaypoints<W extends DistanceWaypoint>(
       trailDistanceKm: distanceKm,
       elevationGain: gain,
       elevationLoss: loss,
-      etaMinutes: estimateHikingTime(distanceKm, gain, loss) * 60,
+      etaMinutes: estimateHikingTime(distanceKm, gain, loss, baseKmh) * 60,
     };
   });
 }
@@ -111,9 +114,11 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
   waypoints: readonly W[],
   trackPoints: readonly ElevationPoint[],
   precomputedDistances?: WaypointDistance<W>[],
+  baseKmh = 4,
 ): NextWaypointsByType<W> {
   const distances =
-    precomputedDistances ?? calculateDistancesToWaypoints(currentKm, waypoints, trackPoints);
+    precomputedDistances ??
+    calculateDistancesToWaypoints(currentKm, waypoints, trackPoints, baseKmh);
 
   const result: NextWaypointsByType<W> = {};
   for (const wd of distances) {

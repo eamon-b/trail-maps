@@ -32,6 +32,24 @@ describe('calculateDistancesToWaypoints', () => {
     // 2 km / 4 km/h = 0.5 h = 30 min.
     expect(first.etaMinutes).toBeCloseTo(30, 0);
   });
+
+  it('scales the ETA by the base speed (pace preference)', () => {
+    // Same flat 2 km segment at slow (3 km/h) and fast (5 km/h) bases.
+    const [slow] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK, 3);
+    const [fast] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK, 5);
+    // 2 km / 3 km/h = 0.667 h → rounded to 0.7 h = 42 min;
+    // 2 km / 5 km/h = 0.4 h = 24 min (estimateHikingTime rounds to 0.1 h).
+    expect(slow.etaMinutes).toBeCloseTo(42, 0);
+    expect(fast.etaMinutes).toBeCloseTo(24, 0);
+    // Slower pace is always the longer ETA.
+    expect(slow.etaMinutes).toBeGreaterThan(fast.etaMinutes);
+  });
+
+  it('defaults to 4 km/h when no base speed is passed', () => {
+    const [withDefault] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK);
+    const [explicit] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK, 4);
+    expect(withDefault.etaMinutes).toBeCloseTo(explicit.etaMinutes, 5);
+  });
 });
 
 describe('getNextWaypointsByType', () => {

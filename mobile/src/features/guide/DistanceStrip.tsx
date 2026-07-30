@@ -24,6 +24,7 @@ import {
   getNextWaypointsByType,
   type WaypointDistance,
 } from '../../services/distance-calculator';
+import { selectPaceBaseKmh, usePlanInputsStore } from '../plan/plan-inputs-store';
 import { ShareIconButton } from '../share/ShareIconButton';
 import { useCheckInShare } from '../share/use-check-in-share';
 import { useGuide } from './GuideContext';
@@ -32,7 +33,8 @@ import { useGuidePositionContext } from './GuidePositionContext';
 
 export function DistanceStrip() {
   const { colors } = useTheme();
-  const { trail } = useGuide();
+  const { trailId, trail } = useGuide();
+  const baseKmh = usePlanInputsStore(selectPaceBaseKmh(trailId));
   const units = useSettingsStore((s) => s.units);
   const { status, currentKm, offTrailMeters, position, start } = useGuidePositionContext();
   const shareCheckIn = useCheckInShare();
@@ -41,7 +43,7 @@ export function DistanceStrip() {
     if (currentKm == null) return [];
     const waypoints = orderedWaypoints(trail);
     const trackPoints = trail.track.points;
-    const distances = calculateDistancesToWaypoints(currentKm, waypoints, trackPoints);
+    const distances = calculateDistancesToWaypoints(currentKm, waypoints, trackPoints, baseKmh);
     const byType = getNextWaypointsByType(currentKm, waypoints, trackPoints, distances);
 
     const items: { key: string; label: string; value: string }[] = [];
@@ -58,7 +60,7 @@ export function DistanceStrip() {
     // "Next waypoint" is the closest upcoming point of any type.
     push('next', 'Next waypoint', distances[0]);
     return items;
-  }, [trail, currentKm, units]);
+  }, [trail, currentKm, units, baseKmh]);
 
   // --- No fix yet: a single "Show my location" pill / locating hint --------
   if (status === 'no-permission') {

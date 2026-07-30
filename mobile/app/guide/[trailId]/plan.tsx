@@ -16,11 +16,8 @@ import { useTheme } from '../../../src/theme';
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore } from '../../../src/state/settings-store';
 import { useGuide } from '../../../src/features/guide/GuideContext';
-import {
-  computePlan,
-  waypointOptions,
-  type PlanInputs,
-} from '../../../src/features/plan/plan-adapters';
+import { computePlan, type PlanInputs } from '../../../src/features/plan/plan-adapters';
+import { sectionOptions } from '../../../src/features/plan/plan-section';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
 import { PlanInputsCard } from '../../../src/features/plan/PlanInputsCard';
 import { DaySplitList } from '../../../src/features/plan/DaySplitList';
@@ -37,7 +34,11 @@ export default function PlanScreen() {
   const setDailyHours = usePlanInputsStore((s) => s.setDailyHours);
   const setPace = usePlanInputsStore((s) => s.setPace);
 
-  const options = useMemo(() => waypointOptions(trail), [trail]);
+  // Waypoints bracketed by synthetic termini so the default section is the whole
+  // track (0 → totalDistance) and both trail ends are reachable — see
+  // plan-section.ts. The list is rebuilt per direction (the guide trail is
+  // direction-applied), so a flip re-brackets correctly.
+  const options = useMemo(() => sectionOptions(trail), [trail]);
   const lastIdx = Math.max(0, options.length - 1);
 
   // Section is local (direction-safe): reset to full trail whenever the trail's
@@ -49,17 +50,37 @@ export default function PlanScreen() {
     setEndIdx(Math.max(0, options.length - 1));
   }, [direction, options.length]);
 
-  const startKm = options[startIdx]?.km ?? 0;
-  const endKm = options[endIdx]?.km ?? trail.track.totalDistance;
-  const inputs: PlanInputs = { startKm, endKm, dailyHours: prefs.dailyHours, pace: prefs.pace };
+  const startOption = options[startIdx];
+  const endOption = options[endIdx];
+  const startKm = startOption?.km ?? 0;
+  const endKm = endOption?.km ?? trail.track.totalDistance;
+  // Prefer the picked option's name so duplicate-km waypoints resolve to the
+  // exact one the stepper is showing (computePlan falls back to nameAtKm).
+  const startName = startOption?.name;
+  const endName = endOption?.name;
+  const inputs: PlanInputs = {
+    startKm,
+    endKm,
+    dailyHours: prefs.dailyHours,
+    pace: prefs.pace,
+    startName,
+    endName,
+  };
 
   const plan = useMemo(
-    () => computePlan(trail, { startKm, endKm, dailyHours: prefs.dailyHours, pace: prefs.pace }),
-    [trail, startKm, endKm, prefs.dailyHours, prefs.pace],
+    () =>
+      computePlan(trail, {
+        startKm,
+        endKm,
+        dailyHours: prefs.dailyHours,
+        pace: prefs.pace,
+        startName,
+        endName,
+      }),
+    [trail, startKm, endKm, startName, endName, prefs.dailyHours, prefs.pace],
   );
 
   const sectionKm = Math.max(0, inputs.endKm - inputs.startKm);
-  const totalHours = plan.days.reduce((sum, d) => sum + d.estimatedHours, 0);
   const validSection = inputs.endKm > inputs.startKm && options.length >= 2;
 
   return (
@@ -95,12 +116,12 @@ export default function PlanScreen() {
           <View style={[styles.summary, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
             <SummaryStat label="Days" value={String(plan.days.length)} />
             <SummaryStat label="Distance" value={formatDistance(sectionKm, units)} />
-            <SummaryStat label="Est. time" value={formatHours(totalHours)} />
-            <SummaryStat label="Target/day" value={formatDistance(plan.targetDailyKm, units)} />
+            <SummaryStat label="Target/day" value={formatHours(plan.targetHours)} />
+            <SummaryStat label="Avg/day" value={formatDistance(plan.effectiveDailyKm, units)} />
           </View>
 
           <Section title="Day splits">
-            <DaySplitList days={plan.days} units={units} />
+            <DaySplitList days={plan.days} targetHours={plan.targetHours} units={units} />
           </Section>
 
           <Section title="Resupply">

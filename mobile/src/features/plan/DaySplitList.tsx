@@ -1,8 +1,9 @@
 /**
  * Day-split list — one card per computed day. Every number comes from the
  * shared day-calculator (`computeDays` → distance, ascent/descent, est. hours,
- * water-source count). The camp indicator is the guide-added snapping: the day
- * end is a real campsite/shelter when `snappedToCamp`, otherwise a wild camp.
+ * water-source count). The end indicator is the guide-added snapping, keyed off
+ * the day's three-state `endKind`: a real campsite/shelter (`camp`), a wild camp
+ * (`wild`), or the section finish (`finish` — a town/hut/trailhead at the end).
  */
 
 import React from 'react';
@@ -10,12 +11,56 @@ import { StyleSheet, Text, View } from 'react-native';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
+import type { ThemeColors } from '../../tokens/themes';
 import type { Units } from '../../state/settings-store';
-import type { PlanDay } from './plan-adapters';
+import { planFloorHours, planWindowHours, type PlanDay } from './plan-adapters';
 import { formatHours } from './plan-format';
 
-export function DaySplitList({ days, units }: { days: PlanDay[]; units: Units }) {
+/** Footer end-of-day label, keyed off the day's three-state `endKind`. */
+function endLabel(day: PlanDay): string {
+  switch (day.endKind) {
+    case 'finish':
+      return `🏁 ${day.endName}`;
+    case 'camp':
+      return `⛺ ${day.endName}`;
+    default:
+      return 'No campsite nearby — wild camp';
+  }
+}
+
+/** Footer end-of-day color: finish reads positive, camp branded, wild muted. */
+function endColor(day: PlanDay, colors: ThemeColors): string {
+  switch (day.endKind) {
+    case 'finish':
+      return colors.success;
+    case 'camp':
+      return colors.waypointCamp;
+    default:
+      return colors.textSecondary;
+  }
+}
+
+export function DaySplitList({
+  days,
+  targetHours,
+  units,
+}: {
+  days: PlanDay[];
+  targetHours: number;
+  units: Units;
+}) {
   const { colors } = useTheme();
+
+  // A snapped camp can (rarely, by construction) push a day past the window the
+  // splitter allows around the target. Surface that overshoot subtly so the card
+  // stays honest about the terrain the hiker asked for. Each day is judged
+  // against the allowance the splitter actually grants IT (Decision 8): interior
+  // days may snap up to the window; the final day absorbs the remainder up to
+  // the floor, which exceeds the window once the target passes 10 h.
+  const windowH = planWindowHours(targetHours);
+  const finishAllowanceH = Math.max(windowH, planFloorHours(targetHours));
+  const allowanceFor = (day: PlanDay) =>
+    targetHours + (day.endKind === 'finish' ? finishAllowanceH : windowH);
 
   if (days.length === 0) {
     return (
@@ -49,21 +94,19 @@ export function DaySplitList({ days, units }: { days: PlanDay[]; units: Units })
           </View>
 
           <View style={styles.footer}>
-            <Text
-              style={[
-                styles.camp,
-                { color: day.snappedToCamp ? colors.waypointCamp : colors.textSecondary },
-              ]}
-            >
-              {day.snappedToCamp
-                ? `⛺ ${day.endName}`
-                : 'No campsite nearby — wild camp'}
+            <Text style={[styles.camp, { color: endColor(day, colors) }]}>
+              {endLabel(day)}
             </Text>
             <Text style={[styles.water, { color: colors.textSecondary }]}>
-              {day.waterSources} water{day.waterSources === 1 ? '' : ''} source
-              {day.waterSources === 1 ? '' : 's'}
+              {day.waterSources} water source{day.waterSources === 1 ? '' : 's'}
             </Text>
           </View>
+
+          {day.estimatedHours > allowanceFor(day) && (
+            <Text style={[styles.overHint, { color: colors.warning }]}>
+              {`+${formatHours(day.estimatedHours - targetHours)} over target`}
+            </Text>
+          )}
         </View>
       ))}
     </View>
@@ -111,4 +154,5 @@ const styles = StyleSheet.create({
   },
   camp: { ...typography.caption, flexShrink: 1 },
   water: { ...typography.caption, fontVariant: ['tabular-nums'] },
+  overHint: { ...typography.caption, fontVariant: ['tabular-nums'] },
 });

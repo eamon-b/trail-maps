@@ -162,6 +162,25 @@ describe('getOnlineMapStyle', () => {
     expect((style.sources as Record<string, unknown>).contour).toBeUndefined();
   });
 
+  it('warns when EXPO_PUBLIC_CONTOUR_TILE_URL is not set', async () => {
+    delete process.env.EXPO_PUBLIC_CONTOUR_TILE_URL;
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await getOnlineMapStyle();
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('EXPO_PUBLIC_CONTOUR_TILE_URL is not set'),
+    );
+  });
+
+  it('does not warn when contours are configured and healthy', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await getOnlineMapStyle();
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('resolves one complete style object with contours when configured', async () => {
     const style = (await getOnlineMapStyle()) as Record<string, unknown>;
     const sources = style.sources as Record<string, unknown>;
@@ -182,6 +201,7 @@ describe('getOnlineMapStyle', () => {
         json: () => Promise.resolve(JSON.parse(JSON.stringify(MOCK_LIBERTY_STYLE))),
       });
     });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const style = (await getOnlineMapStyle()) as Record<string, unknown>;
     const sources = style.sources as Record<string, unknown>;
@@ -190,5 +210,8 @@ describe('getOnlineMapStyle', () => {
     expect(sources.contour).toBeUndefined();
     expect(layerIds).not.toContain('contour-regular');
     expect(layerIds).toContain('road_minor');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('health check failed'),
+    );
   });
 });

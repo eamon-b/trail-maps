@@ -193,10 +193,21 @@ function injectContours(
  */
 export async function getOnlineMapStyle(): Promise<object> {
   const contourTileUrl = getContourTileUrl();
+  if (!contourTileUrl) {
+    console.warn(
+      'Contours disabled: EXPO_PUBLIC_CONTOUR_TILE_URL is not set. ' +
+        'Set it in mobile/.env.local (see CLAUDE.md "Mobile Environment Variables") and restart Metro.',
+    );
+  }
+
   const [style, contoursHealthy] = await Promise.all([
     fetchLibertyStyle(),
     contourTileUrl ? isContourServiceHealthy(contourTileUrl) : Promise.resolve(false),
   ]);
+
+  if (contourTileUrl && !contoursHealthy) {
+    console.warn(`Contours disabled: health check failed for ${contourTileUrl}`);
+  }
 
   return contourTileUrl && contoursHealthy
     ? injectContours(style, contourTileUrl)

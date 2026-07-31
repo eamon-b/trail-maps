@@ -3,9 +3,10 @@
  *
  * Ported from the old app's `ElevationProfile` and extended for the new guide:
  *  - extreme-preserving LOD (precomputed once; selected per zoom — never
- *    resampled per frame),
- *  - pinch-zoom + pan over a windowed km range driven by reanimated shared
- *    values on the UI thread, committed to the controlled `window` prop,
+ *    resampled per frame), with the raw track drawn verbatim once a zoomed
+ *    window is small enough to afford it,
+ *  - pinch-to-zoom on the x-axis (anchored on the pinch focal point) plus
+ *    one-finger horizontal pan, committed to the controlled `window` prop,
  *  - waypoint markers on the trace (tap → `onWaypointTap`),
  *  - tap-to-scrub crosshair snapped to the nearest track point,
  *  - a `currentKm` GPS marker (plumbing only).
@@ -13,6 +14,13 @@
  * The component is controlled: the parent owns the visible `window` and the
  * profile reports changes via `onWindowChange`. Colors are theme-resolved so
  * the Skia canvas adapts to dark mode.
+ *
+ * Gesture design: recognition happens on the UI thread (gesture-handler
+ * worklets) but the window arithmetic runs on JS, against a snapshot of the
+ * window taken at gesture start — so every frame is computed from the *raw*
+ * gesture delta. That keeps the handlers referentially stable (a gesture object
+ * recreated mid-drag is cancelled by gesture-handler) and makes the committed
+ * window exact even when intermediate frames are throttled or suppressed.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,22 +37,22 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS, useSharedValue } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-reanimated';
 import { type DistanceUnit } from '@lib/format-distance';
 import { useReduceMotion, useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
 import { distanceAxisTicks, elevationAxis, getMinMax, type AxisTick } from './axis';
-import {
-  buildLodLevels,
-  selectLodLevel,
-  type ProfilePoint,
-} from './lod';
+import { buildLodLevels, selectWindowPoints, type ProfilePoint } from './lod';
 import {
   buildProfileMarkers,
   clampWindow,
   hitTestMarkers,
+  kmToX,
   nearestPointByKm,
+  panWindowByPixels,
   xToKm,
+  zoomWindowAtFocal,
+  MIN_WINDOW_KM,
   type KmWindow,
 } from './geometry';
 import { waypointColor } from './waypoint-category';
@@ -57,6 +65,10 @@ const MARKER_RADIUS = 4;
 const FAVORITE_MARKER_RADIUS = 6;
 /** Max window state pushes per second while a gesture is active. */
 const WINDOW_THROTTLE_MS = 33;
+/** Pixels a finger must travel before a drag becomes a pan (vs. a tap). */
+const PAN_MIN_DISTANCE = 6;
+/** Box width (px) reserved for a centered x-axis label. */
+const X_LABEL_WIDTH = 52;
 
 /** A waypoint the profile can mark on the trace. */
 export interface ProfileWaypoint {
@@ -107,7 +119,6 @@ interface PlotMetrics {
   distTicks: AxisTick[];
   chartWidth: number;
   chartHeight: number;
-  span: number;
 }
 
 export function ElevationProfile({
@@ -126,7 +137,9 @@ export function ElevationProfile({
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const [size, setSize] = useState({ width: 320, height: 220 });
-  const [crosshair, setCrosshair] = useState<{ x: number; km: number; ele: number } | null>(null);
+  // Held in km (not pixels) so the crosshair stays glued to its track point
+  // while the window pans/zooms underneath it.
+  const [crosshair, setCrosshair] = useState<{ km: number; ele: number } | null>(null);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -142,25 +155,12 @@ export function ElevationProfile({
   // --- LOD: precompute once, pick per zoom (no per-frame resampling) --------
   const lod = useMemo(() => buildLodLevels(points), [points]);
 
-  const span = Math.max(window.endKm - window.startKm, 1e-6);
-  const level = selectLodLevel(span, totalKm);
-  const source = level === 'fine' ? lod.fine : lod.coarse;
-
-  // Points within the window (with one neighbour each side for continuity).
-  const windowedPoints = useMemo(() => {
-    if (source.length === 0) return source;
-    let lo = 0;
-    let hi = source.length - 1;
-    for (let i = 0; i < source.length; i++) {
-      if (source[i].dist < window.startKm) lo = i;
-      else break;
-    }
-    for (let i = source.length - 1; i >= 0; i--) {
-      if (source[i].dist > window.endKm) hi = i;
-      else break;
-    }
-    return source.slice(lo, hi + 1);
-  }, [source, window.startKm, window.endKm]);
+  // Points to draw for the window: the raw track when a zoomed slice fits the
+  // budget (full detail), otherwise a slice of the right LOD level.
+  const windowedPoints = useMemo(
+    () => selectWindowPoints(points, lod, window.startKm, window.endKm, totalKm),
+    [points, lod, window.startKm, window.endKm, totalKm],
+  );
 
   // --- Chart metrics + Skia paths (rebuilt only when the window/size change) -
   const metrics = useMemo<PlotMetrics | null>(() => {
@@ -171,17 +171,21 @@ export function ElevationProfile({
     const ele = elevationAxis(minEle, maxEle, unit, 4);
     const distTicks = distanceAxisTicks(window.startKm, window.endKm, unit, 5);
     const eleRange = ele.max - ele.min || 1;
-    return { eleMin: ele.min, eleRange, eleTicks: ele.ticks, distTicks, chartWidth, chartHeight, span };
-  }, [windowedPoints, chartWidth, chartHeight, window.startKm, window.endKm, span, unit]);
+    return { eleMin: ele.min, eleRange, eleTicks: ele.ticks, distTicks, chartWidth, chartHeight };
+  }, [windowedPoints, chartWidth, chartHeight, window.startKm, window.endKm, unit]);
 
   const clampX = useCallback(
     (x: number) => Math.max(left, Math.min(left + chartWidth, x)),
     [left, chartWidth],
   );
 
+  /** km → plot x, clamped to the plot edges (off-window neighbours pin there). */
   const xOf = useCallback(
-    (dist: number) => clampX(left + ((dist - window.startKm) / span) * chartWidth),
-    [clampX, left, span, chartWidth, window.startKm],
+    (dist: number) =>
+      clampX(
+        kmToX(dist, { startKm: window.startKm, endKm: window.endKm }, { left, chartWidth }),
+      ),
+    [clampX, left, chartWidth, window.startKm, window.endKm],
   );
 
   const elevationPath = useMemo(() => {
@@ -262,127 +266,137 @@ export function ElevationProfile({
     return bands;
   }, [metrics, highlightRanges, window.startKm, window.endKm, xOf]);
 
+  // GPS marker + scrub crosshair are both km-anchored: they follow the trail
+  // under pan/zoom and disappear once scrolled out of the visible window.
   const currentPositionX = useMemo(() => {
     if (currentKm == null || currentKm < window.startKm || currentKm > window.endKm) return null;
-    return left + ((currentKm - window.startKm) / span) * chartWidth;
-  }, [currentKm, window.startKm, window.endKm, span, left, chartWidth]);
+    return xOf(currentKm);
+  }, [currentKm, window.startKm, window.endKm, xOf]);
 
-  // --- Gesture plumbing (stable across window changes via shared values) ----
-  const winStart = useSharedValue(window.startKm);
-  const winEnd = useSharedValue(window.endKm);
-  useEffect(() => {
-    winStart.value = window.startKm;
-    winEnd.value = window.endKm;
-  }, [window.startKm, window.endKm, winStart, winEnd]);
+  const crosshairX = useMemo(() => {
+    if (!crosshair || crosshair.km < window.startKm || crosshair.km > window.endKm) return null;
+    return xOf(crosshair.km);
+  }, [crosshair, window.startKm, window.endKm, xOf]);
 
-  const baseStart = useSharedValue(0);
-  const baseEnd = useSharedValue(0);
-  const focalX0 = useSharedValue(0);
+  // --- Gesture plumbing -----------------------------------------------------
+  // Everything the gesture handlers need is read through refs, so the handlers
+  // (and therefore the `gesture` object) never change identity while a drag is
+  // in flight — gesture-handler cancels an in-progress gesture if the
+  // GestureDetector's config is swapped out.
+  const windowRef = useRef(window);
+  windowRef.current = window;
+  const layoutRef = useRef({ left, chartWidth });
+  layoutRef.current = { left, chartWidth };
+  const onWindowChangeRef = useRef(onWindowChange);
+  onWindowChangeRef.current = onWindowChange;
 
   // Latest render state for tap handling (avoids stale gesture closures).
-  const tapStateRef = useRef({ window, metrics, markers, plotLeft: left, plotWidth: chartWidth });
-  tapStateRef.current = { window, metrics, markers, plotLeft: left, plotWidth: chartWidth };
+  const tapStateRef = useRef({ metrics, markers, points, onWaypointTap, onScrub });
+  tapStateRef.current = { metrics, markers, points, onWaypointTap, onScrub };
 
   const lastPushRef = useRef(0);
   const reduceMotionRef = useRef(reduceMotion);
   reduceMotionRef.current = reduceMotion;
-  const pushWindow = useCallback(
-    (startKm: number, endKm: number, immediate: boolean) => {
-      // Under reduce-motion, skip the continuous mid-gesture updates and only
-      // settle the window when the gesture ends (immediate).
-      if (!immediate && reduceMotionRef.current) return;
-      const now = Date.now();
-      if (!immediate && now - lastPushRef.current < WINDOW_THROTTLE_MS) return;
-      lastPushRef.current = now;
-      onWindowChange(clampWindow(startKm, endKm, totalKm));
+  const totalKmRef = useRef(totalKm);
+  totalKmRef.current = totalKm;
+
+  const pushWindow = useCallback((next: KmWindow, immediate: boolean) => {
+    // Under reduce-motion, skip the continuous mid-gesture updates and only
+    // settle the window when the gesture ends (immediate). The end frame is
+    // recomputed from the gesture's own delta, so nothing is lost.
+    if (!immediate && reduceMotionRef.current) return;
+    const now = Date.now();
+    if (!immediate && now - lastPushRef.current < WINDOW_THROTTLE_MS) return;
+    lastPushRef.current = now;
+    onWindowChangeRef.current(clampWindow(next.startKm, next.endKm, totalKmRef.current));
+  }, []);
+
+  /** Window + pinch focal point snapshotted when the gesture started. */
+  const gestureBaseRef = useRef<{ window: KmWindow; focalX: number } | null>(null);
+
+  const beginGesture = useCallback((focalX: number) => {
+    gestureBaseRef.current = { window: windowRef.current, focalX };
+  }, []);
+
+  const applyPan = useCallback(
+    (translationX: number, immediate: boolean) => {
+      const base = gestureBaseRef.current;
+      if (!base) return;
+      pushWindow(
+        panWindowByPixels(
+          base.window,
+          translationX,
+          layoutRef.current.chartWidth,
+          totalKmRef.current,
+        ),
+        immediate,
+      );
     },
-    [onWindowChange, totalKm],
+    [pushWindow],
   );
 
-  const handleTap = useCallback(
-    (tapX: number, tapY: number) => {
-      const s = tapStateRef.current;
-      if (!s.metrics) return;
-      const hitId = hitTestMarkers(s.markers, tapX, tapY, WAYPOINT_TOUCH_RADIUS);
-      if (hitId && onWaypointTap) {
-        onWaypointTap(hitId);
-        return;
-      }
-      const km = xToKm(tapX, s.window, { left: s.plotLeft, chartWidth: s.plotWidth });
-      const nearest = nearestPointByKm(windowedPoints, km);
-      if (!nearest) return;
-      const x = s.plotLeft + ((nearest.dist - s.window.startKm) / span) * s.plotWidth;
-      setCrosshair({ x, km: nearest.dist, ele: nearest.ele });
-      onScrub?.({ km: nearest.dist, ele: nearest.ele });
+  const applyPinch = useCallback(
+    (scale: number, immediate: boolean) => {
+      const base = gestureBaseRef.current;
+      if (!base) return;
+      pushWindow(
+        zoomWindowAtFocal(
+          base.window,
+          scale,
+          base.focalX,
+          layoutRef.current,
+          totalKmRef.current,
+          MIN_WINDOW_KM,
+        ),
+        immediate,
+      );
     },
-    [onWaypointTap, onScrub, windowedPoints, span],
+    [pushWindow],
   );
+
+  const handleTap = useCallback((tapX: number, tapY: number) => {
+    const s = tapStateRef.current;
+    if (!s.metrics) return;
+    const hitId = hitTestMarkers(s.markers, tapX, tapY, WAYPOINT_TOUCH_RADIUS);
+    if (hitId && s.onWaypointTap) {
+      s.onWaypointTap(hitId);
+      return;
+    }
+    const layout = layoutRef.current;
+    const km = xToKm(tapX, windowRef.current, layout);
+    // Snap against the full track so the readout is exact at any zoom level.
+    const nearest = nearestPointByKm(s.points, km);
+    if (!nearest) return;
+    setCrosshair({ km: nearest.dist, ele: nearest.ele });
+    s.onScrub?.({ km: nearest.dist, ele: nearest.ele });
+  }, []);
 
   const gesture = useMemo(() => {
-    const cw = chartWidth;
-    const plotLeft = left;
-    const total = totalKm;
-    const minSpan = Math.min(2, total);
-
+    // One finger drags the trail along the x-axis; `maxPointers(1)` keeps a
+    // second finger from stealing the pinch.
     const pan = Gesture.Pan()
-      .minDistance(8)
+      .minDistance(PAN_MIN_DISTANCE)
+      .maxPointers(1)
       .onStart(() => {
-        baseStart.value = winStart.value;
-        baseEnd.value = winEnd.value;
+        runOnJS(beginGesture)(0);
       })
       .onUpdate((e) => {
-        const bs = baseStart.value;
-        const be = baseEnd.value;
-        const sp = be - bs;
-        if (cw <= 0 || sp <= 0) return;
-        const dxKm = (e.translationX / cw) * sp;
-        let ns = bs - dxKm;
-        let ne = be - dxKm;
-        if (ns < 0) {
-          ns = 0;
-          ne = sp;
-        }
-        if (ne > total) {
-          ne = total;
-          ns = total - sp;
-        }
-        runOnJS(pushWindow)(ns, ne, false);
+        runOnJS(applyPan)(e.translationX, false);
       })
-      .onEnd(() => {
-        runOnJS(pushWindow)(winStart.value, winEnd.value, true);
+      .onEnd((e) => {
+        runOnJS(applyPan)(e.translationX, true);
       });
 
+    // Pinch zooms the x-axis only; the y-axis keeps auto-fitting the window.
     const pinch = Gesture.Pinch()
       .onStart((e) => {
-        baseStart.value = winStart.value;
-        baseEnd.value = winEnd.value;
-        focalX0.value = e.focalX;
+        runOnJS(beginGesture)(e.focalX);
       })
       .onUpdate((e) => {
-        const bs = baseStart.value;
-        const be = baseEnd.value;
-        const baseSpan = be - bs;
-        if (cw <= 0 || baseSpan <= 0) return;
-        let newSpan = baseSpan / e.scale;
-        if (newSpan < minSpan) newSpan = minSpan;
-        if (newSpan > total) newSpan = total;
-        const fx = focalX0.value;
-        const focalKm = bs + ((fx - plotLeft) / cw) * baseSpan;
-        let ns = focalKm - ((fx - plotLeft) / cw) * newSpan;
-        let ne = ns + newSpan;
-        if (ns < 0) {
-          ns = 0;
-          ne = newSpan;
-        }
-        if (ne > total) {
-          ne = total;
-          ns = total - newSpan;
-        }
-        if (ns < 0) ns = 0;
-        runOnJS(pushWindow)(ns, ne, false);
+        runOnJS(applyPinch)(e.scale, false);
       })
-      .onEnd(() => {
-        runOnJS(pushWindow)(winStart.value, winEnd.value, true);
+      .onEnd((e) => {
+        runOnJS(applyPinch)(e.scale, true);
       });
 
     const tap = Gesture.Tap()
@@ -392,20 +406,9 @@ export function ElevationProfile({
       });
 
     return Gesture.Simultaneous(Gesture.Race(pinch, pan), tap);
-    // Gestures read the live window through shared values, so they do NOT
-    // depend on `window` — recreating them mid-gesture would cancel it.
-  }, [
-    chartWidth,
-    left,
-    totalKm,
-    baseStart,
-    baseEnd,
-    winStart,
-    winEnd,
-    focalX0,
-    pushWindow,
-    handleTap,
-  ]);
+    // Handlers are ref-backed and stable, so this gesture is built once per
+    // mount — never rebuilt (and thus never cancelled) by a window change.
+  }, [beginGesture, applyPan, applyPinch, handleTap]);
 
   if (points.length === 0 || !metrics) {
     return (
@@ -480,15 +483,15 @@ export function ElevationProfile({
             </Group>
           )}
 
-          {crosshair && (
+          {crosshairX != null && (
             <Group>
               <Line
-                p1={vec(crosshair.x, PADDING.top)}
-                p2={vec(crosshair.x, PADDING.top + chartHeight)}
+                p1={vec(crosshairX, PADDING.top)}
+                p2={vec(crosshairX, PADDING.top + chartHeight)}
                 color={colors.chartCrosshair}
                 strokeWidth={StyleSheet.hairlineWidth}
               />
-              <Circle cx={crosshair.x} cy={PADDING.top} r={3} color={colors.chartCrosshair} />
+              <Circle cx={crosshairX} cy={PADDING.top} r={3} color={colors.chartCrosshair} />
             </Group>
           )}
         </Canvas>
@@ -514,9 +517,15 @@ export function ElevationProfile({
         {metrics.distTicks.map((tick) => (
           <Text
             key={`x-${tick.pos}`}
+            numberOfLines={1}
             style={[
               styles.axisLabel,
-              { color: colors.textSecondary, left: xOf(tick.pos) - 12, bottom: 0 },
+              styles.xLabel,
+              {
+                color: colors.textSecondary,
+                left: xOf(tick.pos) - X_LABEL_WIDTH / 2,
+                bottom: 0,
+              },
             ]}
           >
             {tick.label}
@@ -556,5 +565,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     ...typography.caption,
     fontVariant: ['tabular-nums'],
+  },
+  // Fixed-width, centered box so multi-digit zoomed labels (e.g. "123.6") sit
+  // on their tick instead of drifting right.
+  xLabel: {
+    width: X_LABEL_WIDTH,
+    textAlign: 'center',
   },
 });

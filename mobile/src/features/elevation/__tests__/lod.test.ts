@@ -2,6 +2,8 @@ import {
   buildLod,
   buildLodLevels,
   selectLodLevel,
+  selectWindowPoints,
+  sliceByKm,
   LOD_COARSE_SAMPLES,
   LOD_FINE_SAMPLES,
   type ProfilePoint,
@@ -96,5 +98,88 @@ describe('selectLodLevel', () => {
 
   it('is safe for a zero-length trail', () => {
     expect(selectLodLevel(0, 0)).toBe('coarse');
+  });
+});
+
+describe('sliceByKm', () => {
+  // dist 0..99 at 1 km spacing.
+  const pts = ramp(100);
+
+  it('returns [] for empty input', () => {
+    expect(sliceByKm([], 0, 10)).toEqual([]);
+  });
+
+  it('keeps one neighbour on each side of the window', () => {
+    const out = sliceByKm(pts, 10, 20);
+    expect(out[0].dist).toBe(9);
+    expect(out[out.length - 1].dist).toBe(21);
+  });
+
+  it('covers every point inside the window', () => {
+    const out = sliceByKm(pts, 10.5, 20.5);
+    expect(out[0].dist).toBe(10);
+    expect(out[out.length - 1].dist).toBe(21);
+    for (let km = 11; km <= 20; km++) {
+      expect(out.some((p) => p.dist === km)).toBe(true);
+    }
+  });
+
+  it('clamps at the track ends instead of over-reading', () => {
+    const head = sliceByKm(pts, 0, 3);
+    expect(head[0].dist).toBe(0);
+    const tail = sliceByKm(pts, 96, 99);
+    expect(tail[tail.length - 1].dist).toBe(99);
+  });
+
+  it('returns the whole track for a window covering it', () => {
+    expect(sliceByKm(pts, -50, 500)).toHaveLength(pts.length);
+  });
+
+  it('orders a reversed window', () => {
+    expect(sliceByKm(pts, 20, 10)).toEqual(sliceByKm(pts, 10, 20));
+  });
+
+  it('returns a single neighbour for a window past the end', () => {
+    const out = sliceByKm(pts, 200, 300);
+    expect(out.map((p) => p.dist)).toEqual([99]);
+  });
+});
+
+describe('selectWindowPoints', () => {
+  // 6000-point track (dist 0..5999 km) — well over the fine LOD budget.
+  const raw = ramp(6000);
+  const levels = buildLodLevels(raw);
+
+  it('uses an LOD level when the raw slice blows the budget', () => {
+    const out = selectWindowPoints(raw, levels, 0, 5999, 5999);
+    expect(out.length).toBeLessThanOrEqual(LOD_COARSE_SAMPLES + 4);
+  });
+
+  it('draws the raw track once a zoomed slice fits the budget', () => {
+    const out = selectWindowPoints(raw, levels, 100, 101, 5999);
+    // Raw 1 km slice: dists 99..102 (window + one neighbour each side).
+    expect(out.map((p) => p.dist)).toEqual([99, 100, 101, 102]);
+  });
+
+  it('shows more detail zoomed in than the LOD level would', () => {
+    const zoomed = selectWindowPoints(raw, levels, 1000, 1010, 5999);
+    const fromLevel = sliceByKm(levels.fine, 1000, 1010);
+    expect(zoomed.length).toBeGreaterThan(fromLevel.length);
+  });
+
+  it('respects an explicit budget', () => {
+    const out = selectWindowPoints(raw, levels, 0, 100, 5999, 10);
+    expect(out.length).toBeLessThan(102);
+    expect(out.length).toBeGreaterThan(0);
+  });
+
+  it('never exceeds the raw slice for a small track', () => {
+    const small = ramp(50);
+    const smallLevels = buildLodLevels(small);
+    expect(selectWindowPoints(small, smallLevels, 0, 49, 49)).toHaveLength(50);
+  });
+
+  it('is safe for an empty track', () => {
+    expect(selectWindowPoints([], buildLodLevels<ProfilePoint>([]), 0, 10, 10)).toEqual([]);
   });
 });

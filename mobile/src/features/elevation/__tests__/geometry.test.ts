@@ -2,8 +2,11 @@ import {
   buildProfileMarkers,
   clampWindow,
   hitTestMarkers,
+  kmToX,
   nearestPointByKm,
+  panWindowByPixels,
   xToKm,
+  zoomWindowAtFocal,
   MIN_WINDOW_KM,
   type MarkerPlot,
 } from '../geometry';
@@ -95,6 +98,168 @@ describe('xToKm', () => {
     expect(xToKm(44, window, layout)).toBeCloseTo(10, 6);
     expect(xToKm(344, window, layout)).toBeCloseTo(40, 6);
     expect(xToKm(194, window, layout)).toBeCloseTo(25, 6);
+  });
+});
+
+describe('kmToX', () => {
+  const layout = { left: 44, chartWidth: 300 };
+
+  it('maps the window edges to the plot edges', () => {
+    const window = { startKm: 10, endKm: 40 };
+    expect(kmToX(10, window, layout)).toBeCloseTo(44, 6);
+    expect(kmToX(40, window, layout)).toBeCloseTo(344, 6);
+    expect(kmToX(25, window, layout)).toBeCloseTo(194, 6);
+  });
+
+  it('round-trips with xToKm at any zoom', () => {
+    for (const window of [
+      { startKm: 0, endKm: 1300 },
+      { startKm: 612.5, endKm: 613.5 },
+    ]) {
+      for (const x of [44, 120, 250, 344]) {
+        expect(kmToX(xToKm(x, window, layout), window, layout)).toBeCloseTo(x, 6);
+      }
+    }
+  });
+
+  it('degrades to the left edge for a zero-span window', () => {
+    expect(kmToX(5, { startKm: 5, endKm: 5 }, layout)).toBe(44);
+  });
+});
+
+describe('panWindowByPixels', () => {
+  const base = { startKm: 40, endKm: 60 };
+  const chartWidth = 200; // 20 km over 200 px → 0.1 km / px
+
+  it('drags the trail with the finger (right → earlier km)', () => {
+    expect(panWindowByPixels(base, 50, chartWidth, 100)).toEqual({ startKm: 35, endKm: 55 });
+  });
+
+  it('drags left → later km', () => {
+    expect(panWindowByPixels(base, -50, chartWidth, 100)).toEqual({ startKm: 45, endKm: 65 });
+  });
+
+  it('preserves the span while panning', () => {
+    for (const dx of [-500, -37, 0, 12, 900]) {
+      const w = panWindowByPixels(base, dx, chartWidth, 100);
+      expect(w.endKm - w.startKm).toBeCloseTo(20, 6);
+    }
+  });
+
+  it('parks against the trail start instead of running off it', () => {
+    expect(panWindowByPixels(base, 1000, chartWidth, 100)).toEqual({ startKm: 0, endKm: 20 });
+  });
+
+  it('parks against the trail end instead of running off it', () => {
+    expect(panWindowByPixels(base, -1000, chartWidth, 100)).toEqual({ startKm: 80, endKm: 100 });
+  });
+
+  it('is a no-op when fully zoomed out', () => {
+    expect(panWindowByPixels({ startKm: 0, endKm: 100 }, -300, chartWidth, 100)).toEqual({
+      startKm: 0,
+      endKm: 100,
+    });
+  });
+
+  it('returns the base window for degenerate layout/trail input', () => {
+    expect(panWindowByPixels(base, 50, 0, 100)).toEqual(base);
+    expect(panWindowByPixels(base, 50, chartWidth, 0)).toEqual(base);
+    expect(panWindowByPixels({ startKm: 5, endKm: 5 }, 50, chartWidth, 100)).toEqual({
+      startKm: 5,
+      endKm: 5,
+    });
+  });
+});
+
+describe('zoomWindowAtFocal', () => {
+  const layout = { left: 40, chartWidth: 200 };
+  const total = 100;
+
+  it('halves the span when zooming in 2x', () => {
+    const w = zoomWindowAtFocal({ startKm: 0, endKm: 100 }, 2, 140, layout, total);
+    expect(w.endKm - w.startKm).toBeCloseTo(50, 6);
+  });
+
+  it('keeps the km under the focal point pinned', () => {
+    const base = { startKm: 20, endKm: 60 };
+    const focalX = 140; // halfway across the plot → 40 km
+    const focalKm = xToKm(focalX, base, layout);
+    for (const scale of [0.5, 1, 1.7, 4, 20]) {
+      const w = zoomWindowAtFocal(base, scale, focalX, layout, total);
+      // Only pinned while the window has not been shifted off an end.
+      if (w.startKm > 0 && w.endKm < total) {
+        expect(xToKm(focalX, w, layout)).toBeCloseTo(focalKm, 6);
+      }
+    }
+  });
+
+  it('anchors on the left edge focal point', () => {
+    const w = zoomWindowAtFocal({ startKm: 0, endKm: 100 }, 2, layout.left, layout, total);
+    expect(w).toEqual({ startKm: 0, endKm: 50 });
+  });
+
+  it('anchors on the right edge focal point', () => {
+    const w = zoomWindowAtFocal(
+      { startKm: 0, endKm: 100 },
+      2,
+      layout.left + layout.chartWidth,
+      layout,
+      total,
+    );
+    expect(w).toEqual({ startKm: 50, endKm: 100 });
+  });
+
+  it('clamps a focal point in the y-axis gutter to the left edge', () => {
+    const w = zoomWindowAtFocal({ startKm: 0, endKm: 100 }, 2, 0, layout, total);
+    expect(w).toEqual({ startKm: 0, endKm: 50 });
+  });
+
+  it('floors the span at the minimum window', () => {
+    const w = zoomWindowAtFocal({ startKm: 0, endKm: 100 }, 1000, 140, layout, total);
+    expect(w.endKm - w.startKm).toBeCloseTo(MIN_WINDOW_KM, 6);
+  });
+
+  it('honours an explicit minimum window', () => {
+    const w = zoomWindowAtFocal({ startKm: 0, endKm: 100 }, 1000, 140, layout, total, 5);
+    expect(w.endKm - w.startKm).toBeCloseTo(5, 6);
+  });
+
+  it('caps zoom-out at the whole trail', () => {
+    expect(zoomWindowAtFocal({ startKm: 40, endKm: 60 }, 0.01, 140, layout, total)).toEqual({
+      startKm: 0,
+      endKm: 100,
+    });
+  });
+
+  it('never escapes [0, totalKm]', () => {
+    for (const base of [
+      { startKm: 0, endKm: 4 },
+      { startKm: 96, endKm: 100 },
+      { startKm: 48, endKm: 52 },
+    ]) {
+      for (const scale of [0.2, 0.9, 1.4, 8]) {
+        for (const focalX of [40, 100, 240]) {
+          const w = zoomWindowAtFocal(base, scale, focalX, layout, total);
+          expect(w.startKm).toBeGreaterThanOrEqual(0);
+          expect(w.endKm).toBeLessThanOrEqual(total + 1e-9);
+          expect(w.endKm).toBeGreaterThan(w.startKm);
+        }
+      }
+    }
+  });
+
+  it('clamps the span to a trail shorter than the minimum window', () => {
+    expect(zoomWindowAtFocal({ startKm: 0, endKm: 0.5 }, 4, 140, layout, 0.5)).toEqual({
+      startKm: 0,
+      endKm: 0.5,
+    });
+  });
+
+  it('returns the base window for degenerate input', () => {
+    const base = { startKm: 10, endKm: 20 };
+    expect(zoomWindowAtFocal(base, 2, 140, { left: 40, chartWidth: 0 }, total)).toEqual(base);
+    expect(zoomWindowAtFocal(base, 2, 140, layout, 0)).toEqual(base);
+    expect(zoomWindowAtFocal(base, 0, 140, layout, total)).toEqual(base);
   });
 });
 

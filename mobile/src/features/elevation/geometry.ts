@@ -15,8 +15,11 @@ export interface KmWindow {
   endKm: number;
 }
 
-/** Smallest window the user can zoom into, in km. */
-export const MIN_WINDOW_KM = 2;
+/**
+ * Smallest window the user can zoom into, in km. At 1 km the distance axis
+ * still labels cleanly (0.2 km steps) and a single switchback is legible.
+ */
+export const MIN_WINDOW_KM = 1;
 
 /**
  * Clamp a candidate window to [0, totalKm] while keeping a sane span:
@@ -64,6 +67,71 @@ export interface PlotLayout {
   left: number;
   /** Plot area width (px). */
   chartWidth: number;
+}
+
+/**
+ * Park a window of `span` km inside [0, totalKm] by *shifting* it — the span is
+ * never squashed (only capped at the trail length), so dragging past either end
+ * simply rests against it.
+ */
+function shiftIntoRange(startKm: number, span: number, totalKm: number): KmWindow {
+  const fitted = Math.min(span, totalKm);
+  const maxStart = totalKm - fitted;
+  let start = startKm;
+  if (start > maxStart) start = maxStart;
+  if (start < 0) start = 0;
+  return { startKm: start, endKm: start + fitted };
+}
+
+/**
+ * Shift a window horizontally by a finger drag, preserving its span.
+ *
+ * The content follows the finger: dragging **right** (positive `translationX`)
+ * moves the window *earlier* along the trail. Degenerate inputs (no width, no
+ * span, no trail) return the base window unchanged.
+ */
+export function panWindowByPixels(
+  base: KmWindow,
+  translationXPx: number,
+  chartWidth: number,
+  totalKm: number,
+): KmWindow {
+  const span = base.endKm - base.startKm;
+  if (!(span > 0) || !(chartWidth > 0) || !(totalKm > 0)) {
+    return { startKm: base.startKm, endKm: base.endKm };
+  }
+  const dxKm = (translationXPx / chartWidth) * span;
+  return shiftIntoRange(base.startKm - dxKm, span, totalKm);
+}
+
+/**
+ * Pinch-zoom a window about a focal pixel: the km sitting under `focalX` stays
+ * under `focalX`, so the trail expands/contracts around the user's fingers.
+ *
+ * `scale` > 1 zooms in (smaller span). The span is clamped to
+ * [`minWindowKm`, `totalKm`] and the result shifted back inside the trail — at
+ * the ends that means the focal point drifts rather than the window escaping.
+ */
+export function zoomWindowAtFocal(
+  base: KmWindow,
+  scale: number,
+  focalX: number,
+  layout: PlotLayout,
+  totalKm: number,
+  minWindowKm = MIN_WINDOW_KM,
+): KmWindow {
+  const baseSpan = base.endKm - base.startKm;
+  if (!(baseSpan > 0) || !(layout.chartWidth > 0) || !(totalKm > 0)) {
+    return { startKm: base.startKm, endKm: base.endKm };
+  }
+  const factor = scale > 0 ? scale : 1;
+  const minSpan = Math.min(Math.max(minWindowKm, 1e-6), totalKm);
+  const span = Math.min(Math.max(baseSpan / factor, minSpan), totalKm);
+  // Where the focal point sits across the plot (clamped so a focal point in the
+  // y-axis gutter anchors on the left edge instead of extrapolating).
+  const frac = Math.min(Math.max((focalX - layout.left) / layout.chartWidth, 0), 1);
+  const focalKm = base.startKm + frac * baseSpan;
+  return shiftIntoRange(focalKm - frac * span, span, totalKm);
 }
 
 /** A rendered waypoint marker in pixel space. */
@@ -177,4 +245,15 @@ export function xToKm(x: number, window: KmWindow, layout: PlotLayout): number {
   const span = window.endKm - window.startKm;
   if (!(layout.chartWidth > 0)) return window.startKm;
   return window.startKm + ((x - layout.left) / layout.chartWidth) * span;
+}
+
+/**
+ * Convert a km position to a screen x (px) within the window/layout — the
+ * inverse of `xToKm`. Used for every windowed overlay (ticks, GPS marker,
+ * crosshair) so they all track the same zoom transform.
+ */
+export function kmToX(km: number, window: KmWindow, layout: PlotLayout): number {
+  const span = window.endKm - window.startKm;
+  if (!(span > 0)) return layout.left;
+  return layout.left + ((km - window.startKm) / span) * layout.chartWidth;
 }

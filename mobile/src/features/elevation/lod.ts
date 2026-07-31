@@ -129,6 +129,72 @@ export function selectLodLevel(
   return visibleSpanKm / totalKm < fineThreshold ? 'fine' : 'coarse';
 }
 
+/** First index whose `dist` is >= km (`points.length` if none). Binary search. */
+function firstAtOrAfter<T extends ProfilePoint>(points: T[], km: number): number {
+  let lo = 0;
+  let hi = points.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (points[mid].dist < km) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** First index whose `dist` is > km (`points.length` if none). Binary search. */
+function firstAfter<T extends ProfilePoint>(points: T[], km: number): number {
+  let lo = 0;
+  let hi = points.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (points[mid].dist <= km) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * Slice the points visible in [startKm, endKm], plus one neighbour on each side
+ * so the drawn trace runs to (and past) both plot edges instead of stopping
+ * short. `points` must be sorted ascending by `dist`.
+ */
+export function sliceByKm<T extends ProfilePoint>(
+  points: T[],
+  startKm: number,
+  endKm: number,
+): T[] {
+  if (points.length === 0) return [];
+  const lowKm = Math.min(startKm, endKm);
+  const highKm = Math.max(startKm, endKm);
+  const lo = Math.max(0, firstAtOrAfter(points, lowKm) - 1);
+  const hi = Math.min(points.length - 1, firstAfter(points, highKm));
+  if (hi < lo) return [];
+  return points.slice(lo, hi + 1);
+}
+
+/**
+ * Pick the points to draw for the visible window, trading detail for point
+ * count.
+ *
+ * Zoomed in, the raw track inside the window is small enough to draw verbatim —
+ * so deep zoom shows *full* resolution rather than the flat few samples an LOD
+ * level would leave in a 1 km slice. Only once the raw slice exceeds `budget`
+ * do we fall back to the precomputed extreme-preserving levels.
+ */
+export function selectWindowPoints<T extends ProfilePoint>(
+  raw: T[],
+  levels: LodLevels<T>,
+  startKm: number,
+  endKm: number,
+  totalKm: number,
+  budget = LOD_FINE_SAMPLES,
+): T[] {
+  const rawSlice = sliceByKm(raw, startKm, endKm);
+  if (rawSlice.length <= budget) return rawSlice;
+  const level = selectLodLevel(endKm - startKm, totalKm);
+  return sliceByKm(level === 'fine' ? levels.fine : levels.coarse, startKm, endKm);
+}
+
 /** Even stride sampling (no extreme preservation) — degenerate fallback. */
 function strideSample<T>(points: T[], count: number): T[] {
   if (points.length <= count) return points.slice();

@@ -14,6 +14,8 @@ declare module 'react-test-renderer' {
   export interface ReactTestRenderer {
     root: TestInstance;
     toJSON(): unknown;
+    /** Re-render the tree with new props (used to simulate window changes). */
+    update(element: ReactElement): void;
     unmount(): void;
   }
 

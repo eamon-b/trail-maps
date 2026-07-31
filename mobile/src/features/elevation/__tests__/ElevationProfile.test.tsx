@@ -47,19 +47,27 @@ jest.mock('../../../theme', () => ({
 }));
 
 // --- Local gesture-handler mock (chainable proxy) -------------------------
+// `mockComposedGestures` records every gesture composition, so a test can assert
+// the composed gesture is built once and not rebuilt on window changes.
+const mockComposedGestures: unknown[] = [];
 jest.mock('react-native-gesture-handler', () => {
   const chainable = (): unknown =>
     new Proxy(function () {}, {
       get: () => () => chainable(),
       apply: () => chainable(),
     });
+  const compose = () => {
+    const g = chainable();
+    mockComposedGestures.push(g);
+    return g;
+  };
   return {
     GestureDetector: ({ children }: { children: unknown }) => children,
     Gesture: {
       Pan: chainable,
       Pinch: chainable,
       Tap: chainable,
-      Simultaneous: chainable,
+      Simultaneous: compose,
       Race: chainable,
     },
   };
@@ -83,6 +91,10 @@ function layoutAll(root: ReactTestRenderer) {
 }
 
 describe('ElevationProfile', () => {
+  beforeEach(() => {
+    mockComposedGestures.length = 0;
+  });
+
   const baseProps = {
     points: makePoints(300),
     totalKm: 100,
@@ -100,6 +112,49 @@ describe('ElevationProfile', () => {
     act(() => {
       root = TestRenderer.create(
         <ElevationProfile {...baseProps} onWindowChange={onWindowChange} />,
+      );
+    });
+    layoutAll(root);
+    expect(root.toJSON()).toBeTruthy();
+    act(() => root.unmount());
+  });
+
+  it('does not rebuild its gesture when the window changes', () => {
+    // gesture-handler cancels an in-flight gesture if the GestureDetector's
+    // config is swapped, so panning would die on its own first frame if the
+    // composed gesture depended on the window.
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = TestRenderer.create(<ElevationProfile {...baseProps} onWindowChange={jest.fn()} />);
+    });
+    layoutAll(root);
+    expect(mockComposedGestures).toHaveLength(1);
+
+    for (const window of [
+      { startKm: 10, endKm: 60 },
+      { startKm: 20, endKm: 22 },
+      { startKm: 21, endKm: 23 },
+    ]) {
+      act(() => {
+        root.update(
+          <ElevationProfile {...baseProps} window={window} onWindowChange={jest.fn()} />,
+        );
+      });
+    }
+    expect(mockComposedGestures).toHaveLength(1);
+    act(() => root.unmount());
+  });
+
+  it('renders a zoomed window without throwing', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = TestRenderer.create(
+        <ElevationProfile
+          {...baseProps}
+          window={{ startKm: 40, endKm: 41 }}
+          currentKm={40.5}
+          onWindowChange={jest.fn()}
+        />,
       );
     });
     layoutAll(root);

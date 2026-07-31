@@ -6,7 +6,7 @@
  * has zoomed in. Fed entirely from `useGuide()`.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatDistance, formatElevation } from '@lib/format-distance';
@@ -61,6 +61,15 @@ export function ElevationPane() {
   const [window, setWindow] = useState<KmWindow>({ startKm: 0, endKm: totalKm });
   const [readout, setReadout] = useState<ProfileReadout | null>(null);
 
+  // A different (or newly loaded) trail invalidates the km window — refit it to
+  // the full new length rather than leaving the zoom parked off the end.
+  const fittedTotalRef = useRef(totalKm);
+  useEffect(() => {
+    if (fittedTotalRef.current === totalKm) return;
+    fittedTotalRef.current = totalKm;
+    setWindow({ startKm: 0, endKm: totalKm });
+  }, [totalKm]);
+
   const isZoomed = window.startKm > ZOOM_EPSILON_KM || window.endKm < totalKm - ZOOM_EPSILON_KM;
 
   const resetZoom = useCallback(() => {
@@ -103,7 +112,7 @@ export function ElevationPane() {
             </Text>
           ) : (
             <Text style={[styles.chipHint, { color: colors.textSecondary }]}>
-              Tap the profile to read off distance & elevation
+              Tap to read off · pinch to zoom · drag to pan
             </Text>
           )}
         </View>

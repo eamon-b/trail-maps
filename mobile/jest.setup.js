@@ -100,7 +100,11 @@ jest.mock('react-native-gesture-handler', () => {
       failOffsetX: () => gesture,
       failOffsetY: () => gesture,
       minDistance: () => gesture,
+      maxDistance: () => gesture,
+      minPointers: () => gesture,
+      maxPointers: () => gesture,
       minDuration: () => gesture,
+      numberOfTaps: () => gesture,
       enabled: () => gesture,
       simultaneousWithExternalGesture: () => gesture,
     };

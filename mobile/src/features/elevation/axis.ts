@@ -64,9 +64,26 @@ export interface AxisTick {
   label: string;
 }
 
-/** Label a nice numeric tick: integers plain, otherwise one decimal place. */
-function tickLabel(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
+/**
+ * Decimal places a tick step needs to stay distinguishable: whole steps read as
+ * integers, a 0.5 step needs one place, a 0.05 step two (capped at three).
+ */
+function tickDecimals(step: number): number {
+  if (!(step > 0) || step >= 1) return 0;
+  return Math.min(3, Math.ceil(-Math.log10(step) - 1e-9));
+}
+
+/**
+ * Label a run of nice ticks, choosing the precision from their spacing. Zoomed
+ * windows produce sub-unit steps (e.g. 0.2 km), which a fixed one-decimal
+ * format would collapse into duplicate labels.
+ */
+function tickLabels(values: number[]): string[] {
+  const step = values.length > 1 ? Math.abs(values[1] - values[0]) : 0;
+  const decimals = tickDecimals(step);
+  return values.map((v) =>
+    decimals === 0 ? String(Math.round(v * 1e6) / 1e6) : v.toFixed(decimals),
+  );
 }
 
 /**
@@ -82,7 +99,8 @@ export function distanceAxisTicks(
   const ticks = niceAxisTicks(convertDistance(startKm, unit), convertDistance(endKm, unit), targetCount);
   // convertDistance is linear, so its inverse scale is 1 / convertDistance(1).
   const kmPerUnit = 1 / (convertDistance(1, unit) || 1);
-  return ticks.map((t) => ({ pos: t * kmPerUnit, label: tickLabel(t) }));
+  const labels = tickLabels(ticks);
+  return ticks.map((t, i) => ({ pos: t * kmPerUnit, label: labels[i] }));
 }
 
 /** An elevation axis: ticks (nice in the display unit, positioned in metres)
@@ -112,7 +130,8 @@ export function elevationAxis(
     targetCount,
   );
   const metersPerUnit = 1 / (convertElevation(1, unit) || 1);
-  const ticks: AxisTick[] = ticksU.map((t) => ({ pos: t * metersPerUnit, label: tickLabel(t) }));
+  const labels = tickLabels(ticksU);
+  const ticks: AxisTick[] = ticksU.map((t, i) => ({ pos: t * metersPerUnit, label: labels[i] }));
   const min = ticks.length > 0 ? Math.min(minMeters, ticks[0].pos) : minMeters;
   const max = ticks.length > 0 ? Math.max(maxMeters, ticks[ticks.length - 1].pos) : maxMeters;
   return { min, max, ticks };

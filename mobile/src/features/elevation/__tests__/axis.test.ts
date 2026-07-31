@@ -54,6 +54,32 @@ describe('distanceAxisTicks', () => {
     expect(ticks.map((t) => t.pos)).toEqual([0, 20, 40, 60, 80, 100]);
   });
 
+  it('recomputes ticks for a zoomed window, all inside it', () => {
+    const ticks = distanceAxisTicks(122.4, 124.4, 'km', 5);
+    expect(ticks.length).toBeGreaterThanOrEqual(3);
+    for (const t of ticks) {
+      expect(t.pos).toBeGreaterThanOrEqual(122.4 - 1e-9);
+      expect(t.pos).toBeLessThanOrEqual(124.4 + 1e-9);
+    }
+    // 2 km over ~5 steps → 0.5 km steps, labelled to a consistent one decimal.
+    expect(ticks.map((t) => t.label)).toEqual(['122.5', '123.0', '123.5', '124.0']);
+  });
+
+  it('keeps sub-km labels distinct at maximum zoom', () => {
+    // A 1 km window → 0.2 km steps; a fixed one-decimal format is enough here,
+    // but the labels must never collapse into duplicates.
+    const labels = distanceAxisTicks(50, 51, 'km', 5).map((t) => t.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels).toContain('50.2');
+  });
+
+  it('adds decimals when the step needs them', () => {
+    const labels = distanceAxisTicks(10, 10.2, 'km', 5).map((t) => t.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    // 0.05 km steps → two decimals.
+    expect(labels).toContain('10.05');
+  });
+
   it('labels nice miles but keeps positions in km', () => {
     // ~161 km ≈ 100 mi → nice mi ticks 0/20/40/60/80/100 at their km offsets.
     const ticks = distanceAxisTicks(0, 160.9344, 'mi', 5);

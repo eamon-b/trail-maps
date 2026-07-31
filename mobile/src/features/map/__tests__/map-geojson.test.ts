@@ -2,6 +2,7 @@ import {
   buildTrailLine,
   buildVariantCollection,
   buildWaypointCollection,
+  hasDrawableVariant,
   trailCameraBounds,
   waypointFeatureId,
   type MapVariant,
@@ -43,6 +44,39 @@ describe('buildVariantCollection', () => {
 
   it('returns an empty collection for no variants', () => {
     expect(buildVariantCollection([]).features).toEqual([]);
+  });
+
+  it('preserves the classifier’s track type on every feature', () => {
+    // `type` comes straight from track-classification via the bundled trail
+    // JSON ('alternate' | 'side-trip'); the map draws each class in its own
+    // source, and the property keeps the class identifiable on tap/inspection.
+    const fc = buildVariantCollection([
+      { name: 'Razorback', type: 'alternate', points: [{ lat: -36.8, lon: 147.2 }, { lat: -36.9, lon: 147.3 }] },
+      { name: 'Mt Skene spur', type: 'side-trip', points: [{ lat: -37.4, lon: 146.3 }, { lat: -37.5, lon: 146.4 }] },
+    ]);
+    expect(fc.features.map((f) => f.properties!.type)).toEqual(['alternate', 'side-trip']);
+    expect(fc.features.map((f) => f.properties!.name)).toEqual(['Razorback', 'Mt Skene spur']);
+  });
+});
+
+describe('hasDrawableVariant', () => {
+  const mixed: MapVariant[] = [
+    { name: 'No points', type: 'side-trip' },
+    { name: 'Drawable', type: 'side-trip', points: [{ lat: -35, lon: 138 }, { lat: -35.1, lon: 138.1 }] },
+  ];
+
+  it('is true only when some variant has enough points to draw', () => {
+    expect(hasDrawableVariant(mixed)).toBe(true);
+    expect(hasDrawableVariant([{ name: 'Degenerate', points: [{ lat: 0, lon: 0 }] }])).toBe(false);
+    expect(hasDrawableVariant([])).toBe(false);
+    expect(hasDrawableVariant(undefined)).toBe(false);
+  });
+
+  it('agrees with buildVariantCollection (the legend never lies)', () => {
+    const cases: MapVariant[][] = [mixed, [], [{ name: 'No points' }]];
+    for (const list of cases) {
+      expect(hasDrawableVariant(list)).toBe(buildVariantCollection(list).features.length > 0);
+    }
   });
 });
 

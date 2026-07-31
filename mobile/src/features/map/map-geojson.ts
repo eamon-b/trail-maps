@@ -89,6 +89,15 @@ export function buildVariantCollection(variants: MapVariant[]): FeatureCollectio
 }
 
 /**
+ * Whether any variant in the list can actually be drawn (same >= 2 point rule
+ * `buildVariantCollection` applies). Drives the map key: a class that renders no
+ * line must not appear in the legend.
+ */
+export function hasDrawableVariant(variants: MapVariant[] | undefined): boolean {
+  return (variants ?? []).some((v) => (v.points?.length ?? 0) >= 2);
+}
+
+/**
  * Stable feature id for a waypoint. Prefers the bundled id; falls back to a
  * name+index composite so tap-routing and clustering still have a unique key
  * for legacy data without ids.

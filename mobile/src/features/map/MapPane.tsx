@@ -31,7 +31,8 @@ import {
 import { GuideMap, type GuideMapHandle } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import { resolveStyleSource } from './map-style';
-import type { MapVariant, MapWaypoint } from './map-geojson';
+import { TrackLegend } from './TrackLegend';
+import { hasDrawableVariant, type MapVariant, type MapWaypoint } from './map-geojson';
 
 export function MapPane() {
   const { colors } = useTheme();
@@ -177,6 +178,15 @@ export function MapPane() {
           </>
         )}
       </View>
+
+      {/* Map key for the track classes — suppressed while drawing a route, when
+          the builder toolbar owns the bottom of the screen. */}
+      {!building && (
+        <TrackLegend
+          hasAlternates={hasDrawableVariant(alternates)}
+          hasSideTrips={hasDrawableVariant(sideTrips)}
+        />
+      )}
 
       {building ? (
         <RouteBuilderBar

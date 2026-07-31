@@ -1,10 +1,12 @@
 /**
  * The guide's MapLibre map pane (view-only core).
  *
- * Renders one trail: the main track polyline, dashed alternate/side-trip
- * overlays, and clustered, data-driven waypoint markers with labels at hiking
- * zooms. Plan/route/measure interactions from the old app are intentionally
- * absent — this is the read-only guide view.
+ * Renders one trail as three visually distinct track classes — solid red main
+ * track (over a white casing), long-dashed violet alternates, finely dotted teal
+ * side trips — plus clustered, data-driven waypoint markers with labels at
+ * hiking zooms. Track paint lives in map-style's TRACK_COLORS/TRACK_DASH.
+ * Plan/measure interactions from the old app are intentionally absent — this is
+ * the read-only guide view.
  *
  * Style resolution follows the old app's "resolve before mount" rule: the
  * concrete style *object* is fetched in JS and only then handed to a freshly
@@ -61,6 +63,10 @@ import {
   isContourTileLoadFailure,
   labelFontForSource,
   mapRemountKey,
+  TRACK_COLORS,
+  TRACK_DASH,
+  TRACK_WIDTHS,
+  trackWidthExpression,
   type MapStyleSource,
 } from './map-style';
 
@@ -160,6 +166,48 @@ const ROUTE_STRAIGHT_FILTER = [
   ['==', ['get', 'straight'], true],
 ] as Expression;
 const ROUTE_VERTEX_FILTER = ['==', ['geometry-type'], 'Point'] as Expression;
+
+// --- Track paint --------------------------------------------------------------
+// The three track classes are theme-independent map cartography (see
+// TRACK_COLORS in map-style): main = solid red over a white casing, alternates =
+// long-dashed violet, side trips = finely dotted teal. Defined at module level
+// because nothing here depends on the app theme or on props, so the layers never
+// re-paint.
+
+/** White outline under the main track; makes the red read over any basemap. */
+const MAIN_TRACK_CASING_STYLE = {
+  lineColor: TRACK_COLORS.mainCasing,
+  lineWidth: trackWidthExpression(TRACK_WIDTHS.mainCasing) as unknown as number,
+  lineOpacity: 0.8,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+};
+
+const MAIN_TRACK_STYLE = {
+  lineColor: TRACK_COLORS.main,
+  lineWidth: trackWidthExpression(TRACK_WIDTHS.main) as unknown as number,
+  lineOpacity: 1,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+};
+
+const ALTERNATE_TRACK_STYLE = {
+  lineColor: TRACK_COLORS.alternate,
+  lineWidth: trackWidthExpression(TRACK_WIDTHS.alternate) as unknown as number,
+  lineOpacity: 1,
+  lineCap: 'butt' as const,
+  lineJoin: 'round' as const,
+  lineDasharray: TRACK_DASH.alternate as unknown as number[],
+};
+
+const SIDE_TRIP_TRACK_STYLE = {
+  lineColor: TRACK_COLORS.sideTrip,
+  lineWidth: trackWidthExpression(TRACK_WIDTHS.sideTrip) as unknown as number,
+  lineOpacity: 1,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+  lineDasharray: TRACK_DASH.sideTrip as unknown as number[],
+};
 
 export const GuideMap = memo(
   forwardRef<GuideMapHandle, GuideMapProps>(function GuideMap(
@@ -283,46 +331,11 @@ export const GuideMap = memo(
       [bounds, currentPosition],
     );
 
-    // --- Layer paint (theme-routed line colors, data-driven marker colors) --
-    const trailLineStyle = useMemo(
-      () => ({
-        lineColor: colors.accent,
-        lineWidth: 3,
-        lineOpacity: 0.9,
-        lineCap: 'round' as const,
-        lineJoin: 'round' as const,
-      }),
-      [colors.accent],
-    );
-
-    const alternatesLineStyle = useMemo(
-      () => ({
-        lineColor: colors.accentMuted,
-        lineWidth: 2.5,
-        lineOpacity: 0.85,
-        lineCap: 'round' as const,
-        lineJoin: 'round' as const,
-        lineDasharray: [2, 1],
-      }),
-      [colors.accentMuted],
-    );
-
-    const sideTripsLineStyle = useMemo(
-      () => ({
-        lineColor: colors.info,
-        lineWidth: 2.5,
-        lineOpacity: 0.85,
-        lineCap: 'round' as const,
-        lineJoin: 'round' as const,
-        lineDasharray: [2, 1],
-      }),
-      [colors.info],
-    );
-
+    // --- Layer paint (data-driven marker colors; track paint is module-level) --
     // Custom route overlay — a distinct warning/amber hue that reads clearly
-    // above the green trail line and blue side-trips. On-trail spans are solid
-    // and heavier than the trail; off-trail legs are dashed so they are never
-    // read as trail-accurate; builder vertices are amber dots.
+    // above the red trail line, violet alternates, and teal side trips. On-trail
+    // spans are solid and heavier than the trail; off-trail legs are dashed so
+    // they are never read as trail-accurate; builder vertices are amber dots.
     const routeSpanStyle = useMemo(
       () => ({
         lineColor: colors.warning,
@@ -490,24 +503,26 @@ export const GuideMap = memo(
       >
         <Camera ref={cameraRef} defaultSettings={cameraDefaultSettings} />
 
-        {/* Alternate routes (dashed) */}
+        {/* Alternate routes: long-dashed violet, under the main track */}
         {alternatesCollection.features.length > 0 && (
           <ShapeSource id="guide-alternates" shape={alternatesCollection}>
-            <LineLayer id="guide-alternates-layer" style={alternatesLineStyle} />
+            <LineLayer id="guide-alternates-layer" style={ALTERNATE_TRACK_STYLE} />
           </ShapeSource>
         )}
 
-        {/* Side trips (dashed) */}
+        {/* Side trips: finely dotted teal, under the main track */}
         {sideTripsCollection.features.length > 0 && (
           <ShapeSource id="guide-side-trips" shape={sideTripsCollection}>
-            <LineLayer id="guide-side-trips-layer" style={sideTripsLineStyle} />
+            <LineLayer id="guide-side-trips-layer" style={SIDE_TRIP_TRACK_STYLE} />
           </ShapeSource>
         )}
 
-        {/* Main trail line */}
+        {/* Main trail line: white casing + solid red core, drawn last so the
+            trail itself always wins where the three classes overlap */}
         {trailLine && (
           <ShapeSource id="guide-trail-line" shape={trailLine}>
-            <LineLayer id="guide-trail-line-layer" style={trailLineStyle} />
+            <LineLayer id="guide-trail-line-casing" style={MAIN_TRACK_CASING_STYLE} />
+            <LineLayer id="guide-trail-line-layer" style={MAIN_TRACK_STYLE} />
           </ShapeSource>
         )}
 

@@ -150,6 +150,56 @@ describe('GuideMap', () => {
     expect(sourceIds).toContain('guide-waypoints');
   });
 
+  it('draws main / alternate / side-trip tracks as three distinct classes', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          alternates={[{ name: 'Alt', type: 'alternate', points }]}
+          sideTrips={[{ name: 'Spur', type: 'side-trip', points }]}
+        />,
+      );
+    });
+    await flush();
+
+    const layers = new Map<string, Record<string, unknown>>(
+      tree.root
+        .findAll((n) => nodeType(n) === 'LineLayer')
+        .map((n) => [n.props.id as string, n.props.style as Record<string, unknown>]),
+    );
+
+    // All three classes are on the map, plus the main track's casing.
+    expect([...layers.keys()]).toEqual(
+      expect.arrayContaining([
+        'guide-alternates-layer',
+        'guide-side-trips-layer',
+        'guide-trail-line-casing',
+        'guide-trail-line-layer',
+      ]),
+    );
+
+    const main = layers.get('guide-trail-line-layer')!;
+    const alt = layers.get('guide-alternates-layer')!;
+    const side = layers.get('guide-side-trips-layer')!;
+
+    // Distinct colours: the bug was alternates sharing the main track's green.
+    const colorsUsed = [main.lineColor, alt.lineColor, side.lineColor];
+    expect(new Set(colorsUsed).size).toBe(3);
+    // ...and the paint is theme-independent, so a dark-theme user sees the same
+    // cartography (the mocked theme returns one colour for every token).
+    expect(colorsUsed).not.toContain('#123456');
+
+    // Distinct strokes: main solid, both variants dashed but not identically.
+    expect(main.lineDasharray).toBeUndefined();
+    expect(alt.lineDasharray).toBeDefined();
+    expect(side.lineDasharray).toBeDefined();
+    expect(alt.lineDasharray).not.toEqual(side.lineDasharray);
+  });
+
   it('renders the route overlay source when a routeOverlay is supplied', async () => {
     getOnline.mockResolvedValue(ONLINE_STYLE);
     const routeOverlay: GeoJSON.FeatureCollection = {

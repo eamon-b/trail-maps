@@ -57,6 +57,36 @@ upload_file() {
     --cache-control "$cache_control"
 }
 
+# Refuse to upload an mbtiles that would be unusable (or crash the app) on a
+# device: must pass sqlite integrity_check and contain at least one tile.
+# An empty stub (AAWT, 2026-04) and a corrupt database (bibbulmun, 2026-04)
+# have both been uploaded silently in the past; MapLibre native aborts the
+# whole app on files like these.
+validate_mbtiles() {
+  local mbtiles="$1"
+
+  require_command "sqlite3" "Install it with your package manager (e.g. dnf install sqlite)"
+
+  local integrity
+  if ! integrity=$(sqlite3 "$mbtiles" "PRAGMA integrity_check;" 2>&1); then
+    echo "Error: $mbtiles is not a readable SQLite database: $integrity"
+    exit 1
+  fi
+  if [ "$integrity" != "ok" ]; then
+    echo "Error: $mbtiles failed integrity check: $integrity"
+    exit 1
+  fi
+
+  local tile_count
+  tile_count=$(sqlite3 "$mbtiles" "SELECT count(*) FROM tiles;" 2>/dev/null || echo 0)
+  if [ "${tile_count:-0}" -lt 1 ]; then
+    echo "Error: $mbtiles contains no tiles — refusing to upload an empty tile database"
+    exit 1
+  fi
+
+  echo "  Validated $(basename "$mbtiles"): $tile_count tiles, integrity ok"
+}
+
 upload_trail() {
   local trail_id="$1"
   local trail_dir="$TILES_DIR/$trail_id"
@@ -72,6 +102,7 @@ upload_trail() {
 
   for mbtiles in "$trail_dir"/*.mbtiles; do
     [ -f "$mbtiles" ] || continue
+    validate_mbtiles "$mbtiles"
     local filename
     filename=$(basename "$mbtiles")
     upload_file "$mbtiles" "$trail_id/$filename" \
@@ -113,6 +144,7 @@ upload_grid_cell() {
 
   for mbtiles in "$cell_dir"/*.mbtiles; do
     [ -f "$mbtiles" ] || continue
+    validate_mbtiles "$mbtiles"
     local filename
     filename=$(basename "$mbtiles")
     upload_file "$mbtiles" "grid/$cell_id/$filename" \

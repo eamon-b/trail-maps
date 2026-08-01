@@ -5,6 +5,7 @@ import {
   deleteTrailTiles,
   provisionGlyphs,
   buildTopoStyle,
+  validateMbtilesCached,
 } from '../tile-service';
 
 const mockDirExists = jest.fn(() => false);
@@ -38,12 +39,14 @@ jest.mock('../tile-service', () => ({
   deleteTrailTiles: jest.fn(),
   provisionGlyphs: jest.fn().mockResolvedValue('/mock/fonts'),
   buildTopoStyle: jest.fn().mockReturnValue({ version: 8, layers: [] }),
+  validateMbtilesCached: jest.fn().mockResolvedValue({ ok: true }),
 }));
 
 const mockGetStatus = getTrailTileStatus as jest.MockedFunction<typeof getTrailTileStatus>;
 const mockDelete = deleteTrailTiles as jest.MockedFunction<typeof deleteTrailTiles>;
 const mockProvisionGlyphs = provisionGlyphs as jest.MockedFunction<typeof provisionGlyphs>;
 const mockBuildStyle = buildTopoStyle as jest.MockedFunction<typeof buildTopoStyle>;
+const mockValidate = validateMbtilesCached as jest.MockedFunction<typeof validateMbtilesCached>;
 
 describe('TileManager', () => {
   let manager: TileManager;
@@ -52,6 +55,7 @@ describe('TileManager', () => {
     jest.clearAllMocks();
     mockDirExists.mockReturnValue(false);
     mockDirList.mockReturnValue([]);
+    mockValidate.mockResolvedValue({ ok: true });
     manager = new TileManager();
   });
 
@@ -154,8 +158,48 @@ describe('TileManager', () => {
     const result = await manager.getOfflineStyle('heysen');
 
     expect(mockProvisionGlyphs).toHaveBeenCalled();
-    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts');
+    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts', { includeContours: true });
     expect(result).toBe(expectedStyle);
+  });
+
+  it('getOfflineStyle returns null (online fallback) when base.mbtiles fails validation', async () => {
+    mockGetStatus.mockReturnValue({
+      trailId: 'heysen',
+      files: [],
+      complete: true,
+      state: 'complete' as const,
+      totalSizeBytes: 10000,
+    });
+    mockValidate.mockImplementation(async (_trailId, fileName) =>
+      fileName === 'base.mbtiles'
+        ? { ok: false, reason: 'database disk image is malformed' }
+        : { ok: true },
+    );
+
+    const result = await manager.getOfflineStyle('heysen');
+
+    expect(result).toBeNull();
+    expect(mockBuildStyle).not.toHaveBeenCalled();
+  });
+
+  it('getOfflineStyle drops contour layers when contours.mbtiles fails validation', async () => {
+    mockGetStatus.mockReturnValue({
+      trailId: 'aawt',
+      files: [],
+      complete: true,
+      state: 'complete' as const,
+      totalSizeBytes: 10000,
+    });
+    mockValidate.mockImplementation(async (_trailId, fileName) =>
+      fileName === 'contours.mbtiles'
+        ? { ok: false, reason: 'no tiles in tiles table' }
+        : { ok: true },
+    );
+
+    const result = await manager.getOfflineStyle('aawt');
+
+    expect(result).not.toBeNull();
+    expect(mockBuildStyle).toHaveBeenCalledWith('aawt', '/mock/fonts', { includeContours: false });
   });
 
   it('deleteTrail delegates to deleteTrailTiles', () => {

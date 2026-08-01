@@ -214,6 +214,9 @@ export function checkDependencies(opts: {
   // Always need ogr2ogr for corridor/polygon generation
   deps.push({ name: 'GDAL (ogr2ogr)', command: 'ogr2ogr --version' });
 
+  // Always need sqlite3 to validate generated mbtiles before manifesting
+  deps.push({ name: 'sqlite3', command: 'sqlite3 --version' });
+
   if (!opts.skipContours) {
     deps.push({ name: 'GDAL (gdalwarp)', command: 'gdalwarp --version' });
     deps.push({ name: 'GDAL (gdal_contour)', command: 'gdal_contour --version' });
@@ -492,7 +495,60 @@ export function extractBaseTiles(
 }
 
 /**
+ * Structurally validate a generated .mbtiles file. Throws with a descriptive
+ * message if the file would be unusable — or worse — on a device.
+ *
+ * MapLibre native builds a TileJSON from mbtiles metadata using unguarded
+ * std::stoi/std::stod (crashing the whole app on bad input), and an empty or
+ * corrupt file has historically been built and uploaded silently (AAWT's
+ * contours.mbtiles was a 32KB stub with zero tiles; bibbulmun's was a
+ * malformed database). Everything MapLibre parses is checked here.
+ */
+export function validateMbtilesArtifact(filePath: string): void {
+  const name = path.basename(filePath);
+  const sql = (query: string): string => run(`sqlite3 "${filePath}" "${query}"`);
+
+  const integrity = sql('PRAGMA integrity_check;');
+  if (integrity !== 'ok') {
+    throw new Error(`${name} failed integrity check: ${integrity.split('\n')[0]}`);
+  }
+
+  const tileCount = parseInt(sql('SELECT count(*) FROM tiles;'), 10);
+  if (!Number.isFinite(tileCount) || tileCount < 1) {
+    throw new Error(`${name} contains no tiles`);
+  }
+
+  const metaOut = sql(
+    "SELECT name, value FROM metadata WHERE name IN ('minzoom', 'maxzoom', 'scale', 'bounds');"
+  );
+  for (const line of metaOut.split('\n').filter(l => l.length > 0)) {
+    const sep = line.indexOf('|');
+    const key = line.slice(0, sep);
+    const value = line.slice(sep + 1);
+    if (key === 'minzoom' || key === 'maxzoom') {
+      if (!/^\d+$/.test(value)) {
+        throw new Error(`${name} metadata ${key} is not an integer: "${value}"`);
+      }
+    } else if (key === 'scale') {
+      if (value.trim() === '' || !Number.isFinite(Number(value))) {
+        throw new Error(`${name} metadata scale is not a number: "${value}"`);
+      }
+    } else if (key === 'bounds') {
+      const parts = value.split(',');
+      if (parts.length !== 4 || !parts.every(p => p.trim() !== '' && Number.isFinite(Number(p)))) {
+        throw new Error(`${name} metadata bounds is malformed: "${value}"`);
+      }
+    }
+  }
+
+  console.log(`    ✓ Validated ${name}: ${tileCount} tiles, integrity ok`);
+}
+
+/**
  * Write tile manifest JSON.
+ *
+ * Every .mbtiles file is structurally validated first — a build that would
+ * produce an empty or corrupt tile database fails here instead of shipping.
  *
  * @param id - Identifier (trail ID or grid cell ID)
  * @param outputDir - Directory to write manifest.json into
@@ -509,6 +565,9 @@ export function writeManifest(
 
   for (const file of files) {
     if (fs.existsSync(file.path)) {
+      if (file.name.endsWith('.mbtiles')) {
+        validateMbtilesArtifact(file.path);
+      }
       manifestFiles.push({
         name: file.name,
         size: fileSizeBytes(file.path),

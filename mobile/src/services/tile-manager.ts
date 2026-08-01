@@ -13,6 +13,7 @@ import {
   checkForTileUpdate,
   provisionGlyphs,
   buildTopoStyle,
+  validateMbtilesCached,
   type TrailTileStatus,
   type DownloadOptions,
   type ProgressCallback,
@@ -79,11 +80,35 @@ export class TileManager {
    * Build a MapLibre style for offline rendering if tiles are available.
    * Returns the style object, or null if tiles aren't downloaded.
    * Provisions glyph fonts as a side effect.
+   *
+   * Both mbtiles files are structurally validated before being referenced:
+   * handing MapLibre a corrupt or empty mbtiles source aborts the process
+   * natively (std::stoi in MBTilesFileSource), which no JS error boundary
+   * can catch. An invalid basemap falls back to the online style (null);
+   * invalid contours degrade to a style without contour layers.
    */
   async getOfflineStyle(trailId: string): Promise<object | null> {
     if (!this.isTrailDownloaded(trailId)) return null;
+
+    const base = await validateMbtilesCached(trailId, 'base.mbtiles');
+    if (!base.ok) {
+      console.warn(
+        `[tile-manager] base.mbtiles for "${trailId}" failed validation (${base.reason}); ` +
+          'falling back to online style. Re-download the offline maps for this trail.',
+      );
+      return null;
+    }
+
+    const contours = await validateMbtilesCached(trailId, 'contours.mbtiles');
+    if (!contours.ok) {
+      console.warn(
+        `[tile-manager] contours.mbtiles for "${trailId}" failed validation (${contours.reason}); ` +
+          'rendering offline map without contours. Re-download the offline maps for this trail.',
+      );
+    }
+
     const glyphsPath = await provisionGlyphs();
-    return buildTopoStyle(trailId, glyphsPath);
+    return buildTopoStyle(trailId, glyphsPath, { includeContours: contours.ok });
   }
 }
 

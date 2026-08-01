@@ -2,7 +2,7 @@
 /**
  * End-to-end verification for the deployed map + contour tile pipeline.
  *
- * Runs two independent checks against production infrastructure:
+ * Runs three independent checks against production infrastructure:
  *
  *   1. Tile decode        — contour tiles fetched from the Cloudflare Worker
  *                           gunzip and parse as valid Mapbox Vector Tiles.
@@ -12,6 +12,11 @@
  *                           (Follow-up to the worker gzip hardening — the
  *                           failure mode is a header/body compression mismatch
  *                           that hands the client undecodable bytes.)
+ *   3. Trail offline sets — each trail's manifest.json parses, and every
+ *                           mbtiles it lists exists at the manifest size,
+ *                           starts with the SQLite magic, and is not a
+ *                           suspiciously small stub. (An empty/corrupt
+ *                           mbtiles crashes the app natively on device.)
  *
  * No repo build state or external npm deps required — hits public URLs only,
  * uses Node's built-in fetch + zlib. Exits non-zero if any check fails.
@@ -245,6 +250,94 @@ async function checkContourWorker() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Per-trail offline downloads: manifest + mbtiles sanity.
+//
+// The app downloads {trail}/manifest.json and the mbtiles files it lists.
+// A bad artifact here is worse than a missing one — MapLibre native aborts
+// the whole app (std::stoi) on an empty or corrupt mbtiles, and both have
+// been uploaded in the past (AAWT: 32KB zero-tile stub; bibbulmun: malformed
+// database). Without downloading whole files, verify per trail:
+//   - manifest.json exists and parses, with files[] entries
+//   - each mbtiles has Content-Length matching the manifest size
+//   - each mbtiles starts with the SQLite magic ("SQLite format 3\0")
+//   - each mbtiles is at least MIN_MBTILES_BYTES (empty stubs are ~32KB)
+// ---------------------------------------------------------------------------
+
+const TRAIL_IDS = ['aawt', 'bibbulmun', 'cape_to_cape', 'heysen', 'larapinta', 'hume-and-hovell'];
+const MIN_MBTILES_BYTES = 500_000;
+const SQLITE_MAGIC = 'SQLite format 3 ';
+
+async function checkTrailOfflineArtifacts() {
+  console.log(`\n[trails] Per-trail offline manifest + mbtiles sanity`);
+  for (const trailId of TRAIL_IDS) {
+    const manifestUrl = `${TILE_BASE_URL}/${trailId}/manifest.json`;
+    let manifest;
+    try {
+      const res = await fetch(manifestUrl);
+      if (res.status !== 200) {
+        failures.push(`[${trailId}] manifest.json → HTTP ${res.status}`);
+        continue;
+      }
+      manifest = await res.json();
+    } catch (e) {
+      failures.push(`[${trailId}] manifest.json fetch/parse failed: ${e.message}`);
+      continue;
+    }
+
+    if (!Array.isArray(manifest?.files) || manifest.files.length === 0) {
+      failures.push(`[${trailId}] manifest.json lists no files`);
+      continue;
+    }
+
+    const failuresBefore = failures.length;
+    for (const file of manifest.files) {
+      if (!file.name?.endsWith('.mbtiles')) continue;
+      const fileUrl = `${TILE_BASE_URL}/${trailId}/${file.name}`;
+      try {
+        // Range-read the first 16 bytes: verifies existence, SQLite magic,
+        // and (via Content-Range) the full object size — no full download.
+        const res = await fetch(fileUrl, { headers: { Range: 'bytes=0-15' } });
+        if (res.status !== 206 && res.status !== 200) {
+          failures.push(`[${trailId}] ${file.name} → HTTP ${res.status}`);
+          continue;
+        }
+
+        const contentRange = res.headers.get('content-range') || '';
+        const totalSize =
+          res.status === 206
+            ? parseInt(contentRange.split('/')[1] ?? '', 10)
+            : parseInt(res.headers.get('content-length') ?? '', 10);
+        if (Number.isFinite(totalSize) && totalSize !== file.size) {
+          failures.push(
+            `[${trailId}] ${file.name} size mismatch: manifest says ${file.size}, object is ${totalSize}`
+          );
+        }
+        if (file.size < MIN_MBTILES_BYTES) {
+          failures.push(
+            `[${trailId}] ${file.name} is suspiciously small (${file.size} bytes) — likely an empty stub`
+          );
+        }
+
+        const head = Buffer.from(await res.arrayBuffer());
+        const magic = head.subarray(0, 16).toString('latin1');
+        if (res.status === 206 || head.length >= 16) {
+          if (magic !== SQLITE_MAGIC) {
+            failures.push(`[${trailId}] ${file.name} does not start with the SQLite magic header`);
+          }
+        }
+      } catch (e) {
+        failures.push(`[${trailId}] ${file.name} check failed: ${e.message}`);
+      }
+    }
+    if (failures.length === failuresBefore) {
+      console.log(`      ✓ ${trailId}: manifest ok, ${manifest.files.length} files checked (v${manifest.version})`);
+    } else {
+      console.log(`      ✗ ${trailId}: ${failures.length - failuresBefore} problem(s) — see failures below`);
+    }
+  }
+}
+
 async function checkGridBaseReachable() {
   // Light reachability check on the R2 map-tile bucket (grid index).
   const url = `${TILE_BASE_URL}/grid/index.json`;
@@ -271,6 +364,7 @@ async function main() {
   console.log('='.repeat(70));
 
   await checkContourWorker();
+  await checkTrailOfflineArtifacts();
   await checkGridBaseReachable();
 
   console.log('\n' + '='.repeat(70));

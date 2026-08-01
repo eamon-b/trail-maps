@@ -7,6 +7,7 @@
  */
 import { File, Directory } from 'expo-file-system';
 import { Asset } from 'expo-asset';
+import { openDatabaseAsync } from 'expo-sqlite';
 import type { TileManifest } from '@lib/types';
 import {
   TILE_FILES,
@@ -195,6 +196,131 @@ export function getTrailTileStatus(trailId: string): TrailTileStatus {
 }
 
 // ---------------------------------------------------------------------------
+// MBTiles validation
+// ---------------------------------------------------------------------------
+
+export interface MbtilesValidation {
+  ok: boolean;
+  /** Human-readable reason when ok is false */
+  reason?: string;
+}
+
+/**
+ * Values MapLibre native parses numerically from the mbtiles metadata table.
+ * A non-numeric (or empty) value makes std::stoi/std::stod throw on the
+ * MBTilesFileSource thread, which aborts the whole process — it cannot be
+ * caught from JS. See maplibre-native mbtiles_file_source.cpp.
+ */
+const INT_RE = /^\d+$/;
+
+function isFiniteNumberString(value: string): boolean {
+  return value.trim() !== '' && Number.isFinite(Number(value));
+}
+
+/**
+ * Structurally validate a downloaded .mbtiles file before it is ever handed
+ * to MapLibre as an mbtiles:// source.
+ *
+ * MapLibre native builds a TileJSON from the file when the source loads:
+ * it stoi()s minzoom/maxzoom metadata (falling back to
+ * `SELECT MIN(zoom_level), MAX(zoom_level) FROM tiles`, which is NULL on an
+ * empty tiles table), stod()s scale and each comma-separated bounds part.
+ * In the bundled maplibre-native (11.x) any of those throwing crashes the
+ * app with SIGABRT, so everything it parses is checked here first.
+ * A corrupt database (queries throw) also fails validation.
+ */
+export async function validateMbtiles(
+  trailId: string,
+  fileName: TileFileName,
+): Promise<MbtilesValidation> {
+  const dirPath = uriToPath(trailTilesDir(trailId).uri);
+  let db: Awaited<ReturnType<typeof openDatabaseAsync>> | null = null;
+  try {
+    db = await openDatabaseAsync(fileName, { useNewConnection: true }, dirPath);
+    await db.execAsync('PRAGMA query_only = ON;');
+
+    // Any row at all — an empty tiles table renders nothing and, when zoom
+    // metadata is also missing, crashes MapLibre's MIN/MAX zoom fallback.
+    const anyTile = await db.getFirstAsync<{ zoom_level: number }>(
+      'SELECT zoom_level FROM tiles LIMIT 1',
+    );
+    if (anyTile == null) {
+      return { ok: false, reason: 'no tiles in tiles table' };
+    }
+
+    const metaRows = await db.getAllAsync<{ name: string; value: string }>(
+      "SELECT name, value FROM metadata WHERE name IN ('minzoom', 'maxzoom', 'scale', 'bounds')",
+    );
+    for (const row of metaRows) {
+      const value = row.value ?? '';
+      if (row.name === 'minzoom' || row.name === 'maxzoom') {
+        if (!INT_RE.test(value)) {
+          return { ok: false, reason: `metadata ${row.name} is not an integer: "${value}"` };
+        }
+      } else if (row.name === 'scale') {
+        if (!isFiniteNumberString(value)) {
+          return { ok: false, reason: `metadata scale is not a number: "${value}"` };
+        }
+      } else if (row.name === 'bounds') {
+        const parts = value.split(',');
+        if (parts.length !== 4 || !parts.every(isFiniteNumberString)) {
+          return { ok: false, reason: `metadata bounds is malformed: "${value}"` };
+        }
+      }
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, reason: msg };
+  } finally {
+    try {
+      await db?.closeAsync();
+    } catch {
+      // closing a broken database can itself throw; nothing to do
+    }
+  }
+}
+
+/**
+ * Cache of validation results keyed by trailId/fileName/size so the map
+ * screen doesn't reopen the database on every style build. The size in the
+ * key invalidates the entry when the file is re-downloaded or truncated.
+ */
+const validationCache = new Map<string, MbtilesValidation>();
+
+export async function validateMbtilesCached(
+  trailId: string,
+  fileName: TileFileName,
+): Promise<MbtilesValidation> {
+  let size = 0;
+  try {
+    const file = new File(trailTilesDir(trailId), fileName);
+    size = file.exists ? file.size ?? 0 : 0;
+  } catch {
+    size = 0;
+  }
+  const key = `${trailId}/${fileName}:${size}`;
+  const cached = validationCache.get(key);
+  if (cached) return cached;
+
+  const result = await validateMbtiles(trailId, fileName);
+  validationCache.set(key, result);
+  return result;
+}
+
+/** Drop cached validation results (all trails, or one trail's files). */
+export function clearMbtilesValidationCache(trailId?: string): void {
+  if (trailId == null) {
+    validationCache.clear();
+    return;
+  }
+  for (const key of validationCache.keys()) {
+    if (key.startsWith(`${trailId}/`)) validationCache.delete(key);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Tile download
 // ---------------------------------------------------------------------------
 
@@ -318,10 +444,13 @@ export async function downloadTrailTiles(
     const dest = new File(dir, name);
     const expectedSize = expectedSizes.get(name);
 
-    // Skip if already downloaded and matches expected size (or reasonable fallback)
+    // Skip if already downloaded, matches expected size (or reasonable
+    // fallback), and passes structural validation — a previously downloaded
+    // bad file must not survive a re-download just because its size matches.
     if (dest.exists) {
       const size = dest.size ?? 0;
-      if (expectedSize ? size === expectedSize : size > 1000) {
+      const sizeOk = expectedSize ? size === expectedSize : size > 1000;
+      if (sizeOk && (await validateMbtilesCached(trailId, name)).ok) {
         bytesDownloaded += size;
         onProgress?.({ fileName: name, done: true, bytesDownloaded, bytesTotal });
         continue;
@@ -342,6 +471,19 @@ export async function downloadTrailTiles(
         );
       }
 
+      // Validate structure before accepting the file: a bad mbtiles handed to
+      // MapLibre crashes the app natively, so refuse it at download time.
+      clearMbtilesValidationCache(trailId);
+      const validation = await validateMbtiles(trailId, name);
+      if (!validation.ok) {
+        try {
+          dest.delete();
+        } catch {
+          // leave a partial file; size check will flag it next time
+        }
+        throw new Error(`${name} is not a usable tile database (${validation.reason})`);
+      }
+
       bytesDownloaded += downloadedSize;
       onProgress?.({ fileName: name, done: true, bytesDownloaded, bytesTotal });
     } catch (err) {
@@ -360,6 +502,7 @@ export async function downloadTrailTiles(
 export function deleteTrailTiles(trailId: string): void {
   const dir = trailTilesDir(trailId);
   if (dir.exists) dir.delete();
+  clearMbtilesValidationCache(trailId);
 }
 
 // ---------------------------------------------------------------------------
@@ -368,6 +511,15 @@ export function deleteTrailTiles(trailId: string): void {
 
 // Single source of truth: scripts/topo-style.json, copied to mobile/assets/
 const TOPO_STYLE_TEMPLATE = require('../../assets/topo-style.json');
+
+export interface TopoStyleOptions {
+  /**
+   * Include the contour source and layers (default true). Set false when
+   * contours.mbtiles failed validation so the basemap still renders offline
+   * instead of MapLibre crashing on a bad contour source.
+   */
+  includeContours?: boolean;
+}
 
 /**
  * Build a MapLibre style JSON object for rendering a trail's offline tiles.
@@ -379,9 +531,15 @@ const TOPO_STYLE_TEMPLATE = require('../../assets/topo-style.json');
  *
  * @param trailId    - Trail whose tiles to reference
  * @param glyphsPath - Filesystem path to fonts root (from provisionGlyphs())
+ * @param options    - See TopoStyleOptions
  * @returns Complete style object ready for JSON.stringify()
  */
-export function buildTopoStyle(trailId: string, glyphsPath: string): object {
+export function buildTopoStyle(
+  trailId: string,
+  glyphsPath: string,
+  options?: TopoStyleOptions,
+): object {
+  const includeContours = options?.includeContours ?? true;
   const dir = trailTilesDir(trailId);
   const basePath = uriToPath(dir.uri);
 
@@ -390,7 +548,14 @@ export function buildTopoStyle(trailId: string, glyphsPath: string): object {
 
   // Interpolate source URLs
   style.sources.basemap.url = `mbtiles://${basePath}/base.mbtiles`;
-  style.sources.contour.url = `mbtiles://${basePath}/contours.mbtiles`;
+  if (includeContours) {
+    style.sources.contour.url = `mbtiles://${basePath}/contours.mbtiles`;
+  } else {
+    delete style.sources.contour;
+    style.layers = style.layers.filter(
+      (layer: { source?: string }) => layer.source !== 'contour',
+    );
+  }
 
   // Interpolate glyph path
   style.glyphs = `file://${glyphsPath}/{fontstack}/{range}.pbf`;

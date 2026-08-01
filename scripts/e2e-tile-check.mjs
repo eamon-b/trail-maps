@@ -2,11 +2,19 @@
 /**
  * End-to-end verification for the deployed map + contour tile pipeline.
  *
- * Runs three independent checks against production infrastructure:
+ * Runs these independent checks against production infrastructure:
  *
- *   1. Tile decode        — contour tiles fetched from the Cloudflare Worker
+ *   1. Worker /health     — the mobile app gates online contour injection
+ *                           entirely on GET /health returning 200 with
+ *                           `ok === true` (see
+ *                           mobile/src/services/online-style-service.ts,
+ *                           isContourServiceHealthy). If this probe fails, the
+ *                           app silently ships maps with no contours at all.
+ *                           Also asserts the archive advertises maxZoom 15, the
+ *                           maxzoom the client declares for the contour source.
+ *   2. Tile decode        — contour tiles fetched from the Cloudflare Worker
  *                           parse as valid Mapbox Vector Tiles.
- *   2. Content-Encoding   — a gzip-accepting client sees `Content-Encoding:
+ *   3. Content-Encoding   — a gzip-accepting client sees `Content-Encoding:
  *                           gzip` and decodable MVT bytes, and an identity
  *                           client receives plain (non-gzip-framed) MVT.
  *                           (Follow-up to the worker gzip hardening — the
@@ -16,7 +24,12 @@
  *                           identity clients get a decompressed body with NO
  *                           Content-Encoding header, so the header must be
  *                           asserted on the gzip-accepting fetch only.)
- *   3. Trail offline sets — each trail's manifest.json parses, and every
+ *   4. High-zoom coverage — a known-populated z14 AND z15 tile over Kosciuszko
+ *                           serve real MVT. The fast probe loop only covers
+ *                           z10-z13, so an archive rebuilt with a lower maxzoom
+ *                           would pass every other check while silently
+ *                           blanking contours at the zooms hikers actually use.
+ *   5. Trail offline sets — each trail's manifest.json parses, and every
  *                           mbtiles it lists exists at the manifest size,
  *                           starts with the SQLite magic, and is not a
  *                           suspiciously small stub. (An empty/corrupt
@@ -69,6 +82,12 @@ for (const z of ZOOMS) {
     CANDIDATE_TILES.push({ name, ...lonLatToTile(lon, lat, z) });
   }
 }
+
+// The contour source is declared with maxzoom 15 in the mobile online style
+// (online-style-service.ts, injectContours), so the archive must go that deep.
+const EXPECTED_MAX_ZOOM = 15;
+// Probed individually rather than added to ZOOMS so the main loop stays fast.
+const HIGH_ZOOMS = [14, 15];
 
 // ---------------------------------------------------------------------------
 // Minimal protobuf validation: a Mapbox Vector Tile is a protobuf message with
@@ -136,6 +155,105 @@ function isValidMvt(buf) {
 const failures = [];
 const notes = [];
 
+/**
+ * Node's fetch (undici) transparently decompresses gzip responses even when
+ * Accept-Encoding was set manually, so the body is normally plain MVT already.
+ * Gunzip ourselves if a runtime ever hands back the framed body instead.
+ * Returns the plain bytes, or null if gunzip failed (a failure is recorded).
+ */
+function decodeTileBody(raw, label) {
+  if (raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b) {
+    try {
+      return gunzipSync(raw);
+    } catch (e) {
+      failures.push(`${label}: gunzip of tile body failed: ${e.message}`);
+      return null;
+    }
+  }
+  return raw;
+}
+
+// ---------------------------------------------------------------------------
+// /health — the mobile app's gate for injecting contours into the online style.
+// A non-200, a missing `ok: true`, or an archive that no longer reaches
+// maxZoom 15 all mean contours are effectively broken for users even though
+// individual tile fetches may still succeed.
+// ---------------------------------------------------------------------------
+
+async function checkContourHealth() {
+  console.log(`\n[1/5] Contour worker /health (mobile contour-injection gate)`);
+  const url = `${CONTOUR_URL}/health`;
+
+  let res;
+  try {
+    res = await fetch(url, { headers: { Accept: 'application/json' } });
+  } catch (e) {
+    failures.push(`/health fetch failed: ${e.message} — the app would ship maps with no contours`);
+    return;
+  }
+
+  if (res.status !== 200) {
+    failures.push(
+      `/health → HTTP ${res.status} (expected 200) — the app treats anything else ` +
+        'as unhealthy and drops contours entirely'
+    );
+    return;
+  }
+
+  let body;
+  try {
+    body = await res.json();
+  } catch (e) {
+    failures.push(`/health body is not JSON: ${e.message}`);
+    return;
+  }
+
+  if (body?.ok !== true) {
+    failures.push(
+      `/health returned ok=${JSON.stringify(body?.ok)} (expected true)` +
+        (body?.error ? ` — worker error: ${body.error}` : '')
+    );
+    return;
+  }
+  console.log(`      ✓ HTTP 200 with ok: true`);
+
+  const archive = body.archive || {};
+  if (Number.isFinite(archive.size)) {
+    console.log(
+      `      ✓ archive ${archive.key ?? '(unnamed)'}: ` +
+        `${(archive.size / 1e9).toFixed(2)} GB, etag ${archive.etag ?? 'n/a'}`
+    );
+  } else {
+    failures.push('/health did not report an archive size');
+  }
+
+  const tiles = body.tiles || {};
+  if (!Number.isFinite(tiles.minZoom) || !Number.isFinite(tiles.maxZoom)) {
+    failures.push(
+      `/health did not report numeric tiles.minZoom/maxZoom (got ${JSON.stringify(tiles)})`
+    );
+    return;
+  }
+
+  console.log(`      ✓ archive zoom range: z${tiles.minZoom}–z${tiles.maxZoom}`);
+  if (tiles.maxZoom !== EXPECTED_MAX_ZOOM) {
+    failures.push(
+      `Archive maxZoom is ${tiles.maxZoom}, expected ${EXPECTED_MAX_ZOOM}. The mobile ` +
+        'contour source declares maxzoom 15, so anything lower blanks contours at high zoom.'
+    );
+  }
+
+  const bboxFields = ['minLon', 'minLat', 'maxLon', 'maxLat'];
+  if (bboxFields.every((f) => Number.isFinite(tiles[f]))) {
+    console.log(
+      `      ✓ archive bbox: ${tiles.minLon.toFixed(2)},${tiles.minLat.toFixed(2)} → ` +
+        `${tiles.maxLon.toFixed(2)},${tiles.maxLat.toFixed(2)}`
+    );
+  } else {
+    notes.push(`  /health omitted part of the archive bbox: ${JSON.stringify(tiles)}`);
+  }
+}
+
 async function findPopulatedTile() {
   // Probe candidates until one returns a 200 (populated) tile. Request gzip
   // and only gzip: the Cloudflare edge transcodes per Accept-Encoding (a
@@ -162,7 +280,7 @@ async function findPopulatedTile() {
 }
 
 async function checkContourWorker() {
-  console.log(`\n[1/3] Contour worker reachability + tile decode`);
+  console.log(`\n[2/5] Contour worker reachability + tile decode`);
   console.log(`      ${CONTOUR_URL}`);
 
   const hit = await findPopulatedTile();
@@ -184,8 +302,8 @@ async function checkContourWorker() {
     failures.push(`Content-Type is "${ct}", expected application/x-protobuf`);
   }
 
-  // --- Check 2: Content-Encoding: gzip advertised to a gzip-accepting client ---
-  console.log(`\n[2/3] Content-Encoding: gzip verification`);
+  // --- Content-Encoding: gzip advertised to a gzip-accepting client ---
+  console.log(`\n[3/5] Content-Encoding: gzip verification`);
   const ce = (res.headers.get('content-encoding') || '').toLowerCase();
   const raw = Buffer.from(await res.arrayBuffer());
 
@@ -198,25 +316,17 @@ async function checkContourWorker() {
     console.log(`      ✓ Content-Encoding: gzip header present`);
   }
 
-  // Node's fetch (undici) transparently decompresses gzip responses even
-  // when Accept-Encoding was set manually, so `raw` is normally plain MVT
-  // bytes already. Gunzip ourselves if a runtime ever hands us the framed
-  // body instead — either way the decoded bytes must be valid MVT.
-  let mvtBytes;
-  if (raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b) {
-    console.log(`      ~ runtime left the body gzip-framed; decompressing manually`);
-    try {
-      mvtBytes = gunzipSync(raw);
-    } catch (e) {
-      failures.push(`gunzip of tile body failed: ${e.message}`);
-    }
-  } else {
-    console.log(`      ✓ body decompresses to plain (non-gzip-framed) bytes`);
-    mvtBytes = raw;
-  }
+  // Either way the decoded bytes must be valid MVT.
+  const gzipFramed = raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b;
+  console.log(
+    gzipFramed
+      ? `      ~ runtime left the body gzip-framed; decompressing manually`
+      : `      ✓ body decompresses to plain (non-gzip-framed) bytes`
+  );
+  const mvtBytes = decodeTileBody(raw, `${tile.z}/${tile.x}/${tile.y}`);
 
-  // --- Check 1 (decode): valid MVT after decompression ---
-  console.log(`\n[3/3] Vector-tile structural decode`);
+  // --- Valid MVT after decompression ---
+  console.log(`\n[4/5] Vector-tile structural decode`);
   if (mvtBytes) {
     const v = isValidMvt(mvtBytes);
     if (v.ok) {
@@ -254,6 +364,57 @@ async function checkContourWorker() {
     }
   } catch (e) {
     failures.push(`Identity-client cross-check failed: ${e.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// High-zoom coverage. The probe loop above only reaches z13, so a rebuild that
+// silently capped the archive below z15 would pass every check while leaving
+// contours blank at the zoom levels people navigate at. Kosciuszko is the
+// highest-relief point in LAND_POINTS — if anywhere has z15 contours, it does.
+// ---------------------------------------------------------------------------
+
+async function checkHighZoomTiles() {
+  console.log(`\n[5/5] High-zoom (z${HIGH_ZOOMS.join('/z')}) contour coverage`);
+
+  const [name, lat, lon] = LAND_POINTS[0]; // Kosciuszko
+  for (const z of HIGH_ZOOMS) {
+    const t = { name, ...lonLatToTile(lon, lat, z) };
+    const url = `${CONTOUR_URL}/contours/${t.z}/${t.x}/${t.y}.pbf`;
+    const label = `z${z} ${t.x}/${t.y} (${name})`;
+
+    let res;
+    try {
+      res = await fetch(url, { headers: { 'Accept-Encoding': 'gzip' } });
+    } catch (e) {
+      failures.push(`${label} fetch failed: ${e.message}`);
+      continue;
+    }
+
+    if (res.status !== 200) {
+      failures.push(
+        `${label} → HTTP ${res.status} (expected 200). ${
+          res.status === 204
+            ? 'The archive has no data at this zoom — a rebuild likely capped the ' +
+              'maxzoom below 15, which blanks contours when zoomed in.'
+            : ''
+        }`.trim()
+      );
+      continue;
+    }
+
+    const raw = Buffer.from(await res.arrayBuffer());
+    const mvtBytes = decodeTileBody(raw, label);
+    if (!mvtBytes) continue;
+
+    const v = isValidMvt(mvtBytes);
+    if (v.ok) {
+      console.log(
+        `      ✓ ${label}: ${mvtBytes.length} bytes → valid MVT with ${v.layerCount} layer(s)`
+      );
+    } else {
+      failures.push(`${label} is not a valid vector tile: ${v.reason}`);
+    }
   }
 }
 
@@ -370,13 +531,15 @@ async function main() {
   console.log('E2E tile pipeline check —', new Date().toISOString());
   console.log('='.repeat(70));
 
+  await checkContourHealth();
   await checkContourWorker();
+  await checkHighZoomTiles();
   await checkTrailOfflineArtifacts();
   await checkGridBaseReachable();
 
   console.log('\n' + '='.repeat(70));
   if (failures.length === 0) {
-    console.log('RESULT: PASS — all contour/gzip checks succeeded.');
+    console.log('RESULT: PASS — all contour/health/gzip/offline checks succeeded.');
     console.log('='.repeat(70));
     process.exit(0);
   } else {

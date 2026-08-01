@@ -155,20 +155,49 @@ async function healthResponse(request: Request, env: Env): Promise<Response> {
 /**
  * Parse tile coordinates from URL path.
  * Expected: /{source}/{z}/{x}/{y}.pbf
+ *
+ * Returns null (→ 404) for anything out of range. x/y must be validated here:
+ * PMTiles.getZxy() throws for x or y >= 2**z, which would otherwise surface as
+ * an opaque 500 for what is really a malformed request.
  */
 function parseTilePath(
   pathname: string
 ): { source: string; z: number; x: number; y: number } | null {
   const match = pathname.match(/^\/(\w+)\/(\d+)\/(\d+)\/(\d+)\.pbf$/);
   if (!match) return null;
+
+  // Reject absurdly long digit runs before parseInt turns them into Infinity-ish
+  // values; the largest legal coordinate at MAX_ZOOM=22 is 7 digits.
+  if (match[2].length > 2 || match[3].length > 10 || match[4].length > 10) {
+    return null;
+  }
+
   const z = parseInt(match[2], 10);
-  if (z > MAX_ZOOM) return null;
-  return {
-    source: match[1],
-    z,
-    x: parseInt(match[3], 10),
-    y: parseInt(match[4], 10),
-  };
+  if (!Number.isInteger(z) || z > MAX_ZOOM) return null;
+
+  const x = parseInt(match[3], 10);
+  const y = parseInt(match[4], 10);
+  // z <= 22, so 2**z is exact in Number range.
+  const limit = 2 ** z;
+  if (x >= limit || y >= limit) return null;
+
+  return { source: match[1], z, x, y };
+}
+
+/**
+ * True when an error means the cached PMTiles directory/header no longer
+ * matches the R2 object (i.e. australia.pmtiles was re-uploaded).
+ *
+ * pmtiles v4 exports `EtagMismatch`, so `instanceof` is the primary signal.
+ * The message fallback only guards against a duplicated pmtiles copy in the
+ * bundle producing a structurally identical error that fails `instanceof`.
+ */
+function isEtagMismatch(error: unknown): boolean {
+  if (error instanceof EtagMismatch) return true;
+  return (
+    error instanceof Error &&
+    (error.constructor?.name === 'EtagMismatch' || /etag/i.test(error.message))
+  );
 }
 
 export default {
@@ -203,20 +232,28 @@ export default {
       });
     }
 
+    // Empty results are stable for the lifetime of an archive build, so let
+    // clients and the edge cache them like populated tiles instead of
+    // re-asking on every pan.
+    const emptyTileHeaders = (): Record<string, string> => ({
+      ...corsHeaders(env),
+      'Cache-Control': 'public, max-age=86400',
+    });
+
     const serveTile = async (): Promise<Response> => {
       const pmtiles = getPMTiles(env.TILES_BUCKET);
 
       // Check metadata for zoom range
       const header = await pmtiles.getHeader();
       if (tile.z < header.minZoom || tile.z > header.maxZoom) {
-        return new Response(null, { status: 204, headers: corsHeaders(env) });
+        return new Response(null, { status: 204, headers: emptyTileHeaders() });
       }
 
       const tileData = await pmtiles.getZxy(tile.z, tile.x, tile.y);
 
       if (!tileData || !tileData.data || tileData.data.byteLength === 0) {
         // Empty tile (ocean, no data for this area)
-        return new Response(null, { status: 204, headers: corsHeaders(env) });
+        return new Response(null, { status: 204, headers: emptyTileHeaders() });
       }
 
       const responseHeaders: Record<string, string> = {
@@ -241,9 +278,16 @@ export default {
         // instance cached from before the upload fails etag validation on its
         // next range read. Drop the cached instance and retry once so warm
         // isolates recover immediately instead of 500ing until recycled.
+        //
+        // Only etag mismatches justify this. The cached instance holds the warm
+        // directory cache shared by every concurrent request in the isolate, so
+        // evicting it on transient R2 blips or programming errors would turn one
+        // failure into a thundering herd of cold directory re-reads.
+        if (!isEtagMismatch(firstError)) throw firstError;
+
         pmtilesInstance = null;
         console.warn(
-          `Tile ${tile.z}/${tile.x}/${tile.y}: retrying with fresh PMTiles instance after: ` +
+          `Tile ${tile.z}/${tile.x}/${tile.y}: retrying with fresh PMTiles instance after etag mismatch: ` +
           (firstError instanceof Error ? firstError.message : String(firstError))
         );
         return await serveTile();

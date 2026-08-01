@@ -139,11 +139,13 @@ export interface TrailTileStatus {
 /**
  * Check on-disk status for a trail's tiles.
  *
- * When a manifest is present (written by downloadTrailTiles before the download
- * starts, so an interrupted download is detectable) the actual file sizes are
- * verified against the manifest's expected sizes. A truncated or missing file
- * reports `partial` rather than a false-positive `complete`. Tiles with no
- * manifest fall back to a presence heuristic.
+ * When a manifest is present the actual file sizes are verified against the
+ * manifest's expected sizes. A truncated or missing file reports `partial`
+ * rather than a false-positive `complete`. Tiles with no manifest fall back to
+ * a presence heuristic.
+ *
+ * Only the canonical TILE_FILES names are inspected, so in-flight `.part`
+ * downloads never contribute to the reported state or to totalSizeBytes.
  */
 export function getTrailTileStatus(trailId: string): TrailTileStatus {
   const dir = trailTilesDir(trailId);
@@ -233,6 +235,33 @@ export async function validateMbtiles(
   trailId: string,
   fileName: TileFileName,
 ): Promise<MbtilesValidation> {
+  return validateMbtilesFile(trailId, fileName);
+}
+
+/**
+ * Internal generalisation of {@link validateMbtiles} that accepts any file name
+ * inside the trail's tile directory — notably the `{name}.part` staging files
+ * written by downloadTrailTiles, which must be validated *before* they are
+ * renamed over the live file.
+ */
+async function validateMbtilesFile(
+  trailId: string,
+  fileName: string,
+): Promise<MbtilesValidation> {
+  // openDatabaseAsync CREATES an empty SQLite database when the path is
+  // missing, which would turn "file absent" into "file present but empty" —
+  // an mbtiles with no tiles table, i.e. exactly the shape that SIGABRTs
+  // MapLibre. Never open a database for a file that isn't there.
+  let fileExists = false;
+  try {
+    fileExists = new File(trailTilesDir(trailId), fileName).exists;
+  } catch {
+    fileExists = false;
+  }
+  if (!fileExists) {
+    return { ok: false, reason: 'file does not exist' };
+  }
+
   const dirPath = uriToPath(trailTilesDir(trailId).uri);
   let db: Awaited<ReturnType<typeof openDatabaseAsync>> | null = null;
   try {
@@ -385,8 +414,38 @@ export async function checkForTileUpdate(
   };
 }
 
+/** Suffix for in-flight downloads staged alongside their final destination. */
+const PART_SUFFIX = '.part';
+
+/** Best-effort removal of a staging file; never throws. */
+function deletePart(dir: Directory, name: TileFileName): void {
+  try {
+    const part = new File(dir, `${name}${PART_SUFFIX}`);
+    if (part.exists) part.delete();
+  } catch {
+    // A stray .part is inert — TILE_FILES-driven status ignores it, and the
+    // next download overwrites it. Nothing useful to do on failure.
+  }
+}
+
 /**
  * Download tile files for a trail from a base URL.
+ *
+ * Downloads are **atomic**: each file lands at `{name}.part`, is size- and
+ * structure-checked there, and is only renamed over the live `{name}` once
+ * every file in the set has been fetched and validated. This means
+ *
+ *  - MapLibre never sees a half-written mbtiles (a torn read aborts natively);
+ *  - an interrupted or failed *update* leaves the previous, working pack —
+ *    files *and* manifest — completely untouched, so getTrailTileStatus keeps
+ *    reporting 'complete';
+ *  - the window in which the on-disk set mixes old and new files is one
+ *    rename per file rather than one download per file.
+ *
+ * The manifest is promoted last for updates. For a *fresh* download (no
+ * complete pack on disk yet) it is still written up-front, so that an
+ * interrupted first download is detectable as 'partial' rather than being
+ * mistaken for a legacy manifest-less pack.
  *
  * Fetches the manifest first for size validation, supports cancellation
  * between files, and provides byte-level progress totals.
@@ -417,6 +476,13 @@ export async function downloadTrailTiles(
 
   const url = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
+  // Is there already a usable pack here? If so this is an *update*, and the
+  // existing manifest must survive untouched until the new files are in place.
+  const isUpdate = getTrailTileStatus(trailId).state === 'complete';
+
+  // Clear staging files left behind by an earlier interrupted run.
+  for (const name of TILE_FILES) deletePart(dir, name);
+
   // Fetch manifest for size info and post-download validation
   const manifest = await fetchManifest(url, trailId);
   const expectedSizes = new Map<string, number>();
@@ -426,18 +492,35 @@ export async function downloadTrailTiles(
       expectedSizes.set(f.name, f.size);
       bytesTotal += f.size;
     }
-    // Persist the manifest up-front (before any file lands) so an interrupted
-    // download is detectable: getTrailTileStatus verifies on-disk sizes against
-    // these expected sizes and reports a truncated/missing file as 'partial'
-    // instead of a false-positive 'complete'.
-    manifestFile(trailId).write(JSON.stringify(manifest));
+    if (!isUpdate) {
+      // Fresh download: persist the manifest up-front (before any file lands)
+      // so an interrupted download is detectable. getTrailTileStatus verifies
+      // on-disk sizes against these expected sizes and reports a
+      // truncated/missing file as 'partial' instead of a false-positive
+      // 'complete'. There is no older pack to invalidate.
+      manifestFile(trailId).write(JSON.stringify(manifest));
+    }
+    // Update: the new manifest is staged in memory and written only after every
+    // file has downloaded, validated and been renamed into place. Writing it
+    // now would make the *old* files mismatch the *new* sizes, downgrading a
+    // perfectly good pack to 'partial' the moment anything goes wrong.
   }
 
   let bytesDownloaded = 0;
 
+  /** Files fetched this run, staged at {name}.part, awaiting promotion. */
+  const staged: TileFileName[] = [];
+
+  const cleanupStaged = () => {
+    for (const name of TILE_FILES) deletePart(dir, name);
+    staged.length = 0;
+  };
+
+  // ---- Phase 1: download + validate every file into its .part staging path --
   for (const name of TILE_FILES) {
     // Check cancellation
     if (signal?.cancelled) {
+      cleanupStaged();
       throw new Error('Cancelled');
     }
 
@@ -457,14 +540,19 @@ export async function downloadTrailTiles(
       }
     }
 
+    const partName = `${name}${PART_SUFFIX}`;
+    const part = new File(dir, partName);
     const fileUrl = `${url}/${trailId}/${name}`;
     try {
-      await File.downloadFileAsync(fileUrl, dest, {
+      // Download to a temp name in the same directory (same filesystem, so the
+      // later promotion is a cheap rename) rather than over the live file,
+      // which MapLibre native may currently have open.
+      await File.downloadFileAsync(fileUrl, part, {
         idempotent: true,
       });
 
       // Validate downloaded size against manifest
-      const downloadedSize = dest.size ?? 0;
+      const downloadedSize = part.size ?? 0;
       if (expectedSize && downloadedSize !== expectedSize) {
         throw new Error(
           `Size mismatch for ${name}: expected ${expectedSize} bytes, got ${downloadedSize}`,
@@ -472,30 +560,54 @@ export async function downloadTrailTiles(
       }
 
       // Validate structure before accepting the file: a bad mbtiles handed to
-      // MapLibre crashes the app natively, so refuse it at download time.
-      clearMbtilesValidationCache(trailId);
-      const validation = await validateMbtiles(trailId, name);
+      // MapLibre crashes the app natively, so refuse it at download time —
+      // while it is still a .part and the previous good file is untouched.
+      const validation = await validateMbtilesFile(trailId, partName);
       if (!validation.ok) {
-        try {
-          dest.delete();
-        } catch {
-          // leave a partial file; size check will flag it next time
-        }
         throw new Error(`${name} is not a usable tile database (${validation.reason})`);
       }
 
+      staged.push(name);
       bytesDownloaded += downloadedSize;
       onProgress?.({ fileName: name, done: true, bytesDownloaded, bytesTotal });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const detail = `Failed to download ${name} from ${fileUrl}: ${msg}`;
       console.error('[tile-service]', detail);
+      // Discard every staging file: the old pack (files + manifest) is still
+      // intact on disk and must stay the version the app uses.
+      cleanupStaged();
       onProgress?.({ fileName: name, done: false, error: detail, bytesDownloaded, bytesTotal });
       throw new Error(detail);
     }
   }
-  // The manifest was written up-front (see above); once every file has landed
-  // at its expected size, getTrailTileStatus will report 'complete'.
+
+  // ---- Phase 2: promote all validated .part files at once -------------------
+  try {
+    for (const name of staged) {
+      const dest = new File(dir, name);
+      // rename()/move() reject an existing destination on both platforms, so
+      // unlink first. An fd MapLibre already holds keeps the old inode alive,
+      // so this cannot tear a read in progress.
+      if (dest.exists) dest.delete();
+      new File(dir, `${name}${PART_SUFFIX}`).rename(name);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const detail = `Failed to install downloaded tiles for ${trailId}: ${msg}`;
+    console.error('[tile-service]', detail);
+    cleanupStaged();
+    throw new Error(detail);
+  }
+
+  // Contents at these paths changed — drop any cached validation verdicts.
+  if (staged.length > 0) clearMbtilesValidationCache(trailId);
+
+  // ---- Phase 3: promote the manifest ---------------------------------------
+  // Only now does getTrailTileStatus start comparing against the new sizes.
+  if (manifest && isUpdate) {
+    manifestFile(trailId).write(JSON.stringify(manifest));
+  }
 }
 
 /** Delete all downloaded tile files for a trail. */

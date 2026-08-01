@@ -43,7 +43,7 @@ jest.mock('expo-file-system', () => {
         parts.push(dirUri.replace('file://', '').replace(/\/$/, ''));
       }
     }
-    const uri = 'file://' + parts.join('/');
+    let uri = 'file://' + parts.join('/');
     return {
       get uri() { return uri; },
       get exists() { return mockFiles[uri]?.exists ?? false; },
@@ -56,6 +56,18 @@ jest.mock('expo-file-system', () => {
       write: jest.fn((data: string) => {
         mockFileContents[uri] = data;
         mockFiles[uri] = { exists: true, size: data.length };
+      }),
+      // Mirrors the native behaviour: throws when the source is missing or the
+      // destination already exists, and moves both size and contents.
+      rename: jest.fn((newName: string) => {
+        const target = uri.slice(0, uri.lastIndexOf('/') + 1) + newName;
+        if (!mockFiles[uri]?.exists) throw new Error('rename: source does not exist');
+        if (mockFiles[target]?.exists) throw new Error('rename: destination already exists');
+        mockFiles[target] = { ...mockFiles[uri] };
+        if (mockFileContents[uri] !== undefined) mockFileContents[target] = mockFileContents[uri];
+        mockFiles[uri] = { exists: false, size: 0 };
+        delete mockFileContents[uri];
+        uri = target;
       }),
     };
   });
@@ -372,6 +384,31 @@ describe('deleteTrailTiles', () => {
 describe('validateMbtiles', () => {
   const TRAIL_ID = 'aawt';
 
+  beforeEach(() => {
+    // validateMbtiles refuses to open a database for a file that isn't there,
+    // so the files under test must exist on the mock filesystem.
+    for (const name of ['base.mbtiles', 'contours.mbtiles']) {
+      mockFiles[`file:///mock/document/tiles/${TRAIL_ID}/${name}`] = {
+        exists: true,
+        size: 5_000_000,
+      };
+    }
+  });
+
+  it('returns ok:false without creating the file when it does not exist', async () => {
+    const uri = `file:///mock/document/tiles/${TRAIL_ID}/contours.mbtiles`;
+    delete mockFiles[uri];
+    useDb(fakeDb());
+
+    const result = await validateMbtiles(TRAIL_ID, 'contours.mbtiles');
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('file does not exist');
+    // openDatabaseAsync would CREATE an empty (crash-inducing) sqlite db here.
+    expect(mockOpenDatabaseAsync).not.toHaveBeenCalled();
+    expect(mockFiles[uri]).toBeUndefined();
+  });
+
   it('accepts a healthy mbtiles file', async () => {
     useDb(fakeDb());
 
@@ -567,14 +604,96 @@ describe('downloadTrailTiles validation', () => {
     expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBe(true);
   });
 
-  it('deletes the file and throws when a downloaded mbtiles fails validation', async () => {
+  it('downloads to a .part file and validates it before renaming it into place', async () => {
+    useDb(fakeDb());
+    /** Order of interesting events, to prove validate-then-rename. */
+    const events: string[] = [];
+    mockDownloadFileAsync.mockImplementation(async (_url: string, dest: { uri: string }) => {
+      // Every download must target a staging path, never the live file.
+      expect(dest.uri.endsWith('.part')).toBe(true);
+      mockFiles[dest.uri] = { exists: true, size: 5_000_000 };
+      events.push(`download:${dest.uri.split('/').pop()}`);
+    });
+    mockOpenDatabaseAsync.mockImplementation(async (name: string) => {
+      events.push(`validate:${name}`);
+      return fakeDb() as never;
+    });
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(events).toEqual([
+      'download:base.mbtiles.part',
+      'validate:base.mbtiles.part',
+      'download:contours.mbtiles.part',
+      'validate:contours.mbtiles.part',
+    ]);
+
+    // Staging files are gone; the final files are in place.
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBe(true);
+    expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBe(true);
+  });
+
+  it('never creates the final file and cleans up .part when validation fails', async () => {
     useDb(fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) }));
 
     await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).rejects.toThrow(
       /not a usable tile database/,
     );
 
-    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBe(false);
+    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBeFalsy();
+  });
+
+  it('cleans up .part files when the network download itself fails', async () => {
+    useDb(fakeDb());
+    mockDownloadFileAsync
+      .mockImplementationOnce(async (_url: string, dest: { uri: string }) => {
+        mockFiles[dest.uri] = { exists: true, size: 5_000_000 };
+      })
+      .mockImplementationOnce(async (_url: string, dest: { uri: string }) => {
+        // Android streams into the destination, so a partial file can remain.
+        mockFiles[dest.uri] = { exists: true, size: 128 };
+        throw new Error('network died');
+      });
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).rejects.toThrow(/network died/);
+
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBeFalsy();
+    // The first file was validated but never promoted — nothing half-installed.
+    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBeFalsy();
+  });
+
+  it('removes stray .part files left by an earlier interrupted run', async () => {
+    useDb(fakeDb());
+    // Both real files are already valid, so nothing is downloaded this run —
+    // the strays can only disappear via the up-front sweep.
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 5_000_000 };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: 5_000_000 };
+    mockFiles[fileKey('base.mbtiles.part')] = { exists: true, size: 42 };
+    mockFiles[fileKey('contours.mbtiles.part')] = { exists: true, size: 42 };
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(mockDownloadFileAsync).not.toHaveBeenCalled();
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBe(false);
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBe(false);
+  });
+
+  it('ignores .part files in getTrailTileStatus size accounting', () => {
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: 3_000_000 };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: 1_000_000 };
+    mockFiles[fileKey('base.mbtiles.part')] = { exists: true, size: 999_999 };
+
+    const status = getTrailTileStatus(TRAIL_ID);
+
+    expect(status.totalSizeBytes).toBe(4_000_000);
+    expect(status.state).toBe('complete');
+    expect(status.files.map((f) => f.name)).toEqual(['base.mbtiles', 'contours.mbtiles']);
   });
 
   it('re-downloads an existing file that matches size but fails validation', async () => {
@@ -594,5 +713,166 @@ describe('downloadTrailTiles validation', () => {
       (call: unknown[]) => (call[0] as string).includes('base.mbtiles'),
     );
     expect(baseDownloads).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// downloadTrailTiles — atomic updates (manifest promotion is deferred)
+// ---------------------------------------------------------------------------
+
+describe('downloadTrailTiles atomic updates', () => {
+  const TRAIL_ID = 'bibbulmun';
+  const BASE_URL = 'https://tiles.example.com';
+
+  const OLD_SIZES = { base: 5_000_000, contours: 2_000_000 };
+  const NEW_SIZES = { base: 6_000_000, contours: 3_000_000 };
+
+  function fileKey(name: string): string {
+    return `file:///mock/document/tiles/${TRAIL_ID}/${name}`;
+  }
+
+  function makeManifest(sizes: { base: number; contours: number }, version: string) {
+    return {
+      trailId: TRAIL_ID,
+      version,
+      files: [
+        { name: 'base.mbtiles', size: sizes.base, sha256: 'a' },
+        { name: 'contours.mbtiles', size: sizes.contours, sha256: 'b' },
+      ],
+      totalSize: sizes.base + sizes.contours,
+      bounds: [0, 0, 0, 0],
+      zoomRange: [8, 14],
+    };
+  }
+
+  /** Put a working v1 pack (files + manifest) on the mock filesystem. */
+  function installOldPack() {
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: OLD_SIZES.base };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: OLD_SIZES.contours };
+    const manifestJson = JSON.stringify(makeManifest(OLD_SIZES, 'v1'));
+    mockFiles[fileKey('manifest.json')] = { exists: true, size: manifestJson.length };
+    mockFileContents[fileKey('manifest.json')] = manifestJson;
+  }
+
+  /** Serve a v2 manifest with larger files from the network. */
+  function serveNewManifest() {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeManifest(NEW_SIZES, 'v2'),
+    }) as unknown as typeof fetch;
+  }
+
+  const mockDownloadFileAsync = (File as unknown as { downloadFileAsync: jest.Mock })
+    .downloadFileAsync;
+
+  beforeEach(() => {
+    serveNewManifest();
+    useDb(fakeDb());
+  });
+
+  it('leaves the old manifest and files intact when an update fails mid-way', async () => {
+    installOldPack();
+    mockDownloadFileAsync
+      .mockImplementationOnce(async (_url: string, dest: { uri: string }) => {
+        mockFiles[dest.uri] = { exists: true, size: NEW_SIZES.base };
+      })
+      .mockImplementationOnce(async () => {
+        throw new Error('connection reset');
+      });
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).rejects.toThrow(/connection reset/);
+
+    // Old files untouched at their old sizes.
+    expect(mockFiles[fileKey('base.mbtiles')]).toEqual({
+      exists: true,
+      size: OLD_SIZES.base,
+    });
+    expect(mockFiles[fileKey('contours.mbtiles')]).toEqual({
+      exists: true,
+      size: OLD_SIZES.contours,
+    });
+
+    // Old manifest untouched — still v1 with the old sizes.
+    const manifest = JSON.parse(mockFileContents[fileKey('manifest.json')]);
+    expect(manifest.version).toBe('v1');
+    expect(manifest.files[0].size).toBe(OLD_SIZES.base);
+
+    // Staging files cleaned up.
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBeFalsy();
+
+    // The previously working pack still reports as usable.
+    const status = getTrailTileStatus(TRAIL_ID);
+    expect(status.state).toBe('complete');
+    expect(status.complete).toBe(true);
+    expect(status.version).toBe('v1');
+  });
+
+  it('leaves the old pack intact when a downloaded update file fails validation', async () => {
+    installOldPack();
+    mockDownloadFileAsync.mockImplementation(async (_url: string, dest: { uri: string }) => {
+      mockFiles[dest.uri] = { exists: true, size: NEW_SIZES.base };
+    });
+    // Existing files pass the skip-branch check; the .part files do not.
+    mockOpenDatabaseAsync.mockImplementation(async (name: string) =>
+      (name.endsWith('.part')
+        ? fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) })
+        : fakeDb()) as never,
+    );
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).rejects.toThrow(
+      /not a usable tile database/,
+    );
+
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+    expect(JSON.parse(mockFileContents[fileKey('manifest.json')]).version).toBe('v1');
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+  });
+
+  it('promotes the new manifest only after every file is installed', async () => {
+    installOldPack();
+    /** manifest.json content observed at the start of each file download. */
+    const manifestDuringDownload: string[] = [];
+    mockDownloadFileAsync.mockImplementation(async (_url: string, dest: { uri: string }) => {
+      manifestDuringDownload.push(
+        JSON.parse(mockFileContents[fileKey('manifest.json')]).version,
+      );
+      const size = dest.uri.includes('base') ? NEW_SIZES.base : NEW_SIZES.contours;
+      mockFiles[dest.uri] = { exists: true, size };
+    });
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    // The old manifest was still the one on disk throughout the download.
+    expect(manifestDuringDownload).toEqual(['v1', 'v1']);
+
+    // Only at the end is the new manifest promoted.
+    const manifest = JSON.parse(mockFileContents[fileKey('manifest.json')]);
+    expect(manifest.version).toBe('v2');
+
+    expect(mockFiles[fileKey('base.mbtiles')]).toEqual({ exists: true, size: NEW_SIZES.base });
+    expect(mockFiles[fileKey('contours.mbtiles')]).toEqual({
+      exists: true,
+      size: NEW_SIZES.contours,
+    });
+
+    const status = getTrailTileStatus(TRAIL_ID);
+    expect(status.state).toBe('complete');
+    expect(status.version).toBe('v2');
+  });
+
+  it('still writes the manifest up-front for a fresh download (interruption detectable)', async () => {
+    // No pre-existing pack.
+    mockDownloadFileAsync.mockImplementation(async () => {
+      // Manifest must already be on disk before the first byte lands, so an
+      // app kill here leaves a detectable 'partial' rather than a bare dir.
+      expect(JSON.parse(mockFileContents[fileKey('manifest.json')]).version).toBe('v2');
+      throw new Error('killed');
+    });
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).rejects.toThrow(/killed/);
+
+    expect(mockFileContents[fileKey('manifest.json')]).toBeDefined();
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('absent');
   });
 });

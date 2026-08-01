@@ -519,13 +519,13 @@ export const CONTOUR_ZOOM_EXPECTATION: MbtilesZoomExpectation = {
 };
 
 /**
- * Base tiles are extracted with `--minzoom=${MIN_ZOOM} --maxzoom=${MAX_ZOOM}`,
- * but the *observed* low end varies with what the Protomaps source actually
- * holds for the region (heysen's base.mbtiles starts at z8, aawt's at z4), so
- * only the top of the range is asserted. A missing maxzoom is the failure that
- * matters on-device: it is what makes the map blank out when zoomed in.
+ * Base tiles are extracted with `--minzoom=${MIN_ZOOM} --maxzoom=${MAX_ZOOM}`
+ * and every current-pipeline build produces exactly that range. (Heysen's Feb
+ * build was z8–z15 — a stale-flags artifact, disproved by rebuilding: the same
+ * Protomaps source yields z4–z15 with the current pipeline.)
  */
 export const BASE_ZOOM_EXPECTATION: MbtilesZoomExpectation = {
+  minZoom: MIN_ZOOM,
   maxZoom: MAX_ZOOM,
 };
 

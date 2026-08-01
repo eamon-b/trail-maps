@@ -5,13 +5,17 @@
  * Runs three independent checks against production infrastructure:
  *
  *   1. Tile decode        — contour tiles fetched from the Cloudflare Worker
- *                           gunzip and parse as valid Mapbox Vector Tiles.
- *   2. Content-Encoding   — the worker advertises `Content-Encoding: gzip`,
- *                           the body is genuinely gzip-framed (1f 8b magic),
- *                           and a decompressing client receives valid MVT.
+ *                           parse as valid Mapbox Vector Tiles.
+ *   2. Content-Encoding   — a gzip-accepting client sees `Content-Encoding:
+ *                           gzip` and decodable MVT bytes, and an identity
+ *                           client receives plain (non-gzip-framed) MVT.
  *                           (Follow-up to the worker gzip hardening — the
  *                           failure mode is a header/body compression mismatch
- *                           that hands the client undecodable bytes.)
+ *                           that hands the client undecodable bytes. Note the
+ *                           Cloudflare edge transcodes per Accept-Encoding:
+ *                           identity clients get a decompressed body with NO
+ *                           Content-Encoding header, so the header must be
+ *                           asserted on the gzip-accepting fetch only.)
  *   3. Trail offline sets — each trail's manifest.json parses, and every
  *                           mbtiles it lists exists at the manifest size,
  *                           starts with the SQLite magic, and is not a
@@ -133,13 +137,16 @@ const failures = [];
 const notes = [];
 
 async function findPopulatedTile() {
-  // Probe candidates until one returns a 200 (populated) tile.
+  // Probe candidates until one returns a 200 (populated) tile. Request gzip
+  // and only gzip: the Cloudflare edge transcodes per Accept-Encoding (a
+  // default Node fetch accepting br gets Content-Encoding: br; an identity
+  // request gets a decompressed body with no header at all), so pinning the
+  // accepted encoding is the only way to observe the gzip contract.
   for (const t of CANDIDATE_TILES) {
     const url = `${CONTOUR_URL}/contours/${t.z}/${t.x}/${t.y}.pbf`;
     let res;
     try {
-      // Explicitly request no compression so we can inspect raw gzip framing.
-      res = await fetch(url, { headers: { 'Accept-Encoding': 'identity' } });
+      res = await fetch(url, { headers: { 'Accept-Encoding': 'gzip' } });
     } catch (e) {
       notes.push(`  fetch error for ${t.z}/${t.x}/${t.y}: ${e.message}`);
       continue;
@@ -177,40 +184,34 @@ async function checkContourWorker() {
     failures.push(`Content-Type is "${ct}", expected application/x-protobuf`);
   }
 
-  // --- Check 2: Content-Encoding: gzip advertised ---
+  // --- Check 2: Content-Encoding: gzip advertised to a gzip-accepting client ---
   console.log(`\n[2/3] Content-Encoding: gzip verification`);
   const ce = (res.headers.get('content-encoding') || '').toLowerCase();
   const raw = Buffer.from(await res.arrayBuffer());
 
-  // Node's fetch transparently decompresses when the server sets
-  // Content-Encoding, so `raw` may already be decompressed even though we
-  // asked for identity. Handle both: verify header intent + decode correctly.
-  const gzipMagic = raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b;
-
   if (ce !== 'gzip') {
     failures.push(
-      `Worker did not advertise Content-Encoding: gzip (got "${ce || 'none'}"). ` +
-        'Clients will not know to decompress the tile.'
+      `Worker did not advertise Content-Encoding: gzip to a gzip-accepting ` +
+        `client (got "${ce || 'none'}").`
     );
   } else {
     console.log(`      ✓ Content-Encoding: gzip header present`);
   }
 
+  // Node's fetch (undici) transparently decompresses gzip responses even
+  // when Accept-Encoding was set manually, so `raw` is normally plain MVT
+  // bytes already. Gunzip ourselves if a runtime ever hands us the framed
+  // body instead — either way the decoded bytes must be valid MVT.
   let mvtBytes;
-  if (gzipMagic) {
-    // Got raw gzip framing — decompress ourselves and validate.
-    console.log(`      ✓ body is gzip-framed (1f 8b magic bytes)`);
+  if (raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b) {
+    console.log(`      ~ runtime left the body gzip-framed; decompressing manually`);
     try {
       mvtBytes = gunzipSync(raw);
     } catch (e) {
       failures.push(`gunzip of tile body failed: ${e.message}`);
     }
   } else {
-    // Runtime auto-decompressed. That itself confirms header+body agreed
-    // (a mismatch would have thrown or produced garbage). Validate as-is.
-    console.log(
-      `      ~ runtime auto-decompressed the body (Accept-Encoding honored upstream)`
-    );
+    console.log(`      ✓ body decompresses to plain (non-gzip-framed) bytes`);
     mvtBytes = raw;
   }
 
@@ -227,26 +228,32 @@ async function checkContourWorker() {
     }
   }
 
-  // --- Cross-check: a decompressing client gets valid MVT directly ---
+  // --- Cross-check: an identity (non-decompressing) client gets plain MVT ---
+  // The Cloudflare edge decompresses for clients that don't accept gzip. A
+  // gzip-framed body here is the real mismatch failure mode: bytes the client
+  // has no way to decode.
   try {
-    const res2 = await fetch(url); // default: Accept-Encoding: gzip, auto-decompress
+    const res2 = await fetch(url, { headers: { 'Accept-Encoding': 'identity' } });
     if (res2.status === 200) {
       const body2 = Buffer.from(await res2.arrayBuffer());
-      const bytes2 =
-        body2.length >= 2 && body2[0] === 0x1f && body2[1] === 0x8b
-          ? gunzipSync(body2)
-          : body2;
-      const v2 = isValidMvt(bytes2);
-      if (!v2.ok) {
+      if (body2.length >= 2 && body2[0] === 0x1f && body2[1] === 0x8b) {
         failures.push(
-          `Decompressing client received undecodable tile: ${v2.reason}`
+          'Identity client received gzip-framed bytes — header/body ' +
+            'compression mismatch (client cannot decode these).'
         );
       } else {
-        console.log(`      ✓ decompressing-client fetch also yields valid MVT`);
+        const v2 = isValidMvt(body2);
+        if (!v2.ok) {
+          failures.push(`Identity client received undecodable tile: ${v2.reason}`);
+        } else {
+          console.log(`      ✓ identity-client fetch yields plain valid MVT`);
+        }
       }
+    } else {
+      failures.push(`Identity-client cross-check → HTTP ${res2.status}`);
     }
   } catch (e) {
-    failures.push(`Decompressing-client cross-check failed: ${e.message}`);
+    failures.push(`Identity-client cross-check failed: ${e.message}`);
   }
 }
 

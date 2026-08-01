@@ -11,7 +11,7 @@
     "contour": {
       "type": "vector",
       "url": "mbtiles://{basePath}/contours.mbtiles",
-      "minzoom": 4,
+      "minzoom": 9,
       "maxzoom": 15
     }
   },
@@ -106,12 +106,15 @@
       "type": "line",
       "source": "contour",
       "source-layer": "contour",
-      "minzoom": 13,
-      "filter": ["!=", ["to-number", ["get", "is_index"]], 1],
+      "minzoom": 12,
+      "filter": ["all",
+        ["!=", ["to-number", ["get", "is_index"]], 1],
+        [">", ["to-number", ["get", "elevation"]], 0]
+      ],
       "paint": {
         "line-color": "rgb(179, 134, 89)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.3, 14, 0.6, 15, 0.8],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0.2, 14, 0.35, 15, 0.45]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.25, 13, 0.3, 14, 0.6, 15, 0.8],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.15, 13, 0.2, 14, 0.35, 15, 0.45]
       }
     },
     {
@@ -119,15 +122,16 @@
       "type": "line",
       "source": "contour",
       "source-layer": "contour",
-      "minzoom": 11,
+      "minzoom": 9,
       "filter": ["all",
         ["==", ["to-number", ["get", "is_index"]], 1],
-        ["!=", ["%", ["to-number", ["get", "elevation"]], 200], 0]
+        ["!=", ["%", ["to-number", ["get", "elevation"]], 200], 0],
+        [">", ["to-number", ["get", "elevation"]], 0]
       ],
       "paint": {
         "line-color": "rgb(166, 116, 66)",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 12, 1.0, 14, 1.6],
-        "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.3, 12, 0.45, 14, 0.6]
+        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.4, 11, 0.6, 12, 1.0, 14, 1.6],
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.22, 11, 0.3, 12, 0.45, 14, 0.6]
       }
     },
     {
@@ -136,7 +140,10 @@
       "source": "contour",
       "source-layer": "contour",
       "minzoom": 9,
-      "filter": ["==", ["%", ["to-number", ["get", "elevation"]], 200], 0],
+      "filter": ["all",
+        ["==", ["%", ["to-number", ["get", "elevation"]], 200], 0],
+        [">", ["to-number", ["get", "elevation"]], 0]
+      ],
       "paint": {
         "line-color": "rgb(150, 100, 50)",
         "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 11, 1.4, 13, 1.6, 15, 2.0],
@@ -205,7 +212,10 @@
       "source": "contour",
       "source-layer": "contour",
       "minzoom": 12,
-      "filter": ["==", ["to-number", ["get", "is_index"]], 1],
+      "filter": ["all",
+        ["==", ["to-number", ["get", "is_index"]], 1],
+        [">", ["to-number", ["get", "elevation"]], 0]
+      ],
       "layout": {
         "symbol-placement": "line",
         "text-field": ["concat", ["to-string", ["get", "elevation"]], "m"],

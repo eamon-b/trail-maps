@@ -25,6 +25,21 @@ const LIBERTY_FONT = 'Noto Sans Regular';
  * Contour layers styled for visibility on the Liberty basemap.
  * Opacity and width are tuned upward compared to the offline topo style
  * because Liberty's background is busier.
+ *
+ * Zooms and filters MUST stay identical to the offline template in
+ * scripts/topo-style.json (only widths/opacities differ) and MUST stay aligned
+ * with the contour data tiers emitted by classifyAndTileContours() in
+ * scripts/tile-pipeline.ts:
+ *   z9+  elevation % 100 == 0            (100 m + 200 m lines)
+ *   z10+ % 50 == 0 and % 100 != 0        (adds 50 m lines)
+ *   z12+ % 20 == 0 and % 50 != 0         (adds 20 m lines)
+ *   z13+ everything else                 (adds 10 m lines)
+ * A layer's minzoom must be the first zoom at which its filter can match, or
+ * the tiles carry bytes that are decoded and never drawn.
+ *
+ * elevation > 0 is required on every layer: sea-level (0 m) coastlines satisfy
+ * both % 200 == 0 and is_index == 1, so without it they render as the heaviest
+ * line on coastal trails, and sub-zero DEM values draw offshore bathymetry.
  */
 function getContourLayers(): object[] {
   return [
@@ -33,12 +48,17 @@ function getContourLayers(): object[] {
       type: 'line',
       source: 'contour',
       'source-layer': 'contour',
-      minzoom: 13,
-      filter: ['!=', ['to-number', ['get', 'is_index']], 1],
+      // 20 m lines arrive at z12; 10 m lines join at z13.
+      minzoom: 12,
+      filter: [
+        'all',
+        ['!=', ['to-number', ['get', 'is_index']], 1],
+        ['>', ['to-number', ['get', 'elevation']], 0],
+      ],
       paint: {
         'line-color': 'rgb(179, 134, 89)',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.4, 14, 0.7, 15, 1.0],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0.25, 14, 0.4, 15, 0.55],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.3, 13, 0.4, 14, 0.7, 15, 1.0],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.18, 13, 0.25, 14, 0.4, 15, 0.55],
       },
     },
     {
@@ -46,16 +66,19 @@ function getContourLayers(): object[] {
       type: 'line',
       source: 'contour',
       'source-layer': 'contour',
-      minzoom: 11,
+      // Odd hundreds (100, 300, ...) are index lines that ship in the z9 tier;
+      // the 50 m index lines join at z10.
+      minzoom: 9,
       filter: [
         'all',
         ['==', ['to-number', ['get', 'is_index']], 1],
         ['!=', ['%', ['to-number', ['get', 'elevation']], 200], 0],
+        ['>', ['to-number', ['get', 'elevation']], 0],
       ],
       paint: {
         'line-color': 'rgb(166, 116, 66)',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.7, 12, 1.1, 14, 2.0],
-        'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.35, 12, 0.5, 14, 0.7],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.5, 11, 0.7, 12, 1.1, 14, 2.0],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.25, 11, 0.35, 12, 0.5, 14, 0.7],
       },
     },
     {
@@ -63,8 +86,13 @@ function getContourLayers(): object[] {
       type: 'line',
       source: 'contour',
       'source-layer': 'contour',
+      // 200 m lines are a subset of the z9 (% 100 == 0) tier.
       minzoom: 9,
-      filter: ['==', ['%', ['to-number', ['get', 'elevation']], 200], 0],
+      filter: [
+        'all',
+        ['==', ['%', ['to-number', ['get', 'elevation']], 200], 0],
+        ['>', ['to-number', ['get', 'elevation']], 0],
+      ],
       paint: {
         'line-color': 'rgb(150, 100, 50)',
         'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.9, 11, 1.5, 13, 1.8, 15, 2.4],
@@ -76,8 +104,14 @@ function getContourLayers(): object[] {
       type: 'symbol',
       source: 'contour',
       'source-layer': 'contour',
+      // Index-line data exists from z9, but labels are deliberately held back
+      // to z12 for legibility — labelling every 100 m line at z9/z10 is unreadable.
       minzoom: 12,
-      filter: ['==', ['to-number', ['get', 'is_index']], 1],
+      filter: [
+        'all',
+        ['==', ['to-number', ['get', 'is_index']], 1],
+        ['>', ['to-number', ['get', 'elevation']], 0],
+      ],
       layout: {
         'symbol-placement': 'line',
         'text-field': ['concat', ['to-string', ['get', 'elevation']], 'm'],

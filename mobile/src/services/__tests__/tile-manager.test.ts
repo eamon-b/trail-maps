@@ -3,6 +3,7 @@ import { TileManager } from '../tile-manager';
 import {
   getTrailTileStatus,
   deleteTrailTiles,
+  clearMbtilesValidationCache,
   provisionGlyphs,
   buildTopoStyle,
   validateMbtilesCached,
@@ -37,6 +38,7 @@ jest.mock('../tile-service', () => ({
   getTrailTileStatus: jest.fn(),
   downloadTrailTiles: jest.fn().mockResolvedValue(undefined),
   deleteTrailTiles: jest.fn(),
+  clearMbtilesValidationCache: jest.fn(),
   provisionGlyphs: jest.fn().mockResolvedValue('/mock/fonts'),
   buildTopoStyle: jest.fn().mockReturnValue({ version: 8, layers: [] }),
   validateMbtilesCached: jest.fn().mockResolvedValue({ ok: true }),
@@ -44,6 +46,9 @@ jest.mock('../tile-service', () => ({
 
 const mockGetStatus = getTrailTileStatus as jest.MockedFunction<typeof getTrailTileStatus>;
 const mockDelete = deleteTrailTiles as jest.MockedFunction<typeof deleteTrailTiles>;
+const mockClearCache = clearMbtilesValidationCache as jest.MockedFunction<
+  typeof clearMbtilesValidationCache
+>;
 const mockProvisionGlyphs = provisionGlyphs as jest.MockedFunction<typeof provisionGlyphs>;
 const mockBuildStyle = buildTopoStyle as jest.MockedFunction<typeof buildTopoStyle>;
 const mockValidate = validateMbtilesCached as jest.MockedFunction<typeof validateMbtilesCached>;
@@ -142,7 +147,7 @@ describe('TileManager', () => {
     expect(mockBuildStyle).not.toHaveBeenCalled();
   });
 
-  it('getOfflineStyle provisions glyphs and returns style when downloaded', async () => {
+  it('getOfflineStyle provisions glyphs and reports an undegraded style when downloaded', async () => {
     mockGetStatus.mockReturnValue({
       trailId: 'heysen',
       files: [],
@@ -159,7 +164,8 @@ describe('TileManager', () => {
 
     expect(mockProvisionGlyphs).toHaveBeenCalled();
     expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts', { includeContours: true });
-    expect(result).toBe(expectedStyle);
+    expect(result).toEqual({ style: expectedStyle, contoursDropped: false, reason: undefined });
+    expect(result?.style).toBe(expectedStyle);
   });
 
   it('getOfflineStyle returns null (online fallback) when base.mbtiles fails validation', async () => {
@@ -182,7 +188,7 @@ describe('TileManager', () => {
     expect(mockBuildStyle).not.toHaveBeenCalled();
   });
 
-  it('getOfflineStyle drops contour layers when contours.mbtiles fails validation', async () => {
+  it('getOfflineStyle reports dropped contours instead of degrading silently', async () => {
     mockGetStatus.mockReturnValue({
       trailId: 'aawt',
       files: [],
@@ -195,11 +201,27 @@ describe('TileManager', () => {
         ? { ok: false, reason: 'no tiles in tiles table' }
         : { ok: true },
     );
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const result = await manager.getOfflineStyle('aawt');
 
-    expect(result).not.toBeNull();
     expect(mockBuildStyle).toHaveBeenCalledWith('aawt', '/mock/fonts', { includeContours: false });
+    // The degradation is machine-readable (for the map's banner), not just a warn.
+    expect(result).toMatchObject({
+      contoursDropped: true,
+      reason: 'no tiles in tiles table',
+    });
+    expect(result?.style).toBeDefined();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('clearValidationCache delegates to the tile service', () => {
+    manager.clearValidationCache('heysen');
+    expect(mockClearCache).toHaveBeenCalledWith('heysen');
+
+    manager.clearValidationCache();
+    expect(mockClearCache).toHaveBeenCalledWith(undefined);
   });
 
   it('deleteTrail delegates to deleteTrailTiles', () => {

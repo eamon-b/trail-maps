@@ -1,14 +1,26 @@
 import {
+  degradationMessage,
   FALLBACK_MAP_STYLE,
   isContourTileLoadFailure,
+  isRedownloadFixable,
   labelFontForSource,
+  mapDegradation,
   mapRemountKey,
   resolveStyleSource,
   TRACK_COLORS,
   TRACK_DASH,
   TRACK_WIDTHS,
   trackWidthExpression,
+  type MapStyleResolution,
 } from '../map-style';
+
+/** A healthy resolution, spread-overridden per case. */
+const healthy: MapStyleResolution = {
+  requested: 'offline',
+  resolved: 'offline',
+  contoursDropped: false,
+  fallback: false,
+};
 
 /** Rough perceptual distance between two #rrggbb colors (0 = identical). */
 function colorDistance(a: string, b: string): number {
@@ -36,6 +48,51 @@ describe('resolveStyleSource', () => {
     expect(resolveStyleSource('partial')).toBe('online');
     expect(resolveStyleSource('absent')).toBe('online');
     expect(resolveStyleSource(undefined)).toBe('online');
+  });
+
+  it('goes online while an update rewrites a complete pack in place', () => {
+    // An update keeps on-disk state at 'complete' the whole time; holding the
+    // mbtiles open in MapLibre while they are overwritten can abort natively.
+    expect(resolveStyleSource('complete', { downloading: true })).toBe('online');
+    expect(resolveStyleSource('complete', { downloading: false })).toBe('offline');
+  });
+
+  it('returns to offline once the download finishes', () => {
+    const during = resolveStyleSource('complete', { downloading: true });
+    const after = resolveStyleSource('complete', { downloading: false });
+    expect(during).toBe('online');
+    expect(after).toBe('offline');
+    // ...and the flip remounts the map onto the freshly written tiles.
+    expect(mapRemountKey(during)).not.toBe(mapRemountKey(after));
+  });
+});
+
+describe('mapDegradation', () => {
+  it('reports nothing when the map got what it asked for', () => {
+    expect(mapDegradation(healthy)).toBeNull();
+    expect(mapDegradation({ ...healthy, requested: 'online', resolved: 'online' })).toBeNull();
+  });
+
+  it('reports an offline request that fell back to the online basemap', () => {
+    expect(mapDegradation({ ...healthy, resolved: 'online' })).toBe('offline-unavailable');
+  });
+
+  it('reports dropped contours on an otherwise offline map', () => {
+    expect(mapDegradation({ ...healthy, contoursDropped: true })).toBe('contours-missing');
+  });
+
+  it('reports the bare fallback ahead of any other degradation', () => {
+    expect(mapDegradation({ ...healthy, resolved: 'online', fallback: true })).toBe('no-basemap');
+  });
+
+  it('gives every degradation user-facing copy, and only offers a re-download that can help', () => {
+    for (const d of ['no-basemap', 'offline-unavailable', 'contours-missing'] as const) {
+      expect(degradationMessage(d).length).toBeGreaterThan(0);
+    }
+    expect(isRedownloadFixable('offline-unavailable')).toBe(true);
+    expect(isRedownloadFixable('contours-missing')).toBe(true);
+    // No tiles and no network: downloading again is not the fix.
+    expect(isRedownloadFixable('no-basemap')).toBe(false);
   });
 });
 

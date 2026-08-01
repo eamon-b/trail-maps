@@ -67,6 +67,7 @@ import {
   TRACK_DASH,
   TRACK_WIDTHS,
   trackWidthExpression,
+  type MapStyleResolution,
   type MapStyleSource,
 } from './map-style';
 
@@ -150,6 +151,12 @@ export interface GuideMapProps {
   builderMode?: boolean;
   /** A raw map tap (lat/lon) while in builder mode. */
   onMapPress?: (lat: number, lon: number) => void;
+  /**
+   * Reports what actually mounted each time the style is resolved, so the pane
+   * can surface a degraded basemap to the user. Fired on every resolution,
+   * including the healthy one (so a fixed map clears any banner).
+   */
+  onStyleResolved?: (resolution: MapStyleResolution) => void;
 }
 
 // Route-overlay layer filters: split the single mixed ShapeSource into
@@ -225,36 +232,88 @@ export const GuideMap = memo(
       routeOverlay,
       builderMode,
       onMapPress,
+      onStyleResolved,
     },
     ref,
   ) {
     const { colors } = useTheme();
     const cameraRef = useRef<CameraRef>(null);
 
-    // Resolve the concrete style object before mounting the map. The source is
-    // the remount key, so this effect re-runs (and the map remounts) whenever a
-    // download completing flips offline/online.
-    const [resolvedStyle, setResolvedStyle] = useState<object | null>(null);
+    // Held in a ref so a parent re-rendering with a new callback identity does
+    // not re-run style resolution (which would remount the native map).
+    const onStyleResolvedRef = useRef(onStyleResolved);
+    onStyleResolvedRef.current = onStyleResolved;
+
+    // Resolve the concrete style object before mounting the map, and remember
+    // which source it actually came from. `styleSource` is only the *request*:
+    // an offline request whose pack is damaged resolves online, and everything
+    // downstream (label font, remount key) must follow what mounted, not what
+    // was asked for — otherwise we hand Liberty's Noto Sans glyph server a
+    // request for Open Sans and every label renders as an empty box.
+    const [resolved, setResolved] = useState<{ style: object; source: MapStyleSource } | null>(
+      null,
+    );
     useEffect(() => {
       let cancelled = false;
-      setResolvedStyle(null);
+      setResolved(null);
 
-      const resolve = async (): Promise<object> => {
+      const resolve = async (): Promise<{ style: object; resolution: MapStyleResolution }> => {
         if (styleSource === 'offline') {
           const offline = await tileManager.getOfflineStyle(trailId);
-          if (offline) return offline;
-          // Pack vanished between the store read and here — fall back online.
+          if (offline) {
+            return {
+              style: offline.style,
+              resolution: {
+                requested: 'offline',
+                resolved: 'offline',
+                contoursDropped: offline.contoursDropped,
+                fallback: false,
+                reason: offline.reason,
+              },
+            };
+          }
+          // Pack missing or damaged between the store read and here — the map
+          // goes online, and says so.
+          return {
+            style: await getOnlineMapStyle(),
+            resolution: {
+              requested: 'offline',
+              resolved: 'online',
+              contoursDropped: false,
+              fallback: false,
+            },
+          };
         }
-        return getOnlineMapStyle();
+        return {
+          style: await getOnlineMapStyle(),
+          resolution: {
+            requested: 'online',
+            resolved: 'online',
+            contoursDropped: false,
+            fallback: false,
+          },
+        };
       };
 
       resolve()
-        .then((style) => {
-          if (!cancelled) setResolvedStyle(style);
+        .then(({ style, resolution }) => {
+          if (cancelled) return;
+          setResolved({ style, source: resolution.resolved });
+          onStyleResolvedRef.current?.(resolution);
         })
         .catch((error) => {
           console.warn('Failed to resolve map style; using fallback:', error);
-          if (!cancelled) setResolvedStyle(FALLBACK_MAP_STYLE);
+          if (cancelled) return;
+          // The bare fallback style ships no glyphs at all, so 'online' here is
+          // only about keeping the label stack on a defined value.
+          setResolved({ style: FALLBACK_MAP_STYLE, source: 'online' });
+          onStyleResolvedRef.current?.({
+            requested: styleSource,
+            resolved: 'online',
+            contoursDropped: false,
+            fallback: true,
+            reason: error instanceof Error ? error.message : String(error),
+          });
         });
 
       return () => {
@@ -262,7 +321,8 @@ export const GuideMap = memo(
       };
     }, [trailId, styleSource]);
 
-    const labelFont = useMemo(() => labelFontForSource(styleSource), [styleSource]);
+    const resolvedSource = resolved?.source ?? styleSource;
+    const labelFont = useMemo(() => labelFontForSource(resolvedSource), [resolvedSource]);
 
     // --- GeoJSON sources ---------------------------------------------------
     const trailLine = useMemo(() => buildTrailLine(displayPoints), [displayPoints]);
@@ -482,7 +542,7 @@ export const GuideMap = memo(
       [builderMode, onMapPress],
     );
 
-    if (!resolvedStyle) {
+    if (!resolved) {
       return (
         <View style={[styles.loading, { backgroundColor: colors.background }]}>
           <ActivityIndicator size="small" color={colors.accent} />
@@ -493,9 +553,9 @@ export const GuideMap = memo(
 
     return (
       <MapView
-        key={mapRemountKey(styleSource)}
+        key={mapRemountKey(resolved.source)}
         style={styles.map}
-        mapStyle={resolvedStyle}
+        mapStyle={resolved.style}
         logoEnabled={false}
         attributionEnabled={false}
         compassEnabled

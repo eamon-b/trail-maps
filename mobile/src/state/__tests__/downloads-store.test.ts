@@ -1,5 +1,6 @@
 import { useDownloadsStore } from '../downloads-store';
 import { tileManager } from '../../services/tile-manager';
+import { resolveStyleSource } from '../../features/map/map-style';
 import type { DownloadOptions } from '../../services/tile-service';
 
 jest.mock('../../services/tile-manager', () => ({
@@ -7,12 +8,14 @@ jest.mock('../../services/tile-manager', () => ({
     getTrailStatus: jest.fn(),
     downloadTrail: jest.fn(),
     deleteTrail: jest.fn(),
+    clearValidationCache: jest.fn(),
   },
 }));
 
 const mockGetStatus = tileManager.getTrailStatus as jest.Mock;
 const mockDownload = tileManager.downloadTrail as jest.Mock;
 const mockDelete = tileManager.deleteTrail as jest.Mock;
+const mockClearCache = tileManager.clearValidationCache as jest.Mock;
 
 function status(state: 'absent' | 'partial' | 'complete', totalSizeBytes = 0) {
   return { trailId: 't', files: [], complete: state === 'complete', state, totalSizeBytes };
@@ -109,6 +112,50 @@ describe('downloads-store', () => {
     const s = useDownloadsStore.getState().get('aawt');
     expect(s.downloading).toBe(false);
     expect(s.error).toBeUndefined();
+  });
+
+  it('takes the map off the offline tiles while an update re-download runs', async () => {
+    // The regression: during an *update* the pack on disk stays 'complete', so
+    // the guide map kept the mbtiles mounted in MapLibre while
+    // downloadTrailTiles overwrote them in place (native crash risk).
+    let finishDownload: (() => void) | undefined;
+    mockDownload.mockImplementation(
+      () => new Promise<void>((resolve) => { finishDownload = resolve; }),
+    );
+    mockGetStatus.mockReturnValue(status('complete'));
+
+    // A fully downloaded trail: the map is on the offline style.
+    useDownloadsStore.getState().refreshStatus('aawt');
+    let entry = useDownloadsStore.getState().get('aawt');
+    expect(resolveStyleSource(entry.state, { downloading: entry.downloading })).toBe('offline');
+
+    const promise = useDownloadsStore.getState().startDownload('aawt', 'https://tiles.example');
+
+    // In flight: state is still 'complete', but the map must go online.
+    entry = useDownloadsStore.getState().get('aawt');
+    expect(entry.state).toBe('complete');
+    expect(entry.downloading).toBe(true);
+    expect(resolveStyleSource(entry.state, { downloading: entry.downloading })).toBe('online');
+    // Stale validation verdicts for the files being rewritten are dropped.
+    expect(mockClearCache).toHaveBeenCalledWith('aawt');
+
+    finishDownload?.();
+    await promise;
+
+    // Done: back to offline automatically, with a fresh validation pass.
+    entry = useDownloadsStore.getState().get('aawt');
+    expect(entry.downloading).toBe(false);
+    expect(resolveStyleSource(entry.state, { downloading: entry.downloading })).toBe('offline');
+    expect(mockClearCache).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears the validation cache even when a download fails', async () => {
+    mockDownload.mockRejectedValue(new Error('network down'));
+    mockGetStatus.mockReturnValue(status('partial'));
+
+    await useDownloadsStore.getState().startDownload('aawt', 'https://tiles.example');
+
+    expect(mockClearCache).toHaveBeenCalledTimes(2);
   });
 
   it('deleteTiles removes tiles and refreshes status', () => {

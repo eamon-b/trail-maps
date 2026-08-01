@@ -20,7 +20,14 @@ import type { TileStatusState } from '../services/tile-service';
 export interface TrailDownload {
   /** On-disk readiness, mirrored from the tile manager. */
   state: TileStatusState;
-  /** True while a download is actively running. */
+  /**
+   * True while a download is actively running.
+   *
+   * Note this is independent of `state`: during an *update* the pack on disk
+   * stays 'complete' while it is overwritten. Consumers that mount the tiles
+   * (the guide map) must treat `downloading` as "these files are not safe to
+   * hold open" — see resolveStyleSource in features/map/map-style.
+   */
   downloading: boolean;
   /** 0..1 byte-level progress of the active download (0 when idle). */
   progress: number;
@@ -85,7 +92,16 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => {
 
       const signal = { cancelled: false };
       signals.set(trailId, signal);
+      // `downloading` is load-bearing beyond the progress bar: an *update*
+      // re-download replaces base.mbtiles / contours.mbtiles while on-disk
+      // state stays 'complete', so a mounted offline map would keep the old
+      // files open in MapLibre's native tile source across the swap.
+      // resolveStyleSource treats `downloading` as "go online", which remounts
+      // the map off those files before the first byte lands.
       patch(trailId, { downloading: true, progress: 0, error: undefined });
+      // The files are about to change; stale validation verdicts must not
+      // outlive them.
+      tileManager.clearValidationCache(trailId);
 
       try {
         await tileManager.downloadTrail(trailId, baseUrl, {
@@ -95,13 +111,18 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => {
             patch(trailId, { progress });
           },
         });
-        // Success — re-derive final state from disk.
+        // Success — re-derive final state from disk. The cache is dropped
+        // *before* the patch that flips `downloading` back off, so the map
+        // returning to offline re-validates the files that just landed. (A
+        // same-size re-download would otherwise hit the size-keyed cache.)
         const status = tileManager.getTrailStatus(trailId);
+        tileManager.clearValidationCache(trailId);
         patch(trailId, { downloading: false, progress: 1, state: status.state });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         const cancelled = signal.cancelled;
         const status = tileManager.getTrailStatus(trailId);
+        tileManager.clearValidationCache(trailId);
         patch(trailId, {
           downloading: false,
           progress: 0,

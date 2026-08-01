@@ -2,18 +2,18 @@
  * Guide map pane: the MapLibre map plus its chrome.
  *
  * Owns the online/offline decision (subscribed to the downloads store so a
- * finished download flips the base map), a status pill, a recenter button, and
- * the FarOut-style route builder. In builder mode the pane switches the map
- * into tap-to-add-point mode, overlays the in-progress route, and swaps the FAB
- * stack for a builder toolbar; otherwise it overlays the trail's active saved
- * route (if any). The map itself lives in GuideMap.
+ * finished download flips the base map), a status pill, a degraded-map banner,
+ * a recenter button, and the FarOut-style route builder. In builder mode the
+ * pane switches the map into tap-to-add-point mode, overlays the in-progress
+ * route, and swaps the FAB stack for a builder toolbar; otherwise it overlays
+ * the trail's active saved route (if any). The map itself lives in GuideMap.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
-import { glyphSizes, radii, spacing, typography } from '../../tokens';
+import { glyphSizes, radii, spacing, touchTarget, typography } from '../../tokens';
 import { useDownloadsStore } from '../../state/downloads-store';
 import { useFavoritesStore } from '../../state/favorites-store';
 import { useSettingsStore } from '../../state/settings-store';
@@ -30,16 +30,59 @@ import {
 } from '../routes/route-geometry';
 import { GuideMap, type GuideMapHandle } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
-import { resolveStyleSource } from './map-style';
+import {
+  degradationMessage,
+  isRedownloadFixable,
+  mapDegradation,
+  resolveStyleSource,
+  type MapDegradation,
+  type MapStyleResolution,
+} from './map-style';
 import { TrackLegend } from './TrackLegend';
 import { hasDrawableVariant, type MapVariant, type MapWaypoint } from './map-geojson';
+
+/** Same env var the Offline Maps screen uses; empty disables re-download. */
+const TILE_BASE_URL = process.env.EXPO_PUBLIC_TILE_BASE_URL ?? '';
 
 export function MapPane() {
   const { colors } = useTheme();
   const { trail, trailId } = useGuide();
   const download = useDownloadsStore((s) => s.byTrail[trailId]);
-  const source = resolveStyleSource(download?.state);
+  // `downloading` forces the map online for the duration: an update replaces
+  // the mbtiles while on-disk state is still 'complete', and MapLibre must not
+  // be holding those files open while that happens.
+  const source = resolveStyleSource(download?.state, { downloading: download?.downloading });
   const offline = source === 'offline';
+  const downloading = download?.downloading ?? false;
+
+  const startDownload = useDownloadsStore((s) => s.startDownload);
+  const deleteTiles = useDownloadsStore((s) => s.deleteTiles);
+
+  // --- Degraded-basemap reporting ------------------------------------------
+  // GuideMap tells us what actually mounted (which may be worse than what we
+  // asked for: damaged tiles fall back online, bad contours drop their layers).
+  const [resolution, setResolution] = useState<MapStyleResolution | null>(null);
+  const onStyleResolved = useCallback((next: MapStyleResolution) => setResolution(next), []);
+
+  const degradation = useMemo(
+    () => (resolution ? mapDegradation(resolution) : null),
+    [resolution],
+  );
+
+  // Dismissal is per-degradation, so a *different* problem still gets a banner,
+  // and per-trail, so dismissing on one guide doesn't silence another.
+  const [dismissed, setDismissed] = useState<MapDegradation | null>(null);
+  useEffect(() => {
+    setDismissed(null);
+    setResolution(null);
+  }, [trailId]);
+
+  const onRedownload = useCallback(() => {
+    setDismissed(null);
+    setResolution(null);
+    deleteTiles(trailId);
+    void startDownload(trailId, TILE_BASE_URL);
+  }, [deleteTiles, startDownload, trailId]);
 
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
@@ -79,6 +122,10 @@ export function MapPane() {
     () => computeRouteStats(builderPoints, routeTrack),
     [builderPoints, routeTrack],
   );
+
+  // Banner is suppressed while a re-download is already running (it is being
+  // fixed) and while the route builder owns the screen.
+  const showBanner = degradation != null && degradation !== dismissed && !downloading && !building;
 
   const onMapPress = useCallback(
     (lat: number, lon: number) => {
@@ -155,28 +202,55 @@ export function MapPane() {
           routeOverlay={routeOverlay}
           builderMode={building}
           onMapPress={onMapPress}
+          onStyleResolved={onStyleResolved}
         />
       </MapErrorBoundary>
 
-      {/* Base-map status / builder hint pill */}
-      <View
-        style={[styles.pill, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
-        pointerEvents="none"
-      >
-        {building ? (
-          <Text style={[styles.pillText, { color: colors.textPrimary }]}>
-            Tap the map to add route points
-          </Text>
-        ) : (
-          <>
-            <View
-              style={[styles.dot, { backgroundColor: offline ? colors.downloadDone : colors.info }]}
-            />
-            <Text style={[styles.pillText, { color: colors.textPrimary }]}>
-              {offline ? 'Offline maps ready' : 'Online'}
-            </Text>
-          </>
+      {/* Top chrome: degraded-map banner over the base-map status pill. */}
+      <View style={styles.topStack} pointerEvents="box-none">
+        {showBanner && (
+          <DegradedMapBanner
+            message={degradationMessage(degradation)}
+            onRedownload={
+              isRedownloadFixable(degradation) && TILE_BASE_URL.length > 0
+                ? onRedownload
+                : undefined
+            }
+            onDismiss={() => setDismissed(degradation)}
+          />
         )}
+
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+          ]}
+          pointerEvents="none"
+        >
+          {building ? (
+            <Text style={[styles.pillText, { color: colors.textPrimary }]}>
+              Tap the map to add route points
+            </Text>
+          ) : (
+            <>
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: downloading
+                      ? colors.downloadActive
+                      : offline
+                        ? colors.downloadDone
+                        : colors.info,
+                  },
+                ]}
+              />
+              <Text style={[styles.pillText, { color: colors.textPrimary }]}>
+                {downloading ? 'Updating offline maps…' : offline ? 'Offline maps ready' : 'Online'}
+              </Text>
+            </>
+          )}
+        </View>
       </View>
 
       {/* Map key for the track classes — suppressed while drawing a route, when
@@ -250,14 +324,93 @@ export function MapPane() {
   );
 }
 
+/**
+ * Dismissible notice that the mounted basemap is worse than the one the user
+ * downloaded. Lives here rather than in a shared component because it is the
+ * only banner in the app so far; promote it if a second caller appears.
+ */
+function DegradedMapBanner({
+  message,
+  onRedownload,
+  onDismiss,
+}: {
+  message: string;
+  /** Omitted when re-downloading can't fix the problem, or tiles are disabled. */
+  onRedownload?: () => void;
+  onDismiss: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View
+      accessibilityRole="alert"
+      style={[
+        styles.banner,
+        { backgroundColor: colors.surfaceElevated, borderColor: colors.warning },
+      ]}
+    >
+      <Text style={[styles.bannerText, { color: colors.textPrimary }]}>{message}</Text>
+      <View style={styles.bannerActions}>
+        {onRedownload && (
+          <Pressable
+            onPress={onRedownload}
+            accessibilityRole="button"
+            accessibilityLabel="Re-download offline maps"
+            style={({ pressed }) => [styles.bannerButton, pressed && styles.pressed]}
+          >
+            <Text style={[styles.bannerAction, { color: colors.accent }]}>Re-download</Text>
+          </Pressable>
+        )}
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss map warning"
+          style={({ pressed }) => [styles.bannerButton, pressed && styles.pressed]}
+        >
+          <Text style={[styles.bannerAction, { color: colors.textSecondary }]}>Dismiss</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  pill: {
+  topStack: {
     position: 'absolute',
     top: spacing.md,
-    alignSelf: 'center',
+    left: spacing.md,
+    right: spacing.md,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  banner: {
+    alignSelf: 'stretch',
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  bannerText: {
+    ...typography.bodySmall,
+  },
+  bannerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.md,
+  },
+  bannerButton: {
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  bannerAction: {
+    ...typography.bodySmall,
+    fontWeight: '600',
+  },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,

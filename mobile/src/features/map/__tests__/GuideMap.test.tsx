@@ -51,6 +51,18 @@ const nodeType = (n: unknown) => (n as { type: unknown }).type;
 
 const ONLINE_STYLE = { version: 8, sources: {}, layers: [] };
 const OFFLINE_STYLE = { version: 8, sources: { basemap: {} }, layers: [] };
+/** getOfflineStyle's structured result (see tile-manager's OfflineStyleResult). */
+const offlineResult = (contoursDropped = false) => ({
+  style: OFFLINE_STYLE,
+  contoursDropped,
+  reason: contoursDropped ? 'no tiles in tiles table' : undefined,
+});
+
+/** The `textFont` of a mounted SymbolLayer, e.g. the waypoint labels. */
+const labelFontOf = (tree: ReactTestRenderer, id: string) => {
+  const [layer] = tree.root.findAll((n) => nodeType(n) === 'SymbolLayer' && n.props.id === id);
+  return (layer.props.style as { textFont: string[] }).textFont;
+};
 
 const points = [
   { lat: -35, lon: 138, ele: 0, dist: 0 },
@@ -91,7 +103,7 @@ describe('GuideMap', () => {
   });
 
   it('resolves the offline style when the source is offline', async () => {
-    getOfflineStyle.mockResolvedValue(OFFLINE_STYLE);
+    getOfflineStyle.mockResolvedValue(offlineResult());
     getOnline.mockResolvedValue(ONLINE_STYLE);
     let tree!: ReactTestRenderer;
     act(() => {
@@ -103,6 +115,9 @@ describe('GuideMap', () => {
     expect(getOfflineStyle).toHaveBeenCalledWith('heysen');
     expect(getOnline).not.toHaveBeenCalled();
     expect(mapViews(tree)).toHaveLength(1);
+    expect(mapViews(tree)[0].props.mapStyle).toBe(OFFLINE_STYLE);
+    // Offline topo tiles ship Open Sans glyphs.
+    expect(labelFontOf(tree, 'guide-waypoints-labels')).toEqual(['Open Sans Regular']);
   });
 
   it('falls back online when an offline pack is missing at mount time', async () => {
@@ -118,6 +133,95 @@ describe('GuideMap', () => {
     expect(getOfflineStyle).toHaveBeenCalledWith('heysen');
     expect(getOnline).toHaveBeenCalled();
     expect(mapViews(tree)).toHaveLength(1);
+  });
+
+  it('labels and keys off the source that resolved, not the one requested', async () => {
+    // The regression: styleSource='offline' + a damaged pack mounted the online
+    // Liberty style but still asked it for Open Sans glyphs it does not serve,
+    // so every label rendered as an empty box.
+    getOfflineStyle.mockResolvedValue(null);
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="offline"
+          displayPoints={points}
+          waypoints={waypoints}
+        />,
+      );
+    });
+    await flush();
+
+    const map = mapViews(tree)[0];
+    expect(map.props.mapStyle).toBe(ONLINE_STYLE);
+    expect(labelFontOf(tree, 'guide-waypoints-labels')).toEqual(['Noto Sans Regular']);
+    expect(labelFontOf(tree, 'guide-waypoints-cluster-counts')).toEqual(['Noto Sans Regular']);
+  });
+
+  it('reports what actually mounted so the pane can surface a degraded map', async () => {
+    const onStyleResolved = jest.fn();
+    getOfflineStyle.mockResolvedValue(offlineResult(true));
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    act(() => {
+      TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="offline"
+          displayPoints={points}
+          onStyleResolved={onStyleResolved}
+        />,
+      );
+    });
+    await flush();
+    expect(onStyleResolved).toHaveBeenCalledWith({
+      requested: 'offline',
+      resolved: 'offline',
+      contoursDropped: true,
+      fallback: false,
+      reason: 'no tiles in tiles table',
+    });
+  });
+
+  it('reports the online fallback when the offline pack is unusable', async () => {
+    const onStyleResolved = jest.fn();
+    getOfflineStyle.mockResolvedValue(null);
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    act(() => {
+      TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="offline"
+          displayPoints={points}
+          onStyleResolved={onStyleResolved}
+        />,
+      );
+    });
+    await flush();
+    expect(onStyleResolved).toHaveBeenCalledWith(
+      expect.objectContaining({ requested: 'offline', resolved: 'online', fallback: false }),
+    );
+  });
+
+  it('reports the bare fallback when no style resolves at all', async () => {
+    const onStyleResolved = jest.fn();
+    getOfflineStyle.mockResolvedValue(null);
+    getOnline.mockRejectedValue(new Error('network down'));
+    act(() => {
+      TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="offline"
+          displayPoints={points}
+          onStyleResolved={onStyleResolved}
+        />,
+      );
+    });
+    await flush();
+    expect(onStyleResolved).toHaveBeenCalledWith(
+      expect.objectContaining({ fallback: true, reason: 'network down' }),
+    );
   });
 
   it('still mounts on a valid fallback style when resolution throws', async () => {

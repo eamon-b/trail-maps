@@ -11,6 +11,7 @@ import {
   downloadTrailTiles,
   deleteTrailTiles,
   checkForTileUpdate,
+  clearMbtilesValidationCache,
   provisionGlyphs,
   buildTopoStyle,
   validateMbtilesCached,
@@ -19,6 +20,24 @@ import {
   type ProgressCallback,
 } from './tile-service';
 import { tilesRoot } from './tile-paths';
+
+/**
+ * What `getOfflineStyle` actually managed to resolve.
+ *
+ * The offline basemap can degrade in two ways and the user has to be told
+ * about both, so the result is structured rather than "a style or null":
+ * `null` means the offline basemap is unusable (absent, or base.mbtiles failed
+ * validation) and the caller must fall back to the online style; a result with
+ * `contoursDropped` means the map renders offline but without contour lines.
+ */
+export interface OfflineStyleResult {
+  /** MapLibre style document referencing this trail's on-disk mbtiles. */
+  style: object;
+  /** True when contours.mbtiles failed validation and its layers were dropped. */
+  contoursDropped: boolean;
+  /** Validation failure detail, present only when the style is degraded. */
+  reason?: string;
+}
 
 export class TileManager {
   /** Check if a trail's tiles have been downloaded for offline use */
@@ -77,17 +96,31 @@ export class TileManager {
   }
 
   /**
+   * Drop cached mbtiles validation results (all trails, or one trail's files).
+   * Call at any transition that rewrites tiles on disk so the next style build
+   * re-validates instead of trusting a stale verdict.
+   */
+  clearValidationCache(trailId?: string): void {
+    clearMbtilesValidationCache(trailId);
+  }
+
+  /**
    * Build a MapLibre style for offline rendering if tiles are available.
-   * Returns the style object, or null if tiles aren't downloaded.
+   *
+   * Returns what actually resolved (see OfflineStyleResult), or `null` when the
+   * offline basemap is unusable — not downloaded, or base.mbtiles failed
+   * validation — in which case the caller must fall back to the online style.
    * Provisions glyph fonts as a side effect.
    *
    * Both mbtiles files are structurally validated before being referenced:
    * handing MapLibre a corrupt or empty mbtiles source aborts the process
    * natively (std::stoi in MBTilesFileSource), which no JS error boundary
    * can catch. An invalid basemap falls back to the online style (null);
-   * invalid contours degrade to a style without contour layers.
+   * invalid contours degrade to a style without contour layers. Both cases are
+   * degradations the user paid for and should be told about, so the reason is
+   * returned as well as logged.
    */
-  async getOfflineStyle(trailId: string): Promise<object | null> {
+  async getOfflineStyle(trailId: string): Promise<OfflineStyleResult | null> {
     if (!this.isTrailDownloaded(trailId)) return null;
 
     const base = await validateMbtilesCached(trailId, 'base.mbtiles');
@@ -108,7 +141,12 @@ export class TileManager {
     }
 
     const glyphsPath = await provisionGlyphs();
-    return buildTopoStyle(trailId, glyphsPath, { includeContours: contours.ok });
+    const style = buildTopoStyle(trailId, glyphsPath, { includeContours: contours.ok });
+    return {
+      style,
+      contoursDropped: !contours.ok,
+      reason: contours.ok ? undefined : contours.reason,
+    };
   }
 }
 

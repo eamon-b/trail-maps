@@ -17,18 +17,42 @@ import type { TileStatusState } from '../../services/tile-service';
 /** Which base map the guide should render: bundled offline tiles or online. */
 export type MapStyleSource = 'offline' | 'online';
 
+/** Extra context beyond on-disk state that forces the map online. */
+export interface StyleSourceOptions {
+  /**
+   * A download is in flight for this trail. During an *update* the on-disk
+   * state stays 'complete' the whole time while `downloadTrailTiles` replaces
+   * base.mbtiles / contours.mbtiles underneath it. A mounted offline map holds
+   * those files open in MapLibre's native MBTilesFileSource — at best it goes
+   * on serving the old, unlinked inode (so the update appears not to have
+   * happened), at worst a mid-write read aborts the process. Going online for
+   * the duration releases the handles; when the download finishes the source
+   * flips back to offline and the map remounts on the fresh tiles.
+   */
+  downloading?: boolean;
+}
+
 /**
  * Decide the base-map source from a trail's download state. Offline tiles are
  * only trustworthy once the whole pack has verified on disk ('complete'); a
- * 'partial' or 'absent' download falls back to the online basemap.
+ * 'partial' or 'absent' download falls back to the online basemap, and so does
+ * a trail whose tiles are actively being rewritten (see StyleSourceOptions).
  */
-export function resolveStyleSource(state: TileStatusState | undefined): MapStyleSource {
+export function resolveStyleSource(
+  state: TileStatusState | undefined,
+  options?: StyleSourceOptions,
+): MapStyleSource {
+  if (options?.downloading) return 'online';
   return state === 'complete' ? 'offline' : 'online';
 }
 
 /**
  * The `<MapView>` remount key. Identical to the source today, but centralised
  * so the "remount on source change" contract has one authority and one test.
+ *
+ * Pass the source that *actually* resolved, not the one that was requested: a
+ * requested-offline map that fell back online must not reuse the offline map's
+ * key, or React keeps the old native map instance alive across the swap.
  */
 export function mapRemountKey(source: MapStyleSource): string {
   return `guide-map-${source}`;
@@ -39,9 +63,69 @@ export function mapRemountKey(source: MapStyleSource): string {
  * style serves Noto Sans; our bundled offline topo style ships Open Sans. Using
  * the wrong stack renders empty glyph boxes, so the label font tracks the
  * active source.
+ *
+ * Callers must pass the *resolved* source. Deriving this from the requested
+ * source is the bug this comment exists for: an offline request that falls back
+ * to the online style would ask Liberty for Open Sans glyphs it does not serve,
+ * and every label on the map renders as an empty box.
  */
 export function labelFontForSource(source: MapStyleSource): string[] {
   return source === 'offline' ? ['Open Sans Regular'] : ['Noto Sans Regular'];
+}
+
+// ---------------------------------------------------------------------------
+// Degradation reporting
+// ---------------------------------------------------------------------------
+
+/** What the map actually mounted, versus what was asked for. */
+export interface MapStyleResolution {
+  /** The source the caller asked for (from resolveStyleSource). */
+  requested: MapStyleSource;
+  /** The source that actually mounted. */
+  resolved: MapStyleSource;
+  /** Offline style mounted, but contour layers were dropped. */
+  contoursDropped: boolean;
+  /** Neither base map could be loaded; FALLBACK_MAP_STYLE is mounted. */
+  fallback: boolean;
+  /** Validation / error detail behind the degradation, when known. */
+  reason?: string;
+}
+
+/**
+ * The one way the mounted map is worse than what the user asked for, or null
+ * when it is exactly what was requested. Ordered worst-first: a bare fallback
+ * beats "went online" beats "lost contours".
+ */
+export type MapDegradation = 'no-basemap' | 'offline-unavailable' | 'contours-missing';
+
+export function mapDegradation(resolution: MapStyleResolution): MapDegradation | null {
+  if (resolution.fallback) return 'no-basemap';
+  if (resolution.requested === 'offline' && resolution.resolved === 'online') {
+    return 'offline-unavailable';
+  }
+  if (resolution.contoursDropped) return 'contours-missing';
+  return null;
+}
+
+/** Short, non-technical banner copy for a degradation. */
+export function degradationMessage(degradation: MapDegradation): string {
+  switch (degradation) {
+    case 'no-basemap':
+      return 'No map tiles could be loaded. Check your connection, or download this guide for offline use.';
+    case 'offline-unavailable':
+      return "This guide's offline maps are damaged, so the map is using the online basemap.";
+    case 'contours-missing':
+      return 'Contour lines are missing from the offline maps for this guide.';
+  }
+}
+
+/**
+ * Whether re-downloading the tile pack can plausibly fix the degradation.
+ * A missing basemap usually means "no tiles and no network", which a download
+ * cannot repair; the other two are damaged local files.
+ */
+export function isRedownloadFixable(degradation: MapDegradation): boolean {
+  return degradation !== 'no-basemap';
 }
 
 /**

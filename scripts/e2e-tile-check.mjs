@@ -30,7 +30,9 @@
  *                           would pass every other check while silently
  *                           blanking contours at the zooms hikers actually use.
  *   5. Trail offline sets — each trail's manifest.json parses, and every
- *                           mbtiles it lists exists at the manifest size,
+ *                           mbtiles it lists exists (at `files[].key` when the
+ *                           manifest is content-addressed, else at
+ *                           `files[].name`) at the manifest size,
  *                           starts with the SQLite magic, and is not a
  *                           suspiciously small stub. (An empty/corrupt
  *                           mbtiles crashes the app natively on device.)
@@ -459,15 +461,25 @@ async function checkTrailOfflineArtifacts() {
     }
 
     const failuresBefore = failures.length;
+    let keyedFiles = 0;
+    let md5Files = 0;
     for (const file of manifest.files) {
       if (!file.name?.endsWith('.mbtiles')) continue;
-      const fileUrl = `${TILE_BASE_URL}/${trailId}/${file.name}`;
+      // Objects are stored under the content-addressed `key` (uploads write
+      // new keys and swap the manifest last). Manifests published before
+      // content addressing have no key — those objects live at `name`.
+      const objectKey = file.key ?? file.name;
+      if (file.key) keyedFiles++;
+      if (file.md5) md5Files++;
+      // Report the logical name, plus the object it actually resolved to.
+      const label = file.key ? `${file.name} → ${objectKey}` : file.name;
+      const fileUrl = `${TILE_BASE_URL}/${trailId}/${objectKey}`;
       try {
         // Range-read the first 16 bytes: verifies existence, SQLite magic,
         // and (via Content-Range) the full object size — no full download.
         const res = await fetch(fileUrl, { headers: { Range: 'bytes=0-15' } });
         if (res.status !== 206 && res.status !== 200) {
-          failures.push(`[${trailId}] ${file.name} → HTTP ${res.status}`);
+          failures.push(`[${trailId}] ${label} → HTTP ${res.status}`);
           continue;
         }
 
@@ -478,12 +490,12 @@ async function checkTrailOfflineArtifacts() {
             : parseInt(res.headers.get('content-length') ?? '', 10);
         if (Number.isFinite(totalSize) && totalSize !== file.size) {
           failures.push(
-            `[${trailId}] ${file.name} size mismatch: manifest says ${file.size}, object is ${totalSize}`
+            `[${trailId}] ${label} size mismatch: manifest says ${file.size}, object is ${totalSize}`
           );
         }
         if (file.size < MIN_MBTILES_BYTES) {
           failures.push(
-            `[${trailId}] ${file.name} is suspiciously small (${file.size} bytes) — likely an empty stub`
+            `[${trailId}] ${label} is suspiciously small (${file.size} bytes) — likely an empty stub`
           );
         }
 
@@ -491,15 +503,24 @@ async function checkTrailOfflineArtifacts() {
         const magic = head.subarray(0, 16).toString('latin1');
         if (res.status === 206 || head.length >= 16) {
           if (magic !== SQLITE_MAGIC) {
-            failures.push(`[${trailId}] ${file.name} does not start with the SQLite magic header`);
+            failures.push(`[${trailId}] ${label} does not start with the SQLite magic header`);
           }
         }
       } catch (e) {
-        failures.push(`[${trailId}] ${file.name} check failed: ${e.message}`);
+        failures.push(`[${trailId}] ${label} check failed: ${e.message}`);
       }
     }
     if (failures.length === failuresBefore) {
-      console.log(`      ✓ ${trailId}: manifest ok, ${manifest.files.length} files checked (v${manifest.version})`);
+      // md5 is reported, not verified: checking it would mean downloading whole
+      // multi-hundred-MB files. The device verifies it after download instead.
+      const addressing =
+        keyedFiles > 0
+          ? `, ${keyedFiles} content-addressed${md5Files > 0 ? `, ${md5Files} with md5` : ''}`
+          : ', legacy (no content-addressed keys)';
+      console.log(
+        `      ✓ ${trailId}: manifest ok, ${manifest.files.length} files checked ` +
+          `(v${manifest.version}${addressing})`
+      );
     } else {
       console.log(`      ✗ ${trailId}: ${failures.length - failuresBefore} problem(s) — see failures below`);
     }

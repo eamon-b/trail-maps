@@ -76,9 +76,67 @@ export function cleanWorkDir(dir: string): void {
   }
 }
 
+/** Chunk size for streamed hashing (4 MiB). */
+const HASH_CHUNK_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Stream a file through one or more hashes in a single pass.
+ *
+ * Deliberately uses chunked `fs.readSync` rather than `fs.createReadStream`:
+ * the rest of the pipeline (sqlite3 validation, GDAL/tippecanoe invocation,
+ * manifest writing) is synchronous, and base.mbtiles for a long trail can be
+ * multiple GB — `fs.readFileSync` would both balloon RSS and, past ~2 GiB, hit
+ * Node's maximum Buffer length and throw. Reading a fixed 4 MiB window keeps
+ * memory flat at any file size while leaving callers synchronous.
+ */
+function hashFile(filePath: string, algorithms: string[]): string[] {
+  const hashes = algorithms.map(algorithm => crypto.createHash(algorithm));
+  const buffer = Buffer.allocUnsafe(HASH_CHUNK_BYTES);
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    let bytesRead = fs.readSync(fd, buffer, 0, HASH_CHUNK_BYTES, null);
+    while (bytesRead > 0) {
+      const chunk = buffer.subarray(0, bytesRead);
+      for (const hash of hashes) hash.update(chunk);
+      bytesRead = fs.readSync(fd, buffer, 0, HASH_CHUNK_BYTES, null);
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
+  return hashes.map(hash => hash.digest('hex'));
+}
+
 export function fileSha256(filePath: string): string {
-  const data = fs.readFileSync(filePath);
-  return crypto.createHash('sha256').update(data).digest('hex');
+  return hashFile(filePath, ['sha256'])[0];
+}
+
+export function fileMd5(filePath: string): string {
+  return hashFile(filePath, ['md5'])[0];
+}
+
+/**
+ * Both digests the manifest needs, computed in one pass over the bytes.
+ * sha256 is the tooling/content-address hash; md5 is what the device can
+ * cheaply verify after download (expo-file-system exposes `File.md5`).
+ */
+export function fileDigests(filePath: string): { sha256: string; md5: string } {
+  const [sha256, md5] = hashFile(filePath, ['sha256', 'md5']);
+  return { sha256, md5 };
+}
+
+/**
+ * Content-addressed remote object key for a tile file: the logical name with
+ * the first 12 hex chars of its sha256 spliced in before the extension, e.g.
+ * `base.mbtiles` + `58ce65fc4290…` → `base.58ce65fc4290.mbtiles`.
+ *
+ * Uploads write new bytes at new keys and swap manifest.json last, so a client
+ * holding the previous manifest keeps resolving the previous (untouched)
+ * objects for the whole duration of an upload.
+ */
+export function contentAddressedKey(name: string, sha256: string): string {
+  const ext = path.extname(name);
+  const stem = ext ? name.slice(0, -ext.length) : name;
+  return `${stem}.${sha256.slice(0, 12)}${ext}`;
 }
 
 export function fileSizeBytes(filePath: string): number {
@@ -652,6 +710,11 @@ export interface ManifestFileInput {
  * `--skip-base` / `--skip-contours` paths, where the manifest is rewritten
  * over files that were not rebuilt this run.
  *
+ * Each entry carries a `key` — the content-addressed remote object name the
+ * uploader writes to — plus `md5` for cheap on-device verification. Both are
+ * derived from a single streamed pass over the file, so rewriting a manifest
+ * over unchanged artifacts reproduces the same keys.
+ *
  * @param id - Identifier (trail ID or grid cell ID)
  * @param outputDir - Directory to write manifest.json into
  * @param bounds - Geographic bounds [west, south, east, north]
@@ -670,10 +733,13 @@ export function writeManifest(
       if (file.name.endsWith('.mbtiles')) {
         validateMbtilesArtifact(file.path, file.expectedZoom);
       }
+      const { sha256, md5 } = fileDigests(file.path);
       manifestFiles.push({
         name: file.name,
         size: fileSizeBytes(file.path),
-        sha256: fileSha256(file.path),
+        sha256,
+        md5,
+        key: contentAddressedKey(file.name, sha256),
       });
     } else {
       console.warn(

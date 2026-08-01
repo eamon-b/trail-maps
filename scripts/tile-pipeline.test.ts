@@ -2,10 +2,14 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { execFileSync } from 'child_process';
 import {
   validateMbtilesArtifact,
   writeManifest,
+  fileSha256,
+  fileMd5,
+  contentAddressedKey,
   CONTOUR_MIN_ZOOM,
   MAX_ZOOM,
   CONTOUR_ZOOM_EXPECTATION,
@@ -140,6 +144,50 @@ describe('validateMbtilesArtifact', () => {
   });
 });
 
+describe('file hashing helpers', () => {
+  function digest(algorithm: string, data: Buffer): string {
+    return crypto.createHash(algorithm).update(data).digest('hex');
+  }
+
+  it('matches a one-shot digest for a file smaller than the read chunk', () => {
+    const filePath = path.join(tmpDir, `small-${fixtureCounter++}.bin`);
+    const data = Buffer.from('the quick brown fox\n');
+    fs.writeFileSync(filePath, data);
+
+    expect(fileSha256(filePath)).toBe(digest('sha256', data));
+    expect(fileMd5(filePath)).toBe(digest('md5', data));
+  });
+
+  it('matches a one-shot digest across several read chunks', () => {
+    // Larger than the 4 MiB internal read window, so the chunk loop runs
+    // multiple times and a partial final chunk is hashed.
+    const filePath = path.join(tmpDir, `large-${fixtureCounter++}.bin`);
+    const data = crypto.randomBytes(4 * 1024 * 1024 + 12_345);
+    fs.writeFileSync(filePath, data);
+
+    expect(fileSha256(filePath)).toBe(digest('sha256', data));
+    expect(fileMd5(filePath)).toBe(digest('md5', data));
+  });
+
+  it('handles an empty file', () => {
+    const filePath = path.join(tmpDir, `empty-${fixtureCounter++}.bin`);
+    fs.writeFileSync(filePath, Buffer.alloc(0));
+
+    expect(fileSha256(filePath)).toBe(digest('sha256', Buffer.alloc(0)));
+    expect(fileMd5(filePath)).toBe(digest('md5', Buffer.alloc(0)));
+  });
+
+  it('splices the hash prefix before the extension', () => {
+    const sha = 'a'.repeat(52) + 'b'.repeat(12);
+    expect(contentAddressedKey('base.mbtiles', '58ce65fc4290' + sha)).toBe(
+      'base.58ce65fc4290.mbtiles'
+    );
+    expect(contentAddressedKey('contours.mbtiles', 'deadbeef1234' + sha)).toBe(
+      'contours.deadbeef1234.mbtiles'
+    );
+  });
+});
+
 describe('writeManifest', () => {
   function outDir(name: string): string {
     const dir = path.join(tmpDir, `out-${name}-${fixtureCounter++}`);
@@ -197,5 +245,56 @@ describe('writeManifest', () => {
     const written = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf-8'));
     expect(written.trailId).toBe('demo');
     expect(written.files).toHaveLength(1);
+  });
+
+  it('records md5 and a content-addressed key for every file', () => {
+    const dir = outDir('content-addressed');
+    const base = makeMbtiles('base-ok', { zooms: [4, 9, 15] });
+    const contours = makeMbtiles('contours-ok', { zooms: contourZooms });
+
+    const manifest = writeManifest('demo', dir, bounds, [
+      { name: 'base.mbtiles', path: base },
+      { name: 'contours.mbtiles', path: contours, expectedZoom: CONTOUR_ZOOM_EXPECTATION },
+    ]);
+
+    const sourcePaths: Record<string, string> = {
+      'base.mbtiles': base,
+      'contours.mbtiles': contours,
+    };
+
+    for (const file of manifest.files) {
+      const bytes = fs.readFileSync(sourcePaths[file.name]);
+
+      // Independently computed digests — not just the pipeline agreeing with itself.
+      expect(file.sha256).toBe(crypto.createHash('sha256').update(bytes).digest('hex'));
+      expect(file.md5).toBe(crypto.createHash('md5').update(bytes).digest('hex'));
+      expect(file.size).toBe(bytes.length);
+
+      const stem = file.name.replace(/\.mbtiles$/, '');
+      expect(file.key).toBe(`${stem}.${file.sha256!.slice(0, 12)}.mbtiles`);
+      expect(file.key).toMatch(/^[a-z]+\.[0-9a-f]{12}\.mbtiles$/);
+      // The key is a remote-only alias; the local/on-device filename is unchanged.
+      expect(file.name).toBe(`${stem}.mbtiles`);
+    }
+
+    // Distinct content must land on distinct keys.
+    expect(manifest.files[0].key).not.toBe(manifest.files[1].key);
+
+    const written = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf-8'));
+    expect(written.files).toEqual(manifest.files);
+  });
+
+  it('reproduces the same key when rewritten over unchanged files', () => {
+    const dir = outDir('stable-key');
+    const contours = makeMbtiles('contours-stable', { zooms: contourZooms });
+    const input = [
+      { name: 'contours.mbtiles', path: contours, expectedZoom: CONTOUR_ZOOM_EXPECTATION },
+    ];
+
+    const first = writeManifest('demo', dir, bounds, input);
+    const second = writeManifest('demo', dir, bounds, input);
+
+    expect(second.files[0].key).toBe(first.files[0].key);
+    expect(second.files[0].md5).toBe(first.files[0].md5);
   });
 });

@@ -16,6 +16,11 @@
 #
 # The script reads from public/data/tiles/ (the build output directory)
 # and uploads to the aus-map-data R2 bucket.
+#
+# Per-trail and per-grid-cell uploads are manifest-driven: each directory must
+# contain a manifest.json (written by the tile build), whose files[] entries
+# name the local files to upload and the content-addressed remote keys to put
+# them at. The manifest is uploaded last — see upload_manifest_dir.
 
 set -euo pipefail
 
@@ -87,6 +92,101 @@ validate_mbtiles() {
   echo "  Validated $(basename "$mbtiles"): $tile_count tiles, integrity ok"
 }
 
+# Print one "<local name>\t<remote key>" line per manifest entry.
+#
+# Parsed with node (guaranteed present — the whole build pipeline is Node) so
+# this script does not pick up a jq dependency. Entries without a `key` fall
+# back to `name`, which is how manifests built before content addressing are
+# uploaded unchanged.
+read_manifest_entries() {
+  local manifest_file="$1"
+
+  require_command "node" "Install Node.js, then retry."
+
+  node -e '
+    const fs = require("fs");
+    const manifestPath = process.argv[1];
+    let manifest;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    } catch (e) {
+      console.error(`${manifestPath}: could not parse manifest — ${e.message}`);
+      process.exit(1);
+    }
+    if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
+      console.error(`${manifestPath}: manifest lists no files`);
+      process.exit(1);
+    }
+    for (const file of manifest.files) {
+      const name = file && file.name;
+      if (typeof name !== "string" || name === "" || name.includes("/")) {
+        console.error(`${manifestPath}: invalid file name ${JSON.stringify(name)}`);
+        process.exit(1);
+      }
+      const key = typeof file.key === "string" && file.key !== "" ? file.key : name;
+      if (key.includes("/") || key.includes("..")) {
+        console.error(`${manifestPath}: invalid object key ${JSON.stringify(key)}`);
+        process.exit(1);
+      }
+      process.stdout.write(`${name}\t${key}\n`);
+    }
+  ' "$manifest_file"
+}
+
+# Upload every file a manifest lists, then the manifest itself.
+#
+# The manifest is uploaded LAST and is the atomic commit point of the whole
+# operation. Payload files go to their content-addressed `key`, so a new build
+# never overwrites the bytes an already-published manifest points at: a client
+# that fetched the old manifest a moment before this runs keeps downloading the
+# old, still-intact objects, and a mid-loop failure leaves the live manifest
+# (and therefore every client) on the previous consistent set.
+#
+# Local filenames stay plain (`base.mbtiles`) — `key` is a remote-only alias,
+# and the app writes downloads to `name` on device.
+#
+# Superseded objects at old keys are deliberately left in the bucket: older
+# manifests still reference them. Cleanup is manual for now (list the bucket,
+# keep whatever any live manifest references, delete the rest).
+upload_manifest_dir() {
+  local src_dir="$1"
+  local remote_prefix="$2"
+  local manifest_file="$src_dir/manifest.json"
+
+  if [ ! -f "$manifest_file" ]; then
+    echo "Error: $manifest_file not found."
+    echo "Uploads are manifest-driven — run the tile build first to generate it"
+    echo "(e.g. npx tsx scripts/build-tiles.ts --trail <id>)."
+    exit 1
+  fi
+
+  local entries
+  if ! entries=$(read_manifest_entries "$manifest_file"); then
+    exit 1
+  fi
+
+  # Here-string keeps the loop in the current shell so a failure exits the script.
+  while IFS=$'\t' read -r name key; do
+    [ -n "$name" ] || continue
+    local src="$src_dir/$name"
+    if [ ! -f "$src" ]; then
+      echo "Error: manifest lists '$name' but $src does not exist. Rebuild before uploading."
+      exit 1
+    fi
+    case "$name" in
+      *.mbtiles) validate_mbtiles "$src" ;;
+    esac
+    upload_file "$src" "$remote_prefix/$key" \
+      "application/octet-stream" \
+      "public, max-age=2592000"
+  done <<< "$entries"
+
+  # Last: publishing the manifest is what makes the new objects live.
+  upload_file "$manifest_file" "$remote_prefix/manifest.json" \
+    "application/json" \
+    "public, max-age=3600"
+}
+
 upload_trail() {
   local trail_id="$1"
   local trail_dir="$TILES_DIR/$trail_id"
@@ -100,21 +200,7 @@ upload_trail() {
 
   echo "Uploading tiles for $trail_id..."
 
-  for mbtiles in "$trail_dir"/*.mbtiles; do
-    [ -f "$mbtiles" ] || continue
-    validate_mbtiles "$mbtiles"
-    local filename
-    filename=$(basename "$mbtiles")
-    upload_file "$mbtiles" "$trail_id/$filename" \
-      "application/octet-stream" \
-      "public, max-age=2592000"
-  done
-
-  if [ -f "$trail_dir/manifest.json" ]; then
-    upload_file "$trail_dir/manifest.json" "$trail_id/manifest.json" \
-      "application/json" \
-      "public, max-age=3600"
-  fi
+  upload_manifest_dir "$trail_dir" "$trail_id"
 
   echo "Done: $trail_id"
 }
@@ -142,21 +228,9 @@ upload_grid_cell() {
 
   echo "Uploading grid cell $cell_id..."
 
-  for mbtiles in "$cell_dir"/*.mbtiles; do
-    [ -f "$mbtiles" ] || continue
-    validate_mbtiles "$mbtiles"
-    local filename
-    filename=$(basename "$mbtiles")
-    upload_file "$mbtiles" "grid/$cell_id/$filename" \
-      "application/octet-stream" \
-      "public, max-age=2592000"
-  done
-
-  if [ -f "$cell_dir/manifest.json" ]; then
-    upload_file "$cell_dir/manifest.json" "grid/$cell_id/manifest.json" \
-      "application/json" \
-      "public, max-age=3600"
-  fi
+  # Grid manifests come from the same writeManifest() as trail manifests, so
+  # they carry the same content-addressed keys — keep both paths identical.
+  upload_manifest_dir "$cell_dir" "grid/$cell_id"
 
   echo "Done: grid/$cell_id"
 }

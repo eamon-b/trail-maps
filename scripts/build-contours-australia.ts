@@ -36,6 +36,7 @@ import {
   CONTOUR_INTERVAL,
   INDEX_CONTOUR_INTERVAL,
   MAX_ZOOM,
+  CONTOUR_MIN_ZOOM,
   run,
   ensureDir,
   cleanWorkDir,
@@ -53,7 +54,6 @@ import {
 
 // --- Constants ---
 
-const CONTOUR_MIN_ZOOM = 9;
 const WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles/contours-australia');
 const DEFAULT_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles');
 const OUTPUT_FILENAME = 'australia-contours.pmtiles';

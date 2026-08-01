@@ -25,6 +25,15 @@ export const DEM_CACHE_DIR = path.join(PROJECT_ROOT, 'data/dem');
 
 export const MIN_ZOOM = 4;
 export const MAX_ZOOM = 15;
+/**
+ * Lowest zoom contour tiles are generated at.
+ *
+ * This is the single source of truth: it is interpolated into the tippecanoe
+ * `-Z` flag AND used as the validation expectation for contours.mbtiles.
+ * Keeping them linked is deliberate — heysen's contours were once built
+ * without `-Z9`, producing z0–z8 tiles that every validator of the day passed.
+ */
+export const CONTOUR_MIN_ZOOM = 9;
 export const CONTOUR_INTERVAL = 10; // metres
 export const INDEX_CONTOUR_INTERVAL = 50; // metres (bold lines)
 
@@ -402,7 +411,7 @@ export function classifyAndTileContours(
   // 4b: Split into zoom-tier files for density control
   const workDir = path.dirname(contoursMbtilesPath);
   const tiers = [
-    { suffix: 'z9',  minZoom: 9,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
+    { suffix: 'z9',  minZoom: CONTOUR_MIN_ZOOM,  sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 100) = 0` },
     { suffix: 'z10', minZoom: 10, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
     { suffix: 'z12', minZoom: 12, sql: `SELECT * FROM '${classifiedLayerName}' WHERE (CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
     // %50 != 0 as well: odd multiples of 50 (50, 150, ...) have %20 = 10 and
@@ -439,7 +448,7 @@ export function classifyAndTileContours(
   run([
     'tippecanoe',
     `-o "${contoursMbtilesPath}"`,
-    '-Z9',
+    `-Z${CONTOUR_MIN_ZOOM}`,
     `-z${MAX_ZOOM}`,
     '-P',
     '-y elevation',
@@ -495,6 +504,32 @@ export function extractBaseTiles(
 }
 
 /**
+ * Zoom range a caller expects an artifact to contain, asserted against the
+ * zoom levels actually present in the `tiles` table.
+ */
+export interface MbtilesZoomExpectation {
+  minZoom?: number;
+  maxZoom?: number;
+}
+
+/** Contours are always built with tippecanoe `-Z${CONTOUR_MIN_ZOOM} -z${MAX_ZOOM}`. */
+export const CONTOUR_ZOOM_EXPECTATION: MbtilesZoomExpectation = {
+  minZoom: CONTOUR_MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
+};
+
+/**
+ * Base tiles are extracted with `--minzoom=${MIN_ZOOM} --maxzoom=${MAX_ZOOM}`,
+ * but the *observed* low end varies with what the Protomaps source actually
+ * holds for the region (heysen's base.mbtiles starts at z8, aawt's at z4), so
+ * only the top of the range is asserted. A missing maxzoom is the failure that
+ * matters on-device: it is what makes the map blank out when zoomed in.
+ */
+export const BASE_ZOOM_EXPECTATION: MbtilesZoomExpectation = {
+  maxZoom: MAX_ZOOM,
+};
+
+/**
  * Structurally validate a generated .mbtiles file. Throws with a descriptive
  * message if the file would be unusable — or worse — on a device.
  *
@@ -503,8 +538,20 @@ export function extractBaseTiles(
  * corrupt file has historically been built and uploaded silently (AAWT's
  * contours.mbtiles was a 32KB stub with zero tiles; bibbulmun's was a
  * malformed database). Everything MapLibre parses is checked here.
+ *
+ * Metadata is also checked against reality: heysen's contours.mbtiles was once
+ * built without the global `-Z9` tippecanoe flag, yielding z0–z8 tiles and a
+ * self-consistent `minzoom=0` — structurally valid, wrong at every zoom the
+ * app renders. The `expected` argument lets callers declare the zoom range the
+ * build is supposed to produce so that class of miss fails the build.
+ *
+ * @param filePath - Path to the .mbtiles file
+ * @param expected - Optional zoom range the tiles table must actually cover
  */
-export function validateMbtilesArtifact(filePath: string): void {
+export function validateMbtilesArtifact(
+  filePath: string,
+  expected?: MbtilesZoomExpectation
+): void {
   const name = path.basename(filePath);
   const sql = (query: string): string => run(`sqlite3 "${filePath}" "${query}"`);
 
@@ -518,9 +565,20 @@ export function validateMbtilesArtifact(filePath: string): void {
     throw new Error(`${name} contains no tiles`);
   }
 
+  // Actual zoom coverage of the tiles table.
+  const zoomOut = sql('SELECT MIN(zoom_level), MAX(zoom_level) FROM tiles;');
+  const [actualMinRaw, actualMaxRaw] = zoomOut.split('|');
+  const actualMinZoom = parseInt(actualMinRaw, 10);
+  const actualMaxZoom = parseInt(actualMaxRaw, 10);
+  if (!Number.isFinite(actualMinZoom) || !Number.isFinite(actualMaxZoom)) {
+    throw new Error(`${name} has unreadable zoom levels in tiles table: "${zoomOut}"`);
+  }
+
   const metaOut = sql(
     "SELECT name, value FROM metadata WHERE name IN ('minzoom', 'maxzoom', 'scale', 'bounds');"
   );
+  let metaMinZoom: number | null = null;
+  let metaMaxZoom: number | null = null;
   for (const line of metaOut.split('\n').filter(l => l.length > 0)) {
     const sep = line.indexOf('|');
     const key = line.slice(0, sep);
@@ -529,6 +587,8 @@ export function validateMbtilesArtifact(filePath: string): void {
       if (!/^\d+$/.test(value)) {
         throw new Error(`${name} metadata ${key} is not an integer: "${value}"`);
       }
+      if (key === 'minzoom') metaMinZoom = parseInt(value, 10);
+      else metaMaxZoom = parseInt(value, 10);
     } else if (key === 'scale') {
       if (value.trim() === '' || !Number.isFinite(Number(value))) {
         throw new Error(`${name} metadata scale is not a number: "${value}"`);
@@ -541,14 +601,56 @@ export function validateMbtilesArtifact(filePath: string): void {
     }
   }
 
-  console.log(`    ✓ Validated ${name}: ${tileCount} tiles, integrity ok`);
+  // Metadata must describe the tiles that are actually in the file: MapLibre
+  // uses metadata zooms to decide which tiles to request, so a mismatch means
+  // either requests for tiles that don't exist or tiles that are never asked for.
+  if (metaMinZoom !== null && metaMinZoom !== actualMinZoom) {
+    throw new Error(
+      `${name} metadata minzoom=${metaMinZoom} but lowest tile zoom is ${actualMinZoom}`
+    );
+  }
+  if (metaMaxZoom !== null && metaMaxZoom !== actualMaxZoom) {
+    throw new Error(
+      `${name} metadata maxzoom=${metaMaxZoom} but highest tile zoom is ${actualMaxZoom}`
+    );
+  }
+
+  // Caller-declared expectations: catches a build that ran with the wrong
+  // (or missing) zoom flags, even when the resulting file is self-consistent.
+  if (expected?.minZoom !== undefined && actualMinZoom !== expected.minZoom) {
+    throw new Error(
+      `${name} lowest tile zoom is ${actualMinZoom}, expected ${expected.minZoom} ` +
+      `(built with the wrong minimum-zoom flag?)`
+    );
+  }
+  if (expected?.maxZoom !== undefined && actualMaxZoom !== expected.maxZoom) {
+    throw new Error(
+      `${name} highest tile zoom is ${actualMaxZoom}, expected ${expected.maxZoom} ` +
+      `(built with the wrong maximum-zoom flag?)`
+    );
+  }
+
+  console.log(
+    `    ✓ Validated ${name}: ${tileCount} tiles, z${actualMinZoom}–z${actualMaxZoom}, integrity ok`
+  );
+}
+
+export interface ManifestFileInput {
+  name: string;
+  path: string;
+  /** Zoom range this artifact must actually contain (mbtiles only). */
+  expectedZoom?: MbtilesZoomExpectation;
 }
 
 /**
  * Write tile manifest JSON.
  *
  * Every .mbtiles file is structurally validated first — a build that would
- * produce an empty or corrupt tile database fails here instead of shipping.
+ * produce an empty, corrupt, or wrong-zoom-range tile database fails here
+ * instead of shipping. Callers that just rebuilt an artifact should validate
+ * the work-dir copy *before* publishing it; this pass still matters for the
+ * `--skip-base` / `--skip-contours` paths, where the manifest is rewritten
+ * over files that were not rebuilt this run.
  *
  * @param id - Identifier (trail ID or grid cell ID)
  * @param outputDir - Directory to write manifest.json into
@@ -559,21 +661,35 @@ export function writeManifest(
   id: string,
   outputDir: string,
   bounds: { west: number; south: number; east: number; north: number },
-  files: { name: string; path: string }[]
+  files: ManifestFileInput[]
 ): TileManifest {
   const manifestFiles: TileManifestFile[] = [];
 
   for (const file of files) {
     if (fs.existsSync(file.path)) {
       if (file.name.endsWith('.mbtiles')) {
-        validateMbtilesArtifact(file.path);
+        validateMbtilesArtifact(file.path, file.expectedZoom);
       }
       manifestFiles.push({
         name: file.name,
         size: fileSizeBytes(file.path),
         sha256: fileSha256(file.path),
       });
+    } else {
+      console.warn(
+        `    ⚠ ${id}: listed tile file is missing, omitting from manifest: ${file.path}`
+      );
     }
+  }
+
+  // A manifest with no files is never valid output — the app would download an
+  // "offline map" containing nothing. Most likely both --skip-* flags were used
+  // on a region that was never built.
+  if (manifestFiles.length === 0) {
+    throw new Error(
+      `${id}: refusing to write an empty manifest — none of the ${files.length} ` +
+      `listed tile file(s) exist in ${outputDir}`
+    );
   }
 
   const manifest: TileManifest = {

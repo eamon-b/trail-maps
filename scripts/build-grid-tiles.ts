@@ -33,7 +33,9 @@ import {
   classifyAndTileContours,
   extractBaseTiles,
   writeManifest,
+  validateMbtilesArtifact,
   mgaEpsgForLon,
+  CONTOUR_ZOOM_EXPECTATION,
   CELL_SIZE_DEG,
   GRID_LON_MIN,
   GRID_LON_MAX,
@@ -277,6 +279,8 @@ function processCell(
         // Check if contours are empty (flat terrain / ocean margin)
         if (fs.existsSync(contoursRawPath) && fileSizeBytes(contoursRawPath) > 100) {
           classifyAndTileContours(contoursRawPath, contoursClassifiedPath, contoursMbtilesPath, args.verbose);
+          // Validate before publishing so a bad rebuild can't clobber a good file.
+          validateMbtilesArtifact(contoursMbtilesPath, CONTOUR_ZOOM_EXPECTATION);
           fs.copyFileSync(contoursMbtilesPath, outputContoursMbtiles);
         } else {
           console.log(`  Skipping contour tiling (no contour features)`);
@@ -295,6 +299,11 @@ function processCell(
       }
 
       extractBaseTiles(cellPolygonPath, basePmtilesPath, baseMbtilesPath, protomapsSource, args.verbose);
+      // No zoom expectation for grid base tiles: a 2°×2° cell's extracted zoom
+      // range depends on what the Protomaps source holds there, and no grid
+      // cells have been built to establish the real range. The structural and
+      // metadata-vs-actual-zoom checks still apply.
+      validateMbtilesArtifact(baseMbtilesPath);
       fs.copyFileSync(baseMbtilesPath, outputBaseMbtiles);
     }
 
@@ -307,7 +316,7 @@ function processCell(
     };
     const manifestFiles = [
       { name: 'base.mbtiles', path: outputBaseMbtiles },
-      { name: 'contours.mbtiles', path: outputContoursMbtiles },
+      { name: 'contours.mbtiles', path: outputContoursMbtiles, expectedZoom: CONTOUR_ZOOM_EXPECTATION },
     ];
     const manifest = writeManifest(cellId, outputDir, bounds, manifestFiles);
 

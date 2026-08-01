@@ -3,6 +3,7 @@ import { TileManager } from '../tile-manager';
 import {
   getTrailTileStatus,
   deleteTrailTiles,
+  checkForTileUpdate,
   clearMbtilesValidationCache,
   provisionGlyphs,
   buildTopoStyle,
@@ -38,6 +39,7 @@ jest.mock('../tile-service', () => ({
   getTrailTileStatus: jest.fn(),
   downloadTrailTiles: jest.fn().mockResolvedValue(undefined),
   deleteTrailTiles: jest.fn(),
+  checkForTileUpdate: jest.fn(),
   clearMbtilesValidationCache: jest.fn(),
   provisionGlyphs: jest.fn().mockResolvedValue('/mock/fonts'),
   buildTopoStyle: jest.fn().mockReturnValue({ version: 8, layers: [] }),
@@ -222,6 +224,16 @@ describe('TileManager', () => {
 
     manager.clearValidationCache();
     expect(mockClearCache).toHaveBeenCalledWith(undefined);
+  });
+
+  it('checkForUpdate delegates to checkForTileUpdate', async () => {
+    const verdict = { updateAvailable: true, localVersion: 'v1', remoteVersion: 'v2' };
+    (checkForTileUpdate as jest.MockedFunction<typeof checkForTileUpdate>).mockResolvedValue(
+      verdict,
+    );
+
+    await expect(manager.checkForUpdate('heysen', 'https://tiles.example')).resolves.toBe(verdict);
+    expect(checkForTileUpdate).toHaveBeenCalledWith('heysen', 'https://tiles.example');
   });
 
   it('deleteTrail delegates to deleteTrailTiles', () => {

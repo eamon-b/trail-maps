@@ -36,6 +36,7 @@ export default function DownloadsScreen() {
   const cancel = useDownloadsStore((s) => s.cancel);
   const deleteTiles = useDownloadsStore((s) => s.deleteTiles);
   const refreshStatus = useDownloadsStore((s) => s.refreshStatus);
+  const checkForUpdates = useDownloadsStore((s) => s.checkForUpdates);
 
   // On-disk size, re-read whenever the download state changes.
   const [sizeBytes, setSizeBytes] = useState(0);
@@ -45,6 +46,18 @@ export default function DownloadsScreen() {
   }, [trailId, refreshStatus, download.state]);
 
   const missingBaseUrl = TILE_BASE_URL.length === 0;
+
+  // Ask the server whether a newer pack exists — on open, and again once a
+  // download finishes so the badge is re-derived rather than guessed. The store
+  // ignores anything that isn't a complete pack and swallows network failures,
+  // so this is a no-op when there is nothing to say.
+  useEffect(() => {
+    if (missingBaseUrl) return;
+    void checkForUpdates([trailId], TILE_BASE_URL);
+  }, [trailId, checkForUpdates, missingBaseUrl, download.state, download.downloading]);
+
+  const updateAvailable =
+    !!download.updateAvailable && download.state === 'complete' && !download.downloading;
 
   const statusText = useMemo(() => {
     if (download.downloading) return `Downloading… ${Math.round(download.progress * 100)}%`;
@@ -66,6 +79,11 @@ export default function DownloadsScreen() {
           {entry?.name ?? trailId}
         </Text>
         <Text style={[styles.status, { color: colors.textSecondary }]}>{statusText}</Text>
+        {updateAvailable && (
+          <Text style={[styles.badge, { color: colors.downloadActive, borderColor: colors.downloadActive }]}>
+            Update available{download.remoteVersion ? ` (${download.remoteVersion})` : ''}
+          </Text>
+        )}
         {sizeBytes > 0 && (
           <Text style={[styles.meta, { color: colors.textSecondary }]}>
             On device: {formatBytes(sizeBytes)}
@@ -99,7 +117,13 @@ export default function DownloadsScreen() {
           />
         ) : (
           <ActionButton
-            label={download.state === 'complete' ? 'Re-download' : 'Download'}
+            label={
+              updateAvailable
+                ? 'Update'
+                : download.state === 'complete'
+                  ? 'Re-download'
+                  : 'Download'
+            }
             variant="accent"
             disabled={missingBaseUrl}
             onPress={() => startDownload(trailId, TILE_BASE_URL)}
@@ -165,6 +189,14 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...typography.caption,
+  },
+  badge: {
+    ...typography.caption,
+    alignSelf: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.full,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   progressTrack: {
     height: spacing.sm,

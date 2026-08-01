@@ -9,6 +9,7 @@ jest.mock('../../services/tile-manager', () => ({
     downloadTrail: jest.fn(),
     deleteTrail: jest.fn(),
     clearValidationCache: jest.fn(),
+    checkForUpdate: jest.fn(),
   },
 }));
 
@@ -16,6 +17,7 @@ const mockGetStatus = tileManager.getTrailStatus as jest.Mock;
 const mockDownload = tileManager.downloadTrail as jest.Mock;
 const mockDelete = tileManager.deleteTrail as jest.Mock;
 const mockClearCache = tileManager.clearValidationCache as jest.Mock;
+const mockCheckForUpdate = tileManager.checkForUpdate as jest.Mock;
 
 function status(state: 'absent' | 'partial' | 'complete', totalSizeBytes = 0) {
   return { trailId: 't', files: [], complete: state === 'complete', state, totalSizeBytes };
@@ -156,6 +158,120 @@ describe('downloads-store', () => {
     await useDownloadsStore.getState().startDownload('aawt', 'https://tiles.example');
 
     expect(mockClearCache).toHaveBeenCalledTimes(2);
+  });
+
+  describe('checkForUpdates', () => {
+    it('flags a complete trail whose remote pack is newer', async () => {
+      mockGetStatus.mockReturnValue(status('complete'));
+      mockCheckForUpdate.mockResolvedValue({
+        updateAvailable: true,
+        localVersion: 'v1',
+        remoteVersion: 'v2',
+      });
+
+      await useDownloadsStore.getState().checkForUpdates(['aawt'], 'https://tiles.example');
+
+      const s = useDownloadsStore.getState().get('aawt');
+      expect(s.updateAvailable).toBe(true);
+      expect(s.remoteVersion).toBe('v2');
+      expect(mockCheckForUpdate).toHaveBeenCalledWith('aawt', 'https://tiles.example');
+    });
+
+    it('clears the flag when the local pack is already current', async () => {
+      mockGetStatus.mockReturnValue(status('complete'));
+      useDownloadsStore.setState({
+        byTrail: {
+          aawt: { state: 'complete', downloading: false, progress: 1, updateAvailable: true },
+        },
+      });
+      mockCheckForUpdate.mockResolvedValue({
+        updateAvailable: false,
+        localVersion: 'v2',
+        remoteVersion: 'v2',
+      });
+
+      await useDownloadsStore.getState().checkForUpdates(['aawt'], 'https://tiles.example');
+
+      const s = useDownloadsStore.getState().get('aawt');
+      expect(s.updateAvailable).toBe(false);
+      expect(s.remoteVersion).toBeUndefined();
+    });
+
+    it.each(['absent', 'partial'] as const)(
+      'never asks (or flags) for a %s pack — that needs a download, not an update',
+      async (state) => {
+        mockGetStatus.mockReturnValue(status(state));
+
+        await useDownloadsStore.getState().checkForUpdates(['aawt'], 'https://tiles.example');
+
+        // checkForTileUpdate reports updateAvailable:true for an incomplete
+        // pack, which would read as "your maps are out of date" to a user who
+        // never downloaded them.
+        expect(mockCheckForUpdate).not.toHaveBeenCalled();
+        expect(useDownloadsStore.getState().get('aawt').updateAvailable).toBe(false);
+      },
+    );
+
+    it('skips a trail that is mid-download', async () => {
+      mockGetStatus.mockReturnValue(status('complete'));
+      useDownloadsStore.setState({
+        byTrail: { aawt: { state: 'complete', downloading: true, progress: 0.4 } },
+      });
+
+      await useDownloadsStore.getState().checkForUpdates(['aawt'], 'https://tiles.example');
+
+      expect(mockCheckForUpdate).not.toHaveBeenCalled();
+    });
+
+    it('does nothing without a base URL', async () => {
+      await useDownloadsStore.getState().checkForUpdates(['aawt'], '');
+
+      expect(mockCheckForUpdate).not.toHaveBeenCalled();
+      expect(mockGetStatus).not.toHaveBeenCalled();
+    });
+
+    it('fails silently when the check throws (offline): no badge, no error', async () => {
+      mockGetStatus.mockReturnValue(status('complete'));
+      mockCheckForUpdate.mockRejectedValue(new Error('Network request failed'));
+
+      await expect(
+        useDownloadsStore.getState().checkForUpdates(['aawt'], 'https://tiles.example'),
+      ).resolves.toBeUndefined();
+
+      const s = useDownloadsStore.getState().get('aawt');
+      expect(s.updateAvailable).toBeFalsy();
+      expect(s.error).toBeUndefined();
+    });
+
+    it('checks several trails independently', async () => {
+      mockGetStatus.mockImplementation((id: string) =>
+        id === 'heysen' ? status('absent') : status('complete'),
+      );
+      mockCheckForUpdate.mockResolvedValue({ updateAvailable: true, remoteVersion: 'v9' });
+
+      await useDownloadsStore
+        .getState()
+        .checkForUpdates(['aawt', 'heysen', 'bibbulmun'], 'https://tiles.example');
+
+      expect(useDownloadsStore.getState().get('aawt').updateAvailable).toBe(true);
+      expect(useDownloadsStore.getState().get('heysen').updateAvailable).toBe(false);
+      expect(useDownloadsStore.getState().get('bibbulmun').updateAvailable).toBe(true);
+    });
+
+    it('a successful (re-)download clears the update badge', async () => {
+      mockGetStatus.mockReturnValue(status('complete'));
+      mockCheckForUpdate.mockResolvedValue({ updateAvailable: true, remoteVersion: 'v2' });
+      mockDownload.mockResolvedValue(undefined);
+
+      await useDownloadsStore.getState().checkForUpdates(['aawt'], 'https://tiles.example');
+      expect(useDownloadsStore.getState().get('aawt').updateAvailable).toBe(true);
+
+      await useDownloadsStore.getState().startDownload('aawt', 'https://tiles.example');
+
+      const s = useDownloadsStore.getState().get('aawt');
+      expect(s.updateAvailable).toBe(false);
+      expect(s.remoteVersion).toBeUndefined();
+    });
   });
 
   it('deleteTiles removes tiles and refreshes status', () => {

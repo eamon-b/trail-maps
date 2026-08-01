@@ -22,7 +22,7 @@ import {
 import { Directory, File } from 'expo-file-system';
 import { openDatabaseAsync } from 'expo-sqlite';
 
-const mockFiles: Record<string, { exists: boolean; size: number }> = {};
+const mockFiles: Record<string, { exists: boolean; size: number; md5?: string | null }> = {};
 const mockDirs: Record<string, { exists: boolean; deleted: boolean }> = {};
 const mockFileContents: Record<string, string> = {};
 
@@ -48,6 +48,9 @@ jest.mock('expo-file-system', () => {
       get uri() { return uri; },
       get exists() { return mockFiles[uri]?.exists ?? false; },
       get size() { return mockFiles[uri]?.size ?? 0; },
+      // expo-file-system SDK 54 exposes a natively computed MD5 (null when the
+      // file is missing or unreadable).
+      get md5() { return mockFiles[uri]?.md5 ?? null; },
       textSync: jest.fn(() => mockFileContents[uri] ?? ''),
       delete: jest.fn(() => {
         mockFiles[uri] = { exists: false, size: 0 };
@@ -874,5 +877,189 @@ describe('downloadTrailTiles atomic updates', () => {
 
     expect(mockFileContents[fileKey('manifest.json')]).toBeDefined();
     expect(getTrailTileStatus(TRAIL_ID).state).toBe('absent');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// downloadTrailTiles — MD5 integrity + content-addressed remote keys
+// ---------------------------------------------------------------------------
+
+describe('downloadTrailTiles integrity verification', () => {
+  const TRAIL_ID = 'heysen';
+  const BASE_URL = 'https://tiles.example.com';
+
+  const SIZES = { 'base.mbtiles': 6_000_000, 'contours.mbtiles': 3_000_000 } as const;
+  const MD5 = {
+    'base.mbtiles': '58ce65fc42901111111111111111ffff',
+    'contours.mbtiles': '9ab0f13c77b02222222222222222ffff',
+  } as const;
+  const KEYS = {
+    'base.mbtiles': 'base.58ce65fc4290.mbtiles',
+    'contours.mbtiles': 'contours.9ab0f13c77b0.mbtiles',
+  } as const;
+
+  type TileName = keyof typeof SIZES;
+  const NAMES: TileName[] = ['base.mbtiles', 'contours.mbtiles'];
+
+  function fileKey(name: string): string {
+    return `file:///mock/document/tiles/${TRAIL_ID}/${name}`;
+  }
+
+  /** Manifest served by the fake network. `md5`/`key` are opt-out for legacy. */
+  function makeManifest({
+    md5 = true,
+    key = true,
+    version = 'v2',
+  }: { md5?: boolean; key?: boolean; version?: string } = {}) {
+    return {
+      trailId: TRAIL_ID,
+      version,
+      files: NAMES.map((name) => ({
+        name,
+        size: SIZES[name],
+        sha256: `sha-${name}`,
+        ...(md5 ? { md5: MD5[name] } : {}),
+        ...(key ? { key: KEYS[name] } : {}),
+      })),
+      totalSize: SIZES['base.mbtiles'] + SIZES['contours.mbtiles'],
+      bounds: [0, 0, 0, 0],
+      zoomRange: [8, 14],
+    };
+  }
+
+  function serve(manifest: object) {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => manifest,
+    }) as unknown as typeof fetch;
+  }
+
+  const mockDownloadFileAsync = (File as unknown as { downloadFileAsync: jest.Mock })
+    .downloadFileAsync;
+
+  /** Land each .part at its manifest size, with a caller-chosen digest. */
+  function landDownloads(md5For: (name: TileName) => string | null) {
+    mockDownloadFileAsync.mockImplementation(async (_url: string, dest: { uri: string }) => {
+      const name = (dest.uri.split('/').pop() ?? '').replace('.part', '') as TileName;
+      mockFiles[dest.uri] = { exists: true, size: SIZES[name], md5: md5For(name) };
+    });
+  }
+
+  /** Remote object names the downloader actually requested. */
+  function requestedObjects(): string[] {
+    return mockDownloadFileAsync.mock.calls.map(
+      (call: unknown[]) => (call[0] as string).split('/').pop() ?? '',
+    );
+  }
+
+  beforeEach(() => {
+    serve(makeManifest());
+    useDb(fakeDb());
+    landDownloads((name) => MD5[name]);
+  });
+
+  it('fetches the content-addressed key but stores the file under its plain name', async () => {
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(requestedObjects()).toEqual([
+      KEYS['base.mbtiles'],
+      KEYS['contours.mbtiles'],
+    ]);
+    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBe(true);
+    expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBe(true);
+  });
+
+  it('accepts downloads whose MD5 matches the manifest', async () => {
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).resolves.toBeUndefined();
+
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+    expect(getTrailTileStatus(TRAIL_ID).version).toBe('v2');
+  });
+
+  it('rejects a download whose MD5 does not match, leaving the old pack intact', async () => {
+    // A working v1 pack is on disk; the v2 download arrives corrupted but at
+    // exactly the advertised size, so only the digest can catch it.
+    const OLD = { base: 5_000_000, contours: 2_000_000 };
+    mockFiles[fileKey('base.mbtiles')] = { exists: true, size: OLD.base };
+    mockFiles[fileKey('contours.mbtiles')] = { exists: true, size: OLD.contours };
+    const oldManifest = JSON.stringify({
+      trailId: TRAIL_ID,
+      version: 'v1',
+      files: [
+        { name: 'base.mbtiles', size: OLD.base, sha256: 'a' },
+        { name: 'contours.mbtiles', size: OLD.contours, sha256: 'b' },
+      ],
+      totalSize: OLD.base + OLD.contours,
+      bounds: [0, 0, 0, 0],
+      zoomRange: [8, 14],
+    });
+    mockFiles[fileKey('manifest.json')] = { exists: true, size: oldManifest.length };
+    mockFileContents[fileKey('manifest.json')] = oldManifest;
+
+    landDownloads(() => 'deadbeefdeadbeefdeadbeefdeadbeef');
+    const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).rejects.toThrow(/Checksum mismatch/);
+    error.mockRestore();
+
+    // Old files, old manifest, no staging leftovers.
+    expect(mockFiles[fileKey('base.mbtiles')]).toEqual({ exists: true, size: OLD.base });
+    expect(mockFiles[fileKey('contours.mbtiles')]).toEqual({
+      exists: true,
+      size: OLD.contours,
+    });
+    expect(JSON.parse(mockFileContents[fileKey('manifest.json')]).version).toBe('v1');
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBeFalsy();
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+    expect(getTrailTileStatus(TRAIL_ID).version).toBe('v1');
+  });
+
+  it('downloads legacy manifests (no md5, no key) from the plain file name', async () => {
+    serve(makeManifest({ md5: false, key: false }));
+    // Digest is irrelevant: with nothing to compare against, size + structure
+    // remain the only gate, exactly as before content addressing.
+    landDownloads(() => 'whatever-the-platform-says');
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).resolves.toBeUndefined();
+
+    expect(requestedObjects()).toEqual(['base.mbtiles', 'contours.mbtiles']);
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+  });
+
+  it('accepts the download when the platform cannot produce an MD5', async () => {
+    landDownloads(() => null);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL)).resolves.toBeUndefined();
+
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('re-downloads an existing file whose MD5 does not match the manifest', async () => {
+    // Right size, valid sqlite, wrong bytes — the case the user hits
+    // "Re-download" for. Skipping it would make the repair a no-op.
+    mockFiles[fileKey('base.mbtiles')] = {
+      exists: true,
+      size: SIZES['base.mbtiles'],
+      md5: 'deadbeefdeadbeefdeadbeefdeadbeef',
+    };
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(requestedObjects()).toContain(KEYS['base.mbtiles']);
+    expect(mockFiles[fileKey('base.mbtiles')]?.md5).toBe(MD5['base.mbtiles']);
+  });
+
+  it('skips an existing file whose MD5 already matches the manifest', async () => {
+    for (const name of NAMES) {
+      mockFiles[fileKey(name)] = { exists: true, size: SIZES[name], md5: MD5[name] };
+    }
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(mockDownloadFileAsync).not.toHaveBeenCalled();
+    expect(getTrailTileStatus(TRAIL_ID).version).toBe('v2');
   });
 });

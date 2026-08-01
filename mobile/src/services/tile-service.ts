@@ -417,6 +417,39 @@ export async function checkForTileUpdate(
 /** Suffix for in-flight downloads staged alongside their final destination. */
 const PART_SUFFIX = '.part';
 
+/**
+ * Result of comparing a file against a manifest MD5 digest.
+ *
+ * `skipped` covers the two cases where there is nothing to compare: a legacy
+ * manifest with no `md5` field, and a platform that cannot produce a digest
+ * (the property is null/absent). Both fall back to the size + structural
+ * checks that gated downloads before content addressing.
+ */
+type Md5Verdict = 'match' | 'mismatch' | 'skipped';
+
+/**
+ * Compare a file's MD5 against a manifest digest.
+ *
+ * The digest comes from `File.md5` (expo-file-system SDK 54), which hashes the
+ * file natively — hashing 100MB of mbtiles in JS would be far too slow, which
+ * is why the manifest carries an md5 for the device alongside the sha256 used
+ * by the build tooling.
+ */
+function checkMd5(file: File, expected?: string): { verdict: Md5Verdict; actual: string | null } {
+  if (!expected) return { verdict: 'skipped', actual: null };
+
+  let actual: string | null = null;
+  try {
+    const value = (file as { md5?: string | null }).md5;
+    actual = typeof value === 'string' && value.length > 0 ? value.toLowerCase() : null;
+  } catch {
+    actual = null;
+  }
+
+  if (actual == null) return { verdict: 'skipped', actual: null };
+  return { verdict: actual === expected.toLowerCase() ? 'match' : 'mismatch', actual };
+}
+
 /** Best-effort removal of a staging file; never throws. */
 function deletePart(dir: Directory, name: TileFileName): void {
   try {
@@ -447,12 +480,13 @@ function deletePart(dir: Directory, name: TileFileName): void {
  * interrupted first download is detectable as 'partial' rather than being
  * mistaken for a legacy manifest-less pack.
  *
- * Fetches the manifest first for size validation, supports cancellation
- * between files, and provides byte-level progress totals.
+ * Fetches the manifest first for size, MD5 and remote-key information,
+ * supports cancellation between files, and provides byte-level progress totals.
  *
  * @param trailId  - Trail identifier (matches directory under tiles server)
  * @param baseUrl  - Base URL where tiles are hosted, e.g. "https://cdn.example.com/tiles"
- *                   Files are fetched from {baseUrl}/{trailId}/{fileName}
+ *                   Files are fetched from {baseUrl}/{trailId}/{key ?? fileName}
+ *                   and always stored on device under {fileName}
  * @param optionsOrCallback - DownloadOptions, or legacy ProgressCallback for compat
  */
 export async function downloadTrailTiles(
@@ -486,10 +520,21 @@ export async function downloadTrailTiles(
   // Fetch manifest for size info and post-download validation
   const manifest = await fetchManifest(url, trailId);
   const expectedSizes = new Map<string, number>();
+  /** Manifest MD5 digests, keyed by logical (on-device) file name. */
+  const expectedMd5 = new Map<string, string>();
+  /**
+   * Remote object keys, keyed by logical file name. Content-addressed manifests
+   * publish each file at `{name}.{hash}.{ext}` so a new upload never overwrites
+   * the object an older manifest still points at; legacy manifests have no
+   * `key` and are fetched under their plain name.
+   */
+  const remoteKeys = new Map<string, string>();
   let bytesTotal = 0;
   if (manifest) {
     for (const f of manifest.files) {
       expectedSizes.set(f.name, f.size);
+      if (f.md5) expectedMd5.set(f.name, f.md5);
+      if (f.key) remoteKeys.set(f.name, f.key);
       bytesTotal += f.size;
     }
     if (!isUpdate) {
@@ -526,14 +571,24 @@ export async function downloadTrailTiles(
 
     const dest = new File(dir, name);
     const expectedSize = expectedSizes.get(name);
+    const md5 = expectedMd5.get(name);
 
     // Skip if already downloaded, matches expected size (or reasonable
     // fallback), and passes structural validation — a previously downloaded
     // bad file must not survive a re-download just because its size matches.
+    //
+    // The digest is checked here too when the manifest has one: this branch is
+    // what makes the user's "Re-download" a no-op, so trusting size alone would
+    // let a same-size-but-wrong-content file survive the very action meant to
+    // repair it. It costs one native hash per already-present file per
+    // *download attempt* (not per status check), and it doubles as the "this
+    // file is unchanged between manifest versions" test that lets an update
+    // skip re-fetching bytes it already has.
     if (dest.exists) {
       const size = dest.size ?? 0;
       const sizeOk = expectedSize ? size === expectedSize : size > 1000;
-      if (sizeOk && (await validateMbtilesCached(trailId, name)).ok) {
+      const hashOk = checkMd5(dest, md5).verdict !== 'mismatch';
+      if (sizeOk && hashOk && (await validateMbtilesCached(trailId, name)).ok) {
         bytesDownloaded += size;
         onProgress?.({ fileName: name, done: true, bytesDownloaded, bytesTotal });
         continue;
@@ -542,7 +597,9 @@ export async function downloadTrailTiles(
 
     const partName = `${name}${PART_SUFFIX}`;
     const part = new File(dir, partName);
-    const fileUrl = `${url}/${trailId}/${name}`;
+    // Content-addressed manifests point at an immutable remote key; the file is
+    // always *stored* under its plain logical name.
+    const fileUrl = `${url}/${trailId}/${remoteKeys.get(name) ?? name}`;
     try {
       // Download to a temp name in the same directory (same filesystem, so the
       // later promotion is a cheap rename) rather than over the live file,
@@ -556,6 +613,21 @@ export async function downloadTrailTiles(
       if (expectedSize && downloadedSize !== expectedSize) {
         throw new Error(
           `Size mismatch for ${name}: expected ${expectedSize} bytes, got ${downloadedSize}`,
+        );
+      }
+
+      // Verify content integrity before anything else looks at the bytes: a
+      // truncated-but-plausible or man-in-the-middled file can still be a
+      // structurally valid sqlite database. Same failure path as a size
+      // mismatch — the .part is discarded and the old pack stays in place.
+      const { verdict, actual } = checkMd5(part, md5);
+      if (verdict === 'mismatch') {
+        throw new Error(`Checksum mismatch for ${name}: expected MD5 ${md5}, got ${actual}`);
+      }
+      if (verdict === 'skipped' && md5) {
+        console.warn(
+          `[tile-service] no MD5 available for ${name} on this platform; ` +
+            'accepting the download on size and structure alone.',
         );
       }
 

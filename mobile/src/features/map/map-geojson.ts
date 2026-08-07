@@ -9,6 +9,7 @@
 
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
 import { calculateTrailBounds, type TrackPoint } from '../../services/trail-bounds';
+import { waypointIconName } from './waypoint-icons';
 
 /** Minimal track-point shape used for polyline geometry. */
 export interface LatLon {
@@ -36,11 +37,28 @@ export function trailCameraBounds(points: LatLon[]): CameraBounds | null {
   return { ne: [b.east, b.north], sw: [b.west, b.south] };
 }
 
-/** A route variant (alternate or side trip) with its own point list. */
+/** Which class of variant a collection holds. Also the feature-id prefix. */
+export type VariantKind = 'alternate' | 'side-trip';
+
+/**
+ * A route variant (alternate or side trip) with its own point list. Everything
+ * past `points` is the read-out the info card shows when the line is tapped; all
+ * of it is optional because the bundled data omits what the pipeline could not
+ * compute (see variant-info for the per-field notes).
+ */
 export interface MapVariant {
   name?: string;
   type?: string;
   points?: LatLon[];
+  /** The variant's own length, km. */
+  distance?: number;
+  elevation?: { ascent?: number; descent?: number };
+  /** Km along the main track where the variant leaves it. */
+  startDistance?: number;
+  /** Km along the main track where it rejoins (absent for out-and-back spurs). */
+  endDistance?: number;
+  /** Waypoints that sit on the variant rather than the main track. */
+  waypoints?: unknown[];
 }
 
 /** Minimal waypoint shape needed to place and colour a marker. */
@@ -70,21 +88,45 @@ export function buildTrailLine(points: LatLon[]): Feature<LineString> | null {
 }
 
 /**
+ * Stable feature id for a variant line. The index is the variant's position in
+ * its *own* class list, so the id round-trips a tap back to the source object
+ * (`alternates[2]` → "alternate-2") without depending on names being unique.
+ */
+export function variantFeatureId(kind: VariantKind, index: number): string {
+  return `${kind}-${index}`;
+}
+
+/**
  * Variant polylines (alternates or side trips) as a FeatureCollection. Each
  * variant needs at least two points to form a line; degenerate variants are
  * dropped so the dashed overlay never renders a zero-length artefact.
+ *
+ * Ids are assigned from the *unfiltered* index so a dropped degenerate variant
+ * never shifts the ids of the ones after it — the id is how a tap finds its
+ * variant again.
  */
-export function buildVariantCollection(variants: MapVariant[]): FeatureCollection<LineString> {
+export function buildVariantCollection(
+  variants: MapVariant[],
+  kind: VariantKind,
+): FeatureCollection<LineString> {
   const features: Feature<LineString>[] = variants
-    .filter((v) => (v.points?.length ?? 0) >= 2)
-    .map((v) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: v.points!.map((p) => [p.lon, p.lat]),
-      },
-      properties: { name: v.name ?? '', type: v.type ?? '' },
-    }));
+    .map((v, index) => ({ v, index }))
+    .filter(({ v }) => (v.points?.length ?? 0) >= 2)
+    .map(({ v, index }) => {
+      const id = variantFeatureId(kind, index);
+      return {
+        type: 'Feature' as const,
+        id,
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: v.points!.map((p) => [p.lon, p.lat]),
+        },
+        // Only identity travels through the map: the tap handler resolves `id`
+        // back to the variant object, so the numeric read-out never has to
+        // survive a round trip through native feature properties.
+        properties: { id, kind, name: v.name ?? '', type: v.type ?? '' },
+      };
+    });
   return { type: 'FeatureCollection', features };
 }
 
@@ -112,6 +154,9 @@ export function waypointFeatureId(wp: MapWaypoint, index: number): string {
  *    across cluster/label re-layouts and tap events resolve back to it;
  *  - a `color` property (resolved from the theme via `colorForType`) so a
  *    single data-driven CircleLayer can paint every category correctly;
+ *  - an `icon` property (the glyph name from waypoint-icons) so a single
+ *    data-driven SymbolLayer can draw every type's marker glyph via
+ *    `iconImage: ['get', 'icon']`;
  *  - a `favorite` boolean (true when the id is in `favoriteIds`) so the same
  *    CircleLayer can enlarge/ring starred markers via a `case` paint
  *    expression, without a second source or breaking clustering.
@@ -135,6 +180,7 @@ export function buildWaypointCollection(
         name: wp.name,
         type: wp.type,
         color: colorForType(wp.type),
+        icon: waypointIconName(wp.type),
         favorite: favoriteIds?.has(id) ?? false,
       },
     };

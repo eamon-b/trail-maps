@@ -7,6 +7,10 @@
  * pane switches the map into tap-to-add-point mode, overlays the in-progress
  * route, and swaps the FAB stack for a builder toolbar; otherwise it overlays
  * the trail's active saved route (if any). The map itself lives in GuideMap.
+ *
+ * Tapping an alternate or side trip opens VariantInfoCard over the map. The card
+ * shares the bottom of the screen with the legend and the FAB stack, so those
+ * hide while it is open — the same trade the route-builder bar makes.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -39,7 +43,15 @@ import {
   type MapStyleResolution,
 } from './map-style';
 import { TrackLegend } from './TrackLegend';
-import { hasDrawableVariant, type MapVariant, type MapWaypoint } from './map-geojson';
+import {
+  hasDrawableVariant,
+  variantFeatureId,
+  type MapVariant,
+  type MapWaypoint,
+  type VariantKind,
+} from './map-geojson';
+import { variantInfo, type VariantInfo } from './variant-info';
+import { VariantInfoCard } from './VariantInfoCard';
 
 /** Same env var the Offline Maps screen uses; empty disables re-download. */
 const TILE_BASE_URL = process.env.EXPO_PUBLIC_TILE_BASE_URL ?? '';
@@ -101,6 +113,37 @@ export function MapPane() {
   const displayPoints = trail.track.displayPoints;
   const routeTrack = displayPoints as RouteTrackPoint[];
 
+  // --- Tappable alternates / side trips ------------------------------------
+  // Ids are resolved back to the source objects here rather than read off the
+  // tapped feature, so the read-out never depends on numeric properties
+  // surviving a round trip through native feature properties.
+  const variantsById = useMemo(() => {
+    const map = new Map<string, VariantInfo>();
+    const add = (list: MapVariant[] | undefined, kind: VariantKind) => {
+      (list ?? []).forEach((variant, index) => {
+        const id = variantFeatureId(kind, index);
+        map.set(id, variantInfo(variant, kind, id));
+      });
+    };
+    add(alternates, 'alternate');
+    add(sideTrips, 'side-trip');
+    return map;
+  }, [alternates, sideTrips]);
+
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const selectedVariant = selectedVariantId ? variantsById.get(selectedVariantId) : undefined;
+
+  const onVariantTap = useCallback(
+    (id: string) => setSelectedVariantId(id),
+    [],
+  );
+  const clearVariant = useCallback(() => setSelectedVariantId(null), []);
+
+  // Switching trails must not leave another trail's variant selected.
+  useEffect(() => {
+    setSelectedVariantId(null);
+  }, [trailId]);
+
   // --- Route builder + active-route overlay --------------------------------
   const [building, setBuilding] = useState(false);
   const [builderPoints, setBuilderPoints] = useState<RoutePointInput[]>([]);
@@ -136,6 +179,7 @@ export function MapPane() {
 
   const startBuilding = useCallback(() => {
     void activateRoute(trailId, null); // hide any active-route overlay while drawing
+    setSelectedVariantId(null); // the builder owns the bottom of the screen
     setBuilderPoints([]);
     setBuilding(true);
   }, [activateRoute, trailId]);
@@ -199,6 +243,9 @@ export function MapPane() {
           accuracy={accuracy}
           favoriteIds={favoriteSet}
           onWaypointTap={onWaypointTap}
+          onVariantTap={onVariantTap}
+          selectedVariantId={selectedVariantId}
+          onBackgroundPress={clearVariant}
           routeOverlay={routeOverlay}
           builderMode={building}
           onMapPress={onMapPress}
@@ -253,16 +300,21 @@ export function MapPane() {
         </View>
       </View>
 
-      {/* Map key for the track classes — suppressed while drawing a route, when
-          the builder toolbar owns the bottom of the screen. */}
-      {!building && (
+      {/* Map key for the track classes — suppressed while the builder toolbar or
+          a variant's info card owns the bottom of the screen (the card names the
+          class it describes anyway). */}
+      {!building && !selectedVariant && (
         <TrackLegend
           hasAlternates={hasDrawableVariant(alternates)}
           hasSideTrips={hasDrawableVariant(sideTrips)}
         />
       )}
 
-      {building ? (
+      {selectedVariant && !building && (
+        <VariantInfoCard info={selectedVariant} unit={units} onDismiss={clearVariant} />
+      )}
+
+      {building && (
         <RouteBuilderBar
           totalKm={builderStats.totalKm}
           pointCount={builderPoints.length}
@@ -271,7 +323,10 @@ export function MapPane() {
           onCancel={cancelBuilding}
           onSave={onSaveRoute}
         />
-      ) : (
+      )}
+
+      {/* FAB stack — hidden whenever something else owns the bottom-right. */}
+      {!building && !selectedVariant && (
         <>
           {/* Draw route: enter the tap-to-add-point builder */}
           <Pressable

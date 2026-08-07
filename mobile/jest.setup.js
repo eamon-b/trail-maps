@@ -6,6 +6,8 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   ShapeSource: 'ShapeSource',
   LineLayer: 'LineLayer',
   SymbolLayer: 'SymbolLayer',
+  CircleLayer: 'CircleLayer',
+  Images: 'Images',
   OfflineManager: {
     createPack: jest.fn(),
     getPacks: jest.fn(),

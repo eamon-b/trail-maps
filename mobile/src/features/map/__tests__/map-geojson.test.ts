@@ -4,6 +4,7 @@ import {
   buildWaypointCollection,
   hasDrawableVariant,
   trailCameraBounds,
+  variantFeatureId,
   waypointFeatureId,
   type MapVariant,
   type MapWaypoint,
@@ -37,25 +38,54 @@ describe('buildVariantCollection', () => {
   ];
 
   it('drops variants that cannot form a line', () => {
-    const fc = buildVariantCollection(variants);
+    const fc = buildVariantCollection(variants, 'alternate');
     expect(fc.features).toHaveLength(1);
-    expect(fc.features[0].properties).toEqual({ name: 'Alt A', type: 'alternate' });
+    expect(fc.features[0].properties).toEqual({
+      id: 'alternate-0',
+      kind: 'alternate',
+      name: 'Alt A',
+      type: 'alternate',
+    });
   });
 
   it('returns an empty collection for no variants', () => {
-    expect(buildVariantCollection([]).features).toEqual([]);
+    expect(buildVariantCollection([], 'alternate').features).toEqual([]);
   });
 
   it('preserves the classifier’s track type on every feature', () => {
     // `type` comes straight from track-classification via the bundled trail
     // JSON ('alternate' | 'side-trip'); the map draws each class in its own
     // source, and the property keeps the class identifiable on tap/inspection.
-    const fc = buildVariantCollection([
-      { name: 'Razorback', type: 'alternate', points: [{ lat: -36.8, lon: 147.2 }, { lat: -36.9, lon: 147.3 }] },
-      { name: 'Mt Skene spur', type: 'side-trip', points: [{ lat: -37.4, lon: 146.3 }, { lat: -37.5, lon: 146.4 }] },
-    ]);
+    const fc = buildVariantCollection(
+      [
+        { name: 'Razorback', type: 'alternate', points: [{ lat: -36.8, lon: 147.2 }, { lat: -36.9, lon: 147.3 }] },
+        { name: 'Mt Skene spur', type: 'side-trip', points: [{ lat: -37.4, lon: 146.3 }, { lat: -37.5, lon: 146.4 }] },
+      ],
+      'alternate',
+    );
     expect(fc.features.map((f) => f.properties!.type)).toEqual(['alternate', 'side-trip']);
     expect(fc.features.map((f) => f.properties!.name)).toEqual(['Razorback', 'Mt Skene spur']);
+  });
+
+  it('ids features by their index in the source list, not the drawn list', () => {
+    // The id is how a tap finds its variant object again, so a dropped
+    // degenerate variant must not renumber the ones behind it.
+    const fc = buildVariantCollection(
+      [
+        { name: 'Degenerate', points: [{ lat: 0, lon: 0 }] },
+        { name: 'Second', points: [{ lat: -35, lon: 138 }, { lat: -35.1, lon: 138.1 }] },
+      ],
+      'side-trip',
+    );
+    expect(fc.features).toHaveLength(1);
+    expect(fc.features[0].id).toBe('side-trip-1');
+    expect(fc.features[0].properties!.id).toBe('side-trip-1');
+    expect(fc.features[0].properties!.kind).toBe('side-trip');
+  });
+
+  it('namespaces ids by class so the two collections never collide', () => {
+    expect(variantFeatureId('alternate', 0)).toBe('alternate-0');
+    expect(variantFeatureId('side-trip', 0)).toBe('side-trip-0');
   });
 });
 
@@ -75,7 +105,9 @@ describe('hasDrawableVariant', () => {
   it('agrees with buildVariantCollection (the legend never lies)', () => {
     const cases: MapVariant[][] = [mixed, [], [{ name: 'No points' }]];
     for (const list of cases) {
-      expect(hasDrawableVariant(list)).toBe(buildVariantCollection(list).features.length > 0);
+      expect(hasDrawableVariant(list)).toBe(
+        buildVariantCollection(list, 'side-trip').features.length > 0,
+      );
     }
   });
 });
@@ -123,6 +155,11 @@ describe('buildWaypointCollection', () => {
 
   it('returns an empty collection for no waypoints', () => {
     expect(buildWaypointCollection([], colorForType).features).toEqual([]);
+  });
+
+  it('carries the per-type glyph name so one SymbolLayer draws every marker', () => {
+    const fc = buildWaypointCollection(waypoints, colorForType);
+    expect(fc.features.map((f) => f.properties!.icon)).toEqual(['water', 'campsite', 'town']);
   });
 
   it('defaults every feature to favorite:false when no set is given', () => {

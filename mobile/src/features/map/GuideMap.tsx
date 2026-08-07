@@ -8,6 +8,17 @@
  * Plan/measure interactions from the old app are intentionally absent — this is
  * the read-only guide view.
  *
+ * Markers are FarOut-style badges: a white disc ringed in the waypoint's
+ * category colour with a per-type ink glyph on top (see waypoint-icons). The
+ * glyphs are bundled PNGs registered through <Images>, because the map has to
+ * work offline and the bundled glyph pbfs carry no pictographs.
+ *
+ * Two overlays are tappable, and which one wins is decided natively by style
+ * order (MLRNMapView picks the touched source whose layers sit highest): the
+ * waypoint source is declared last, so a marker tap always beats the variant
+ * line underneath it. A tap that hits neither reaches <MapView onPress>, which
+ * is what dismisses the variant selection.
+ *
  * Style resolution follows the old app's "resolve before mount" rule: the
  * concrete style *object* is fetched in JS and only then handed to a freshly
  * keyed <MapView>. Swapping a live map's style object mid-flight can crash the
@@ -33,6 +44,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import MapLibreGL, {
   Camera,
   CircleLayer,
+  Images,
   LineLayer,
   MapView,
   ShapeSource,
@@ -57,6 +69,7 @@ import {
   type MapVariant,
   type MapWaypoint,
 } from './map-geojson';
+import { WAYPOINT_ICON_IMAGES } from './waypoint-icon-images';
 import {
   FALLBACK_MAP_STYLE,
   isBasemapGeometryNoise,
@@ -95,6 +108,12 @@ MapLibreGL.Logger.setLogCallback((log: { level: string; message: string; tag?: s
  * routed through the theme. The design-token lint targets RN styles only.
  */
 const MARKER_STROKE = '#ffffff';
+/**
+ * Marker badge fill. The glyph PNGs are dark ink on transparency, so the disc
+ * behind them is white in either app theme — the category colour moves to the
+ * ring (circleStrokeColor), which is still theme-resolved.
+ */
+const MARKER_BADGE = '#ffffff';
 const LABEL_TEXT = '#1a1a1a';
 const LABEL_HALO = '#ffffff';
 /** Puck ring/dot stroke against the basemap (paint prop, not an RN style). */
@@ -108,6 +127,23 @@ const ACCURACY_CIRCLE_MIN_METERS = 20;
 export const WAYPOINT_CLUSTER_MAX_ZOOM = 10;
 /** Individual waypoint labels appear at/above this zoom (above the cluster ceiling). */
 export const WAYPOINT_LABEL_MIN_ZOOM = 11;
+
+/**
+ * Marker badge geometry, in screen px. The badge grew from the old Ø13 dot to
+ * Ø23 (radius + ring) so a glyph fits inside it and still reads at arm's length
+ * in sunlight; the tap target is the source hitbox below, not this.
+ */
+const MARKER_RADIUS = 9;
+const MARKER_RING_WIDTH = 2.5;
+/** Favorites keep their pink ring, one size up so a star stands out. */
+const FAVORITE_MARKER_RADIUS = 11;
+const FAVORITE_MARKER_RING_WIDTH = 3.5;
+/**
+ * Icon scale for the 96 px glyph PNGs. 0.165 lands the glyph's ~76 px content
+ * box at ~12.5 px on screen, whose diagonal just fits inside the Ø18 white
+ * badge — bigger and the corners of the wider glyphs spill over the ring.
+ */
+const MARKER_ICON_SIZE = 0.165;
 
 const CLUSTER_FILTER = ['has', 'point_count'] as Expression;
 const INDIVIDUAL_FILTER = ['!', ['has', 'point_count']] as Expression;
@@ -141,6 +177,18 @@ export interface GuideMapProps {
   favoriteIds?: ReadonlySet<string>;
   /** Tapped waypoint's stable id. */
   onWaypointTap?: (id: string) => void;
+  /**
+   * Tapped variant's feature id ("alternate-2" / "side-trip-0", see
+   * variantFeatureId). Omit to leave the variant lines inert.
+   */
+  onVariantTap?: (id: string) => void;
+  /** Variant feature id to highlight (the one whose info card is open). */
+  selectedVariantId?: string | null;
+  /**
+   * A tap that hit no overlay. Only fires outside builder mode (where every tap
+   * is a route point instead) — used to dismiss the variant selection.
+   */
+  onBackgroundPress?: () => void;
   /**
    * Custom-route overlay (the active saved route, or the in-progress builder
    * route). Mixed geometry: LineString features (`straight` property → dashed)
@@ -216,6 +264,57 @@ const SIDE_TRIP_TRACK_STYLE = {
   lineDasharray: TRACK_DASH.sideTrip as unknown as number[],
 };
 
+/**
+ * Invisible fat line over each variant, purely as a tap target: a 3 px dotted
+ * spur is impossible to hit precisely with a thumb. The source's hitbox already
+ * adds slop around the touch point, and this widens the *line* the query tests
+ * against — MapLibre buffers a line's query geometry by its rendered width, and
+ * `line-opacity: 0` suppresses drawing without removing the feature from the
+ * index the tap query walks.
+ */
+const VARIANT_HIT_WIDTH = 20;
+const VARIANT_HIT_STYLE = {
+  lineColor: TRACK_COLORS.alternate,
+  lineWidth: VARIANT_HIT_WIDTH,
+  lineOpacity: 0,
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+};
+
+/** Hit slop around the touch point for the variant sources (±22 px). */
+const VARIANT_HITBOX = { width: 44, height: 44 };
+/** Waypoint markers are bigger now, so their hitbox grew with them. */
+const WAYPOINT_HITBOX = { width: 44, height: 44 };
+
+/**
+ * Halo drawn under the selected variant's dashes while its info card is open —
+ * wide, solid, and semi-transparent, so the dash pattern still reads on top and
+ * the highlight cannot be mistaken for a different track class.
+ */
+function variantHighlightStyle(color: string, baseWidth: number) {
+  return {
+    lineColor: color,
+    lineWidth: trackWidthExpression(baseWidth * 3) as unknown as number,
+    lineOpacity: 0.4,
+    lineCap: 'round' as const,
+    lineJoin: 'round' as const,
+  };
+}
+
+const ALTERNATE_HIGHLIGHT_STYLE = variantHighlightStyle(
+  TRACK_COLORS.alternate,
+  TRACK_WIDTHS.alternate,
+);
+const SIDE_TRIP_HIGHLIGHT_STYLE = variantHighlightStyle(
+  TRACK_COLORS.sideTrip,
+  TRACK_WIDTHS.sideTrip,
+);
+
+/** Matches only the selected variant; matches nothing when none is selected. */
+function selectedVariantFilter(selectedVariantId: string | null | undefined): Expression {
+  return ['==', ['get', 'id'], selectedVariantId ?? ''] as Expression;
+}
+
 export const GuideMap = memo(
   forwardRef<GuideMapHandle, GuideMapProps>(function GuideMap(
     {
@@ -229,6 +328,9 @@ export const GuideMap = memo(
       accuracy,
       favoriteIds,
       onWaypointTap,
+      onVariantTap,
+      selectedVariantId,
+      onBackgroundPress,
       routeOverlay,
       builderMode,
       onMapPress,
@@ -327,12 +429,16 @@ export const GuideMap = memo(
     // --- GeoJSON sources ---------------------------------------------------
     const trailLine = useMemo(() => buildTrailLine(displayPoints), [displayPoints]);
     const alternatesCollection = useMemo(
-      () => buildVariantCollection(alternates ?? []),
+      () => buildVariantCollection(alternates ?? [], 'alternate'),
       [alternates],
     );
     const sideTripsCollection = useMemo(
-      () => buildVariantCollection(sideTrips ?? []),
+      () => buildVariantCollection(sideTrips ?? [], 'side-trip'),
       [sideTrips],
+    );
+    const highlightFilter = useMemo(
+      () => selectedVariantFilter(selectedVariantId),
+      [selectedVariantId],
     );
     const waypointCollection = useMemo(
       () =>
@@ -429,17 +535,47 @@ export const GuideMap = memo(
       [colors.warning],
     );
 
-    // Favorited markers read as a data-driven `case` on the feature's
-    // `favorite` flag: a larger circle ringed in the theme favorite color, so a
-    // single CircleLayer paints both states and clustering is untouched.
+    // The badge: a white disc ringed in the waypoint's category color, with the
+    // per-type glyph drawn over it by the icon layer below. Favorites read as a
+    // data-driven `case` on the feature's `favorite` flag — one size up and
+    // ringed in the theme favorite color — so a single CircleLayer paints both
+    // states and clustering is untouched.
     const waypointCircleStyle = useMemo(
       () => ({
-        circleRadius: ['case', ['get', 'favorite'], 7, 5] as unknown as number,
-        circleColor: ['get', 'color'] as unknown as string,
-        circleStrokeColor: ['case', ['get', 'favorite'], colors.waypointFavorite, MARKER_STROKE] as unknown as string,
-        circleStrokeWidth: ['case', ['get', 'favorite'], 3, 1.5] as unknown as number,
+        circleRadius: [
+          'case',
+          ['get', 'favorite'],
+          FAVORITE_MARKER_RADIUS,
+          MARKER_RADIUS,
+        ] as unknown as number,
+        circleColor: MARKER_BADGE,
+        circleStrokeColor: [
+          'case',
+          ['get', 'favorite'],
+          colors.waypointFavorite,
+          ['get', 'color'],
+        ] as unknown as string,
+        circleStrokeWidth: [
+          'case',
+          ['get', 'favorite'],
+          FAVORITE_MARKER_RING_WIDTH,
+          MARKER_RING_WIDTH,
+        ] as unknown as number,
       }),
       [colors.waypointFavorite],
+    );
+
+    // Per-type glyph over the badge. `iconAllowOverlap` + `iconIgnorePlacement`
+    // keep every marker's glyph drawn (and keep symbol collision from hiding a
+    // glyph while its circle stays visible); labels still collide normally.
+    const waypointIconStyle = useMemo(
+      () => ({
+        iconImage: ['get', 'icon'] as unknown as string,
+        iconSize: MARKER_ICON_SIZE,
+        iconAllowOverlap: true,
+        iconIgnorePlacement: true,
+      }),
+      [],
     );
 
     const clusterCircleStyle = useMemo(
@@ -472,7 +608,8 @@ export const GuideMap = memo(
         textColor: LABEL_TEXT,
         textHaloColor: LABEL_HALO,
         textHaloWidth: 2.5,
-        textOffset: [0, 1.2] as [number, number],
+        // In ems; clears the taller badge (favorites reach 14.5 px from center).
+        textOffset: [0, 1.5] as [number, number],
         textAnchor: 'top' as const,
         textMaxWidth: 15,
         textAllowOverlap: false,
@@ -528,18 +665,33 @@ export const GuideMap = memo(
       [onWaypointTap],
     );
 
-    // In builder mode, every map tap adds a route point (waypoint selection is
-    // suppressed below so taps flow through to the raw coordinate).
+    // A tapped variant line. The hit layer and the visible dashes both belong to
+    // the source, so a tap can return either; both carry the same feature `id`.
+    const handleVariantPress = useCallback(
+      (event: OnPressEvent) => {
+        const id = event.features?.[0]?.properties?.id as string | undefined;
+        if (id != null) onVariantTap?.(id);
+      },
+      [onVariantTap],
+    );
+
+    // In builder mode, every map tap adds a route point (overlay selection is
+    // suppressed below so taps flow through to the raw coordinate). Outside it,
+    // a tap that hit no overlay is a request to clear the current selection.
     const handleMapPress = useCallback(
       (feature: GeoJSON.Feature) => {
-        if (!builderMode || !onMapPress) return;
+        if (!builderMode) {
+          onBackgroundPress?.();
+          return;
+        }
+        if (!onMapPress) return;
         const geom = feature.geometry;
         if (geom?.type === 'Point') {
           const [lon, lat] = geom.coordinates;
           onMapPress(lat, lon);
         }
       },
-      [builderMode, onMapPress],
+      [builderMode, onMapPress, onBackgroundPress],
     );
 
     if (!resolved) {
@@ -559,20 +711,46 @@ export const GuideMap = memo(
         logoEnabled={false}
         attributionEnabled={false}
         compassEnabled
-        onPress={builderMode ? handleMapPress : undefined}
+        onPress={builderMode || onBackgroundPress ? handleMapPress : undefined}
       >
         <Camera ref={cameraRef} defaultSettings={cameraDefaultSettings} />
 
+        {/* Marker glyphs. Registered inside the map, so a style flip (which
+            remounts the MapView) re-registers them with the new style. */}
+        <Images images={WAYPOINT_ICON_IMAGES} />
+
         {/* Alternate routes: long-dashed violet, under the main track */}
         {alternatesCollection.features.length > 0 && (
-          <ShapeSource id="guide-alternates" shape={alternatesCollection}>
+          <ShapeSource
+            id="guide-alternates"
+            shape={alternatesCollection}
+            onPress={builderMode ? undefined : handleVariantPress}
+            hitbox={VARIANT_HITBOX}
+          >
+            <LineLayer id="guide-alternates-hit" style={VARIANT_HIT_STYLE} />
+            <LineLayer
+              id="guide-alternates-highlight"
+              filter={highlightFilter}
+              style={ALTERNATE_HIGHLIGHT_STYLE}
+            />
             <LineLayer id="guide-alternates-layer" style={ALTERNATE_TRACK_STYLE} />
           </ShapeSource>
         )}
 
         {/* Side trips: finely dotted teal, under the main track */}
         {sideTripsCollection.features.length > 0 && (
-          <ShapeSource id="guide-side-trips" shape={sideTripsCollection}>
+          <ShapeSource
+            id="guide-side-trips"
+            shape={sideTripsCollection}
+            onPress={builderMode ? undefined : handleVariantPress}
+            hitbox={VARIANT_HITBOX}
+          >
+            <LineLayer id="guide-side-trips-hit" style={VARIANT_HIT_STYLE} />
+            <LineLayer
+              id="guide-side-trips-highlight"
+              filter={highlightFilter}
+              style={SIDE_TRIP_HIGHLIGHT_STYLE}
+            />
             <LineLayer id="guide-side-trips-layer" style={SIDE_TRIP_TRACK_STYLE} />
           </ShapeSource>
         )}
@@ -611,7 +789,7 @@ export const GuideMap = memo(
             id="guide-waypoints"
             shape={waypointCollection}
             onPress={builderMode ? undefined : handleWaypointPress}
-            hitbox={{ width: 30, height: 30 }}
+            hitbox={WAYPOINT_HITBOX}
             cluster
             clusterRadius={40}
             clusterMaxZoomLevel={WAYPOINT_CLUSTER_MAX_ZOOM}
@@ -626,6 +804,11 @@ export const GuideMap = memo(
               id="guide-waypoints-circles"
               filter={INDIVIDUAL_FILTER}
               style={waypointCircleStyle}
+            />
+            <SymbolLayer
+              id="guide-waypoints-icons"
+              filter={INDIVIDUAL_FILTER}
+              style={waypointIconStyle}
             />
             <SymbolLayer
               id="guide-waypoints-labels"

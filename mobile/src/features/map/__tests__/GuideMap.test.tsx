@@ -14,6 +14,7 @@ import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { GuideMap } from '../GuideMap';
 import { tileManager } from '../../../services/tile-manager';
 import { getOnlineMapStyle } from '../../../services/online-style-service';
+import { WAYPOINT_ICON_NAMES } from '../waypoint-icons';
 
 // jest.mock is hoisted above the imports above, so the mocked deps are in place
 // before GuideMap's module evaluates.
@@ -25,6 +26,7 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   LineLayer: 'LineLayer',
   SymbolLayer: 'SymbolLayer',
   CircleLayer: 'CircleLayer',
+  Images: 'Images',
   default: {
     setAccessToken: jest.fn(),
     Logger: { setLogCallback: jest.fn() },
@@ -48,6 +50,14 @@ const getOnline = getOnlineMapStyle as jest.Mock;
 
 /** Host-node type accessor (the ambient test-renderer types omit `.type`). */
 const nodeType = (n: unknown) => (n as { type: unknown }).type;
+
+/** First mounted host node of `type` with the given layer/source id. */
+const nodeById = (tree: ReactTestRenderer, type: string, id: string) =>
+  tree.root.findAll((n) => nodeType(n) === type && n.props.id === id)[0];
+
+/** A mounted node's press handler, typed so tests can invoke it. */
+const pressHandler = (node: { props: Record<string, unknown> }) =>
+  node.props.onPress as (event: unknown) => void;
 
 const ONLINE_STYLE = { version: 8, sources: {}, layers: [] };
 const OFFLINE_STYLE = { version: 8, sources: { basemap: {} }, layers: [] };
@@ -302,6 +312,213 @@ describe('GuideMap', () => {
     expect(alt.lineDasharray).toBeDefined();
     expect(side.lineDasharray).toBeDefined();
     expect(alt.lineDasharray).not.toEqual(side.lineDasharray);
+  });
+
+  it('registers a bundled image for every marker glyph', async () => {
+    // A marker whose `icon` names an unregistered image draws nothing at all,
+    // and the registry has to be inside the map so a style flip re-applies it.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} waypoints={waypoints} />,
+      );
+    });
+    await flush();
+
+    const [images] = tree.root.findAll((n) => nodeType(n) === 'Images');
+    const registered = Object.keys(images.props.images as Record<string, unknown>);
+    expect(registered.sort()).toEqual([...WAYPOINT_ICON_NAMES].sort());
+    // ...and the glyph layer reads the name straight off the feature.
+    const [icons] = tree.root.findAll(
+      (n) => nodeType(n) === 'SymbolLayer' && n.props.id === 'guide-waypoints-icons',
+    );
+    expect((icons.props.style as { iconImage: unknown }).iconImage).toEqual(['get', 'icon']);
+  });
+
+  it('draws markers as a white badge ringed in the category color, glyph on top', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} waypoints={waypoints} />,
+      );
+    });
+    await flush();
+
+    const [circles] = tree.root.findAll(
+      (n) => nodeType(n) === 'CircleLayer' && n.props.id === 'guide-waypoints-circles',
+    );
+    const style = circles.props.style as Record<string, unknown>;
+    // The ring carries the (theme-resolved) category color; the disc is white so
+    // the ink glyph on top reads in either app theme.
+    expect(style.circleStrokeColor).toEqual([
+      'case',
+      ['get', 'favorite'],
+      '#123456',
+      ['get', 'color'],
+    ]);
+    expect(style.circleColor).toBe('#ffffff');
+    // Bigger than the 5 px dot it replaces, and favorites are bigger still.
+    expect(style.circleRadius).toEqual(['case', ['get', 'favorite'], 11, 9]);
+  });
+
+  it('makes variant lines tappable with a fat invisible hit target', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onVariantTap = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          alternates={[{ name: 'Alt', type: 'alternate', points }]}
+          sideTrips={[{ name: 'Spur', type: 'side-trip', points }]}
+          onVariantTap={onVariantTap}
+        />,
+      );
+    });
+    await flush();
+
+    for (const sourceId of ['guide-alternates', 'guide-side-trips']) {
+      const [source] = tree.root.findAll(
+        (n) => nodeType(n) === 'ShapeSource' && n.props.id === sourceId,
+      );
+      expect(source.props.onPress).toBeInstanceOf(Function);
+      // Generous slop around the touch point — a 3 px dotted spur is otherwise
+      // unhittable with a thumb.
+      expect(source.props.hitbox).toEqual({ width: 44, height: 44 });
+
+      const [hit] = tree.root.findAll(
+        (n) => nodeType(n) === 'LineLayer' && n.props.id === `${sourceId}-hit`,
+      );
+      const hitStyle = hit.props.style as Record<string, unknown>;
+      expect(hitStyle.lineWidth).toBeGreaterThanOrEqual(20);
+      expect(hitStyle.lineOpacity).toBe(0);
+    }
+
+    // A tap reports the feature's stable id, which is how the pane finds the
+    // variant object again.
+    const [alternates] = tree.root.findAll(
+      (n) => nodeType(n) === 'ShapeSource' && n.props.id === 'guide-alternates',
+    );
+    act(() => {
+      pressHandler(alternates)({
+        features: [{ type: 'Feature', properties: { id: 'alternate-0' } }],
+      });
+    });
+    expect(onVariantTap).toHaveBeenCalledWith('alternate-0');
+  });
+
+  it('highlights only the selected variant', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          alternates={[{ name: 'Alt', type: 'alternate', points }]}
+          sideTrips={[{ name: 'Spur', type: 'side-trip', points }]}
+          selectedVariantId="side-trip-0"
+        />,
+      );
+    });
+    await flush();
+
+    const filterOf = (id: string) => nodeById(tree, 'LineLayer', id).props.filter;
+    expect(filterOf('guide-side-trips-highlight')).toEqual(['==', ['get', 'id'], 'side-trip-0']);
+    // The other class's highlight filter matches nothing.
+    expect(filterOf('guide-alternates-highlight')).toEqual(['==', ['get', 'id'], 'side-trip-0']);
+  });
+
+  it('matches no variant when nothing is selected', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          alternates={[{ name: 'Alt', type: 'alternate', points }]}
+        />,
+      );
+    });
+    await flush();
+    const layer = nodeById(tree, 'LineLayer', 'guide-alternates-highlight');
+    // '' can never equal a variant id (which is always "<kind>-<index>").
+    expect(layer.props.filter).toEqual(['==', ['get', 'id'], '']);
+  });
+
+  it('reports a tap that hit no overlay so the pane can clear its selection', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onBackgroundPress = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          onBackgroundPress={onBackgroundPress}
+        />,
+      );
+    });
+    await flush();
+    act(() => {
+      pressHandler(mapViews(tree)[0])({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [138, -35] },
+        properties: {},
+      });
+    });
+    expect(onBackgroundPress).toHaveBeenCalled();
+  });
+
+  it('gates overlay taps off while the route builder owns the map', async () => {
+    // Every tap in builder mode is a route point, including one that lands on a
+    // marker or a variant line.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onMapPress = jest.fn();
+    const onBackgroundPress = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          alternates={[{ name: 'Alt', type: 'alternate', points }]}
+          sideTrips={[{ name: 'Spur', type: 'side-trip', points }]}
+          onVariantTap={jest.fn()}
+          onBackgroundPress={onBackgroundPress}
+          builderMode
+          onMapPress={onMapPress}
+        />,
+      );
+    });
+    await flush();
+
+    for (const sourceId of ['guide-alternates', 'guide-side-trips', 'guide-waypoints']) {
+      const [source] = tree.root.findAll(
+        (n) => nodeType(n) === 'ShapeSource' && n.props.id === sourceId,
+      );
+      expect(source.props.onPress).toBeUndefined();
+    }
+
+    act(() => {
+      pressHandler(mapViews(tree)[0])({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [138.5, -34.5] },
+        properties: {},
+      });
+    });
+    expect(onMapPress).toHaveBeenCalledWith(-34.5, 138.5);
+    expect(onBackgroundPress).not.toHaveBeenCalled();
   });
 
   it('renders the route overlay source when a routeOverlay is supplied', async () => {

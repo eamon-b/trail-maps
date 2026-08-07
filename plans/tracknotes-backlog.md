@@ -13,7 +13,7 @@ Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this fil
 - [ ] **Phase 7 — custom route builder**: reintroduce routes/route_legs (old schema migrations 7–8 DDL), route drawing on GuideMap, route overlay on profile.
 - [ ] **Phase 8 — planner heritage**: day/resupply/water-carry planners (`@lib` calculators) redesigned into the guide IA.
 - [ ] **Aggregated water-status chip** — client-side freshness ranking over cached reports (weight `exp(-age_days/30)`, 120-day window) shown on water waypoints in list/map.
-- [ ] **Display-name rename UI** — `PATCH /v1/me` exists; add the settings field.
+- [x] **Display-name rename UI** — done: Settings → Account shows the current display name with an inline editor (`src/features/settings/DisplayNameSection.tsx`) calling `identity-store.rename` → `PATCH /v1/me`; client-side trim/length check mirrors the server's 40-char limit, network failures render inline and keep the previous name. Anonymous devices get an explanatory row instead (registration still happens on first post, never from Settings).
 - [ ] **Waypoint descriptions enrichment** — bundled data has almost none; serve curated descriptions from the backend over the comment sync channel rather than authoring into `public/data/`.
 
 ## Design divergences awaiting Eamon's review
@@ -25,8 +25,8 @@ Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this fil
 - [ ] **iOS smoke test** — all E2E tooling is Android; run an EAS iOS build and hand-check before any TestFlight.
 
 ## Data quality
-- [ ] **Duplicate waypoint IDs in larapinta.json** — three id pairs (`w_93f929d7` "Redbank", `w_766c3fd2` "Redbank Gorge Trailhead", `w_b6e87871` "Redbank Gorge") appear twice each; React logs duplicate-key warnings from `ElevationProfile` markers (keyed by `wp.id`) whenever the Larapinta guide renders (found 2026-07-31, pre-existing — not from the Phase 8 fixes). Root-cause in the `waypoint-ids.ts` registry matching (two source waypoints should either dedupe or build-error); mind the append-only registry when fixing.
-- [ ] **Near-duplicate waypoint dedupe** — AAWT has pairs like "Talbot Hut Site" twice ~100 m apart (source-data trait, predates rebuild). Dedupe in `scripts/build-trails.ts`; mind the waypoint-ID registry (retired IDs keep their comments).
+- [x] **Duplicate waypoint IDs in larapinta.json** — RESOLVED 2026-08-07. Not a registry-matching bug: the Mt Sonder summit out-and-back was folded into the single "Main Route" trkseg, so `enrichWaypoints` (one row per proximity episode) matched the three Redbank waypoints twice and fanned one source waypoint into two rows sharing an id. Fixed by lifting the spur into a side trip via new opt-in `extractSpurs` config (`src/lib/track-spurs.ts`), reversing the Larapinta track so km 0 is Alice Springs (new `reverseTrack` config — the existing "Westbound" label was inverted), and adding a duplicate-id build invariant in `processTrail` so the fan-out can never ship again. Larapinta is now 215.8 km with 58 unique on-trail waypoints; `data/waypoint-ids.json` unchanged (ids are minted from lat/lon, so reversal is a no-op for them).
+- [ ] **Near-duplicate waypoint dedupe** — AAWT has pairs like "Talbot Hut Site" twice ~100 m apart (source-data trait, predates rebuild). Larapinta has the same shape: `WT:`/`C:` pairs at one site, e.g. "Rocky Bar Gap" (`w_7d1c866d` + `w_09fe6506`, ~22 m apart, both km 205.2) and "Rocky Gully" (`w_409f844e` + `w_5b17238e`, both km 111.0) — two distinct source `<wpt>`s with distinct ids, so no duplicate-key warning, but they render as adjacent identical-looking rows. Dedupe in `scripts/build-trails.ts`; mind the waypoint-ID registry (retired IDs keep their comments).
 
 ## Tech debt / infra
 - [ ] **Photo-upload idempotency server-side** — the client drain mutex prevents double-uploads, but the POST itself appends blindly; an idempotency key (e.g. content hash per comment) would be defense in depth.

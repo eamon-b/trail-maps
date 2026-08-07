@@ -1,7 +1,8 @@
 /**
  * Minimal ambient types for `react-test-renderer` — the package ships without
  * declarations and `@types/react-test-renderer` is not (and must not be) added
- * as a dependency. Only the surface used by the elevation smoke test is typed.
+ * as a dependency. Only the surface the component smoke tests use is typed
+ * (this declaration is global, so every test file sees it).
  */
 declare module 'react-test-renderer' {
   import type { ReactElement } from 'react';
@@ -9,6 +10,8 @@ declare module 'react-test-renderer' {
   export interface TestInstance {
     props: Record<string, unknown> & { onLayout?: (e: unknown) => void };
     findAll(predicate: (node: TestInstance) => boolean): TestInstance[];
+    /** Instances of a given component type, e.g. RN's `Text` / `TextInput`. */
+    findAllByType(type: unknown): TestInstance[];
   }
 
   export interface ReactTestRenderer {

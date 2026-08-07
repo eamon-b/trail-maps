@@ -1,7 +1,13 @@
-import { StyleSheet, Text, View } from 'react-native';
+/**
+ * App settings — units, plus the account section where the comment display
+ * name can be renamed (the promise the first-post prompt makes).
+ */
+
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../src/theme';
 import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
+import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
 import { useSettingsStore, type Units } from '../src/state/settings-store';
 
 const UNIT_OPTIONS = [
@@ -15,7 +21,11 @@ export default function SettingsScreen() {
   const setUnits = useSettingsStore((s) => s.setUnits);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.section}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Units</Text>
         <SegmentedControl<Units>
@@ -24,13 +34,15 @@ export default function SettingsScreen() {
           onChange={setUnits}
         />
       </View>
-    </View>
+
+      <DisplayNameSection />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: spacing.lg,
     gap: spacing.xl,
   },

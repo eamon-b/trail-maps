@@ -3,9 +3,10 @@
  *
  * Resolves the tapped waypoint from the active guide, then layers on the
  * offline-first comments client: a newest-first feed (server rows + optimistic
- * local rows with "waiting to send" / "failed" affordances), a composer with
- * water-flow chips for water-family waypoints, an inline display-name prompt for
- * first-time posters, and a favorite heart backed by the local favorites store.
+ * local rows with "waiting to send" / "failed" affordances), the composer
+ * (`features/comments/Composer` — water-flow chips, photo attach, and the
+ * first-post display-name prompt), and a favorite heart backed by the local
+ * favorites store.
  *
  * The feed reads straight from SQLite (so it renders instantly and offline);
  * mount kicks a background pull + drain and re-reads when they land.
@@ -21,12 +22,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { useTheme } from '../../../../src/theme';
@@ -40,10 +39,8 @@ import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
 import { waypointColor } from '../../../../src/features/elevation/waypoint-category';
 import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
 import {
-  WATER_STATUS_OPTIONS,
   estimateEtaMinutes,
   formatEta,
-  isWaterFamily,
   relativeDate,
   waterStatusMeta,
 } from '../../../../src/features/guide/waypoint-detail';
@@ -52,11 +49,7 @@ import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favor
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
 import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
-import {
-  selectedPhotoFromResult,
-  hasComposerContent,
-  type SelectedPhoto,
-} from '../../../../src/features/comments/photo-upload';
+import { Composer } from '../../../../src/features/comments/Composer';
 import { isApiConfigured } from '../../../../src/api/client';
 import {
   deleteOwnComment,
@@ -493,235 +486,6 @@ function CommentItem({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Composer
-// ---------------------------------------------------------------------------
-
-interface SubmitArgs {
-  text: string | null;
-  waterStatus: WaterStatus | null;
-  photo: SelectedPhoto | null;
-  displayName?: string;
-}
-
-function Composer({
-  waypointType,
-  registered,
-  onSubmit,
-}: {
-  waypointType: string;
-  registered: boolean;
-  onSubmit: (args: SubmitArgs) => Promise<void>;
-}) {
-  const { colors } = useTheme();
-  const showWater = isWaterFamily(waypointType);
-  const [text, setText] = useState('');
-  const [waterStatus, setWaterStatus] = useState<WaterStatus | null>(null);
-  const [photo, setPhoto] = useState<SelectedPhoto | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [promptOpen, setPromptOpen] = useState(false);
-  const [nameDraft, setNameDraft] = useState('');
-
-  const hasContent = hasComposerContent({ text, waterStatus, photo });
-
-  const pickFromLibrary = useCallback(async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-      allowsMultipleSelection: false,
-      base64: false,
-    });
-    const selected = selectedPhotoFromResult(result);
-    if (selected) setPhoto(selected);
-  }, []);
-
-  const takePhoto = useCallback(async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return;
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-      base64: false,
-    });
-    const selected = selectedPhotoFromResult(result);
-    if (selected) setPhoto(selected);
-  }, []);
-
-  const finish = useCallback(
-    async (displayName?: string) => {
-      setBusy(true);
-      try {
-        await onSubmit({
-          text: text.trim().length > 0 ? text.trim() : null,
-          waterStatus,
-          photo,
-          displayName,
-        });
-        setText('');
-        setWaterStatus(null);
-        setPhoto(null);
-      } finally {
-        setBusy(false);
-      }
-    },
-    [onSubmit, text, waterStatus, photo],
-  );
-
-  const handleSubmit = useCallback(() => {
-    if (!hasContent || busy) return;
-    if (!registered) {
-      setPromptOpen(true);
-      return;
-    }
-    void finish();
-  }, [hasContent, busy, registered, finish]);
-
-  return (
-    <View style={[styles.composer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-      {showWater && (
-        <View style={styles.waterChips}>
-          {WATER_STATUS_OPTIONS.map((status) => {
-            const meta = waterStatusMeta(status);
-            const color = colors[meta.colorToken];
-            const active = waterStatus === status;
-            return (
-              <Pressable
-                key={status}
-                onPress={() => setWaterStatus(active ? null : status)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                style={[
-                  styles.waterChip,
-                  { borderColor: color },
-                  active && { backgroundColor: color },
-                ]}
-              >
-                <Text style={[styles.waterChipText, { color: active ? colors.textInverse : color }]}>
-                  {meta.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-
-      <TextInput
-        style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
-        placeholder={showWater ? 'Add a note or water report…' : 'Add a note…'}
-        placeholderTextColor={colors.textSecondary}
-        value={text}
-        onChangeText={setText}
-        multiline
-        editable={!busy}
-      />
-
-      {photo ? (
-        <View style={styles.photoChip}>
-          <Image
-            source={{ uri: photo.uri }}
-            style={[styles.photoChipImage, { backgroundColor: colors.background }]}
-            contentFit="cover"
-            cachePolicy="disk"
-            accessibilityIgnoresInvertColors
-          />
-          <Pressable
-            onPress={() => setPhoto(null)}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel="Remove photo"
-            hitSlop={spacing.sm}
-            style={[styles.photoChipRemove, { backgroundColor: colors.scrim }]}
-          >
-            <Text style={[styles.photoChipRemoveIcon, { color: colors.textInverse }]}>×</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={styles.photoActions}>
-          <Pressable
-            onPress={() => void pickFromLibrary()}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel="Add photo from library"
-            hitSlop={spacing.xs}
-            style={[styles.photoButton, { borderColor: colors.border }]}
-          >
-            <Text style={[styles.photoButtonIcon, { color: colors.accent }]}>🖼</Text>
-            <Text style={[styles.photoButtonText, { color: colors.textSecondary }]}>Photo</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => void takePhoto()}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel="Take a photo"
-            hitSlop={spacing.xs}
-            style={[styles.photoButton, { borderColor: colors.border }]}
-          >
-            <Text style={[styles.photoButtonIcon, { color: colors.accent }]}>📷</Text>
-            <Text style={[styles.photoButtonText, { color: colors.textSecondary }]}>Camera</Text>
-          </Pressable>
-        </View>
-      )}
-
-      <Pressable
-        onPress={handleSubmit}
-        disabled={!hasContent || busy}
-        accessibilityRole="button"
-        accessibilityLabel="Post comment"
-        style={[
-          styles.submit,
-          { backgroundColor: hasContent && !busy ? colors.accent : colors.accentMuted },
-        ]}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.accentText} />
-        ) : (
-          <Text style={[styles.submitText, { color: colors.accentText }]}>Post</Text>
-        )}
-      </Pressable>
-
-      <Modal visible={promptOpen} transparent animationType="fade" onRequestClose={() => setPromptOpen(false)}>
-        <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Choose a display name</Text>
-            <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
-              Shown next to your comments. You can change it later in settings.
-            </Text>
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
-              placeholder="e.g. Trail Ghost"
-              placeholderTextColor={colors.textSecondary}
-              value={nameDraft}
-              onChangeText={setNameDraft}
-              autoFocus
-              maxLength={40}
-            />
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setPromptOpen(false)}
-                accessibilityRole="button"
-                style={styles.modalButton}
-              >
-                <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  const name = nameDraft.trim();
-                  if (name.length === 0) return;
-                  setPromptOpen(false);
-                  void finish(name);
-                }}
-                accessibilityRole="button"
-                style={[styles.modalButton, styles.modalSave, { backgroundColor: colors.accent }]}
-              >
-                <Text style={[styles.submitText, { color: colors.accentText }]}>Save &amp; post</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
@@ -791,74 +555,4 @@ const styles = StyleSheet.create({
 
   viewerBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   viewerImage: { width: '100%', height: '100%' },
-
-  photoActions: { flexDirection: 'row', gap: spacing.sm },
-  photoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  photoButtonIcon: { ...typography.dataSmall },
-  photoButtonText: { ...typography.dataSmall, fontWeight: '600' },
-  photoChip: { alignSelf: 'flex-start' },
-  photoChipImage: { width: 88, height: 88, borderRadius: radii.md },
-  photoChipRemove: {
-    position: 'absolute',
-    top: -spacing.xs,
-    right: -spacing.xs,
-    width: 24,
-    height: 24,
-    borderRadius: radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoChipRemoveIcon: { ...typography.titleSmall, lineHeight: 20 },
-
-  composer: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  waterChips: { flexDirection: 'row', gap: spacing.sm },
-  waterChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  waterChipText: { ...typography.dataSmall, fontWeight: '600' },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radii.sm,
-    padding: spacing.md,
-    minHeight: 64,
-    ...typography.body,
-    textAlignVertical: 'top',
-  },
-  submit: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radii.sm,
-    minHeight: 44,
-  },
-  submitText: { ...typography.titleSmall },
-
-  modalBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  modalCard: { width: '100%', borderRadius: radii.lg, padding: spacing.lg, gap: spacing.md },
-  modalTitle: { ...typography.titleLarge },
-  modalHint: { ...typography.bodySmall },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-  modalButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.sm,
-  },
-  modalSave: { minWidth: 44, alignItems: 'center' },
 });

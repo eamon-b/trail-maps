@@ -36,6 +36,15 @@ export const MAX_ZOOM = 15;
 export const CONTOUR_MIN_ZOOM = 9;
 export const CONTOUR_INTERVAL = 10; // metres
 export const INDEX_CONTOUR_INTERVAL = 50; // metres (bold lines)
+/**
+ * Warp resolution for contour generation. The source DEM is 1 arc-second
+ * (~30m, 0.000278°); warping at 2x that density with cubicspline resampling
+ * interpolates smooth curves between the 30m samples, so gdal_contour traces
+ * rounded contours instead of polygonal lines on the DEM lattice. Costs 4x
+ * the pixels. Must match WARP_TR_DEG in build-contours-australia.ts so
+ * offline and worker-served contours line up at identical elevations.
+ */
+export const CONTOUR_WARP_TR_DEG = 0.000139;
 
 // --- Utility functions ---
 
@@ -368,8 +377,9 @@ export function clipDem(
 /**
  * Smooth a DEM using cubic-spline resampling.
  * This acts as a low-pass filter that reduces single-pixel SRTM noise
- * while preserving real terrain features. Resamples at the same 1-arc-second
- * resolution but through cubic spline interpolation.
+ * while preserving real terrain features. Resamples at 2x the 1-arc-second
+ * source resolution (CONTOUR_WARP_TR_DEG) so contours traced from the result
+ * follow smooth interpolated curves rather than the 30m DEM lattice.
  */
 export function smoothDem(
   demPath: string,
@@ -384,7 +394,7 @@ export function smoothDem(
     'gdalwarp',
     '-overwrite',
     '-r cubicspline',
-    '-tr 0.000278 0.000278',
+    `-tr ${CONTOUR_WARP_TR_DEG} ${CONTOUR_WARP_TR_DEG}`,
     // Align the output pixel grid to -tr multiples so separately-warped
     // regions sample the DEM identically and contours meet at shared edges.
     '-tap',
@@ -513,6 +523,10 @@ export function classifyAndTileContours(
     '-y is_index',
     '--drop-smallest-as-needed',
     '--simplification=14',
+    // Keep full vertex detail at maxzoom: those tiles are what MapLibre
+    // overzooms past z15, so simplifying them makes contours visibly
+    // polygonal exactly where users zoom in. Lower zooms stay simplified.
+    '--simplify-only-low-zooms',
     '--minimum-detail=4',
     '--force',
     ...layerArgs,

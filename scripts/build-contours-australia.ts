@@ -63,6 +63,12 @@ const OUTPUT_FILENAME = 'australia-contours.pmtiles';
 // exact cell extent so features tile seamlessly without duplication.
 const CELL_BUFFER_DEG = 0.01; // ~1.1km
 
+// Warp resolution. The source DEM is 1 arc-second (~30m, 0.000278°); warping
+// at 2x that density with cubicspline resampling interpolates smooth curves
+// between the 30m samples, so gdal_contour traces rounded contours instead of
+// polygonal lines on the DEM lattice. Costs 4x the pixels per cell.
+const WARP_TR_DEG = 0.000139;
+
 const CLASSIFIED_LAYER = 'contour';
 
 interface Tier {
@@ -211,7 +217,7 @@ function processCell(cell: CellDef, args: CliArgs): void {
       '-overwrite',
       `-te ${cell.west - CELL_BUFFER_DEG} ${latMin - CELL_BUFFER_DEG} ${cell.east + CELL_BUFFER_DEG} ${latMax + CELL_BUFFER_DEG}`,
       `-r ${resampling}`,
-      '-tr 0.000278 0.000278',
+      `-tr ${WARP_TR_DEG} ${WARP_TR_DEG}`,
       // -tap aligns every cell's pixel grid to the same global -tr lattice.
       // Without it, adjacent cells (whose -te origins differ by 2°, not a
       // multiple of -tr) sample the DEM ~0.24px apart and smoothed elevations
@@ -397,6 +403,10 @@ function mergeToPmtiles(outputPath: string, verbose: boolean): void {
     '-y', 'is_index',
     '--drop-smallest-as-needed',
     '--simplification=14',
+    // Keep full vertex detail at maxzoom: z15 tiles are what MapLibre
+    // overzooms past z15, so simplifying them makes contours visibly
+    // polygonal exactly where users zoom in. Lower zooms stay simplified.
+    '--simplify-only-low-zooms',
     '--minimum-detail=4',
     '--force',
     ...layerArgs,

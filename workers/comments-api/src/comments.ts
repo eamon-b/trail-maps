@@ -51,6 +51,8 @@ export interface CommentRow {
   deleted_at: string | null;
   deleted_by: 'owner' | 'admin' | null;
   photo_urls_json: string | null;
+  /** JSON array of sha-256 hex digests, index-aligned with `photo_urls_json`. */
+  photo_hashes_json: string | null;
 }
 
 // ---------------------------------------------------------------------------

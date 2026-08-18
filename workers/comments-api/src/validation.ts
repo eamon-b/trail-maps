@@ -4,7 +4,7 @@
  */
 
 import { HttpError } from './http';
-import type { WaterStatus } from '../../../src/lib/comments-api-types';
+import type { ReportReason, WaterStatus } from '../../../src/lib/comments-api-types';
 
 /**
  * Allowlist of trail ids that may receive comments.
@@ -30,8 +30,12 @@ const UUID_V4_RE =
 
 const WATER_STATUSES: readonly WaterStatus[] = ['flowing', 'low', 'dry'];
 
+const REPORT_REASONS: readonly ReportReason[] = ['spam', 'offensive', 'inaccurate', 'other'];
+
 const MAX_TEXT_LEN = 2000;
 const MAX_DISPLAY_NAME_LEN = 40;
+const MAX_REPORT_DETAIL_LEN = 500;
+const MAX_DESCRIPTION_LEN = 4000;
 
 /** Clock skew we tolerate on client-supplied `observedAt` before clamping. */
 const OBSERVED_AT_FUTURE_TOLERANCE_MS = 10 * 60 * 1000;
@@ -109,6 +113,54 @@ export function validateWaterStatus(raw: unknown): WaterStatus | null {
     );
   }
   return raw as WaterStatus;
+}
+
+/** Validate a report reason against the enum. */
+export function validateReportReason(raw: unknown): ReportReason {
+  if (typeof raw !== 'string' || !REPORT_REASONS.includes(raw as ReportReason)) {
+    throw new HttpError(
+      400,
+      'invalid_reason',
+      "reason must be one of 'spam', 'offensive', 'inaccurate', 'other'"
+    );
+  }
+  return raw as ReportReason;
+}
+
+/** Validate optional report detail (<= 500 chars). Returns trimmed value or null. */
+export function validateReportDetail(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== 'string') {
+    throw new HttpError(400, 'invalid_detail', 'detail must be a string');
+  }
+  const trimmed = raw.trim();
+  if (trimmed.length > MAX_REPORT_DETAIL_LEN) {
+    throw new HttpError(
+      400,
+      'invalid_detail',
+      `detail must be at most ${MAX_REPORT_DETAIL_LEN} characters`
+    );
+  }
+  return trimmed.length === 0 ? null : trimmed;
+}
+
+/**
+ * Validate a curated waypoint description (<= 4000 chars after trimming). The
+ * empty string is valid and means "cleared".
+ */
+export function validateDescription(raw: unknown): string {
+  if (typeof raw !== 'string') {
+    throw new HttpError(400, 'invalid_description', 'description must be a string');
+  }
+  const trimmed = raw.trim();
+  if (trimmed.length > MAX_DESCRIPTION_LEN) {
+    throw new HttpError(
+      400,
+      'invalid_description',
+      `description must be at most ${MAX_DESCRIPTION_LEN} characters`
+    );
+  }
+  return trimmed;
 }
 
 /**

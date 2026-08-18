@@ -1,0 +1,65 @@
+appId: com.tracknotes.app
+---
+# Map pane — open a guide and verify the map chrome mounts and survives a pan.
+#
+# The MapLibre canvas itself is a native surface Maestro can't inspect, so the
+# checks are on the chrome MapPane draws over it:
+#   - the base-map status pill ("Online" / "Offline maps ready" / "Updating…")
+#   - the track legend ("Map key" a11y label, "Trail" row)
+#   - the FAB stack a11y labels ("Recenter map on the trail", "Draw a route")
+# A crash in the map subtree would trip MapErrorBoundary and none of these
+# would render, so this doubles as the map smoke test.
+#
+# NOTE: all three panes stay mounted in GuideView (inactive ones are hidden via
+# `display: 'none'`), so cross-pane `assertNotVisible` is unreliable. Every
+# assertion here is positive.
+- runFlow: shared/launch-dev.yaml
+
+# Cape to Cape (127 km) is the smallest bundled trail — fastest to load.
+- tapOn: "Cape to Cape Track"
+
+# Guide header shows the trail's shortName; Map is the default pane.
+- extendedWaitUntil:
+    visible: "Cape to Cape"
+    timeout: 30000
+- assertVisible: "Map"
+- assertVisible: "Elevation"
+- assertVisible: "List"
+
+# Map chrome. The status pill text depends on tile state, so match any of the
+# three legal readings rather than pinning one.
+- extendedWaitUntil:
+    visible: "Online|Offline maps ready|Updating offline maps…"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "Map key"
+    timeout: 15000
+- assertVisible: "Trail"
+- assertVisible: "Recenter map on the trail"
+- assertVisible: "Draw a route"
+- takeScreenshot: view-map
+
+# Pan the map: the chrome must stay put and nothing may crash (regression
+# guard inherited from the old map-pan-stability flow).
+- swipe:
+    start: "50%, 55%"
+    end: "20%, 55%"
+- waitForAnimationToEnd
+- swipe:
+    start: "50%, 55%"
+    end: "80%, 55%"
+- waitForAnimationToEnd
+- assertVisible: "Map key"
+- assertVisible: "Recenter map on the trail"
+
+# Recenter re-fits the camera to the trail bounds; chrome must survive it.
+- tapOn: "Recenter map on the trail"
+- waitForAnimationToEnd
+- assertVisible: "Map key"
+- takeScreenshot: view-map-recentered
+
+# Back returns to the guide list.
+- pressKey: back
+- extendedWaitUntil:
+    visible: "My Guides"
+    timeout: 15000

@@ -61,6 +61,13 @@ export interface MapVariant {
   waypoints?: unknown[];
 }
 
+/**
+ * Aggregated water status per bundled waypoint id, as produced by the guide's
+ * `useWaterStatus`. Declared structurally (only `status` is read) so this module
+ * stays free of the guide feature's types.
+ */
+export type WaterStatusLookup = ReadonlyMap<string, { status: string }>;
+
 /** Minimal waypoint shape needed to place and colour a marker. */
 export interface MapWaypoint {
   /** Stable bundled id (e.g. "w_766c3fd2"); falls back to name when absent. */
@@ -159,12 +166,17 @@ export function waypointFeatureId(wp: MapWaypoint, index: number): string {
  *    `iconImage: ['get', 'icon']`;
  *  - a `favorite` boolean (true when the id is in `favoriteIds`) so the same
  *    CircleLayer can enlarge/ring starred markers via a `case` paint
- *    expression, without a second source or breaking clustering.
+ *    expression, without a second source or breaking clustering;
+ *  - a `waterStatus` string ('flowing' | 'low' | 'dry', or '' when unknown) so
+ *    the same CircleLayer can tint a water source's ring by its aggregated
+ *    status via a `match` expression. Empty string rather than null keeps the
+ *    property's type stable through the native bridge.
  */
 export function buildWaypointCollection(
   waypoints: MapWaypoint[],
   colorForType: (type: string) => string,
   favoriteIds?: ReadonlySet<string>,
+  waterStatusById?: WaterStatusLookup,
 ): FeatureCollection<Point> {
   const features: Feature<Point>[] = waypoints.map((wp, i) => {
     const id = waypointFeatureId(wp, i);
@@ -182,6 +194,10 @@ export function buildWaypointCollection(
         color: colorForType(wp.type),
         icon: waypointIconName(wp.type),
         favorite: favoriteIds?.has(id) ?? false,
+        // Keyed by the *bundled* waypoint id, because that is the id reports are
+        // filed against — a legacy waypoint with only a name+index fallback id
+        // can never have any.
+        waterStatus: (wp.id ? waterStatusById?.get(wp.id)?.status : undefined) ?? '',
       },
     };
   });

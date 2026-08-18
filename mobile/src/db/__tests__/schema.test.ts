@@ -122,3 +122,35 @@ describe('schema v2 — routes', () => {
     expect(rows).toHaveLength(0);
   });
 });
+
+describe('schema v3 — synced waypoint descriptions', () => {
+  it('creates the waypoint_meta table', async () => {
+    const db = await createMigratedTestDb();
+    const rows = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
+    );
+    expect(rows.map((r) => r.name)).toContain('waypoint_meta');
+  });
+
+  it('rejects duplicate (trail_id, waypoint_id) rows', async () => {
+    const db = await createMigratedTestDb();
+    await db.runAsync(
+      `INSERT INTO waypoint_meta (trail_id, waypoint_id, description, updated_at)
+       VALUES ('larapinta', 'w_abcd1234', 'Tank.', '2026-08-01T00:00:00Z')`
+    );
+    await expectDbRejection(() =>
+      db.runAsync(
+        `INSERT INTO waypoint_meta (trail_id, waypoint_id, description, updated_at)
+         VALUES ('larapinta', 'w_abcd1234', 'Tank again.', '2026-08-02T00:00:00Z')`
+      )
+    );
+  });
+
+  it('adds sync_state.meta_synced_at alongside the comment cursor', async () => {
+    const db = await createMigratedTestDb();
+    const cols = await db.getAllAsync<{ name: string }>("PRAGMA table_info('sync_state')");
+    const names = cols.map((c) => c.name);
+    expect(names).toContain('meta_synced_at');
+    expect(names).toContain('last_synced_at');
+  });
+});

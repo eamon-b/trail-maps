@@ -173,6 +173,30 @@ describe('buildWaypointCollection', () => {
     // Keyed by the same stable feature id (bundled id, or name+index fallback).
     expect(fc.features.map((f) => f.properties!.favorite)).toEqual([false, true, true]);
   });
+
+  it("defaults waterStatus to '' when no lookup is given", () => {
+    const fc = buildWaypointCollection(waypoints, colorForType);
+    expect(fc.features.map((f) => f.properties!.waterStatus)).toEqual(['', '', '']);
+  });
+
+  it('carries the aggregated water status, keyed by the bundled waypoint id', () => {
+    const waterStatusById = new Map([
+      ['w_water', { status: 'dry' }],
+      // A camp with a (nonsense) entry still gets it — the pane decides which
+      // waypoints are water; the builder only copies the lookup through.
+      ['w_camp', { status: 'flowing' }],
+    ]);
+    const fc = buildWaypointCollection(waypoints, colorForType, undefined, waterStatusById);
+    expect(fc.features.map((f) => f.properties!.waterStatus)).toEqual(['dry', 'flowing', '']);
+  });
+
+  it("leaves an id-less waypoint's waterStatus empty (reports need a bundled id)", () => {
+    // The legacy waypoint's feature id is "Legacy-2", but reports are filed
+    // against bundled ids only, so that fallback must never match a report.
+    const waterStatusById = new Map([['Legacy-2', { status: 'dry' }]]);
+    const fc = buildWaypointCollection(waypoints, colorForType, undefined, waterStatusById);
+    expect(fc.features[2].properties!.waterStatus).toBe('');
+  });
 });
 
 describe('trailCameraBounds', () => {

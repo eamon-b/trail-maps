@@ -68,6 +68,7 @@ import {
   type LatLon,
   type MapVariant,
   type MapWaypoint,
+  type WaterStatusLookup,
 } from './map-geojson';
 import { WAYPOINT_ICON_IMAGES } from './waypoint-icon-images';
 import {
@@ -175,6 +176,12 @@ export interface GuideMapProps {
   accuracy?: number | null;
   /** Starred waypoint ids — enlarged and ringed in the favorite color. */
   favoriteIds?: ReadonlySet<string>;
+  /**
+   * Aggregated water status per bundled waypoint id (see the guide's
+   * `useWaterStatus`). Tints a water source's marker ring by its status; markers
+   * without an entry keep their category ring.
+   */
+  waterStatusById?: WaterStatusLookup;
   /** Tapped waypoint's stable id. */
   onWaypointTap?: (id: string) => void;
   /**
@@ -327,6 +334,7 @@ export const GuideMap = memo(
       currentPosition,
       accuracy,
       favoriteIds,
+      waterStatusById,
       onWaypointTap,
       onVariantTap,
       selectedVariantId,
@@ -442,8 +450,13 @@ export const GuideMap = memo(
     );
     const waypointCollection = useMemo(
       () =>
-        buildWaypointCollection(waypoints ?? [], (type) => waypointColor(type, colors), favoriteIds),
-      [waypoints, colors, favoriteIds],
+        buildWaypointCollection(
+          waypoints ?? [],
+          (type) => waypointColor(type, colors),
+          favoriteIds,
+          waterStatusById,
+        ),
+      [waypoints, colors, favoriteIds, waterStatusById],
     );
 
     // --- User-location puck ------------------------------------------------
@@ -540,6 +553,12 @@ export const GuideMap = memo(
     // data-driven `case` on the feature's `favorite` flag — one size up and
     // ringed in the theme favorite color — so a single CircleLayer paints both
     // states and clustering is untouched.
+    //
+    // Water sources with an aggregated status swap that category ring for the
+    // status colour (flowing/low/dry), so a glance at the map shows which
+    // sources were last reported dry. Deliberately ring-only: no extra layer, no
+    // new glyph, and a starred waypoint still wins (the favorite ring is what the
+    // hiker asked to see).
     const waypointCircleStyle = useMemo(
       () => ({
         circleRadius: [
@@ -553,7 +572,17 @@ export const GuideMap = memo(
           'case',
           ['get', 'favorite'],
           colors.waypointFavorite,
-          ['get', 'color'],
+          [
+            'match',
+            ['get', 'waterStatus'],
+            'flowing',
+            colors.waterFlowing,
+            'low',
+            colors.waterLow,
+            'dry',
+            colors.waterDry,
+            ['get', 'color'],
+          ],
         ] as unknown as string,
         circleStrokeWidth: [
           'case',
@@ -562,7 +591,7 @@ export const GuideMap = memo(
           MARKER_RING_WIDTH,
         ] as unknown as number,
       }),
-      [colors.waypointFavorite],
+      [colors.waypointFavorite, colors.waterFlowing, colors.waterLow, colors.waterDry],
     );
 
     // Per-type glyph over the badge. `iconAllowOverlap` + `iconIgnorePlacement`

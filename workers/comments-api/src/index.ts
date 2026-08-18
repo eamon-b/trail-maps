@@ -8,7 +8,9 @@
 
 import { CORS_HEADERS, HttpError, errorResponse, json } from './http';
 import type { Env } from './http';
-import { getMe, registerDevice, updateMe } from './devices';
+import { deleteMe, getMe, registerDevice, updateMe } from './devices';
+import { getTrailDescriptions, upsertTrailDescription } from './descriptions';
+import { getAdminReports, reportComment } from './reports';
 import {
   deleteComment,
   getAdminComments,
@@ -52,6 +54,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (rest.length === 1 && rest[0] === 'me') {
       if (method === 'GET') return await getMe(request, env, ctx);
       if (method === 'PATCH') return await updateMe(request, env, ctx);
+      if (method === 'DELETE') return await deleteMe(request, env, ctx);
       return methodNotAllowed();
     }
 
@@ -69,15 +72,46 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return methodNotAllowed();
     }
 
+    // /v1/comments/:id/report
+    if (rest.length === 3 && rest[0] === 'comments' && rest[2] === 'report') {
+      if (method === 'POST') return await reportComment(request, env, ctx, rest[1]);
+      return methodNotAllowed();
+    }
+
     // /v1/admin/comments
     if (rest.length === 2 && rest[0] === 'admin' && rest[1] === 'comments') {
       if (method === 'GET') return await getAdminComments(request, env, ctx);
       return methodNotAllowed();
     }
 
+    // /v1/admin/reports
+    if (rest.length === 2 && rest[0] === 'admin' && rest[1] === 'reports') {
+      if (method === 'GET') return await getAdminReports(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/admin/trails/:trailId/descriptions/:waypointId
+    if (
+      rest.length === 5 &&
+      rest[0] === 'admin' &&
+      rest[1] === 'trails' &&
+      rest[3] === 'descriptions'
+    ) {
+      if (method === 'PUT') {
+        return await upsertTrailDescription(request, env, ctx, rest[2], rest[4]);
+      }
+      return methodNotAllowed();
+    }
+
     // /v1/trails/:trailId/comments
     if (rest.length === 3 && rest[0] === 'trails' && rest[2] === 'comments') {
       if (method === 'GET') return await getBulkSync(request, env, rest[1]);
+      return methodNotAllowed();
+    }
+
+    // /v1/trails/:trailId/descriptions
+    if (rest.length === 3 && rest[0] === 'trails' && rest[2] === 'descriptions') {
+      if (method === 'GET') return await getTrailDescriptions(request, env, rest[1]);
       return methodNotAllowed();
     }
 

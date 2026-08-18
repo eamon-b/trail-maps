@@ -27,8 +27,8 @@
    Do instead: `wrangler dev` in workers/comments-api (migrate local first), `adb reverse tcp:8787 tcp:8787`, `EXPO_PUBLIC_API_BASE_URL=http://localhost:8787` in mobile/.env.local, restart Metro (EXPO_PUBLIC_* is inlined at bundle time). Airplane mode does NOT cut adb-reverse loopback — simulate offline by killing wrangler dev.
 10. **[2026-07-30] Changing database_id in wrangler.toml resets which LOCAL D1 wrangler uses**
    Do instead: local state is keyed by the id — after pasting a production id, re-run `migrate:local` and expect an empty local DB (old data still on disk under .wrangler/state/v3/d1; registered device tokens vanish → app 401s and pauses its outbox).
-11. **[2026-08-07] Claude-spawned emulator can't register with adb (3/3 attempts: "Unable to connect to adb daemon on port: 5037", ports 5554/5555 never open) — the user-launched emulator works fine**
-   Do instead: never launch the Pixel_7 AVD from a Claude shell; ask the user to start it. If `adb devices` goes empty mid-session, the user's emulator died — report it and wait.
+11. **[2026-08-19] Fresh worktrees have no mobile/node_modules, and symlinking the main checkout's copy breaks when the branch adds deps (e.g. expo-secure-store) — every Jest suite then fails at jest.setup.js module resolution**
+   Do instead: run a real `npm ci --legacy-peer-deps` in the worktree's mobile/ (and `npm ci` in workers/comments-api if testing the worker); never symlink or install into the shared checkout's node_modules. (Emulator note moved to user memory: user must launch the AVD; Claude-spawned ones can't register with adb.)
 12. **[2026-08-07] Dev client ANRs ("failed to complete startup") when launched against a cold Metro bundle**
    Do instead: warm the bundle first — `curl "http://localhost:8081/.expo/.virtual-metro-entry.bundle?platform=android&dev=true"` (the plain `/index.bundle` path 404s; that's normal for expo-router) — then fire the deep link.
 

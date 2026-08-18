@@ -17,6 +17,14 @@ import type {
 const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x01, 0x02, 0x03]);
 const WEBP_BYTES = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x0a, 0x0b, 0x0c]);
 
+/**
+ * Distinct jpeg-ish payloads. Uploads are deduped by content hash, so tests that
+ * want N *separate* photos must send N different byte strings.
+ */
+function distinctJpeg(n: number): Uint8Array<ArrayBuffer> {
+  return new Uint8Array([0xff, 0xd8, 0xff, 0xe0, n, n + 1, n + 2]);
+}
+
 /** Read a comment row's photo_urls_json + updated_at straight from D1. */
 async function readRow(id: string): Promise<{ photo_urls_json: string | null; updated_at: string }> {
   const row = await env.DB.prepare(
@@ -156,10 +164,10 @@ describe('POST /v1/comments/:id/photos — payload limits', () => {
     const device = await registerDevice();
     const { id } = await createComment(device, { waypointId: 'photo-max-wp' });
     for (let i = 0; i < 4; i++) {
-      const ok = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+      const ok = await uploadPhoto(device, id, distinctJpeg(i), 'image/jpeg');
       expect(ok.status).toBe(201);
     }
-    const fifth = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    const fifth = await uploadPhoto(device, id, distinctJpeg(9), 'image/jpeg');
     expect(fifth.status).toBe(409);
     expect(((await fifth.json()) as { error: { code: string } }).error.code).toBe('too_many_photos');
   });
@@ -180,6 +188,169 @@ describe('POST /v1/comments/:id/photos — rate limit', () => {
     const res = await uploadPhoto(device, fresh, JPEG_BYTES, 'image/jpeg');
     expect(res.status).toBe(429);
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('rate_limited');
+  });
+});
+
+describe('POST /v1/comments/:id/photos — idempotent replay', () => {
+  /** Read a comment row's photo hash array straight from D1. */
+  async function readHashes(id: string): Promise<string[]> {
+    const row = await env.DB.prepare(`SELECT photo_hashes_json FROM comments WHERE id = ?`)
+      .bind(id)
+      .first<{ photo_hashes_json: string | null }>();
+    return row?.photo_hashes_json === null || row?.photo_hashes_json === undefined
+      ? []
+      : (JSON.parse(row.photo_hashes_json) as string[]);
+  }
+
+  it('re-uploading identical bytes returns 200 with the original URL and stores one object', async () => {
+    const device = await registerDevice();
+    const { id } = await createComment(device, { waypointId: 'photo-replay-wp' });
+
+    const first = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(first.status).toBe(201);
+    const firstBody = (await first.json()) as UploadCommentPhotoResponse;
+    const rowAfterFirst = await readRow(id);
+
+    const replay = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(replay.status).toBe(200);
+    const replayBody = (await replay.json()) as UploadCommentPhotoResponse;
+    expect(replayBody.photoUrl).toBe(firstBody.photoUrl);
+    expect(replayBody.photoUrls).toEqual(firstBody.photoUrls);
+
+    // The row is untouched — no second URL, no updated_at bump (so delta sync
+    // doesn't churn), and only one object under the comment's R2 prefix.
+    const rowAfterReplay = await readRow(id);
+    expect(rowAfterReplay.photo_urls_json).toBe(rowAfterFirst.photo_urls_json);
+    expect(rowAfterReplay.updated_at).toBe(rowAfterFirst.updated_at);
+    const listed = await env.PHOTOS.list({ prefix: `comments/${id}/` });
+    expect(listed.objects.map((o) => o.key)).toEqual([`comments/${id}/0.jpg`]);
+  });
+
+  it('records one hash per stored photo, index-aligned with the URLs', async () => {
+    const device = await registerDevice();
+    const { id } = await createComment(device, { waypointId: 'photo-hashes-wp' });
+
+    await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    await uploadPhoto(device, id, WEBP_BYTES, 'image/webp');
+
+    const hashes = await readHashes(id);
+    expect(hashes).toHaveLength(2);
+    expect(hashes[0]).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashes[1]).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashes[0]).not.toBe(hashes[1]);
+
+    // A replay of the *second* photo returns that photo's URL, not the last one.
+    const replay = await uploadPhoto(device, id, WEBP_BYTES, 'image/webp');
+    expect(replay.status).toBe(200);
+    expect(((await replay.json()) as UploadCommentPhotoResponse).photoUrl).toBe(
+      `https://photos.test/comments/${id}/1.webp`
+    );
+
+    const replayFirst = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(replayFirst.status).toBe(200);
+    expect(((await replayFirst.json()) as UploadCommentPhotoResponse).photoUrl).toBe(
+      `https://photos.test/comments/${id}/0.jpg`
+    );
+  });
+
+  it('different bytes still create a new photo', async () => {
+    const device = await registerDevice();
+    const { id } = await createComment(device, { waypointId: 'photo-distinct-wp' });
+
+    expect((await uploadPhoto(device, id, distinctJpeg(1), 'image/jpeg')).status).toBe(201);
+    const second = await uploadPhoto(device, id, distinctJpeg(2), 'image/jpeg');
+    expect(second.status).toBe(201);
+    expect(((await second.json()) as UploadCommentPhotoResponse).photoUrls).toHaveLength(2);
+  });
+
+  it('replays a stored photo even at the 4-photo cap', async () => {
+    const device = await registerDevice();
+    const { id } = await createComment(device, { waypointId: 'photo-replay-cap-wp' });
+
+    const urls: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      const res = await uploadPhoto(device, id, distinctJpeg(i), 'image/jpeg');
+      expect(res.status).toBe(201);
+      urls.push(((await res.json()) as UploadCommentPhotoResponse).photoUrl);
+    }
+
+    // A genuinely new 5th photo is still refused…
+    const fifth = await uploadPhoto(device, id, distinctJpeg(50), 'image/jpeg');
+    expect(fifth.status).toBe(409);
+
+    // …but retrying the 4th (the case a flaky network actually produces) succeeds.
+    const replay = await uploadPhoto(device, id, distinctJpeg(3), 'image/jpeg');
+    expect(replay.status).toBe(200);
+    const body = (await replay.json()) as UploadCommentPhotoResponse;
+    expect(body.photoUrl).toBe(urls[3]);
+    expect(body.photoUrls).toEqual(urls);
+  });
+
+  it('replays a stored photo even at the daily upload cap', async () => {
+    const device = await registerDevice();
+    const { id } = await createComment(device, { waypointId: 'photo-replay-rate-wp' });
+    const first = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(first.status).toBe(201);
+    const photoUrl = ((await first.json()) as UploadCommentPhotoResponse).photoUrl;
+
+    // Seed another comment so the user's 24h photo count is at the cap.
+    const { id: seeded } = await createComment(device, { waypointId: 'photo-replay-rate-seed' });
+    const fakeUrls = Array.from({ length: 40 }, (_, i) => `https://photos.test/y/${i}.jpg`);
+    await env.DB.prepare(`UPDATE comments SET photo_urls_json = ?, updated_at = ? WHERE id = ?`)
+      .bind(JSON.stringify(fakeUrls), new Date().toISOString(), seeded)
+      .run();
+
+    // A new photo is rate-limited…
+    const blocked = await uploadPhoto(device, id, distinctJpeg(7), 'image/jpeg');
+    expect(blocked.status).toBe(429);
+
+    // …while the replay short-circuits ahead of the cap.
+    const replay = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(replay.status).toBe(200);
+    expect(((await replay.json()) as UploadCommentPhotoResponse).photoUrl).toBe(photoUrl);
+  });
+
+  it('does not dedupe across comments', async () => {
+    const device = await registerDevice();
+    const { id: a } = await createComment(device, { waypointId: 'photo-cross-a-wp' });
+    const { id: b } = await createComment(device, { waypointId: 'photo-cross-b-wp' });
+
+    expect((await uploadPhoto(device, a, JPEG_BYTES, 'image/jpeg')).status).toBe(201);
+    const onB = await uploadPhoto(device, b, JPEG_BYTES, 'image/jpeg');
+    expect(onB.status).toBe(201);
+    expect(((await onB.json()) as UploadCommentPhotoResponse).photoUrl).toBe(
+      `https://photos.test/comments/${b}/0.jpg`
+    );
+  });
+
+  it('treats a legacy row with NULL photo_hashes_json as undeduped', async () => {
+    const device = await registerDevice();
+    const { id } = await createComment(device, { waypointId: 'photo-legacy-wp' });
+
+    // Simulate a row written before the hash column existed.
+    const legacyUrl = `https://photos.test/comments/${id}/0.jpg`;
+    await env.DB.prepare(
+      `UPDATE comments SET photo_urls_json = ?, photo_hashes_json = NULL WHERE id = ?`
+    )
+      .bind(JSON.stringify([legacyUrl]), id)
+      .run();
+
+    // The same bytes upload again (no hash to match), landing at the next index…
+    const res = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as UploadCommentPhotoResponse;
+    expect(body.photoUrl).toBe(`https://photos.test/comments/${id}/1.jpg`);
+
+    // …and the hash array is padded so index 1 describes index 1.
+    const hashes = await readHashes(id);
+    expect(hashes).toHaveLength(2);
+    expect(hashes[0]).toBe('');
+    expect(hashes[1]).toMatch(/^[0-9a-f]{64}$/);
+
+    // From here on the new photo is dedupe-protected.
+    const replay = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(replay.status).toBe(200);
+    expect(((await replay.json()) as UploadCommentPhotoResponse).photoUrl).toBe(body.photoUrl);
   });
 });
 

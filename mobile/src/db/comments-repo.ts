@@ -252,15 +252,27 @@ export async function deleteById(db: SqlDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM comments WHERE id = ?', [id]);
 }
 
+/** Read options for `listByWaypoint`. */
+export interface ListByWaypointOptions {
+  /**
+   * Cap the number of (newest) rows returned — the detail screen's feed paging
+   * window. Omit for the whole feed.
+   */
+  limit?: number;
+}
+
 /**
- * All comments for a waypoint, newest-first, each joined with its outbox state
- * so the UI can render "waiting to send" / "failed" badges without a second
- * query.
+ * Comments for a waypoint, newest-first, each joined with its outbox state so
+ * the UI can render "waiting to send" / "failed" badges without a second query.
+ *
+ * Defaults to the whole feed; pass `limit` to materialize only the newest page
+ * (`countByWaypoint` gives the total for a "show earlier" affordance).
  */
 export async function listByWaypoint(
   db: SqlDatabase,
   trailId: string,
   waypointId: string,
+  options: ListByWaypointOptions = {},
 ): Promise<CommentWithSyncState[]> {
   // Photo uploads live in the outbox under kind='photo', keyed by their own id
   // with the owning comment id in the JSON payload. Fold the worst status of a
@@ -283,8 +295,9 @@ export async function listByWaypoint(
        FROM comments c
        LEFT JOIN outbox o ON o.id = c.id AND o.kind = 'comment'
       WHERE c.trail_id = ? AND c.waypoint_id = ?
-      ORDER BY c.created_at DESC, c.id DESC`,
-    [trailId, waypointId],
+      ORDER BY c.created_at DESC, c.id DESC
+      ${options.limit != null ? 'LIMIT ?' : ''}`,
+    options.limit != null ? [trailId, waypointId, options.limit] : [trailId, waypointId],
   );
   return rows.map((row) => ({
     ...toRecord(row),

@@ -8,32 +8,46 @@
  *                         high-water mark, upsert live rows, apply tombstones,
  *                         then persist the server's `syncedAt` as the next
  *                         `since`. First sync (no cursor) is a full snapshot.
+ *                         It also pulls curated waypoint descriptions on their
+ *                         own high-water mark (`sync_state.meta_synced_at`) —
+ *                         independently, so a failure there never fails the
+ *                         comment pull.
  *
- *   drainOutbox()       — walk the FIFO outbox, PUT/DELETE each item against the
- *                         idempotent write endpoints. On 2xx flip the mirrored
+ *   drainOutbox()       — walk the FIFO outbox, PUT/DELETE/POST each item against
+ *                         the idempotent write endpoints. On 2xx flip the mirrored
  *                         comment to `source='server'` and drop the outbox row.
  *                         A network error STOPS the drain (retry later); a 401
  *                         PAUSES the whole queue (identity needs attention); a
  *                         4xx validation error marks the single item failed but
  *                         keeps it (and the optimistic comment) visible.
+ *                         A `report` item is settled by a 2xx (201 first report,
+ *                         200 idempotent repeat) and equally by a 404/410 —
+ *                         a comment that no longer exists needs no moderation.
  *
  * Retry backoff is `min(2^attempts * 30s, 1h)` measured from the item's
  * `created_at`; attempts start at 0 (send immediately), and each 4xx failure
  * bumps them.
  */
 
-import type { PhotoContentType, PutCommentRequest, WaterStatus } from '@lib/comments-api-types';
+import type {
+  PhotoContentType,
+  PutCommentRequest,
+  ReportReason,
+  WaterStatus,
+} from '@lib/comments-api-types';
 import { isSyncTombstone } from '@lib/comments-api-types';
 import { getDatabase } from '../db/database';
 import type { SqlDatabase } from '../db/sql-database';
 import * as commentsRepo from '../db/comments-repo';
 import type { CommentSource } from '../db/comments-repo';
 import * as outboxRepo from '../db/outbox-repo';
+import * as waypointMetaRepo from '../db/waypoint-meta-repo';
 import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/client';
 import * as commentsApi from '../api/comments';
 import { getSession, type Session } from '../api/auth';
 import { uuidv4 } from '../api/uuid';
 import type { SelectedPhoto } from '../features/comments/photo-upload';
+import { parseReportPayload, validateReport } from '../features/comments/report-comment';
 import { emitSyncChange } from './sync-events';
 
 /** Payload persisted for a `kind='photo'` outbox row. */
@@ -115,6 +129,32 @@ async function writeSince(db: SqlDatabase, trailId: string, syncedAt: string): P
 }
 
 // ---------------------------------------------------------------------------
+// pullTrailMeta — curated waypoint descriptions
+// ---------------------------------------------------------------------------
+
+/**
+ * Pull the curated waypoint descriptions for a trail (delta since the stored
+ * `meta_synced_at`) and mirror them locally. Cleared rows — empty descriptions —
+ * are stored as-is; the repo hides them from readers.
+ *
+ * Returns the waypoint ids the pull touched. Throws on transport/API failure:
+ * the caller decides how loudly to fail (`pullTrail` swallows it so a broken
+ * description endpoint never breaks comment sync).
+ */
+async function pullTrailMeta(
+  db: SqlDatabase,
+  trailId: string,
+  ctx: commentsApi.ApiContext,
+): Promise<string[]> {
+  const since = await waypointMetaRepo.readMetaSyncedAt(db, trailId);
+  const result = await commentsApi.getTrailDescriptions(ctx, { trailId, since });
+  const rows = result.descriptions ?? [];
+  await waypointMetaRepo.upsertDescriptions(db, trailId, rows);
+  await waypointMetaRepo.writeMetaSyncedAt(db, trailId, result.syncedAt);
+  return rows.map((row) => row.waypointId).filter((id): id is string => !!id);
+}
+
+// ---------------------------------------------------------------------------
 // pullTrail
 // ---------------------------------------------------------------------------
 
@@ -166,8 +206,24 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
   }
 
   await writeSince(db, trailId, result.syncedAt);
+
+  // Descriptions ride the same trigger but are a SEPARATE channel: a failure
+  // here (offline mid-pull, endpoint not deployed yet) must not turn a
+  // successful comment pull into an error, so it is swallowed and simply
+  // retried on the next pull.
+  let metaApplied = 0;
+  try {
+    const metaWaypoints = await pullTrailMeta(db, trailId, ctx);
+    metaApplied = metaWaypoints.length;
+    for (const id of metaWaypoints) changedWaypoints.add(id);
+  } catch {
+    // Keep the comment pull's outcome; the meta high-water mark is unchanged.
+  }
+
   // Nudge any mounted feed for this trail to re-read the freshly-applied rows.
-  if (applied > 0) emitSyncChange({ trailId, waypointIds: [...changedWaypoints] });
+  if (applied > 0 || metaApplied > 0) {
+    emitSyncChange({ trailId, waypointIds: [...changedWaypoints] });
+  }
   return { outcome: 'pulled', applied, syncedAt: result.syncedAt };
 }
 
@@ -276,6 +332,13 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
       }
     }
 
+    // A report we can't parse can never succeed — drop it instead of retrying a
+    // payload we can't turn into a request.
+    if (item.kind === 'report' && parseReportPayload(item.payloadJson) === null) {
+      await outboxRepo.remove(db, item.id);
+      continue;
+    }
+
     await outboxRepo.markSending(db, item.id);
 
     try {
@@ -292,6 +355,16 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
           payload.contentType,
         );
         await commentsRepo.setPhotoUrls(db, payload.commentId, res.photoUrls);
+      } else if (item.kind === 'report') {
+        // Pre-checked above, so this parse always succeeds; reports own no
+        // local comment row, the outbox row IS the whole record.
+        const payload = parseReportPayload(item.payloadJson);
+        if (payload) {
+          await commentsApi.reportComment(ctx, payload.commentId, {
+            reason: payload.reason,
+            detail: payload.detail,
+          });
+        }
       } else {
         const payload = JSON.parse(item.payloadJson) as PutCommentRequest;
         const server = await commentsApi.putComment(ctx, item.id, payload);
@@ -318,6 +391,18 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
       if (e instanceof ApiError && e.status === 404 && item.kind === 'delete') {
         // Already gone server-side — the delete is a no-op success.
         await commentsRepo.deleteById(db, item.id);
+        await outboxRepo.remove(db, item.id);
+        noteChange(item);
+        sent += 1;
+        continue;
+      }
+      if (
+        e instanceof ApiError &&
+        item.kind === 'report' &&
+        (e.status === 404 || e.status === 410)
+      ) {
+        // Unknown or already-deleted comment — there is nothing left to
+        // moderate, so the report is settled rather than failed.
         await outboxRepo.remove(db, item.id);
         noteChange(item);
         sent += 1;
@@ -438,6 +523,64 @@ export async function submitComment(
       createdAt,
     });
   }
+
+  const drain = await drainOutbox({
+    ...deps,
+    db,
+    getSessionFn: deps.getSessionFn ?? (async () => input.session),
+  });
+  return { id, drain };
+}
+
+export interface SubmitReportInput {
+  /** The reported comment's server id. */
+  commentId: string;
+  trailId: string;
+  waypointId: string;
+  reason: ReportReason;
+  detail?: string | null;
+  /** A report is authenticated, so the reporter must be registered first. */
+  session: Session;
+}
+
+export interface SubmitReportResult {
+  /** The outbox row id (a fresh uuid — reports own no comment row). */
+  id: string;
+  drain: DrainResult;
+}
+
+/**
+ * Report a comment for moderation: validate, enqueue, and attempt an immediate
+ * drain. Nothing is written to the comment cache — the report is invisible in
+ * the feed, and the server treats a repeat report from the same device as
+ * idempotent, so a queued report is safe to send whenever connectivity returns.
+ *
+ * Throws when the reason/detail fail validation so the caller can surface the
+ * message inline.
+ */
+export async function submitReport(
+  input: SubmitReportInput,
+  deps: SyncDeps = {},
+): Promise<SubmitReportResult> {
+  const check = validateReport({
+    commentId: input.commentId,
+    reason: input.reason,
+    detail: input.detail,
+  });
+  if (!check.ok) throw new Error(check.message);
+
+  const db = await resolveDb(deps);
+  const nowMs = (deps.now ?? Date.now)();
+  const id = uuidv4();
+
+  await outboxRepo.enqueue(db, {
+    id,
+    kind: 'report',
+    trailId: input.trailId,
+    waypointId: input.waypointId,
+    payload: check.value,
+    createdAt: new Date(nowMs).toISOString(),
+  });
 
   const drain = await drainOutbox({
     ...deps,

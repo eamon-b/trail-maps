@@ -45,6 +45,18 @@ export {
   TRACK_CLASSIFICATION_DEFAULTS,
 } from './track-classification';
 
+// Waypoint Dedupe
+export type {
+  DedupableWaypoint,
+  WaypointDedupeOptions,
+  WaypointDedupeResult,
+  WaypointMerge,
+} from './waypoint-dedupe';
+export {
+  dedupeNearDuplicateWaypoints,
+  WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS,
+} from './waypoint-dedupe';
+
 // Waypoint Classification
 export type { ClassificationResult, WaypointPrefixRule } from './waypoint-classifier';
 export {

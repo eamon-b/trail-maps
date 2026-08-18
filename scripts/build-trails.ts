@@ -7,6 +7,11 @@ import { douglasPeucker } from '../src/lib/gpx-optimizer.js';
 import { classifyTracks, combineTracksGeographically } from '../src/lib/track-classification.js';
 import { classifyWaypoint } from '../src/lib/waypoint-classifier.js';
 import { cumulativeKm, detectSelfRetraces, extractSpur } from '../src/lib/track-spurs.js';
+import {
+  dedupeNearDuplicateWaypoints,
+  WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS,
+  type DedupableWaypoint,
+} from '../src/lib/waypoint-dedupe.js';
 import { escapeHtml, escapeJsString } from '../src/lib/escape.js';
 import type { TrackClassificationConfig, GpxPoint as LibGpxPoint } from '../src/lib/types.js';
 import {
@@ -105,6 +110,7 @@ interface TrailConfig {
   trackClassification?: TrackClassificationConfig;  // Patterns for multi-track GPX classification
   reverseTrack?: boolean;  // Reverse the source track so km 0 is the trail's canonical start
   extractSpurs?: SpurExtractionConfig[];  // Out-and-back sections to lift out of the main route
+  dedupeWaypoints?: boolean | { radiusMeters?: number };  // Merge near-duplicate waypoints (same name + type within radius, default 150m)
   waypointMaxDistance?: number;  // Max distance (meters) from track to match waypoints (default 500)
   waypointsFile?: string;  // Now optional - can extract from GPX
   climateFile?: string;
@@ -127,6 +133,7 @@ interface Waypoint {
   lon: number;
   type: string;
   description?: string;
+  mergedIds?: string[];    // ids of near-duplicate waypoints merged into this one (see dedupeWaypoints)
 }
 
 interface EnrichedWaypoint extends Waypoint {
@@ -161,6 +168,7 @@ interface VariantWaypoint {
   totalDescent: number;
   variantTrackIndex: number;
   description?: string;
+  mergedIds?: string[];    // ids of near-duplicate waypoints merged into this one (see dedupeWaypoints)
 }
 
 interface RouteVariant {
@@ -1140,22 +1148,101 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
     seenWaypointIds.set(wp.id, wp);
   }
 
+  // Merge near-duplicate waypoints: some sources mark one physical feature with
+  // two <wpt>s — the AAWT has "Talbot Hut Site" twice ~60m apart, the Larapinta
+  // pins a `WT:` tank and a `C:` campsite at the same site (Rocky Bar Gap) —
+  // which, after the GeoJSON category overwrite gives both the same type, shows
+  // up as two adjacent identical-looking rows. Opt in per trail via
+  // `dedupeWaypoints`.
+  //
+  // Placement matters: this runs AFTER assignWaypointIds (which still sees every
+  // source waypoint, so data/waypoint-ids.json stays append-only and retired ids
+  // keep their comments) and after the duplicate-id invariant above, but before
+  // the waypoint lists are handed to the output. Dropped ids are recorded on the
+  // survivor as `mergedIds`.
+  const dedupeConfig = config.dedupeWaypoints;
+  const dedupeEnabled = dedupeConfig === true || (typeof dedupeConfig === 'object' && dedupeConfig !== null);
+  const dedupeRadiusMeters = typeof dedupeConfig === 'object' && dedupeConfig !== null
+    ? dedupeConfig.radiusMeters
+    : undefined;
+
+  // Ids kept by an earlier view win survivor selection in later views, so one
+  // feature never surfaces under two different ids across main/variant/off-trail.
+  const canonicalIds = new Set<string>();
+  const mergedAwayIds = new Set<string>();
+  const mergeLog: string[] = [];
+  let rowsBeforeDedupe = 0;
+  let rowsAfterDedupe = 0;
+
+  function applyWaypointDedupe<T extends DedupableWaypoint>(rows: T[], view: string): T[] {
+    if (!dedupeEnabled || rows.length < 2) return rows;
+
+    const result = dedupeNearDuplicateWaypoints(rows, {
+      radiusMeters: dedupeRadiusMeters,
+      preferIds: canonicalIds,
+    });
+    rowsBeforeDedupe += rows.length;
+    rowsAfterDedupe += result.waypoints.length;
+
+    for (const merge of result.merges) {
+      if (merge.survivorId) canonicalIds.add(merge.survivorId);
+      for (const id of merge.droppedIds) mergedAwayIds.add(id);
+      mergeLog.push(
+        `    - ${merge.name} (${merge.type}, ${view}): kept ${merge.survivorId ?? 'no id'}, ` +
+          `merged ${merge.droppedIds.join(', ') || `${merge.droppedCount} row(s) with no id`} ` +
+          `(${Math.round(merge.maxSeparationMeters)}m apart)`
+      );
+    }
+    return result.waypoints;
+  }
+
+  const outputWaypoints = applyWaypointDedupe(enrichedWaypoints, 'main');
+  // Ids merged away on the main route are already represented by an on-trail
+  // row, so they must never resurface in the off-trail list below.
+  const mainMergedAwayIds = new Set(mergedAwayIds);
+
   // Enrich variants with junction point data (where they connect to main track)
   const enrichedAlternates = findVariantJunctions(alternates, points);
   const enrichedSideTrips = findVariantJunctions(sideTrips, points);
 
-  // Enrich variants with waypoint data (which waypoints they pass through)
-  const alternatesWithWaypoints = enrichVariantWaypoints(enrichedAlternates, waypoints);
-  const sideTripsWithWaypoints = enrichVariantWaypoints(enrichedSideTrips, waypoints);
+  // Enrich variants with waypoint data (which waypoints they pass through).
+  // Variants re-match the same source waypoints, so a near-duplicate pair shows
+  // up twice here too and needs the same merge (preferring the main route's
+  // survivor) to stay consistent with the main list.
+  const dedupeVariants = (variants: RouteVariant[]): RouteVariant[] =>
+    variants.map(variant => variant.waypoints === undefined
+      ? variant
+      : { ...variant, waypoints: applyWaypointDedupe(variant.waypoints, `variant "${variant.name}"`) });
 
-  // Identify off-trail waypoints (not matched even at the increased threshold)
+  const alternatesWithWaypoints = dedupeVariants(enrichVariantWaypoints(enrichedAlternates, waypoints));
+  const sideTripsWithWaypoints = dedupeVariants(enrichVariantWaypoints(enrichedSideTrips, waypoints));
+
+  // Identify off-trail waypoints (not matched even at the increased threshold).
+  // `matchedNames` is built from the pre-dedupe enriched list on purpose: a
+  // waypoint that was matched and then merged away must not reappear here as an
+  // off-trail waypoint. `mainMergedAwayIds` re-states that explicitly (the
+  // name|lat|lon key would miss a merged-away twin only if two source waypoints
+  // shared all three, but the guard costs nothing and states the intent).
   const matchedNames = new Set(enrichedWaypoints.map(ew => `${ew.name}|${ew.lat}|${ew.lon}`));
-  const offTrailWaypoints: OffTrailWaypoint[] = waypoints
+  const offTrailCandidates: OffTrailWaypoint[] = waypoints
     .filter(wp => !matchedNames.has(`${wp.name}|${wp.lat}|${wp.lon}`))
+    .filter(wp => !(wp.id !== undefined && mainMergedAwayIds.has(wp.id)))
     .map(wp => {
       const { distanceFromTrack } = findNearestTrackPoint(wp, points);
       return { ...wp, distanceFromTrail: Math.round(distanceFromTrack) };
     });
+  // Off-trail pairs are duplicates in the same way (the AAWT marks "Macalister
+  // Springs" twice, 115m apart, both beyond the on-trail threshold).
+  const offTrailWaypoints = applyWaypointDedupe(offTrailCandidates, 'off-trail');
+
+  if (dedupeEnabled && rowsBeforeDedupe > rowsAfterDedupe) {
+    console.log(
+      `  ✓ Merged ${rowsBeforeDedupe - rowsAfterDedupe} near-duplicate waypoints ` +
+        `(${rowsBeforeDedupe} → ${rowsAfterDedupe} rows, radius ` +
+        `${dedupeRadiusMeters ?? WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS}m)`
+    );
+    for (const line of mergeLog) console.log(line);
+  }
 
   if (offTrailWaypoints.length > 0) {
     console.log(`  ✓ ${offTrailWaypoints.length} off-trail waypoints (beyond ${waypointMaxDist}m threshold)`);
@@ -1170,7 +1257,7 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
       totalAscent,
       totalDescent,
     },
-    waypoints: enrichedWaypoints,
+    waypoints: outputWaypoints,
     offTrailWaypoints,
     alternates: alternatesWithWaypoints,
     sideTrips: sideTripsWithWaypoints,

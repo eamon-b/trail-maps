@@ -1,0 +1,74 @@
+appId: com.tracknotes.app
+---
+# Waypoint detail — List pane → tap a row → the detail screen.
+#
+# Asserts the parts of the screen that are structural rather than in flux:
+# the waypoint name (hero + stack title), the stat chips, the favorite heart
+# (toggled and untoggled to exercise the SQLite favorites store), and the
+# Comments section heading.
+#
+# The comments feed body itself depends on the environment
+# (EXPO_PUBLIC_API_BASE_URL set or not, server reachable or not), so it is
+# checked through a conditional branch instead of one hard-coded string.
+# Deliberately avoids the comment-row action links (Delete / Retry / report),
+# which move around as the comments UI evolves.
+- runFlow: shared/launch-dev.yaml
+- tapOn: "Cape to Cape Track"
+- extendedWaitUntil:
+    visible: "Cape to Cape"
+    timeout: 30000
+
+# Switch to the datasheet pane and open the km-0 waypoint (always the first
+# row, so no scrolling is needed).
+- tapOn: "List"
+- extendedWaitUntil:
+    visible: "Cape Leeuwin Lighthouse"
+    timeout: 20000
+# Each row is a button labelled "Open <waypoint name>".
+- tapOn: "Open Cape Leeuwin Lighthouse"
+- waitForAnimationToEnd
+
+# --- Detail header + stats -------------------------------------------------
+- extendedWaitUntil:
+    visible: "Comments"
+    timeout: 20000
+- assertVisible: "Cape Leeuwin Lighthouse"
+- assertVisible: "Distance"
+# This waypoint carries an elevation (14 m), so the elevation stat renders.
+- assertVisible: "Elevation"
+- takeScreenshot: waypoint-detail
+
+# --- Favorite heart round-trip ---------------------------------------------
+- assertVisible: "Add to favorites"
+- tapOn: "Add to favorites"
+- extendedWaitUntil:
+    visible: "Remove from favorites"
+    timeout: 10000
+- tapOn: "Remove from favorites"
+- extendedWaitUntil:
+    visible: "Add to favorites"
+    timeout: 10000
+
+# --- Comments area ---------------------------------------------------------
+# Three legal states. With EXPO_PUBLIC_API_BASE_URL set (the normal dev setup)
+# the composer renders; on a fresh state with an unreachable server the feed is
+# the empty note. With the var unset the screen says comments are unavailable.
+# assertVisible does not scroll, so walk down to whichever one is present.
+- scrollUntilVisible:
+    element:
+      text: "No comments yet.*|Comments are unavailable.*|Add a note.*"
+    direction: DOWN
+    timeout: 20000
+- runFlow:
+    when:
+      visible: "Add a note.*"
+    commands:
+      - assertVisible: "Post comment"
+      - assertVisible: "Add photo from library"
+
+# --- Back to the guide -----------------------------------------------------
+- pressKey: back
+- extendedWaitUntil:
+    visible: "Cape Leeuwin Lighthouse"
+    timeout: 15000
+- assertVisible: "List"

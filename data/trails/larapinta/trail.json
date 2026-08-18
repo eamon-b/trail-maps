@@ -7,6 +7,7 @@
   "gpxFile": "Larapinta_Trail.gpx",
   "geojsonFile": "Larapinta_Trail.json",
   "description": "Trail data auto-generated from Larapinta_Trail.gpx. Edit trail.json to customize.",
+  "dedupeWaypoints": true,
   "reverseTrack": true,
   "extractSpurs": [
     {

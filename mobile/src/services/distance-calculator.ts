@@ -1,75 +1,131 @@
-import { calculateElevationBetween } from '@lib/track-geometry';
-import type { TrackPoint, TrailWaypoint } from '../lib/trail-utils';
+/**
+ * Trail distances, elevation change, and Naismith ETA from a current km
+ * position to the upcoming waypoints of each important type (next water, camp,
+ * town/resupply, shelter).
+ *
+ * Ported from the old app and adapted to Tracknotes' waypoint shape: parameter
+ * types are structural (`DistanceWaypoint`, `ElevationPoint`) so the bundled
+ * trail JSON's waypoints and track points are accepted without conversion.
+ *
+ * Direction-awareness is inherited for free: the guide feeds already
+ * direction-applied waypoints (mirrored `totalDistance`) and a track whose
+ * `dist` runs in the travelled direction, so "upcoming" (`totalDistance >
+ * currentKm`) always means ahead of the hiker.
+ */
 
-export interface WaypointDistance {
-  waypoint: TrailWaypoint;
-  /** Trail distance from current position in km */
-  trailDistanceKm: number;
-  /** Elevation gain to this waypoint in meters */
-  elevationGain: number;
-  /** Elevation loss to this waypoint in meters */
-  elevationLoss: number;
+import { calculateElevationBetween, type ElevationPoint } from '@lib/track-geometry';
+import { estimateHikingTime } from '@lib/day-calculator';
+
+/** Minimal waypoint shape needed to rank the next-of-type cards. */
+export interface DistanceWaypoint {
+  id?: string;
+  name: string;
+  type: string;
+  /** Cumulative distance along the trail in km. */
+  totalDistance?: number;
 }
 
-export interface NextWaypointsByType {
-  campsite?: WaypointDistance;
-  water?: WaypointDistance;
-  town?: WaypointDistance;
-  shelter?: WaypointDistance;
+export interface WaypointDistance<W extends DistanceWaypoint = DistanceWaypoint> {
+  waypoint: W;
+  /** Trail distance from the current position in km. */
+  trailDistanceKm: number;
+  /** Elevation gain to this waypoint in metres. */
+  elevationGain: number;
+  /** Elevation loss to this waypoint in metres. */
+  elevationLoss: number;
+  /**
+   * Naismith walking time from the current position, in minutes
+   * (distance / baseKmh + ascent / 600 m/h + Tranter descent correction).
+   * `baseKmh` is the per-trail pace preference (Slow 3 / Average 4 / Fast 5),
+   * defaulting to 4 km/h when the hiker has never set a pace.
+   */
+  etaMinutes: number;
 }
 
 /**
- * Calculate trail distances and elevation changes from current position to upcoming waypoints.
+ * Format an ETA in minutes: "~50 min" under an hour, "~2 h 10 min" above.
+ * Sub-5-minute answers all read "~5 min" — GPS and pace noise make anything
+ * finer a lie.
  */
-export function calculateDistancesToWaypoints(
-  currentKm: number,
-  waypoints: TrailWaypoint[],
-  trackPoints: TrackPoint[],
-): WaypointDistance[] {
-  const upcoming = waypoints.filter(wp => (wp.totalDistance ?? 0) > currentKm);
+export function formatEtaMinutes(minutes: number): string {
+  const rounded = Math.max(5, Math.round(minutes / 5) * 5);
+  if (rounded < 60) return `~${rounded} min`;
+  const h = Math.floor(rounded / 60);
+  const m = rounded % 60;
+  return m > 0 ? `~${h} h ${m} min` : `~${h} h`;
+}
 
-  return upcoming.map(wp => {
+export interface NextWaypointsByType<W extends DistanceWaypoint = DistanceWaypoint> {
+  campsite?: WaypointDistance<W>;
+  water?: WaypointDistance<W>;
+  town?: WaypointDistance<W>;
+  shelter?: WaypointDistance<W>;
+}
+
+/**
+ * Trail distances and elevation changes from `currentKm` to every waypoint
+ * ahead, ordered as supplied (callers pass distance-sorted waypoints).
+ */
+export function calculateDistancesToWaypoints<W extends DistanceWaypoint>(
+  currentKm: number,
+  waypoints: readonly W[],
+  trackPoints: readonly ElevationPoint[],
+  baseKmh = 4,
+): WaypointDistance<W>[] {
+  const upcoming = waypoints.filter((wp) => (wp.totalDistance ?? 0) > currentKm);
+
+  return upcoming.map((wp) => {
     const wpKm = wp.totalDistance ?? 0;
-    const { gain, loss } = calculateElevationBetween(currentKm, wpKm, trackPoints);
+    const distanceKm = wpKm - currentKm;
+    const { gain, loss } = calculateElevationBetween(currentKm, wpKm, trackPoints as ElevationPoint[]);
 
     return {
       waypoint: wp,
-      trailDistanceKm: wpKm - currentKm,
+      trailDistanceKm: distanceKm,
       elevationGain: gain,
       elevationLoss: loss,
+      etaMinutes: estimateHikingTime(distanceKm, gain, loss, baseKmh) * 60,
     };
   });
 }
 
+/** Waypoint `type` → the next-of-type bucket it feeds. */
+const TYPE_MAPPING: Record<string, keyof NextWaypointsByType> = {
+  campsite: 'campsite',
+  camp: 'campsite',
+  campground: 'campsite',
+  water: 'water',
+  'water-tank': 'water',
+  spring: 'water',
+  creek: 'water',
+  town: 'town',
+  food: 'town',
+  resupply: 'town',
+  shelter: 'shelter',
+  hut: 'shelter',
+};
+
 /**
- * Get the next waypoint of each important type.
- * Accepts pre-computed distances to avoid recalculating.
+ * The next waypoint of each important type. Accepts pre-computed distances to
+ * avoid recalculating when the caller already has them.
  */
-export function getNextWaypointsByType(
+export function getNextWaypointsByType<W extends DistanceWaypoint>(
   currentKm: number,
-  waypoints: TrailWaypoint[],
-  trackPoints: TrackPoint[],
-  precomputedDistances?: WaypointDistance[],
-): NextWaypointsByType {
-  const distances = precomputedDistances ?? calculateDistancesToWaypoints(currentKm, waypoints, trackPoints);
+  waypoints: readonly W[],
+  trackPoints: readonly ElevationPoint[],
+  precomputedDistances?: WaypointDistance<W>[],
+  baseKmh = 4,
+): NextWaypointsByType<W> {
+  const distances =
+    precomputedDistances ??
+    calculateDistancesToWaypoints(currentKm, waypoints, trackPoints, baseKmh);
 
-  const typeMapping: Record<string, keyof NextWaypointsByType> = {
-    campsite: 'campsite',
-    water: 'water',
-    'water-tank': 'water',
-    town: 'town',
-    shelter: 'shelter',
-    hut: 'shelter',
-  };
-
-  const result: NextWaypointsByType = {};
-
+  const result: NextWaypointsByType<W> = {};
   for (const wd of distances) {
-    const key = typeMapping[wd.waypoint.type];
+    const key = TYPE_MAPPING[wd.waypoint.type];
     if (key && !result[key]) {
       result[key] = wd;
     }
   }
-
   return result;
 }

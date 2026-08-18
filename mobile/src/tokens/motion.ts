@@ -4,7 +4,7 @@ import { Easing, WithSpringConfig, WithTimingConfig } from 'react-native-reanima
 /**
  * Standard motion tokens for all animations.
  * All animations must respect isReduceMotionEnabled — when enabled,
- * skip animations and show final state immediately.
+ * skip animations and show the final state immediately.
  */
 
 /** Timing-based animation configs */
@@ -21,8 +21,8 @@ export const timingConfigs = {
     easing: Easing.out(Easing.ease),
   } satisfies WithTimingConfig,
 
-  /** Mode bar expand/collapse, color transitions */
-  modeSwitch: {
+  /** Color/state cross-fades */
+  crossfade: {
     duration: 200,
     easing: Easing.inOut(Easing.ease),
   } satisfies WithTimingConfig,
@@ -70,9 +70,6 @@ export async function isReduceMotionEnabled(): Promise<boolean> {
  * Returns an unsubscribe function.
  */
 export function onReduceMotionChange(callback: (enabled: boolean) => void): () => void {
-  const subscription = AccessibilityInfo.addEventListener(
-    'reduceMotionChanged',
-    callback,
-  );
+  const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', callback);
   return () => subscription.remove();
 }

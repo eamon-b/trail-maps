@@ -1,12 +1,16 @@
 import { palette } from './colors';
 
-/** Application modes corresponding to the three main navigation tabs */
-export type AppMode = 'plan' | 'hike' | 'contribute';
+/**
+ * Tracknotes has a single UX mode (unlike the old three-mode Plan/Hike/
+ * Contribute app), so themes resolve on one axis only: the theme variant.
+ * Every semantic token below has a light and a dark value, each verified for
+ * WCAG AA contrast against its intended background (see themes.test.ts).
+ */
 
 /** Available theme variants */
-export type ThemeVariant = 'light' | 'dark' | 'oled' | 'nightRed';
+export type ThemeVariant = 'light' | 'dark';
 
-/** Semantic color tokens resolved for a specific theme + mode combination */
+/** Semantic color tokens resolved for a specific theme variant */
 export interface ThemeColors {
   // Backgrounds
   background: string;
@@ -22,202 +26,196 @@ export interface ThemeColors {
   border: string;
   borderSubtle: string;
 
-  // Mode accent colors
+  // Brand accent (deep forest green)
   accent: string;
+  /** Faint accent wash for selected rows / chips */
   accentSubtle: string;
+  /** Mid accent for muted emphasis, disabled-but-branded states */
   accentMuted: string;
-  accentOnDark: string;
-  accentOnLight: string;
+  /** Text/icon color rendered ON an accent-filled surface */
+  accentText: string;
 
-  // Alert colors
-  alertGreen: string;
-  alertAmber: string;
-  alertRed: string;
+  // Status semantics
+  /** Destructive/error color for text, borders, and filled surfaces */
+  danger: string;
+  /** Text color for content rendered ON a danger-filled surface */
+  dangerText: string;
+  /** Caution color */
+  warning: string;
+  /** Text color for content rendered ON a warning-filled surface */
+  warningText: string;
+  /** Positive/confirmation color */
+  success: string;
+  /** Informational/neutral-emphasis color */
+  info: string;
+
+  // Waypoint category colors (FarOut-style map markers + datasheet icons).
+  // The waypoint-type-meta registry (ported later from src/lib) keys into
+  // these — every FarOut category has a hook here.
+  waypointWater: string;
+  waypointCamp: string;
+  waypointTown: string;
+  waypointShelter: string;
+  waypointJunction: string;
+  waypointHazard: string;
+  /** Favorite / saved heart */
+  waypointFavorite: string;
+
+  // Water-status semantics (source reliability: flowing → low → dry)
+  waterFlowing: string;
+  waterLow: string;
+  waterDry: string;
+
+  // Offline-download state (tiles / guides)
+  downloadIdle: string;
+  downloadActive: string;
+  downloadDone: string;
+  downloadError: string;
+
+  // Elevation-profile / chart chrome. Routed through the theme so the Skia
+  // canvas adapts to dark mode.
+  /** Faint grid lines behind the profile */
+  chartGrid: string;
+  /** The elevation trace line */
+  chartLine: string;
+  /** Area fill under the trace — top (near the line) and bottom (near the axis) */
+  chartFillTop: string;
+  chartFillBottom: string;
+  /** Drag crosshair line */
+  chartCrosshair: string;
+  /** Current-position / waypoint marker on the profile */
+  chartMarker: string;
+
+  /** GPS / current-location accent (map dot, location status bar) */
+  gps: string;
+
+  /** Modal/backdrop scrim */
+  scrim: string;
 
   // Status bar
   statusBarStyle: 'light' | 'dark';
 }
 
-/** Mode accent palettes per theme */
-const modeAccents: Record<ThemeVariant, Record<AppMode, Pick<ThemeColors, 'accent' | 'accentSubtle' | 'accentMuted' | 'accentOnDark' | 'accentOnLight'>>> = {
-  light: {
-    plan: {
-      accent: palette.blue,
-      accentSubtle: palette.blueSubtle,
-      accentMuted: palette.blueMuted,
-      accentOnDark: palette.blueLight,
-      accentOnLight: palette.blueDark,
-    },
-    hike: {
-      accent: palette.green,
-      accentSubtle: palette.greenSubtle,
-      accentMuted: palette.greenMuted,
-      accentOnDark: palette.greenLight,
-      accentOnLight: palette.greenDark,
-    },
-    contribute: {
-      accent: palette.orange,
-      accentSubtle: palette.orangeSubtle,
-      accentMuted: palette.orangeMuted,
-      accentOnDark: palette.orangeLight,
-      accentOnLight: palette.orangeDark,
-    },
-  },
-  dark: {
-    plan: {
-      accent: palette.blueLight,
-      accentSubtle: '#1A2A3D',
-      accentMuted: palette.blueMuted,
-      accentOnDark: palette.blueLight,
-      accentOnLight: palette.blue,
-    },
-    hike: {
-      accent: palette.greenLight,
-      accentSubtle: '#1A2D1A',
-      accentMuted: palette.greenMuted,
-      accentOnDark: palette.greenLight,
-      accentOnLight: palette.green,
-    },
-    contribute: {
-      accent: palette.orangeLight,
-      accentSubtle: '#2D2A1A',
-      accentMuted: palette.orangeMuted,
-      accentOnDark: palette.orangeLight,
-      accentOnLight: palette.orange,
-    },
-  },
-  oled: {
-    plan: {
-      accent: palette.blueLight,
-      accentSubtle: '#0D1520',
-      accentMuted: palette.blueMuted,
-      accentOnDark: palette.blueLight,
-      accentOnLight: palette.blue,
-    },
-    hike: {
-      accent: palette.greenLight,
-      accentSubtle: '#0D150D',
-      accentMuted: palette.greenMuted,
-      accentOnDark: palette.greenLight,
-      accentOnLight: palette.green,
-    },
-    contribute: {
-      accent: palette.orangeLight,
-      accentSubtle: '#15120D',
-      accentMuted: palette.orangeMuted,
-      accentOnDark: palette.orangeLight,
-      accentOnLight: palette.orange,
-    },
-  },
-  nightRed: {
-    plan: {
-      accent: palette.nightRedAccent,
-      accentSubtle: palette.nightRedAccentSubtle,
-      accentMuted: palette.nightRedAccentMuted,
-      accentOnDark: palette.nightRedAccent,
-      accentOnLight: palette.nightRedAccentMuted,
-    },
-    hike: {
-      accent: palette.nightRedAccent,
-      accentSubtle: palette.nightRedAccentSubtle,
-      accentMuted: palette.nightRedAccentMuted,
-      accentOnDark: palette.nightRedAccent,
-      accentOnLight: palette.nightRedAccentMuted,
-    },
-    contribute: {
-      accent: palette.nightRedAccent,
-      accentSubtle: palette.nightRedAccentSubtle,
-      accentMuted: palette.nightRedAccentMuted,
-      accentOnDark: palette.nightRedAccent,
-      accentOnLight: palette.nightRedAccentMuted,
-    },
-  },
-};
-
-/** Base theme colors (mode-independent) per theme variant */
-const baseThemes: Record<ThemeVariant, Omit<ThemeColors, 'accent' | 'accentSubtle' | 'accentMuted' | 'accentOnDark' | 'accentOnLight'>> = {
+const themes: Record<ThemeVariant, ThemeColors> = {
   light: {
     background: palette.white,
     surface: palette.gray50,
     surfaceElevated: palette.white,
-    textPrimary: palette.black,
-    textSecondary: palette.gray600,
+
+    textPrimary: palette.ink,
+    textSecondary: palette.inkSecondary,
     textInverse: palette.white,
+
     border: palette.gray100,
     borderSubtle: palette.gray50,
-    alertGreen: palette.alertGreenLight,
-    alertAmber: palette.alertAmberLight,
-    alertRed: palette.alertRedLight,
+
+    accent: palette.forest7,
+    accentSubtle: palette.forest0,
+    accentMuted: palette.forest3,
+    accentText: palette.white,
+
+    danger: palette.dangerLight,
+    dangerText: palette.white,
+    warning: palette.warningLight,
+    warningText: palette.white,
+    success: palette.successLight,
+    info: palette.infoLight,
+
+    waypointWater: palette.wpWaterLight,
+    waypointCamp: palette.wpCampLight,
+    waypointTown: palette.wpTownLight,
+    waypointShelter: palette.wpShelterLight,
+    waypointJunction: palette.wpJunctionLight,
+    waypointHazard: palette.wpHazardLight,
+    waypointFavorite: palette.wpFavoriteLight,
+
+    waterFlowing: palette.infoLight,
+    waterLow: palette.warningLight,
+    waterDry: palette.dangerLight,
+
+    downloadIdle: palette.inkSecondary,
+    downloadActive: palette.infoLight,
+    downloadDone: palette.successLight,
+    downloadError: palette.dangerLight,
+
+    chartGrid: palette.gray100,
+    chartLine: palette.forest6,
+    chartFillTop: 'rgba(45, 106, 79, 0.30)',
+    chartFillBottom: 'rgba(45, 106, 79, 0.02)',
+    chartCrosshair: 'rgba(16, 36, 28, 0.40)',
+    chartMarker: palette.infoLight,
+
+    gps: palette.infoLight,
+
+    scrim: palette.scrim,
     statusBarStyle: 'dark',
   },
+
   dark: {
-    background: palette.gray950,
-    surface: palette.gray900,
-    surfaceElevated: palette.gray800,
-    textPrimary: palette.white,
-    textSecondary: palette.gray400,
-    textInverse: palette.black,
-    border: palette.gray800,
-    borderSubtle: palette.gray900,
-    alertGreen: palette.alertGreenDark,
-    alertAmber: palette.alertAmberDark,
-    alertRed: palette.alertRedDark,
-    statusBarStyle: 'light',
-  },
-  oled: {
-    background: palette.black,
-    surface: palette.gray950,
-    surfaceElevated: palette.gray900,
-    textPrimary: palette.white,
-    textSecondary: palette.gray400,
-    textInverse: palette.black,
-    border: palette.gray900,
-    borderSubtle: palette.gray950,
-    alertGreen: palette.alertGreenDark,
-    alertAmber: palette.alertAmberDark,
-    alertRed: palette.alertRedDark,
-    statusBarStyle: 'light',
-  },
-  nightRed: {
-    background: palette.nightBg,
-    surface: palette.nightSurface,
-    surfaceElevated: palette.nightSurface,
-    textPrimary: palette.nightTextPrimary,
-    textSecondary: palette.nightTextSecondary,
-    textInverse: palette.nightBg,
-    border: palette.nightBorder,
-    borderSubtle: palette.nightBg,
-    alertGreen: palette.nightAlertGreen,
-    alertAmber: palette.nightAlertAmber,
-    alertRed: palette.nightAlertRed,
+    background: palette.forest10,
+    surface: palette.forest8,
+    surfaceElevated: palette.forest7,
+
+    textPrimary: palette.mist,
+    textSecondary: palette.sage,
+    textInverse: palette.forest10,
+
+    border: palette.forest7,
+    borderSubtle: palette.forest9,
+
+    accent: palette.forest4,
+    accentSubtle: palette.accentSubtleDark,
+    accentMuted: palette.forest5,
+    accentText: palette.forest10,
+
+    danger: palette.dangerDark,
+    dangerText: palette.forest10,
+    warning: palette.warningDark,
+    warningText: palette.forest10,
+    success: palette.successDark,
+    info: palette.infoDark,
+
+    waypointWater: palette.wpWaterDark,
+    waypointCamp: palette.wpCampDark,
+    waypointTown: palette.wpTownDark,
+    waypointShelter: palette.wpShelterDark,
+    waypointJunction: palette.wpJunctionDark,
+    waypointHazard: palette.wpHazardDark,
+    waypointFavorite: palette.wpFavoriteDark,
+
+    waterFlowing: palette.infoDark,
+    waterLow: palette.warningDark,
+    waterDry: palette.dangerDark,
+
+    downloadIdle: palette.sage,
+    downloadActive: palette.infoDark,
+    downloadDone: palette.successDark,
+    downloadError: palette.dangerDark,
+
+    chartGrid: palette.forest8,
+    chartLine: palette.forest3,
+    chartFillTop: 'rgba(116, 198, 157, 0.28)',
+    chartFillBottom: 'rgba(116, 198, 157, 0.02)',
+    chartCrosshair: 'rgba(236, 245, 240, 0.50)',
+    chartMarker: palette.infoDark,
+
+    gps: palette.infoDark,
+
+    scrim: palette.scrim,
     statusBarStyle: 'light',
   },
 };
 
-/** Resolve the complete theme colors for a given variant and mode */
-export function resolveTheme(variant: ThemeVariant, mode: AppMode): ThemeColors {
-  return {
-    ...baseThemes[variant],
-    ...modeAccents[variant][mode],
-  };
+/** Resolve the complete theme colors for a given variant */
+export function resolveTheme(variant: ThemeVariant): ThemeColors {
+  return themes[variant];
 }
 
 /** All theme variant options for UI pickers */
-export const themeVariants: ThemeVariant[] = ['light', 'dark', 'oled', 'nightRed'];
-
-/** All mode options */
-export const appModes: AppMode[] = ['plan', 'hike', 'contribute'];
+export const themeVariants: ThemeVariant[] = ['light', 'dark'];
 
 /** Human-readable labels */
 export const themeLabels: Record<ThemeVariant, string> = {
   light: 'Light',
   dark: 'Dark',
-  oled: 'OLED Dark',
-  nightRed: 'Night Red',
-};
-
-export const modeLabels: Record<AppMode, string> = {
-  plan: 'Plan',
-  hike: 'Hike',
-  contribute: 'Contribute',
 };

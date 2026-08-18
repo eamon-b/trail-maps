@@ -1,0 +1,52 @@
+appId: com.tracknotes.app
+---
+# Plan screen — the live per-trail planner reached from a guide's header (▤).
+# Opens a guide, taps the "Plan" header action, and verifies the inputs card,
+# summary, and day splits render and survive a pace-driven recompute.
+#
+# Asserts only on stable text: the header/input labels, pace control, summary
+# labels, "Day 1", and the three section headers. Deliberately avoids specific
+# km values, waypoint names, and day-card footer text (all in flux).
+- runFlow: shared/launch-dev.yaml
+
+# From the guide list, open the smallest/fastest trail.
+- tapOn: "Cape to Cape Track"
+
+# Wait for the guide three-pane shell (Map | Elevation | List) to load.
+- extendedWaitUntil:
+    visible: "Elevation"
+    timeout: 30000
+
+# Open the planner from the header action (accessibilityLabel "Plan", glyph ▤).
+- tapOn: "Plan"
+
+# Inputs card renders: section controls, daily-hours stepper, pace control.
+- extendedWaitUntil:
+    visible: "Daily hours"
+    timeout: 15000
+- assertVisible: "Pace"
+- assertVisible: "Fast"
+
+# Live summary renders (full trail is the default, valid section).
+- assertVisible: "Days"
+
+# Day splits section + at least the first day card.
+- assertVisible: "Day splits"
+- assertVisible: "Day 1"
+
+# Change pace and confirm the plan recomputes without crashing.
+- tapOn: "Fast"
+- assertVisible: "Day 1"
+
+# The remaining sections live further down the scroll view.
+- scrollUntilVisible:
+    element:
+      text: "Water carries"
+    direction: DOWN
+    timeout: 20000
+
+# Back returns to the guide shell.
+- pressKey: back
+- extendedWaitUntil:
+    visible: "Elevation"
+    timeout: 15000

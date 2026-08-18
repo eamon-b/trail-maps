@@ -1,14 +1,7 @@
-appId: com.trailcompanion.app
+appId: com.tracknotes.app
 ---
-# Verify the app launches and data loads successfully
+# Verify the app launches and reaches the guide list.
 - runFlow: shared/launch-dev.yaml
 - extendedWaitUntil:
-    visible: "Select a Trail"
+    visible: "My Guides"
     timeout: 30000
-- assertVisible: "Plan"
-- assertVisible: "Hike"
-- assertVisible: "Contribute"
-# Verify trail data loaded from SQLite
-- extendedWaitUntil:
-    visible: "View trail →"
-    timeout: 15000

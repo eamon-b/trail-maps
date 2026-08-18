@@ -1,4 +1,15 @@
 // Variables prefixed with "mock" are accessible inside jest.mock factories
+import { TileManager } from '../tile-manager';
+import {
+  getTrailTileStatus,
+  deleteTrailTiles,
+  checkForTileUpdate,
+  clearMbtilesValidationCache,
+  provisionGlyphs,
+  buildTopoStyle,
+  validateMbtilesCached,
+} from '../tile-service';
+
 const mockDirExists = jest.fn(() => false);
 const mockDirList = jest.fn((): unknown[] => []);
 
@@ -28,22 +39,21 @@ jest.mock('../tile-service', () => ({
   getTrailTileStatus: jest.fn(),
   downloadTrailTiles: jest.fn().mockResolvedValue(undefined),
   deleteTrailTiles: jest.fn(),
+  checkForTileUpdate: jest.fn(),
+  clearMbtilesValidationCache: jest.fn(),
   provisionGlyphs: jest.fn().mockResolvedValue('/mock/fonts'),
   buildTopoStyle: jest.fn().mockReturnValue({ version: 8, layers: [] }),
+  validateMbtilesCached: jest.fn().mockResolvedValue({ ok: true }),
 }));
-
-import { TileManager } from '../tile-manager';
-import {
-  getTrailTileStatus,
-  deleteTrailTiles,
-  provisionGlyphs,
-  buildTopoStyle,
-} from '../tile-service';
 
 const mockGetStatus = getTrailTileStatus as jest.MockedFunction<typeof getTrailTileStatus>;
 const mockDelete = deleteTrailTiles as jest.MockedFunction<typeof deleteTrailTiles>;
+const mockClearCache = clearMbtilesValidationCache as jest.MockedFunction<
+  typeof clearMbtilesValidationCache
+>;
 const mockProvisionGlyphs = provisionGlyphs as jest.MockedFunction<typeof provisionGlyphs>;
 const mockBuildStyle = buildTopoStyle as jest.MockedFunction<typeof buildTopoStyle>;
+const mockValidate = validateMbtilesCached as jest.MockedFunction<typeof validateMbtilesCached>;
 
 describe('TileManager', () => {
   let manager: TileManager;
@@ -52,6 +62,7 @@ describe('TileManager', () => {
     jest.clearAllMocks();
     mockDirExists.mockReturnValue(false);
     mockDirList.mockReturnValue([]);
+    mockValidate.mockResolvedValue({ ok: true });
     manager = new TileManager();
   });
 
@@ -60,6 +71,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: true,
+      state: 'complete' as const,
       totalSizeBytes: 5000,
     });
 
@@ -70,6 +82,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: false,
+      state: 'absent' as const,
       totalSizeBytes: 0,
     });
 
@@ -81,6 +94,7 @@ describe('TileManager', () => {
       trailId: 'bibbulmun',
       files: [{ name: 'base.mbtiles' as const, exists: true, sizeBytes: 3000 }],
       complete: false,
+      state: 'absent' as const,
       totalSizeBytes: 3000,
     };
     mockGetStatus.mockReturnValue(status);
@@ -98,6 +112,7 @@ describe('TileManager', () => {
   it('getDownloadedTrails filters to complete trails when directory exists', () => {
     mockDirExists.mockReturnValue(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- construct the hoisted filesystem mock
     const { Directory } = require('expo-file-system');
     const dir1 = new Directory();
     Object.defineProperty(dir1, 'name', { value: 'trail-1' });
@@ -112,6 +127,7 @@ describe('TileManager', () => {
       trailId: id,
       files: [],
       complete: id === 'trail-1' || id === 'trail-3',
+      state: (id === 'trail-1' || id === 'trail-3' ? 'complete' : 'absent') as 'complete' | 'absent',
       totalSizeBytes: id === 'trail-1' ? 5000 : id === 'trail-3' ? 8000 : 0,
     }));
 
@@ -123,6 +139,7 @@ describe('TileManager', () => {
       trailId: 'heysen',
       files: [],
       complete: false,
+      state: 'absent' as const,
       totalSizeBytes: 0,
     });
 
@@ -132,11 +149,12 @@ describe('TileManager', () => {
     expect(mockBuildStyle).not.toHaveBeenCalled();
   });
 
-  it('getOfflineStyle provisions glyphs and returns style when downloaded', async () => {
+  it('getOfflineStyle provisions glyphs and reports an undegraded style when downloaded', async () => {
     mockGetStatus.mockReturnValue({
       trailId: 'heysen',
       files: [],
       complete: true,
+      state: 'complete' as const,
       totalSizeBytes: 10000,
     });
 
@@ -147,8 +165,75 @@ describe('TileManager', () => {
     const result = await manager.getOfflineStyle('heysen');
 
     expect(mockProvisionGlyphs).toHaveBeenCalled();
-    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts');
-    expect(result).toBe(expectedStyle);
+    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts', { includeContours: true });
+    expect(result).toEqual({ style: expectedStyle, contoursDropped: false, reason: undefined });
+    expect(result?.style).toBe(expectedStyle);
+  });
+
+  it('getOfflineStyle returns null (online fallback) when base.mbtiles fails validation', async () => {
+    mockGetStatus.mockReturnValue({
+      trailId: 'heysen',
+      files: [],
+      complete: true,
+      state: 'complete' as const,
+      totalSizeBytes: 10000,
+    });
+    mockValidate.mockImplementation(async (_trailId, fileName) =>
+      fileName === 'base.mbtiles'
+        ? { ok: false, reason: 'database disk image is malformed' }
+        : { ok: true },
+    );
+
+    const result = await manager.getOfflineStyle('heysen');
+
+    expect(result).toBeNull();
+    expect(mockBuildStyle).not.toHaveBeenCalled();
+  });
+
+  it('getOfflineStyle reports dropped contours instead of degrading silently', async () => {
+    mockGetStatus.mockReturnValue({
+      trailId: 'aawt',
+      files: [],
+      complete: true,
+      state: 'complete' as const,
+      totalSizeBytes: 10000,
+    });
+    mockValidate.mockImplementation(async (_trailId, fileName) =>
+      fileName === 'contours.mbtiles'
+        ? { ok: false, reason: 'no tiles in tiles table' }
+        : { ok: true },
+    );
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await manager.getOfflineStyle('aawt');
+
+    expect(mockBuildStyle).toHaveBeenCalledWith('aawt', '/mock/fonts', { includeContours: false });
+    // The degradation is machine-readable (for the map's banner), not just a warn.
+    expect(result).toMatchObject({
+      contoursDropped: true,
+      reason: 'no tiles in tiles table',
+    });
+    expect(result?.style).toBeDefined();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('clearValidationCache delegates to the tile service', () => {
+    manager.clearValidationCache('heysen');
+    expect(mockClearCache).toHaveBeenCalledWith('heysen');
+
+    manager.clearValidationCache();
+    expect(mockClearCache).toHaveBeenCalledWith(undefined);
+  });
+
+  it('checkForUpdate delegates to checkForTileUpdate', async () => {
+    const verdict = { updateAvailable: true, localVersion: 'v1', remoteVersion: 'v2' };
+    (checkForTileUpdate as jest.MockedFunction<typeof checkForTileUpdate>).mockResolvedValue(
+      verdict,
+    );
+
+    await expect(manager.checkForUpdate('heysen', 'https://tiles.example')).resolves.toBe(verdict);
+    expect(checkForTileUpdate).toHaveBeenCalledWith('heysen', 'https://tiles.example');
   });
 
   it('deleteTrail delegates to deleteTrailTiles', () => {
@@ -160,6 +245,7 @@ describe('TileManager', () => {
   it('getTotalStorageUsed sums sizes across all downloaded trails', () => {
     mockDirExists.mockReturnValue(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- construct the hoisted filesystem mock
     const { Directory } = require('expo-file-system');
     const dir1 = new Directory();
     Object.defineProperty(dir1, 'name', { value: 'trail-a' });
@@ -172,6 +258,7 @@ describe('TileManager', () => {
       trailId: id,
       files: [],
       complete: true,
+      state: 'complete' as const,
       totalSizeBytes: id === 'trail-a' ? 4000 : 6000,
     }));
 

@@ -1,127 +1,66 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
-import { View, ActivityIndicator, Text, Pressable, StyleSheet } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { Stack, useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Paths, File } from 'expo-file-system';
-import { ThemeProvider, useTheme, BottomSheetProvider } from '../src/theme';
-import { FocusedWaypointProvider } from '../src/theme/FocusedWaypointContext';
-import { TrailDataService } from '../src/services/trail-data-service';
-import { loadBundledTrails } from '../src/services/trail-loader';
-import { closeDatabase } from '../src/db/database';
+import { StatusBar } from 'expo-status-bar';
+import { ThemeProvider, useTheme } from '../src/theme';
+import { glyphSizes, spacing } from '../src/tokens';
+
+function ThemedStack() {
+  const { colors } = useTheme();
+  const router = useRouter();
+  return (
+    <>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.accent },
+          headerTintColor: colors.accentText,
+          headerTitleStyle: { color: colors.accentText },
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            title: 'Tracknotes',
+            // Same ⚙ affordance as the guide header — Settings is app-wide, so
+            // it must be reachable without opening a guide first.
+            headerRight: () => (
+              <Pressable
+                accessibilityLabel="Settings"
+                accessibilityRole="button"
+                onPress={() => router.push('/settings')}
+                style={styles.headerButton}
+                hitSlop={spacing.sm}
+              >
+                <Text style={[styles.icon, { color: colors.accentText }]}>⚙</Text>
+              </Pressable>
+            ),
+          }}
+        />
+        <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        {/* Guide group renders its own nested Stack (header + provider). */}
+        <Stack.Screen name="guide/[trailId]" options={{ headerShown: false }} />
+      </Stack>
+      <StatusBar style={colors.statusBarStyle} />
+    </>
+  );
+}
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-
-  useEffect(() => {
-    async function init() {
-      try {
-        const service = await TrailDataService.create();
-        await loadBundledTrails(service);
-        setReady(true);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    }
-    init();
-  }, [retryCount]);
-
-  const handleReset = useCallback(async () => {
-    try {
-      await closeDatabase();
-      for (const name of ['trail-companion.db', 'trail-companion.db-wal', 'trail-companion.db-shm']) {
-        try {
-          const f = new File(Paths.document, 'SQLite', name);
-          if (f.exists) f.delete();
-        } catch { /* ignore missing files */ }
-      }
-      await AsyncStorage.clear();
-    } catch {
-      // Best effort
-    }
-    // Clear error state to retry initialization
-    setError(null);
-    setReady(false);
-    setRetryCount(c => c + 1);
-  }, []);
-
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Failed to initialize: {error}</Text>
-        <Pressable onPress={handleReset} style={styles.resetButton}>
-          <Text style={styles.resetText}>Reset App Data</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (!ready) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loading}>Loading trail data...</Text>
-      </View>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <BottomSheetProvider>
-          <FocusedWaypointProvider>
-            <ThemedStatusBar />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="trail" />
-              <Stack.Screen name="plan" />
-              <Stack.Screen name="import" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
-            </Stack>
-          </FocusedWaypointProvider>
-        </BottomSheetProvider>
+        <ThemedStack />
       </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
 
-/** Applies the theme's statusBarStyle to the system status bar */
-function ThemedStatusBar() {
-  const { colors } = useTheme();
-  return <StatusBar style={colors.statusBarStyle === 'light' ? 'light' : 'dark'} />;
-}
-
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+  headerButton: {
+    paddingHorizontal: spacing.sm,
   },
-  loading: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  error: {
-    fontSize: 16,
-    color: '#d32f2f',
-    textAlign: 'center',
-  },
-  resetButton: {
-    marginTop: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#d32f2f',
-    borderRadius: 8,
-  },
-  resetText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
+  icon: {
+    fontSize: glyphSizes.lg,
   },
 });

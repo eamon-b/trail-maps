@@ -61,7 +61,26 @@ export const typography = {
     letterSpacing: 0,
   },
 
-  /** Timestamps, secondary info */
+  /** Secondary body copy — floor for field-readable text (≥14pt) */
+  bodySmall: {
+    fontFamily,
+    fontSize: 14,
+    fontWeight: '400' as TextStyle['fontWeight'],
+    lineHeight: 19,
+    letterSpacing: 0,
+  },
+
+  /** Compact field data (distances, countdowns, stats) — ≥14pt, tabular */
+  dataSmall: {
+    fontFamily,
+    fontSize: 14,
+    fontWeight: '600' as TextStyle['fontWeight'],
+    lineHeight: 19,
+    letterSpacing: 0,
+    fontVariant: ['tabular-nums'] as TextStyle['fontVariant'],
+  },
+
+  /** Timestamps, secondary info. NOT for field-critical data — use dataSmall */
   caption: {
     fontFamily,
     fontSize: 12,
@@ -72,3 +91,25 @@ export const typography = {
 } as const satisfies Record<string, TextStyle>;
 
 export type TypographyToken = keyof typeof typography;
+
+/**
+ * Emoji / text-glyph icon sizes — for icon-like text (chevrons, emoji markers,
+ * close ×), never body copy. Referencing these (fontSize: glyphSizes.md)
+ * satisfies the design-token lint rule, which bans raw numeric fontSize.
+ */
+export const glyphSizes = {
+  xs: 14,
+  sm: 18,
+  md: 20,
+  lg: 22,
+  xl: 24,
+  xxl: 28,
+  hero: 36,
+} as const;
+
+/**
+ * Global cap for OS font scaling: text grows up to 1.4× with the system
+ * accessibility setting, then clamps so fixed layouts degrade gracefully
+ * instead of clipping. Applied by AppText and the shared primitives.
+ */
+export const MAX_FONT_SCALE = 1.4;

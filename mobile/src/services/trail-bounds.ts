@@ -1,10 +1,15 @@
 /**
- * Calculate bounding box and corridor from trail track geometry.
- *
- * Used for resolving grid tile cells for custom trail offline maps.
+ * Calculate the bounding box (with a buffer corridor) of a trail's track.
  */
 
-import type { TrackPoint } from '../lib/trail-utils';
+/** A single point along a trail track. */
+export interface TrackPoint {
+  lat: number;
+  lon: number;
+  ele: number;
+  /** Cumulative distance along the trail in km */
+  dist: number;
+}
 
 export interface TrailBounds {
   west: number;

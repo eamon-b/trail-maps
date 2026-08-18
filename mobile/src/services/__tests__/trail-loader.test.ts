@@ -1,141 +1,105 @@
-import { TrailDataService } from '../trail-data-service';
-import { loadBundledTrails } from '../trail-loader';
+import {
+  listTrails,
+  getTrailIndexEntry,
+  getTrailJson,
+  hasTrail,
+} from '../trail-loader';
 
-const INDEX_JSON: { id: string; name: string; shortName: string; lengthKm: number }[] = [
-  { id: 'bibbulmun', name: 'bibbulmun Track', shortName: 'bibb', lengthKm: 981.6 },
+// The loader resolves bundled trail JSON straight from the require() map.
+// Mock both the asset map and the index so the test is isolated from the
+// (large) real bundled JSON and deterministic.
+
+const INDEX_JSON = [
+  { id: 'bibbulmun', name: 'Bibbulmun Track', shortName: 'Bibb', lengthKm: 981.6, dataVersion: '2026-07-29' },
+  { id: 'heysen', name: 'Heysen Trail', shortName: 'Heysen', lengthKm: 1200, dataVersion: '2026-07-29' },
 ];
 
-const TRAIL_JSON = {
+const BIBBULMUN_JSON = {
   config: {
     id: 'bibbulmun',
-    name: 'bibbulmun Track',
-    shortName: 'bibb',
+    name: 'Bibbulmun Track',
+    shortName: 'Bibb',
     region: 'South West WA',
     lengthKm: 981.6,
     direction: { default: 'SOBO', reversed: 'NOBO' },
   },
   waypoints: [
-    { name: 'Kalamunda', lat: -31.974, lon: 116.058, type: 'town', elevation: 295, totalDistance: 0 },
-    { name: 'Hewitt\'s Hill', lat: -31.958, lon: 116.129, type: 'campsite', totalDistance: 12.5 },
-    { name: 'Ball Creek', lat: -32.012, lon: 116.1, type: 'water' },
+    { id: 'w_abc123', name: 'Kalamunda', lat: -31.974, lon: 116.058, type: 'town', totalDistance: 0 },
   ],
-  track: {
-    points: [],
-    displayPoints: [{ lat: -31.974, lon: 116.058, ele: 295, dist: 0 }],
-    totalDistance: 981600,
-    totalAscent: 25000,
-    totalDescent: 25200,
-  },
+  track: { points: [], displayPoints: [], totalDistance: 981600, totalAscent: 25000, totalDescent: 25200 },
 };
 
-// Mock the JSON asset requires before importing the module
+const HEYSEN_JSON = {
+  config: {
+    id: 'heysen',
+    name: 'Heysen Trail',
+    shortName: 'Heysen',
+    region: 'SA',
+    lengthKm: 1200,
+    direction: { default: 'NOBO', reversed: 'SOBO' },
+  },
+  waypoints: [],
+  track: { points: [], displayPoints: [], totalDistance: 1200000, totalAscent: 0, totalDescent: 0 },
+};
+
+jest.mock('../trail-assets', () => ({
+  TRAIL_DATA: {
+    bibbulmun: BIBBULMUN_JSON,
+    heysen: HEYSEN_JSON,
+  },
+}));
+
 jest.mock('../../../assets/trails/index.json', () => INDEX_JSON, { virtual: true });
-jest.mock('../../../assets/trails/bibbulmun.json', () => TRAIL_JSON, { virtual: true });
 
-function createMockService() {
-  return {
-    getTrail: jest.fn().mockResolvedValue(null),
-    storeTrail: jest.fn().mockResolvedValue(undefined),
-    storeWaypoints: jest.fn().mockResolvedValue(undefined),
-  } as unknown as jest.Mocked<TrailDataService>;
-}
-
-describe('loadBundledTrails', () => {
-  let service: jest.Mocked<TrailDataService>;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    service = createMockService() as jest.Mocked<TrailDataService>;
-  });
-
-  it('loads a trail and its waypoints into the service', async () => {
-    await loadBundledTrails(service);
-
-    expect(service.storeTrail).toHaveBeenCalledWith({
-      id: 'bibbulmun',
-      name: 'bibbulmun Track',
-      shortName: 'bibb',
-      region: 'South West WA',
-      lengthKm: 981.6,
-      dataVersion: null,
-      isCustom: false,
-      sourceFilename: null,
-      metadataJson: expect.stringContaining('"totalDistance":981600'),
-    });
-
-    expect(service.storeWaypoints).toHaveBeenCalledWith('bibbulmun', [
-      { name: 'Kalamunda', type: 'town', lat: -31.974, lon: 116.058, ele: 295, kmPosition: 0, description: null },
-      { name: 'Hewitt\'s Hill', type: 'campsite', lat: -31.958, lon: 116.129, ele: null, kmPosition: 12.5, description: null },
-      { name: 'Ball Creek', type: 'water', lat: -32.012, lon: 116.1, ele: null, kmPosition: null, description: null },
-    ]);
-  });
-
-  it('stores direction metadata from trail config', async () => {
-    await loadBundledTrails(service);
-
-    const storedMetadata = JSON.parse(service.storeTrail.mock.calls[0][0].metadataJson!);
-    expect(storedMetadata.direction).toEqual({ default: 'SOBO', reversed: 'NOBO' });
-  });
-
-  it('stores track summary in metadata', async () => {
-    await loadBundledTrails(service);
-
-    const storedMetadata = JSON.parse(service.storeTrail.mock.calls[0][0].metadataJson!);
-    expect(storedMetadata.track).toEqual({
-      totalDistance: 981600,
-      totalAscent: 25000,
-      totalDescent: 25200,
-      displayPointCount: 1,
+describe('trail-loader', () => {
+  describe('listTrails', () => {
+    it('returns the bundled trail index in order', () => {
+      const trails = listTrails();
+      expect(trails).toHaveLength(2);
+      expect(trails.map((t) => t.id)).toEqual(['bibbulmun', 'heysen']);
+      expect(trails[0]).toEqual(
+        expect.objectContaining({ id: 'bibbulmun', shortName: 'Bibb', dataVersion: '2026-07-29' }),
+      );
     });
   });
 
-  it('skips trails that already exist with matching version', async () => {
-    service.getTrail.mockResolvedValueOnce({
-      id: 'bibbulmun',
-      name: 'bibbulmun Track',
-      shortName: 'bibb',
-      region: 'South West WA',
-      lengthKm: 981.6,
-      metadataJson: null,
-      dataVersion: null,
-      isCustom: false,
-      sourceFilename: null,
-      createdAt: '2026-01-01',
-      updatedAt: '2026-01-01',
+  describe('getTrailIndexEntry', () => {
+    it('returns metadata for a known trail', () => {
+      expect(getTrailIndexEntry('heysen')).toEqual(
+        expect.objectContaining({ id: 'heysen', name: 'Heysen Trail', lengthKm: 1200 }),
+      );
     });
 
-    await loadBundledTrails(service);
-
-    expect(service.storeTrail).not.toHaveBeenCalled();
-    expect(service.storeWaypoints).not.toHaveBeenCalled();
+    it('returns null for an unknown trail', () => {
+      expect(getTrailIndexEntry('nonexistent')).toBeNull();
+    });
   });
 
-  it('skips index entries with no matching trail data', async () => {
-    // The index mock includes only 'bibbulmun', but if the index had extra entries
-    // they'd be skipped because TRAIL_DATA wouldn't have them
-    await loadBundledTrails(service);
+  describe('hasTrail', () => {
+    it('is true for a bundled trail', () => {
+      expect(hasTrail('bibbulmun')).toBe(true);
+    });
 
-    // Only bibbulmun should be stored
-    expect(service.storeTrail).toHaveBeenCalledTimes(1);
-    expect(service.storeTrail).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'bibbulmun' }),
-    );
+    it('is false for an unknown trail', () => {
+      expect(hasTrail('nonexistent')).toBe(false);
+    });
   });
 
-  it('handles waypoints with missing optional fields', async () => {
-    // Ball Creek waypoint has no elevation, totalDistance, or description
-    await loadBundledTrails(service);
+  describe('getTrailJson', () => {
+    it('resolves the full trail JSON by id', () => {
+      const json = getTrailJson('bibbulmun');
+      expect(json).not.toBeNull();
+      expect(json!.config.id).toBe('bibbulmun');
+      expect(json!.track.totalDistance).toBe(981600);
+    });
 
-    const waypoints = service.storeWaypoints.mock.calls[0][1];
-    const ballCreek = waypoints.find((w: any) => w.name === 'Ball Creek');
-    expect(ballCreek).toEqual({
-      name: 'Ball Creek',
-      type: 'water',
-      lat: -32.012,
-      lon: 116.1,
-      ele: null,
-      kmPosition: null,
-      description: null,
+    it('exposes stable per-waypoint ids from bundled data', () => {
+      const json = getTrailJson('bibbulmun');
+      expect(json!.waypoints[0].id).toBe('w_abc123');
+    });
+
+    it('returns null for an unknown trail', () => {
+      expect(getTrailJson('nonexistent')).toBeNull();
     });
   });
 });

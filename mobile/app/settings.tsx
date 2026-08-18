@@ -1,322 +1,55 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+/**
+ * App settings — units, plus the account section where the comment display
+ * name can be renamed (the promise the first-post prompt makes).
+ */
+
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../src/theme';
-import type { ThemeVariant } from '../src/tokens/themes';
-import { spacing, radii, touchTarget } from '../src/tokens/spacing';
-import { typography } from '../src/tokens/typography';
-import { closeDatabase } from '../src/db/database';
-import { Paths, File } from 'expo-file-system';
+import { spacing, typography } from '../src/tokens';
+import { SegmentedControl } from '../src/features/guide/SegmentedControl';
+import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
+import { useSettingsStore, type Units } from '../src/state/settings-store';
 
-export const ALERT_THRESHOLD_KEY = 'trail-companion:alertThreshold';
-export const BACKGROUND_TRACKING_KEY = 'trail-companion:backgroundTracking';
-
-type AlertPreset = 'tight' | 'normal' | 'loose';
-
-const THEME_OPTIONS: { label: string; value: ThemeVariant | 'system' }[] = [
-  { label: 'System', value: 'system' },
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'OLED', value: 'oled' },
-];
-
-const ALERT_OPTIONS: { label: string; value: AlertPreset; description: string }[] = [
-  { label: 'Tight', value: 'tight', description: '30m on-trail, 100m drift' },
-  { label: 'Normal', value: 'normal', description: '50m on-trail, 200m drift' },
-  { label: 'Loose', value: 'loose', description: '100m on-trail, 300m drift' },
+const UNIT_OPTIONS = [
+  { value: 'km' as const, label: 'Kilometres' },
+  { value: 'mi' as const, label: 'Miles' },
 ];
 
 export default function SettingsScreen() {
-  const {
-    colors,
-    themeVariant,
-    setThemeVariant,
-    autoDarkMode,
-    setAutoDarkMode,
-    nightRedEnabled,
-    setNightRedEnabled,
-    highContrast,
-    setHighContrast,
-  } = useTheme();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-
-  const [alertPreset, setAlertPreset] = useState<AlertPreset>('normal');
-  const [backgroundTracking, setBackgroundTracking] = useState(false);
-
-  // Load persisted preferences
-  useEffect(() => {
-    AsyncStorage.getItem(ALERT_THRESHOLD_KEY).then((val) => {
-      if (val === 'tight' || val === 'normal' || val === 'loose') {
-        setAlertPreset(val);
-      }
-    });
-    AsyncStorage.getItem(BACKGROUND_TRACKING_KEY).then((val) => {
-      setBackgroundTracking(val === 'true');
-    });
-  }, []);
-
-  const handleAlertSelect = useCallback(async (value: AlertPreset) => {
-    setAlertPreset(value);
-    await AsyncStorage.setItem(ALERT_THRESHOLD_KEY, value);
-  }, []);
-
-  const handleBackgroundTrackingToggle = useCallback(async () => {
-    const next = !backgroundTracking;
-    setBackgroundTracking(next);
-    await AsyncStorage.setItem(BACKGROUND_TRACKING_KEY, String(next));
-  }, [backgroundTracking]);
-
-  const currentThemeValue: ThemeVariant | 'system' = autoDarkMode ? 'system' : themeVariant;
-
-  const handleThemeSelect = useCallback(
-    (value: ThemeVariant | 'system') => {
-      if (value === 'system') {
-        setAutoDarkMode(true);
-      } else {
-        setThemeVariant(value);
-      }
-    },
-    [setAutoDarkMode, setThemeVariant],
-  );
-
-  const handleResetData = useCallback(() => {
-    Alert.alert(
-      'Reset App Data',
-      'This will delete all trail data, plans, and settings. The app will restart. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await closeDatabase();
-              for (const name of ['trail-companion.db', 'trail-companion.db-wal', 'trail-companion.db-shm']) {
-                try {
-                  const f = new File(Paths.document, 'SQLite', name);
-                  if (f.exists) f.delete();
-                } catch { /* ignore missing files */ }
-              }
-              await AsyncStorage.clear();
-              Alert.alert('Reset Complete', 'Please restart the app to reload trail data.');
-            } catch (e) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Failed to reset data');
-            }
-          },
-        },
-      ],
-    );
-  }, []);
+  const { colors } = useTheme();
+  const units = useSettingsStore((s) => s.units);
+  const setUnits = useSettingsStore((s) => s.setUnits);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top, backgroundColor: colors.surface }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Text style={[styles.backText, { color: colors.accent }]}>Done</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings</Text>
-        <View style={styles.backButton} />
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.section}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Units</Text>
+        <SegmentedControl<Units>
+          options={UNIT_OPTIONS}
+          value={units}
+          onChange={setUnits}
+        />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Theme Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>THEME</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {THEME_OPTIONS.map((opt, i) => (
-            <Pressable
-              key={opt.value}
-              onPress={() => handleThemeSelect(opt.value)}
-              style={[
-                styles.optionRow,
-                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: currentThemeValue === opt.value }}
-            >
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
-              {currentThemeValue === opt.value && (
-                <Text style={[styles.checkmark, { color: colors.accent }]}>✓</Text>
-              )}
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Night Red Toggle */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.md }]}>
-          <Pressable
-            onPress={() => setNightRedEnabled(!nightRedEnabled)}
-            style={styles.optionRow}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: nightRedEnabled }}
-          >
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Night Red Mode</Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                Red-shifted display for dark-adapted eyes
-              </Text>
-            </View>
-            <Text style={[styles.checkmark, { color: nightRedEnabled ? colors.accent : colors.textSecondary }]}>
-              {nightRedEnabled ? '✓' : ''}
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* High Contrast Toggle */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.md }]}>
-          <Pressable
-            onPress={() => setHighContrast(!highContrast)}
-            style={styles.optionRow}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: highContrast }}
-          >
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>High Contrast</Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                Thicker borders and solid backgrounds
-              </Text>
-            </View>
-            <Text style={[styles.checkmark, { color: highContrast ? colors.accent : colors.textSecondary }]}>
-              {highContrast ? '✓' : ''}
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* GPS Tracking Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
-          GPS TRACKING
-        </Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Pressable
-            onPress={handleBackgroundTrackingToggle}
-            style={styles.optionRow}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: backgroundTracking }}
-          >
-            <View style={styles.optionInfo}>
-              <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>Background Tracking</Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                Keep tracking while the screen is locked. Uses more battery and
-                asks for the &quot;Allow all the time&quot; location permission.
-              </Text>
-            </View>
-            <Text style={[styles.checkmark, { color: backgroundTracking ? colors.accent : colors.textSecondary }]}>
-              {backgroundTracking ? '✓' : ''}
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Alert Threshold Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
-          OFF-TRAIL ALERT SENSITIVITY
-        </Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {ALERT_OPTIONS.map((opt, i) => (
-            <Pressable
-              key={opt.value}
-              onPress={() => handleAlertSelect(opt.value)}
-              style={[
-                styles.optionRow,
-                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: alertPreset === opt.value }}
-            >
-              <View style={styles.optionInfo}>
-                <Text style={[styles.optionLabel, { color: colors.textPrimary }]}>{opt.label}</Text>
-                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>{opt.description}</Text>
-              </View>
-              {alertPreset === opt.value && <Text style={[styles.checkmark, { color: colors.accent }]}>&#x2713;</Text>}
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Data Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.xl }]}>
-          DATA
-        </Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Pressable
-            onPress={handleResetData}
-            style={styles.optionRow}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.optionLabel, { color: '#c00' }]}>Reset App Data</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </View>
+      <DisplayNameSection />
+    </ScrollView>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerTitle: {
-    ...typography.titleLarge,
-    textAlign: 'center',
-  },
-  backButton: {
-    minWidth: 60,
-    minHeight: touchTarget.min,
-    justifyContent: 'center',
-  },
-  backText: {
-    ...typography.body,
-    fontWeight: '600',
-  },
-  content: {
+    flexGrow: 1,
     padding: spacing.lg,
-    paddingBottom: spacing.xl * 2,
+    gap: spacing.xl,
   },
-  sectionTitle: {
-    ...typography.caption,
-    fontWeight: '600',
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.sm,
+  section: {
+    gap: spacing.sm,
   },
-  card: {
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: touchTarget.min,
-  },
-  optionInfo: {
-    flex: 1,
-  },
-  optionLabel: {
-    ...typography.body,
-  },
-  optionDescription: {
-    ...typography.caption,
-    marginTop: 2,
-  },
-  checkmark: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginLeft: spacing.md,
+  label: {
+    ...typography.titleLarge,
   },
 });

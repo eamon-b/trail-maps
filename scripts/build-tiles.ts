@@ -34,7 +34,10 @@ import {
   classifyAndTileContours,
   extractBaseTiles,
   writeManifest,
+  validateMbtilesArtifact,
   mgaEpsgForLon,
+  BASE_ZOOM_EXPECTATION,
+  CONTOUR_ZOOM_EXPECTATION,
 } from './tile-pipeline.js';
 
 // --- Path setup ---
@@ -294,6 +297,9 @@ async function processTrail(
   if (!args.skipContours) {
     generateContours(demPath, contoursRawPath, args.verbose);
     classifyAndTileContours(contoursRawPath, contoursClassifiedPath, contoursMbtilesPath, args.verbose);
+    // Validate BEFORE publishing: a bad artifact must not overwrite the
+    // known-good file already in the output dir.
+    validateMbtilesArtifact(contoursMbtilesPath, CONTOUR_ZOOM_EXPECTATION);
     fs.copyFileSync(contoursMbtilesPath, outputContoursMbtiles);
   }
 
@@ -312,13 +318,14 @@ async function processTrail(
     }
 
     extractBaseTiles(corridorPath, basePmtilesPath, baseMbtilesPath, protomapsSource, args.verbose);
+    validateMbtilesArtifact(baseMbtilesPath, BASE_ZOOM_EXPECTATION);
     fs.copyFileSync(baseMbtilesPath, outputBaseMbtiles);
   }
 
-  // Write manifest
+  // Write manifest (re-validates, covering files not rebuilt this run)
   const manifestFiles = [
-    { name: 'base.mbtiles', path: outputBaseMbtiles },
-    { name: 'contours.mbtiles', path: outputContoursMbtiles },
+    { name: 'base.mbtiles', path: outputBaseMbtiles, expectedZoom: BASE_ZOOM_EXPECTATION },
+    { name: 'contours.mbtiles', path: outputContoursMbtiles, expectedZoom: CONTOUR_ZOOM_EXPECTATION },
   ];
 
   const manifest = writeManifest(trailId, outputDir, bounds, manifestFiles);

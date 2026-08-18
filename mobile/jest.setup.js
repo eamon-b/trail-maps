@@ -6,6 +6,8 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   ShapeSource: 'ShapeSource',
   LineLayer: 'LineLayer',
   SymbolLayer: 'SymbolLayer',
+  CircleLayer: 'CircleLayer',
+  Images: 'Images',
   OfflineManager: {
     createPack: jest.fn(),
     getPacks: jest.fn(),
@@ -13,6 +15,9 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   },
   default: {
     setAccessToken: jest.fn(),
+    Logger: {
+      setLogCallback: jest.fn(),
+    },
   },
 }));
 
@@ -39,7 +44,6 @@ jest.mock('expo-asset', () => ({
 jest.mock('react-native-worklets', () => ({}));
 jest.mock('react-native-reanimated', () => {
   const View = require('react-native').View;
-  const actualReact = require('react');
 
   const Animated = {
     View: View,
@@ -98,7 +102,11 @@ jest.mock('react-native-gesture-handler', () => {
       failOffsetX: () => gesture,
       failOffsetY: () => gesture,
       minDistance: () => gesture,
+      maxDistance: () => gesture,
+      minPointers: () => gesture,
+      maxPointers: () => gesture,
       minDuration: () => gesture,
+      numberOfTaps: () => gesture,
       enabled: () => gesture,
       simultaneousWithExternalGesture: () => gesture,
     };
@@ -183,6 +191,31 @@ jest.mock('expo-task-manager', () => ({
   unregisterTaskAsync: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('expo-document-picker', () => ({
-  getDocumentAsync: jest.fn(() => Promise.resolve({ canceled: true, assets: null })),
+jest.mock('expo-battery', () => ({
+  getBatteryLevelAsync: jest.fn(() => Promise.resolve(1)),
+  getBatteryStateAsync: jest.fn(() => Promise.resolve(2)),
+  BatteryState: { UNKNOWN: 0, UNPLUGGED: 1, CHARGING: 2, FULL: 3 },
+}));
+
+jest.mock('expo-secure-store', () => {
+  const store = new Map();
+  return {
+    getItemAsync: jest.fn((key) => Promise.resolve(store.get(key) ?? null)),
+    setItemAsync: jest.fn((key, value) => {
+      store.set(key, value);
+      return Promise.resolve();
+    }),
+    deleteItemAsync: jest.fn((key) => {
+      store.delete(key);
+      return Promise.resolve();
+    }),
+  };
+});
+
+jest.mock('expo-network', () => ({
+  getNetworkStateAsync: jest.fn(() =>
+    Promise.resolve({ isConnected: true, isInternetReachable: true, type: 'WIFI' })
+  ),
+  addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),
+  NetworkStateType: { NONE: 'NONE', WIFI: 'WIFI', CELLULAR: 'CELLULAR' },
 }));

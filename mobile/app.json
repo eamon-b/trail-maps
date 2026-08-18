@@ -1,44 +1,61 @@
 {
   "expo": {
-    "name": "Trail Companion",
-    "slug": "trail-maps",
+    "name": "Tracknotes",
+    "slug": "tracknotes",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "scheme": "trail-companion",
+    "icon": "./assets/images/icon.png",
+    "scheme": "tracknotes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#4CAF50"
-    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.trailcompanion.app",
+      "bundleIdentifier": "com.tracknotes.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your position on the trail map.",
+        "NSLocationWhenInUseUsageDescription": "Tracknotes uses your location to show your position on the trail and calculate distances to waypoints.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location keeps tracking your hike when the screen is locked.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#4CAF50"
+        "backgroundColor": "#1B4332",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "package": "com.trailcompanion.app",
+      "package": "com.tracknotes.app",
       "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#081C15"
+          }
+        }
+      ],
       [
         "@maplibre/maplibre-react-native",
         {
@@ -54,13 +71,26 @@
           "isIosBackgroundLocationEnabled": true
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font",
+      "expo-secure-store",
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Take a photo of a water source, campsite, or hazard to attach to your comment.",
+          "photosPermission": "Attach an existing photo to a comment."
+        }
+      ]
     ],
+    "experiments": {
+      "typedRoutes": true
+    },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "b498c5fd-080e-45cb-9ad2-5619b4b85cfc"
-      },
-      "router": {}
+        "projectId": "7d83a673-09c1-4bfa-bef7-2ca62c5e777d"
+      }
     },
     "owner": "eamonb123"
   }

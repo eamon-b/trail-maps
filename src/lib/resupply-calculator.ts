@@ -34,7 +34,12 @@ export interface ResupplyAnalysis {
   hasResupplyData: boolean;
 }
 
-const RESUPPLY_TYPES = new Set(['town', 'food']);
+// Waypoint types that let a hiker obtain food supplies. Mirrors the town
+// family in the mobile guide's waypoint taxonomy (waypoint-category.ts):
+// 'town', 'food', and standalone 'resupply' caches. Note 'accommodation' and
+// 'caravan-park' are deliberately excluded — they map to the *shelter* family
+// and do not reliably mean food can be obtained.
+const RESUPPLY_TYPES = new Set(['town', 'food', 'resupply']);
 
 /** Default daily hiking distance for estimating days between resupply */
 export const DEFAULT_DAILY_KM = 20;

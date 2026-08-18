@@ -1,77 +1,124 @@
+import { createMigratedTestDb, expectDbRejection } from './test-helpers';
 import { migrateDatabase, SCHEMA_VERSION } from '../schema';
 
-describe('schema', () => {
-  it('has SCHEMA_VERSION set to 5', () => {
-    expect(SCHEMA_VERSION).toBe(5);
+describe('schema v1', () => {
+  it('migrates a fresh database to the current version', async () => {
+    const db = await createMigratedTestDb();
+    const row = await db.getFirstAsync<{ version: number }>(
+      'SELECT version FROM schema_version'
+    );
+    expect(row?.version).toBe(SCHEMA_VERSION);
   });
 
-  it('runs all migrations on a fresh database', async () => {
-    const executedSql: string[] = [];
-    const mockDb = {
-      getFirstAsync: jest.fn().mockRejectedValueOnce(new Error('no such table')),
-      execAsync: jest.fn().mockImplementation((sql: string) => {
-        executedSql.push(sql);
-        return Promise.resolve();
-      }),
-    };
-
-    await migrateDatabase(mockDb as any);
-
-    // Each migration runs 3 calls: BEGIN, migration SQL, COMMIT
-    expect(executedSql.length).toBe(5 * 3);
-
-    // Migration 5 SQL is the 2nd call in the last group of 3 (BEGIN, SQL, COMMIT)
-    const migration5 = executedSql[executedSql.length - 2];
-    expect(migration5).toContain('custom_waypoints');
-    expect(migration5).toContain('km_position');
-    expect(migration5).toContain('off_track_m');
-    expect(migration5).toContain('climate_json');
+  it('creates all v1 tables', async () => {
+    const db = await createMigratedTestDb();
+    const rows = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
+    );
+    const tables = rows.map((r) => r.name);
+    for (const table of ['guides', 'favorites', 'comments', 'outbox', 'sync_state']) {
+      expect(tables).toContain(table);
+    }
   });
 
-  it('skips migrations if already at current version', async () => {
-    const mockDb = {
-      getFirstAsync: jest.fn().mockResolvedValueOnce({ version: SCHEMA_VERSION }),
-      execAsync: jest.fn(),
-    };
-
-    await migrateDatabase(mockDb as any);
-
-    expect(mockDb.execAsync).not.toHaveBeenCalled();
+  it('is idempotent when already at the current version', async () => {
+    const db = await createMigratedTestDb();
+    await migrateDatabase(db as never);
+    const row = await db.getFirstAsync<{ version: number }>(
+      'SELECT version FROM schema_version'
+    );
+    expect(row?.version).toBe(SCHEMA_VERSION);
   });
 
-  it('runs only pending migrations', async () => {
-    const executedSql: string[] = [];
-    const mockDb = {
-      getFirstAsync: jest.fn().mockResolvedValueOnce({ version: 4 }),
-      execAsync: jest.fn().mockImplementation((sql: string) => {
-        executedSql.push(sql);
-        return Promise.resolve();
-      }),
-    };
-
-    await migrateDatabase(mockDb as any);
-
-    // Should only run migration 5: BEGIN, SQL, COMMIT
-    expect(executedSql.length).toBe(3);
-    expect(executedSql[1]).toContain('custom_waypoints');
+  it('rejects comments with an invalid water_status', async () => {
+    const db = await createMigratedTestDb();
+    await expectDbRejection(() =>
+      db.runAsync(
+        `INSERT INTO comments (id, trail_id, waypoint_id, body, water_status, created_at)
+         VALUES ('c1', 'larapinta', 'w_abcd1234', 'hi', 'gushing', '2026-07-29T00:00:00Z')`
+      )
+    );
   });
 
-  it('stops at an explicit target version', async () => {
-    const executedSql: string[] = [];
-    const mockDb = {
-      getFirstAsync: jest.fn().mockRejectedValueOnce(new Error('no such table')),
-      execAsync: jest.fn().mockImplementation((sql: string) => {
-        executedSql.push(sql);
-        return Promise.resolve();
-      }),
-    };
+  it('rejects duplicate favorites for the same waypoint', async () => {
+    const db = await createMigratedTestDb();
+    await db.runAsync(
+      "INSERT INTO favorites (trail_id, waypoint_id) VALUES ('larapinta', 'w_abcd1234')"
+    );
+    await expectDbRejection(() =>
+      db.runAsync(
+        "INSERT INTO favorites (trail_id, waypoint_id) VALUES ('larapinta', 'w_abcd1234')"
+      )
+    );
+  });
+});
 
-    await migrateDatabase(mockDb as any, 4);
+describe('schema v2 — routes', () => {
+  async function seedRoute(db: Awaited<ReturnType<typeof createMigratedTestDb>>) {
+    await db.runAsync(
+      `INSERT INTO routes (id, trail_id, name, total_km, ascent_m, descent_m, created_at, updated_at)
+       VALUES ('rt1', 'larapinta', 'Day 1', 12.3, 400, 200, '2026-07-29T00:00:00Z', '2026-07-29T00:00:00Z')`
+    );
+  }
 
-    // Migrations 1-4 only: 4 groups of BEGIN, SQL, COMMIT
-    expect(executedSql.length).toBe(4 * 3);
-    const migration4 = executedSql[executedSql.length - 2];
-    expect(migration4).toContain('is_custom');
-    expect(migration4).not.toContain('custom_waypoints');
+  it('creates the routes + route_points tables', async () => {
+    const db = await createMigratedTestDb();
+    const rows = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
+    );
+    const tables = rows.map((r) => r.name);
+    expect(tables).toContain('routes');
+    expect(tables).toContain('route_points');
+  });
+
+  it('rejects a route_point with an invalid kind', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await expectDbRejection(() =>
+      db.runAsync(
+        "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'wander', -23, 133, 0)"
+      )
+    );
+  });
+
+  it('accepts snap (with km) and sketch (km NULL) points', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+    );
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 1, 'sketch', -23.6, 133.3, NULL)"
+    );
+    const rows = await db.getAllAsync<{ seq: number }>(
+      "SELECT seq FROM route_points WHERE route_id = 'rt1' ORDER BY seq"
+    );
+    expect(rows.map((r) => r.seq)).toEqual([0, 1]);
+  });
+
+  it('rejects duplicate (route_id, seq)', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+    );
+    await expectDbRejection(() =>
+      db.runAsync(
+        "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+      )
+    );
+  });
+
+  it('cascades route_points when a route is deleted (FK on)', async () => {
+    const db = await createMigratedTestDb();
+    await seedRoute(db);
+    await db.runAsync(
+      "INSERT INTO route_points (route_id, seq, kind, lat, lon, km) VALUES ('rt1', 0, 'snap', -23.5, 133.2, 4.5)"
+    );
+    await db.runAsync("DELETE FROM routes WHERE id = 'rt1'");
+    const rows = await db.getAllAsync<{ seq: number }>(
+      "SELECT seq FROM route_points WHERE route_id = 'rt1'"
+    );
+    expect(rows).toHaveLength(0);
   });
 });

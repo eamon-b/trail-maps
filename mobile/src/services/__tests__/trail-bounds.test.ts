@@ -1,5 +1,4 @@
-import type { TrackPoint } from '../../lib/trail-utils';
-import { calculateTrailBounds } from '../trail-bounds';
+import { calculateTrailBounds, type TrackPoint } from '../trail-bounds';
 
 function makeTrackPoints(
   latRange: [number, number],

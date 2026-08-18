@@ -1,27 +1,36 @@
+/**
+ * SQLite open helper.
+ *
+ * Opens the single app database and runs pending migrations. Returns a cached
+ * promise so concurrent callers share one connection. Keep this minimal — the
+ * schema itself lives in `schema.ts`.
+ *
+ * NOTE (Phase 1): the `guides` table exists for later use, but offline-tile
+ * status is derived from the filesystem via the tile manager (see
+ * `downloads-store`), which is the source of truth. Nothing in Phase 1 writes
+ * to `guides` yet.
+ */
+
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 import { migrateDatabase } from './schema';
 
-const DB_NAME = 'trail-companion.db';
+const DB_NAME = 'tracknotes.db';
 
-let dbInstance: SQLiteDatabase | null = null;
+let dbPromise: Promise<SQLiteDatabase> | null = null;
 
-export async function getDatabase(): Promise<SQLiteDatabase> {
-  if (dbInstance) {
-    return dbInstance;
+/** Open (once) and migrate the app database. */
+export function getDatabase(): Promise<SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const db = await openDatabaseAsync(DB_NAME);
+      await migrateDatabase(db);
+      return db;
+    })();
   }
-
-  const db = await openDatabaseAsync(DB_NAME);
-  await db.execAsync('PRAGMA journal_mode = WAL');
-  await db.execAsync('PRAGMA foreign_keys = ON');
-  await migrateDatabase(db);
-
-  dbInstance = db;
-  return db;
+  return dbPromise;
 }
 
-export async function closeDatabase(): Promise<void> {
-  if (dbInstance) {
-    await dbInstance.closeAsync();
-    dbInstance = null;
-  }
+/** Test seam: drop the cached connection so the next call re-opens. */
+export function resetDatabaseForTests(): void {
+  dbPromise = null;
 }

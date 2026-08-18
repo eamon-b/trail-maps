@@ -1,0 +1,24 @@
+name = "farout-comments"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+# Serve on the account's workers.dev subdomain:
+#   https://farout-comments.<account-subdomain>.workers.dev
+# Deploy with: npm run deploy (requires `wrangler login`).
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "farout-comments"
+database_id = "2d1504b2-13c4-422b-829b-af3a3536a5bd"
+
+# Photo attachments live in R2. This is the same bucket the map tiles use; photos
+# go under the `comments/` prefix and are read publicly via PHOTOS_PUBLIC_BASE.
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "aus-map-data"
+
+[vars]
+# Public read base for R2 objects (the bucket's r2.dev dev URL). The worker
+# returns full URLs built from this + the object key. Tests override it.
+PHOTOS_PUBLIC_BASE = "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev"

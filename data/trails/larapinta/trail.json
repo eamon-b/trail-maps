@@ -3,10 +3,17 @@
   "name": "Larapinta Trail",
   "shortName": "larapinta",
   "region": "West MacDonnell Ranges",
-  "lengthKm": 230.6,
+  "lengthKm": 215.8,
   "gpxFile": "Larapinta_Trail.gpx",
   "geojsonFile": "Larapinta_Trail.json",
   "description": "Trail data auto-generated from Larapinta_Trail.gpx. Edit trail.json to customize.",
+  "reverseTrack": true,
+  "extractSpurs": [
+    {
+      "name": "Mt Sonder Summit (return)",
+      "fromKm": 215.83
+    }
+  ],
   "direction": {
     "default": "Westbound",
     "reversed": "Eastbound"

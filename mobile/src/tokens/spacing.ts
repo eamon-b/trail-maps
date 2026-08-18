@@ -21,7 +21,10 @@ export type SpacingToken = keyof typeof spacing;
 
 /** Minimum touch target size per accessibility guidelines */
 export const touchTarget = {
+  /** WCAG / platform minimum */
   min: 44,
+  /** Primary field actions — bigger for gloved/one-handed outdoor use */
+  field: 56,
 } as const;
 
 /** Border radius tokens */

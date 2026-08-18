@@ -1,199 +1,112 @@
+/**
+ * Foreground GPS tracking with trail snapping.
+ *
+ * Ported from the old app and trimmed to the pieces Tracknotes needs: a lazy,
+ * permission-gated foreground watch whose fixes are snapped to a supplied track
+ * (via the pure `position-on-trail` service) to yield a current km and an
+ * off-trail distance.
+ *
+ * The heavy geometry lives in `snapToTrail`; this hook only owns the tracking
+ * lifecycle, the permission state, and a small hint-index cache that keeps the
+ * per-fix snap cheap. Background tracking is intentionally absent — it stays
+ * opt-in and lives in the location service.
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   requestLocationPermission,
   getLocationPermissionStatus,
   startLocationTracking,
   stopLocationTracking,
-  requestBackgroundPermission,
-  startBackgroundTracking,
-  stopBackgroundTracking,
-  subscribeToBackgroundLocation,
   type LocationUpdate,
   type PermissionStatus,
 } from '../services/location-service';
-import { type TrackPoint } from '../lib/trail-utils';
-import { haversineDistance } from '@lib/distance';
+import { snapToTrail, type SnapPoint } from '../services/position-on-trail';
 
 export interface SnappedLocation {
-  /** Raw GPS coordinates */
+  /** Raw GPS coordinates. */
   raw: LocationUpdate;
-  /** Snapped km position along trail */
+  /** Snapped km position along the trail (null when no track was supplied). */
   trailKm: number | null;
-  /** Distance from trail in meters */
-  distanceFromTrail: number | null;
+  /** Distance from the trail in metres (null when no track was supplied). */
+  offTrailMeters: number | null;
 }
 
-interface UseLocationOptions {
-  /** Enable background location tracking (survives screen lock) */
-  background?: boolean;
-}
-
-interface UseLocationResult {
-  /** Current location (raw + snapped) */
+export interface UseLocationResult {
+  /** Current location (raw + snapped), or null before the first fix. */
   location: SnappedLocation | null;
-  /** GPS accuracy in meters */
+  /** GPS accuracy in metres. */
   accuracy: number | null;
-  /** Error message if any */
+  /** Error message, if any. */
   error: string | null;
-  /** Whether actively tracking */
+  /** Whether a tracking session is live. */
   isTracking: boolean;
-  /** Permission status */
+  /** Latest known permission status. */
   permissionStatus: PermissionStatus;
-  /** Start GPS tracking */
+  /** Request permission (if needed) and start the foreground watch. */
   startTracking: () => Promise<void>;
-  /** Stop GPS tracking */
+  /** Stop this hook's tracking subscription. */
   stopTracking: () => void;
 }
 
 /**
- * Hook for GPS location tracking with trail snapping.
- * @param trackPoints - Track points to snap location to (pass null to skip snapping)
- * @param options - Optional config (e.g. background tracking)
+ * @param trackPoints Points to snap fixes to (pass null/undefined to skip).
  */
-export function useLocation(
-  trackPoints?: TrackPoint[] | null,
-  options?: UseLocationOptions,
-): UseLocationResult {
-  const background = options?.background ?? false;
+export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocationResult {
   const [location, setLocation] = useState<SnappedLocation | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('undetermined');
+
   const trackPointsRef = useRef(trackPoints);
   trackPointsRef.current = trackPoints;
-  // Check permission on mount
-  useEffect(() => {
-    getLocationPermissionStatus().then(setPermissionStatus);
-  }, []);
 
-  const lastSnapRef = useRef<{ idx: number; lat: number; lon: number } | null>(null);
-
-  // Reset snap cache when track points change (e.g. direction reversal)
+  // Previous nearest index — feeds the windowed snap. Reset when the track
+  // changes (e.g. a direction reversal renumbers every point).
+  const hintRef = useRef<number | undefined>(undefined);
   useEffect(() => {
-    lastSnapRef.current = null;
+    hintRef.current = undefined;
   }, [trackPoints]);
 
-  const snapToTrail = useCallback((update: LocationUpdate): SnappedLocation => {
-    const points = trackPointsRef.current;
-    if (!points || points.length === 0) {
-      return { raw: update, trailKm: null, distanceFromTrail: null };
-    }
-
-    const last = lastSnapRef.current;
-
-    // Skip re-snapping if GPS hasn't moved more than 10m from last reading
-    if (last) {
-      const moved = haversineDistance(update.latitude, update.longitude, last.lat, last.lon);
-      if (moved < 10) {
-        return {
-          raw: update,
-          trailKm: points[last.idx].dist,
-          distanceFromTrail: haversineDistance(update.latitude, update.longitude, points[last.idx].lat, points[last.idx].lon),
-        };
-      }
-    }
-
-    let nearestIdx = 0;
-    let nearestDist = Infinity;
-
-    // Start-from-last: search a window around the previous snapped index
-    if (last) {
-      const windowSize = 50;
-      const start = Math.max(0, last.idx - windowSize);
-      const end = Math.min(points.length - 1, last.idx + windowSize);
-      for (let i = start; i <= end; i++) {
-        const dist = haversineDistance(update.latitude, update.longitude, points[i].lat, points[i].lon);
-        if (dist < nearestDist) {
-          nearestDist = dist;
-          nearestIdx = i;
-        }
-      }
-      // If window result is within 500m, use it; otherwise fall back to full scan
-      if (nearestDist < 500) {
-        lastSnapRef.current = { idx: nearestIdx, lat: update.latitude, lon: update.longitude };
-        return {
-          raw: update,
-          trailKm: points[nearestIdx].dist,
-          distanceFromTrail: nearestDist,
-        };
-      }
-    }
-
-    // Full coarse-then-refine scan (fallback)
-    nearestIdx = 0;
-    nearestDist = Infinity;
-    const step = Math.max(1, Math.floor(points.length / 500));
-    for (let i = 0; i < points.length; i += step) {
-      const dist = haversineDistance(update.latitude, update.longitude, points[i].lat, points[i].lon);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestIdx = i;
-      }
-    }
-    // Refine around the nearest coarse point
-    const start = Math.max(0, nearestIdx - step);
-    const end = Math.min(points.length - 1, nearestIdx + step);
-    for (let i = start; i <= end; i++) {
-      const dist = haversineDistance(update.latitude, update.longitude, points[i].lat, points[i].lon);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestIdx = i;
-      }
-    }
-
-    lastSnapRef.current = { idx: nearestIdx, lat: update.latitude, lon: update.longitude };
-    return {
-      raw: update,
-      trailKm: points[nearestIdx].dist,
-      distanceFromTrail: nearestDist,
-    };
+  // Check permission on mount (non-prompting).
+  useEffect(() => {
+    getLocationPermissionStatus().then(setPermissionStatus).catch(() => {});
   }, []);
 
   const handleLocationUpdate = useCallback((update: LocationUpdate) => {
     setAccuracy(update.accuracy);
-    setLocation(snapToTrail(update));
+    const points = trackPointsRef.current;
+    if (!points || points.length === 0) {
+      setLocation({ raw: update, trailKm: null, offTrailMeters: null });
+    } else {
+      const snap = snapToTrail(update.latitude, update.longitude, points, hintRef.current);
+      if (snap) hintRef.current = snap.index;
+      setLocation({
+        raw: update,
+        trailKm: snap?.currentKm ?? null,
+        offTrailMeters: snap?.offTrailMeters ?? null,
+      });
+    }
     setError(null);
-  }, [snapToTrail]);
+  }, []);
 
-  const bgUnsubRef = useRef<(() => void) | null>(null);
-  // Mode the current tracking session was actually started in. Stop must tear
-  // down what was started — not what the (possibly since-changed) background
-  // option currently says.
-  const activeModeRef = useRef<'foreground' | 'background' | null>(null);
-  // Re-entrancy guard: a start already in flight short-circuits further calls,
-  // so effect re-runs can't stack overlapping permission requests / starts.
+  // Re-entrancy guard: a start already in flight short-circuits further calls.
   const startingRef = useRef(false);
+  const activeRef = useRef(false);
 
   const startTracking = useCallback(async () => {
-    // Idempotent: a start in flight or a live session makes this a no-op, so
-    // callers (focus effects, retry listeners) can invoke it freely.
-    if (startingRef.current || activeModeRef.current !== null) return;
+    if (startingRef.current || activeRef.current) return;
     startingRef.current = true;
     try {
       const status = await requestLocationPermission();
       setPermissionStatus(status);
-
       if (status !== 'granted') {
         setError('Location permission not granted');
         return;
       }
-
-      if (background) {
-        const bgStatus = await requestBackgroundPermission();
-        if (bgStatus !== 'granted') {
-          setError('Background location permission not granted');
-          return;
-        }
-
-        bgUnsubRef.current = subscribeToBackgroundLocation(handleLocationUpdate);
-        await startBackgroundTracking();
-        activeModeRef.current = 'background';
-      } else {
-        await startLocationTracking(handleLocationUpdate);
-        activeModeRef.current = 'foreground';
-      }
-
+      await startLocationTracking(handleLocationUpdate);
+      activeRef.current = true;
       setIsTracking(true);
       setError(null);
     } catch (e) {
@@ -201,44 +114,19 @@ export function useLocation(
     } finally {
       startingRef.current = false;
     }
-  }, [handleLocationUpdate, background]);
+  }, [handleLocationUpdate]);
 
-  const stopTrackingFn = useCallback(() => {
-    if (activeModeRef.current === 'background') {
-      bgUnsubRef.current?.();
-      bgUnsubRef.current = null;
-      stopBackgroundTracking();
-    } else if (activeModeRef.current === 'foreground') {
-      // Unsubscribe only this hook instance — another screen may be tracking.
-      stopLocationTracking(handleLocationUpdate);
-    }
-    activeModeRef.current = null;
+  const stopTracking = useCallback(() => {
+    // Unsubscribe only this hook instance — another screen may be tracking.
+    stopLocationTracking(handleLocationUpdate);
+    activeRef.current = false;
     setIsTracking(false);
   }, [handleLocationUpdate]);
 
-  // The hook owns mode switching: if the background option changes while a
-  // session is live, restart in the new mode. Callers just flip the option.
-  // Keyed on isTracking so an option flip that lands while a start is still
-  // in flight gets reconciled once that start completes.
-  useEffect(() => {
-    if (!isTracking) return;
-    const wantedMode = background ? 'background' : 'foreground';
-    if (activeModeRef.current === wantedMode) return;
-    stopTrackingFn();
-    startTracking();
-  }, [background, isTracking, startTracking, stopTrackingFn]);
-
-  // Clean up this instance's subscriptions on unmount. Scoped to our own
-  // callback/mode so unmounting one screen never kills another screen's
-  // tracking session.
+  // Clean up this instance's subscription on unmount.
   useEffect(() => {
     return () => {
       stopLocationTracking(handleLocationUpdate);
-      if (bgUnsubRef.current) {
-        bgUnsubRef.current();
-        bgUnsubRef.current = null;
-        stopBackgroundTracking();
-      }
     };
   }, [handleLocationUpdate]);
 
@@ -249,6 +137,6 @@ export function useLocation(
     isTracking,
     permissionStatus,
     startTracking,
-    stopTracking: stopTrackingFn,
+    stopTracking,
   };
 }

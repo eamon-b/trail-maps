@@ -2,7 +2,7 @@
  * Shared path helpers for tile services.
  *
  * Centralises directory layout and URI conversion used by
- * tile-service.ts, grid-tile-service.ts, and tile-manager.ts.
+ * tile-service.ts and tile-manager.ts.
  */
 import { File, Directory, Paths } from 'expo-file-system';
 

@@ -6,8 +6,14 @@ import { haversineDistance as haversineDistanceMeters } from '../src/lib/distanc
 import { douglasPeucker } from '../src/lib/gpx-optimizer.js';
 import { classifyTracks, combineTracksGeographically } from '../src/lib/track-classification.js';
 import { classifyWaypoint } from '../src/lib/waypoint-classifier.js';
+import { cumulativeKm, detectSelfRetraces, extractSpur } from '../src/lib/track-spurs.js';
 import { escapeHtml, escapeJsString } from '../src/lib/escape.js';
 import type { TrackClassificationConfig, GpxPoint as LibGpxPoint } from '../src/lib/types.js';
+import {
+  assignWaypointIds,
+  stringifyRegistry,
+  type WaypointRegistry,
+} from './lib/waypoint-ids.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -25,6 +31,19 @@ function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 const MIN_TOLERANCE_METERS = 5;
 const DISTANCE_SCALE_FACTOR_KM = 500;
 const TOLERANCE_MULTIPLIER = 5;
+
+// Report main-route sections that double back on themselves for at least this
+// many km. Purely advisory: most are the official route (e.g. the Bibbulmun's
+// walk-ins to Collie and Denmark), so extraction is opt-in via `extractSpurs`.
+// 2 km is low enough to surface Collie's 2.8 km walk-in and still silent on the
+// five trails that have no retrace at all.
+const SELF_RETRACE_WARN_KM = 2;
+
+// Distance (metres) from a variant's track within which a waypoint counts as
+// being on that variant. Deliberately tighter than the main route's
+// `waypointMaxDistance`: variants are short and run close to the main route, so
+// a loose threshold pulls in waypoints that belong to the through-route.
+const VARIANT_WAYPOINT_MAX_DISTANCE_METERS = 200;
 
 /**
  * Calculate an adaptive simplification tolerance based on point count.
@@ -63,6 +82,18 @@ interface DirectionConfig {
   reversed: string;
 }
 
+/**
+ * An out-and-back section folded into the main-route track that should be
+ * lifted out into a side trip. `fromKm`/`toKm` are in the *built* km space,
+ * i.e. after `reverseTrack` has been applied, and `toKm` defaults to the end of
+ * the track (the common case: a summit spur off a terminus).
+ */
+interface SpurExtractionConfig {
+  name: string;
+  fromKm: number;
+  toKm?: number;
+}
+
 interface TrailConfig {
   id: string;
   name: string;
@@ -72,6 +103,8 @@ interface TrailConfig {
   gpxFile: string;
   geojsonFile?: string;  // CalTopo GeoJSON file for alternates/side trips
   trackClassification?: TrackClassificationConfig;  // Patterns for multi-track GPX classification
+  reverseTrack?: boolean;  // Reverse the source track so km 0 is the trail's canonical start
+  extractSpurs?: SpurExtractionConfig[];  // Out-and-back sections to lift out of the main route
   waypointMaxDistance?: number;  // Max distance (meters) from track to match waypoints (default 500)
   waypointsFile?: string;  // Now optional - can extract from GPX
   climateFile?: string;
@@ -88,6 +121,7 @@ interface GpxPoint {
 }
 
 interface Waypoint {
+  id?: string;             // stable id assigned from the committed registry
   name: string;
   lat: number;
   lon: number;
@@ -113,6 +147,7 @@ interface WaypointVisit {
 }
 
 interface VariantWaypoint {
+  id?: string;             // stable id, shared with the same waypoint on the main route
   name: string;
   type: string;
   lat: number;
@@ -178,6 +213,7 @@ const SCRIPTS_DIR = path.dirname(
 );
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '..');
 const DATA_DIR = path.join(PROJECT_ROOT, 'data/trails');
+const WAYPOINT_IDS_PATH = path.join(PROJECT_ROOT, 'data/waypoint-ids.json');
 const OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/generated');
 const TRAIL_PAGES_DIR = path.join(PROJECT_ROOT, 'src/web/trails');
 const TRAIL_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'trail-template.html');
@@ -406,6 +442,19 @@ function findVariantJunctions(
       }
     }
 
+    // A variant's stored point order follows its own source track, which need
+    // not agree with the main route's direction (notably after a `reverseTrack`
+    // build). Normalise so the junction range always reads forwards — the
+    // viewer renders these as "Branches at: X km / Rejoins: Y km".
+    if (
+      enriched.startDistance !== undefined &&
+      enriched.endDistance !== undefined &&
+      enriched.startDistance > enriched.endDistance
+    ) {
+      [enriched.startDistance, enriched.endDistance] = [enriched.endDistance, enriched.startDistance];
+      [enriched.startTrackIndex, enriched.endTrackIndex] = [enriched.endTrackIndex, enriched.startTrackIndex];
+    }
+
     return enriched;
   });
 }
@@ -417,11 +466,17 @@ function findVariantJunctions(
  * Uses hysteresis to prevent "flickering" - the exit threshold is larger than
  * the entry threshold, so the track must move significantly away before a new
  * visit can be recorded for the same waypoint.
+ *
+ * A genuinely re-visited waypoint (the route passes it, leaves, and comes back)
+ * still yields one visit per episode, so callers that key output rows by
+ * waypoint identity must guard against the fan-out - see the duplicate-id check
+ * in processTrail. `maxDistanceMeters` is required: variants and the main route
+ * use deliberately different thresholds.
  */
 function findWaypointVisits(
   waypoints: Waypoint[],
   trackPoints: { lat: number; lon: number; ele: number }[],
-  maxDistanceMeters: number = 200
+  maxDistanceMeters: number
 ): WaypointVisit[] {
   if (trackPoints.length === 0 || waypoints.length === 0) {
     return [];
@@ -579,7 +634,7 @@ function enrichVariantWaypoints(
   return variants.map(variant => {
     if (variant.points.length === 0) return variant;
 
-    const visits = findWaypointVisits(waypoints, variant.points);
+    const visits = findWaypointVisits(waypoints, variant.points, VARIANT_WAYPOINT_MAX_DISTANCE_METERS);
     if (visits.length === 0) return variant;
 
     const junctionKm = variant.startDistance ?? 0;
@@ -599,6 +654,7 @@ function enrichVariantWaypoints(
       const trackPoint = variant.points[visit.trackIndex];
 
       variantWaypoints.push({
+        id: visit.waypoint.id,
         name: visit.waypoint.name,
         type: visit.waypoint.type,
         lat: visit.waypoint.lat,
@@ -819,7 +875,7 @@ function validateTrailDirectory(trailDir: string): { errors: string[]; needsAuto
   return { errors, needsAutoConfig };
 }
 
-async function processTrail(trailDir: string, autoGenConfig: boolean = false): Promise<ProcessedTrail> {
+async function processTrail(trailDir: string, registry: WaypointRegistry, autoGenConfig: boolean = false): Promise<ProcessedTrail> {
   const configPath = path.join(trailDir, 'trail.json');
 
   // Find GPX file
@@ -857,8 +913,48 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
   }
 
   // Select and combine main route tracks using classification
-  const { points: mainRoutePoints, classificationSummary, alternateTracks, sideTripTracks: classifiedSideTrips } = selectMainRoute(gpxData, config);
+  const { points: selectedMainRoutePoints, classificationSummary, alternateTracks, sideTripTracks: classifiedSideTrips } = selectMainRoute(gpxData, config);
   console.log(`  Classified: ${classificationSummary}`);
+
+  let mainRoutePoints = selectedMainRoutePoints;
+
+  // Reverse the source track when it runs opposite to the trail's canonical
+  // direction (km 0 should be the terminus named by `direction.default`).
+  // Variants are reversed too so they still describe a walk in the same
+  // direction as the main route. Must run before the cumulative-distance pass
+  // below, and before spur extraction, so every later km is in built space.
+  if (config.reverseTrack) {
+    mainRoutePoints = [...mainRoutePoints].reverse();
+    for (const track of [...alternateTracks, ...classifiedSideTrips]) {
+      track.points.reverse();
+    }
+    console.log('  ✓ Reversed track direction (reverseTrack)');
+  }
+
+  // Lift configured out-and-back spurs off the main route. Explicit config
+  // only - detectSelfRetraces below finds every retrace, but most are the
+  // official route, so this is never automatic.
+  const extractedSpurs: ParsedGpxTrack[] = [];
+  for (const spur of config.extractSpurs ?? []) {
+    const km = cumulativeKm(mainRoutePoints);
+    const toKm = spur.toKm ?? km[km.length - 1];
+    const { trimmedMain, spurPoints } = extractSpur(mainRoutePoints, spur.fromKm, toKm);
+    mainRoutePoints = trimmedMain;
+    extractedSpurs.push({ name: spur.name, points: spurPoints });
+    const spurKm = cumulativeKm(spurPoints);
+    console.log(
+      `  ✓ Extracted spur "${spur.name}" (${spurKm[spurKm.length - 1].toFixed(2)} km) ` +
+        `from main route km ${spur.fromKm}-${toKm.toFixed(2)}`
+    );
+  }
+
+  for (const retrace of detectSelfRetraces(mainRoutePoints, { minRetraceKm: SELF_RETRACE_WARN_KM })) {
+    console.warn(
+      `  Warning: main route retraces ${retrace.retraceLengthKm.toFixed(1)} km around km ` +
+        `${retrace.turnaroundKm.toFixed(1)} (${retrace.terminal ? 'terminal spur' : 'mid-route'}). ` +
+        `If it is not part of the route, add an extractSpurs entry to trail.json.`
+    );
+  }
 
   // For auto-gen config, now generate the full config with distance calculated
   if (autoGenConfig) {
@@ -914,8 +1010,8 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
 
   // Get waypoints - prefer GPX waypoints, fall back to CSV if specified
   let waypoints: Waypoint[] = gpxData.waypoints;
-  let alternates: RouteVariant[] = [];
-  let sideTrips: RouteVariant[] = [];
+  const alternates: RouteVariant[] = [];
+  const sideTrips: RouteVariant[] = [];
 
   // If GeoJSON exists, use it to enhance data
   const geojsonFile = findGeojsonFile(trailDir, config.geojsonFile);
@@ -958,8 +1054,8 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
     });
   }
 
-  // Convert classified GPX side-trip tracks to RouteVariant[]
-  for (const track of classifiedSideTrips) {
+  // Convert classified GPX side-trip tracks (plus any extracted spurs) to RouteVariant[]
+  for (const track of [...classifiedSideTrips, ...extractedSpurs]) {
     const trackPoints3d = track.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele }));
     const stats = calculateRouteStats(trackPoints3d);
     sideTrips.push({
@@ -975,7 +1071,7 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
   }
 
   if (alternates.length > 0) console.log(`  ✓ Found ${alternates.length} alternate routes from GPX`);
-  if (sideTrips.length > 0) console.log(`  ✓ Found ${sideTrips.length} side trips from GPX`);
+  if (sideTrips.length > 0) console.log(`  ✓ Found ${sideTrips.length} side trips`);
 
   // Fall back to CSV waypoints if no GPX waypoints and CSV exists
   if (waypoints.length === 0 && config.waypointsFile) {
@@ -1006,9 +1102,43 @@ async function processTrail(trailDir: string, autoGenConfig: boolean = false): P
   // Update config with calculated distance
   config.lengthKm = Math.round(totalDistance * 10) / 10;
 
+  // Assign stable ids from the committed registry BEFORE splitting the
+  // waypoint list into on-trail / off-trail / variant views. Enriched,
+  // off-trail, and variant waypoints all spread or copy from these same
+  // source objects, so mutating `id` here propagates the id to every place a
+  // waypoint surfaces in the generated JSON (so a comment follows the
+  // waypoint regardless of which view a user is looking at).
+  const waypointIds = assignWaypointIds(config.id, waypoints, registry);
+  waypoints.forEach((wp, i) => {
+    wp.id = waypointIds[i];
+  });
+
   // Enrich waypoints with distance and elevation data
   const waypointMaxDist = config.waypointMaxDistance ?? 500;
   const enrichedWaypoints = enrichWaypoints(waypoints, mainRoutePoints, waypointMaxDist);
+
+  // Output invariant: every enriched waypoint carries a distinct stable id.
+  // enrichWaypoints emits one row per proximity episode, so a route that passes
+  // the same waypoint twice (an out-and-back folded into the main track) fans
+  // one source waypoint into several rows sharing an id — which breaks every
+  // consumer that keys by id (React list keys, elevation-profile markers,
+  // comment lookups). assignWaypointIds cannot catch this: it runs on the
+  // source list, before the fan-out happens.
+  const seenWaypointIds = new Map<string, EnrichedWaypoint>();
+  for (const wp of enrichedWaypoints) {
+    if (!wp.id) continue;
+    const first = seenWaypointIds.get(wp.id);
+    if (first) {
+      throw new Error(
+        `Duplicate waypoint id "${wp.id}" ("${wp.name}") in trail "${config.id}": matched ` +
+          `at km ${first.totalDistance} and km ${wp.totalDistance}. The route passes this ` +
+          `waypoint twice — lift the out-and-back section out with an "extractSpurs" entry ` +
+          `in trail.json, or lower "waypointMaxDistance" (currently ${waypointMaxDist}m) so ` +
+          `the second pass falls outside the match threshold.`
+      );
+    }
+    seenWaypointIds.set(wp.id, wp);
+  }
 
   // Enrich variants with junction point data (where they connect to main track)
   const enrichedAlternates = findVariantJunctions(alternates, points);
@@ -1191,7 +1321,19 @@ async function main() {
 
   console.log('All trails validated successfully.\n');
 
+  // Load the committed waypoint-id registry (deterministic mint + registry).
+  let waypointRegistry: WaypointRegistry = {};
+  if (fs.existsSync(WAYPOINT_IDS_PATH)) {
+    try {
+      waypointRegistry = JSON.parse(fs.readFileSync(WAYPOINT_IDS_PATH, 'utf-8'));
+    } catch (e) {
+      console.error(`Failed to parse ${WAYPOINT_IDS_PATH}: ${e instanceof Error ? e.message : 'parse error'}`);
+      process.exit(1);
+    }
+  }
+
   const trailIndex: { id: string; name: string; shortName: string; lengthKm: number }[] = [];
+  const failedTrails: string[] = [];
 
   for (const trailDir of trailDirs) {
     const trailId = path.basename(trailDir);
@@ -1199,7 +1341,7 @@ async function main() {
     console.log(`Processing: ${trailId}${needsAutoGen ? ' (auto-generating config)' : ''}`);
 
     try {
-      const processed = await processTrail(trailDir, needsAutoGen);
+      const processed = await processTrail(trailDir, waypointRegistry, needsAutoGen);
 
       // Write processed data
       const outputPath = path.join(OUTPUT_DIR, `${processed.config.id}.json`);
@@ -1222,6 +1364,7 @@ async function main() {
       });
     } catch (error) {
       console.error(`  ✗ Error processing ${trailId}:`, error);
+      failedTrails.push(trailId);
     }
   }
 
@@ -1229,6 +1372,22 @@ async function main() {
   const indexPath = path.join(OUTPUT_DIR, 'index.json');
   fs.writeFileSync(indexPath, JSON.stringify(trailIndex, null, 2));
   console.log(`\nTrail index written to ${indexPath}`);
+
+  // Write the (append-only) waypoint-id registry back, deterministically
+  // sorted for stable git diffs.
+  fs.writeFileSync(WAYPOINT_IDS_PATH, stringifyRegistry(waypointRegistry));
+  const registryCount = Object.values(waypointRegistry).reduce((sum, e) => sum + e.length, 0);
+  console.log(`Waypoint-id registry written to ${WAYPOINT_IDS_PATH} (${registryCount} entries)`);
+
+  // A trail that threw wrote no output, so the generated data is stale/absent
+  // for it — fail the build rather than letting a silent gap ship.
+  if (failedTrails.length > 0) {
+    console.error(`\n${failedTrails.length} trail(s) failed to build: ${failedTrails.join(', ')}`);
+    process.exitCode = 1;
+  }
 }
 
-main().catch(console.error);
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

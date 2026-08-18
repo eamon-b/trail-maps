@@ -7,11 +7,23 @@ export interface GpxPoint {
 }
 
 export interface GpxWaypoint {
+  /**
+   * Stable waypoint id assigned by the build pipeline from the committed
+   * registry (`data/waypoint-ids.json`). Absent for freshly-parsed GPX that
+   * has not been through id assignment.
+   */
+  id?: string;
   lat: number;
   lon: number;
   ele: number;
   name: string;
   desc: string;
+  /**
+   * Explicit GPX `<type>` when the source file provides one (e.g. files
+   * exported by the mobile app). Consumers prefer it over name-based
+   * classification so an export→import round trip preserves the type.
+   */
+  type?: string;
 }
 
 export interface GpxSegment {
@@ -241,9 +253,25 @@ export interface CombineTracksResult {
 // Tile Pipeline Types
 
 export interface TileManifestFile {
+  /** Logical filename — also the on-device filename (e.g. "base.mbtiles"). */
   name: string;
   size: number;
   sha256: string;
+  /**
+   * MD5 hex digest of the file. Verified on-device after download via the
+   * expo-file-system `File.md5` property (sha256 is kept for tooling, but
+   * hashing a 100MB file in JS is too slow to check on-device).
+   */
+  md5?: string;
+  /**
+   * Content-addressed remote object key under the trail prefix, e.g.
+   * "base.58ce65fc4290.mbtiles" (first 12 hex chars of the sha256). Uploads
+   * write new objects at new keys and swap the manifest last, so a client
+   * holding the old manifest keeps downloading the old (still present)
+   * objects — the manifest write is the atomic commit point. Absent in
+   * manifests produced before content addressing; fall back to `name`.
+   */
+  key?: string;
 }
 
 export interface TileManifest {

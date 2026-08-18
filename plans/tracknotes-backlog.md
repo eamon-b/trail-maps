@@ -1,6 +1,6 @@
 # Tracknotes Backlog
 
-Living list of known follow-ups for the FarOut-clone rebuild (branch `rebuild/farout-clone`).
+Living list of known follow-ups for the FarOut-clone rebuild (merged to `main` 2026-08-18).
 Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this file as items land or emerge.
 
 ## Required before any App Store / Play Store release
@@ -9,9 +9,9 @@ Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this fil
 - [ ] **Privacy policy + D1 data-residency check** — Oceania location hint is best-effort; re-verify before public claims (`plans/part-6b-crowdsourcing-design.md` §8 has the APP analysis).
 
 ## Product features (planned phases)
-- [ ] **Phase 6 — check-in sharing**: OS share sheet with position + km + message first; backend check-ins later.
-- [ ] **Phase 7 — custom route builder**: reintroduce routes/route_legs (old schema migrations 7–8 DDL), route drawing on GuideMap, route overlay on profile.
-- [ ] **Phase 8 — planner heritage**: day/resupply/water-carry planners (`@lib` calculators) redesigned into the guide IA.
+- [x] **Phase 6 — check-in sharing (share-sheet half)**: shipped — `src/features/share/{check-in.ts,use-check-in-share.ts,ShareIconButton.tsx}`. Backend check-ins remain a follow-up.
+- [x] **Phase 7 — custom route builder**: shipped — `src/features/routes/`, `src/db/routes-repo.ts`, `app/guide/[trailId]/routes.tsx` (route drawing on the map pane, saved-routes screen).
+- [x] **Phase 8 — planner heritage**: shipped — live plan calculator at `app/guide/[trailId]/plan.tsx` over `src/features/plan/` + `@lib` calculators (see `PLAN-hours-based-planning.md`, incl. post-review fixes).
 - [ ] **Aggregated water-status chip** — client-side freshness ranking over cached reports (weight `exp(-age_days/30)`, 120-day window) shown on water waypoints in list/map.
 - [x] **Display-name rename UI** — done: Settings → Account shows the current display name with an inline editor (`src/features/settings/DisplayNameSection.tsx`) calling `identity-store.rename` → `PATCH /v1/me`; client-side trim/length check mirrors the server's 40-char limit, network failures render inline and keep the previous name. Anonymous devices get an explanatory row instead (registration still happens on first post, never from Settings).
 - [ ] **Waypoint descriptions enrichment** — bundled data has almost none; serve curated descriptions from the backend over the comment sync channel rather than authoring into `public/data/`.
@@ -33,4 +33,4 @@ Master plan: `~/.claude/plans/i-want-to-start-melodic-reddy.md`. Update this fil
 - [ ] **MapLibre RN + Expo SDK upgrade** — pinned at the proven 10.4.x / SDK 54 combo; upgrade deliberately as its own task.
 - [ ] **Custom domain for workers** — `*.workers.dev` URLs are baked into shipped builds (same trade-off as the contour worker); a custom domain decouples them.
 - [ ] **Comment-feed pagination UI** — the per-waypoint feed endpoint paginates; the detail screen currently renders the full cached set (fine at hobby scale).
-- [ ] **Maestro coverage** — only `app-launch.yaml` exists post-rebuild; port guide-list / view-map / toggle-views / waypoint-detail / add-comment-offline flows from the old suite's patterns.
+- [ ] **Maestro coverage** — local-only now (the `maestro-e2e` CI workflow was removed 2026-08-18; flows run against the local emulator). Two flows exist: `app-launch.yaml`, `plan-screen.yaml` (+ `shared/launch-dev.yaml` launcher). Port guide-list / view-map / toggle-views / waypoint-detail / add-comment-offline flows from the old suite's patterns if coverage is wanted.

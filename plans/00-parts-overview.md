@@ -1,5 +1,7 @@
 # Trail Companion App - Parts Overview
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 This document provides an overview of all implementation parts for the Trail Companion App. Each part has its own detailed file in this directory.
 
 ## Version Scope
@@ -116,7 +118,7 @@ This delivers the core differentiating value. Features explicitly **NOT in v1.0*
 - [Part 1: Design System](./part-1-design-system.md)
 - [Part 2: Offline Viewer](./part-2-offline-viewer.md)
 - [Part 3: Planning Tools](./part-3-planning-tools.md)
-- [Part 4: Custom Trails](./part-4-custom-trails.md)
+- Part 4: Custom Trails — [4a: GPX Processing Engine](./part-4a-gpx-processing-engine.md) · [4b: Import UI & Storage](./part-4b-import-ui-and-storage.md) · [4c: Custom Trail Features](./part-4c-custom-trail-features.md)
 - [Part 5: On-Trail Features](./part-5-on-trail-features.md) (5a is v1.0, 5b is v2.0)
 
 ### v2.0 Parts

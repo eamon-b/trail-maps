@@ -1,5 +1,7 @@
 # Part 0: Foundation & Project Setup
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Goal
 Establish the technical foundation for the Trail Companion app, including React Native project setup, shared library extraction, core data architecture, and basic app scaffolding.
 

@@ -1,5 +1,7 @@
 # Part 1: Design System & UX Foundation
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Goal
 Create a cohesive design system and core UI components that implement the detailed UX specifications from the feature plan. This establishes the visual and interaction patterns that all subsequent parts will use.
 

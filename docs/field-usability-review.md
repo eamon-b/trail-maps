@@ -1,5 +1,7 @@
 # Field Usability & UI Review — Trail Companion Mobile App
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 **Date:** 2026-07-10
 **Scope:** The full mobile app (`mobile/`), reviewed against one central aim: *the app must be easily usable in the field* — one-handed, gloved, in bright sun or darkness, tired, with a weak GPS fix and a battery that has to last a week. User-added waypoints and routes are treated as the flagship feature and reviewed in depth.
 

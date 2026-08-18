@@ -912,7 +912,7 @@ For a download-heavy workload (~260 MB total, individual files up to 50 MB), zer
 ### R2 Bucket Structure
 
 ```
-trail-companion-tiles/               # R2 bucket name
+aus-map-data/                        # R2 bucket name
   bibbulmun/
     base.mbtiles                     # 28 MB
     contours.mbtiles                 # 47 MB
@@ -928,19 +928,16 @@ trail-companion-tiles/               # R2 bucket name
 
 ### Public Access URL
 
-With R2 public access enabled on a custom domain:
+With R2 public access enabled (the bucket's r2.dev public URL):
 
 ```
-https://tiles.trailcompanion.app/bibbulmun/base.mbtiles
-https://tiles.trailcompanion.app/bibbulmun/contours.mbtiles
-https://tiles.trailcompanion.app/bibbulmun/manifest.json
-https://tiles.trailcompanion.app/manifest.json
+https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev/bibbulmun/base.mbtiles
+https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev/bibbulmun/contours.mbtiles
+https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev/bibbulmun/manifest.json
+https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev/manifest.json
 ```
 
-Alternatively, use the default R2.dev subdomain for development:
-```
-https://trail-companion-tiles.<account-id>.r2.dev/bibbulmun/base.mbtiles
-```
+A custom domain can be added later to front the same bucket.
 
 ### Upload Workflow
 
@@ -948,29 +945,29 @@ Upload tiles after running `build:tiles` for a trail:
 
 ```bash
 # Using wrangler (Cloudflare CLI)
-npx wrangler r2 object put trail-companion-tiles/bibbulmun/base.mbtiles \
+npx wrangler r2 object put aus-map-data/bibbulmun/base.mbtiles \
   --file public/data/tiles/bibbulmun/base.mbtiles \
   --content-type application/octet-stream
 
-npx wrangler r2 object put trail-companion-tiles/bibbulmun/contours.mbtiles \
+npx wrangler r2 object put aus-map-data/bibbulmun/contours.mbtiles \
   --file public/data/tiles/bibbulmun/contours.mbtiles \
   --content-type application/octet-stream
 
-npx wrangler r2 object put trail-companion-tiles/bibbulmun/manifest.json \
+npx wrangler r2 object put aus-map-data/bibbulmun/manifest.json \
   --file public/data/tiles/bibbulmun/manifest.json \
   --content-type application/json
 
 # Or using AWS CLI with R2 endpoint
-aws s3 sync public/data/tiles/ s3://trail-companion-tiles/ \
+aws s3 sync public/data/tiles/ s3://aus-map-data/ \
   --endpoint-url https://<account-id>.r2.cloudflarestorage.com
 ```
 
 ### Setup Steps
 
 1. **Create Cloudflare account** (free tier is sufficient)
-2. **Create R2 bucket** named `trail-companion-tiles`
+2. **Create R2 bucket** named `aus-map-data`
 3. **Enable public access** on the bucket (Settings → Public access → Enable)
-4. **Optional: Add custom domain** (`tiles.trailcompanion.app`) via Cloudflare DNS
+4. **Optional: Add custom domain** in front of the bucket via Cloudflare DNS
 5. **Install wrangler**: `npm install -g wrangler` and `wrangler login`
 6. **Upload tiles** using the commands above
 7. **Set `EXPO_PUBLIC_TILE_BASE_URL`** in the mobile app to the public URL

@@ -1,5 +1,7 @@
 # Trail Companion App - Feature Analysis & Feedback
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Your Vision (Summary)
 
 An offline-capable mobile trail companion app — your own extensible FarOut alternative — with current-location tracking, distance/elevation to waypoints, custom GPX upload with auto-generated datasheets, multi-day campsite planning, crowdsourced updates, resupply/water planning, and strong UX throughout.

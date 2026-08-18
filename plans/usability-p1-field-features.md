@@ -1,5 +1,7 @@
 # P1 Plan — Flagship Field Features (from the Field Usability Review)
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 > **Source:** `docs/field-usability-review.md` §2 and roadmap items 7–12.
 > **Theme:** make user-added waypoints and routes a feature people actively want, and give
 > the hike screen the navigation context (ETA / bearing / time-to-water) that raw km can't.

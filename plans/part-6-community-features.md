@@ -1,5 +1,7 @@
 # Part 6: Community Features (v2.0 - DEFERRED)
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Goal
 Add crowdsourced updates and community interaction features, enabling users to contribute trail conditions, waypoint updates, comments, and photos. This is a significant architecture shift requiring backend infrastructure.
 

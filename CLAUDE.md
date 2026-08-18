@@ -21,7 +21,7 @@ npm run preview        # Preview production build locally
 
 ## Architecture Overview
 
-**Trail Maps** is a TypeScript web application for displaying Australian long-distance hiking trails with interactive maps, elevation profiles, and waypoint data.
+**Trail Maps** is a TypeScript web application for displaying Australian long-distance hiking trails with interactive maps, elevation profiles, and waypoint data. The repo also contains **Tracknotes**, the companion Expo/React Native mobile app (`mobile/` — see Mobile App section).
 
 ### Core Library (`src/lib/`)
 
@@ -38,7 +38,7 @@ Shared processing modules (used by both web and mobile):
 - `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight)
 - `water-carry-calculator.ts` - Water carry distance calculations
 
-**Shared calculators:** `track-geometry.ts`, `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` are the single implementations used by both web and mobile. Mobile imports them via the `@lib` alias (Metro `watchFolders` + tsconfig paths + Jest `moduleNameMapper`). Parameter types are structural (e.g. `PlanWaypoint`, `PlanStopInput`) so each platform's own trail/waypoint/stop shapes are accepted without conversion. Mobile-only StopData (persisted in SQLite) stays in `mobile/src/services/plan-calculator-types.ts`, which re-exports the shared `SectionConfig`/`ComputedDay`.
+**Shared calculators:** `track-geometry.ts`, `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` are the single implementations used by both web and mobile. Mobile imports them via the `@lib` alias (Metro `watchFolders` + tsconfig paths + Jest `moduleNameMapper`). Parameter types are structural (e.g. `PlanWaypoint`, `PlanStopInput`) so each platform's own trail/waypoint/stop shapes are accepted without conversion. On mobile the Plan screen is a live calculator (nothing persisted except pace + daily hours per trail); the adapters live in `mobile/src/features/plan/plan-adapters.ts`.
 
 ### Build Scripts (`scripts/`)
 
@@ -95,13 +95,13 @@ Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: 
 
 ## Testing
 
-Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` in `src/lib/`). Mobile tests use `__tests__/` subdirectories within `components/`, `services/`, `tokens/`, and `lib/`.
+Tests use Vitest with jsdom. Test files are colocated with source (`*.test.ts` in `src/lib/`). Mobile tests (Jest) live in `__tests__/` subdirectories colocated with source across `mobile/src/` (`api/`, `db/`, `features/*/`, `hooks/`, `services/`, `state/`, `sync/`, `tokens/`).
 
 ```bash
 # Mobile tests (from mobile/)
 npm test                           # Run all mobile tests (Jest)
 npm run test:watch                 # Watch mode
-npm run test:integration           # Integration tests only
+npm run typecheck                  # tsc --noEmit
 ```
 
 ## Mobile App (Expo / React Native)
@@ -160,7 +160,7 @@ npx expo start --dev-client      # Start Metro + connect to dev client
 - **Continuous Native Generation (CNG)**: `ios/` and `android/` are generated from `app.json` + config plugins via `npx expo prebuild`. They are build artifacts, not source files. Regenerate with `--clean` after config changes.
 - **Config plugins**: Declared in `app.json` `"plugins"` array. They modify native project files during prebuild (e.g. MapLibre adds location permissions automatically).
 - **Development builds**: Custom debug apps built via EAS that include your native dependencies. Rebuild only when native deps change; JS changes hot-reload.
-- **EAS Build profiles** (`eas.json`): `development` (dev client), `preview` (internal testers), `production` (app store).
+- **EAS Build profiles** (`eas.json`): `base` (shared env), `development` (dev client), `development-device` (dev client on a physical device), `preview` (internal testers), `production` (app store).
 - **EAS Update**: OTA JavaScript updates. Only works for JS/styling/image changes — native changes need a new binary build.
 - **Expo Router**: File-based routing where files in `app/` become navigation routes. `_layout.tsx` defines navigators, `(groups)/` organize without adding URL segments, `[param].tsx` for dynamic routes.
 
@@ -181,7 +181,7 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 
 ### Mobile Environment Variables
 
-`EXPO_PUBLIC_*` vars are inlined by Metro at bundle time from `mobile/.env` / `mobile/.env.local` — **restart Metro after changing them** (hot reload won't pick them up). The env block in `eas.json` applies only to EAS cloud builds, NOT to local Metro bundles, so each var must also be in `.env.local` for local dev. All three are non-secret public URLs (they ship in the client bundle):
+`EXPO_PUBLIC_*` vars are inlined by Metro at bundle time from `mobile/.env.local` — **restart Metro after changing them** (hot reload won't pick them up). The env block in `eas.json` applies only to EAS cloud builds, NOT to local Metro bundles, so each var must also be in `.env.local` for local dev. All three are non-secret public URLs (they ship in the client bundle):
 
 ```
 # Comments API (local wrangler dev server, or the deployed worker URL)
@@ -196,32 +196,46 @@ EXPO_PUBLIC_TILE_BASE_URL=https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev
 
 ### Mobile App Architecture
 
-- **Map**: MapLibre React Native with OpenFreeMap vector tiles (offline capable)
-- **Storage**: `expo-sqlite` for trail data, `expo-file-system` for tile files
-- **Shared code**: `src/lib/` modules shared via Metro `watchFolders` config. Safe modules: distance, track-classification, waypoint-classifier, types, plan-types, track-geometry, variant-reverse, trail-reverse, plan-direction, day-calculator, resupply-calculator, water-carry-calculator. NOT safe (browser APIs): gpx-parser, gpx-optimizer.
-- **Navigation**: Three-mode bottom tabs (Plan / Hike / Contribute) via Expo Router
-- **Data**: SQLite (`expo-sqlite`) for trails, waypoints, plans. Bundled trail JSON loaded on first launch.
+The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com.tracknotes.app`, URL scheme `tracknotes://`).
+
+- **Map**: MapLibre React Native. Style objects are resolved before mount via `src/services/online-style-service.ts` (online) or `tileManager.getOfflineStyle()` (offline); the bundled base style is `mobile/assets/topo-style.json`, synced from `scripts/topo-style.json` with root `npm run sync:style`. Contours come from `EXPO_PUBLIC_CONTOUR_TILE_URL`.
+- **Storage**: trail content is read from bundled JSON assets via `src/services/trail-loader.ts` (`listTrails`/`getTrailJson`) — there is no `trails` SQLite table. SQLite (`expo-sqlite`) holds per-guide state, comments + outbox, favorites, and custom routes. Tile files live in `expo-file-system`.
+- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse. NOT safe for mobile (browser APIs): gpx-parser, gpx-optimizer.
+- **Navigation**: a single Expo Router Stack — "My Guides" list → per-trail guide (nested stack). No bottom tabs. Inside a guide, a segmented control switches three always-mounted panes: Map | Elevation | List (`src/features/guide/GuideView.tsx`).
+- **State**: Zustand stores in `src/state/` (settings, downloads, favorites, identity) plus per-guide React contexts.
 
 ### Mobile Route Structure (`mobile/app/`)
 
-- `_layout.tsx` — Root layout
-- `index.tsx` — Entry redirect
-- `settings.tsx` — App settings screen
-- `(tabs)/` — Bottom tab navigator: `plan.tsx`, `hike.tsx`, `contribute.tsx`
-- `trail/` — Trail screens: `overview.tsx` (detail card), `[id].tsx` (map viewer), `datasheet.tsx` (waypoint datasheet)
-- `plan/` — Plan screens: `create.tsx`, `[planId].tsx` (edit), `map.tsx`, `section-map.tsx`, `measure.tsx`
-- `import/` — GPX import: `index.tsx`
+- `_layout.tsx` — Root Stack (ThemeProvider, GestureHandlerRootView)
+- `index.tsx` — "My Guides" home: list of bundled trails with download badges
+- `settings.tsx` — App settings (units, display name)
+- `guide/[trailId]/_layout.tsx` — Per-trail guide stack, wrapped in `GuideProvider` + `GuidePositionProvider`; header actions for Routes / Plan / Offline maps / Settings
+- `guide/[trailId]/index.tsx` — Guide home: renders `GuideView` (Map | Elevation | List panes)
+- `guide/[trailId]/downloads.tsx` — Offline maps: download/delete tile packs
+- `guide/[trailId]/plan.tsx` — Live plan calculator (day splits, resupply, water carries)
+- `guide/[trailId]/routes.tsx` — Saved custom routes (built on the map pane)
+- `guide/[trailId]/waypoint/[waypointId].tsx` — Waypoint detail + offline-first comments
 
 ### Mobile Source Structure (`mobile/src/`)
 
-- `components/` — UI components: map (TrailMap, ElevationProfile, ElevationProfileDrawer, MapErrorBoundary), planning (DayPlanCard, StopSelector, SectionSelector, PlanSummaryCard), hike dashboard (HikeDashboard, WaypointList, WaypointCard, WaypointDetailSheet, WaterCountdown, LocationStatusBar, SunriseCountdown), resources (ResupplyList, WaterCarryList, ClimateCard, ClimateOverview), common (Card, AlertBanner, ProgressBar, SkeletonPlaceholder, UndoToast, ModeSelector, AppBottomSheet, haptics)
-- `services/` — Business logic: data layer (trail-data-service, trail-loader, trail-bounds), planning (plan-service, plan-utils, plan-export, plan-calculator-types, day-calculator, distance-calculator), resources (resupply-calculator, water-carry-calculator), maps (tile-service, tile-manager, tile-paths, grid-tile-service, online-style-service), other (datasheet-service, custom-trail-service, climate-service, location-service, measure-service, off-trail-alert-service)
-- `contexts/` — React contexts (TrailDataContext)
-- `db/` — Database layer (database.ts, schema.ts)
-- `hooks/` — React hooks (useLocation, useDirectionalTrail, useOffTrailAlert)
-- `theme/` — Theme context and utilities
-- `tokens/` — Design tokens (colors, typography, spacing, motion)
-- `lib/` — Mobile-specific utilities (trail-utils, gpx-parser, gpx-processor, sunrise-sunset)
+Feature-sliced: UI lives with its feature, not in a global components dir.
+
+- `features/` — one dir per feature, each with colocated `__tests__/`:
+  - `guide/` — GuideView shell, waypoint list pane, contexts (GuideContext, GuidePositionContext), direction toggle, distance strip
+  - `map/` — MapPane, GuideMap, map styles/geojson, waypoint icons, track legend, error boundary
+  - `elevation/` — Skia elevation profile (axis, geometry, LOD)
+  - `plan/` — plan inputs card, day-split list, resupply/water-carry cards, `plan-adapters.ts` (bridges to `@lib` calculators), `plan-inputs-store.ts`
+  - `routes/` — route builder bar, route geometry, routes store
+  - `comments/` — composer, display name, photo upload
+  - `settings/`, `share/` — display-name section; check-in sharing
+- `api/` — comments API client (device auth, typed fetch wrapper, uuid via `globalThis.expo.uuidv4`)
+- `db/` — SQLite layer: `database.ts`, `schema.ts`, and repos (comments, favorites, outbox, routes)
+- `sync/` — comment sync engine, connectivity watcher, sync events
+- `state/` — Zustand stores: settings, downloads, favorites, identity
+- `services/` — trail-loader/assets/bounds, tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
+- `hooks/` — `useLocation` (GPS + trail snapping), `useGuidePosition`
+- `theme/` — ThemeContext, reduce-motion hook
+- `tokens/` — design tokens (colors, themes, typography, spacing, motion); raw palette is import-restricted and lint-enforced (`mobile/lint/design-token-restrictions.js`)
 
 ### Android Emulator (ADB)
 
@@ -231,9 +245,10 @@ An Android emulator (Pixel 7) is available for testing. The user runs Metro dev 
 
 ```bash
 adb exec-out screencap -p > /tmp/screenshot.png   # Screenshot (view with Read tool)
-adb shell am start -n com.trailcompanion.app/.MainActivity  # Launch app
-adb shell am force-stop com.trailcompanion.app     # Force stop
-adb shell pm clear com.trailcompanion.app          # Clear app data (fresh state)
+# Launch the dev build INTO the JS app (a plain `am start` lands on the Expo Dev Launcher)
+adb shell am start -a android.intent.action.VIEW -d "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" com.tracknotes.app
+adb shell am force-stop com.tracknotes.app         # Force stop
+adb shell pm clear com.tracknotes.app              # Clear app data (fresh state)
 adb shell input tap 540 1200                       # Tap at (x, y)
 adb shell input swipe 540 1500 540 500 300         # Swipe (x1 y1 x2 y2 ms)
 adb shell input keyevent KEYCODE_BACK              # Back button
@@ -246,17 +261,14 @@ adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk  # Insta
 
 ### Maestro UI Tests
 
-Maestro test flows live in `mobile/maestro/`. Run them to verify UI behavior end-to-end.
+Maestro test flows live in `mobile/maestro/`. They run locally against the emulator + Metro (no CI job — the Maestro CI workflow was removed 2026-08).
 
 ```bash
 # Run a single test flow
-~/.maestro/bin/maestro test mobile/maestro/smoke-test.yaml
-
-# Run all test flows
-~/.maestro/bin/maestro test mobile/maestro/
+~/.maestro/bin/maestro test mobile/maestro/app-launch.yaml
 
 # Record a test (writes a flow YAML from manual interaction)
 ~/.maestro/bin/maestro record mobile/maestro/new-flow.yaml
 ```
 
-**Key flows**: `smoke-test.yaml` (full smoke), `app-launch.yaml`, `navigate-tabs.yaml`, `view-trail.yaml`, `trail-overview-details.yaml`, `trail-overview-to-map.yaml`, `deep-back-navigation.yaml`, `plan-creation.yaml`, `plan-editing.yaml`, `measure-tool.yaml`, `gpx-import-screen.yaml`, `manage-custom-trail.yaml`. Run `ls mobile/maestro/` for the full list (~20 flows).
+**Flows**: `app-launch.yaml` (launch → "My Guides"), `plan-screen.yaml` (guide → Plan → day splits/water carries). Both start via `shared/launch-dev.yaml`, which deep-links the dev client into Metro — don't run `maestro test mobile/maestro/` on the directory, since that would execute the shared launcher as a standalone flow.

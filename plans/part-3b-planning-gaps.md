@@ -1,5 +1,7 @@
 # Part 3b: Planning Tools — Remaining Gaps
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 Gaps identified from reviewing the Part 3 implementation against the original plan. Excludes drag-to-reorder (intentionally dropped — reordering campsites doesn't make sense since they're ordered by trail position).
 
 ## Code Quality Fixes (Do First)

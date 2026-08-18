@@ -73,9 +73,9 @@ What you need to do next (manual steps)
 private: https://02d2391a8994960e800c486af7739ccf.r2.cloudflarestorage.com/aus-map-data
 public: https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev
 
-1. Create a Cloudflare account and R2 bucket named trail-companion-tiles
-2. Enable public access on the bucket
-3. Optionally add a custom domain (e.g. tiles.trailcompanion.app)
+1. Create a Cloudflare account and R2 bucket named aus-map-data
+2. Enable public access on the bucket (public base: https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev)
+3. Optionally add a custom domain in front of the bucket
 4. npm install -g wrangler && wrangler login
 5. After building tiles: npm run upload:tiles
 6. Set EXPO_PUBLIC_TILE_BASE_URL in your mobile .env to the public URL

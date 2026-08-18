@@ -1,5 +1,7 @@
 # Mobile App Testing Improvement Plan
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Context
 
 The mobile app has 44% overall test coverage — web library code is at 100%, but mobile services are at 61%, components at 33%, and critical services like tile management, GPS tracking, and distance calculations have zero tests. The existing tests mock the database entirely, so schema/query bugs go undetected. Maestro E2E flows only cover navigation; no plan creation, editing, or import workflows are tested.

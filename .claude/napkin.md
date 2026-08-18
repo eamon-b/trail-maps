@@ -7,10 +7,10 @@
 - Each item includes date + "Do instead".
 
 ## Execution & Validation (Highest Priority)
-1. **[2026-07-29] `expo lint` serves stale results from its own cache**
+1. **[2026-08-18] Lockfile "in sync" is npm-major-version-dependent — local npm 11 accepts locks that CI's npm 10 rejects**
+   Do instead: validate with CI's exact npm: `npx -y npm@10.8.2 ci --dry-run` in both root and mobile/; if stale, regenerate with `npx -y npm@10.8.2 install --package-lock-only`.
+2. **[2026-07-29] `expo lint` serves stale results from its own cache**
    Do instead: cache lives at `mobile/.expo/cache/eslint` (rm may be permission-blocked); `touch` the affected file to invalidate its entry, or verify with `npx eslint <path> --no-cache`.
-2. **[2026-07-29] Raw `eslint .` lints files `expo lint` skips (e.g. jest.setup.js)**
-   Do instead: keep the `jest.setup.js` globals block in `mobile/eslint.config.js`; verify with `npx eslint . --no-cache` before claiming lint-clean.
 3. **[2026-07-29] Jest 29 only for jest-expo; dynamic `import()` fails in tests**
    Do instead: never install Jest 30; use static imports in test files (no `await import(...)` — needs --experimental-vm-modules).
 4. **[2026-07-29] Expo CLI invoked from repo root creates a stray `{"expo":{}}` app.json**
@@ -19,17 +19,13 @@
    Do instead: use `expectDbRejection` from `mobile/src/db/__tests__/test-helpers.ts`.
 6. **[2026-07-29] Dev-client deep link scheme is `tracknotes://`, NOT `exp+tracknotes://`**
    Do instead: launch with `adb shell am start -a android.intent.action.VIEW -d "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" com.tracknotes.app`.
-7. **[2026-07-29] Dev-menu "Continue" overlay appears only on first launch per install, not per clearState**
-   Do instead: in Maestro flows, wait for it with `optional: true` + conditional `runFlow` dismissal (see maestro/shared/launch-dev.yaml).
-8. **[2026-07-30] Hermes has no crypto.getRandomValues without the expo-crypto native module**
+7. **[2026-07-30] Hermes has no crypto.getRandomValues without the expo-crypto native module**
    Do instead: for secure randomness use `globalThis.expo.uuidv4` (native, always present via expo-modules-core) as the RN path — see mobile/src/api/uuid.ts; never Math.random.
-9. **[2026-07-30] Local comments-API E2E without cloud auth**
+8. **[2026-07-30] Local comments-API E2E without cloud auth**
    Do instead: `wrangler dev` in workers/comments-api (migrate local first), `adb reverse tcp:8787 tcp:8787`, `EXPO_PUBLIC_API_BASE_URL=http://localhost:8787` in mobile/.env.local, restart Metro (EXPO_PUBLIC_* is inlined at bundle time). Airplane mode does NOT cut adb-reverse loopback — simulate offline by killing wrangler dev.
-10. **[2026-07-30] Changing database_id in wrangler.toml resets which LOCAL D1 wrangler uses**
-   Do instead: local state is keyed by the id — after pasting a production id, re-run `migrate:local` and expect an empty local DB (old data still on disk under .wrangler/state/v3/d1; registered device tokens vanish → app 401s and pauses its outbox).
-11. **[2026-08-19] Fresh worktrees have no mobile/node_modules, and symlinking the main checkout's copy breaks when the branch adds deps (e.g. expo-secure-store) — every Jest suite then fails at jest.setup.js module resolution**
-   Do instead: run a real `npm ci --legacy-peer-deps` in the worktree's mobile/ (and `npm ci` in workers/comments-api if testing the worker); never symlink or install into the shared checkout's node_modules. (Emulator note moved to user memory: user must launch the AVD; Claude-spawned ones can't register with adb.)
-12. **[2026-08-07] Dev client ANRs ("failed to complete startup") when launched against a cold Metro bundle**
+9. **[2026-08-19] Fresh worktrees have no mobile/node_modules, and symlinking the main checkout's copy breaks when the branch adds deps (e.g. expo-secure-store) — every Jest suite then fails at jest.setup.js module resolution**
+   Do instead: run a real `npm ci --legacy-peer-deps` in the worktree's mobile/ (and `npm ci` in workers/comments-api if testing the worker); never symlink or install into the shared checkout's node_modules. (Emulator note lives in user memory: user must launch the AVD; Claude-spawned ones can't register with adb.)
+10. **[2026-08-07] Dev client ANRs ("failed to complete startup") when launched against a cold Metro bundle**
    Do instead: warm the bundle first — `curl "http://localhost:8081/.expo/.virtual-metro-entry.bundle?platform=android&dev=true"` (the plain `/index.bundle` path 404s; that's normal for expo-router) — then fire the deep link.
 
 ## Domain Behavior Guardrails

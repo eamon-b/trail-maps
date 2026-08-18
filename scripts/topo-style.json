@@ -1,6 +1,6 @@
 {
   "version": 8,
-  "name": "Trail Companion Topo",
+  "name": "Tracknotes Topo",
   "sources": {
     "basemap": {
       "type": "vector",

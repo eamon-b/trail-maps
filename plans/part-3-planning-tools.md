@@ -1,5 +1,7 @@
 # Part 3: Planning Tools
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Goal
 Build the comprehensive planning suite that makes this app invaluable for trip preparation. Includes the multi-day campsite planner (the "killer feature"), resupply planning, water carry calculations, and point-to-point measurement.
 

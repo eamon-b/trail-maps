@@ -1,5 +1,7 @@
 # P2 Plan — UI Overhaul & Structural Health (from the Field Usability Review)
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 > **Source:** `docs/field-usability-review.md` §3, §4 and roadmap items 13–18.
 > **Theme:** the design system exists and is good — this phase *enforces* it everywhere,
 > consolidates duplicated chrome, redesigns the hidden Plan-mode editing verbs, and pays the

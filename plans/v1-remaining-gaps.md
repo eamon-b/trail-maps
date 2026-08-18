@@ -1,5 +1,7 @@
 # v1.0 Remaining Gaps & Polish
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 Gaps identified from end-to-end review of the full v1.0 implementation (Parts 0-4 + 5a) against the original plans.
 
 ---

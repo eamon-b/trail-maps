@@ -1,5 +1,7 @@
 # Part 4b: Import UI & Custom Trail Storage
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Goal
 Provide the user-facing interface for importing GPX files and managing custom trails. This connects the processing engine (Part 4a) to the app's UI and persistence layer.
 

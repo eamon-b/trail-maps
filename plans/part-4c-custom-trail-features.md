@@ -1,5 +1,7 @@
 # Part 4c: Custom Trail Feature Parity
 
+> **⚠ Pre-rebuild document (superseded 2026-08).** Written for the retired three-tab "Trail Companion" app; the Tracknotes rebuild (merged 2026-08-18) replaced that layout, and file paths/features referenced here mostly no longer exist. Kept for historical context. Current sources of truth: `CLAUDE.md` and `plans/tracknotes-backlog.md`.
+
 ## Goal
 Ensure custom trails support the same features as built-in trails: datasheets, offline maps, campsite planner, measure tool, and direction reversal.
 

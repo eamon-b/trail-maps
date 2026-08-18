@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Australian Contour Tiles — free 10 m contour vector tiles</title>
+<meta name="description" content="Free contour line vector tiles for all of Australia. 10 m intervals from Geoscience Australia's 1-second DEM-S, smoothed, packaged as a single PMTiles archive. CC-BY 4.0." />
+<link rel="stylesheet" href="vendor/maplibre-gl.css" />
+<script src="vendor/maplibre-gl.js"></script>
+<script src="vendor/pmtiles.js"></script>
+<style>
+  :root {
+    --ink: #2b2620;
+    --ink-soft: #6b6257;
+    --paper: #faf8f5;
+    --card: #ffffff;
+    --line: #e6e0d8;
+    --contour: #a67442;
+    --accent: #3d6b4f;
+    --code-bg: #2b2620;
+    --code-ink: #ede7de;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+  header.hero { padding: 44px 0 20px; }
+  h1 { font-size: 2rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .tagline { color: var(--ink-soft); font-size: 1.1rem; margin: 0 0 16px; max-width: 640px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .badge {
+    font-size: 0.8rem; padding: 3px 10px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line); color: var(--ink-soft);
+  }
+  .badge strong { color: var(--ink); font-weight: 600; }
+
+  .map-shell { position: relative; margin: 20px 0 8px; }
+  #map {
+    height: 480px; border-radius: 10px; border: 1px solid var(--line);
+    background: #eee;
+  }
+  .chips {
+    position: absolute; top: 10px; left: 10px; right: 48px; z-index: 5;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .chips button {
+    font: 600 0.78rem/1 system-ui, sans-serif; color: var(--ink);
+    background: rgba(255,255,255,0.92); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 12px; cursor: pointer;
+  }
+  .chips button:hover { background: #fff; border-color: var(--contour); }
+  .map-note { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 8px; }
+
+  section { margin: 40px 0; }
+  h2 { font-size: 1.3rem; margin: 0 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 1.02rem; margin: 20px 0 8px; }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  code {
+    background: #efe9e0; border-radius: 4px; padding: 1px 5px;
+    font: 0.86em/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+    font: 0.82rem/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; white-space: nowrap; }
+  .table-scroll { overflow-x: auto; }
+  footer {
+    border-top: 1px solid var(--line); margin-top: 56px; padding: 24px 0 40px;
+    color: var(--ink-soft); font-size: 0.88rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="hero">
+  <h1>Australian Contour Tiles</h1>
+  <p class="tagline">Free contour-line vector tiles for the whole of Australia — 10&nbsp;m intervals
+  derived from Geoscience&nbsp;Australia's 1-second DEM, smoothed so they look like a printed topo
+  map rather than a pixel lattice. One PMTiles file, no API key, no server required.</p>
+  <div class="badges">
+    <span class="badge"><strong>11.9 GB</strong> single archive</span>
+    <span class="badge">zoom <strong>9–15</strong></span>
+    <span class="badge"><strong>10 m</strong> interval, 50 m index</span>
+    <span class="badge">~<strong>8.5 M</strong> tiles</span>
+    <span class="badge"><strong>CC-BY 4.0</strong></span>
+  </div>
+</header>
+
+<div class="map-shell">
+  <div class="chips" id="chips"></div>
+  <div id="map"></div>
+</div>
+<p class="map-note">Live demo — contours are range-read straight out of the 11.9&nbsp;GB archive in your browser;
+basemap by <a href="https://openfreemap.org">OpenFreeMap</a>. Zoom in for full 10&nbsp;m detail.</p>
+
+<section id="quick-start">
+  <h2>Quick start (MapLibre GL JS)</h2>
+  <p>The archive is served with CORS enabled and HTTP range support, so MapLibre can read tiles
+  directly from it using the <a href="https://github.com/protomaps/PMTiles">pmtiles</a> protocol —
+  no tile server involved:</p>
+<pre><code>&lt;!-- maplibre-gl v5 is the last major with a script-tag (UMD) build; v6+ is ESM-only --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/pmtiles@4.5.0/dist/pmtiles.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+
+  const map = new maplibregl.Map({ container: "map", /* your base style */ });
+  map.on("load", () =&gt; {
+    map.addSource("contours", {
+      type: "vector",
+      url: "pmtiles://<span class="archive-url">ARCHIVE_URL</span>",
+      attribution: "Contours © Geoscience Australia, CC-BY 4.0",
+    });
+    map.addLayer({
+      id: "contour-regular", type: "line",
+      source: "contours", "source-layer": "contour",
+      filter: ["!=", ["get", "is_index"], 1],
+      paint: { "line-color": "rgb(179,134,89)", "line-width": 0.5, "line-opacity": 0.5 },
+    });
+    map.addLayer({
+      id: "contour-index", type: "line",
+      source: "contours", "source-layer": "contour",
+      filter: ["==", ["get", "is_index"], 1],
+      paint: { "line-color": "rgb(166,116,66)", "line-width": 1.1, "line-opacity": 0.65 },
+    });
+  });
+&lt;/script&gt;</code></pre>
+  <p>The same file works anywhere PMTiles is supported: MapLibre (web and native),
+  QGIS&nbsp;3.32+, Felt, and the <code>pmtiles</code> CLI.</p>
+
+  <h3>Plain z/x/y endpoint</h3>
+  <p>If your client can't speak PMTiles, a conventional tile endpoint fronts the same archive:</p>
+<pre><code>https://contour-tiles.aus-map-data.workers.dev/contours/{z}/{x}/{y}.pbf</code></pre>
+  <p>Prefer the <code>pmtiles://</code> URL where you can — it's served by dumb storage and
+  will always be the more reliable of the two.</p>
+</section>
+
+<section id="download">
+  <h2>Download or extract a region</h2>
+  <p>Grab the whole continent (11.9&nbsp;GB):</p>
+<pre><code>curl -O <span class="archive-url">ARCHIVE_URL</span></code></pre>
+  <p>Or pull just your area of interest with the
+  <a href="https://github.com/protomaps/go-pmtiles">pmtiles CLI</a> — this range-reads only the
+  tiles inside your bounding box, so it's fast and small (Tasmania is ~350&nbsp;MB, a single
+  national park usually a few MB):</p>
+<pre><code># bbox = minLon,minLat,maxLon,maxLat  (this one is Tasmania)
+pmtiles extract <span class="archive-url">ARCHIVE_URL</span> \
+  tasmania-contours.pmtiles \
+  --bbox=144.5,-43.9,148.5,-39.5</code></pre>
+  <p>Need MBTiles for an offline mobile app? <code>pmtiles convert</code> does the conversion.</p>
+</section>
+
+<section id="data">
+  <h2>What's in the tiles</h2>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Layer</th><td>One vector layer, <code>contour</code> (MVT/pbf, gzip)</td></tr>
+    <tr><th>Attributes</th><td><code>elevation</code> — integer metres · <code>is_index</code> — <code>1</code> on 50&nbsp;m multiples (bold "index" lines), else <code>0</code></td></tr>
+    <tr><th>Interval</th><td>10 m contours, 50 m index contours</td></tr>
+    <tr><th>Zoom range</th><td>z9–z15 (overzooms cleanly beyond 15)</td></tr>
+    <tr><th>Density by zoom</th><td>z9: 100 m contours · z10–11: 50 m · z12: 20 m · z13+: full 10 m</td></tr>
+    <tr><th>Coverage</th><td>Mainland Australia + Tasmania (112.92°E–154°E, 43.86°S–10°S)</td></tr>
+    <tr><th>Source DEM</th><td><a href="https://elevation.fsdf.org.au/">Geoscience Australia 1-second SRTM DEM-S</a> (smoothed variant, ~30 m resolution)</td></tr>
+    <tr><th>Size</th><td>11.9 GB, ~8.5 million tiles</td></tr>
+    <tr><th>Built with</th><td>GDAL (cubic-spline oversampled warp + <code>gdal_contour</code>) and <a href="https://github.com/felt/tippecanoe">tippecanoe</a></td></tr>
+  </table>
+  </div>
+  <p style="margin-top:12px">The DEM is warped to 2× its native density with cubic-spline resampling
+  before contouring, which traces smooth curves between the 30&nbsp;m elevation samples instead of
+  polygonal lines along the pixel lattice. Australia is processed as 2°×2° cells with buffered
+  edges, so contours join seamlessly across cell boundaries.</p>
+</section>
+
+<section id="built">
+  <h2>How it was built</h2>
+  <p>This tileset is a by-product of building offline topo maps for
+  <a href="https://github.com/eamon-b/trail-maps">a hiking-trail guide app</a>. The full pipeline —
+  chunked, resumable, one continent on one machine — is open source in that repo:
+  <a href="https://github.com/eamon-b/trail-maps/blob/main/scripts/build-contours-australia.ts"><code>scripts/build-contours-australia.ts</code></a>.
+  A write-up of the build (and the failures along the way) is coming soon.</p>
+</section>
+
+<section id="license">
+  <h2>Licence &amp; attribution</h2>
+  <p>Elevation data © Commonwealth of Australia (Geoscience Australia), licensed under
+  <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a>. The derived contour tiles
+  are likewise CC-BY 4.0 — free for any use, including commercial, with attribution.</p>
+  <p>Suggested map attribution:</p>
+<pre><code>Contours © Geoscience Australia, CC-BY 4.0</code></pre>
+  <p>The tiles are provided as-is, with no uptime guarantee — for production use, please
+  <code>pmtiles extract</code> your region and host it yourself (any static bucket works).</p>
+</section>
+
+<footer>
+  Contour tiles by <a href="https://github.com/eamon-b">eamon-b</a> ·
+  pipeline source on <a href="https://github.com/eamon-b/trail-maps">GitHub</a> ·
+  basemap on this page by <a href="https://openfreemap.org">OpenFreeMap</a> © OpenStreetMap contributors
+</footer>
+
+</div>
+
+<script>
+const ARCHIVE_URL = "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev/contours/australia.pmtiles";
+
+// Inject the archive URL everywhere the docs reference it (single swap point
+// for when this moves to a custom domain).
+document.querySelectorAll(".archive-url").forEach((el) => { el.textContent = ARCHIVE_URL; });
+
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", protocol.tile);
+
+const PLACES = [
+  { name: "Kosciuszko", lon: 148.27, lat: -36.43, zoom: 12.3 },
+  { name: "Cradle Mtn", lon: 145.95, lat: -41.66, zoom: 12.3 },
+  { name: "Mt Sonder", lon: 132.57, lat: -23.58, zoom: 12 },
+  { name: "Blue Mtns", lon: 150.31, lat: -33.75, zoom: 12.3 },
+  { name: "Stirling Range", lon: 118.25, lat: -34.38, zoom: 12.3 },
+  { name: "Wilsons Prom", lon: 146.37, lat: -39.03, zoom: 12 },
+];
+
+const CONTOUR_SOURCE = {
+  type: "vector",
+  url: "pmtiles://" + ARCHIVE_URL,
+  attribution: "Contours © Geoscience Australia, CC-BY 4.0",
+};
+const CONTOUR_LAYERS = [
+  {
+    id: "contour-regular",
+    type: "line",
+    source: "contours",
+    "source-layer": "contour",
+    minzoom: 11,
+    filter: ["!=", ["get", "is_index"], 1],
+    paint: {
+      "line-color": "rgb(179,134,89)",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.3, 15, 0.7],
+      "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.25, 14, 0.5],
+    },
+  },
+  {
+    id: "contour-index",
+    type: "line",
+    source: "contours",
+    "source-layer": "contour",
+    filter: ["==", ["get", "is_index"], 1],
+    paint: {
+      "line-color": "rgb(166,116,66)",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 12, 1.0, 15, 1.6],
+      "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.2, 11, 0.45, 14, 0.65],
+    },
+  },
+];
+const CONTOUR_LABEL_LAYER = {
+  id: "contour-label",
+  type: "symbol",
+  source: "contours",
+  "source-layer": "contour",
+  minzoom: 12,
+  filter: ["==", ["get", "is_index"], 1],
+  layout: {
+    "symbol-placement": "line",
+    "text-field": ["concat", ["to-string", ["get", "elevation"]], " m"],
+    "text-size": ["interpolate", ["linear"], ["zoom"], 12, 9.5, 15, 11.5],
+    "text-max-angle": 25,
+    "text-padding": 120,
+    "text-font": ["Noto Sans Regular"],
+  },
+  paint: {
+    "text-color": "rgb(131,66,37)",
+    "text-halo-color": "rgba(255,255,255,0.85)",
+    "text-halo-width": 1.5,
+  },
+};
+
+async function initMap() {
+  // Build the style up front instead of adding layers in a map "load" handler:
+  // positron's ne2_shaded raster source can hang forever, which blocks the
+  // "load" event from ever firing. We drop that source (it adds nothing under
+  // contours) and splice the contour layers straight into the style JSON.
+  const style = await (await fetch("https://tiles.openfreemap.org/styles/positron")).json();
+  delete style.sources.ne2_shaded;
+  style.layers = style.layers.filter((l) => l.source !== "ne2_shaded");
+  style.sources.contours = CONTOUR_SOURCE;
+
+  // Contour lines go under the basemap's first symbol layer so road/place
+  // labels stay readable; elevation labels go on top of everything.
+  const firstSymbol = style.layers.findIndex((l) => l.type === "symbol");
+  style.layers.splice(firstSymbol === -1 ? style.layers.length : firstSymbol, 0, ...CONTOUR_LAYERS);
+  style.layers.push(CONTOUR_LABEL_LAYER);
+
+  const map = new maplibregl.Map({
+    container: "map",
+    style,
+    center: [PLACES[0].lon, PLACES[0].lat],
+    zoom: PLACES[0].zoom,
+    hash: true,
+    attributionControl: { compact: true },
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+
+  const chips = document.getElementById("chips");
+  PLACES.forEach((p) => {
+    const b = document.createElement("button");
+    b.textContent = p.name;
+    b.addEventListener("click", () => map.flyTo({ center: [p.lon, p.lat], zoom: p.zoom }));
+    chips.appendChild(b);
+  });
+}
+initMap();
+</script>
+
+</body>
+</html>

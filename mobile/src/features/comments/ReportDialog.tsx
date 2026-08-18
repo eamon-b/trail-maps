@@ -133,7 +133,14 @@ export function ReportDialog({
                 Choose a display name to report. It’s shown next to any comments you post.
               </Text>
               <TextInput
-                style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.textPrimary,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
                 placeholder="e.g. Trail Ghost"
                 placeholderTextColor={colors.textSecondary}
                 value={nameDraft}
@@ -166,8 +173,15 @@ export function ReportDialog({
                     accessibilityState={{ selected: active, checked: active }}
                     style={[
                       styles.reason,
-                      { borderColor: active ? colors.accent : colors.border },
-                      active && { backgroundColor: colors.surface },
+                      {
+                        // Filled, not just outlined: in the dark theme `border`
+                        // and `surfaceElevated` are the same green, so a
+                        // hairline outline on this card is invisible. The fill
+                        // is what makes each option read as a tappable box;
+                        // the accent border then marks the chosen one.
+                        backgroundColor: active ? colors.accentSubtle : colors.surface,
+                        borderColor: active ? colors.accent : colors.border,
+                      },
                     ]}
                   >
                     <Text
@@ -182,7 +196,14 @@ export function ReportDialog({
                 );
               })}
               <TextInput
-                style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.textPrimary,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
                 placeholder="Anything else we should know? (optional)"
                 placeholderTextColor={colors.textSecondary}
                 value={detail}

@@ -18,6 +18,7 @@ import {
 } from '../api/auth';
 import { getDatabase } from '../db/database';
 import { purgeLocalAccountData } from '../features/settings/account-deletion';
+import { emitSyncChange } from '../sync/sync-events';
 
 export type IdentityStatus = 'unknown' | 'anonymous' | 'registered';
 
@@ -70,6 +71,11 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
     if (userId) {
       const db = await getDatabase();
       await purgeLocalAccountData(db, userId);
+      // The purge deletes rows out from under any mounted feed or water-status
+      // chip; nothing else will emit for it (this device never syncs as that
+      // user again), so nudge subscribers to re-read instead of leaving the
+      // deleted comments on screen until the next remount.
+      emitSyncChange();
     }
     set({ session: null, status: 'anonymous', authError: false });
   },

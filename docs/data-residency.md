@@ -44,4 +44,4 @@ The original analysis lives in `plans/part-6b-crowdsourcing-design.md` §8
 
 | Date | Checked by | D1 location | R2 location | Notes |
 |------|-----------|-------------|-------------|-------|
-| —    | —         | —           | —           | Not yet verified — run the commands above. |
+| 2026-08-19 | Claude (session) | `running_in_region: OC` | `location: OC` | Both in Oceania. `jurisdiction: null` — placement is observed, not contractually pinned, so the policy wording ("may be stored or replicated in other regions") stays. Re-check before each release. |

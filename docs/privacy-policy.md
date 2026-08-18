@@ -1,7 +1,9 @@
 # Tracknotes Privacy Policy (draft)
 
-_Draft for review — publish to a public URL before any App Store / Play Store
-submission and link it from the store listings and from Settings → About._
+_Draft for review. The public copy ships with the web app at
+`public/privacy.html` (served at `<site>/privacy.html` on the Vercel deploy) —
+keep the two in sync. Before store submission: link that URL from the store
+listings and from the app's Settings screen._
 
 **Last updated: 2026-08-19**
 

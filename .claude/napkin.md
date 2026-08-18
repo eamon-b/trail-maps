@@ -40,6 +40,9 @@
 5. **[2026-07-29] Design tokens are lint-enforced**
    Do instead: no raw hex colors or numeric font sizes in `src/**`/`app/**` styles; go through `useTheme().colors` and `typography`; raw palette is import-restricted to `src/tokens`.
 
+6. **[2026-08-19] The contour tileset is public — treat the archive as an API**
+   Do instead: `contours/australia.pmtiles` on R2 is publicly documented at aus-contour-tiles.pages.dev (deploy: `npx wrangler pages deploy site/contour-tiles --project-name aus-contour-tiles`); bucket CORS (GET/HEAD, `etag`/`content-range` exposed) must stay on, and layer/attribute schema changes (`contour`, `elevation`, `is_index`) break external consumers.
+
 ## User Directives
 1. **[2026-07-29] Use Opus subagents regularly**
    Do instead: delegate well-scoped implementation chunks to parallel `model: "opus"` Agent calls; keep orchestration/integration in the main session.

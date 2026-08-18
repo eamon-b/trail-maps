@@ -594,7 +594,7 @@ Complete `style.json` for the two-source topographic map. This is the actual imp
 ```json
 {
   "version": 8,
-  "name": "Trail Companion Topo",
+  "name": "Tracknotes Topo",
   "sources": {
     "basemap": {
       "type": "vector",

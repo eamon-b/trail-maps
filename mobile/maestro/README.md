@@ -11,10 +11,14 @@ emulator plus a Metro dev server.
    ```bash
    adb devices          # must list one device, e.g. emulator-5554
    ```
-2. **A debug build installed** on that emulator (`com.tracknotes.app`) — either an
-   `expo-dev-client` build or a plain RN debug build (`npx expo run:android`).
-   Expo Go will not work. If it is a plain debug build, read "Running against a
-   plain RN debug client" below **before** running anything.
+2. **A dev-client debug build installed** on that emulator (`com.tracknotes.app`),
+   built from `mobile/` with:
+   ```bash
+   npx expo run:android          # builds + installs to the running emulator
+   ```
+   `expo-dev-client` is a dependency (added 2026-08-20, issue #32), so this
+   produces a real dev client that honours the
+   `tracknotes://expo-development-client/?url=…` deep link. Expo Go will not work.
 3. **Metro running** in a separate terminal (interactive):
    ```bash
    cd mobile && npx expo start --dev-client
@@ -44,55 +48,44 @@ Screenshots land in the working directory as `<name>.png` (each flow names its
 own via `takeScreenshot`). They are throwaway artifacts — delete them after a run
 so they don't end up committed.
 
-## Running against a plain RN debug client
+## The shared launcher
 
-`shared/launch-dev.yaml` currently uses a bare `launchApp` — **no `clearState`,
-no deep link**. That is a deliberate accommodation for a plain React Native debug
-build (i.e. one built with `npx expo run:android` rather than an
-`expo-dev-client` build), which is what the flows were last verified against:
+`shared/launch-dev.yaml` is `clearState` followed by the dev-client deep link:
 
-- The `tracknotes://expo-development-client/?url=…` deep link is a **no-op**
-  there — only a dev client handles it. A plain debug build loads JS from
-  whatever `debug_http_host` says in its shared preferences.
-- `clearState` (and `adb shell pm clear`) wipes `shared_prefs`, so the app
-  silently falls back to the default `10.0.2.2:8081` and may load a **different
-  bundle than the one you are testing**. Symptom: duplicated waypoints or stale
-  data in the guide list.
-- Navigation state is not persisted across a cold start (verified 2026-08-19),
-  so `launchApp` alone already lands on "My Guides" — `clearState` was only ever
-  needed for install-level state (downloaded tiles, the SecureStore session,
-  SQLite rows).
-
-**With a real `expo-dev-client` build the original launcher works as written** —
-restore the two lines commented at the top of `shared/launch-dev.yaml` and delete
-the `launchApp`.
-
-### Resetting state between flows
-
-Because the launcher no longer clears anything, do it externally between flows
-that need a fresh install (`guide-list.yaml` asserts every badge reads "Not
-downloaded"; `add-comment-offline.yaml` wants no device identity). Note that
-`pm clear` also removes the `shared_prefs` **directory**, so recreate it before
-restoring the pref:
-
-```bash
-PKG=com.tracknotes.app
-adb shell pm clear $PKG
-adb shell "run-as $PKG mkdir -p /data/data/$PKG/shared_prefs"
-adb shell "run-as $PKG cp /data/local/tmp/rn_prefs.xml \
-  /data/data/$PKG/shared_prefs/${PKG}_preferences.xml"
-adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1
-# wait for "My Guides", then run the flow
+```yaml
+- clearState
+- openLink: "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
 ```
 
-`/data/local/tmp/rn_prefs.xml` is a staged copy of the preferences file pinning
-`debug_http_host` to the Metro you want, e.g.:
+The deep link tells the dev launcher which Metro to load from, so `clearState`
+is safe: it wipes install-level state (downloaded tiles, the SecureStore
+session, SQLite rows) and the link re-supplies the bundle URL. Every flow
+therefore starts from a genuinely fresh install, and flows that need one
+(`guide-list.yaml` asserts every badge reads "Not downloaded";
+`add-comment-offline.yaml` wants no device identity) need no external reset.
 
-```xml
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <string name="debug_http_host">10.0.2.2:8082</string>
-</map>
+If Metro is on a port other than 8081, edit the URL in the launcher (percent-
+encoded, e.g. `http%3A%2F%2F10.0.2.2%3A8082`).
+
+### If the deep link appears to do nothing
+
+That is the signature of a **plain React Native debug build** — one installed
+from a tree without the `expo-dev-client` package (the state of the emulator
+before issue #32, fixed 2026-08-20). Such a build ignores the deep link
+entirely and loads JS from whatever `debug_http_host` says in its shared
+preferences; `clearState` wipes those prefs, so it silently falls back to the
+build-time default and may load a **different bundle than the one you are
+testing** (symptom: duplicated waypoints or stale data in the guide list). The
+fix is to rebuild and reinstall:
+
+```bash
+cd mobile && npx expo run:android
+```
+
+Confirm the installed app really is a dev client:
+
+```bash
+adb shell pm dump com.tracknotes.app | grep -i devlauncher   # must print matches
 ```
 
 **Sanity check you are on the right bundle** before trusting a run: the guide
@@ -115,15 +108,19 @@ adb reverse tcp:8787 tcp:8787   # after
 | --- | --- | --- |
 | `app-launch.yaml` | Launch → "My Guides" renders. | **Green** — 2026-08-19, Pixel 7 emulator |
 | `plan-screen.yaml` | Guide → Plan: inputs card, summary, day splits, water carries. | **Green** — 2026-08-19 |
-| `guide-list.yaml` | My Guides lists all six bundled trails, badges read "Not downloaded", list scrolls. | **Green** — 2026-08-19 (needs the external reset above) |
+| `guide-list.yaml` | My Guides lists all six bundled trails, badges read "Not downloaded", list scrolls. | **Green** — 2026-08-19 |
 | `view-map.yaml` | Open a guide → map pane chrome (status pill, map key, FABs) mounts and survives pans + recenter. | **Green** — 2026-08-19 |
 | `toggle-views.yaml` | Map → Elevation → List segmented switching, plus the List filter chips. | **Green** — 2026-08-19 |
 | `waypoint-detail.yaml` | List → waypoint row → detail: name, stats, favorite round-trip, comments area. | **Green** — 2026-08-19 |
 | `add-comment-offline.yaml` | Post a comment with the API unreachable; assert the queued/failed affordance. | **Green** — 2026-08-19, took branch A (registration NetworkError → "Try again") |
-| `shared/launch-dev.yaml` | Launcher fragment — plain `launchApp`. Not standalone. | — |
+| `shared/launch-dev.yaml` | Launcher fragment — `clearState` + dev-client deep link. Not standalone. | — |
 
-All seven passed on their first run against a plain RN debug client; no selector
-drift was found, so no flow YAML needed changes beyond the shared launcher.
+All seven passed on their first run (2026-08-19) against a plain RN debug client,
+with the launcher temporarily reduced to a bare `launchApp`; no selector drift
+was found, so no flow YAML needed changes beyond the shared launcher. The
+launcher was restored to `clearState` + deep link on 2026-08-20 once the
+emulator carried a real `expo-dev-client` build (issue #32) — the flows
+themselves are unchanged, but they have not been re-run against it yet.
 
 ## Selector conventions
 

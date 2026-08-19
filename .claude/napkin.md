@@ -17,8 +17,8 @@
    Do instead: always run expo/eas commands from `mobile/`; if a root `app.json` appears, delete it.
 5. **[2026-07-29] DB constraint tests flake with `.rejects.toThrow()` on the better-sqlite3 adapter**
    Do instead: use `expectDbRejection` from `mobile/src/db/__tests__/test-helpers.ts`.
-6. **[2026-08-19] The installed Android debug client is a plain RN build (no expo-dev-client) — the `tracknotes://expo-development-client/?url=…` deep link is a SILENT NO-OP; the app always loads from `debug_http_host` (default 10.0.2.2:8081)**
-   Do instead: to point it at another Metro, write the pref (`/data/data/com.tracknotes.app/shared_prefs/com.tracknotes.app_preferences.xml`, key `debug_http_host`) and relaunch — recipe in `mobile/maestro/README.md`; note `pm clear` deletes the whole shared_prefs dir (mkdir -p before restoring). Root fix tracked in issue #32; once expo-dev-client is installed the deep link (scheme `tracknotes://`, not `exp+tracknotes://`) works as documented.
+6. **[2026-08-20] A debug build only honours the `tracknotes://expo-development-client/?url=…` deep link if the tree it was built from has `expo-dev-client` — otherwise the link is a SILENT NO-OP and the app loads from `debug_http_host` (default 10.0.2.2:8081)**
+   Do instead: `expo-dev-client` is a dependency as of issue #32, so just `npx expo run:android` from `mobile/` and the deep link works (scheme `tracknotes://`, not `exp+tracknotes://`). Confirm what is actually installed with `adb shell pm dump com.tracknotes.app | grep -i devlauncher` — no matches means a stale plain-RN build; rebuild rather than hand-writing the `debug_http_host` shared-pref.
 7. **[2026-07-30] Hermes has no crypto.getRandomValues without the expo-crypto native module**
    Do instead: for secure randomness use `globalThis.expo.uuidv4` (native, always present via expo-modules-core) as the RN path — see mobile/src/api/uuid.ts; never Math.random.
 8. **[2026-07-30] Local comments-API E2E without cloud auth**

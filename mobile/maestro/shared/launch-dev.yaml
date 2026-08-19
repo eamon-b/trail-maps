@@ -2,22 +2,21 @@ appId: com.tracknotes.app
 ---
 # Shared launch flow.
 #
-# Plain `launchApp` — no `clearState`, no dev-client deep link. See
-# "Running against a plain RN debug client" in mobile/maestro/README.md for why,
-# and for the external reset you must run BETWEEN flows to get a fresh install.
+# `clearState` + the dev-client deep link. The app is built with
+# `expo-dev-client` (added 2026-08-20, issue #32), so
+# `tracknotes://expo-development-client/?url=…` is handled by the dev launcher
+# and points the app at the Metro server named in the URL. `clearState` then
+# costs nothing: it wipes install-level state (downloaded tiles, the SecureStore
+# session, SQLite rows) and the deep link re-supplies the bundle URL, so every
+# flow starts from a genuinely fresh install.
 #
-# On a real expo-dev-client build the two commented lines below are the correct
-# launcher (deep link auto-connects to Metro; clearState guarantees a clean home
-# screen). Restore them and delete the `launchApp` if you go back to a dev
-# client:
-#
-#   - clearState
-#   - openLink: "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
-#
-# Navigation state is NOT persisted across a cold start (verified 2026-08-19), so
-# a plain relaunch already lands on the guide list — clearState was only ever
-# needed for install-level state (tiles, SecureStore session, SQLite).
-- launchApp
+# NOTE: on a plain React Native debug build (one WITHOUT the `expo-dev-client`
+# package) this deep link is silently ignored and `clearState` drops the app back
+# to the build-time default `10.0.2.2:8081` — which may be a different Metro than
+# the one you are testing. That was the state of the emulator build before issue
+# #32; see mobile/maestro/README.md if you ever hit it again.
+- clearState
+- openLink: "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
 
 # The dev menu welcome ("Continue" button) can appear on the first launch after
 # install, so dismiss it only if it shows up.

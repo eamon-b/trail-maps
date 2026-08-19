@@ -96,13 +96,15 @@ wrangler r2 bucket cors list aus-map-data
 The exposed `etag` and `content-range` are load-bearing: without them the
 pmtiles JS client cannot validate ranges and the demo map renders nothing.
 
-## Related: r2.dev rate limits
+## Related: off r2.dev
 
-Offline tile downloads (`EXPO_PUBLIC_TILE_BASE_URL`) still point at the
+Offline tile downloads (`EXPO_PUBLIC_TILE_BASE_URL`) used to point at the
 `pub-….r2.dev` public bucket URL, which is rate-limited and explicitly not
-meant for production traffic. Once `data.contour-map-tiles.net` is attached to
-the bucket, repoint `EXPO_PUBLIC_TILE_BASE_URL` (`mobile/eas.json` +
-`mobile/.env.local`) at it — same object keys, so no other change is needed.
+meant for production traffic. Since 2026-08-19 they go through
+`data.contour-map-tiles.net` — same bucket, same object keys, but with a real
+CDN cache in front. The `r2.dev` URL still works and is unchanged; nothing has
+to be migrated off it in a hurry.
 
-Metro inlines `EXPO_PUBLIC_*` at bundle time: restart Metro after editing
-`.env.local`, and note that `eas.json` only affects EAS cloud builds.
+`mobile/.env.local` is untracked, so it keeps whatever it had: update it by hand
+to match `eas.json`. Metro inlines `EXPO_PUBLIC_*` at bundle time, so restart
+Metro afterwards — and remember `eas.json` only affects EAS cloud builds.

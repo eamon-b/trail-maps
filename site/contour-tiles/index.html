@@ -312,6 +312,8 @@ async function initMap() {
     attributionControl: { compact: true },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+  // Exposed on purpose: lets anyone poke at the tileset from the console.
+  window.contourMap = map;
 
   const chips = document.getElementById("chips");
   PLACES.forEach((p) => {

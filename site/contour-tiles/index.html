@@ -124,16 +124,18 @@ basemap by <a href="https://openfreemap.org">OpenFreeMap</a>. Zoom in for full 1
       url: "pmtiles://<span class="archive-url">ARCHIVE_URL</span>",
       attribution: "Contours © Geoscience Australia, CC-BY 4.0",
     });
+    // is_index arrives as the STRING "0"/"1", so wrap it in to-number —
+    // ["==", ["get","is_index"], 1] silently matches nothing.
     map.addLayer({
       id: "contour-regular", type: "line",
       source: "contours", "source-layer": "contour",
-      filter: ["!=", ["get", "is_index"], 1],
+      filter: ["!=", ["to-number", ["get", "is_index"]], 1],
       paint: { "line-color": "rgb(179,134,89)", "line-width": 0.5, "line-opacity": 0.5 },
     });
     map.addLayer({
       id: "contour-index", type: "line",
       source: "contours", "source-layer": "contour",
-      filter: ["==", ["get", "is_index"], 1],
+      filter: ["==", ["to-number", ["get", "is_index"]], 1],
       paint: { "line-color": "rgb(166,116,66)", "line-width": 1.1, "line-opacity": 0.65 },
     });
   });
@@ -170,7 +172,11 @@ pmtiles extract <span class="archive-url">ARCHIVE_URL</span> \
   <div class="table-scroll">
   <table>
     <tr><th>Layer</th><td>One vector layer, <code>contour</code> (MVT/pbf, gzip)</td></tr>
-    <tr><th>Attributes</th><td><code>elevation</code> — integer metres · <code>is_index</code> — <code>1</code> on 50&nbsp;m multiples (bold "index" lines), else <code>0</code></td></tr>
+    <tr><th>Attributes</th><td><code>elevation</code> — metres, a number · <code>is_index</code> — <code>"1"</code> on 50&nbsp;m multiples (bold "index" lines), else <code>"0"</code>.
+      <strong>Note the quotes:</strong> <code>is_index</code> is encoded as a string, so compare it with
+      <code>["==", ["to-number", ["get", "is_index"]], 1]</code> — a plain
+      <code>["==", ["get", "is_index"], 1]</code> is type-strict in MapLibre and silently matches nothing,
+      which renders every line at intermediate weight with no labels.</td></tr>
     <tr><th>Interval</th><td>10 m contours, 50 m index contours</td></tr>
     <tr><th>Zoom range</th><td>z9–z15 (overzooms cleanly beyond 15)</td></tr>
     <tr><th>Density by zoom</th><td>z9: 100 m contours · z10–11: 50 m · z12: 20 m · z13+: full 10 m</td></tr>
@@ -245,7 +251,7 @@ const CONTOUR_LAYERS = [
     source: "contours",
     "source-layer": "contour",
     minzoom: 11,
-    filter: ["!=", ["get", "is_index"], 1],
+    filter: ["!=", ["to-number", ["get", "is_index"]], 1],
     paint: {
       "line-color": "rgb(179,134,89)",
       "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.3, 15, 0.7],
@@ -257,7 +263,7 @@ const CONTOUR_LAYERS = [
     type: "line",
     source: "contours",
     "source-layer": "contour",
-    filter: ["==", ["get", "is_index"], 1],
+    filter: ["==", ["to-number", ["get", "is_index"]], 1],
     paint: {
       "line-color": "rgb(166,116,66)",
       "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 12, 1.0, 15, 1.6],
@@ -271,7 +277,7 @@ const CONTOUR_LABEL_LAYER = {
   source: "contours",
   "source-layer": "contour",
   minzoom: 12,
-  filter: ["==", ["get", "is_index"], 1],
+  filter: ["==", ["to-number", ["get", "is_index"]], 1],
   layout: {
     "symbol-placement": "line",
     "text-field": ["concat", ["to-string", ["get", "elevation"]], " m"],

@@ -341,6 +341,10 @@ The style.json composites both sources into a topographic map. See [Appendix A](
 Key design decisions:
 - **Contour lines in warm brown** (`rgb(179, 134, 89)`) — standard topo map convention
 - **Index contours (50m) bold** with elevation labels along the line
+- **`is_index` is a string in the tiles** (`"0"`/`"1"`), so every filter on it must go through
+  `["to-number", ["get", "is_index"]]`. Comparing directly against `1` is type-strict in MapLibre,
+  matches nothing, and fails silently — you get every contour at intermediate weight and no
+  elevation labels at all.
 - **Regular contours (10m) thin** and semi-transparent
 - **Layer order**: background → earth → land cover → water → contours → roads → buildings → labels → trail overlay
 
@@ -675,7 +679,7 @@ Complete `style.json` for the two-source topographic map. This is the actual imp
       "source": "contour",
       "source-layer": "contour",
       "minzoom": 11,
-      "filter": ["!=", ["get", "is_index"], 1],
+      "filter": ["!=", ["to-number", ["get", "is_index"]], 1],
       "paint": {
         "line-color": "rgb(179, 134, 89)",
         "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.3, 14, 0.6],
@@ -688,7 +692,7 @@ Complete `style.json` for the two-source topographic map. This is the actual imp
       "source": "contour",
       "source-layer": "contour",
       "minzoom": 9,
-      "filter": ["==", ["get", "is_index"], 1],
+      "filter": ["==", ["to-number", ["get", "is_index"]], 1],
       "paint": {
         "line-color": "rgb(166, 116, 66)",
         "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.4, 11, 0.8, 14, 1.4],
@@ -754,7 +758,7 @@ Complete `style.json` for the two-source topographic map. This is the actual imp
       "source": "contour",
       "source-layer": "contour",
       "minzoom": 11,
-      "filter": ["==", ["get", "is_index"], 1],
+      "filter": ["==", ["to-number", ["get", "is_index"]], 1],
       "layout": {
         "symbol-placement": "line",
         "text-field": ["concat", ["to-string", ["get", "elevation"]], "m"],

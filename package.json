@@ -20,6 +20,7 @@
     "sync:style": "cp scripts/topo-style.json mobile/assets/topo-style.json",
     "fetch:fonts": "tsx scripts/fetch-font-glyphs.ts",
     "upload:tiles": "bash scripts/upload-tiles.sh",
+    "upload:descriptions": "tsx scripts/upload-descriptions.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -3,22 +3,60 @@
  *
  * Wraps its screens in a GuideProvider so `index` and `downloads` share a
  * single loaded (and direction-applied) trail. The header exposes the guide
- * title plus quick actions: offline maps and app settings.
+ * title plus quick actions: app settings, and a ⋯ overflow menu holding the
+ * guide-scoped actions (Routes, Plan, Offline maps).
+ *
+ * Issue #26 preview: these three used to be always-visible inline glyphs, so
+ * the header carried four buttons (⋔ ▤ ⤓ ⚙) and React Navigation ate the
+ * *title* to make room. Settings stays inline — it is the one app-level (not
+ * guide-scoped) action and the conventional always-there gear.
  */
 
+import { useMemo } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../../src/theme';
-import { glyphSizes, spacing } from '../../../src/tokens';
+import { glyphSizes, spacing, touchTarget } from '../../../src/tokens';
 import { getTrailIndexEntry } from '../../../src/services/trail-loader';
 import { GuideProvider } from '../../../src/features/guide/GuideContext';
 import { GuidePositionProvider } from '../../../src/features/guide/GuidePositionContext';
+import {
+  GuideHeaderMenu,
+  type GuideMenuItem,
+} from '../../../src/features/guide/GuideHeaderMenu';
 
 export default function GuideLayout() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
   const { colors } = useTheme();
   const router = useRouter();
   const entry = getTrailIndexEntry(trailId);
+
+  const menuItems = useMemo<GuideMenuItem[]>(
+    () => [
+      {
+        key: 'routes',
+        label: 'Routes',
+        glyph: '⋔',
+        onPress: () =>
+          router.push({ pathname: '/guide/[trailId]/routes', params: { trailId } }),
+      },
+      {
+        key: 'plan',
+        label: 'Plan',
+        glyph: '▤',
+        onPress: () =>
+          router.push({ pathname: '/guide/[trailId]/plan', params: { trailId } }),
+      },
+      {
+        key: 'downloads',
+        label: 'Offline maps',
+        glyph: '⤓',
+        onPress: () =>
+          router.push({ pathname: '/guide/[trailId]/downloads', params: { trailId } }),
+      },
+    ],
+    [router, trailId],
+  );
 
   return (
     <GuideProvider trailId={trailId}>
@@ -40,48 +78,6 @@ export default function GuideLayout() {
             headerRight: () => (
               <View style={styles.headerActions}>
                 <Pressable
-                  accessibilityLabel="Routes"
-                  accessibilityRole="button"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/guide/[trailId]/routes',
-                      params: { trailId },
-                    })
-                  }
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>⋔</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityLabel="Plan"
-                  accessibilityRole="button"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/guide/[trailId]/plan',
-                      params: { trailId },
-                    })
-                  }
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>▤</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityLabel="Offline maps"
-                  accessibilityRole="button"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/guide/[trailId]/downloads',
-                      params: { trailId },
-                    })
-                  }
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>⤓</Text>
-                </Pressable>
-                <Pressable
                   accessibilityLabel="Settings"
                   accessibilityRole="button"
                   onPress={() => router.push('/settings')}
@@ -90,6 +86,9 @@ export default function GuideLayout() {
                 >
                   <Text style={[styles.icon, { color: colors.accentText }]}>⚙</Text>
                 </Pressable>
+                {/* Overflow sits last: the far right is where both platforms
+                    put it, and the popover right-aligns beneath it. */}
+                <GuideHeaderMenu items={menuItems} tintColor={colors.accentText} />
               </View>
             ),
           }}
@@ -108,10 +107,13 @@ export default function GuideLayout() {
 const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   headerButton: {
     paddingHorizontal: spacing.sm,
+    minHeight: touchTarget.min,
+    justifyContent: 'center',
   },
   icon: {
     fontSize: glyphSizes.lg,

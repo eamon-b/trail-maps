@@ -136,6 +136,9 @@ drift was found, so no flow YAML needed changes beyond the shared launcher.
 - Trail names come from `mobile/assets/trails/index.json`; the guide header
   shows `shortName` ("Cape to Cape"), the list shows `name`
   ("Cape to Cape Track").
+- The guide-scoped header actions (Routes, Plan, Offline maps) live behind the
+  ⋯ overflow button labelled `More actions`; tap that first, then the entry.
+  Settings (⚙) is still an inline header button.
 - Waypoint rows are buttons labelled `Open <waypoint name>`. Cape to Cape's
   km-0 waypoint, "Cape Leeuwin Lighthouse", is always the first row, so flows
   use it and never have to scroll the datasheet.

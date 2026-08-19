@@ -1,8 +1,8 @@
 appId: com.tracknotes.app
 ---
-# Plan screen — the live per-trail planner reached from a guide's header (▤).
-# Opens a guide, taps the "Plan" header action, and verifies the inputs card,
-# summary, and day splits render and survive a pace-driven recompute.
+# Plan screen — the live per-trail planner reached from a guide's ⋯ header menu.
+# Opens a guide, opens the overflow menu, taps "Plan", and verifies the inputs
+# card, summary, and day splits render and survive a pace-driven recompute.
 #
 # Asserts only on stable text: the header/input labels, pace control, summary
 # labels, "Day 1", and the three section headers. Deliberately avoids specific
@@ -17,7 +17,12 @@ appId: com.tracknotes.app
     visible: "Elevation"
     timeout: 30000
 
-# Open the planner from the header action (accessibilityLabel "Plan", glyph ▤).
+# Open the ⋯ overflow menu (accessibilityLabel "More actions"), then the
+# planner entry inside it (accessibilityLabel "Plan", glyph ▤).
+- tapOn: "More actions"
+- extendedWaitUntil:
+    visible: "Plan"
+    timeout: 10000
 - tapOn: "Plan"
 
 # Inputs card renders: section controls, daily-hours stepper, pace control.

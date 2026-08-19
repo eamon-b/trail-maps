@@ -7,9 +7,9 @@
  * Why a remount key: swapping a live MapLibre `mapStyle` object at runtime
  * forces the native renderer to reload its style graph mid-flight, which can
  * terminate the renderer on some devices (see the old app's TrailMap). Instead
- * we key the `<MapView>` on the *source* — when a download finishes and the
- * source flips from 'online' to 'offline', React unmounts the old map and
- * mounts a fresh one with the new style already resolved.
+ * we key the `<Map>` on the *source* — when a download finishes and the source
+ * flips from 'online' to 'offline', React unmounts the old map and mounts a
+ * fresh one with the new style already resolved.
  */
 
 import type { TileStatusState } from '../../services/tile-service';
@@ -47,7 +47,7 @@ export function resolveStyleSource(
 }
 
 /**
- * The `<MapView>` remount key. Identical to the source today, but centralised
+ * The `<Map>` remount key. Identical to the source today, but centralised
  * so the "remount on source change" contract has one authority and one test.
  *
  * Pass the source that *actually* resolved, not the one that was requested: a
@@ -228,9 +228,17 @@ export function isContourTileLoadFailure(log: MapLogEvent): boolean {
  * basemap vector tiles; our own line sources are guarded (buildTrailLine /
  * buildVariantCollection drop degenerate lines, and the bundled data was
  * verified coordinate-complete) so this is basemap tile noise, not ours.
+ *
+ * Both spellings of the warn level are accepted on purpose: MapLibre RN 10
+ * emitted `'warning'`, v11's LogManager emits `'warn'`. Matching only one makes
+ * this filter silently stop working on an upgrade — the failure mode is noise
+ * returning, not a crash, so nothing else would catch it.
  */
 export function isBasemapGeometryNoise(log: MapLogEvent): boolean {
-  return log.level === 'warning' && log.message.includes('Invalid geometry in line layer');
+  return (
+    (log.level === 'warn' || log.level === 'warning') &&
+    log.message.includes('Invalid geometry in line layer')
+  );
 }
 
 /**

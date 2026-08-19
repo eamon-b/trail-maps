@@ -1,23 +1,23 @@
 // Mock native modules that don't work in test environment
 
+// MapLibre RN 11's export surface: `Map`/`GeoJSONSource`/`Layer` replaced v10's
+// `MapView`/`ShapeSource`/`{Line,Circle,Symbol}Layer`, the default export is
+// gone, and logging moved from `Logger.setLogCallback` to `LogManager.onLog`.
 jest.mock('@maplibre/maplibre-react-native', () => ({
-  MapView: 'MapView',
+  __esModule: true,
+  Map: 'Map',
   Camera: 'Camera',
-  ShapeSource: 'ShapeSource',
-  LineLayer: 'LineLayer',
-  SymbolLayer: 'SymbolLayer',
-  CircleLayer: 'CircleLayer',
+  GeoJSONSource: 'GeoJSONSource',
+  Layer: 'Layer',
   Images: 'Images',
   OfflineManager: {
     createPack: jest.fn(),
     getPacks: jest.fn(),
     deletePack: jest.fn(),
   },
-  default: {
-    setAccessToken: jest.fn(),
-    Logger: {
-      setLogCallback: jest.fn(),
-    },
+  LogManager: {
+    onLog: jest.fn(),
+    setLogLevel: jest.fn(),
   },
 }));
 

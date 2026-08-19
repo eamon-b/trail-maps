@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tracknotes",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tracknotes.app",
@@ -27,7 +26,6 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "package": "com.tracknotes.app",
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -56,12 +54,7 @@
           }
         }
       ],
-      [
-        "@maplibre/maplibre-react-native",
-        {
-          "locationWhenInUsePermission": "Show your position on the trail map and calculate distances to waypoints."
-        }
-      ],
+      "@maplibre/maplibre-react-native",
       [
         "expo-location",
         {
@@ -81,7 +74,10 @@
           "cameraPermission": "Take a photo of a water source, campsite, or hazard to attach to your comment.",
           "photosPermission": "Attach an existing photo to a comment."
         }
-      ]
+      ],
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

@@ -80,7 +80,10 @@ export async function provisionGlyphs(): Promise<string> {
       await asset.downloadAsync();
       if (asset.localUri) {
         const src = new File(asset.localUri);
-        src.copy(destFile);
+        // expo-file-system 56 made File.copy() async (copySync() is the old
+        // behaviour). Left unawaited, MapLibre could be pointed at a glyph
+        // directory whose .pbf files are still being written.
+        await src.copy(destFile);
       }
     }
 
@@ -227,9 +230,15 @@ function isFiniteNumberString(value: string): boolean {
  * it stoi()s minzoom/maxzoom metadata (falling back to
  * `SELECT MIN(zoom_level), MAX(zoom_level) FROM tiles`, which is NULL on an
  * empty tiles table), stod()s scale and each comma-separated bounds part.
- * In the bundled maplibre-native (11.x) any of those throwing crashes the
- * app with SIGABRT, so everything it parses is checked here first.
- * A corrupt database (queries throw) also fails validation.
+ * Any of those throwing crashes the app with SIGABRT, so everything it parses
+ * is checked here first. A corrupt database (queries throw) also fails
+ * validation.
+ *
+ * The bundled maplibre-native moved with MapLibre RN 11 (Android 11.12.1 →
+ * 13.2.0, iOS 6.17.1 → 6.26.0). The parse-and-abort path is unchanged upstream,
+ * and these guards are cheap, so they stay — but they are the reason an empty
+ * or truncated pack has to be re-checked on a real device after any native
+ * bump, since the failure is a process abort JS never sees.
  */
 export async function validateMbtiles(
   trailId: string,

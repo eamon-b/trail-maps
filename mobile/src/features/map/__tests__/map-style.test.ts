@@ -1,6 +1,7 @@
 import {
   degradationMessage,
   FALLBACK_MAP_STYLE,
+  isBasemapGeometryNoise,
   isContourTileLoadFailure,
   isRedownloadFixable,
   labelFontForSource,
@@ -133,6 +134,23 @@ describe('isContourTileLoadFailure', () => {
     expect(isContourTileLoadFailure({ level: 'error', message: 'Network unreachable' })).toBe(false);
     expect(
       isContourTileLoadFailure({ level: 'warning', message: 'Failed to load tile from source basemap' }),
+    ).toBe(false);
+  });
+});
+
+describe('isBasemapGeometryNoise', () => {
+  // MapLibre RN 10 spelled the level 'warning'; v11's LogManager spells it
+  // 'warn'. Both must match or the noise filter silently stops firing.
+  it.each(['warn', 'warning'])('matches the %s-level basemap geometry warning', (level) => {
+    expect(
+      isBasemapGeometryNoise({ level, message: 'Invalid geometry in line layer foo' }),
+    ).toBe(true);
+  });
+
+  it('leaves other warnings alone', () => {
+    expect(isBasemapGeometryNoise({ level: 'warn', message: 'Something else' })).toBe(false);
+    expect(
+      isBasemapGeometryNoise({ level: 'error', message: 'Invalid geometry in line layer foo' }),
     ).toBe(false);
   });
 });

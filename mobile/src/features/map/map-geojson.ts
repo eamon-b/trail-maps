@@ -1,5 +1,5 @@
 /**
- * Pure GeoJSON builders for the guide map's ShapeSources.
+ * Pure GeoJSON builders for the guide map's GeoJSONSources.
  *
  * React-free and side-effect-free so every geometry transform is unit-testable.
  * Marker colours are injected via a `colorForType` resolver rather than read
@@ -17,14 +17,16 @@ export interface LatLon {
   lon: number;
 }
 
-/** Camera fit corners in MapLibre's [lon, lat] order. */
-export interface CameraBounds {
-  ne: [number, number];
-  sw: [number, number];
-}
+/**
+ * Camera fit bounds as MapLibre's flat `[west, south, east, north]` tuple —
+ * the GeoJSON RFC ordering that MapLibre RN 11 takes everywhere bounds appear
+ * (`Camera.initialViewState.bounds`, `CameraRef.fitBounds`). v10's
+ * `{ ne, sw }` corner object is gone.
+ */
+export type CameraBounds = [west: number, south: number, east: number, north: number];
 
 /**
- * Fit corners for the initial camera, derived from the trail's own points via
+ * Fit bounds for the initial camera, derived from the trail's own points via
  * the shared `calculateTrailBounds`. Returns null when there is no geometry to
  * fit (the caller then falls back to a continental default view). The buffer is
  * left at zero here; the camera adds pixel padding instead.
@@ -34,7 +36,7 @@ export function trailCameraBounds(points: LatLon[]): CameraBounds | null {
   // Bounds only reads lat/lon; widen structurally to the richer TrackPoint the
   // shared helper expects (display points carry ele/dist, LatLon may not).
   const b = calculateTrailBounds(points as unknown as TrackPoint[], 0);
-  return { ne: [b.east, b.north], sw: [b.west, b.south] };
+  return [b.west, b.south, b.east, b.north];
 }
 
 /** Which class of variant a collection holds. Also the feature-id prefix. */
@@ -160,15 +162,15 @@ export function waypointFeatureId(wp: MapWaypoint, index: number): string {
  *  - a top-level `id` (the stable waypoint id) so MapLibre keeps identity
  *    across cluster/label re-layouts and tap events resolve back to it;
  *  - a `color` property (resolved from the theme via `colorForType`) so a
- *    single data-driven CircleLayer can paint every category correctly;
+ *    single data-driven circle layer can paint every category correctly;
  *  - an `icon` property (the glyph name from waypoint-icons) so a single
- *    data-driven SymbolLayer can draw every type's marker glyph via
+ *    data-driven symbol layer can draw every type's marker glyph via
  *    `iconImage: ['get', 'icon']`;
  *  - a `favorite` boolean (true when the id is in `favoriteIds`) so the same
- *    CircleLayer can enlarge/ring starred markers via a `case` paint
+ *    circle layer can enlarge/ring starred markers via a `case` paint
  *    expression, without a second source or breaking clustering;
  *  - a `waterStatus` string ('flowing' | 'low' | 'dry', or '' when unknown) so
- *    the same CircleLayer can tint a water source's ring by its aggregated
+ *    the same circle layer can tint a water source's ring by its aggregated
  *    status via a `match` expression. Empty string rather than null keeps the
  *    property's type stable through the native bridge.
  */

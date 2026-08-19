@@ -196,7 +196,7 @@ export interface RouteOverlayOptions {
  *     (`kind` property) for the builder's tapped-dot markers.
  *
  * Mixed geometry in one collection is intentional: the map filters layers by
- * `['geometry-type']` so lines and vertices paint from a single ShapeSource.
+ * `['geometry-type']` so lines and vertices paint from one GeoJSONSource.
  */
 export function buildRouteOverlayGeoJSON(
   points: RoutePointInput[],

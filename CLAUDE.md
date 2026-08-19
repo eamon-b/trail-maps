@@ -188,7 +188,7 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8787
 
 # Contour vector tiles — without this, online maps silently render without contours
-EXPO_PUBLIC_CONTOUR_TILE_URL=https://contour-tiles.aus-map-data.workers.dev
+EXPO_PUBLIC_CONTOUR_TILE_URL=https://tiles.contour-map-tiles.net
 
 # Offline map tile downloads — without this, the Offline Maps screen disables downloads
 EXPO_PUBLIC_TILE_BASE_URL=https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev

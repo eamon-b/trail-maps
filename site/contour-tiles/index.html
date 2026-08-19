@@ -142,10 +142,12 @@ basemap by <a href="https://openfreemap.org">OpenFreeMap</a>. Zoom in for full 1
   QGIS&nbsp;3.32+, Felt, and the <code>pmtiles</code> CLI.</p>
 
   <h3>Plain z/x/y endpoint</h3>
-  <p>If your client can't speak PMTiles, a conventional tile endpoint fronts the same archive:</p>
-<pre><code>https://contour-tiles.aus-map-data.workers.dev/contours/{z}/{x}/{y}.pbf</code></pre>
-  <p>Prefer the <code>pmtiles://</code> URL where you can — it's served by dumb storage and
-  will always be the more reliable of the two.</p>
+  <p>If your client can't speak PMTiles, a conventional tile endpoint fronts the same archive,
+  edge-cached on Cloudflare's network:</p>
+<pre><code>https://tiles.contour-map-tiles.net/contours/{z}/{x}/{y}.pbf</code></pre>
+  <p>Empty tiles (ocean, or outside Australia) answer <code>204</code> rather than
+  <code>404</code>. Prefer the <code>pmtiles://</code> URL where you can — it's served straight
+  from storage with no request limits in front of it.</p>
 </section>
 
 <section id="download">
@@ -213,7 +215,7 @@ pmtiles extract <span class="archive-url">ARCHIVE_URL</span> \
 </div>
 
 <script>
-const ARCHIVE_URL = "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev/contours/australia.pmtiles";
+const ARCHIVE_URL = "https://data.contour-map-tiles.net/contours/australia.pmtiles";
 
 // Inject the archive URL everywhere the docs reference it (single swap point
 // for when this moves to a custom domain).

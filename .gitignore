@@ -13,10 +13,15 @@ src/web/trails/*/
 
 # Tile pipeline data (large files, built from source)
 data/dem/
+data/dem-glo30/
 data/protomaps/
 data/tiles/
+data/experiments/
 public/data/tiles/
 aus-map-data/
+
+# Remote build logs + generated shard runners (scripts/remote/run-shard.sh)
+logs/
 
 # Override global gitignore `lib/` rule for source code
 !src/lib/

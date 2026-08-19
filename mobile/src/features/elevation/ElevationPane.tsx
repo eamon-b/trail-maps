@@ -4,6 +4,10 @@
  * Owns the visible km window (the profile is controlled), surfaces the scrub
  * readout in a fixed chip, and shows a reset-zoom affordance whenever the user
  * has zoomed in. Fed entirely from `useGuide()`.
+ *
+ * That km window doubles as this pane's focus window (see guide-focus): arriving
+ * from the map zooms the profile to the section that was on screen, and leaving
+ * hands the same range to whichever pane comes next.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -15,12 +19,14 @@ import { radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
 import { useFavoritesStore } from '../../state/favorites-store';
 import { useGuide } from '../guide/GuideContext';
+import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
+import { isSameFocus } from '../guide/guide-focus';
 import { orderedWaypoints } from '../guide/guide-trail';
 import { useRoutesStore } from '../routes/routes-store';
 import { routeHighlightRanges, type RouteTrackPoint } from '../routes/route-geometry';
 import { ElevationProfile, type ProfileReadout, type ProfileWaypoint } from './ElevationProfile';
-import type { KmWindow } from './geometry';
+import { clampWindow, type KmWindow } from './geometry';
 import type { ProfilePoint } from './lod';
 
 const ZOOM_EPSILON_KM = 0.01;
@@ -85,6 +91,21 @@ export function ElevationPane() {
     },
     [router, trailId],
   );
+
+  // --- Pane focus ----------------------------------------------------------
+  // The profile's zoom window is already a focus window, so leaving hands it
+  // over as-is; arriving zooms to the incoming section unless the profile is
+  // effectively there already (which would fight a zoom the user just made).
+  const windowRef = useRef(window);
+  windowRef.current = window;
+  useGuidePaneFocus('elevation', {
+    capture: () => windowRef.current,
+    apply: (focus) => {
+      const next = clampWindow(focus.startKm, focus.endKm, totalKm);
+      if (isSameFocus(windowRef.current, next)) return;
+      setWindow(next);
+    },
+  });
 
   if (points.length === 0) {
     return (

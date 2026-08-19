@@ -11,6 +11,10 @@
  * Tapping an alternate or side trip opens VariantInfoCard over the map. The card
  * shares the bottom of the screen with the legend and the FAB stack, so those
  * hide while it is open — the same trade the route-builder bar makes.
+ *
+ * The pane also translates its viewport to and from the guide's shared focus
+ * window (see guide-focus): leaving the map reports the km range on screen, and
+ * arriving fits the camera to whatever range the previous pane was showing.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,7 +26,9 @@ import { useDownloadsStore } from '../../state/downloads-store';
 import { useFavoritesStore } from '../../state/favorites-store';
 import { useSettingsStore } from '../../state/settings-store';
 import { useGuide } from '../guide/GuideContext';
+import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
+import { boundsForKmRange, isSameFocus, kmRangeInBounds } from '../guide/guide-focus';
 import { useWaterStatus } from '../guide/use-water-status';
 import { useRoutesStore } from '../routes/routes-store';
 import { RouteBuilderBar } from '../routes/RouteBuilderBar';
@@ -47,6 +53,7 @@ import { TrackLegend } from './TrackLegend';
 import {
   hasDrawableVariant,
   variantFeatureId,
+  type CameraBounds,
   type MapVariant,
   type MapWaypoint,
   type VariantKind,
@@ -232,6 +239,37 @@ export function MapPane() {
     [router, trailId],
   );
 
+  // --- Pane focus ----------------------------------------------------------
+  // The last settled viewport, kept in a ref: the camera moves constantly and
+  // none of this belongs in render. `onRegionDidChange` is MapLibre's idle
+  // event, so this is already debounced to "the user stopped moving the map".
+  const visibleBoundsRef = useRef<CameraBounds | null>(null);
+  const onVisibleBoundsChange = useCallback((box: CameraBounds) => {
+    visibleBoundsRef.current = box;
+  }, []);
+
+  const totalKm = trail.track.totalDistance || 0;
+  // Which stretch of trail the viewport covers right now (null before the
+  // camera has ever settled, or when the trail is off screen).
+  const currentFocus = useCallback(
+    () =>
+      visibleBoundsRef.current
+        ? kmRangeInBounds(displayPoints, visibleBoundsRef.current, totalKm)
+        : null,
+    [displayPoints, totalKm],
+  );
+
+  useGuidePaneFocus('map', {
+    capture: currentFocus,
+    apply: (focus) => {
+      // Already looking at that stretch (typically because this map is where
+      // the focus came from) — leave the camera alone rather than re-animating.
+      if (isSameFocus(currentFocus(), focus)) return;
+      const box = boundsForKmRange(displayPoints, focus);
+      if (box) mapRef.current?.fitBounds(box);
+    },
+  });
+
   return (
     <View style={styles.root}>
       <MapErrorBoundary>
@@ -255,6 +293,7 @@ export function MapPane() {
           builderMode={building}
           onMapPress={onMapPress}
           onStyleResolved={onStyleResolved}
+          onVisibleBoundsChange={onVisibleBoundsChange}
         />
       </MapErrorBoundary>
 

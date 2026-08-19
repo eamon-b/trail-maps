@@ -52,6 +52,7 @@ import MapLibreGL, {
   type CameraRef,
   type Expression,
   type OnPressEvent,
+  type RegionPayload,
 } from '@maplibre/maplibre-react-native';
 import { useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
@@ -65,6 +66,7 @@ import {
   buildVariantCollection,
   buildWaypointCollection,
   trailCameraBounds,
+  type CameraBounds,
   type LatLon,
   type MapVariant,
   type MapWaypoint,
@@ -156,6 +158,8 @@ export interface GuideMapHandle {
   recenter: () => void;
   /** Center + zoom the camera on the current GPS position (no-op without one). */
   centerOnMe: () => void;
+  /** Fit the camera to an arbitrary box — how a focus window reaches the map. */
+  fitBounds: (bounds: CameraBounds) => void;
 }
 
 export interface GuideMapProps {
@@ -212,6 +216,13 @@ export interface GuideMapProps {
    * including the healthy one (so a fixed map clears any banner).
    */
   onStyleResolved?: (resolution: MapStyleResolution) => void;
+  /**
+   * The viewport, reported once the camera settles (MapLibre's
+   * `onRegionDidChange` — the idle event, not the per-frame one). This is what
+   * lets the pane translate "where the user was looking" into a km range when
+   * they switch panes; nothing here re-renders on it.
+   */
+  onVisibleBoundsChange?: (bounds: CameraBounds) => void;
 }
 
 // Route-overlay layer filters: split the single mixed ShapeSource into
@@ -343,6 +354,7 @@ export const GuideMap = memo(
       builderMode,
       onMapPress,
       onStyleResolved,
+      onVisibleBoundsChange,
     },
     ref,
   ) {
@@ -506,8 +518,27 @@ export const GuideMap = memo(
             animationDuration: 500,
           });
         },
+        fitBounds: (box: CameraBounds) => {
+          cameraRef.current?.fitBounds(box.ne, box.sw, CAMERA_PADDING.top, 400);
+        },
       }),
       [bounds, currentPosition],
+    );
+
+    // Viewport reporting. The callback is held in a ref so a parent that hands
+    // us a fresh closure never re-renders the native map, and the payload is
+    // reduced to plain corners so nothing downstream knows about MapLibre.
+    const onVisibleBoundsChangeRef = useRef(onVisibleBoundsChange);
+    onVisibleBoundsChangeRef.current = onVisibleBoundsChange;
+    const handleRegionDidChange = useCallback(
+      (feature: { properties?: Partial<RegionPayload> }) => {
+        const visible = feature?.properties?.visibleBounds;
+        if (!visible || visible.length < 2) return;
+        const [ne, sw] = visible;
+        if (ne.length < 2 || sw.length < 2) return;
+        onVisibleBoundsChangeRef.current?.({ ne: [ne[0], ne[1]], sw: [sw[0], sw[1]] });
+      },
+      [],
     );
 
     // --- Layer paint (data-driven marker colors; track paint is module-level) --
@@ -741,6 +772,7 @@ export const GuideMap = memo(
         attributionEnabled={false}
         compassEnabled
         onPress={builderMode || onBackgroundPress ? handleMapPress : undefined}
+        onRegionDidChange={onVisibleBoundsChange ? handleRegionDidChange : undefined}
       >
         <Camera ref={cameraRef} defaultSettings={cameraDefaultSettings} />
 

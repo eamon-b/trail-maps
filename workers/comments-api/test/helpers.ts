@@ -81,6 +81,41 @@ export function url(path: string): string {
   return `${BASE}${path}`;
 }
 
+/** POST a moderation report against a comment. */
+export async function reportComment(
+  device: Device,
+  commentId: string,
+  body: { reason?: unknown; detail?: unknown } = { reason: 'spam' }
+): Promise<Response> {
+  return SELF.fetch(url(`/v1/comments/${commentId}/report`), {
+    method: 'POST',
+    headers: authHeaders(device),
+    body: JSON.stringify(body),
+  });
+}
+
+/** DELETE the authenticated device's own account. */
+export async function deleteMe(device: Device): Promise<Response> {
+  return SELF.fetch(url('/v1/me'), {
+    method: 'DELETE',
+    headers: authHeaders(device),
+  });
+}
+
+/** PUT a curated waypoint description as an admin. */
+export async function putDescription(
+  device: Device,
+  trailId: string,
+  waypointId: string,
+  body: { description?: unknown }
+): Promise<Response> {
+  return SELF.fetch(url(`/v1/admin/trails/${trailId}/descriptions/${waypointId}`), {
+    method: 'PUT',
+    headers: authHeaders(device),
+    body: JSON.stringify(body),
+  });
+}
+
 /** POST raw image bytes to a comment's photo endpoint. */
 export async function uploadPhoto(
   device: Device,

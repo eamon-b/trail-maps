@@ -9,7 +9,7 @@
 
 import { HttpError, json } from './http';
 import type { Env } from './http';
-import { requireUser } from './auth';
+import { requireUser, sha256HexBytes } from './auth';
 import type { CommentRow } from './comments';
 import type {
   PhotoContentType,
@@ -45,6 +45,25 @@ export function parsePhotoUrls(raw: string | null): string[] | undefined {
     return undefined;
   }
   return parsed.length > 0 ? (parsed as string[]) : undefined;
+}
+
+/**
+ * Parse `photo_hashes_json` into a string array of sha-256 hex digests, parallel
+ * to `photo_urls_json`. Rows predating the column are NULL → empty list, so
+ * their photos simply aren't dedupe-protected.
+ */
+export function parsePhotoHashes(raw: string | null): string[] {
+  if (raw === null || raw === '') return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed) || parsed.some((h) => typeof h !== 'string')) {
+    return [];
+  }
+  return parsed as string[];
 }
 
 /** Extract + validate the request's image content type, or throw 415. */
@@ -95,7 +114,31 @@ export async function uploadCommentPhoto(
     throw new HttpError(413, 'photo_too_large', 'Photo must be at most 5 MB');
   }
 
+  const bytes = await request.arrayBuffer();
+  if (bytes.byteLength === 0) {
+    throw new HttpError(400, 'empty_photo', 'Photo body must not be empty');
+  }
+  if (bytes.byteLength > MAX_PHOTO_BYTES) {
+    throw new HttpError(413, 'photo_too_large', 'Photo must be at most 5 MB');
+  }
+
   const existing = parsePhotoUrls(row.photo_urls_json) ?? [];
+  const hashes = parsePhotoHashes(row.photo_hashes_json);
+  const hash = await sha256HexBytes(bytes);
+
+  // Replay detection: a retried upload of bytes we already stored is a success,
+  // not a new photo. It short-circuits ahead of the quota checks so a client
+  // retrying its 4th photo isn't told the comment is full, and neither R2 nor the
+  // row is touched.
+  const replayIndex = hashes.indexOf(hash);
+  if (replayIndex !== -1 && replayIndex < existing.length) {
+    const replay: UploadCommentPhotoResponse = {
+      photoUrl: existing[replayIndex],
+      photoUrls: existing,
+    };
+    return json(replay, 200);
+  }
+
   if (existing.length >= MAX_PHOTOS_PER_COMMENT) {
     throw new HttpError(
       409,
@@ -123,14 +166,6 @@ export async function uploadCommentPhoto(
     );
   }
 
-  const bytes = await request.arrayBuffer();
-  if (bytes.byteLength === 0) {
-    throw new HttpError(400, 'empty_photo', 'Photo body must not be empty');
-  }
-  if (bytes.byteLength > MAX_PHOTO_BYTES) {
-    throw new HttpError(413, 'photo_too_large', 'Photo must be at most 5 MB');
-  }
-
   const index = existing.length;
   const ext = CONTENT_TYPE_EXT[contentType];
   const key = `comments/${id}/${index}.${ext}`;
@@ -139,12 +174,17 @@ export async function uploadCommentPhoto(
   const base = env.PHOTOS_PUBLIC_BASE.replace(/\/+$/, '');
   const photoUrl = `${base}/${key}`;
   const photoUrls = [...existing, photoUrl];
+  // Hashes stay index-aligned with URLs; a NULL/garbled legacy column is padded
+  // so `photo_hashes_json[i]` always describes `photo_urls_json[i]`.
+  const photoHashes = [...existing.map((_, i) => hashes[i] ?? ''), hash];
 
   const nowIso = new Date(nowMs).toISOString();
   await env.DB.prepare(
-    `UPDATE comments SET photo_urls_json = ?, updated_at = ? WHERE id = ?`
+    `UPDATE comments
+        SET photo_urls_json = ?, photo_hashes_json = ?, updated_at = ?
+      WHERE id = ?`
   )
-    .bind(JSON.stringify(photoUrls), nowIso, id)
+    .bind(JSON.stringify(photoUrls), JSON.stringify(photoHashes), nowIso, id)
     .run();
 
   const payload: UploadCommentPhotoResponse = { photoUrl, photoUrls };

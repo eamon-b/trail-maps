@@ -17,7 +17,7 @@ import type {
   RegisterDeviceResponse,
   UpdateMeRequest,
 } from '@lib/comments-api-types';
-import { apiRequest, getBaseUrl, type FetchLike } from './client';
+import { ApiError, apiRequest, getBaseUrl, type FetchLike } from './client';
 
 const SESSION_KEY = 'tracknotes.commentSession';
 
@@ -112,4 +112,42 @@ export async function updateDisplayName(displayName: string, deps?: AuthDeps): P
   const next: Session = { ...session, displayName: res.displayName };
   await saveSession(next);
   return next;
+}
+
+/**
+ * Delete this device's account (`DELETE /v1/me` → 204) and forget the local
+ * identity. The server soft-deletes every comment the user authored, drops
+ * their photos and invalidates the token; the tombstones reach other devices on
+ * their next sync.
+ *
+ * Failure handling is deliberately asymmetric:
+ *   - 401 counts as success. The token is already dead (a previous attempt
+ *     landed, or the server invalidated it), so the only thing left to do is
+ *     drop our stale copy.
+ *   - anything else — `NetworkError` above all — rethrows with the session
+ *     INTACT. Clearing locally after a failed request would strand the account
+ *     on the server with no token left to delete it with.
+ */
+export async function deleteAccount(deps?: AuthDeps): Promise<void> {
+  const baseUrl = resolveBaseUrl(deps);
+  if (!baseUrl) {
+    throw new Error('Cannot delete account: API base URL is not configured');
+  }
+  const session = await getSession();
+  if (!session) {
+    // Nothing registered — make sure nothing is left behind either.
+    await clearSession();
+    return;
+  }
+  try {
+    await apiRequest<void>('/v1/me', {
+      baseUrl,
+      token: session.token,
+      fetchImpl: deps?.fetchImpl,
+      method: 'DELETE',
+    });
+  } catch (err) {
+    if (!(err instanceof ApiError && err.status === 401)) throw err;
+  }
+  await clearSession();
 }

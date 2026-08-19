@@ -6,6 +6,7 @@
   "lengthKm": 688.3,
   "gpxFile": "AAWT_2025.gpx",
   "geojsonFile": "AAWT_2025.json",
+  "dedupeWaypoints": true,
   "trackClassification": {
     "mainRoutePatterns": ["^AAWT Main$"],
     "sideTripPatterns": ["^ST "],

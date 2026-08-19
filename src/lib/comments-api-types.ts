@@ -51,6 +51,82 @@ export interface UpdateMeRequest {
   displayName: string;
 }
 
+/**
+ * DELETE /v1/me — deletes the authenticated device account. Soft-deletes every
+ * comment the user authored (tombstones flow to clients on their next sync),
+ * removes their photos from storage, and invalidates the token. Returns 204.
+ */
+
+// ---------------------------------------------------------------------------
+// Comments — reporting / moderation
+// ---------------------------------------------------------------------------
+
+/** Reasons a comment can be reported. */
+export type ReportReason = 'spam' | 'offensive' | 'inaccurate' | 'other';
+
+/** POST /v1/comments/:id/report request body. */
+export interface ReportCommentRequest {
+  reason: ReportReason;
+  /** Optional free-text detail, <= 500 chars after trimming. */
+  detail?: string | null;
+}
+
+/**
+ * POST /v1/comments/:id/report response. 201 on first report; repeat reports
+ * from the same device are idempotent and return 200 with the original id.
+ */
+export interface ReportCommentResponse {
+  reportId: string;
+}
+
+/** A report row for the admin console. */
+export interface AdminReport {
+  id: string;
+  commentId: string;
+  trailId: string;
+  waypointId: string;
+  reporterUserId: string;
+  reason: ReportReason;
+  detail: string | null;
+  createdAt: string;
+  /** Snapshot of the reported comment's text at read time (null if deleted). */
+  commentText: string | null;
+  commentDeleted: boolean;
+}
+
+/** GET /v1/admin/reports response. */
+export interface AdminReportsResponse {
+  reports: AdminReport[];
+}
+
+// ---------------------------------------------------------------------------
+// Waypoint descriptions (curated, served over the sync channel)
+// ---------------------------------------------------------------------------
+
+/** A curated waypoint description row. */
+export interface WaypointDescription {
+  waypointId: string;
+  /** Markdown-free plain text. Empty string means "cleared" (tombstone). */
+  description: string;
+  updatedAt: string;
+}
+
+/**
+ * GET /v1/trails/:trailId/descriptions?since=<iso> response. Unauthenticated
+ * read, same delta semantics as the comment bulk endpoint: `since` filters to
+ * rows updated after the client's high-water mark.
+ */
+export interface TrailDescriptionsResponse {
+  descriptions: WaypointDescription[];
+  /** Server clock at query time; the client persists this as the next `since`. */
+  syncedAt: string;
+}
+
+/** PUT /v1/admin/trails/:trailId/descriptions/:waypointId request body. */
+export interface UpsertDescriptionRequest {
+  description: string;
+}
+
 // ---------------------------------------------------------------------------
 // Comments — write
 // ---------------------------------------------------------------------------

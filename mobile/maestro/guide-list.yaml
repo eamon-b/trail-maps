@@ -1,0 +1,58 @@
+appId: com.tracknotes.app
+---
+# "My Guides" — the home list of bundled trails (mobile/app/index.tsx).
+#
+# Asserts the list renders every bundled guide from assets/trails/index.json,
+# scrolls to the last one, and that a fresh install reports no offline tiles.
+#
+# Selectors: trail display names straight out of index.json (`name`, not
+# `shortName`) and the DownloadBadge's "Not downloaded" label. Deliberately
+# avoids the formatted length strings (unit-dependent: km vs mi).
+- runFlow: shared/launch-dev.yaml
+- extendedWaitUntil:
+    visible: "My Guides"
+    timeout: 30000
+
+# First two cards, in index.json order.
+- assertVisible: "Australian Alps Walking Track"
+- assertVisible: "Hume and Hovell Track"
+
+# A fresh state (launch-dev clears app data, which wipes the tile directory)
+# has no packs, so every badge reads "Not downloaded". The store hydrates
+# asynchronously on mount, hence the wait rather than a bare assert.
+- extendedWaitUntil:
+    visible: "Not downloaded"
+    timeout: 15000
+
+# The list is scrollable and every remaining guide is reachable. Each step
+# scrolls only as far as it needs to, so this stays robust to card height /
+# screen size (a single scroll to the last item could overshoot the others).
+- scrollUntilVisible:
+    element:
+      text: "Bibbulmun Track"
+    direction: DOWN
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Cape to Cape Track"
+    direction: DOWN
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Heysen Trail"
+    direction: DOWN
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Larapinta Trail"
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: guide-list
+
+# Scrolling back up returns to the heading (nothing unmounts the list).
+- scrollUntilVisible:
+    element:
+      text: "My Guides"
+    direction: UP
+    timeout: 15000
+- assertVisible: "Australian Alps Walking Track"

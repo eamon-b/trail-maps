@@ -1,25 +1,36 @@
 appId: com.tracknotes.app
 ---
-# Shared launch flow for dev builds.
-# Dev builds show the Expo Dev Launcher on plain `am start`, so we use
-# a deep link to auto-connect to the Metro bundler.
+# Shared launch flow.
 #
-# We clearState to guarantee a clean home screen (the app persists
-# navigation state, so stopApp alone can resume on a random screen).
-- clearState
-- openLink: "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
-# The dev menu welcome ("Continue" button) appears on the first launch
-# after install — but not on every clearState — so dismiss it only if
-# it shows up.
+# Plain `launchApp` — no `clearState`, no dev-client deep link. See
+# "Running against a plain RN debug client" in mobile/maestro/README.md for why,
+# and for the external reset you must run BETWEEN flows to get a fresh install.
+#
+# On a real expo-dev-client build the two commented lines below are the correct
+# launcher (deep link auto-connects to Metro; clearState guarantees a clean home
+# screen). Restore them and delete the `launchApp` if you go back to a dev
+# client:
+#
+#   - clearState
+#   - openLink: "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081"
+#
+# Navigation state is NOT persisted across a cold start (verified 2026-08-19), so
+# a plain relaunch already lands on the guide list — clearState was only ever
+# needed for install-level state (tiles, SecureStore session, SQLite).
+- launchApp
+
+# The dev menu welcome ("Continue" button) can appear on the first launch after
+# install, so dismiss it only if it shows up.
 - extendedWaitUntil:
     visible: "Continue"
-    timeout: 20000
+    timeout: 10000
     optional: true
 - runFlow:
     when:
       visible: "Continue"
     commands:
       - pressKey: back
+
 # Wait for the app to reach the guide list.
 - extendedWaitUntil:
     visible: "My Guides"

@@ -350,17 +350,51 @@ describe('GuideMap', () => {
       (n) => nodeType(n) === 'CircleLayer' && n.props.id === 'guide-waypoints-circles',
     );
     const style = circles.props.style as Record<string, unknown>;
-    // The ring carries the (theme-resolved) category color; the disc is white so
-    // the ink glyph on top reads in either app theme.
+    // The ring carries the (theme-resolved) category color unless the feature
+    // has an aggregated water status; the disc is white so the ink glyph on top
+    // reads in either app theme.
     expect(style.circleStrokeColor).toEqual([
       'case',
       ['get', 'favorite'],
       '#123456',
-      ['get', 'color'],
+      [
+        'match',
+        ['get', 'waterStatus'],
+        'flowing',
+        '#123456',
+        'low',
+        '#123456',
+        'dry',
+        '#123456',
+        ['get', 'color'],
+      ],
     ]);
     expect(style.circleColor).toBe('#ffffff');
     // Bigger than the 5 px dot it replaces, and favorites are bigger still.
     expect(style.circleRadius).toEqual(['case', ['get', 'favorite'], 11, 9]);
+  });
+
+  it('feeds the aggregated water status into the marker source', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          waterStatusById={new Map([['w_1', { status: 'dry' as const }]])}
+        />,
+      );
+    });
+    await flush();
+
+    const [source] = tree.root.findAll(
+      (n) => nodeType(n) === 'ShapeSource' && n.props.id === 'guide-waypoints',
+    );
+    const shape = source.props.shape as GeoJSON.FeatureCollection;
+    expect(shape.features[0].properties!.waterStatus).toBe('dry');
   });
 
   it('makes variant lines tappable with a fat invisible hit target', async () => {

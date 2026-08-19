@@ -1,0 +1,63 @@
+appId: com.tracknotes.app
+---
+# Map | Elevation | List — the guide's segmented control (GuideView.tsx).
+#
+# Taps each segment and asserts an element only that pane draws:
+#   Map       → "Map key" legend + the recenter FAB
+#   Elevation → the scrub hint chip ("Tap to read off · pinch to zoom · …")
+#   List      → the category filter chips + the first waypoint row
+#
+# NOTE: all three panes stay mounted (inactive ones are hidden with
+# `display: 'none'`), so a hidden pane's text can still appear in the view
+# hierarchy. That makes cross-pane `assertNotVisible` unreliable — the real
+# signal here is that each segment is tappable and its pane's controls respond,
+# so every assertion is positive. The pane-switch logic itself is unit-tested
+# (src/features/guide/__tests__).
+- runFlow: shared/launch-dev.yaml
+- tapOn: "Cape to Cape Track"
+- extendedWaitUntil:
+    visible: "Cape to Cape"
+    timeout: 30000
+
+# --- Map (default pane) ----------------------------------------------------
+- extendedWaitUntil:
+    visible: "Map key"
+    timeout: 30000
+- assertVisible: "Recenter map on the trail"
+
+# --- Elevation -------------------------------------------------------------
+- tapOn: "Elevation"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Tap to read off.*"
+    timeout: 20000
+- takeScreenshot: toggle-views-elevation
+
+# --- List ------------------------------------------------------------------
+- tapOn: "List"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Favorites"
+    timeout: 20000
+- assertVisible: "Water"
+- assertVisible: "Camp"
+# First row of the km-ordered datasheet for Cape to Cape (km 0).
+- assertVisible: "Cape Leeuwin Lighthouse"
+- takeScreenshot: toggle-views-list
+
+# The filter chips are live: "Camp" narrows the list to campsites.
+- tapOn: "Camp"
+- extendedWaitUntil:
+    visible: "Deepdene Campsite"
+    timeout: 15000
+- tapOn: "All"
+- extendedWaitUntil:
+    visible: "Cape Leeuwin Lighthouse"
+    timeout: 15000
+
+# --- Back to Map -----------------------------------------------------------
+- tapOn: "Map"
+- waitForAnimationToEnd
+- assertVisible: "Map key"
+- assertVisible: "Recenter map on the trail"
+- takeScreenshot: toggle-views-map

@@ -9,7 +9,14 @@
  * favorites store.
  *
  * The feed reads straight from SQLite (so it renders instantly and offline);
- * mount kicks a background pull + drain and re-reads when they land.
+ * mount kicks a background pull + drain and re-reads when they land. Since the
+ * cache already holds every comment for the trail, paging is a widening LIMIT
+ * over that cache rather than a network page fetch.
+ *
+ * Two other things ride the same sync channel: a "Report" affordance on other
+ * people's synced rows (offline-first, via the outbox — an App Store UGC
+ * requirement) and the curated waypoint description, which overrides the
+ * near-empty bundled one.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -49,15 +56,21 @@ import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favor
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
 import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
+import * as waypointMetaRepo from '../../../../src/db/waypoint-meta-repo';
 import { Composer } from '../../../../src/features/comments/Composer';
+import { ReportDialog } from '../../../../src/features/comments/ReportDialog';
 import { isApiConfigured } from '../../../../src/api/client';
 import {
   deleteOwnComment,
   pullTrail,
   retryOutbox,
   submitComment,
+  submitReport,
 } from '../../../../src/sync/comment-sync';
 import { onSyncChange } from '../../../../src/sync/sync-events';
+
+/** Comments revealed per "show earlier" tap (and in the initial window). */
+const COMMENT_PAGE_SIZE = 20;
 
 export default function WaypointDetailScreen() {
   const { trailId, waypointId } = useLocalSearchParams<{
@@ -89,15 +102,31 @@ export default function WaypointDetailScreen() {
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
+  // Feed paging is over the LOCAL cache (trail sync pulls the whole set), so
+  // "show earlier" just widens the query window — no network round trip.
+  const [visibleCount, setVisibleCount] = useState(COMMENT_PAGE_SIZE);
+  const [totalComments, setTotalComments] = useState(0);
+  const [syncedDescription, setSyncedDescription] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [reportTarget, setReportTarget] = useState<CommentWithSyncState | null>(null);
+  // Ephemeral per-session "Reported" acknowledgement; the report itself is
+  // durable in the outbox and idempotent server-side, so nothing is persisted.
+  const [reportedIds, setReportedIds] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     if (!commentWaypointId) {
       setComments([]);
+      setTotalComments(0);
+      setSyncedDescription(null);
       return;
     }
     const db = await getDatabase();
-    setComments(await commentsRepo.listByWaypoint(db, trailId, commentWaypointId));
-  }, [trailId, commentWaypointId]);
+    setComments(
+      await commentsRepo.listByWaypoint(db, trailId, commentWaypointId, { limit: visibleCount }),
+    );
+    setTotalComments(await commentsRepo.countByWaypoint(db, trailId, commentWaypointId));
+    setSyncedDescription(await waypointMetaRepo.getDescription(db, trailId, commentWaypointId));
+  }, [trailId, commentWaypointId, visibleCount]);
 
   // Hydrate identity + favorites, load the cached feed, then pull in the
   // background and re-read.
@@ -106,17 +135,24 @@ export default function WaypointDetailScreen() {
     void useFavoritesStore.getState().hydrate(trailId);
   }, [trailId]);
 
+  // Read the cache on mount, whenever the paging window widens, and whenever a
+  // background pull lands (`reloadToken`).
+  useEffect(() => {
+    void load();
+  }, [load, reloadToken]);
+
+  // The background pull is keyed on the trail alone, so widening the paging
+  // window re-queries SQLite without re-hitting the network.
   useEffect(() => {
     let active = true;
     void (async () => {
-      await load();
       const res = await pullTrail(trailId);
-      if (active && res.outcome === 'pulled') await load();
+      if (active && res.outcome === 'pulled') setReloadToken((t) => t + 1);
     })();
     return () => {
       active = false;
     };
-  }, [load, trailId]);
+  }, [trailId]);
 
   // A background drain/pull that changes rows (e.g. flips this comment
   // local→server) emits here; re-read so the mounted feed reflects it without
@@ -140,6 +176,8 @@ export default function WaypointDetailScreen() {
   }
 
   const marker = waypointColor(waypoint.type, colors);
+  const description = syncedDescription ?? waypoint.description;
+  const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
   const km = waypoint.totalDistance ?? 0;
   const deltaKm = currentKm != null ? km - currentKm : null;
   const signed = deltaKm != null ? formatSignedDistance(deltaKm, units) : null;
@@ -201,9 +239,11 @@ export default function WaypointDetailScreen() {
             </View>
           </View>
           <Text style={[styles.name, { color: colors.textPrimary }]}>{waypoint.name}</Text>
-          {waypoint.description ? (
+          {/* Curated descriptions arrive over the sync channel; the bundled
+              trail JSON is the fallback. */}
+          {description ? (
             <Text style={[styles.description, { color: colors.textSecondary }]}>
-              {waypoint.description}
+              {description}
             </Text>
           ) : null}
         </View>
@@ -236,22 +276,44 @@ export default function WaypointDetailScreen() {
         ) : comments.length === 0 ? (
           <EmptyNote text="No comments yet. Be the first to leave a note." />
         ) : (
-          comments.map((c) => (
-            <CommentItem
-              key={c.id}
-              comment={c}
-              isMine={!!session && c.authorId === session.userId}
-              onOpenPhoto={setViewerUri}
-              onDelete={async () => {
-                await deleteOwnComment({ id: c.id, source: c.source });
-                await load();
-              }}
-              onRetry={async () => {
-                await retryOutbox();
-                await load();
-              }}
-            />
-          ))
+          comments.map((c) => {
+            const isMine = !!session && c.authorId === session.userId;
+            return (
+              <CommentItem
+                key={c.id}
+                comment={c}
+                isMine={isMine}
+                // Only a synced comment by someone else can be reported — a
+                // local row isn't on the server to moderate yet.
+                canReport={!isMine && c.source === 'server'}
+                reported={reportedIds.includes(c.id)}
+                onReport={() => setReportTarget(c)}
+                onOpenPhoto={setViewerUri}
+                onDelete={async () => {
+                  await deleteOwnComment({ id: c.id, source: c.source });
+                  await load();
+                }}
+                onRetry={async () => {
+                  await retryOutbox();
+                  await load();
+                }}
+              />
+            );
+          })
+        )}
+
+        {remaining > 0 && (
+          <Pressable
+            onPress={() => setVisibleCount((count) => count + COMMENT_PAGE_SIZE)}
+            accessibilityRole="button"
+            accessibilityLabel={`Show earlier comments, ${remaining} remaining`}
+            hitSlop={spacing.xs}
+            style={styles.showEarlier}
+          >
+            <Text style={[styles.actionLink, { color: colors.accent }]}>
+              {`Show earlier comments (${remaining} remaining)`}
+            </Text>
+          </Pressable>
         )}
 
         {isApiConfigured() && commentWaypointId && (
@@ -267,11 +329,41 @@ export default function WaypointDetailScreen() {
               await submitComment(
                 { trailId, waypointId: commentWaypointId, text, waterStatus, photo, session: activeSession },
               );
+              // Keep the whole window visible: the new row is the newest, so
+              // widen by one rather than pushing the oldest out of the page.
+              setVisibleCount((count) => count + 1);
               await load();
             }}
           />
         )}
       </ScrollView>
+
+      {reportTarget && commentWaypointId && (
+        <ReportDialog
+          commentId={reportTarget.id}
+          registered={identityStatus === 'registered'}
+          onCancel={() => setReportTarget(null)}
+          onSubmit={async ({ reason, detail, displayName }) => {
+            let activeSession = session;
+            if (!activeSession) {
+              // Reports are authenticated, so a first-time reporter registers
+              // here exactly as a first-time poster does in the composer.
+              if (!displayName) return; // guarded by the dialog's name step
+              activeSession = await useIdentityStore.getState().register(displayName);
+            }
+            await submitReport({
+              commentId: reportTarget.id,
+              trailId,
+              waypointId: commentWaypointId,
+              reason,
+              detail,
+              session: activeSession,
+            });
+            setReportedIds((ids) => [...ids, reportTarget.id]);
+            setReportTarget(null);
+          }}
+        />
+      )}
 
       <PhotoViewer uri={viewerUri} onClose={() => setViewerUri(null)} />
     </KeyboardAvoidingView>
@@ -406,12 +498,18 @@ function PhotoThumbnails({
 function CommentItem({
   comment,
   isMine,
+  canReport,
+  reported,
+  onReport,
   onOpenPhoto,
   onDelete,
   onRetry,
 }: {
   comment: CommentWithSyncState;
   isMine: boolean;
+  canReport: boolean;
+  reported: boolean;
+  onReport: () => void;
   onOpenPhoto: (uri: string) => void;
   onDelete: () => void | Promise<void>;
   onRetry: () => void | Promise<void>;
@@ -471,16 +569,32 @@ function CommentItem({
         </View>
       )}
 
-      {isMine && (
-        <Pressable
-          onPress={onDelete}
-          accessibilityRole="button"
-          accessibilityLabel="Delete comment"
-          hitSlop={spacing.xs}
-          style={styles.deleteAffordance}
-        >
-          <Text style={[styles.actionLink, { color: colors.danger }]}>Delete</Text>
-        </Pressable>
+      {(isMine || canReport) && (
+        <View style={styles.rowActions}>
+          {isMine && (
+            <Pressable
+              onPress={onDelete}
+              accessibilityRole="button"
+              accessibilityLabel="Delete comment"
+              hitSlop={spacing.xs}
+            >
+              <Text style={[styles.actionLink, { color: colors.danger }]}>Delete</Text>
+            </Pressable>
+          )}
+          {canReport &&
+            (reported ? (
+              <Text style={[styles.statusText, { color: colors.textSecondary }]}>Reported</Text>
+            ) : (
+              <Pressable
+                onPress={onReport}
+                accessibilityRole="button"
+                accessibilityLabel="Report comment"
+                hitSlop={spacing.xs}
+              >
+                <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Report</Text>
+              </Pressable>
+            ))}
+        </View>
       )}
     </View>
   );
@@ -548,7 +662,14 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusText: { ...typography.caption },
   actionLink: { ...typography.titleSmall },
-  deleteAffordance: { alignSelf: 'flex-start', paddingTop: spacing.xs },
+  rowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    alignSelf: 'flex-start',
+    paddingTop: spacing.xs,
+  },
+  showEarlier: { alignSelf: 'flex-start', paddingVertical: spacing.sm },
 
   thumbRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
   thumb: { width: 76, height: 76, borderRadius: radii.md },

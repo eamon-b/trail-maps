@@ -8,6 +8,7 @@ import { useTheme } from '../src/theme';
 import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
 import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
+import { DeleteAccountSection } from '../src/features/settings/DeleteAccountSection';
 import { useSettingsStore, type Units } from '../src/state/settings-store';
 
 const UNIT_OPTIONS = [
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
       </View>
 
       <DisplayNameSection />
+      <DeleteAccountSection />
     </ScrollView>
   );
 }

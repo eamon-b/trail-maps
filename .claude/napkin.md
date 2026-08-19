@@ -17,16 +17,16 @@
    Do instead: always run expo/eas commands from `mobile/`; if a root `app.json` appears, delete it.
 5. **[2026-07-29] DB constraint tests flake with `.rejects.toThrow()` on the better-sqlite3 adapter**
    Do instead: use `expectDbRejection` from `mobile/src/db/__tests__/test-helpers.ts`.
-6. **[2026-07-29] Dev-client deep link scheme is `tracknotes://`, NOT `exp+tracknotes://`**
-   Do instead: launch with `adb shell am start -a android.intent.action.VIEW -d "tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081" com.tracknotes.app`.
+6. **[2026-08-19] The installed Android debug client is a plain RN build (no expo-dev-client) — the `tracknotes://expo-development-client/?url=…` deep link is a SILENT NO-OP; the app always loads from `debug_http_host` (default 10.0.2.2:8081)**
+   Do instead: to point it at another Metro, write the pref (`/data/data/com.tracknotes.app/shared_prefs/com.tracknotes.app_preferences.xml`, key `debug_http_host`) and relaunch — recipe in `mobile/maestro/README.md`; note `pm clear` deletes the whole shared_prefs dir (mkdir -p before restoring). Root fix tracked in issue #32; once expo-dev-client is installed the deep link (scheme `tracknotes://`, not `exp+tracknotes://`) works as documented.
 7. **[2026-07-30] Hermes has no crypto.getRandomValues without the expo-crypto native module**
    Do instead: for secure randomness use `globalThis.expo.uuidv4` (native, always present via expo-modules-core) as the RN path — see mobile/src/api/uuid.ts; never Math.random.
 8. **[2026-07-30] Local comments-API E2E without cloud auth**
    Do instead: `wrangler dev` in workers/comments-api (migrate local first), `adb reverse tcp:8787 tcp:8787`, `EXPO_PUBLIC_API_BASE_URL=http://localhost:8787` in mobile/.env.local, restart Metro (EXPO_PUBLIC_* is inlined at bundle time). Airplane mode does NOT cut adb-reverse loopback — simulate offline by killing wrangler dev.
-9. **[2026-08-07] Claude-spawned emulator can't register with adb (3/3 attempts: "Unable to connect to adb daemon on port: 5037", ports 5554/5555 never open) — the user-launched emulator works fine**
-   Do instead: never launch the Pixel_7 AVD from a Claude shell; ask the user to start it. If `adb devices` goes empty mid-session, the user's emulator died — report it and wait.
+9. **[2026-08-19] Fresh worktrees have no mobile/node_modules, and symlinking the main checkout's copy breaks when the branch adds deps (e.g. expo-secure-store) — every Jest suite then fails at jest.setup.js module resolution**
+   Do instead: run a real `npm ci --legacy-peer-deps` in the worktree's mobile/ (and `npm ci` in workers/comments-api if testing the worker); never symlink or install into the shared checkout's node_modules. (Emulator note lives in user memory: user must launch the AVD; Claude-spawned ones can't register with adb.)
 10. **[2026-08-07] Dev client ANRs ("failed to complete startup") when launched against a cold Metro bundle**
-   Do instead: warm the bundle first — `curl "http://localhost:8081/.expo/.virtual-metro-entry.bundle?platform=android&dev=true"` (the plain `/index.bundle` path 404s; that's normal for expo-router) — then fire the deep link.
+   Do instead: warm the bundle first — `curl "http://localhost:8081/.expo/.virtual-metro-entry.bundle?platform=android&dev=true"` (the plain `/index.bundle` path 404s; that's normal for expo-router) — then launch. Related: hot reload can't be trusted for zustand store module edits (Fast Refresh doesn't re-seat an already-created store) — force-stop + relaunch before verifying them on device.
 
 ## Domain Behavior Guardrails
 1. **[2026-07-29] Waypoint IDs are registry-pinned — never regenerate them ad hoc**

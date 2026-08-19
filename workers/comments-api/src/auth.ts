@@ -20,9 +20,8 @@ export interface UserRow {
   last_seen_at: string | null;
 }
 
-/** Lowercase hex SHA-256 of a UTF-8 string. */
-export async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
+/** Lowercase hex SHA-256 of raw bytes. */
+export async function sha256HexBytes(data: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', data);
   const bytes = new Uint8Array(digest);
   let hex = '';
@@ -30,6 +29,12 @@ export async function sha256Hex(input: string): Promise<string> {
     hex += b.toString(16).padStart(2, '0');
   }
   return hex;
+}
+
+/** Lowercase hex SHA-256 of a UTF-8 string. */
+export async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  return sha256HexBytes(data.buffer as ArrayBuffer);
 }
 
 /** Mint a fresh 32-byte token encoded as URL-safe base64 (no padding). */

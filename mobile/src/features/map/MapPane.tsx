@@ -23,6 +23,7 @@ import { useFavoritesStore } from '../../state/favorites-store';
 import { useSettingsStore } from '../../state/settings-store';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
+import { useWaterStatus } from '../guide/use-water-status';
 import { useRoutesStore } from '../routes/routes-store';
 import { RouteBuilderBar } from '../routes/RouteBuilderBar';
 import {
@@ -99,6 +100,9 @@ export function MapPane() {
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
   const units = useSettingsStore((s) => s.units);
+  // Freshness-ranked water verdicts — tint the ring of water markers that have
+  // recent reports (see GuideMap's waypointCircleStyle).
+  const waterStatusById = useWaterStatus(trailId);
 
   const { position, accuracy, status, start } = useGuidePositionContext();
 
@@ -242,6 +246,7 @@ export function MapPane() {
           currentPosition={position}
           accuracy={accuracy}
           favoriteIds={favoriteSet}
+          waterStatusById={waterStatusById}
           onWaypointTap={onWaypointTap}
           onVariantTap={onVariantTap}
           selectedVariantId={selectedVariantId}

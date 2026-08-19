@@ -10,11 +10,15 @@
 
 import { create } from 'zustand';
 import {
+  deleteAccount as deleteAccountRequest,
   getSession,
   registerDevice,
   updateDisplayName,
   type Session,
 } from '../api/auth';
+import { getDatabase } from '../db/database';
+import { purgeLocalAccountData } from '../features/settings/account-deletion';
+import { emitSyncChange } from '../sync/sync-events';
 
 export type IdentityStatus = 'unknown' | 'anonymous' | 'registered';
 
@@ -30,10 +34,15 @@ export interface IdentityState {
   register: (displayName: string) => Promise<Session>;
   /** Change the display name (requires an existing identity). */
   rename: (displayName: string) => Promise<void>;
+  /**
+   * Delete the account server-side, purge this device's copy of its data, and
+   * fall back to `anonymous`. Rejects (store untouched) if the request fails.
+   */
+  deleteAccount: () => Promise<void>;
   setAuthError: (value: boolean) => void;
 }
 
-export const useIdentityStore = create<IdentityState>((set) => ({
+export const useIdentityStore = create<IdentityState>((set, get) => ({
   status: 'unknown',
   session: null,
   authError: false,
@@ -52,6 +61,23 @@ export const useIdentityStore = create<IdentityState>((set) => ({
   rename: async (displayName: string) => {
     const session = await updateDisplayName(displayName);
     set({ session });
+  },
+
+  deleteAccount: async () => {
+    // Capture the id BEFORE the request: a successful delete clears the
+    // keystore, and the local purge is keyed on that id.
+    const userId = get().session?.userId ?? (await getSession())?.userId;
+    await deleteAccountRequest();
+    if (userId) {
+      const db = await getDatabase();
+      await purgeLocalAccountData(db, userId);
+      // The purge deletes rows out from under any mounted feed or water-status
+      // chip; nothing else will emit for it (this device never syncs as that
+      // user again), so nudge subscribers to re-read instead of leaving the
+      // deleted comments on screen until the next remount.
+      emitSyncChange();
+    }
+    set({ session: null, status: 'anonymous', authError: false });
   },
 
   setAuthError: (value: boolean) => set({ authError: value }),

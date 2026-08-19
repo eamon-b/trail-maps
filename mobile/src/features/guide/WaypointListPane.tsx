@@ -6,6 +6,10 @@
  * "3.1 km behind") once a fix is available. A sticky row of category filter
  * chips scopes the list by family (water / camp / town / shelter / all), and a
  * "scroll to me" button jumps to the hiker's position within the filtered list.
+ *
+ * Water waypoints also carry a freshness-ranked status chip ("Flowing · 3d")
+ * when the comment cache holds recent reports — see `water-aggregate` for the
+ * ranking and `use-water-status` for the read.
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -20,6 +24,13 @@ import type { TrailJson } from '../../services/trail-loader';
 import { useGuide } from './GuideContext';
 import { orderedWaypoints } from './guide-trail';
 import { useGuidePositionContext } from './GuidePositionContext';
+import { useWaterStatus } from './use-water-status';
+import { isWaterFamily, waterStatusMeta } from './waypoint-detail';
+import {
+  formatWaterStatusChip,
+  waterStatusAccessibilityLabel,
+  type WaterAggregate,
+} from './water-aggregate';
 import {
   FILTER_FAMILIES,
   formatSignedDistance,
@@ -40,6 +51,9 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const units = useSettingsStore((s) => s.units);
   const { currentKm } = useGuidePositionContext();
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
+  // Freshness-ranked water verdicts, keyed by the *bundled* waypoint id (the id
+  // comments are filed against; legacy waypoints without one carry no reports).
+  const waterByWaypoint = useWaterStatus(trailId);
   const [family, setFamily] = useState<WaypointFamily>('all');
   const listRef = useRef<FlatList<Waypoint>>(null);
 
@@ -126,6 +140,11 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
                 units={units}
                 currentKm={currentKm}
                 favorite={favoriteSet.has(id)}
+                water={
+                  item.id && isWaterFamily(item.type)
+                    ? waterByWaypoint.get(item.id) ?? null
+                    : null
+                }
               />
             </Pressable>
           );
@@ -179,11 +198,14 @@ function WaypointRow({
   units,
   currentKm,
   favorite,
+  water,
 }: {
   waypoint: Waypoint;
   units: 'km' | 'mi';
   currentKm: number | null;
   favorite: boolean;
+  /** Aggregated water verdict, for water waypoints with recent reports. */
+  water?: WaterAggregate | null;
 }) {
   const { colors } = useTheme();
   const wpKm = waypoint.totalDistance ?? 0;
@@ -210,6 +232,7 @@ function WaypointRow({
               ♥
             </Text>
           )}
+          {water && <WaterStatusChip aggregate={water} />}
         </View>
       </View>
       <View style={styles.rowMeta}>
@@ -233,6 +256,28 @@ function WaypointRow({
           </Text>
         )}
       </View>
+    </View>
+  );
+}
+
+/**
+ * The aggregated water verdict as an inline chip — status label plus how stale
+ * the winning report is ("Flowing · 3d"). Outlined rather than filled (the same
+ * treatment the waypoint detail screen gives a single report's badge) so the
+ * status colour reads without competing with the row's name.
+ */
+function WaterStatusChip({ aggregate }: { aggregate: WaterAggregate }) {
+  const { colors } = useTheme();
+  const color = colors[waterStatusMeta(aggregate.status).colorToken];
+  return (
+    <View
+      accessible
+      accessibilityLabel={waterStatusAccessibilityLabel(aggregate)}
+      style={[styles.waterChip, { borderColor: color }]}
+    >
+      <Text style={[styles.waterChipText, { color }]} numberOfLines={1}>
+        {formatWaterStatusChip(aggregate)}
+      </Text>
     </View>
   );
 }
@@ -288,6 +333,17 @@ const styles = StyleSheet.create({
   },
   favoriteBadge: {
     fontSize: glyphSizes.xs,
+  },
+  waterChip: {
+    flexShrink: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  waterChipText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   rowMeta: {
     alignItems: 'flex-end',

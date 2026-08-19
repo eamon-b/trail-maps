@@ -14,7 +14,10 @@ import type {
   FeedResponse,
   PhotoContentType,
   PutCommentRequest,
+  ReportCommentRequest,
+  ReportCommentResponse,
   SyncEntry,
+  TrailDescriptionsResponse,
   UploadCommentPhotoResponse,
 } from '@lib/comments-api-types';
 import { apiRequest, apiRequestRaw, type FetchLike } from './client';
@@ -140,6 +143,55 @@ export async function uploadCommentPhoto(
       contentType,
     },
   );
+}
+
+/**
+ * Report a comment for moderation (Bearer auth required). 201 on the first
+ * report, 200 for an idempotent repeat from the same device; 404 unknown id,
+ * 410 already deleted, 400 invalid reason/detail, 429 rate-limited.
+ */
+export async function reportComment(
+  ctx: ApiContext,
+  id: string,
+  payload: ReportCommentRequest,
+): Promise<ReportCommentResponse> {
+  return apiRequest<ReportCommentResponse>(
+    `/v1/comments/${encodeURIComponent(id)}/report`,
+    {
+      baseUrl: ctx.baseUrl,
+      fetchImpl: ctx.fetchImpl,
+      token: ctx.token,
+      method: 'POST',
+      body: payload,
+    },
+  );
+}
+
+export interface GetTrailDescriptionsParams {
+  trailId: string;
+  /** ISO high-water mark; when set the response is a delta, cleared rows included. */
+  since?: string;
+}
+
+/**
+ * GET the curated waypoint descriptions for a trail. Public (no token), same
+ * delta semantics as the comment bulk endpoint — an empty `description` is the
+ * server's "cleared" marker.
+ */
+export async function getTrailDescriptions(
+  ctx: ApiContext,
+  params: GetTrailDescriptionsParams,
+): Promise<TrailDescriptionsResponse> {
+  const qs = new URLSearchParams();
+  if (params.since) qs.set('since', params.since);
+  const query = qs.toString();
+  const path =
+    `/v1/trails/${encodeURIComponent(params.trailId)}/descriptions` +
+    (query ? `?${query}` : '');
+  return apiRequest<TrailDescriptionsResponse>(path, {
+    baseUrl: ctx.baseUrl,
+    fetchImpl: ctx.fetchImpl,
+  });
 }
 
 /** Soft-delete a comment (owner or admin). 204 on success; idempotent. */

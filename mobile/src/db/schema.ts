@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 // Fresh v1 schema for Tracknotes. Waypoints and track geometry stay in the
 // bundled trail JSON — SQLite holds only per-guide state, the comment cache,
@@ -115,6 +115,30 @@ const MIGRATIONS: Record<number, string> = {
     );
 
     UPDATE schema_version SET version = 2;
+  `,
+
+  // Migration 3: curated waypoint descriptions, synced from the comments API
+  // (`GET /v1/trails/:trailId/descriptions?since=`). The bundled trail JSON
+  // carries almost no descriptions, so the server is the authority for this
+  // copy — but it must survive offline, hence a local mirror rather than a
+  // fetch-on-open. An empty `description` is the server's "cleared" tombstone;
+  // rows are stored verbatim and filtered on read (see `waypoint-meta-repo`).
+  //
+  // `sync_state.meta_synced_at` is the description high-water mark, kept
+  // separate from `last_synced_at` (comments) so one channel failing never
+  // rewinds or skips the other.
+  3: `
+    CREATE TABLE IF NOT EXISTS waypoint_meta (
+      trail_id TEXT NOT NULL,
+      waypoint_id TEXT NOT NULL,
+      description TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (trail_id, waypoint_id)
+    );
+
+    ALTER TABLE sync_state ADD COLUMN meta_synced_at TEXT;
+
+    UPDATE schema_version SET version = 3;
   `,
 };
 

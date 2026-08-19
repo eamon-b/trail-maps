@@ -1,0 +1,105 @@
+appId: com.tracknotes.app
+---
+# Posting a comment with the comments API unreachable.
+#
+# OFFLINE ASSUMPTION — no airplane-mode toggling. The default dev state already
+# is "API unreachable": EXPO_PUBLIC_API_BASE_URL is a localhost URL (e.g.
+# http://localhost:8787), and inside the emulator `localhost` is the emulator
+# itself, so every request is refused unless a wrangler dev server is running on
+# the device's own loopback (the host would be 10.0.2.2). The client turns that
+# into a NetworkError. If you DO have the comments worker reachable, this flow
+# takes its second branch (see below) instead of failing.
+#
+# The var must be SET (even to a dead URL): with it unset, `isApiConfigured()`
+# is false, the composer isn't rendered at all, and this flow fails at the
+# "Add a note…" step. See mobile/maestro/README.md.
+#
+# Two legal outcomes, both asserted:
+#
+#   A. This install has NO device identity yet (the default — launch-dev clears
+#      app data, which wipes the SecureStore session). Posting must first
+#      register the device, which is the one hard network dependency in the
+#      comment path. Offline it fails, and the composer has to SAY so and keep
+#      the draft: the display-name prompt stays open showing
+#      "Couldn't reach the server — check your connection and try again." with
+#      the save button flipped to "Try again".
+#
+#   B. This install is already registered (previous run against a live worker,
+#      state not cleared). `submitComment` writes to SQLite and enqueues, so the
+#      comment appears immediately in the feed with the pending indicator
+#      "Waiting to send…" and the outbox drain stops on the network error.
+- runFlow: shared/launch-dev.yaml
+- tapOn: "Cape to Cape Track"
+- extendedWaitUntil:
+    visible: "Cape to Cape"
+    timeout: 30000
+
+# Open the km-0 waypoint from the datasheet (first row — no scrolling).
+- tapOn: "List"
+- extendedWaitUntil:
+    visible: "Cape Leeuwin Lighthouse"
+    timeout: 20000
+- tapOn: "Open Cape Leeuwin Lighthouse"
+- extendedWaitUntil:
+    visible: "Comments"
+    timeout: 20000
+
+# --- Write a note ----------------------------------------------------------
+# Placeholder is "Add a note…" for most types and "Add a note or water report…"
+# for water waypoints — match either. It sits below the stats, so scroll to it.
+- scrollUntilVisible:
+    element:
+      text: "Add a note.*"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Add a note.*"
+- inputText: "Maestro offline note"
+- hideKeyboard
+- assertVisible: "Maestro offline note"
+- takeScreenshot: add-comment-offline-draft
+
+# Submit (the button is labelled "Post comment").
+- tapOn: "Post comment"
+- waitForAnimationToEnd
+
+# Branch B is checked FIRST: conditions are evaluated when the step is reached,
+# so if branch A ran and dismissed the prompt, a later `notVisible` check on the
+# prompt would wrongly fire too.
+#
+# --- Branch B: already registered → the comment queues locally --------------
+- runFlow:
+    when:
+      notVisible: "Choose a display name"
+    commands:
+      - extendedWaitUntil:
+          visible: "Waiting to send.*"
+          timeout: 30000
+      - assertVisible: "Maestro offline note"
+      - takeScreenshot: add-comment-offline-queued
+
+# --- Branch A: no identity yet → registration fails, inline and recoverable
+- runFlow:
+    when:
+      visible: "Choose a display name"
+    commands:
+      # The prompt's input is autoFocused, so type straight into it.
+      - inputText: "Maestro Tester"
+      - tapOn: "Save display name and post"
+      # Registration is the network call that fails offline.
+      - extendedWaitUntil:
+          visible: ".*reach the server.*"
+          timeout: 30000
+      - assertVisible: "Try again"
+      - assertVisible: "Retry posting comment"
+      - takeScreenshot: add-comment-offline-network-error
+      # Dismissing the prompt must leave the draft intact for a later retry.
+      - tapOn: "Cancel"
+      - waitForAnimationToEnd
+      - assertVisible: "Maestro offline note"
+
+# Either way the screen is still alive: scroll back up to the hero.
+- scrollUntilVisible:
+    element:
+      text: "Cape Leeuwin Lighthouse"
+    direction: UP
+    timeout: 15000

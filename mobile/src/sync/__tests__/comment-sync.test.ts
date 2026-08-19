@@ -115,8 +115,12 @@ describe('pullTrail', () => {
     expect(await commentsRepo.getById(d, 'a')).toBeNull(); // tombstoned
     expect((await commentsRepo.getById(d, 'c'))?.body).toBe('new');
     expect(await readSince(d, 'aawt')).toBe('T2');
-    // Second request carried since=T1.
-    expect((fetchImpl as jest.Mock).mock.calls[1][0]).toContain('since=T1');
+    // Second COMMENT request carried since=T1. (A pull also hits the
+    // descriptions channel, so filter to the comment requests.)
+    const commentUrls = (fetchImpl as jest.Mock).mock.calls
+      .map((call) => String(call[0]))
+      .filter((url) => url.includes('/comments'));
+    expect(commentUrls[1]).toContain('since=T1');
   });
 
   it('no-ops when the API is unconfigured', async () => {

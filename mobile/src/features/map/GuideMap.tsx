@@ -14,14 +14,16 @@
  * work offline and the bundled glyph pbfs carry no pictographs.
  *
  * Two overlays are tappable, and which one wins is decided natively by style
- * order (MLRNMapView picks the touched source whose layers sit highest): the
+ * order (the native map picks the touched source whose layers sit highest): the
  * waypoint source is declared last, so a marker tap always beats the variant
- * line underneath it. A tap that hits neither reaches <MapView onPress>, which
- * is what dismisses the variant selection.
+ * line underneath it. A tap that hits neither reaches <Map onPress>, which is
+ * what dismisses the variant selection — and because MapLibre RN 11 bubbles a
+ * source press up to the map, the source handlers stop propagation so a marker
+ * tap does not also count as a background tap.
  *
  * Style resolution follows the old app's "resolve before mount" rule: the
  * concrete style *object* is fetched in JS and only then handed to a freshly
- * keyed <MapView>. Swapping a live map's style object mid-flight can crash the
+ * keyed <Map>. Swapping a live map's style object mid-flight can crash the
  * native renderer, so the map is remounted (via `mapRemountKey`) whenever the
  * source flips between online and offline.
  *
@@ -40,19 +42,21 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import MapLibreGL, {
+import { ActivityIndicator, StyleSheet, Text, View, type NativeSyntheticEvent } from 'react-native';
+import {
   Camera,
-  CircleLayer,
+  GeoJSONSource,
   Images,
-  LineLayer,
-  MapView,
-  ShapeSource,
-  SymbolLayer,
+  Layer,
+  LogManager,
+  Map as MapLibreMap,
   type CameraRef,
-  type Expression,
-  type OnPressEvent,
-  type RegionPayload,
+  type FilterSpecification,
+  type InitialViewState,
+  type PressEvent,
+  type PressEventWithFeatures,
+  type StyleSpecification,
+  type ViewStateChangeEvent,
 } from '@maplibre/maplibre-react-native';
 import { useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
@@ -66,7 +70,6 @@ import {
   buildVariantCollection,
   buildWaypointCollection,
   trailCameraBounds,
-  type CameraBounds,
   type LatLon,
   type MapVariant,
   type MapWaypoint,
@@ -87,14 +90,14 @@ import {
   type MapStyleSource,
 } from './map-style';
 
-// A null access token keeps MapLibre from expecting Mapbox credentials.
-MapLibreGL.setAccessToken(null);
+// (MapLibre RN 11 dropped setAccessToken/getAccessToken with no replacement —
+// MapLibre never wanted a Mapbox token, so nothing takes its place here.)
 
 // Silence the expected "missing contour tile" native logs so an optional
 // overlay's absence never becomes a red-box error. Registered once at module
 // load, mirroring the old app.
 let hasWarnedAboutContourTiles = false;
-MapLibreGL.Logger.setLogCallback((log: { level: string; message: string; tag?: string }) => {
+LogManager.onLog((log: { level: string; message: string; tag?: string }) => {
   if (isBasemapGeometryNoise(log)) return true;
   if (!isContourTileLoadFailure(log)) return false;
   if (!hasWarnedAboutContourTiles) {
@@ -148,10 +151,14 @@ const FAVORITE_MARKER_RING_WIDTH = 3.5;
  */
 const MARKER_ICON_SIZE = 0.165;
 
-const CLUSTER_FILTER = ['has', 'point_count'] as Expression;
-const INDIVIDUAL_FILTER = ['!', ['has', 'point_count']] as Expression;
+const CLUSTER_FILTER = ['has', 'point_count'] as FilterSpecification;
+const INDIVIDUAL_FILTER = ['!', ['has', 'point_count']] as FilterSpecification;
 
 const CAMERA_PADDING = { top: 48, right: 32, bottom: 48, left: 32 };
+
+/** Plain viewport corners handed across the pane boundary — panes and
+ * guide-focus never see MapLibre's [west, south, east, north] tuples. */
+export type ViewportBounds = { ne: [number, number]; sw: [number, number] };
 
 export interface GuideMapHandle {
   /** Re-fit the camera to the full trail bounds. */
@@ -159,7 +166,7 @@ export interface GuideMapHandle {
   /** Center + zoom the camera on the current GPS position (no-op without one). */
   centerOnMe: () => void;
   /** Fit the camera to an arbitrary box — how a focus window reaches the map. */
-  fitBounds: (bounds: CameraBounds) => void;
+  fitBounds: (bounds: ViewportBounds) => void;
 }
 
 export interface GuideMapProps {
@@ -222,23 +229,23 @@ export interface GuideMapProps {
    * lets the pane translate "where the user was looking" into a km range when
    * they switch panes; nothing here re-renders on it.
    */
-  onVisibleBoundsChange?: (bounds: CameraBounds) => void;
+  onVisibleBoundsChange?: (bounds: ViewportBounds) => void;
 }
 
-// Route-overlay layer filters: split the single mixed ShapeSource into
+// Route-overlay layer filters: split the single mixed GeoJSONSource into
 // on-trail spans (solid), straight/off-trail legs (dashed), and builder
 // vertices (dots) by geometry type + the `straight` property.
 const ROUTE_SPAN_FILTER = [
   'all',
   ['==', ['geometry-type'], 'LineString'],
   ['!=', ['get', 'straight'], true],
-] as Expression;
+] as FilterSpecification;
 const ROUTE_STRAIGHT_FILTER = [
   'all',
   ['==', ['geometry-type'], 'LineString'],
   ['==', ['get', 'straight'], true],
-] as Expression;
-const ROUTE_VERTEX_FILTER = ['==', ['geometry-type'], 'Point'] as Expression;
+] as FilterSpecification;
+const ROUTE_VERTEX_FILTER = ['==', ['geometry-type'], 'Point'] as FilterSpecification;
 
 // --- Track paint --------------------------------------------------------------
 // The three track classes are theme-independent map cartography (see
@@ -299,10 +306,14 @@ const VARIANT_HIT_STYLE = {
   lineJoin: 'round' as const,
 };
 
-/** Hit slop around the touch point for the variant sources (±22 px). */
-const VARIANT_HITBOX = { width: 44, height: 44 };
+/**
+ * Hit slop around the touch point for the variant sources (±22 px). MapLibre RN
+ * 11 takes the hitbox as edge insets rather than v10's {width, height} box, so
+ * these are the half-extents of the same 44 x 44 target.
+ */
+const VARIANT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
 /** Waypoint markers are bigger now, so their hitbox grew with them. */
-const WAYPOINT_HITBOX = { width: 44, height: 44 };
+const WAYPOINT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
 
 /**
  * Halo drawn under the selected variant's dashes while its info card is open —
@@ -329,8 +340,10 @@ const SIDE_TRIP_HIGHLIGHT_STYLE = variantHighlightStyle(
 );
 
 /** Matches only the selected variant; matches nothing when none is selected. */
-function selectedVariantFilter(selectedVariantId: string | null | undefined): Expression {
-  return ['==', ['get', 'id'], selectedVariantId ?? ''] as Expression;
+function selectedVariantFilter(
+  selectedVariantId: string | null | undefined,
+): FilterSpecification {
+  return ['==', ['get', 'id'], selectedVariantId ?? ''] as FilterSpecification;
 }
 
 export const GuideMap = memo(
@@ -487,20 +500,9 @@ export const GuideMap = memo(
     // --- Camera ------------------------------------------------------------
     const bounds = useMemo(() => trailCameraBounds(displayPoints), [displayPoints]);
 
-    const cameraDefaultSettings = useMemo(() => {
-      if (bounds) {
-        return {
-          bounds: {
-            ne: bounds.ne,
-            sw: bounds.sw,
-            paddingTop: CAMERA_PADDING.top,
-            paddingBottom: CAMERA_PADDING.bottom,
-            paddingLeft: CAMERA_PADDING.left,
-            paddingRight: CAMERA_PADDING.right,
-          },
-        };
-      }
-      return { centerCoordinate: [135, -28] as [number, number], zoomLevel: 4 };
+    const cameraInitialViewState = useMemo<InitialViewState>(() => {
+      if (bounds) return { bounds, padding: CAMERA_PADDING };
+      return { center: [135, -28], zoom: 4 };
     }, [bounds]);
 
     useImperativeHandle(
@@ -508,18 +510,21 @@ export const GuideMap = memo(
       () => ({
         recenter: () => {
           if (!bounds) return;
-          cameraRef.current?.fitBounds(bounds.ne, bounds.sw, CAMERA_PADDING.top, 500);
+          cameraRef.current?.fitBounds(bounds, { padding: CAMERA_PADDING, duration: 500 });
         },
         centerOnMe: () => {
           if (!currentPosition) return;
-          cameraRef.current?.setCamera({
-            centerCoordinate: [currentPosition.lon, currentPosition.lat],
-            zoomLevel: 14,
-            animationDuration: 500,
+          cameraRef.current?.easeTo({
+            center: [currentPosition.lon, currentPosition.lat],
+            zoom: 14,
+            duration: 500,
           });
         },
-        fitBounds: (box: CameraBounds) => {
-          cameraRef.current?.fitBounds(box.ne, box.sw, CAMERA_PADDING.top, 400);
+        fitBounds: (box: ViewportBounds) => {
+          cameraRef.current?.fitBounds(
+            [box.sw[0], box.sw[1], box.ne[0], box.ne[1]],
+            { padding: CAMERA_PADDING, duration: 400 },
+          );
         },
       }),
       [bounds, currentPosition],
@@ -531,12 +536,13 @@ export const GuideMap = memo(
     const onVisibleBoundsChangeRef = useRef(onVisibleBoundsChange);
     onVisibleBoundsChangeRef.current = onVisibleBoundsChange;
     const handleRegionDidChange = useCallback(
-      (feature: { properties?: Partial<RegionPayload> }) => {
-        const visible = feature?.properties?.visibleBounds;
-        if (!visible || visible.length < 2) return;
-        const [ne, sw] = visible;
-        if (ne.length < 2 || sw.length < 2) return;
-        onVisibleBoundsChangeRef.current?.({ ne: [ne[0], ne[1]], sw: [sw[0], sw[1]] });
+      (event: NativeSyntheticEvent<ViewStateChangeEvent>) => {
+        // v11: the idle event carries the viewport directly as
+        // bounds = [west, south, east, north] (was a GeoJSON feature in v10).
+        const b = event?.nativeEvent?.bounds;
+        if (!b || b.length < 4) return;
+        const [west, south, east, north] = b;
+        onVisibleBoundsChangeRef.current?.({ ne: [east, north], sw: [west, south] });
       },
       [],
     );
@@ -582,7 +588,7 @@ export const GuideMap = memo(
     // The badge: a white disc ringed in the waypoint's category color, with the
     // per-type glyph drawn over it by the icon layer below. Favorites read as a
     // data-driven `case` on the feature's `favorite` flag — one size up and
-    // ringed in the theme favorite color — so a single CircleLayer paints both
+    // ringed in the theme favorite color — so a single circle layer paints both
     // states and clustering is untouched.
     //
     // Water sources with an aggregated status swap that category ring for the
@@ -701,9 +707,15 @@ export const GuideMap = memo(
     );
 
     // --- Interaction -------------------------------------------------------
+    // MapLibre RN 11 bubbles a source press up to <Map onPress> unless the
+    // source handler stops it. Every handler below therefore calls
+    // stopPropagation() first: without it a marker or variant tap would *also*
+    // run handleMapPress, which clears the variant selection the tap just made
+    // (and, in builder mode, would drop a route point under the marker).
     const handleWaypointPress = useCallback(
-      async (event: OnPressEvent) => {
-        const feature = event.features?.[0];
+      (event: NativeSyntheticEvent<PressEventWithFeatures>) => {
+        event.stopPropagation();
+        const feature = event.nativeEvent.features?.[0];
         // A cluster bubble zooms in to expand instead of selecting.
         if (feature?.properties?.point_count != null) {
           const coords =
@@ -711,10 +723,10 @@ export const GuideMap = memo(
               ? (feature.geometry as GeoJSON.Point).coordinates
               : null;
           if (coords && coords.length >= 2 && cameraRef.current) {
-            cameraRef.current.setCamera({
-              centerCoordinate: [coords[0], coords[1]],
-              zoomLevel: WAYPOINT_CLUSTER_MAX_ZOOM + 2,
-              animationDuration: 400,
+            cameraRef.current.easeTo({
+              center: [coords[0], coords[1]],
+              zoom: WAYPOINT_CLUSTER_MAX_ZOOM + 2,
+              duration: 400,
             });
           }
           return;
@@ -728,8 +740,9 @@ export const GuideMap = memo(
     // A tapped variant line. The hit layer and the visible dashes both belong to
     // the source, so a tap can return either; both carry the same feature `id`.
     const handleVariantPress = useCallback(
-      (event: OnPressEvent) => {
-        const id = event.features?.[0]?.properties?.id as string | undefined;
+      (event: NativeSyntheticEvent<PressEventWithFeatures>) => {
+        event.stopPropagation();
+        const id = event.nativeEvent.features?.[0]?.properties?.id as string | undefined;
         if (id != null) onVariantTap?.(id);
       },
       [onVariantTap],
@@ -739,17 +752,16 @@ export const GuideMap = memo(
     // suppressed below so taps flow through to the raw coordinate). Outside it,
     // a tap that hit no overlay is a request to clear the current selection.
     const handleMapPress = useCallback(
-      (feature: GeoJSON.Feature) => {
+      (event: NativeSyntheticEvent<PressEvent> | NativeSyntheticEvent<PressEventWithFeatures>) => {
         if (!builderMode) {
           onBackgroundPress?.();
           return;
         }
         if (!onMapPress) return;
-        const geom = feature.geometry;
-        if (geom?.type === 'Point') {
-          const [lon, lat] = geom.coordinates;
-          onMapPress(lat, lon);
-        }
+        const lngLat = event.nativeEvent.lngLat;
+        if (!lngLat) return;
+        const [lon, lat] = lngLat;
+        onMapPress(lat, lon);
       },
       [builderMode, onMapPress, onBackgroundPress],
     );
@@ -764,136 +776,155 @@ export const GuideMap = memo(
     }
 
     return (
-      <MapView
+      <MapLibreMap
         key={mapRemountKey(resolved.source)}
         style={styles.map}
-        mapStyle={resolved.style}
-        logoEnabled={false}
-        attributionEnabled={false}
-        compassEnabled
+        mapStyle={resolved.style as StyleSpecification}
+        logo={false}
+        attribution={false}
+        compass
         onPress={builderMode || onBackgroundPress ? handleMapPress : undefined}
         onRegionDidChange={onVisibleBoundsChange ? handleRegionDidChange : undefined}
       >
-        <Camera ref={cameraRef} defaultSettings={cameraDefaultSettings} />
+        <Camera ref={cameraRef} initialViewState={cameraInitialViewState} />
 
         {/* Marker glyphs. Registered inside the map, so a style flip (which
-            remounts the MapView) re-registers them with the new style. */}
+            remounts the map) re-registers them with the new style. */}
         <Images images={WAYPOINT_ICON_IMAGES} />
 
         {/* Alternate routes: long-dashed violet, under the main track */}
         {alternatesCollection.features.length > 0 && (
-          <ShapeSource
+          <GeoJSONSource
             id="guide-alternates"
-            shape={alternatesCollection}
+            data={alternatesCollection}
             onPress={builderMode ? undefined : handleVariantPress}
             hitbox={VARIANT_HITBOX}
           >
-            <LineLayer id="guide-alternates-hit" style={VARIANT_HIT_STYLE} />
-            <LineLayer
+            <Layer type="line" id="guide-alternates-hit" style={VARIANT_HIT_STYLE} />
+            <Layer
+              type="line"
               id="guide-alternates-highlight"
               filter={highlightFilter}
               style={ALTERNATE_HIGHLIGHT_STYLE}
             />
-            <LineLayer id="guide-alternates-layer" style={ALTERNATE_TRACK_STYLE} />
-          </ShapeSource>
+            <Layer type="line" id="guide-alternates-layer" style={ALTERNATE_TRACK_STYLE} />
+          </GeoJSONSource>
         )}
 
         {/* Side trips: finely dotted teal, under the main track */}
         {sideTripsCollection.features.length > 0 && (
-          <ShapeSource
+          <GeoJSONSource
             id="guide-side-trips"
-            shape={sideTripsCollection}
+            data={sideTripsCollection}
             onPress={builderMode ? undefined : handleVariantPress}
             hitbox={VARIANT_HITBOX}
           >
-            <LineLayer id="guide-side-trips-hit" style={VARIANT_HIT_STYLE} />
-            <LineLayer
+            <Layer type="line" id="guide-side-trips-hit" style={VARIANT_HIT_STYLE} />
+            <Layer
+              type="line"
               id="guide-side-trips-highlight"
               filter={highlightFilter}
               style={SIDE_TRIP_HIGHLIGHT_STYLE}
             />
-            <LineLayer id="guide-side-trips-layer" style={SIDE_TRIP_TRACK_STYLE} />
-          </ShapeSource>
+            <Layer type="line" id="guide-side-trips-layer" style={SIDE_TRIP_TRACK_STYLE} />
+          </GeoJSONSource>
         )}
 
         {/* Main trail line: white casing + solid red core, drawn last so the
             trail itself always wins where the three classes overlap */}
         {trailLine && (
-          <ShapeSource id="guide-trail-line" shape={trailLine}>
-            <LineLayer id="guide-trail-line-casing" style={MAIN_TRACK_CASING_STYLE} />
-            <LineLayer id="guide-trail-line-layer" style={MAIN_TRACK_STYLE} />
-          </ShapeSource>
+          <GeoJSONSource id="guide-trail-line" data={trailLine}>
+            <Layer type="line" id="guide-trail-line-casing" style={MAIN_TRACK_CASING_STYLE} />
+            <Layer type="line" id="guide-trail-line-layer" style={MAIN_TRACK_STYLE} />
+          </GeoJSONSource>
         )}
 
         {/* Custom route overlay (active route or in-progress builder), above
             the trail line: solid on-trail spans, dashed off-trail legs, dots
             for builder vertices. */}
         {routeOverlay && routeOverlay.features.length > 0 && (
-          <ShapeSource id="guide-route" shape={routeOverlay}>
-            <LineLayer id="guide-route-spans" filter={ROUTE_SPAN_FILTER} style={routeSpanStyle} />
-            <LineLayer
+          <GeoJSONSource id="guide-route" data={routeOverlay}>
+            <Layer
+              type="line"
+              id="guide-route-spans"
+              filter={ROUTE_SPAN_FILTER}
+              style={routeSpanStyle}
+            />
+            <Layer
+              type="line"
               id="guide-route-straight"
               filter={ROUTE_STRAIGHT_FILTER}
               style={routeStraightStyle}
             />
-            <CircleLayer
+            <Layer
+              type="circle"
               id="guide-route-vertices"
               filter={ROUTE_VERTEX_FILTER}
               style={routeVertexStyle}
             />
-          </ShapeSource>
+          </GeoJSONSource>
         )}
 
         {/* Waypoint markers — clustered at overview zooms, labelled at hiking zooms */}
         {waypointCollection.features.length > 0 && (
-          <ShapeSource
+          <GeoJSONSource
             id="guide-waypoints"
-            shape={waypointCollection}
+            data={waypointCollection}
             onPress={builderMode ? undefined : handleWaypointPress}
             hitbox={WAYPOINT_HITBOX}
             cluster
             clusterRadius={40}
-            clusterMaxZoomLevel={WAYPOINT_CLUSTER_MAX_ZOOM}
+            clusterMaxZoom={WAYPOINT_CLUSTER_MAX_ZOOM}
           >
-            <CircleLayer id="guide-waypoints-clusters" filter={CLUSTER_FILTER} style={clusterCircleStyle} />
-            <SymbolLayer
+            <Layer
+              type="circle"
+              id="guide-waypoints-clusters"
+              filter={CLUSTER_FILTER}
+              style={clusterCircleStyle}
+            />
+            <Layer
+              type="symbol"
               id="guide-waypoints-cluster-counts"
               filter={CLUSTER_FILTER}
               style={clusterCountStyle}
             />
-            <CircleLayer
+            <Layer
+              type="circle"
               id="guide-waypoints-circles"
               filter={INDIVIDUAL_FILTER}
               style={waypointCircleStyle}
             />
-            <SymbolLayer
+            <Layer
+              type="symbol"
               id="guide-waypoints-icons"
               filter={INDIVIDUAL_FILTER}
               style={waypointIconStyle}
             />
-            <SymbolLayer
+            <Layer
+              type="symbol"
               id="guide-waypoints-labels"
-              minZoomLevel={WAYPOINT_LABEL_MIN_ZOOM}
+              minzoom={WAYPOINT_LABEL_MIN_ZOOM}
               filter={INDIVIDUAL_FILTER}
               style={labelStyle}
             />
-          </ShapeSource>
+          </GeoJSONSource>
         )}
 
         {/* User-location puck: accuracy circle (when uncertain) + dot */}
         {userLocationFeature && (
-          <ShapeSource id="guide-user-location" shape={userLocationFeature}>
+          <GeoJSONSource id="guide-user-location" data={userLocationFeature}>
             {(accuracy ?? 0) > ACCURACY_CIRCLE_MIN_METERS && (
-              <CircleLayer
+              <Layer
+                type="circle"
                 id="guide-user-accuracy"
-                minZoomLevel={ACCURACY_CIRCLE_MIN_ZOOM}
+                minzoom={ACCURACY_CIRCLE_MIN_ZOOM}
                 style={userAccuracyStyle}
               />
             )}
-            <CircleLayer id="guide-user-dot" style={userDotStyle} />
-          </ShapeSource>
+            <Layer type="circle" id="guide-user-dot" style={userDotStyle} />
+          </GeoJSONSource>
         )}
-      </MapView>
+      </MapLibreMap>
     );
   }),
 );

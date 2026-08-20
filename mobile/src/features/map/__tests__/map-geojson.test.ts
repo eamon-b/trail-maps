@@ -200,15 +200,15 @@ describe('buildWaypointCollection', () => {
 });
 
 describe('trailCameraBounds', () => {
-  it('wires calculateTrailBounds into MapLibre [lon, lat] corners', () => {
+  it('wires calculateTrailBounds into MapLibre [west, south, east, north]', () => {
     const bounds = trailCameraBounds([
       { lat: -35, lon: 138 },
       { lat: -34, lon: 139 },
     ]);
     expect(bounds).not.toBeNull();
-    // ne is the max corner, sw the min, each as [lon, lat].
-    expect(bounds!.ne).toEqual([139, -34]);
-    expect(bounds!.sw).toEqual([138, -35]);
+    // MapLibre RN 11 takes bounds as one flat GeoJSON-RFC tuple; feeding it the
+    // v10 {ne, sw} corner object silently fits the camera to nothing.
+    expect(bounds).toEqual([138, -35, 139, -34]);
   });
 
   it('returns null when there is no geometry to fit', () => {

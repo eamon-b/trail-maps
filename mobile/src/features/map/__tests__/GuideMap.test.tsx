@@ -1,12 +1,15 @@
 /**
  * Shallow smoke test for the guide map.
  *
- * MapLibre is mocked to string host components (the global jest.setup mock does
- * not export CircleLayer, so a local mock adds it); tileManager and the online
+ * MapLibre is mocked to string host components; tileManager and the online
  * style service are mocked so no native/network work runs. The goal is to prove
  * the "resolve style before mount" flow works — loading first, then a mounted
- * <MapView> — and that the offline/online/fallback branches pick the right
- * style source, not to verify pixel output.
+ * <Map> — and that the offline/online/fallback branches pick the right style
+ * source, not to verify pixel output.
+ *
+ * MapLibre RN 11 collapsed the per-type layer components into one <Layer
+ * type="line|circle|symbol">, so layers are matched on the host node's `type`
+ * prop rather than on its element name.
  */
 
 import React from 'react';
@@ -20,17 +23,12 @@ import { WAYPOINT_ICON_NAMES } from '../waypoint-icons';
 // before GuideMap's module evaluates.
 jest.mock('@maplibre/maplibre-react-native', () => ({
   __esModule: true,
-  MapView: 'MapView',
+  Map: 'Map',
   Camera: 'Camera',
-  ShapeSource: 'ShapeSource',
-  LineLayer: 'LineLayer',
-  SymbolLayer: 'SymbolLayer',
-  CircleLayer: 'CircleLayer',
+  GeoJSONSource: 'GeoJSONSource',
+  Layer: 'Layer',
   Images: 'Images',
-  default: {
-    setAccessToken: jest.fn(),
-    Logger: { setLogCallback: jest.fn() },
-  },
+  LogManager: { onLog: jest.fn() },
 }));
 
 jest.mock('../../../theme', () => ({
@@ -51,13 +49,35 @@ const getOnline = getOnlineMapStyle as jest.Mock;
 /** Host-node type accessor (the ambient test-renderer types omit `.type`). */
 const nodeType = (n: unknown) => (n as { type: unknown }).type;
 
-/** First mounted host node of `type` with the given layer/source id. */
-const nodeById = (tree: ReactTestRenderer, type: string, id: string) =>
-  tree.root.findAll((n) => nodeType(n) === type && n.props.id === id)[0];
+/** Every mounted <Layer> of one MapLibre layer type ('line' / 'circle' / …). */
+const layersOfType = (tree: ReactTestRenderer, layerType: string) =>
+  tree.root.findAll((n) => nodeType(n) === 'Layer' && n.props.type === layerType);
+
+/** First mounted <Layer> of `layerType` with the given id. */
+const nodeById = (tree: ReactTestRenderer, layerType: string, id: string) =>
+  layersOfType(tree, layerType).filter((n) => n.props.id === id)[0];
+
+/** Every mounted <GeoJSONSource>. */
+const sources = (tree: ReactTestRenderer) =>
+  tree.root.findAll((n) => nodeType(n) === 'GeoJSONSource');
+
+/** First mounted <GeoJSONSource> with the given id. */
+const sourceById = (tree: ReactTestRenderer, id: string) =>
+  sources(tree).filter((n) => n.props.id === id)[0];
 
 /** A mounted node's press handler, typed so tests can invoke it. */
 const pressHandler = (node: { props: Record<string, unknown> }) =>
   node.props.onPress as (event: unknown) => void;
+
+/**
+ * A MapLibre RN 11 press payload. Source and map handlers both take a
+ * NativeSyntheticEvent, and source handlers call stopPropagation() to keep the
+ * tap from also reaching <Map onPress>, so the stub has to carry one.
+ */
+const pressEvent = (nativeEvent: Record<string, unknown>) => ({
+  nativeEvent,
+  stopPropagation: jest.fn(),
+});
 
 const ONLINE_STYLE = { version: 8, sources: {}, layers: [] };
 const OFFLINE_STYLE = { version: 8, sources: { basemap: {} }, layers: [] };
@@ -68,9 +88,9 @@ const offlineResult = (contoursDropped = false) => ({
   reason: contoursDropped ? 'no tiles in tiles table' : undefined,
 });
 
-/** The `textFont` of a mounted SymbolLayer, e.g. the waypoint labels. */
+/** The `textFont` of a mounted symbol layer, e.g. the waypoint labels. */
 const labelFontOf = (tree: ReactTestRenderer, id: string) => {
-  const [layer] = tree.root.findAll((n) => nodeType(n) === 'SymbolLayer' && n.props.id === id);
+  const layer = nodeById(tree, 'symbol', id);
   return (layer.props.style as { textFont: string[] }).textFont;
 };
 
@@ -83,7 +103,7 @@ const waypoints = [{ id: 'w_1', name: 'Spring', lat: -35, lon: 138, type: 'water
 /** Flush the style-resolution promise chain and re-render. */
 const flush = () => act(async () => { await new Promise((r) => setImmediate(r)); });
 
-const mapViews = (tree: ReactTestRenderer) => tree.root.findAll((n) => nodeType(n) === 'MapView');
+const mapViews = (tree: ReactTestRenderer) => tree.root.findAll((n) => nodeType(n) === 'Map');
 
 let warnSpy: jest.SpyInstance;
 beforeEach(() => {
@@ -257,9 +277,7 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    const sourceIds = tree.root
-      .findAll((n) => nodeType(n) === 'ShapeSource')
-      .map((n) => n.props.id);
+    const sourceIds = sources(tree).map((n) => n.props.id);
     expect(sourceIds).toContain('guide-trail-line');
     expect(sourceIds).toContain('guide-waypoints');
   });
@@ -281,9 +299,10 @@ describe('GuideMap', () => {
     await flush();
 
     const layers = new Map<string, Record<string, unknown>>(
-      tree.root
-        .findAll((n) => nodeType(n) === 'LineLayer')
-        .map((n) => [n.props.id as string, n.props.style as Record<string, unknown>]),
+      layersOfType(tree, 'line').map((n) => [
+        n.props.id as string,
+        n.props.style as Record<string, unknown>,
+      ]),
     );
 
     // All three classes are on the map, plus the main track's casing.
@@ -330,9 +349,7 @@ describe('GuideMap', () => {
     const registered = Object.keys(images.props.images as Record<string, unknown>);
     expect(registered.sort()).toEqual([...WAYPOINT_ICON_NAMES].sort());
     // ...and the glyph layer reads the name straight off the feature.
-    const [icons] = tree.root.findAll(
-      (n) => nodeType(n) === 'SymbolLayer' && n.props.id === 'guide-waypoints-icons',
-    );
+    const icons = nodeById(tree, 'symbol', 'guide-waypoints-icons');
     expect((icons.props.style as { iconImage: unknown }).iconImage).toEqual(['get', 'icon']);
   });
 
@@ -346,9 +363,7 @@ describe('GuideMap', () => {
     });
     await flush();
 
-    const [circles] = tree.root.findAll(
-      (n) => nodeType(n) === 'CircleLayer' && n.props.id === 'guide-waypoints-circles',
-    );
+    const circles = nodeById(tree, 'circle', 'guide-waypoints-circles');
     const style = circles.props.style as Record<string, unknown>;
     // The ring carries the (theme-resolved) category color unless the feature
     // has an aggregated water status; the disc is white so the ink glyph on top
@@ -390,10 +405,8 @@ describe('GuideMap', () => {
     });
     await flush();
 
-    const [source] = tree.root.findAll(
-      (n) => nodeType(n) === 'ShapeSource' && n.props.id === 'guide-waypoints',
-    );
-    const shape = source.props.shape as GeoJSON.FeatureCollection;
+    const source = sourceById(tree, 'guide-waypoints');
+    const shape = source.props.data as GeoJSON.FeatureCollection;
     expect(shape.features[0].properties!.waterStatus).toBe('dry');
   });
 
@@ -416,17 +429,14 @@ describe('GuideMap', () => {
     await flush();
 
     for (const sourceId of ['guide-alternates', 'guide-side-trips']) {
-      const [source] = tree.root.findAll(
-        (n) => nodeType(n) === 'ShapeSource' && n.props.id === sourceId,
-      );
+      const source = sourceById(tree, sourceId);
       expect(source.props.onPress).toBeInstanceOf(Function);
       // Generous slop around the touch point — a 3 px dotted spur is otherwise
-      // unhittable with a thumb.
-      expect(source.props.hitbox).toEqual({ width: 44, height: 44 });
+      // unhittable with a thumb. v11 takes the hitbox as edge insets, so this
+      // is the same 44 x 44 target expressed as half-extents.
+      expect(source.props.hitbox).toEqual({ top: 22, right: 22, bottom: 22, left: 22 });
 
-      const [hit] = tree.root.findAll(
-        (n) => nodeType(n) === 'LineLayer' && n.props.id === `${sourceId}-hit`,
-      );
+      const hit = nodeById(tree, 'line', `${sourceId}-hit`);
       const hitStyle = hit.props.style as Record<string, unknown>;
       expect(hitStyle.lineWidth).toBeGreaterThanOrEqual(20);
       expect(hitStyle.lineOpacity).toBe(0);
@@ -434,15 +444,17 @@ describe('GuideMap', () => {
 
     // A tap reports the feature's stable id, which is how the pane finds the
     // variant object again.
-    const [alternates] = tree.root.findAll(
-      (n) => nodeType(n) === 'ShapeSource' && n.props.id === 'guide-alternates',
-    );
+    const alternates = sourceById(tree, 'guide-alternates');
+    const event = pressEvent({
+      features: [{ type: 'Feature', properties: { id: 'alternate-0' } }],
+    });
     act(() => {
-      pressHandler(alternates)({
-        features: [{ type: 'Feature', properties: { id: 'alternate-0' } }],
-      });
+      pressHandler(alternates)(event);
     });
     expect(onVariantTap).toHaveBeenCalledWith('alternate-0');
+    // ...and the tap does not also reach <Map onPress>, which would clear the
+    // selection the same tap just made.
+    expect(event.stopPropagation).toHaveBeenCalled();
   });
 
   it('highlights only the selected variant', async () => {
@@ -462,7 +474,7 @@ describe('GuideMap', () => {
     });
     await flush();
 
-    const filterOf = (id: string) => nodeById(tree, 'LineLayer', id).props.filter;
+    const filterOf = (id: string) => nodeById(tree, 'line', id).props.filter;
     expect(filterOf('guide-side-trips-highlight')).toEqual(['==', ['get', 'id'], 'side-trip-0']);
     // The other class's highlight filter matches nothing.
     expect(filterOf('guide-alternates-highlight')).toEqual(['==', ['get', 'id'], 'side-trip-0']);
@@ -482,7 +494,7 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    const layer = nodeById(tree, 'LineLayer', 'guide-alternates-highlight');
+    const layer = nodeById(tree, 'line', 'guide-alternates-highlight');
     // '' can never equal a variant id (which is always "<kind>-<index>").
     expect(layer.props.filter).toEqual(['==', ['get', 'id'], '']);
   });
@@ -503,11 +515,7 @@ describe('GuideMap', () => {
     });
     await flush();
     act(() => {
-      pressHandler(mapViews(tree)[0])({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [138, -35] },
-        properties: {},
-      });
+      pressHandler(mapViews(tree)[0])(pressEvent({ lngLat: [138, -35], point: [0, 0] }));
     });
     expect(onBackgroundPress).toHaveBeenCalled();
   });
@@ -538,18 +546,11 @@ describe('GuideMap', () => {
     await flush();
 
     for (const sourceId of ['guide-alternates', 'guide-side-trips', 'guide-waypoints']) {
-      const [source] = tree.root.findAll(
-        (n) => nodeType(n) === 'ShapeSource' && n.props.id === sourceId,
-      );
-      expect(source.props.onPress).toBeUndefined();
+      expect(sourceById(tree, sourceId).props.onPress).toBeUndefined();
     }
 
     act(() => {
-      pressHandler(mapViews(tree)[0])({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [138.5, -34.5] },
-        properties: {},
-      });
+      pressHandler(mapViews(tree)[0])(pressEvent({ lngLat: [138.5, -34.5], point: [0, 0] }));
     });
     expect(onMapPress).toHaveBeenCalledWith(-34.5, 138.5);
     expect(onBackgroundPress).not.toHaveBeenCalled();
@@ -574,21 +575,29 @@ describe('GuideMap', () => {
     await flush();
 
     const map = mapViews(tree)[0];
-    const onRegionDidChange = map.props.onRegionDidChange as (feature: unknown) => void;
+    const onRegionDidChange = map.props.onRegionDidChange as (event: unknown) => void;
     expect(map.props.onRegionIsChanging).toBeUndefined();
 
     act(() => {
+      // v11 idle event: the viewport rides on nativeEvent as
+      // bounds = [west, south, east, north].
       onRegionDidChange({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [138.5, -34.5] },
-        properties: { visibleBounds: [[139, -34], [138, -35]] },
+        nativeEvent: {
+          center: [138.5, -34.5],
+          zoom: 10,
+          bearing: 0,
+          pitch: 0,
+          bounds: [138, -35, 139, -34],
+          animated: false,
+          userInteraction: true,
+        },
       });
     });
     expect(onVisibleBoundsChange).toHaveBeenCalledWith({ ne: [139, -34], sw: [138, -35] });
 
     // A payload without bounds is ignored rather than reported as garbage.
     act(() => {
-      onRegionDidChange({ type: 'Feature', properties: {} });
+      onRegionDidChange({ nativeEvent: {} });
     });
     expect(onVisibleBoundsChange).toHaveBeenCalledTimes(1);
   });
@@ -629,9 +638,36 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    const sourceIds = tree.root
-      .findAll((n) => nodeType(n) === 'ShapeSource')
-      .map((n) => n.props.id);
-    expect(sourceIds).toContain('guide-route');
+    expect(sources(tree).map((n) => n.props.id)).toContain('guide-route');
+  });
+
+  it('taps a waypoint without letting the tap fall through to the map', async () => {
+    // v11 bubbles a source press up to <Map onPress> unless the source handler
+    // stops it — unstopped, selecting a marker would immediately clear the
+    // selection via onBackgroundPress.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onWaypointTap = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          onWaypointTap={onWaypointTap}
+        />,
+      );
+    });
+    await flush();
+
+    const event = pressEvent({
+      features: [{ type: 'Feature', properties: { id: 'w_1' } }],
+    });
+    act(() => {
+      pressHandler(sourceById(tree, 'guide-waypoints'))(event);
+    });
+    expect(onWaypointTap).toHaveBeenCalledWith('w_1');
+    expect(event.stopPropagation).toHaveBeenCalled();
   });
 });

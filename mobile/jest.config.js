@@ -1,7 +1,13 @@
 module.exports = {
   preset: 'jest-expo',
+  // jest-expo's own list (see node_modules/jest-expo/jest-preset.js) plus
+  // @maplibre, which ships untranspiled ESM. Setting this key replaces the
+  // preset's value outright, so the two guard entries below have to be carried
+  // over by hand or Babel re-enters the reanimated / RN babel presets.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@maplibre/.*)',
+    '/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|@maplibre))',
+    '/node_modules/react-native-reanimated/plugin/',
+    '/node_modules/@react-native/babel-preset/',
   ],
   setupFiles: ['./jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],

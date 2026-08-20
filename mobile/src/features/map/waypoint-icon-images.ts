@@ -10,14 +10,19 @@
  * which is what keeps per-type iconography working on an offline map.
  */
 
-import type { ImageSourcePropType } from 'react-native';
+import type { ImageRequireSource } from 'react-native';
 import type { WaypointIconName } from './waypoint-icons';
 
 /**
  * Every glyph in WAYPOINT_ICON_NAMES, keyed by the same name a feature's `icon`
  * property carries — so `iconImage: ['get', 'icon']` resolves directly.
+ *
+ * Typed as `ImageRequireSource` (the opaque asset id Metro's `require` returns)
+ * rather than the wider `ImageSourcePropType`: MapLibre RN 11's `<Images>`
+ * accepts a require, a native asset name, or `{ source, sdf }` — but not the
+ * `{ uri }` object that `ImageSourcePropType` also admits.
  */
-export const WAYPOINT_ICON_IMAGES: Record<WaypointIconName, ImageSourcePropType> = {
+export const WAYPOINT_ICON_IMAGES: Record<WaypointIconName, ImageRequireSource> = {
   water: require('../../../assets/map-icons/water.png'),
   'water-tank': require('../../../assets/map-icons/water-tank.png'),
   campsite: require('../../../assets/map-icons/campsite.png'),

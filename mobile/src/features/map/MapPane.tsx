@@ -39,7 +39,7 @@ import {
   type RoutePointInput,
   type RouteTrackPoint,
 } from '../routes/route-geometry';
-import { GuideMap, type GuideMapHandle } from './GuideMap';
+import { GuideMap, type GuideMapHandle, type ViewportBounds } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import {
   degradationMessage,
@@ -53,7 +53,6 @@ import { TrackLegend } from './TrackLegend';
 import {
   hasDrawableVariant,
   variantFeatureId,
-  type CameraBounds,
   type MapVariant,
   type MapWaypoint,
   type VariantKind,
@@ -243,8 +242,8 @@ export function MapPane() {
   // The last settled viewport, kept in a ref: the camera moves constantly and
   // none of this belongs in render. `onRegionDidChange` is MapLibre's idle
   // event, so this is already debounced to "the user stopped moving the map".
-  const visibleBoundsRef = useRef<CameraBounds | null>(null);
-  const onVisibleBoundsChange = useCallback((box: CameraBounds) => {
+  const visibleBoundsRef = useRef<ViewportBounds | null>(null);
+  const onVisibleBoundsChange = useCallback((box: ViewportBounds) => {
     visibleBoundsRef.current = box;
   }, []);
 

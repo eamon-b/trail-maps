@@ -160,7 +160,11 @@ const themes: Record<ThemeVariant, ThemeColors> = {
     textSecondary: palette.sage,
     textInverse: palette.forest10,
 
-    border: palette.forest7,
+    // One ramp step LIGHTER than surfaceElevated (forest7), mirroring how the
+    // light theme's border (gray100) sits one step darker than its surfaces.
+    // These must never collide: a hairline painted in `border` on an elevated
+    // card would otherwise be invisible (see themes.test.ts).
+    border: palette.forest6,
     borderSubtle: palette.forest9,
 
     accent: palette.forest4,

@@ -2,32 +2,24 @@ name = "contour-tiles"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
-# Serve on the account's workers.dev subdomain:
-#   https://contour-tiles.<account-subdomain>.workers.dev
-# That URL must match EXPO_PUBLIC_CONTOUR_TILE_URL in mobile/eas.json and
-# mobile/.env. Deploy with: npm run deploy (requires `wrangler login`).
+# Kept alive alongside the custom domain below so already-shipped mobile builds
+# (which have the workers.dev URL inlined at bundle time) keep working. Do not
+# flip to false until no released build points at
+# https://contour-tiles.aus-map-data.workers.dev.
 workers_dev = true
 
 # --- Custom domain (enables real edge caching) --------------------------------
 # The Worker calls caches.default, which is a NO-OP on *.workers.dev: that cache
-# is zone-level and workers.dev is a shared zone. Serving from a custom domain
-# on a zone in this Cloudflare account makes it live — no code changes needed.
+# is zone-level and workers.dev is a shared zone. Serving from this custom
+# domain — a zone in this account — makes it live, with no code changes.
 #
-# Requires the apex domain to be a zone in this account. Then set workers_dev to
-# false (or leave it true to keep the old URL working during the cutover),
-# uncomment ONE of the blocks below, deploy, and repoint
-# EXPO_PUBLIC_CONTOUR_TILE_URL (mobile/eas.json + mobile/.env.local) at the new
-# hostname. See README.md.
-#
-# Option A — custom domain (Cloudflare creates the DNS record for you):
-# [[routes]]
-# pattern = "contours.example.com"
-# custom_domain = true
-#
-# Option B — route on an existing hostname (bring your own DNS record):
-# [[routes]]
-# pattern = "example.com/contours/*"
-# zone_name = "example.com"
+# Public hostnames for the tileset (zone: contour-map-tiles.net):
+#   contour-map-tiles.net       → docs + demo (Cloudflare Pages)
+#   data.contour-map-tiles.net  → R2 bucket: the PMTiles archive itself
+#   tiles.contour-map-tiles.net → this Worker: /{source}/{z}/{x}/{y}.pbf
+[[routes]]
+pattern = "tiles.contour-map-tiles.net"
+custom_domain = true
 
 [[r2_buckets]]
 binding = "TILES_BUCKET"

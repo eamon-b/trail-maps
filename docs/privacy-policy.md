@@ -1,9 +1,15 @@
 # Tracknotes Privacy Policy (draft)
 
 _Draft for review. The public copy ships with the web app at
-`public/privacy.html` (served at `<site>/privacy.html` on the Vercel deploy) —
-keep the two in sync. Before store submission: link that URL from the store
-listings and from the app's Settings screen._
+`public/privacy.html`, published at
+**<https://trail-maps.vercel.app/privacy.html>** (the Vercel deploy) — keep the
+two in sync._
+
+_The mobile app links that same URL from Settings → About
+(`PRIVACY_POLICY_URL` in `mobile/src/features/settings/AboutSection.tsx`);
+change one and change the other. Still outstanding before store submission:
+link the URL from the App Store / Play Store listings, and give this draft a
+human read (issue #31)._
 
 **Last updated: 2026-08-19**
 

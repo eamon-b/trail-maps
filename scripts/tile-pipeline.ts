@@ -46,6 +46,34 @@ export const INDEX_CONTOUR_INTERVAL = 50; // metres (bold lines)
  */
 export const CONTOUR_WARP_TR_DEG = 0.000139;
 
+/**
+ * One zoom tier of the chunked contour builds: a `WHERE` clause selecting the
+ * elevations that first appear at `minZoom`, written to `{cellId}_{suffix}.fgb`
+ * and handed to tippecanoe as a `-L` layer with that minzoom.
+ */
+export interface ContourTier {
+  suffix: string;
+  minZoom: number;
+  where: string;
+}
+
+/**
+ * Contour density tiers, shared by build-contours-australia.ts and
+ * build-contours-world.ts. The two archives are served from the same Worker
+ * under the same public schema, so their tiers must not drift: this is the
+ * single definition of which elevations appear at which zoom.
+ *
+ * The clauses partition the elevations exactly once each — see the z13 note.
+ */
+export const CONTOUR_TIERS: ContourTier[] = [
+  { suffix: 'z9',  minZoom: CONTOUR_MIN_ZOOM, where: `(CAST(elevation AS INTEGER) % 100) = 0` },
+  { suffix: 'z10', minZoom: 10, where: `(CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
+  { suffix: 'z12', minZoom: 12, where: `(CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
+  // %50 != 0 as well: odd multiples of 50 (50, 150, ...) have %20 = 10 and are
+  // already emitted by the z10 tier — without it they'd appear twice.
+  { suffix: 'z13', minZoom: 13, where: `(CAST(elevation AS INTEGER) % 20) != 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
+];
+
 // --- Utility functions ---
 
 export function run(cmd: string, options?: { cwd?: string; verbose?: boolean }): string {

@@ -45,6 +45,11 @@ Shared processing modules (used by both web and mobile):
 - `build-trails.ts` - Generates static trail pages from GPX/JSON data
 - `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision)
 - `build-contours-australia.ts` - Builds contour PMTiles for the contour tile worker
+- `build-contours-world.ts` - Builds world contour shards from Copernicus GLO-30 DEM, `--join` merges shards to world.pmtiles (spec: `plans/world-contour-tiles.md`)
+- `fetch-dem-copernicus.ts` - Downloads Copernicus GLO-30 DEM tiles (global, anonymous, per bbox/cells/shard)
+- `contour-experiment.ts` - Contour quality experiment harness: settings-matrix builds + side-by-side compare viewer (`npm run experiment:contours`)
+- `lib/world-grid.ts` - Global 2° cell grid, shard partition, Copernicus tile naming
+- `remote/` - Remote-machine world build: bootstrap, detached shard driver, status, R2 upload (runbook: `docs/world-contours-remote-build.md`)
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
 - `fetch-pois.ts` - Fetches points of interest
@@ -53,6 +58,7 @@ Shared processing modules (used by both web and mobile):
 - `build-grid-tiles.ts` - Builds grid-based map tiles
 - `tile-pipeline.ts` - Orchestrates the full tile generation pipeline
 - `process-heysen-waypoints.ts` - Trail-specific waypoint data processing
+- `upload-descriptions.ts` - PUTs curated waypoint descriptions to the comments API (`npm run upload:descriptions`, admin token in `$TRACKNOTES_ADMIN_TOKEN`; `--dry-run` prints the requests)
 
 ### Web UI (`src/web/`)
 
@@ -71,6 +77,7 @@ Each trail has its own directory containing:
 - `*.gpx` - Original GPX track data
 - `trail.json` - Trail metadata and waypoints
 - `climate.json` - Climate data for locations along the trail
+- `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
 
 ### Generated Data (`public/data/generated/`)
 
@@ -188,10 +195,10 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8787
 
 # Contour vector tiles — without this, online maps silently render without contours
-EXPO_PUBLIC_CONTOUR_TILE_URL=https://contour-tiles.aus-map-data.workers.dev
+EXPO_PUBLIC_CONTOUR_TILE_URL=https://tiles.contour-map-tiles.net
 
 # Offline map tile downloads — without this, the Offline Maps screen disables downloads
-EXPO_PUBLIC_TILE_BASE_URL=https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev
+EXPO_PUBLIC_TILE_BASE_URL=https://data.contour-map-tiles.net
 ```
 
 ### Mobile App Architecture

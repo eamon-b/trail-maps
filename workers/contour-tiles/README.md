@@ -1,11 +1,26 @@
 # contour-tiles worker
 
-Serves contour vector tiles out of a PMTiles archive on R2.
+Serves contour vector tiles out of PMTiles archives on R2.
 
-- URL pattern: `/{source}/{z}/{x}/{y}.pbf` (only source `contours` is served)
-- Archive: R2 bucket `aus-map-data`, key `contours/australia.pmtiles`
+- Public hostname: `https://tiles.contour-map-tiles.net` (also still on
+  `contour-tiles.aus-map-data.workers.dev` for already-shipped mobile builds)
+- URL pattern: `/{source}/{z}/{x}/{y}.pbf`
+- Archives: R2 bucket `aus-map-data` (see Sources below)
 - Health: `/health` — reports archive size/etag and the archive's zoom + bbox
 - Consumed by the mobile app via `EXPO_PUBLIC_CONTOUR_TILE_URL`
+
+This Worker is one of three public hostnames for the tileset; the docs page
+and the archive itself are served without it:
+
+| Hostname | Serves |
+| --- | --- |
+| `contour-map-tiles.net` | docs + live demo (Cloudflare Pages, `site/contour-tiles/`) |
+| `data.contour-map-tiles.net` | the R2 bucket directly — the PMTiles archive and offline tile packs |
+| `tiles.contour-map-tiles.net` | this Worker: z/x/y tile endpoint |
+
+Clients that speak PMTiles should read the archive straight off
+`data.…` — it has no Worker request limits in front of it. This Worker exists
+for clients that can only consume z/x/y URLs.
 
 ```bash
 npm run dev      # wrangler dev
@@ -13,26 +28,59 @@ npm run deploy   # wrangler deploy (requires `wrangler login`)
 npx tsc --noEmit # typecheck
 ```
 
-## Edge caching and the workers.dev limitation
+## Sources
+
+The `{source}` path segment selects one PMTiles archive. The mapping is the
+`SOURCES` record in `src/index.ts`:
+
+| Source | R2 key |
+| --- | --- |
+| `contours` | `contours/australia.pmtiles` |
+| `world` | `contours/world.pmtiles` |
+
+**Adding a tileset is one entry in `SOURCES` plus uploading the archive to R2** —
+routing, the per-source PMTiles instance cache, edge caching (already keyed by
+the full pathname, which includes the source segment) and `/health` all pick it
+up automatically. An unknown source is a `404`.
+
+A source listed in `SOURCES` whose archive is not uploaded yet is not an error
+condition: it serves `500`s for tiles and reports `ok: false` under
+`sources` in `/health`, while the rest of the Worker is unaffected.
+
+### `/health` shape
+
+Top-level fields describe the `contours` source exactly as they always have
+(`ok`, plus `archive`/`tiles` when healthy or `error` when not), and the overall
+HTTP status still follows `contours` alone — so existing consumers keep working
+while `world` is still being built. A `sources` object adds the per-source
+breakdown:
+
+```json
+{
+  "ok": true,
+  "archive": { "key": "contours/australia.pmtiles", "size": 0, "etag": "…" },
+  "tiles": { "minZoom": 9, "maxZoom": 14, "minLon": 0, "minLat": 0, "maxLon": 0, "maxLat": 0 },
+  "sources": {
+    "contours": { "ok": true, "archive": { … }, "tiles": { … } },
+    "world": { "ok": false, "error": "Contour archive not found" }
+  }
+}
+```
+
+## Edge caching
 
 Tile responses are stored in `caches.default`, keyed by URL (query string
 stripped, always a GET key so HEAD shares the same entry).
 
-**This does nothing today.** The Cache API is a no-op on `*.workers.dev`,
-because the cache is zone-level and workers.dev is a zone shared by every
-account. The code is written so switching it on is config-only:
+This is **live on `tiles.contour-map-tiles.net`** (verified 2026-08-19:
+requesting `/contours/12/3734/2493.pbf` twice flips `X-Edge-Cache` from `MISS`
+to `HIT`). It remains a no-op on the `*.workers.dev` hostname, where the Cache
+API does nothing because that zone is shared by every account — so measure
+caching on the custom domain only.
 
-1. Add the domain as a zone in this Cloudflare account.
-2. Uncomment a `[[routes]]` block in `wrangler.toml` (custom domain or route —
-   both examples are there) and set `workers_dev = false` once the cutover is
-   done.
-3. `npm run deploy`.
-4. Repoint `EXPO_PUBLIC_CONTOUR_TILE_URL` in `mobile/eas.json` and
-   `mobile/.env.local` at the new hostname. Metro inlines `EXPO_PUBLIC_*` at
-   bundle time — restart Metro after editing `.env.local`.
-
-To confirm caching went live, request the same tile twice and watch the
-`X-Edge-Cache` response header flip from `MISS` to `HIT`.
+`workers_dev = true` is deliberately still set, so builds that already shipped
+with the workers.dev URL inlined keep working. Flip it to `false` only once no
+released build points there.
 
 What is and is not cached:
 
@@ -73,11 +121,29 @@ changing `ALLOWED_ORIGIN` takes effect immediately instead of after entries
 expire. When `ALLOWED_ORIGIN` is set, responses also carry `Vary: Origin` so
 downstream shared caches know the response is origin-dependent.
 
-## Related: r2.dev rate limits
+## CORS on the bucket itself (separate from this Worker)
 
-Separate from this Worker, offline tile downloads (`EXPO_PUBLIC_TILE_BASE_URL`)
-are served straight from an `r2.dev` public bucket URL. `r2.dev` is rate-limited
-and explicitly not meant for production traffic — it has no custom-domain cache
-in front of it, so bulk offline downloads can get throttled. The fix is the same
-shape as the one above: put the bucket behind a custom domain (or a Worker) on a
-zone in this account and repoint `EXPO_PUBLIC_TILE_BASE_URL`.
+Browsers reading the archive directly (`pmtiles://…`) need CORS on the R2
+bucket, not on this Worker. Rules were set 2026-08-19 — GET/HEAD, wildcard
+origin, `range`/`if-match` allowed, `etag`/`content-range`/`accept-ranges`
+exposed:
+
+```bash
+wrangler r2 bucket cors list aus-map-data
+```
+
+The exposed `etag` and `content-range` are load-bearing: without them the
+pmtiles JS client cannot validate ranges and the demo map renders nothing.
+
+## Related: off r2.dev
+
+Offline tile downloads (`EXPO_PUBLIC_TILE_BASE_URL`) used to point at the
+`pub-….r2.dev` public bucket URL, which is rate-limited and explicitly not
+meant for production traffic. Since 2026-08-19 they go through
+`data.contour-map-tiles.net` — same bucket, same object keys, but with a real
+CDN cache in front. The `r2.dev` URL still works and is unchanged; nothing has
+to be migrated off it in a hurry.
+
+`mobile/.env.local` is untracked, so it keeps whatever it had: update it by hand
+to match `eas.json`. Metro inlines `EXPO_PUBLIC_*` at bundle time, so restart
+Metro afterwards — and remember `eas.json` only affects EAS cloud builds.

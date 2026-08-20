@@ -8,9 +8,15 @@
  * A single `GuidePositionProvider` (hoisted to the guide navigator's `_layout`)
  * feeds the distance strip, the map puck, the elevation marker, the list
  * distances, and the waypoint detail screen from one GPS session in lockstep.
+ *
+ * The switch itself goes through `GuideFocusProvider`, which carries the section
+ * you were looking at across the panes: leaving the map hands the elevation
+ * profile the km range that was on screen, leaving the profile fits the map to
+ * its zoom window, and the list scrolls to whichever pane you came from was
+ * showing. See GuideFocusContext for the one-shot, one-direction rule.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { spacing } from '../../tokens';
@@ -23,8 +29,7 @@ import { DistanceStrip } from './DistanceStrip';
 import { SegmentedControl } from './SegmentedControl';
 import { WaypointListPane } from './WaypointListPane';
 import { useGuide } from './GuideContext';
-
-type PaneKey = 'map' | 'elevation' | 'list';
+import { GuideFocusProvider, useGuideFocus, type GuidePaneKey } from './GuideFocusContext';
 
 const OPTIONS = [
   { value: 'map' as const, label: 'Map' },
@@ -33,9 +38,17 @@ const OPTIONS = [
 ];
 
 export function GuideView() {
+  return (
+    <GuideFocusProvider>
+      <GuidePanes />
+    </GuideFocusProvider>
+  );
+}
+
+function GuidePanes() {
   const { colors } = useTheme();
   const { trail, trailId } = useGuide();
-  const [pane, setPane] = useState<PaneKey>('map');
+  const { pane, switchPane } = useGuideFocus();
 
   // Hydrate favorite hearts for the list badges, and run comment sync in the
   // background (drain outbox + pull delta on open / reconnect / foreground).
@@ -48,7 +61,11 @@ export function GuideView() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <View style={styles.segmented}>
-          <SegmentedControl options={OPTIONS} value={pane} onChange={setPane} />
+          <SegmentedControl<GuidePaneKey>
+            options={OPTIONS}
+            value={pane}
+            onChange={switchPane}
+          />
         </View>
         <DirectionToggle />
       </View>

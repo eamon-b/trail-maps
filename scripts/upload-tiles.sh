@@ -29,7 +29,7 @@ TILES_DIR="${TILES_DIR:-public/data/tiles}"
 GRID_DIR="$TILES_DIR/grid"
 CONTOUR_LOCAL_FILENAME="australia-contours.pmtiles"
 CONTOUR_OBJECT_KEY="contours/australia.pmtiles"
-CONTOUR_WORKER_URL="${CONTOUR_WORKER_URL:-https://contour-tiles.aus-map-data.workers.dev}"
+CONTOUR_WORKER_URL="${CONTOUR_WORKER_URL:-https://tiles.contour-map-tiles.net}"
 
 require_command() {
   local command_name="$1"

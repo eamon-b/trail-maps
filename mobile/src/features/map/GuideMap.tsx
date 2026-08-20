@@ -56,6 +56,7 @@ import {
   type PressEvent,
   type PressEventWithFeatures,
   type StyleSpecification,
+  type ViewStateChangeEvent,
 } from '@maplibre/maplibre-react-native';
 import { useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
@@ -69,6 +70,7 @@ import {
   buildVariantCollection,
   buildWaypointCollection,
   trailCameraBounds,
+  type CameraBounds,
   type LatLon,
   type MapVariant,
   type MapWaypoint,
@@ -155,11 +157,17 @@ const INDIVIDUAL_FILTER = ['!', ['has', 'point_count']] as FilterSpecification;
 
 const CAMERA_PADDING = { top: 48, right: 32, bottom: 48, left: 32 };
 
+/** Plain viewport corners handed across the pane boundary — panes and
+ * guide-focus never see MapLibre's [west, south, east, north] tuples. */
+export type ViewportBounds = { ne: [number, number]; sw: [number, number] };
+
 export interface GuideMapHandle {
   /** Re-fit the camera to the full trail bounds. */
   recenter: () => void;
   /** Center + zoom the camera on the current GPS position (no-op without one). */
   centerOnMe: () => void;
+  /** Fit the camera to an arbitrary box — how a focus window reaches the map. */
+  fitBounds: (bounds: ViewportBounds) => void;
 }
 
 export interface GuideMapProps {
@@ -216,6 +224,13 @@ export interface GuideMapProps {
    * including the healthy one (so a fixed map clears any banner).
    */
   onStyleResolved?: (resolution: MapStyleResolution) => void;
+  /**
+   * The viewport, reported once the camera settles (MapLibre's
+   * `onRegionDidChange` — the idle event, not the per-frame one). This is what
+   * lets the pane translate "where the user was looking" into a km range when
+   * they switch panes; nothing here re-renders on it.
+   */
+  onVisibleBoundsChange?: (bounds: ViewportBounds) => void;
 }
 
 // Route-overlay layer filters: split the single mixed GeoJSONSource into
@@ -353,6 +368,7 @@ export const GuideMap = memo(
       builderMode,
       onMapPress,
       onStyleResolved,
+      onVisibleBoundsChange,
     },
     ref,
   ) {
@@ -505,8 +521,31 @@ export const GuideMap = memo(
             duration: 500,
           });
         },
+        fitBounds: (box: ViewportBounds) => {
+          cameraRef.current?.fitBounds(
+            [box.sw[0], box.sw[1], box.ne[0], box.ne[1]],
+            { padding: CAMERA_PADDING, duration: 400 },
+          );
+        },
       }),
       [bounds, currentPosition],
+    );
+
+    // Viewport reporting. The callback is held in a ref so a parent that hands
+    // us a fresh closure never re-renders the native map, and the payload is
+    // reduced to plain corners so nothing downstream knows about MapLibre.
+    const onVisibleBoundsChangeRef = useRef(onVisibleBoundsChange);
+    onVisibleBoundsChangeRef.current = onVisibleBoundsChange;
+    const handleRegionDidChange = useCallback(
+      (event: NativeSyntheticEvent<ViewStateChangeEvent>) => {
+        // v11: the idle event carries the viewport directly as
+        // bounds = [west, south, east, north] (was a GeoJSON feature in v10).
+        const b = event?.nativeEvent?.bounds;
+        if (!b || b.length < 4) return;
+        const [west, south, east, north] = b;
+        onVisibleBoundsChangeRef.current?.({ ne: [east, north], sw: [west, south] });
+      },
+      [],
     );
 
     // --- Layer paint (data-driven marker colors; track paint is module-level) --
@@ -746,6 +785,7 @@ export const GuideMap = memo(
         attribution={false}
         compass
         onPress={builderMode || onBackgroundPress ? handleMapPress : undefined}
+        onRegionDidChange={onVisibleBoundsChange ? handleRegionDidChange : undefined}
       >
         <Camera ref={cameraRef} initialViewState={cameraInitialViewState} />
 

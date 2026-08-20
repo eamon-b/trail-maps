@@ -37,6 +37,7 @@ import {
   INDEX_CONTOUR_INTERVAL,
   MAX_ZOOM,
   CONTOUR_MIN_ZOOM,
+  CONTOUR_TIERS,
   run,
   ensureDir,
   cleanWorkDir,
@@ -50,6 +51,7 @@ import {
   mgaEpsgForLon,
   CELL_SIZE_DEG,
   type CellDef,
+  type ContourTier,
 } from './tile-pipeline.js';
 
 // --- Constants ---
@@ -71,20 +73,9 @@ const WARP_TR_DEG = 0.000139;
 
 const CLASSIFIED_LAYER = 'contour';
 
-interface Tier {
-  suffix: string;
-  minZoom: number;
-  where: string;
-}
-
-const TIERS: Tier[] = [
-  { suffix: 'z9',  minZoom: 9,  where: `(CAST(elevation AS INTEGER) % 100) = 0` },
-  { suffix: 'z10', minZoom: 10, where: `(CAST(elevation AS INTEGER) % 50) = 0 AND (CAST(elevation AS INTEGER) % 100) != 0` },
-  { suffix: 'z12', minZoom: 12, where: `(CAST(elevation AS INTEGER) % 20) = 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
-  // %50 != 0 as well: odd multiples of 50 (50, 150, ...) have %20 = 10 and are
-  // already emitted by the z10 tier — without it they'd appear twice.
-  { suffix: 'z13', minZoom: 13, where: `(CAST(elevation AS INTEGER) % 20) != 0 AND (CAST(elevation AS INTEGER) % 50) != 0` },
-];
+// Tier definitions live in tile-pipeline.ts so this build and the world build
+// cannot drift apart — they feed the same public schema.
+const TIERS = CONTOUR_TIERS;
 
 // --- CLI argument parsing ---
 
@@ -149,7 +140,7 @@ function parseArgs(): CliArgs {
 
 // --- Per-cell paths ---
 
-function cellTierPath(cellId: string, tier: Tier): string {
+function cellTierPath(cellId: string, tier: ContourTier): string {
   return path.join(WORK_DIR, `${cellId}_${tier.suffix}.fgb`);
 }
 

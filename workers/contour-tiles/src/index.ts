@@ -4,7 +4,7 @@
  * URL pattern: /{source}/{z}/{x}/{y}.pbf
  * Example:     /contours/12/3750/2520.pbf
  *
- * The PMTiles file is stored in R2 at: contours/australia.pmtiles
+ * Each source name maps to one PMTiles archive in R2 (see SOURCES).
  */
 
 import {
@@ -87,7 +87,22 @@ function finalize(
   });
 }
 
-const PMTILES_KEY = 'contours/australia.pmtiles';
+/**
+ * Served tilesets, keyed by the `{source}` path segment. Adding a tileset is
+ * one entry here plus uploading the archive to R2 — nothing else in this file
+ * is per-source.
+ */
+const SOURCES: Record<string, string> = {
+  contours: 'contours/australia.pmtiles',
+  world: 'contours/world.pmtiles',
+};
+
+/** The source whose health decides the top-level `ok` of /health. */
+const DEFAULT_SOURCE = 'contours';
+
+function isKnownSource(source: string): boolean {
+  return Object.hasOwn(SOURCES, source);
+}
 
 /**
  * R2-backed source for the pmtiles library.
@@ -146,46 +161,50 @@ class R2Source implements Source {
   }
 }
 
-// Cache PMTiles instances per isolate lifetime
-let pmtilesInstance: PMTiles | null = null;
+// Cache PMTiles instances per source, per isolate lifetime
+const pmtilesInstances = new Map<string, PMTiles>();
 
-function getPMTiles(bucket: R2Bucket): PMTiles {
-  if (!pmtilesInstance) {
-    const source = new R2Source(bucket, PMTILES_KEY);
+function getPMTiles(bucket: R2Bucket, source: string): PMTiles {
+  let instance = pmtilesInstances.get(source);
+  if (!instance) {
+    const r2Source = new R2Source(bucket, SOURCES[source]);
     // Cloudflare Workers cannot reuse pending I/O promises across requests.
     // ResolvedValueCache stores only completed values and is the cache PMTiles
     // provides specifically for runtimes with that restriction.
-    pmtilesInstance = new PMTiles(source, new ResolvedValueCache());
+    instance = new PMTiles(r2Source, new ResolvedValueCache());
+    pmtilesInstances.set(source, instance);
   }
-  return pmtilesInstance;
+  return instance;
 }
 
-/**
- * Health check. Never edge-cached (Cache-Control: no-store) — it exists to
- * report the *current* state of the R2 archive.
- *
- * Returns a CORS-free response; the caller runs it through finalize().
- */
-async function healthResponse(env: Env): Promise<Response> {
-  const headers = {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-store',
+interface SourceHealth {
+  ok: boolean;
+  error?: string;
+  archive?: { key: string; size: number; etag: string };
+  tiles?: {
+    minZoom: number;
+    maxZoom: number;
+    minLon: number;
+    minLat: number;
+    maxLon: number;
+    maxLat: number;
   };
+}
 
+/** Probe one source's archive. Never throws. */
+async function sourceHealth(env: Env, source: string): Promise<SourceHealth> {
+  const key = SOURCES[source];
   try {
-    const object = await env.TILES_BUCKET.head(PMTILES_KEY);
+    const object = await env.TILES_BUCKET.head(key);
     if (!object) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Contour archive not found' }),
-        { status: 503, headers }
-      );
+      return { ok: false, error: 'Contour archive not found' };
     }
 
-    const header = await getPMTiles(env.TILES_BUCKET).getHeader();
-    const body = {
+    const header = await getPMTiles(env.TILES_BUCKET, source).getHeader();
+    return {
       ok: true,
       archive: {
-        key: PMTILES_KEY,
+        key,
         size: object.size,
         etag: object.etag,
       },
@@ -198,17 +217,45 @@ async function healthResponse(env: Env): Promise<Response> {
         maxLat: header.maxLat,
       },
     };
-
-    return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (error) {
-    pmtilesInstance = null;
+    pmtilesInstances.delete(source);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`Contour health check failed: ${message}`);
-    return new Response(JSON.stringify({ ok: false, error: message }), {
-      status: 503,
-      headers,
-    });
+    console.error(`Contour health check failed for ${source}: ${message}`);
+    return { ok: false, error: message };
   }
+}
+
+/**
+ * Health check. Never edge-cached (Cache-Control: no-store) — it exists to
+ * report the *current* state of the R2 archives.
+ *
+ * The top-level shape still describes DEFAULT_SOURCE exactly as it always did,
+ * so existing consumers keep working; `sources` adds the per-source breakdown.
+ * A source whose archive is not uploaded yet reports ok:false under `sources`
+ * without failing the overall check.
+ *
+ * Returns a CORS-free response; the caller runs it through finalize().
+ */
+async function healthResponse(env: Env): Promise<Response> {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+  };
+
+  const names = Object.keys(SOURCES);
+  const results = await Promise.all(names.map((name) => sourceHealth(env, name)));
+  const sources: Record<string, SourceHealth> = {};
+  names.forEach((name, i) => {
+    sources[name] = results[i];
+  });
+
+  const primary = sources[DEFAULT_SOURCE];
+  const body = { ...primary, sources };
+
+  return new Response(JSON.stringify(body), {
+    status: primary.ok ? 200 : 503,
+    headers,
+  });
 }
 
 /**
@@ -245,7 +292,7 @@ function parseTilePath(
 
 /**
  * True when an error means the cached PMTiles directory/header no longer
- * matches the R2 object (i.e. australia.pmtiles was re-uploaded).
+ * matches the R2 object (i.e. the archive was re-uploaded).
  *
  * pmtiles v4 exports `EtagMismatch`, so `instanceof` is the primary signal.
  * The message fallback only guards against a duplicated pmtiles copy in the
@@ -293,7 +340,7 @@ export default {
       );
     }
 
-    if (tile.source !== 'contours') {
+    if (!isKnownSource(tile.source)) {
       return finalize(new Response(`Unknown source: ${tile.source}`, { status: 404 }), env, request);
     }
 
@@ -301,9 +348,9 @@ export default {
     //
     // NOTE: `caches.default` is a NO-OP on *.workers.dev — that cache lives at
     // the zone level and workers.dev is a shared zone, so put/match silently do
-    // nothing there. Every line below becomes live the moment this Worker is
-    // served from a custom domain or route (see wrangler.toml / README.md); the
-    // move is config-only.
+    // nothing there. This Worker answers on both hostnames, so the code below is
+    // live on tiles.contour-map-tiles.net and inert on the workers.dev one.
+    // Measure cache behaviour on the custom domain only.
     //
     // Staleness tradeoff: tiles are immutable for the lifetime of an archive
     // build, but australia.pmtiles can be re-uploaded. The R2 side of that is
@@ -315,9 +362,11 @@ export default {
     // zone cache manually.
     const cache = caches.default;
 
-    // Cache keyed by URL only. Normalize away the query string: the response
-    // depends solely on the path, so leaving the query in would let
-    // `?cachebust=N` mint unbounded distinct entries for byte-identical bytes.
+    // Cache keyed by URL only — the full pathname, which already includes the
+    // `{source}` segment, so serving multiple sources needs no cache changes.
+    // Normalize away the query string: the response depends solely on the path,
+    // so leaving the query in would let `?cachebust=N` mint unbounded distinct
+    // entries for byte-identical bytes.
     // Always a GET key — cache.put() rejects non-GET requests, and this lets a
     // HEAD be served from (and populate) the same entry a GET uses.
     const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' });
@@ -338,7 +387,7 @@ export default {
     // a HEAD miss stores a usable entry rather than poisoning the cache with an
     // empty body; finalize() strips the body on the way out.
     const serveTile = async (): Promise<Response> => {
-      const pmtiles = getPMTiles(env.TILES_BUCKET);
+      const pmtiles = getPMTiles(env.TILES_BUCKET, tile.source);
 
       // Check metadata for zoom range
       const header = await pmtiles.getHeader();
@@ -399,9 +448,9 @@ export default {
       try {
         return cacheAndFinalize(await serveTile());
       } catch (firstError) {
-        // Re-uploading australia.pmtiles changes the R2 etag, and a PMTiles
-        // instance cached from before the upload fails etag validation on its
-        // next range read. Drop the cached instance and retry once so warm
+        // Re-uploading an archive changes the R2 etag, and a PMTiles instance
+        // cached from before the upload fails etag validation on its next range
+        // read. Drop that source's cached instance and retry once so warm
         // isolates recover immediately instead of 500ing until recycled.
         //
         // Only etag mismatches justify this. The cached instance holds the warm
@@ -410,16 +459,16 @@ export default {
         // failure into a thundering herd of cold directory re-reads.
         if (!isEtagMismatch(firstError)) throw firstError;
 
-        pmtilesInstance = null;
+        pmtilesInstances.delete(tile.source);
         console.warn(
-          `Tile ${tile.z}/${tile.x}/${tile.y}: retrying with fresh PMTiles instance after etag mismatch: ` +
+          `Tile ${tile.source}/${tile.z}/${tile.x}/${tile.y}: retrying with fresh PMTiles instance after etag mismatch: ` +
           (firstError instanceof Error ? firstError.message : String(firstError))
         );
         return cacheAndFinalize(await serveTile());
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Tile error ${tile.z}/${tile.x}/${tile.y}: ${message}`);
+      console.error(`Tile error ${tile.source}/${tile.z}/${tile.x}/${tile.y}: ${message}`);
       // Errors are never edge-cached — a transient R2 failure must not pin a
       // 500 to this tile URL for the next 24 hours.
       return finalize(new Response('Internal server error', { status: 500 }), env, request);

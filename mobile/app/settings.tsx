@@ -1,6 +1,7 @@
 /**
- * App settings — units, plus the account section where the comment display
- * name can be renamed (the promise the first-post prompt makes).
+ * App settings — units, the account section where the comment display name can
+ * be renamed (the promise the first-post prompt makes), and About, which
+ * carries the privacy-policy link the app stores require in-app.
  */
 
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +10,7 @@ import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
 import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
 import { DeleteAccountSection } from '../src/features/settings/DeleteAccountSection';
+import { AboutSection } from '../src/features/settings/AboutSection';
 import { useSettingsStore, type Units } from '../src/state/settings-store';
 
 const UNIT_OPTIONS = [
@@ -38,6 +40,9 @@ export default function SettingsScreen() {
 
       <DisplayNameSection />
       <DeleteAccountSection />
+      {/* Last: About is always visible, while the two account sections above
+          hide themselves on a device with no identity. */}
+      <AboutSection />
     </ScrollView>
   );
 }

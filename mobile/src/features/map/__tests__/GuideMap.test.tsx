@@ -556,6 +556,64 @@ describe('GuideMap', () => {
     expect(onBackgroundPress).not.toHaveBeenCalled();
   });
 
+  it('reports the settled viewport so the pane can turn it into a focus window', async () => {
+    // Only the idle event is wired (onRegionDidChange, not onRegionIsChanging),
+    // so the report is already debounced to "the user stopped moving the map".
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onVisibleBoundsChange = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          onVisibleBoundsChange={onVisibleBoundsChange}
+        />,
+      );
+    });
+    await flush();
+
+    const map = mapViews(tree)[0];
+    const onRegionDidChange = map.props.onRegionDidChange as (event: unknown) => void;
+    expect(map.props.onRegionIsChanging).toBeUndefined();
+
+    act(() => {
+      // v11 idle event: the viewport rides on nativeEvent as
+      // bounds = [west, south, east, north].
+      onRegionDidChange({
+        nativeEvent: {
+          center: [138.5, -34.5],
+          zoom: 10,
+          bearing: 0,
+          pitch: 0,
+          bounds: [138, -35, 139, -34],
+          animated: false,
+          userInteraction: true,
+        },
+      });
+    });
+    expect(onVisibleBoundsChange).toHaveBeenCalledWith({ ne: [139, -34], sw: [138, -35] });
+
+    // A payload without bounds is ignored rather than reported as garbage.
+    act(() => {
+      onRegionDidChange({ nativeEvent: {} });
+    });
+    expect(onVisibleBoundsChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the region handler off when nobody is listening', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} />,
+      );
+    });
+    await flush();
+    expect(mapViews(tree)[0].props.onRegionDidChange).toBeUndefined();
+  });
+
   it('renders the route overlay source when a routeOverlay is supplied', async () => {
     getOnline.mockResolvedValue(ONLINE_STYLE);
     const routeOverlay: GeoJSON.FeatureCollection = {

@@ -70,7 +70,6 @@ import {
   buildVariantCollection,
   buildWaypointCollection,
   trailCameraBounds,
-  type CameraBounds,
   type LatLon,
   type MapVariant,
   type MapWaypoint,

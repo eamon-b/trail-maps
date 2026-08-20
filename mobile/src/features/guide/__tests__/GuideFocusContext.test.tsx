@@ -41,12 +41,17 @@ interface Harness {
 }
 
 function renderPanes(panes: React.ReactNode): Harness {
-  let handle!: ReturnType<typeof useGuideFocus>;
-  let pane: GuidePaneKey = 'map';
+  // Probe reports each render's hook value through a mock rather than
+  // assigning to closure variables, which the React Compiler lint rejects.
+  const report = jest.fn<void, [ReturnType<typeof useGuideFocus>]>();
+  const latest = () => {
+    const call = report.mock.lastCall;
+    if (!call) throw new Error('Probe has not rendered');
+    return call[0];
+  };
 
   function Probe() {
-    handle = useGuideFocus();
-    pane = handle.pane;
+    report(useGuideFocus());
     return null;
   }
 
@@ -60,9 +65,9 @@ function renderPanes(panes: React.ReactNode): Harness {
   });
 
   return {
-    switchPane: (next) => act(() => handle.switchPane(next)),
-    currentPane: () => pane,
-    getFocus: () => handle.getFocus(),
+    switchPane: (next) => act(() => latest().switchPane(next)),
+    currentPane: () => latest().pane,
+    getFocus: () => latest().getFocus(),
   };
 }
 

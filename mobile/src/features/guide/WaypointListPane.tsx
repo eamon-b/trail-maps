@@ -10,10 +10,21 @@
  * Water waypoints also carry a freshness-ranked status chip ("Flowing · 3d")
  * when the comment cache holds recent reports — see `water-aggregate` for the
  * ranking and `use-water-status` for the read.
+ *
+ * The rows on screen are also this pane's contribution to the guide's shared
+ * focus window (see guide-focus): leaving the list reports the km range they
+ * span, and arriving scrolls to the first waypoint in the incoming range.
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ViewToken,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import { useTheme } from '../../theme';
@@ -22,6 +33,8 @@ import { useSettingsStore } from '../../state/settings-store';
 import { useFavoritesStore } from '../../state/favorites-store';
 import type { TrailJson } from '../../services/trail-loader';
 import { useGuide } from './GuideContext';
+import { useGuidePaneFocus } from './GuideFocusContext';
+import { firstIndexInFocus, focusFromItems } from './guide-focus';
 import { orderedWaypoints } from './guide-trail';
 import { useGuidePositionContext } from './GuidePositionContext';
 import { useWaterStatus } from './use-water-status';
@@ -89,6 +102,36 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
     listRef.current?.scrollToIndex({ index: currentIndex, viewPosition: 0.3, animated: true });
   }, [currentIndex]);
 
+  // --- Pane focus ----------------------------------------------------------
+  // The rows currently on screen, tracked through FlatList's viewability
+  // callback. `onViewableItemsChanged` must keep one identity for the list's
+  // lifetime (FlatList throws otherwise), hence the ref-held handler.
+  const visibleItemsRef = useRef<Waypoint[]>([]);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  // Optional-chained: the pane only ever reads distances off the rows, so a
+  // trail handed in without track geometry still lists fine (focusFromItems
+  // falls back to the last row's distance when it has no total to clamp to).
+  const totalKm = trail.track?.totalDistance || 0;
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    visibleItemsRef.current = viewableItems
+      .map((token) => token.item as Waypoint)
+      .filter((item): item is Waypoint => item != null);
+  }).current;
+
+  useGuidePaneFocus('list', {
+    capture: () => focusFromItems(visibleItemsRef.current, totalKm),
+    apply: (focus) => {
+      const rows = dataRef.current;
+      const index = firstIndexInFocus(rows, focus);
+      if (index < 0) return;
+      // Not animated: this lands while the pane is being revealed, and an
+      // animated scroll from the old offset would be a distracting fly-past.
+      listRef.current?.scrollToIndex({ index, viewPosition: 0, animated: false });
+    },
+  });
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Sticky category filter chips */}
@@ -124,6 +167,7 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
         ref={listRef}
         data={data}
         keyExtractor={waypointKey}
+        onViewableItemsChanged={onViewableItemsChanged}
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
         renderItem={({ item, index }) => {

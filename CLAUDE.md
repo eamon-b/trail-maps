@@ -45,6 +45,11 @@ Shared processing modules (used by both web and mobile):
 - `build-trails.ts` - Generates static trail pages from GPX/JSON data
 - `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision)
 - `build-contours-australia.ts` - Builds contour PMTiles for the contour tile worker
+- `build-contours-world.ts` - Builds world contour shards from Copernicus GLO-30 DEM, `--join` merges shards to world.pmtiles (spec: `plans/world-contour-tiles.md`)
+- `fetch-dem-copernicus.ts` - Downloads Copernicus GLO-30 DEM tiles (global, anonymous, per bbox/cells/shard)
+- `contour-experiment.ts` - Contour quality experiment harness: settings-matrix builds + side-by-side compare viewer (`npm run experiment:contours`)
+- `lib/world-grid.ts` - Global 2° cell grid, shard partition, Copernicus tile naming
+- `remote/` - Remote-machine world build: bootstrap, detached shard driver, status, R2 upload (runbook: `docs/world-contours-remote-build.md`)
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
 - `fetch-pois.ts` - Fetches points of interest

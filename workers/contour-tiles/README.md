@@ -1,11 +1,11 @@
 # contour-tiles worker
 
-Serves contour vector tiles out of a PMTiles archive on R2.
+Serves contour vector tiles out of PMTiles archives on R2.
 
 - Public hostname: `https://tiles.contour-map-tiles.net` (also still on
   `contour-tiles.aus-map-data.workers.dev` for already-shipped mobile builds)
-- URL pattern: `/{source}/{z}/{x}/{y}.pbf` (only source `contours` is served)
-- Archive: R2 bucket `aus-map-data`, key `contours/australia.pmtiles`
+- URL pattern: `/{source}/{z}/{x}/{y}.pbf`
+- Archives: R2 bucket `aus-map-data` (see Sources below)
 - Health: `/health` — reports archive size/etag and the archive's zoom + bbox
 - Consumed by the mobile app via `EXPO_PUBLIC_CONTOUR_TILE_URL`
 
@@ -26,6 +26,45 @@ for clients that can only consume z/x/y URLs.
 npm run dev      # wrangler dev
 npm run deploy   # wrangler deploy (requires `wrangler login`)
 npx tsc --noEmit # typecheck
+```
+
+## Sources
+
+The `{source}` path segment selects one PMTiles archive. The mapping is the
+`SOURCES` record in `src/index.ts`:
+
+| Source | R2 key |
+| --- | --- |
+| `contours` | `contours/australia.pmtiles` |
+| `world` | `contours/world.pmtiles` |
+
+**Adding a tileset is one entry in `SOURCES` plus uploading the archive to R2** —
+routing, the per-source PMTiles instance cache, edge caching (already keyed by
+the full pathname, which includes the source segment) and `/health` all pick it
+up automatically. An unknown source is a `404`.
+
+A source listed in `SOURCES` whose archive is not uploaded yet is not an error
+condition: it serves `500`s for tiles and reports `ok: false` under
+`sources` in `/health`, while the rest of the Worker is unaffected.
+
+### `/health` shape
+
+Top-level fields describe the `contours` source exactly as they always have
+(`ok`, plus `archive`/`tiles` when healthy or `error` when not), and the overall
+HTTP status still follows `contours` alone — so existing consumers keep working
+while `world` is still being built. A `sources` object adds the per-source
+breakdown:
+
+```json
+{
+  "ok": true,
+  "archive": { "key": "contours/australia.pmtiles", "size": 0, "etag": "…" },
+  "tiles": { "minZoom": 9, "maxZoom": 14, "minLon": 0, "minLat": 0, "maxLon": 0, "maxLat": 0 },
+  "sources": {
+    "contours": { "ok": true, "archive": { … }, "tiles": { … } },
+    "world": { "ok": false, "error": "Contour archive not found" }
+  }
+}
 ```
 
 ## Edge caching

@@ -72,7 +72,7 @@ describe('Australia contour upload contract', () => {
     );
 
     expect(buildSource).toContain("const OUTPUT_FILENAME = 'australia-contours.pmtiles'");
-    expect(workerSource).toContain("const PMTILES_KEY = 'contours/australia.pmtiles'");
+    expect(workerSource).toContain("contours: 'contours/australia.pmtiles'");
   });
 
   it('uploads a small archive to the exact Worker key via Wrangler', () => {

@@ -113,6 +113,27 @@ describe('Design Tokens — Themes', () => {
     }
   });
 
+  // Regression guard for the dark theme shipping `border === surfaceElevated`
+  // (both palette.forest7), which made every hairline on an elevated card
+  // invisible in dark mode.
+  it('border is distinct from every surface token in each theme', () => {
+    for (const variant of themeVariants) {
+      const theme = resolveTheme(variant);
+      for (const key of ['background', 'surface', 'surfaceElevated'] as const) {
+        expect(theme.border).not.toBe(theme[key]);
+      }
+    }
+  });
+
+  it('border is perceptible against every surface it can be drawn on', () => {
+    for (const variant of themeVariants) {
+      const theme = resolveTheme(variant);
+      for (const key of ['background', 'surface', 'surfaceElevated'] as const) {
+        expect(contrastRatio(theme.border, theme[key])).toBeGreaterThanOrEqual(1.1);
+      }
+    }
+  });
+
   describe('WCAG contrast', () => {
     for (const variant of themeVariants) {
       const label = themeLabels[variant];

@@ -174,11 +174,11 @@ export function ReportDialog({
                     style={[
                       styles.reason,
                       {
-                        // Filled, not just outlined: in the dark theme `border`
-                        // and `surfaceElevated` are the same green, so a
-                        // hairline outline on this card is invisible. The fill
-                        // is what makes each option read as a tappable box;
-                        // the accent border then marks the chosen one.
+                        // Filled, not just outlined: `surface` reads as a
+                        // recessed box against the card's `surfaceElevated`, so
+                        // each option looks tappable at a glance rather than
+                        // relying on the hairline alone. The accent border then
+                        // marks the chosen one.
                         backgroundColor: active ? colors.accentSubtle : colors.surface,
                         borderColor: active ? colors.accent : colors.border,
                       },

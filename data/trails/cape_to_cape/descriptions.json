@@ -1,0 +1,156 @@
+{
+  "trailId": "cape_to_cape",
+  "note": "Curated waypoint descriptions, keyed by the stable ids in data/waypoint-ids.json. Applied by scripts/build-trails.ts (overriding any description from the GPX/GeoJSON source) and uploadable to the comments API with scripts/upload-descriptions.ts. Listed south to north, matching the km order of the generated trail data.",
+  "descriptions": [
+    {
+      "waypointId": "w_455abc29",
+      "name": "Cape Leeuwin Lighthouse",
+      "description": "The southern end of the Cape to Cape Track, on the headland where the Indian and Southern oceans meet. The lighthouse precinct has a car park and visitor facilities, and Augusta is the nearest town for food, beds and transport."
+    },
+    {
+      "waypointId": "w_cd183495",
+      "name": "Deepdene Beach Start (5.5km)",
+      "description": "Where the track drops onto Deepdene Beach for a long stretch of sand. Soft sand makes for slow going, so allow extra time and use the firmer strip near the waterline."
+    },
+    {
+      "waypointId": "w_077cff01",
+      "name": "Deepdene Campsite",
+      "description": "Basic hikers' campsite set back behind the dunes near Deepdene Beach, with tent sites and a toilet. There is no natural water here; treat anything you collect from a tank and don't count on the tank holding water late in summer."
+    },
+    {
+      "waypointId": "w_bd275418",
+      "name": "Deepdene Beach End (5.5km)",
+      "description": "The track leaves Deepdene Beach here and climbs back into the dunes and coastal heath."
+    },
+    {
+      "waypointId": "w_4c97face",
+      "name": "Hamelin Bay Beach Start (6.5km)",
+      "description": "Start of the long beach walk along Hamelin Bay. Check the tide before you set out — the sand is much firmer and faster on a falling or low tide — and expect little shade the whole way."
+    },
+    {
+      "waypointId": "w_4ec1d492",
+      "name": "Hamelin Bay",
+      "description": "Sheltered bay with a boat ramp, day-use area and a caravan park just off the track, and the only roadside facilities on this stretch of coast. Stingrays often cruise the shallows near the ramp."
+    },
+    {
+      "waypointId": "w_64f09073",
+      "name": "Hamelin Bay Beach End (6.5km)",
+      "description": "The track turns off the sand here and climbs into the dunes and heath behind the bay."
+    },
+    {
+      "waypointId": "w_daacc724",
+      "name": "Boranup Forest",
+      "description": "Tall karri forest that runs almost to the coast, regrowth from the area's timber-milling era and a striking change from the dunes and heath. Shaded walking, but no water along the way."
+    },
+    {
+      "waypointId": "w_808bb2ce",
+      "name": "Point Rd Campsite",
+      "description": "Small hikers' campsite off Point Road, with tent sites and a basic toilet. Any water here is rainwater at best, so carry what you need and treat whatever you collect."
+    },
+    {
+      "waypointId": "w_888629a6",
+      "name": "Contos Campsite",
+      "description": "The largest campground on the track: a vehicle-accessible DBCA campground near Conto Beach, with toilets and drive-in sites. Camping fees apply, and the road access makes it a practical spot for a food drop or a lift."
+    },
+    {
+      "waypointId": "w_45c70cb4",
+      "name": "Redgate Beach Start (2.3km)",
+      "description": "The track drops to Redgate Beach for a short stretch of sand. It is an exposed, unpatrolled surf beach with strong rips — fine to walk, but not a safe swim in any swell."
+    },
+    {
+      "waypointId": "w_9866af0f",
+      "name": "Redgate Beach End (2.3km)",
+      "description": "The track leaves Redgate Beach here and climbs back onto the clifftop."
+    },
+    {
+      "waypointId": "w_2f9a4e45",
+      "name": "Prevelly",
+      "description": "Small coastal settlement above the Margaret River mouth with a general store, cafes and a caravan park — the handiest resupply on the southern half of the track. Margaret River town, with full-sized supermarkets, is a short drive inland."
+    },
+    {
+      "waypointId": "w_b76d9ab6",
+      "name": "Margaret River Mouth",
+      "description": "Where the Margaret River meets the sea below Prevelly, beside the well-known Surfers Point breaks. The mouth can be open and running after winter rain — look at it before committing to a crossing, and take the inland detour to the road bridge if it is not safely wadeable."
+    },
+    {
+      "waypointId": "w_1823e0c7",
+      "name": "Kilcarnup Beach Start (2.1km)",
+      "description": "The track joins the sand here for the walk along Kilcarnup Beach, north of the Margaret River mouth. Soft in places; the firmer sand near the water is easier walking."
+    },
+    {
+      "waypointId": "w_5495b8d6",
+      "name": "Kilcarnup Beach End (2.1km)",
+      "description": "The track leaves the beach here and climbs the dunes toward Ellensbrook."
+    },
+    {
+      "waypointId": "w_ff9ac775",
+      "name": "Ellensbrook Campsite",
+      "description": "Hikers' campsite in the bush near Ellensbrook, with tent sites and a basic toilet. Plan to carry water in, and treat any tank water you do find."
+    },
+    {
+      "waypointId": "w_bf7909d4",
+      "name": "Ellensbrook Homestead",
+      "description": "Historic mid-1800s homestead in a sheltered gully, now a National Trust heritage property. Opening times are limited, so check before counting on going inside — but the shady grounds and the short walk to the falls behind it make an easy break just off the track."
+    },
+    {
+      "waypointId": "w_1042b1df",
+      "name": "Gracetown",
+      "description": "Small coastal village on Cowaramup Bay with a general store and a caravan park. Good for snacks, drinks and a top-up rather than a full resupply — there is no supermarket, so plan bigger shops around Margaret River."
+    },
+    {
+      "waypointId": "w_7209018a",
+      "name": "Moses Rock Campsite",
+      "description": "Hikers' campsite in the coastal heath near Moses Rock, with tent sites and a basic toilet. Treat any tank water, and don't rely on the tank in a dry summer."
+    },
+    {
+      "waypointId": "w_9863ffae",
+      "name": "Quinninup Falls",
+      "description": "Seasonal waterfall in a sheltered gully a short detour off the track. It runs after winter and spring rain and can be dry by late summer, so don't plan on it as a water source."
+    },
+    {
+      "waypointId": "w_fdbbdbbb",
+      "name": "Injidup Beach Start (0.8km)",
+      "description": "A short sand section along Injidup Beach, one of the quicker beach walks on the track. The surf here is exposed and unpatrolled."
+    },
+    {
+      "waypointId": "w_5be983d4",
+      "name": "Injidup Beach End (0.8km)",
+      "description": "The track leaves the sand here and climbs back into the coastal heath."
+    },
+    {
+      "waypointId": "w_236ca161",
+      "name": "Canal Rocks",
+      "description": "Granite outcrop split by narrow sea channels, with a car park and a footbridge over the canal — one of the busier day-visitor spots on this coast. A good place for a break, but there is no drinking water."
+    },
+    {
+      "waypointId": "w_048ddf7c",
+      "name": "Smiths Beach Start (1.7km)",
+      "description": "The track drops to Smiths Beach for a short walk on sand. It is a popular surf beach with vehicle access, so expect company in the holidays."
+    },
+    {
+      "waypointId": "w_ea44b5aa",
+      "name": "Smiths Beach End (1.7km)",
+      "description": "The track leaves Smiths Beach here and climbs back onto the headland."
+    },
+    {
+      "waypointId": "w_946d76a3",
+      "name": "Yallingup",
+      "description": "Small settlement above Yallingup Beach with a general store, cafes and a caravan park — the last easy resupply on the northern end of the track. Dunsborough, a short drive inland, has the nearest full-sized shops."
+    },
+    {
+      "waypointId": "w_1aa84d7e",
+      "name": "Mount Duckworth Campsite",
+      "description": "Hikers' campsite on the slopes of Mount Duckworth, the closest camp to the northern end of the track, with tent sites and a basic toilet. Carry water in rather than counting on a tank."
+    },
+    {
+      "waypointId": "w_3e042ac7",
+      "name": "Sugarloaf Rock",
+      "description": "A large granite sea stack just offshore and the most photographed landmark on the track, with a car park and lookout above it. Seabirds nest on and around the rock, so stay on the formed paths."
+    },
+    {
+      "waypointId": "w_3e1dc6db",
+      "name": "Cape Naturaliste Lighthouse",
+      "description": "The northern end of the Cape to Cape Track, at the lighthouse precinct with its car park, toilets and visitor centre. Dunsborough is the nearest town for food, beds and transport."
+    }
+  ]
+}

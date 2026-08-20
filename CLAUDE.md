@@ -58,6 +58,7 @@ Shared processing modules (used by both web and mobile):
 - `build-grid-tiles.ts` - Builds grid-based map tiles
 - `tile-pipeline.ts` - Orchestrates the full tile generation pipeline
 - `process-heysen-waypoints.ts` - Trail-specific waypoint data processing
+- `upload-descriptions.ts` - PUTs curated waypoint descriptions to the comments API (`npm run upload:descriptions`, admin token in `$TRACKNOTES_ADMIN_TOKEN`; `--dry-run` prints the requests)
 
 ### Web UI (`src/web/`)
 
@@ -76,6 +77,7 @@ Each trail has its own directory containing:
 - `*.gpx` - Original GPX track data
 - `trail.json` - Trail metadata and waypoints
 - `climate.json` - Climate data for locations along the trail
+- `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
 
 ### Generated Data (`public/data/generated/`)
 

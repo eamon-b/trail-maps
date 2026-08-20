@@ -19,6 +19,11 @@ import {
   stringifyRegistry,
   type WaypointRegistry,
 } from './lib/waypoint-ids.js';
+import {
+  applyCuratedDescriptions,
+  DESCRIPTIONS_FILENAME,
+  loadCuratedDescriptions,
+} from './lib/waypoint-descriptions.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -1120,6 +1125,24 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
   waypoints.forEach((wp, i) => {
     wp.id = waypointIds[i];
   });
+
+  // Apply curated descriptions from data/trails/<trail>/descriptions.json.
+  // Keyed by the stable ids just assigned, and applied here for the same reason
+  // ids are: every downstream view copies from these objects. The curated text
+  // is the bundled half of the description pipeline — the comments API serves
+  // the same ids as synced overrides (see scripts/lib/waypoint-descriptions.ts).
+  const curatedDescriptions = loadCuratedDescriptions(trailDir, config.id);
+  if (curatedDescriptions.length > 0) {
+    const { applied, unmatchedIds } = applyCuratedDescriptions(waypoints, curatedDescriptions);
+    console.log(`  ✓ Applied ${applied} curated waypoint description(s) from ${DESCRIPTIONS_FILENAME}`);
+    if (unmatchedIds.length > 0) {
+      // Not fatal: an id can go stale when source data moves a waypoint far
+      // enough to mint a new id. Loud, because the prose silently disappears.
+      console.warn(
+        `  ⚠ ${unmatchedIds.length} curated description(s) matched no waypoint: ${unmatchedIds.join(', ')}`
+      );
+    }
+  }
 
   // Enrich waypoints with distance and elevation data
   const waypointMaxDist = config.waypointMaxDistance ?? 500;

@@ -10,7 +10,7 @@ export interface Env {
   DB: D1Database;
   /** R2 bucket holding comment photo attachments under the `comments/` prefix. */
   PHOTOS: R2Bucket;
-  /** Public read base for R2 objects, e.g. the bucket's r2.dev URL (no trailing slash needed). */
+  /** Public read base for R2 objects, e.g. the bucket's custom domain (no trailing slash needed). */
   PHOTOS_PUBLIC_BASE: string;
 }
 

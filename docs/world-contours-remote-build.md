@@ -172,7 +172,7 @@ pmtiles tile public/data/tiles/world_oceania.pmtiles 15 28450 18593 | wc -c
 ```
 
 Check against the production archive
-(`https://contour-tiles.aus-map-data.workers.dev/contours/15/28450/18593.pbf`):
+(`https://tiles.contour-map-tiles.net/contours/15/28450/18593.pbf`):
 same contour density, no dangling lines at 2° cell edges, index contours
 present (`is_index` is the **string** `"1"` — MapLibre filters must
 `to-number` it), z9–15 coverage. Only when this looks right do you spend money
@@ -271,9 +271,9 @@ mapping to `contours/world.pmtiles` alongside the existing `contours`
 ```bash
 cd workers/contour-tiles && npx wrangler deploy
 
-curl -s https://contour-tiles.aus-map-data.workers.dev/health | jq .
+curl -s https://tiles.contour-map-tiles.net/health | jq .
 #   expect ok: true overall, and a per-source breakdown with world: ok
-curl -sI https://contour-tiles.aus-map-data.workers.dev/world/15/28450/18593.pbf
+curl -sI https://tiles.contour-map-tiles.net/world/15/28450/18593.pbf
 #   expect 200 + application/x-protobuf (204 means "no contours here", which is
 #   correct over ocean but wrong at Mt Sonder)
 ```

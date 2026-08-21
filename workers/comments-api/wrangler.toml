@@ -2,10 +2,18 @@ name = "farout-comments"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
 
-# Serve on the account's workers.dev subdomain:
-#   https://farout-comments.<account-subdomain>.workers.dev
+# Public hostname: https://api.contour-map-tiles.net (zone: contour-map-tiles.net).
 # Deploy with: npm run deploy (requires `wrangler login`).
+#
+# workers.dev is kept alive alongside the custom domain so already-shipped
+# mobile builds (which have https://farout-comments.aus-map-data.workers.dev
+# inlined at bundle time) keep working. Do not flip to false until no released
+# build points at the workers.dev URL.
 workers_dev = true
+
+[[routes]]
+pattern = "api.contour-map-tiles.net"
+custom_domain = true
 
 [[d1_databases]]
 binding = "DB"
@@ -19,6 +27,7 @@ binding = "PHOTOS"
 bucket_name = "aus-map-data"
 
 [vars]
-# Public read base for R2 objects (the bucket's r2.dev dev URL). The worker
+# Public read base for R2 objects: the bucket's custom domain (the old
+# pub-….r2.dev URL still resolves but is rate-limited and uncached). The worker
 # returns full URLs built from this + the object key. Tests override it.
-PHOTOS_PUBLIC_BASE = "https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev"
+PHOTOS_PUBLIC_BASE = "https://data.contour-map-tiles.net"

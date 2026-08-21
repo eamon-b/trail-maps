@@ -192,7 +192,7 @@ When changes affect native dependencies (adding/removing/updating packages, modi
 
 ```
 # Comments API (local wrangler dev server, or the deployed worker URL)
-EXPO_PUBLIC_API_BASE_URL=http://localhost:8787
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8787   # deployed: https://api.contour-map-tiles.net
 
 # Contour vector tiles — without this, online maps silently render without contours
 EXPO_PUBLIC_CONTOUR_TILE_URL=https://tiles.contour-map-tiles.net

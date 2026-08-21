@@ -7,7 +7,7 @@
       "env": {
         "EXPO_PUBLIC_TILE_BASE_URL": "https://data.contour-map-tiles.net",
         "EXPO_PUBLIC_CONTOUR_TILE_URL": "https://tiles.contour-map-tiles.net",
-        "EXPO_PUBLIC_API_BASE_URL": "https://farout-comments.aus-map-data.workers.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.contour-map-tiles.net"
       }
     },
     "development": {

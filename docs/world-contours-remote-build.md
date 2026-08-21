@@ -89,6 +89,14 @@ chosen bundle into the defaults of `scripts/build-contours-world.ts`, commit,
 and push — **before** provisioning. Changing your mind after two shards means
 rebuilding them.
 
+**Decided 2026-08-22** (Mt Sonder, run `smooth-z13`): 2× cubicspline warp,
+`--simplification=2 --simplify-only-low-zooms --minimum-detail=7
+--maximum-tile-bytes=1000000`. The previous `--simplification=14` left z12–z14
+contours visibly polygonal; 2 is smooth at every zoom for ~+35% archive size in
+mountainous tiles (z15 unchanged). Only the tippecanoe flags changed, so a
+future re-tune is a `--merge-only` re-run, not a cell rebuild. The experiment's
+`baseline` variant mirrors these flags; `legacy-simp-14` is the old bundle.
+
 ---
 
 ## 3. Provision and bootstrap

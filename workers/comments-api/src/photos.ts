@@ -2,7 +2,7 @@
  * Photo attachments for comments.
  *
  * Storage: R2 (`PHOTOS` binding), objects keyed `comments/{commentId}/{index}.{ext}`.
- * Public reads happen directly against `PHOTOS_PUBLIC_BASE` (the bucket's r2.dev
+ * Public reads happen directly against `PHOTOS_PUBLIC_BASE` (the bucket's custom-domain
  * URL); the worker only ever returns full public URLs. The comment row carries a
  * JSON array of those URLs in `photo_urls_json` (NULL = none).
  */

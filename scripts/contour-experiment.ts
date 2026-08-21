@@ -94,21 +94,33 @@ interface Variant {
   simplification: number;
   minimumDetail: number;
   simplifyOnlyLowZooms: boolean;
+  /** tippecanoe --maximum-tile-bytes; undefined = tippecanoe default (500 KB). */
+  maxTileBytes?: number;
 }
 
+/** Mirrors the tippecanoe flags in build-contours-world.ts (decision gate 2026-08-22). */
 const BASELINE: Omit<Variant, 'name' | 'description'> = {
   warpScale: 2,
   resampling: 'cubicspline',
-  simplification: 14,
-  minimumDetail: 4,
+  simplification: 2,
+  minimumDetail: 7,
   simplifyOnlyLowZooms: true,
+  maxTileBytes: 1_000_000,
 };
 
 const VARIANTS: Variant[] = [
   {
     name: 'baseline',
-    description: 'Current production settings (australia-contours.pmtiles)',
+    description: 'Current world-build settings (build-contours-world.ts)',
     ...BASELINE,
+  },
+  {
+    name: 'legacy-simp-14',
+    description: 'Pre-2026-08-22 production settings (australia.pmtiles as deployed): polygonal at z12–14',
+    ...BASELINE,
+    simplification: 14,
+    minimumDetail: 4,
+    maxTileBytes: undefined,
   },
   {
     name: 'no-oversample',
@@ -148,6 +160,26 @@ const VARIANTS: Variant[] = [
     simplification: 30,
     simplifyOnlyLowZooms: false,
   },
+  // --- tippecanoe-only variants bracketing the chosen simplification. Same
+  // contour geometry as baseline; only the merge flags differ.
+  {
+    name: 'simp-8',
+    description: 'simplification 8 at z9–14 (z15 untouched)',
+    ...BASELINE,
+    simplification: 8,
+  },
+  {
+    name: 'simp-4',
+    description: 'simplification 4 at z9–14 (z15 untouched)',
+    ...BASELINE,
+    simplification: 4,
+  },
+  {
+    name: 'simp-1',
+    description: 'simplification 1 at z9–14 — tippecanoe\'s own default; effectively unsimplified',
+    ...BASELINE,
+    simplification: 1,
+  },
   {
     name: 'glo30-baseline',
     description: 'Baseline settings on Copernicus GLO-30 instead of SRTM',
@@ -166,6 +198,8 @@ interface CliArgs {
   list: boolean;
   keepWork: boolean;
   verbose: boolean;
+  /** Regenerate index.html from an existing run's results.json — no builds. */
+  htmlOnly: boolean;
 }
 
 function defaultRunName(): string {
@@ -185,6 +219,7 @@ function parseArgs(): CliArgs {
     list: false,
     keepWork: false,
     verbose: false,
+    htmlOnly: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -216,6 +251,9 @@ function parseArgs(): CliArgs {
         break;
       case '--verbose':
         result.verbose = true;
+        break;
+      case '--html-only':
+        result.htmlOnly = true;
         break;
       case '--help':
         printUsage();
@@ -254,6 +292,7 @@ function printUsage(): void {
   console.log('  --list             Print the variant matrix and exit');
   console.log('  --keep-work        Keep per-variant intermediates');
   console.log('  --verbose          Stream GDAL/tippecanoe output');
+  console.log('  --html-only        Rewrite --run\'s index.html from its results.json (no builds)');
 }
 
 // --- DEM selection ---
@@ -336,6 +375,7 @@ interface VariantResult {
     simplification: number;
     minimumDetail: number;
     simplifyOnlyLowZooms: boolean;
+    maxTileBytes?: number;
   };
   pmtiles?: string;
   pmtilesBytes?: number;
@@ -405,6 +445,7 @@ function buildVariant(
       simplification: variant.simplification,
       minimumDetail: variant.minimumDetail,
       simplifyOnlyLowZooms: variant.simplifyOnlyLowZooms,
+      maxTileBytes: variant.maxTileBytes,
     },
   };
 
@@ -535,6 +576,7 @@ function buildVariant(
       `--simplification=${variant.simplification}`,
       `--minimum-detail=${variant.minimumDetail}`,
       ...(variant.simplifyOnlyLowZooms ? ['--simplify-only-low-zooms'] : []),
+      ...(variant.maxTileBytes ? [`--maximum-tile-bytes=${variant.maxTileBytes}`] : []),
       '--force',
       ...layerArgs,
     ], {
@@ -564,12 +606,34 @@ function buildVariant(
 
 // --- Compare page ---
 
+const TOPO_STYLE_PATH = path.join(PROJECT_ROOT, 'scripts', 'topo-style.json');
+
+/**
+ * The production contour layers from scripts/topo-style.json, retargeted at
+ * the viewer's `contours` source and given round joins. Reading the real
+ * style (rather than copying it) keeps the compare page honest when the app
+ * style changes.
+ */
+function prodContourLayers(): Record<string, unknown>[] {
+  const style = JSON.parse(fs.readFileSync(TOPO_STYLE_PATH, 'utf8')) as {
+    layers: Record<string, unknown>[];
+  };
+  return style.layers
+    .filter(l => l.source === 'contour' && l.type === 'line')
+    .map(l => ({
+      ...l,
+      source: 'contours',
+      layout: { ...((l.layout as Record<string, unknown>) ?? {}), 'line-join': 'round', 'line-cap': 'round' },
+    }));
+}
+
 function settingsLabel(v: VariantResult): string {
   return [
     `${v.settings.warpScale}× ${v.settings.resampling}`,
     `simp ${v.settings.simplification}`,
     `detail ${v.settings.minimumDetail}`,
     v.settings.simplifyOnlyLowZooms ? 'low-zooms only' : 'all zooms',
+    v.settings.maxTileBytes ? `tile ≤${formatBytes(v.settings.maxTileBytes)}` : 'tile ≤500 KB',
     v.settings.demDir,
   ].join(' · ');
 }
@@ -627,45 +691,65 @@ function writeIndexHtml(results: RunResults, runDir: string): void {
   <h1>Contour experiment — ${results.run}</h1>
   <span class="meta">bbox ${results.bbox.join(', ')} · ${CONTOUR_INTERVAL} m interval · z${results.minZoom}–${results.maxZoom}</span>
   <label>columns <select id="cols"><option>1</option><option selected>2</option><option>3</option></select></label>
+  <label>style <select id="style"><option value="prod" selected>production (topo-style.json)</option><option value="raw">raw (every contour, fixed width)</option></select></label>
   <span class="meta" id="camera"></span>
 </header>
 ${skipped.map(v => `<div class="skipped">⊘ ${v.name}: ${v.status}${v.note ? ' — ' + v.note : ''}</div>`).join('\n')}
 <div id="grid"></div>
 <script>
 const PANES = ${JSON.stringify(panes, null, 2)};
-const CENTER = ${JSON.stringify(center)};
-const START_ZOOM = 13;
+// ?z=13.5&lng=132.57&lat=-23.58&style=raw&cols=3 pins the camera/style, e.g.
+// for headless screenshots (google-chrome --headless --screenshot <url>).
+const QS = new URLSearchParams(window.location.search);
+const CENTER = [
+  parseFloat(QS.get('lng') ?? ${center[0]}),
+  parseFloat(QS.get('lat') ?? ${center[1]})
+];
+const START_ZOOM = parseFloat(QS.get('z') ?? '13');
+if (QS.get('style')) document.getElementById('style').value = QS.get('style');
+if (QS.get('cols')) document.getElementById('cols').value = QS.get('cols');
 
 const protocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
 
-function styleFor(file) {
+// Production contour layers (scripts/topo-style.json), retargeted at this
+// pane's source — so what you judge here is what the app draws: regular
+// contours hidden below z12, zoom-ramped widths/opacities. 'raw' draws every
+// contour at a fixed width so you can see the geometry itself.
+const PROD_LAYERS = ${JSON.stringify(prodContourLayers(), null, 2)};
+
+function styleFor(file, mode) {
   // Absolute URL so the pmtiles protocol handler (which does not resolve
   // relative paths against the document) still finds the sibling file.
   const url = 'pmtiles://' + new URL(file, window.location.href).href;
+  // is_index arrives as a STRING from the vector tiles — comparing it to
+  // the number 1 silently matches nothing. Coerce before comparing.
+  const rawLayers = [
+    {
+      id: 'contour',
+      type: 'line',
+      source: 'contours',
+      'source-layer': 'contour',
+      filter: ['!=', ['to-number', ['get', 'is_index']], 1],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#a2704a', 'line-width': 0.7 }
+    },
+    {
+      id: 'contour-index',
+      type: 'line',
+      source: 'contours',
+      'source-layer': 'contour',
+      filter: ['==', ['to-number', ['get', 'is_index']], 1],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#7a4a24', 'line-width': 1.5 }
+    }
+  ];
   return {
     version: 8,
     sources: { contours: { type: 'vector', url: url } },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': '#ffffff' } },
-      {
-        id: 'contour',
-        type: 'line',
-        source: 'contours',
-        'source-layer': 'contour',
-        // is_index arrives as a STRING from the vector tiles — comparing it to
-        // the number 1 silently matches nothing. Coerce before comparing.
-        filter: ['!=', ['to-number', ['get', 'is_index']], 1],
-        paint: { 'line-color': '#a2704a', 'line-width': 0.7 }
-      },
-      {
-        id: 'contour-index',
-        type: 'line',
-        source: 'contours',
-        'source-layer': 'contour',
-        filter: ['==', ['to-number', ['get', 'is_index']], 1],
-        paint: { 'line-color': '#7a4a24', 'line-width': 1.5 }
-      }
+      ...(mode === 'raw' ? rawLayers : PROD_LAYERS)
     ]
   };
 }
@@ -695,7 +779,7 @@ for (const pane of PANES) {
 
   const map = new maplibregl.Map({
     container: el.querySelector('.map'),
-    style: styleFor(pane.file),
+    style: styleFor(pane.file, document.getElementById('style').value),
     center: CENTER,
     zoom: START_ZOOM,
     hash: false,
@@ -720,6 +804,10 @@ for (const pane of PANES) {
 
 maps[0] && maps[0].addControl(new maplibregl.NavigationControl(), 'bottom-right');
 document.getElementById('cols').addEventListener('change', resize);
+document.getElementById('style').addEventListener('change', () => {
+  const mode = document.getElementById('style').value;
+  maps.forEach((map, i) => map.setStyle(styleFor(PANES[i].file, mode)));
+});
 window.addEventListener('resize', resize);
 resize();
 </script>
@@ -742,7 +830,8 @@ async function main(): Promise<void> {
       console.log(`  ${v.name.padEnd(16)} ${v.description}`);
       console.log(`  ${''.padEnd(16)} warp ${v.warpScale}x (tr=${tr}) ${v.resampling}, ` +
         `simplification=${v.simplification}, minimum-detail=${v.minimumDetail}, ` +
-        `simplify-only-low-zooms=${v.simplifyOnlyLowZooms}, dem=${v.demDir ?? '--dem-dir'}`);
+        `simplify-only-low-zooms=${v.simplifyOnlyLowZooms}, ` +
+        `maximum-tile-bytes=${v.maxTileBytes ?? 'default'}, dem=${v.demDir ?? '--dem-dir'}`);
     }
     return;
   }
@@ -752,6 +841,18 @@ async function main(): Promise<void> {
     : VARIANTS;
 
   const runDir = path.join(EXPERIMENTS_DIR, args.run);
+
+  if (args.htmlOnly) {
+    const resultsPath = path.join(runDir, 'results.json');
+    if (!fs.existsSync(resultsPath)) {
+      console.error(`--html-only: no results.json in ${path.relative(PROJECT_ROOT, runDir)} (pass --run <name>)`);
+      process.exit(1);
+    }
+    writeIndexHtml(JSON.parse(fs.readFileSync(resultsPath, 'utf8')) as RunResults, runDir);
+    console.log(`Rewrote ${path.relative(PROJECT_ROOT, path.join(runDir, 'index.html'))}`);
+    return;
+  }
+
   ensureDir(runDir);
 
   console.log('Contour Quality Experiment');

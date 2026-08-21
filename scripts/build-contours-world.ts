@@ -661,12 +661,19 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
     '-y', 'elevation',
     '-y', 'is_index',
     '--drop-smallest-as-needed',
-    '--simplification=14',
+    // Quality bundle chosen at the 2026-08-22 decision gate (Mt Sonder,
+    // `npm run experiment:contours`, run `smooth-z13`): simplification 14
+    // left z12–z14 contours visibly polygonal; 2 renders smooth at every zoom
+    // for ~+35% archive size in mountainous tiles (z15 is unaffected).
+    '--simplification=2',
     // Keep full vertex detail at maxzoom: z15 tiles are what MapLibre
     // overzooms past z15, so simplifying them makes contours visibly
     // polygonal exactly where users zoom in. Lower zooms stay simplified.
     '--simplify-only-low-zooms',
-    '--minimum-detail=4',
+    // tippecanoe's default (128 units): an oversize tile may be quantised no
+    // coarser than that before features are dropped — 4 allowed a 16×16 grid.
+    '--minimum-detail=7',
+    '--maximum-tile-bytes=1000000',
     '--force',
     ...layerArgs,
   ], {

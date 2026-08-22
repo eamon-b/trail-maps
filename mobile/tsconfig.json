@@ -9,7 +9,10 @@
     "types": ["jest", "node", "geojson"],
     "paths": {
       "@/*": ["./*"],
-      "@lib/*": ["../src/lib/*"]
+      "@lib/*": ["../src/lib/*"],
+      // @lib/xml-adapter-fxp imports fast-xml-parser; CI installs only
+      // mobile/node_modules, so resolution must not walk up to the repo root.
+      "fast-xml-parser": ["./node_modules/fast-xml-parser"]
     }
   },
   "include": [

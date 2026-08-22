@@ -14,6 +14,7 @@
 
 import {
   applyTrailName,
+  detectImportFormat,
   importGpxFromUri,
   pickGpxFile,
   saveImport,
@@ -23,6 +24,7 @@ import {
 import { saveImportedTrail } from '../../../services/imported-trail-store';
 import { getDocumentAsync } from 'expo-document-picker';
 import type { ImportReport } from '@lib/gpx-import';
+import { HANDOFF_FORMAT, serializeTrailHandoff } from '@lib/trail-handoff';
 import type { ProcessedTrail } from '@lib/trail-types';
 
 // ---------------------------------------------------------------------------
@@ -157,6 +159,105 @@ describe('importGpxFromUri', () => {
   it('propagates a parse failure', async () => {
     mockFiles['file:///cache/bad.gpx'] = '<gpx><trk></gpx>';
     await expect(importGpxFromUri('file:///cache/bad.gpx')).rejects.toThrow(/Invalid GPX XML/);
+  });
+});
+
+describe('detectImportFormat', () => {
+  it('trusts a .gpx extension over the bytes', () => {
+    expect(detectImportFormat('walk.GPX', '{"format":"x"}')).toBe('gpx');
+  });
+
+  it('trusts a .json extension', () => {
+    expect(detectImportFormat('trail.tracknotes.json', '<gpx/>')).toBe('handoff');
+  });
+
+  it('sniffs the bytes when the name is opaque, as content:// URIs are', () => {
+    expect(detectImportFormat('', '  {"format":"tracknotes-trail"}')).toBe('handoff');
+    expect(detectImportFormat(undefined, '<?xml version="1.0"?><gpx/>')).toBe('gpx');
+  });
+
+  it('falls back to GPX for an unrecognised name and non-JSON bytes', () => {
+    expect(detectImportFormat('msf:1000000123', 'garbage')).toBe('gpx');
+  });
+});
+
+describe('importGpxFromUri — .tracknotes.json handoff', () => {
+  /** Build a handoff file the way the web export page does. */
+  async function handoffText(): Promise<string> {
+    mockFiles['file:///cache/walk.gpx'] = SAMPLE_GPX;
+    const imported = await importGpxFromUri('file:///cache/walk.gpx');
+    return serializeTrailHandoff(imported.trail);
+  }
+
+  it('reads back a trail exported from the web without re-ingesting it', async () => {
+    const text = await handoffText();
+    mockFiles['file:///cache/weekend.tracknotes.json'] = text;
+
+    const imported = await importGpxFromUri('file:///cache/weekend.tracknotes.json', {
+      fileName: 'weekend.tracknotes.json',
+    });
+
+    expect(imported.trail.config.name).toBe('Phone Import');
+    expect(imported.trail.track.points).toHaveLength(3);
+    // Waypoint ids were minted on the other device and must survive the trip:
+    // favourites and route references are keyed on them.
+    expect(imported.trail.waypoints[0].id).toMatch(/^uw_/);
+    expect(imported.trail.config.source).toBe('imported');
+  });
+
+  it('synthesizes a report the review screen can render unchanged', async () => {
+    mockFiles['file:///cache/x.tracknotes.json'] = await handoffText();
+
+    const { report } = await importGpxFromUri('file:///cache/x.tracknotes.json', {
+      fileName: 'x.tracknotes.json',
+    });
+
+    expect(report.hasElevation).toBe(true);
+    expect(report.pointCount).toBe(3);
+    expect(report.waypointCount).toBe(1);
+    expect(report.simplified).toBe(false);
+    expect(report.warnings).toEqual([]);
+    expect(report.gapWarnings).toEqual([]);
+  });
+
+  it('takes the handoff branch on content alone when the URI names nothing', async () => {
+    mockFiles['content://downloads/document/msf%3A42'] = await handoffText();
+
+    const imported = await importGpxFromUri('content://downloads/document/msf%3A42');
+
+    expect(imported.trail.config.name).toBe('Phone Import');
+  });
+
+  it('round-trips through save with the same id, so re-importing is not a duplicate', async () => {
+    mockFiles['file:///cache/walk.gpx'] = SAMPLE_GPX;
+    const original = await importGpxFromUri('file:///cache/walk.gpx');
+    mockFiles['file:///cache/copy.tracknotes.json'] = serializeTrailHandoff(original.trail);
+
+    const reimported = await importGpxFromUri('file:///cache/copy.tracknotes.json', {
+      fileName: 'copy.tracknotes.json',
+    });
+
+    expect(reimported.trail.config.id).toBe(original.trail.config.id);
+  });
+
+  it('rejects a JSON file that is not a Tracknotes export', async () => {
+    mockFiles['file:///cache/other.json'] = JSON.stringify({ type: 'FeatureCollection' });
+
+    await expect(
+      importGpxFromUri('file:///cache/other.json', { fileName: 'other.json' }),
+    ).rejects.toThrow(/not a Tracknotes trail file/);
+  });
+
+  it('rejects a handoff written by a newer app version', async () => {
+    mockFiles['file:///cache/future.json'] = JSON.stringify({
+      format: HANDOFF_FORMAT,
+      version: 99,
+      trail: {},
+    });
+
+    await expect(
+      importGpxFromUri('file:///cache/future.json', { fileName: 'future.json' }),
+    ).rejects.toThrow(/newer version of Tracknotes/);
   });
 });
 

@@ -8,8 +8,17 @@
  * uploaded anywhere.
  */
 
+import {
+  applyElevation,
+  backfillElevation,
+  estimateElevationRequests,
+} from '@lib/elevation-backfill';
 import { importGpx, type ImportGpxResult } from '@lib/gpx-import';
-import { isIndexedDbAvailable, putTrail } from './imported-trails-db';
+import {
+  isIndexedDbAvailable,
+  putTrail,
+  type ImportedTrailSummary,
+} from './imported-trails-db';
 import { escapeHtml, formatKm } from './web-utils';
 
 /**
@@ -24,6 +33,18 @@ const WEB_TARGET_POINTS = 20000;
 /** Largest file we will even try to read, in bytes. */
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
+/**
+ * Warning `importGpx` pushes when the file carries no `<ele>`. Matched by prefix
+ * so a backfill can drop it once it is no longer true — the wording may change,
+ * but the opening words are the stable part.
+ */
+const NO_ELEVATION_WARNING_PREFIX = 'No elevation data';
+
+/** Replacement note, so the report still says where the numbers came from. */
+const BACKFILLED_ELEVATION_NOTE =
+  'Elevation was filled in from Open-Elevation (terrain height under the track), ' +
+  'not recorded on the walk — treat ascent totals as an estimate.';
+
 interface Elements {
   dropZone: HTMLLabelElement;
   fileInput: HTMLInputElement;
@@ -35,6 +56,10 @@ interface Elements {
   reportStats: HTMLElement;
   reportWarnings: HTMLElement;
   reportWarningList: HTMLElement;
+  elevationBackfill: HTMLElement;
+  fetchElevationBtn: HTMLButtonElement;
+  elevationProgress: HTMLElement;
+  elevationError: HTMLElement;
   trailName: HTMLInputElement;
   saveBtn: HTMLButtonElement;
   saveError: HTMLElement;
@@ -46,6 +71,18 @@ interface Elements {
 
 /** The most recent successful import, waiting to be named and saved. */
 let pending: ImportGpxResult | null = null;
+
+/**
+ * Row metadata of the pending import's last successful save, or null if it has
+ * not been saved yet.
+ *
+ * Why keep it: elevation can be fetched *after* the trail is saved, and the
+ * stored record would then still hold the flat version — the trail and plan
+ * pages read IndexedDB, not this page's memory. When this is set, a backfill
+ * re-`putTrail`s under the very same key and metadata, so the save is an
+ * in-place update rather than a second row.
+ */
+let savedSummary: ImportedTrailSummary | null = null;
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -65,6 +102,10 @@ function collectElements(): Elements {
     reportStats: el('report-stats'),
     reportWarnings: el('report-warnings'),
     reportWarningList: el('report-warning-list'),
+    elevationBackfill: el('elevation-backfill'),
+    fetchElevationBtn: el<HTMLButtonElement>('fetch-elevation-btn'),
+    elevationProgress: el('elevation-progress'),
+    elevationError: el('elevation-error'),
     trailName: el<HTMLInputElement>('trail-name'),
     saveBtn: el<HTMLButtonElement>('save-btn'),
     saveError: el('save-error'),
@@ -107,7 +148,16 @@ function renderStats(ui: Elements, result: ImportGpxResult): void {
   }
   if (report.alternateCount > 0) rows.push(['Alternates', String(report.alternateCount)]);
   if (report.sideTripCount > 0) rows.push(['Side trips', String(report.sideTripCount)]);
-  rows.push(['Elevation data', report.hasElevation ? 'present' : 'missing']);
+  // A backfilled profile is real data, but not *the walker's* data — say so here
+  // rather than letting "present" imply the GPX carried it.
+  rows.push([
+    'Elevation data',
+    trail.config.elevationSource === 'backfilled'
+      ? 'filled in from Open-Elevation'
+      : report.hasElevation
+        ? 'present'
+        : 'missing',
+  ]);
 
   ui.reportStats.innerHTML = rows
     .map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`)
@@ -124,10 +174,98 @@ function renderWarnings(ui: Elements, result: ImportGpxResult): void {
 
 function resetOutput(ui: Elements): void {
   pending = null;
+  savedSummary = null;
   show(ui.error, false);
   show(ui.report, false);
   show(ui.saved, false);
   show(ui.saveError, false);
+  // The backfill affordance is per-import: a fresh file decides again whether it
+  // is offered, and must never inherit the previous file's progress or error.
+  show(ui.elevationBackfill, false);
+  show(ui.elevationProgress, false);
+  show(ui.elevationError, false);
+  ui.fetchElevationBtn.disabled = false;
+}
+
+/**
+ * Offer the backfill only when the import has no elevation of its own, labelled
+ * with the request count so the user knows what they are committing to before a
+ * long track starts a minute of round-trips.
+ */
+function renderElevationBackfill(ui: Elements, result: ImportGpxResult): void {
+  const offer = !result.report.hasElevation;
+  if (offer) {
+    const requests = estimateElevationRequests(result.trail.track.points.length);
+    ui.fetchElevationBtn.textContent = `Fetch elevation (Open-Elevation, ~${requests.toLocaleString()} requests)`;
+  }
+  show(ui.elevationBackfill, offer);
+}
+
+/**
+ * Look the terrain height up for every track point and fold it into the pending
+ * import.
+ *
+ * Everything is replaced at once on success — `backfillElevation` either returns
+ * a complete elevation array or throws — so a failure leaves the preview exactly
+ * as it was and the button available to try again.
+ */
+async function handleFetchElevation(ui: Elements): Promise<void> {
+  if (!pending) return;
+
+  show(ui.elevationError, false);
+  ui.fetchElevationBtn.disabled = true;
+  ui.elevationProgress.textContent = 'Fetching elevation…';
+  show(ui.elevationProgress, true);
+
+  let withElevation: ImportGpxResult['trail'];
+  try {
+    const elevations = await backfillElevation(pending.trail.track.points, {
+      onProgress: (done, total) => {
+        ui.elevationProgress.textContent =
+          `Fetching elevation… ${done.toLocaleString()} / ${total.toLocaleString()} points`;
+      },
+    });
+    withElevation = applyElevation(pending.trail, elevations);
+  } catch (err) {
+    ui.elevationError.textContent = `Could not fetch elevation: ${messageOf(err)}`;
+    show(ui.elevationError, true);
+    show(ui.elevationProgress, false);
+    ui.fetchElevationBtn.disabled = false;
+    return;
+  }
+
+  show(ui.elevationProgress, false);
+
+  pending.trail = withElevation;
+  pending.report.hasElevation = true;
+  // The "no elevation data" warning is now false; replace it with a note saying
+  // where the numbers actually came from.
+  pending.report.warnings = pending.report.warnings.filter(
+    warning => !warning.startsWith(NO_ELEVATION_WARNING_PREFIX)
+  );
+  pending.report.warnings.push(BACKFILLED_ELEVATION_NOTE);
+
+  renderStats(ui, pending);
+  renderWarnings(ui, pending);
+  show(ui.elevationBackfill, false);
+
+  await persistBackfillIfSaved(ui);
+}
+
+/**
+ * Re-save an already-saved trail so IndexedDB doesn't keep the flat version.
+ *
+ * No-op when the user hasn't pressed Save yet — the normal Save flow reads
+ * `pending.trail`, which is the backfilled one by then.
+ */
+async function persistBackfillIfSaved(ui: Elements): Promise<void> {
+  if (!pending || !savedSummary) return;
+  try {
+    await putTrail({ ...savedSummary, trail: pending.trail });
+  } catch (err) {
+    ui.saveError.textContent = `Elevation was fetched, but re-saving the trail failed: ${messageOf(err)}. Press Save trail again.`;
+    show(ui.saveError, true);
+  }
 }
 
 function fail(ui: Elements, message: string): void {
@@ -182,6 +320,7 @@ async function handleFile(ui: Elements, file: File): Promise<void> {
   ui.trailName.value = result.report.name;
   renderStats(ui, result);
   renderWarnings(ui, result);
+  renderElevationBackfill(ui, result);
   ui.saveBtn.disabled = !isIndexedDbAvailable();
   show(ui.report, true);
 }
@@ -200,16 +339,17 @@ async function handleSave(ui: Elements): Promise<void> {
   trail.config.shortName = name;
   trail.config.lengthKm = lengthKm;
 
+  const summary: ImportedTrailSummary = {
+    id: trail.config.id,
+    name,
+    lengthKm,
+    createdAt: Date.now(),
+  };
+
   ui.saveBtn.disabled = true;
   ui.saveBtn.textContent = 'Saving…';
   try {
-    await putTrail({
-      id: trail.config.id,
-      name,
-      lengthKm,
-      createdAt: Date.now(),
-      trail,
-    });
+    await putTrail({ ...summary, trail });
   } catch (err) {
     ui.saveError.textContent = `Could not save this trail: ${messageOf(err)}`;
     show(ui.saveError, true);
@@ -220,6 +360,8 @@ async function handleSave(ui: Elements): Promise<void> {
 
   ui.saveBtn.disabled = false;
   ui.saveBtn.textContent = 'Save trail';
+  // A later elevation backfill re-saves under exactly these fields.
+  savedSummary = summary;
 
   const query = `?id=${encodeURIComponent(trail.config.id)}`;
   ui.savedName.textContent = name;
@@ -277,6 +419,7 @@ function init(): void {
   });
 
   ui.saveBtn.addEventListener('click', () => void handleSave(ui));
+  ui.fetchElevationBtn.addEventListener('click', () => void handleFetchElevation(ui));
   initDragAndDrop(ui);
 }
 

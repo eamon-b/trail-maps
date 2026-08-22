@@ -33,6 +33,10 @@ import {
   type ImportStage,
   type ImportedGpx,
 } from '../src/features/import/import-gpx';
+import {
+  backfillImportElevation,
+  elevationRequestEstimate,
+} from '../src/features/import/elevation-backfill-flow';
 
 const STAGE_LABELS: Record<ImportStage, string> = {
   reading: 'Reading file…',
@@ -45,6 +49,17 @@ type ScreenState =
   | { status: 'saving' }
   | { status: 'failed'; message: string };
 
+/**
+ * Elevation backfill is an *offer*, not a step: a file with no `<ele>` data
+ * still imports and still saves. So its progress and failures live in their own
+ * state rather than in {@link ScreenState} — a failed lookup must leave the
+ * review screen standing, with Save still available.
+ */
+type BackfillState =
+  | { status: 'idle' }
+  | { status: 'running'; done: number; total: number }
+  | { status: 'failed'; message: string };
+
 export default function ImportScreen() {
   const { colors } = useTheme();
   const router = useRouter();
@@ -53,9 +68,21 @@ export default function ImportScreen() {
 
   const [state, setState] = useState<ScreenState>({ status: 'working', stage: 'reading' });
   const [name, setName] = useState('');
+  const [backfill, setBackfill] = useState<BackfillState>({ status: 'idle' });
   // The import runs once per URI. Without this guard a re-render from the
   // stage callback (or a fast-refresh remount) would re-parse the file.
   const startedFor = useRef<string | null>(null);
+  // Held in a ref so leaving the screen can abort a lookup that may still have
+  // minutes of batches to go — nobody is waiting for it any more.
+  const backfillAbort = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      backfillAbort.current?.abort();
+      backfillAbort.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!uri || startedFor.current === uri) return;
@@ -86,6 +113,43 @@ export default function ImportScreen() {
       cancelled = true;
     };
   }, [uri, fileName]);
+
+  const onFetchElevation = useCallback(async () => {
+    if (state.status !== 'ready') return;
+    const imported = state.imported;
+
+    backfillAbort.current?.abort();
+    const controller = new AbortController();
+    backfillAbort.current = controller;
+
+    // 0/0 until the first batch reports: the real total is the *sampled* point
+    // count, which the lookup decides, and guessing it would make the counter
+    // jump backwards on a long track.
+    setBackfill({ status: 'running', done: 0, total: 0 });
+    try {
+      const backfilled = await backfillImportElevation(imported, {
+        signal: controller.signal,
+        onProgress: (done, total) => {
+          if (!controller.signal.aborted) setBackfill({ status: 'running', done, total });
+        },
+      });
+      if (controller.signal.aborted) return;
+      // Spread over the original so `suggestedName` (and anything else
+      // ImportedGpx adds on top of ImportGpxResult) survives.
+      setState({ status: 'ready', imported: { ...imported, ...backfilled } });
+      setBackfill({ status: 'idle' });
+    } catch (err: unknown) {
+      // Leaving the screen is not a failure worth rendering — and there is no
+      // screen left to render it on.
+      if (controller.signal.aborted || (err instanceof Error && err.name === 'AbortError')) return;
+      setBackfill({
+        status: 'failed',
+        message: err instanceof Error ? err.message : 'Could not fetch elevation data.',
+      });
+    } finally {
+      if (backfillAbort.current === controller) backfillAbort.current = null;
+    }
+  }, [state]);
 
   const onSave = useCallback(async () => {
     if (state.status !== 'ready') return;
@@ -130,6 +194,7 @@ export default function ImportScreen() {
   }
 
   const { report, trail } = state.imported;
+  const fetching = backfill.status === 'running';
 
   return (
     <ScrollView
@@ -190,13 +255,62 @@ export default function ImportScreen() {
         </View>
       )}
 
+      {!report.hasElevation && (
+        <View
+          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <Text style={[styles.warningTitle, { color: colors.textPrimary }]}>Elevation</Text>
+          <Text style={[styles.warning, { color: colors.textSecondary }]}>
+            Without a profile, day estimates are distance-only — climbing time isn&apos;t
+            included. Terrain heights can be looked up now instead.
+          </Text>
+
+          {fetching ? (
+            <View style={styles.progress}>
+              <ActivityIndicator color={colors.accent} />
+              <Text style={[styles.warning, { color: colors.textSecondary }]}>
+                {backfill.total > 0
+                  ? `Fetching elevation… ${formatCount(backfill.done)} / ${formatCount(backfill.total)} points`
+                  : 'Fetching elevation…'}
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => void onFetchElevation()}
+              accessibilityRole="button"
+              accessibilityLabel={
+                backfill.status === 'failed' ? 'Try fetching elevation again' : 'Fetch elevation'
+              }
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { borderColor: colors.accent },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.accent }]}>
+                {backfill.status === 'failed' ? 'Try again' : 'Fetch elevation'} · ~
+                {elevationRequestEstimate(trail)} requests
+              </Text>
+            </Pressable>
+          )}
+
+          {backfill.status === 'failed' && (
+            <Text style={[styles.warning, { color: colors.danger }]}>
+              {backfill.message} You can try again, or save without elevation.
+            </Text>
+          )}
+        </View>
+      )}
+
       <Pressable
         onPress={() => void onSave()}
+        disabled={fetching}
         accessibilityRole="button"
         accessibilityLabel="Save guide"
+        accessibilityState={{ disabled: fetching }}
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: colors.accent },
+          { backgroundColor: fetching ? colors.accentMuted : colors.accent },
           pressed && styles.pressed,
         ]}
       >
@@ -212,6 +326,15 @@ export default function ImportScreen() {
       </Pressable>
     </ScrollView>
   );
+}
+
+/**
+ * Thousands separators for the progress counter. Written by hand rather than
+ * via `toLocaleString`, whose grouping depends on whether this Hermes build
+ * shipped with full Intl — a progress line is not worth that variance.
+ */
+function formatCount(value: number): string {
+  return String(Math.max(0, Math.round(value))).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -291,6 +414,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { ...typography.titleSmall },
+  secondaryButton: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+  },
+  secondaryButtonText: { ...typography.titleSmall },
+  progress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   secondary: { alignItems: 'center', paddingVertical: spacing.sm },
   secondaryText: { ...typography.bodySmall },
   messageTitle: { ...typography.displaySmall, textAlign: 'center' },

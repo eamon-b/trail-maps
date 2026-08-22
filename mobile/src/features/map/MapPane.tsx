@@ -22,6 +22,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, touchTarget, typography } from '../../tokens';
+import { resolveOfflinePack } from '../../services/offline-pack-resolver';
 import { useDownloadsStore } from '../../state/downloads-store';
 import { useFavoritesStore } from '../../state/favorites-store';
 import { useSettingsStore } from '../../state/settings-store';
@@ -66,7 +67,18 @@ const TILE_BASE_URL = process.env.EXPO_PUBLIC_TILE_BASE_URL ?? '';
 export function MapPane() {
   const { colors } = useTheme();
   const { trail, trailId } = useGuide();
-  const download = useDownloadsStore((s) => s.byTrail[trailId]);
+  // An imported guide has no tile pack of its own; it borrows a bundled one
+  // when its track sits inside that trail's coverage (see
+  // `services/offline-pack-resolver`). Everything tile-shaped below — the
+  // download state that decides offline vs online, the style the map mounts,
+  // and the banner's re-download — keys on the resolved pack, not on trailId.
+  const packTrailId = useMemo(() => {
+    const pack = resolveOfflinePack(trailId, trail);
+    if (pack.kind === 'own') return trailId;
+    return pack.kind === 'bundled' ? pack.packTrailId : null;
+  }, [trailId, trail]);
+
+  const download = useDownloadsStore((s) => (packTrailId ? s.byTrail[packTrailId] : undefined));
   // `downloading` forces the map online for the duration: an update replaces
   // the mbtiles while on-disk state is still 'complete', and MapLibre must not
   // be holding those files open while that happens.
@@ -97,11 +109,12 @@ export function MapPane() {
   }, [trailId]);
 
   const onRedownload = useCallback(() => {
+    if (!packTrailId) return;
     setDismissed(null);
     setResolution(null);
-    deleteTiles(trailId);
-    void startDownload(trailId, TILE_BASE_URL);
-  }, [deleteTiles, startDownload, trailId]);
+    deleteTiles(packTrailId);
+    void startDownload(packTrailId, TILE_BASE_URL);
+  }, [deleteTiles, startDownload, packTrailId]);
 
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
@@ -275,6 +288,7 @@ export function MapPane() {
         <GuideMap
           ref={mapRef}
           trailId={trailId}
+          tilePackId={packTrailId ?? undefined}
           styleSource={source}
           displayPoints={displayPoints}
           alternates={alternates}
@@ -302,7 +316,7 @@ export function MapPane() {
           <DegradedMapBanner
             message={degradationMessage(degradation)}
             onRedownload={
-              isRedownloadFixable(degradation) && TILE_BASE_URL.length > 0
+              isRedownloadFixable(degradation) && TILE_BASE_URL.length > 0 && packTrailId
                 ? onRedownload
                 : undefined
             }

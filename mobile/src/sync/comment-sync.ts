@@ -46,6 +46,7 @@ import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/clien
 import * as commentsApi from '../api/comments';
 import { getSession, type Session } from '../api/auth';
 import { uuidv4 } from '../api/uuid';
+import { isServerKnown } from '../services/server-trails';
 import type { SelectedPhoto } from '../features/comments/photo-upload';
 import { parseReportPayload, validateReport } from '../features/comments/report-comment';
 import { emitSyncChange } from './sync-events';
@@ -108,6 +109,25 @@ async function resolveDb(deps: SyncDeps): Promise<SqlDatabase> {
   return deps.db ?? (await getDatabase());
 }
 
+/**
+ * The outbox choke point: every user-authored write (comment, its photo, and a
+ * moderation report) is minted by `submitComment` / `submitReport`, so guarding
+ * those two is enough to make a `u_` trail id unrepresentable in the queue —
+ * a `delete` row can only follow a comment that got in, and the drain is
+ * therefore id-clean by construction.
+ *
+ * This is defence in depth: the UI never offers a composer on an imported
+ * guide. Reaching it means a bug, so it throws rather than silently dropping
+ * the user's note.
+ */
+function assertServerTrail(trailId: string): void {
+  if (!isServerKnown(trailId)) {
+    throw new Error(
+      `Refusing to queue a server write for "${trailId}": imported trails have no server side.`,
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // sync_state high-water mark
 // ---------------------------------------------------------------------------
@@ -158,7 +178,13 @@ async function pullTrailMeta(
 // pullTrail
 // ---------------------------------------------------------------------------
 
-export type PullOutcome = 'unconfigured' | 'pulled' | 'offline' | 'error';
+export type PullOutcome =
+  | 'unconfigured'
+  | 'pulled'
+  | 'offline'
+  | 'error'
+  /** The trail is user-imported: it has no server side, so nothing was pulled. */
+  | 'not-server-trail';
 
 export interface PullResult {
   outcome: PullOutcome;
@@ -166,8 +192,17 @@ export interface PullResult {
   syncedAt: string | null;
 }
 
-/** Pull the trail-wide delta (or full snapshot) and apply it locally. */
+/**
+ * Pull the trail-wide delta (or full snapshot) and apply it locally.
+ *
+ * The server-boundary gate comes before everything, including the base-URL
+ * read: an imported trail must not produce a request under any configuration.
+ */
 export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<PullResult> {
+  if (!isServerKnown(trailId)) {
+    return { outcome: 'not-server-trail', applied: 0, syncedAt: null };
+  }
+
   const baseUrl = deps.baseUrl ?? getBaseUrl();
   if (!baseUrl) return { outcome: 'unconfigured', applied: 0, syncedAt: null };
 
@@ -461,6 +496,7 @@ export async function submitComment(
   input: SubmitCommentInput,
   deps: SyncDeps = {},
 ): Promise<SubmitCommentResult> {
+  assertServerTrail(input.trailId);
   const db = await resolveDb(deps);
   const nowMs = (deps.now ?? Date.now)();
   const id = uuidv4();
@@ -562,6 +598,7 @@ export async function submitReport(
   input: SubmitReportInput,
   deps: SyncDeps = {},
 ): Promise<SubmitReportResult> {
+  assertServerTrail(input.trailId);
   const check = validateReport({
     commentId: input.commentId,
     reason: input.reason,

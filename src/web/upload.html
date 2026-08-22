@@ -60,6 +60,18 @@
         <ul id="report-warning-list" class="import-warning-list"></ul>
       </div>
 
+      <div id="elevation-backfill" hidden>
+        <p class="import-note">
+          Without elevation, day estimates only count distance — no climbing time. The
+          terrain height under the track can be looked up from
+          <a href="https://open-elevation.com/" target="_blank" rel="noopener">Open-Elevation</a>,
+          a free public service. Only the track's coordinates are sent to it.
+        </p>
+        <button type="button" id="fetch-elevation-btn" class="process-btn">Fetch elevation</button>
+        <p id="elevation-progress" class="loading" hidden></p>
+        <p id="elevation-error" class="import-error" hidden></p>
+      </div>
+
       <button type="button" id="save-btn" class="process-btn">Save trail</button>
       <p id="save-error" class="import-error" hidden></p>
     </section>

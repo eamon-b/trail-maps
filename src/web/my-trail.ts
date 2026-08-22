@@ -8,6 +8,8 @@
  */
 
 import { initTrailViewer } from './trails/trail-viewer';
+import { handoffFileName, serializeTrailHandoff } from '@lib/trail-handoff';
+import type { ProcessedTrail } from '@lib/trail-types';
 import { deleteTrail, getTrail, isIndexedDbAvailable } from './imported-trails-db';
 import { getQueryParam } from './web-utils';
 
@@ -43,6 +45,37 @@ function applyTrailIdentity(name: string, trailId: string): void {
 
   const planLink = document.getElementById('plan-link') as HTMLAnchorElement | null;
   if (planLink) planLink.href = `./my-plan.html?id=${encodeURIComponent(trailId)}`;
+}
+
+/**
+ * Wire the "Export for Tracknotes" button.
+ *
+ * An imported trail lives only in this browser's IndexedDB, so this download is
+ * the entire bridge to the phone: the file it produces is what the mobile app's
+ * share/open intent (or its document picker) reads back through
+ * `parseHandoffJson`. The payload is the trail object verbatim — the phone does
+ * no re-ingestion, so what you see here is exactly what you get there.
+ */
+function initTracknotesExport(trail: ProcessedTrail): void {
+  const button = document.getElementById('export-tracknotes-btn') as HTMLButtonElement | null;
+  if (!button) return;
+
+  button.disabled = false;
+  button.addEventListener('click', () => {
+    // Built lazily: a full-resolution track serializes to megabytes, and most
+    // visitors never press this.
+    const blob = new Blob([serializeTrailHandoff(trail)], {
+      type: 'application/json;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = handoffFileName(trail);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
 }
 
 function initDeleteButton(trailId: string, name: string): void {
@@ -89,6 +122,7 @@ async function init(): Promise<void> {
 
   const name = record.trail.config.name || record.name;
   applyTrailIdentity(name, record.id);
+  initTracknotesExport(record.trail);
   initDeleteButton(record.id, name);
 
   // The panel must be laid out before the viewer runs: Leaflet and the

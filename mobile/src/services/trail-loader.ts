@@ -63,17 +63,12 @@ export function hasTrail(id: string): boolean {
 }
 
 /**
- * Whether this trail id is known to the server (comments API, waypoint-id
- * registry) — i.e. whether it is bundled.
- *
- * Imported trails carry `u_`-prefixed ids that exist only on this device.
- * Posting a comment, syncing descriptions or fetching waypoint metadata for one
- * would 4xx at best and create orphan rows at worst, so every network path is
- * gated on this.
+ * The server boundary — implemented in `services/server-trails` and re-exported
+ * here so callers already talking to the loader keep one import, while the sync
+ * engine can gate on it without dragging the bundled JSON, `expo-file-system`
+ * and SQLite into its module graph.
  */
-export function isServerKnown(id: string): boolean {
-  return hasTrail(id);
-}
+export { isServerKnown } from './server-trails';
 
 /** Resolve the full bundled trail JSON by id, or null if not bundled. */
 export function getTrailJson(id: string): TrailJson | null {

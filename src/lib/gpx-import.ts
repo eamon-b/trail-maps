@@ -145,6 +145,10 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
     waypointMaxDistance: options.waypointMaxDistance,
     direction: { default: 'Start → End', reversed: 'End → Start' },
     source: 'imported',
+    // Recorded up front so every later consumer (plan labelling, the "fetch
+    // elevation" offer) can ask the trail rather than having to keep the import
+    // report around. `applyElevation` flips this to 'backfilled'.
+    elevationSource: hasElevation ? 'gpx' : 'none',
   };
 
   const collected: BuildTrailDiagnostics[] = [];

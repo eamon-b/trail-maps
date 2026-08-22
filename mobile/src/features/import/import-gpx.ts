@@ -1,12 +1,24 @@
 /**
- * The GPX import flow, with no UI attached.
+ * The file import flow, with no UI attached.
  *
  * Pick a file → read its text → run the shared ingestion pipeline → persist.
  * Every step is a plain async function so the screen (`app/import.tsx`) is only
  * responsible for rendering state, and so this can be unit-tested without a
  * renderer.
  *
- * Two mobile-specific constraints shape it:
+ * Two file formats arrive here and both end at the same review screen:
+ *
+ * - **GPX**, the general case — parsed and ingested by `@lib/gpx-import`.
+ * - **`.tracknotes.json`**, the web → mobile handoff — a trail that was already
+ *   ingested in the browser, read back by `@lib/trail-handoff`. No re-ingestion
+ *   happens: both ends speak {@link ProcessedTrail}, so the phone gets exactly
+ *   the trail the browser showed.
+ *
+ * {@link detectImportFormat} picks the branch, and the handoff branch
+ * synthesizes an {@link ImportReport} so `app/import.tsx` never has to know
+ * which one it got.
+ *
+ * Two mobile-specific constraints shape the rest:
  *
  * 1. **Hermes has no DOMParser**, so `importGpx` must be handed the
  *    fast-xml-parser adapter. That is the only reason this wrapper exists
@@ -22,6 +34,11 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { importGpx, type ImportGpxResult, type ImportReport } from '@lib/gpx-import';
+import {
+  handoffImportReport,
+  looksLikeHandoffJson,
+  parseHandoffJson,
+} from '@lib/trail-handoff';
 import { fxpXmlAdapter } from '@lib/xml-adapter-fxp';
 import type { ProcessedTrail } from '@lib/trail-types';
 
@@ -34,6 +51,9 @@ const GENERIC_NAME = 'Imported trail';
 
 /** Coarse progress, for the screen's status line. */
 export type ImportStage = 'reading' | 'ingesting';
+
+/** Which reader a file's bytes should go through. */
+export type ImportFormat = 'gpx' | 'handoff';
 
 /** A file the user chose, already copied into the app's cache directory. */
 export interface PickedGpxFile {
@@ -55,7 +75,9 @@ export interface ImportedGpx extends ImportGpxResult {
  * under at least `application/gpx+xml`, `application/xml`, `text/xml` and
  * `application/octet-stream` depending on which app wrote the file, and a
  * narrow MIME filter greys out exactly the file the user came to import. A
- * wrong file is caught immediately by the parser instead.
+ * wrong file is caught immediately by the parser instead. The wildcard is also
+ * what lets a `.tracknotes.json` handoff file through without a second picker
+ * or a MIME list that would have to enumerate `application/json` too.
  *
  * `copyToCacheDirectory` is what turns an Android `content://` URI into a
  * `file://` one that `expo-file-system`'s `File` can read.
@@ -76,11 +98,38 @@ export async function pickGpxFile(): Promise<PickedGpxFile | null> {
 }
 
 /**
- * Read and ingest a picked GPX file.
+ * Decide how to read a file's bytes.
+ *
+ * The file name wins when it carries a usable extension, because it is the
+ * cheap and unambiguous signal. It often carries nothing, though: an Android
+ * `content://` URI handed over by a share sheet frequently resolves to an
+ * opaque document id with no extension at all, so the text itself has to
+ * decide, and "starts with `{`" separates the two formats cleanly (a GPX file
+ * always starts with `<`).
+ *
+ * Note the asymmetry — a `.json` name is trusted, but an unrecognised name
+ * falls through to GPX. GPX is the format users actually have, and its parser
+ * produces a far better error message for a wrong file than the JSON one does.
+ */
+export function detectImportFormat(fileName: string | undefined, text: string): ImportFormat {
+  const name = (fileName ?? '').trim().toLowerCase();
+  if (name.endsWith('.gpx')) return 'gpx';
+  if (name.endsWith('.json')) return 'handoff';
+  return looksLikeHandoffJson(text) ? 'handoff' : 'gpx';
+}
+
+/**
+ * Read and ingest a picked file — a GPX track or a `.tracknotes.json` handoff.
+ *
+ * Named for GPX because that is the overwhelmingly common case and because
+ * `app/import.tsx` calls it by this name; {@link detectImportFormat} decides
+ * what actually happens to the bytes.
  *
  * @throws whatever `importGpx` throws (malformed XML, unparseable coordinates,
- * size caps, no track points) plus file-read errors — the screen renders the
- * message, since every one of them is something the user can act on.
+ * size caps, no track points) or `parseHandoffJson` throws (wrong format, a
+ * future file version, malformed track points), plus file-read errors — the
+ * screen renders the message, since every one of them is something the user can
+ * act on.
  */
 export async function importGpxFromUri(
   uri: string,
@@ -92,9 +141,20 @@ export async function importGpxFromUri(
 
   options.onStage?.('ingesting');
   await yieldToUi();
-  const result = importGpx(text, { adapter: fxpXmlAdapter });
+  const result = ingestText(text, detectImportFormat(options.fileName, text));
 
   return { ...result, suggestedName: suggestName(result.report, options.fileName) };
+}
+
+/** Format dispatch, split out so both branches are visible side by side. */
+function ingestText(text: string, format: ImportFormat): ImportGpxResult {
+  if (format === 'handoff') {
+    // Already ingested on the other device: no parsing, no simplification, no
+    // elevation cleaning — just validation and a report describing what landed.
+    const trail = parseHandoffJson(text);
+    return { trail, report: handoffImportReport(trail) };
+  }
+  return importGpx(text, { adapter: fxpXmlAdapter });
 }
 
 /**

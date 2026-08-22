@@ -14,6 +14,7 @@ import { findNearestByDistance } from '@lib/track-geometry';
 import { analyzeResupply } from '@lib/resupply-calculator';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
+import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { loadPlanState, savePlanState } from './plan-state';
 
@@ -29,6 +30,8 @@ interface Trail {
     region?: string;
     /** Display labels for the two hiking directions (e.g. Westbound/Eastbound). */
     direction?: { default: string; reversed: string };
+    /** Where the track's elevations came from; absent on trails built before imports. */
+    elevationSource?: 'gpx' | 'backfilled' | 'none';
   };
   track: {
     points: PlanTrackPoint[];
@@ -495,14 +498,20 @@ function renderDayList(): void {
 
   const days = currentDays;
 
+  // Naismith needs ascent: with a flat profile the day times are distance-only
+  // and read as optimistic, so say so wherever the estimates are shown.
+  const elevationNote = trailElevationIsUsable(activeTrail())
+    ? ''
+    : `<p class="days-empty">Distance-only estimate — this trail has no elevation data, so climbing time isn't included.</p>`;
+
   if (days.length === 1 && planState.stops.length === 0) {
-    container.innerHTML = `<p class="days-empty">Add stops in the Stops tab to split the trail into days.</p>`;
+    container.innerHTML = `${elevationNote}<p class="days-empty">Add stops in the Stops tab to split the trail into days.</p>`;
     renderResupplySection();
     renderWaterCarrySection();
     return;
   }
 
-  container.innerHTML = days.map((day, i) => {
+  container.innerHTML = elevationNote + days.map((day, i) => {
     const dateStr = day.date ? `<span class="day-card-date">${formatDate(day.date)}</span>` : '';
     const waterStr = day.waterSources > 0
       ? `<span class="water-info">💧 ${day.waterSources} water</span>`

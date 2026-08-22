@@ -50,8 +50,11 @@ function GuidePanes() {
   const { trail, trailId } = useGuide();
   const { pane, switchPane } = useGuideFocus();
 
-  // Hydrate favorite hearts for the list badges, and run comment sync in the
-  // background (drain outbox + pull delta on open / reconnect / foreground).
+  // Hydrate favorite hearts for the list badges (local, every guide), and run
+  // comment sync in the background (drain outbox + pull delta on open /
+  // reconnect / foreground). The sync hook is called unconditionally and gates
+  // itself on the server boundary, so an imported guide wires up no listeners
+  // and issues no request — see `sync/connectivity`.
   useEffect(() => {
     void useFavoritesStore.getState().hydrate(trailId);
   }, [trailId]);

@@ -1006,6 +1006,95 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   };
 }
 
+/**
+ * Re-derive everything that depends on the main route's `ele` values, after
+ * something replaced them wholesale (today: the Open-Elevation backfill in
+ * `elevation-backfill.ts`).
+ *
+ * This is deliberately NOT a re-run of {@link buildTrail}: the trail has
+ * already been classified, reversed, spur-extracted and waypoint-matched, and
+ * redoing any of that on an already-built trail risks producing a *different*
+ * trail rather than the same one with better elevation. Only the elevation-
+ * derived quantities move:
+ * - `track.points[].ele` (cleaned with the same passes an import uses),
+ * - `track.totalAscent` / `track.totalDescent`,
+ * - `track.displayPoints[].ele` (re-read from the cleaned full-resolution
+ *   points by coordinate, the same way buildTrail derives them),
+ * - each waypoint's `elevation`, `ascent`/`descent` and running totals, from
+ *   its stored `trackIndex` via {@link calculateSegmentStats} — the identical
+ *   accumulation {@link enrichWaypoints} performs.
+ *
+ * Distances (`dist`, `totalDistance`, per-waypoint `distance`) are untouched:
+ * no lat/lon moved. Alternates, side trips and their waypoints are untouched
+ * too — a backfill only covers the main route's points.
+ *
+ * Returns a new trail; the input is not mutated.
+ */
+export function recomputeTrailElevation(
+  trail: ProcessedTrail,
+  options?: ElevationCleaningOptions
+): ProcessedTrail {
+  const source = trail.track.points;
+  if (source.length === 0) return trail;
+
+  // `time` is the one GpxPoint field a TrackPoint lacks; the cleaning passes
+  // spread their input, so `dist` survives the round trip regardless.
+  const withTime = source.map(p => ({ ...p, time: null as string | null }));
+  const cleaned = cleanElevation(withTime, options);
+
+  const points: TrackPoint[] = cleaned.map((p, i) => ({
+    lat: p.lat,
+    lon: p.lon,
+    ele: p.ele,
+    dist: source[i]?.dist ?? 0,
+  }));
+
+  let totalAscent = 0;
+  let totalDescent = 0;
+  for (let i = 1; i < points.length; i++) {
+    const diff = points[i].ele - points[i - 1].ele;
+    if (diff > 0) totalAscent += diff;
+    else totalDescent += Math.abs(diff);
+  }
+  if (options?.ascentThreshold !== undefined) {
+    const stats = calculateElevationStats(cleaned, options.ascentThreshold);
+    totalAscent = stats.gain;
+    totalDescent = stats.loss;
+  }
+
+  // displayPoints are a coordinate-identical subset of points (Douglas-Peucker
+  // returns references), so a coordinate key re-attaches the new elevations.
+  const byCoord = new Map(points.map(p => [`${p.lat},${p.lon}`, p]));
+  const displayPoints = trail.track.displayPoints.map(dp => {
+    const updated = byCoord.get(`${dp.lat},${dp.lon}`);
+    return updated ? { ...dp, ele: updated.ele } : dp;
+  });
+
+  let prevTrackIndex = 0;
+  let runningAscent = 0;
+  let runningDescent = 0;
+  const waypoints: EnrichedWaypoint[] = trail.waypoints.map(wp => {
+    const segment = calculateSegmentStats(points, prevTrackIndex, wp.trackIndex);
+    runningAscent += segment.ascent;
+    runningDescent += segment.descent;
+    prevTrackIndex = wp.trackIndex;
+    return {
+      ...wp,
+      elevation: Math.round(points[wp.trackIndex]?.ele ?? wp.elevation),
+      ascent: Math.round(segment.ascent),
+      descent: Math.round(segment.descent),
+      totalAscent: Math.round(runningAscent),
+      totalDescent: Math.round(runningDescent),
+    };
+  });
+
+  return {
+    ...trail,
+    track: { ...trail.track, points, displayPoints, totalAscent, totalDescent },
+    waypoints,
+  };
+}
+
 /** Apply the opt-in elevation cleaning passes, in order. */
 function cleanElevation(points: GpxPoint[], options?: ElevationCleaningOptions): GpxPoint[] {
   if (!options) return points;

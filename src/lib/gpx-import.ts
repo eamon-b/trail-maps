@@ -26,6 +26,7 @@ import {
   type BuildTrailDiagnostics,
   type ParsedGpxResult,
 } from './trail-ingest';
+import type { SelfRetrace } from './track-spurs';
 import type { CombineTracksWarning, GpxPoint } from './types';
 import type { ProcessedTrail, TrailConfig, TrailWaypoint } from './trail-types';
 import type { XmlAdapter } from './xml-adapter';
@@ -169,7 +170,8 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
           ascentThreshold: IMPORT_ASCENT_THRESHOLD_METERS,
         }
       : undefined,
-    warn: message => warnings.push(message.trim()),
+    // buildTrail's `warn` advice is written for trail.json authors; imports
+    // word their own from the structured diagnostics below.
     onDiagnostics: d => collected.push(d),
   });
 
@@ -182,6 +184,9 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
       `${gap.gapMeters.toFixed(0)}m gap between "${gap.fromTrack}" and "${gap.toTrack}" — ` +
         'the route may be discontinuous here.'
     );
+  }
+  for (const retrace of built.selfRetraces) {
+    warnings.push(describeSelfRetrace(retrace));
   }
   if (!hasElevation) {
     warnings.push('No elevation data in this file: the profile is flat and day estimates are distance-only.');
@@ -208,6 +213,24 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
   };
 
   return { trail, report };
+}
+
+/**
+ * Word a self-retrace for someone who can edit their GPX but not a trail.json.
+ * Most retraces are the real route (a walk-in to town and back), so this is
+ * advice, not an error: the fix, if one is wanted, is to move the out-and-back
+ * into its own `<trk>` named as a side trip so classification lifts it off the
+ * main route (see docs/gpx-import.md).
+ */
+function describeSelfRetrace(retrace: SelfRetrace): string {
+  const where = retrace.terminal
+    ? `at the ${retrace.startKm <= 1 ? 'start' : 'end'} of the route`
+    : `around km ${retrace.turnaroundKm.toFixed(1)}`;
+  return (
+    `The route doubles back on itself for ${retrace.retraceLengthKm.toFixed(1)} km ${where}, ` +
+    `so those kilometres count twice. If that section is a side trip rather than part of the ` +
+    `walk, put it in its own <trk> named "Side trip: …" and re-import.`
+  );
 }
 
 /**

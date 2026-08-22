@@ -44,6 +44,8 @@
    Do instead: it is published on contour-map-tiles.net (apex = docs via Pages `aus-contour-tiles`, `data.` = the R2 bucket, `tiles.` = the Worker). Bucket CORS (GET/HEAD, `etag`/`content-range` exposed) must stay on, and layer/attribute changes (`contour`, `elevation`, `is_index`) break external consumers. Worker edge caching only works off `*.workers.dev`, so measure it on `tiles.`.
 7. **[2026-08-19] Filter `is_index` through `to-number`, always**
    Do instead: it is the string `"0"`/`"1"` in the tiles, and MapLibre `==` is type-strict — comparing to `1` matches nothing and fails silently (every contour at one weight, no labels). Copy filters from `scripts/topo-style.json`, and verify with `queryRenderedFeatures({layers:['contour-index']}).length > 0`, never a screenshot alone.
+8. **[2026-08-22] `src/lib/trail-ingest.ts` is the single GPX→trail pipeline for the build, web imports and mobile imports — any edit can silently change `public/data/generated/*.json` (gitignored, so git won't show it)**
+   Do instead: before touching `trail-ingest`/`gpx-parser`/`track-simplify`, run `npm run build:trails && npm run build:mobile-trails` and copy `public/data/generated` + `mobile/assets/trails` aside; after, `diff -r` both (only `dataVersion` may differ) and `git diff data/waypoint-ids.json` must be empty. Imported ids are `u_<base36>`/`uw_<base36>` and are path-validated — never loosen `IMPORTED_ID_PATTERN` (ids become file names under `Paths.document/trails/`).
 
 ## User Directives
 1. **[2026-07-29] Use Opus subagents regularly**

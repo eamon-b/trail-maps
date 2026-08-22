@@ -37,7 +37,6 @@ Shared processing modules (used by both web and mobile):
 - `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
 - `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
 - `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`)
-- `track-simplify.ts` - `simplifyToTarget`/`truncatePoints` point-budget simplification (used by `build-mobile-trails.ts` and imports)
 - `elevation-backfill.ts` - Open-Elevation backfill for GPX without `<ele>` (`backfillElevation` batches of 100, ≤2000 samples interpolated by distance; `applyElevation` re-derives ascent/waypoint stats via `recomputeTrailElevation`); `trailHasElevation`/`trailElevationIsUsable` drive the "distance-only estimate" labels
 - `trail-handoff.ts` - `<slug>.tracknotes.json` web → mobile handoff format (`wrapTrailForHandoff`, strict `parseHandoffJson`)
 - `types.ts` - TypeScript interfaces

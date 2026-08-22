@@ -18,6 +18,9 @@ module.exports = {
     // injected during transform can't be resolved by walking up from their
     // location — pin them to mobile's copy.
     '^@babel/runtime/(.*)$': '<rootDir>/node_modules/@babel/runtime/$1',
+    // Same for fast-xml-parser: @lib/xml-adapter-fxp imports it, but CI only
+    // installs mobile/node_modules (the root copy is a devDependency for Vitest).
+    '^fast-xml-parser$': '<rootDir>/node_modules/fast-xml-parser',
     '\\.pbf$': '<rootDir>/jest.setup.js',
   },
 };

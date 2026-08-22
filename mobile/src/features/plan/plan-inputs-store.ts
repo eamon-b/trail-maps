@@ -33,6 +33,12 @@ export interface PlanInputsState {
   byTrail: Record<string, PlanPrefs>;
   setDailyHours: (trailId: string, hours: number) => void;
   setPace: (trailId: string, pace: Pace) => void;
+  /**
+   * Forget a trail's prefs entirely. Called when an imported trail is deleted
+   * (`services/imported-trail-store`) so the persisted blob doesn't accumulate
+   * entries for trails that no longer exist. No-op for an unknown id.
+   */
+  clearTrail: (trailId: string) => void;
 }
 
 /** Persisted map shape (what `partialize` writes / `migrate` returns). */
@@ -73,6 +79,16 @@ export const usePlanInputsStore = create<PlanInputsState>()(
             [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), pace },
           },
         })),
+      clearTrail: (trailId) =>
+        set((s) => {
+          if (!(trailId in s.byTrail)) return s;
+          // Omit the key rather than setting undefined — `partialize` writes
+          // `byTrail` verbatim, and an undefined value would serialise away
+          // anyway; dropping it keeps in-memory and persisted state identical.
+          const next = { ...s.byTrail };
+          delete next[trailId];
+          return { byTrail: next };
+        }),
     }),
     {
       name: 'tracknotes:plan-inputs',

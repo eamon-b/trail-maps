@@ -7,7 +7,7 @@ import type {
   OptimizationResult,
   OptimizationStats
 } from './types';
-import { parseGpx } from './gpx-parser';
+import { parseGpx, GPX_MAX_FILE_SIZE, GPX_MAX_POINT_COUNT } from './gpx-parser';
 import { haversineDistance3D } from './distance';
 
 // Constants
@@ -26,8 +26,8 @@ export const GPX_OPTIMIZER_DEFAULTS: OptimizationOptions = {
   coordinatePrecision: 6,           // ~0.11 meter precision
   maxDistanceChangeRatio: 0.05,     // 5% - warn if distance changes by more than this
   maxElevationChangeRatio: 0.15,    // 15% - warn if elevation gain changes by more than this
-  maxPointCount: 100000,            // 100k points maximum (0 = unlimited)
-  maxFileSize: 50 * 1024 * 1024     // 50MB maximum input file size (0 = unlimited)
+  maxPointCount: GPX_MAX_POINT_COUNT, // 100k points maximum (0 = unlimited)
+  maxFileSize: GPX_MAX_FILE_SIZE      // 50MB maximum input file size (0 = unlimited)
 }
 
 /**
@@ -546,8 +546,10 @@ export function optimizeGpx(
     );
   }
 
-  // Parse GPX
-  const gpxData = parseGpx(gpxContent);
+  // Parse GPX. The parser's own size/point caps are disabled here because
+  // optimizeGpx validates both itself against the caller's options (above and
+  // below), and its error messages are the documented contract.
+  const gpxData = parseGpx(gpxContent, undefined, { maxFileSize: 0, maxPointCount: 0 });
 
   // Get original stats
   const originalPoints = getAllPoints(gpxData);

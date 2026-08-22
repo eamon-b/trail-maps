@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Route Only Trail</name></metadata>
+  <wpt lat="-33.8688" lon="151.2093"><name>W: Rain Tank</name></wpt>
+  <rte>
+    <name>Planned Route</name>
+    <rtept lat="-33.8688" lon="151.2093"><ele>10</ele></rtept>
+    <rtept lat="-33.8700" lon="151.2100"><ele>15</ele></rtept>
+    <rtept lat="-33.8750" lon="151.2150"><ele>25</ele></rtept>
+    <rtept lat="-33.8800" lon="151.2200"><ele>20</ele></rtept>
+  </rte>
+</gpx>

@@ -27,10 +27,16 @@ npm run preview        # Preview production build locally
 
 Shared processing modules (used by both web and mobile):
 - `distance.ts` - Haversine distance calculations
-- `gpx-parser.ts` - Parse GPX XML into structured data (browser APIs — NOT safe for mobile)
-- `gpx-optimizer.ts` - Track simplification (Douglas-Peucker, browser APIs — NOT safe for mobile)
+- `gpx-parser.ts` - Parse GPX XML into structured data; `parseGpx(xml, adapter?, limits?)` is platform-neutral (see XML adapters below) and parses coordinates strictly (throws instead of plotting 0,0)
+- `xml-adapter.ts` - Minimal XML node interface (`querySelectorAll`/`querySelector`/`getAttribute`/`textContent`, tag selectors only) + the DOMParser adapter
+- `xml-adapter-fxp.ts` - fast-xml-parser adapter (the React Native path — Hermes has no DOMParser)
+- `gpx-optimizer.ts` - Track simplification (Douglas-Peucker), elevation spike removal/smoothing, elevation stats
+- `track-simplify.ts` - Target-point-count simplification + coordinate truncation (the mobile point budget)
 - `track-classification.ts` - Classify main/alternate/side-trip tracks
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.)
+- `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
+- `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
+- `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`)
 - `types.ts` - TypeScript interfaces
 - `plan-types.ts` - Plan data types shared with mobile
 - `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions
@@ -38,17 +44,22 @@ Shared processing modules (used by both web and mobile):
 - `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight)
 - `water-carry-calculator.ts` - Water carry distance calculations
 
+**XML adapters:** GPX parsing is injected, not hard-wired, so one parser serves three runtimes. `parseGpx` defaults to `DOMParser` (web); build scripts pass `jsdomXmlAdapter` (`scripts/lib/xml-adapter-jsdom.ts` — jsdom must never reach `src/lib`); mobile passes `fxpXmlAdapter` (`src/lib/xml-adapter-fxp.ts`). A parity test (`src/lib/xml-adapter.test.ts`) asserts the fast-xml-parser and DOMParser backends produce deep-equal `GpxData` for every fixture.
+
+**Ingestion is shared, not forked:** `scripts/build-trails.ts` and `importGpx` both call `buildTrail`, so a GPX file produces the same trail in the build, on the web and on the phone. The build script keeps only what needs a file system: CalTopo GeoJSON, the CSV waypoint fallback, climate, curated descriptions, the `data/waypoint-ids.json` registry, and HTML generation — each passed in as a hook. Any change to `trail-ingest.ts` must leave `public/data/generated/*.json` byte-identical unless the change is intentional.
+
 **Shared calculators:** `track-geometry.ts`, `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` are the single implementations used by both web and mobile. Mobile imports them via the `@lib` alias (Metro `watchFolders` + tsconfig paths + Jest `moduleNameMapper`). Parameter types are structural (e.g. `PlanWaypoint`, `PlanStopInput`) so each platform's own trail/waypoint/stop shapes are accepted without conversion. On mobile the Plan screen is a live calculator (nothing persisted except pace + daily hours per trail); the adapters live in `mobile/src/features/plan/plan-adapters.ts`.
 
 ### Build Scripts (`scripts/`)
 
-- `build-trails.ts` - Generates static trail pages from GPX/JSON data
+- `build-trails.ts` - Generates static trail pages + `public/data/generated/*.json` from GPX/JSON data; the geometry work lives in `@lib/trail-ingest` (`buildTrail`) — this script only supplies the file-system pieces (config, CalTopo GeoJSON, CSV fallback, climate, curated descriptions, waypoint-id registry) and writes the output
 - `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision)
 - `build-contours-australia.ts` - Builds contour PMTiles for the contour tile worker
 - `build-contours-world.ts` - Builds world contour shards from Copernicus GLO-30 DEM, `--join` merges shards to world.pmtiles (spec: `plans/world-contour-tiles.md`)
 - `fetch-dem-copernicus.ts` - Downloads Copernicus GLO-30 DEM tiles (global, anonymous, per bbox/cells/shard)
 - `contour-experiment.ts` - Contour quality experiment harness: settings-matrix builds + side-by-side compare viewer (`npm run experiment:contours`)
 - `lib/world-grid.ts` - Global 2° cell grid, shard partition, Copernicus tile naming
+- `lib/xml-adapter-jsdom.ts` - jsdom `XmlAdapter` for `parseGpx` (kept out of `src/lib` so jsdom never enters the mobile bundle)
 - `remote/` - Remote-machine world build: bootstrap, detached shard driver, status, R2 upload (runbook: `docs/world-contours-remote-build.md`)
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
@@ -207,7 +218,7 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 
 - **Map**: MapLibre React Native. Style objects are resolved before mount via `src/services/online-style-service.ts` (online) or `tileManager.getOfflineStyle()` (offline); the bundled base style is `mobile/assets/topo-style.json`, synced from `scripts/topo-style.json` with root `npm run sync:style`. Contours come from `EXPO_PUBLIC_CONTOUR_TILE_URL`.
 - **Storage**: trail content is read from bundled JSON assets via `src/services/trail-loader.ts` (`listTrails`/`getTrailJson`) — there is no `trails` SQLite table. SQLite (`expo-sqlite`) holds per-guide state, comments + outbox, favorites, and custom routes. Tile files live in `expo-file-system`.
-- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse. NOT safe for mobile (browser APIs): gpx-parser, gpx-optimizer.
+- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse, trail-types, gpx-import, xml-adapter-fxp. Every `src/lib` module is RN-safe: `gpx-parser`/`gpx-optimizer` no longer reach for `DOMParser` (mobile passes `fxpXmlAdapter`), and `gpx-import` avoids `crypto` entirely. jsdom stays out of `src/lib` — its adapter lives in `scripts/lib/xml-adapter-jsdom.ts`.
 - **Navigation**: a single Expo Router Stack — "My Guides" list → per-trail guide (nested stack). No bottom tabs. Inside a guide, a segmented control switches three always-mounted panes: Map | Elevation | List (`src/features/guide/GuideView.tsx`).
 - **State**: Zustand stores in `src/state/` (settings, downloads, favorites, identity) plus per-guide React contexts.
 

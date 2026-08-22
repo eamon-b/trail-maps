@@ -1,10 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
-// Fresh v1 schema for Tracknotes. Waypoints and track geometry stay in the
-// bundled trail JSON — SQLite holds only per-guide state, the comment cache,
-// and the offline outbox.
+// Fresh v1 schema for Tracknotes. Waypoints and track geometry stay OUT of
+// SQLite — bundled trails ship as JSON assets, and user-imported trails are
+// written as JSON files on disk (`{documentDir}/trails/{id}.json`) with only a
+// lightweight registry row in `imported_trails` (v4). SQLite therefore holds
+// per-guide state, the imported-trail registry, the comment cache, and the
+// offline outbox — never track geometry.
 const MIGRATIONS: Record<number, string> = {
   1: `
     CREATE TABLE IF NOT EXISTS guides (
@@ -139,6 +142,45 @@ const MIGRATIONS: Record<number, string> = {
     ALTER TABLE sync_state ADD COLUMN meta_synced_at TEXT;
 
     UPDATE schema_version SET version = 3;
+  `,
+
+  // Migration 4: registry for user-imported GPX trails.
+  //
+  // Why a FRESH table rather than extending `guides`: `guides` has been dead
+  // code since v1 (created, written by nothing) but it still exists in every
+  // shipped database, and its columns describe per-guide *state* for a trail
+  // that already exists (direction, tiles_downloaded, comments_synced_at) —
+  // orthogonal to "this trail exists at all". Bolting identity columns onto it
+  // would mean either NULLable name/length columns that are meaningless for
+  // the bundled trails it was designed for, or a `source` discriminator that
+  // makes every future read of either concern filter on it. A dedicated table
+  // keeps `guides` free for its original purpose (or for eventual deletion)
+  // and lets the registry carry NOT NULL identity columns.
+  //
+  // The table is a VIEW over the real artifact: the trail JSON on disk at
+  // `{documentDir}/trails/{id}.json` (see `services/imported-trail-store.ts`).
+  // Disk is truth — exactly the tiles pattern. A row without its file is a
+  // torn import, not a usable trail.
+  //
+  // No foreign keys anywhere: production never enables `PRAGMA foreign_keys`,
+  // and `favorites` / `routes` / `sync_state` / `comments` / `outbox` all treat
+  // `trail_id` as a plain scoping column (bundled trail ids have no row here at
+  // all). Deleting an imported trail therefore cascades MANUALLY — see
+  // `imported-trails-repo.deleteImportedTrail`.
+  4: `
+    CREATE TABLE IF NOT EXISTS imported_trails (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      short_name TEXT NOT NULL,
+      length_km REAL NOT NULL,
+      source TEXT NOT NULL DEFAULT 'imported',
+      has_elevation INTEGER NOT NULL DEFAULT 1,
+      point_count INTEGER,
+      waypoint_count INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    UPDATE schema_version SET version = 4;
   `,
 };
 

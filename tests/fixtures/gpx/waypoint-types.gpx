@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Typed Waypoints</name></metadata>
+  <wpt lat="-33.8688" lon="151.2093">
+    <ele>12.5</ele>
+    <name>Bay Lookout</name>
+    <type>mountain</type>
+    <desc>Explicitly typed, name carries no prefix.</desc>
+  </wpt>
+  <wpt lat="-33.8700" lon="151.2100">
+    <name>C: Cliff Camp</name>
+  </wpt>
+  <trk>
+    <name>Typed Track</name>
+    <trkseg>
+      <trkpt lat="-33.8688" lon="151.2093"><ele>12</ele></trkpt>
+      <trkpt lat="-33.8700" lon="151.2100"><ele>18</ele></trkpt>
+      <trkpt lat="-33.8750" lon="151.2150"><ele>22</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

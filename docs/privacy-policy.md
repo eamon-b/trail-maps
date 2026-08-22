@@ -69,7 +69,7 @@ collect personal information from them.
 
 ## Contact
 
-Questions or removal requests: barretteamon@gmail.com
+Questions or removal requests: privacy@contour-map-tiles.net
 
 ## Changes
 

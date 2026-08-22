@@ -225,8 +225,9 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 ### Mobile Route Structure (`mobile/app/`)
 
 - `_layout.tsx` — Root Stack (ThemeProvider, GestureHandlerRootView)
-- `index.tsx` — "My Guides" home: list of bundled trails with download badges
+- `index.tsx` — "My Guides" home: bundled trails (download badges) + imported ones ("Imported" badge, long-press to delete); ＋ header action picks a GPX
 - `settings.tsx` — App settings (units, display name)
+- `import.tsx` — Modal: review a picked GPX (name, counts, warnings) then save it as a guide
 - `guide/[trailId]/_layout.tsx` — Per-trail guide stack, wrapped in `GuideProvider` + `GuidePositionProvider`; header actions for Routes / Plan / Offline maps / Settings
 - `guide/[trailId]/index.tsx` — Guide home: renders `GuideView` (Map | Elevation | List panes)
 - `guide/[trailId]/downloads.tsx` — Offline maps: download/delete tile packs
@@ -245,12 +246,13 @@ Feature-sliced: UI lives with its feature, not in a global components dir.
   - `plan/` — plan inputs card, day-split list, resupply/water-carry cards, `plan-adapters.ts` (bridges to `@lib` calculators), `plan-inputs-store.ts`
   - `routes/` — route builder bar, route geometry, routes store
   - `comments/` — composer, display name, photo upload
+  - `import/` — `import-gpx.ts`: document picker → read file → `@lib/gpx-import` (fast-xml-parser adapter) → persist
   - `settings/`, `share/` — display-name section; check-in sharing
 - `api/` — comments API client (device auth, typed fetch wrapper, uuid via `globalThis.expo.uuidv4`)
-- `db/` — SQLite layer: `database.ts`, `schema.ts`, and repos (comments, favorites, outbox, routes)
+- `db/` — SQLite layer: `database.ts`, `schema.ts`, and repos (comments, favorites, outbox, routes, imported-trails)
 - `sync/` — comment sync engine, connectivity watcher, sync events
 - `state/` — Zustand stores: settings, downloads, favorites, identity
-- `services/` — trail-loader/assets/bounds, tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
+- `services/` — trail-loader/assets/bounds (bundled + imported: `loadTrail`, `listAllTrails`, `isServerKnown`), imported-trail-store (JSON on disk), tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
 - `hooks/` — `useLocation` (GPS + trail snapping), `useGuidePosition`
 - `theme/` — ThemeContext, reduce-motion hook
 - `tokens/` — design tokens (colors, themes, typography, spacing, motion); raw palette is import-restricted and lint-enforced (`mobile/lint/design-token-restrictions.js`)

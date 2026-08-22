@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import a GPX - Trail Maps</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./my-trails.css">
+</head>
+<body>
+  <div class="container">
+    <nav class="breadcrumb">
+      <a href="./">Home</a> / <span>Import a GPX</span>
+    </nav>
+
+    <header>
+      <h1>Import a GPX</h1>
+      <p class="subtitle">
+        Turn your own track into a full trail page — map, elevation profile, waypoints and
+        trip planner. The file is read in your browser and stored on this device only.
+      </p>
+    </header>
+
+    <div id="no-storage" class="warnings" hidden>
+      <h4>This browser can't store imported trails</h4>
+      <p class="import-note">
+        IndexedDB is unavailable — often the case in private-browsing modes with storage
+        locked down. You can still preview a file below, but it can't be saved or reopened.
+      </p>
+    </div>
+
+    <label class="upload-area" id="drop-zone" for="file-input">
+      <span class="upload-icon" aria-hidden="true">🗺️</span>
+      <span class="upload-label">Drop a .gpx file here, or click to choose one</span>
+      <span class="upload-hint">Tracks, routes and waypoints are all read. Nothing is uploaded anywhere.</span>
+    </label>
+    <input type="file" id="file-input" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden>
+
+    <p id="status" class="loading" hidden>Reading file…</p>
+
+    <div id="error" class="warnings" hidden>
+      <h4>Couldn't read that file</h4>
+      <p id="error-message" class="import-note"></p>
+    </div>
+
+    <section id="report" class="results" hidden>
+      <h3>Import preview</h3>
+
+      <div class="options">
+        <div class="option-row">
+          <label for="trail-name">Trail name</label>
+          <input type="text" id="trail-name" maxlength="120" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="stats" id="report-stats"></div>
+
+      <div id="report-warnings" class="warnings" hidden>
+        <h4>Worth knowing</h4>
+        <ul id="report-warning-list" class="import-warning-list"></ul>
+      </div>
+
+      <button type="button" id="save-btn" class="process-btn">Save trail</button>
+      <p id="save-error" class="import-error" hidden></p>
+    </section>
+
+    <section id="saved" class="results" hidden>
+      <h3>Saved</h3>
+      <p class="import-note"><strong id="saved-name"></strong> is stored in this browser.</p>
+      <div class="cta-buttons import-cta">
+        <a id="saved-trail-link" class="cta-button primary" href="#">Open trail page</a>
+        <a id="saved-plan-link" class="cta-button" href="#">Plan this trail</a>
+      </div>
+      <p class="import-note"><a href="./">← Back to all trails</a></p>
+    </section>
+
+    <footer>
+      <p class="import-note">
+        Imported trails live in this browser's storage. Clearing site data removes them,
+        and they aren't synced to other devices.
+      </p>
+    </footer>
+  </div>
+
+  <script type="module" src="./upload.ts"></script>
+</body>
+</html>

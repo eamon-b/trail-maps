@@ -10,15 +10,15 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../../src/theme';
 import { glyphSizes, spacing } from '../../../src/tokens';
-import { getTrailIndexEntry } from '../../../src/services/trail-loader';
 import { GuideProvider } from '../../../src/features/guide/GuideContext';
+import { useTrailTitle } from '../../../src/features/guide/use-trail-title';
 import { GuidePositionProvider } from '../../../src/features/guide/GuidePositionContext';
 
 export default function GuideLayout() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
   const { colors } = useTheme();
   const router = useRouter();
-  const entry = getTrailIndexEntry(trailId);
+  const title = useTrailTitle(trailId);
 
   return (
     <GuideProvider trailId={trailId}>
@@ -36,7 +36,7 @@ export default function GuideLayout() {
         <Stack.Screen
           name="index"
           options={{
-            title: entry?.shortName ?? entry?.name ?? 'Guide',
+            title,
             headerRight: () => (
               <View style={styles.headerActions}>
                 <Pressable

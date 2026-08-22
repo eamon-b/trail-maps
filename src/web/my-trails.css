@@ -1,0 +1,137 @@
+/**
+ * Styles for the user-import pages: upload.html, my-trail.html, my-plan.html
+ * and the "My trails" section of index.html.
+ *
+ * Everything here builds on the tokens and component classes already in
+ * styles.css (.container, .upload-area, .results, .warnings, .trail-card, …);
+ * this file only adds the handful of pieces those pages need on top.
+ */
+
+/* ---- Upload area: the label needs its children on their own lines ---- */
+.upload-area .upload-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.upload-area .upload-hint {
+  display: block;
+}
+
+/* ---- Import report ---- */
+.import-note {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.import-note a {
+  color: var(--primary);
+}
+
+.import-warning-list {
+  list-style: disc;
+  margin-left: 1.25rem;
+  font-size: 0.875rem;
+  color: #78350f;
+}
+
+.import-warning-list li {
+  margin-bottom: 0.25rem;
+}
+
+.import-error {
+  color: #b91c1c;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+}
+
+.import-cta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.cta-button:not(.primary) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.cta-button:not(.primary):hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ---- "My trails" section on the landing page ---- */
+.imported-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+
+.section-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.section-actions h2 {
+  margin-bottom: 0;
+}
+
+/* ---- Imported trail page: delete control ---- */
+.danger-btn {
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.danger-btn:hover {
+  background: #fef2f2;
+  border-color: #b91c1c;
+}
+
+/* ---- "Trail not found" fallback state ---- */
+.import-missing {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.import-missing h2 {
+  margin-bottom: 0.5rem;
+}
+
+/* ---- my-plan.html states ----
+   The plan layout styles its regions by id (`#plan-shell { display: flex }`),
+   which outranks the user-agent `[hidden] { display: none }` rule — so the
+   `hidden` attribute needs help to actually hide them. */
+#plan-shell[hidden],
+#small-screen-msg[hidden],
+#plan-missing[hidden] {
+  display: none !important;
+}
+
+#plan-missing {
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+#plan-missing h2 {
+  margin-bottom: 0.5rem;
+}

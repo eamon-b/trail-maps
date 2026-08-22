@@ -894,14 +894,30 @@ function initStopsFilter(): void {
 // Init
 // ---------------------------------------------------------------------------
 
-export async function initPlanViewer(trailId: string): Promise<void> {
-  const data = await loadTrailData(trailId);
+/**
+ * Boot the plan page.
+ *
+ * @param trailId  The key plan state is persisted under.
+ * @param preloadedTrail  An already-loaded trail — passed by the imported-trail
+ *   plan page (`my-plan.html`), which reads from IndexedDB instead of
+ *   `/data/generated/{id}.json`. When omitted the trail is fetched as before.
+ */
+export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): Promise<void> {
+  const data = preloadedTrail ?? await loadTrailData(trailId);
   if (!data) {
     document.body.innerHTML = `<div style="padding:2rem;text-align:center">
       <h2>Trail data not found</h2>
       <p><a href="index.html">← Back to trail</a></p>
     </div>`;
     return;
+  }
+
+  // `scheduleSave` writes plan state under `trail.config.id` while it is read
+  // below under `trailId`. Normalise so a preloaded trail whose stored config
+  // drifted from its record key can never save to a different slot than it
+  // loads from.
+  if (data.config.id !== trailId) {
+    data.config.id = trailId;
   }
 
   trail = data;

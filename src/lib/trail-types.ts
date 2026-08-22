@@ -64,6 +64,15 @@ export interface TrailConfig {
   direction?: DirectionConfig;
   /** Marks a trail produced by the runtime GPX importer rather than the build. */
   source?: 'imported';
+  /**
+   * Where the track's elevations came from: the source file (`'gpx'`), a
+   * terrain-API backfill (`'backfilled'`), or nowhere at all (`'none'` — the
+   * profile is flat and day estimates are distance-only).
+   *
+   * Optional, and only written by the runtime importer: bundled trails omit it,
+   * which is what keeps `public/data/generated/*.json` byte-identical.
+   */
+  elevationSource?: 'gpx' | 'backfilled' | 'none';
 }
 
 /** A raw source waypoint, before it is matched against the track. */

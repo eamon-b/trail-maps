@@ -17,6 +17,11 @@
  * people's synced rows (offline-first, via the outbox — an App Store UGC
  * requirement) and the curated waypoint description, which overrides the
  * near-empty bundled one.
+ *
+ * None of that channel exists for a user-imported guide (`services/server-trails`):
+ * its ids are local-only, so the whole comments block collapses to a one-line
+ * note and no SQLite read or request is issued for it. The favorite heart, the
+ * stats and the check-in share are purely local and keep working.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -53,6 +58,7 @@ import {
 } from '../../../../src/features/guide/waypoint-detail';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
+import { isServerKnown } from '../../../../src/services/server-trails';
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
 import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
@@ -92,8 +98,11 @@ export default function WaypointDetailScreen() {
     );
   }, [trail, waypointId]);
 
-  // Comments key on the stable waypoint id; waypoints without one can't sync.
-  const commentWaypointId = waypoint?.id ?? null;
+  // The comments channel needs BOTH a server-side trail (imported guides have
+  // none) and a stable waypoint id. Null here switches the whole block off:
+  // no SQLite read, no pull, no composer.
+  const serverKnown = isServerKnown(trailId);
+  const commentWaypointId = serverKnown ? (waypoint?.id ?? null) : null;
 
   const identityStatus = useIdentityStore((s) => s.status);
   const session = useIdentityStore((s) => s.session);
@@ -144,6 +153,7 @@ export default function WaypointDetailScreen() {
   // The background pull is keyed on the trail alone, so widening the paging
   // window re-queries SQLite without re-hitting the network.
   useEffect(() => {
+    if (!serverKnown) return;
     let active = true;
     void (async () => {
       const res = await pullTrail(trailId);
@@ -152,7 +162,7 @@ export default function WaypointDetailScreen() {
     return () => {
       active = false;
     };
-  }, [trailId]);
+  }, [serverKnown, trailId]);
 
   // A background drain/pull that changes rows (e.g. flips this comment
   // local→server) emits here; re-read so the mounted feed reflects it without
@@ -267,7 +277,9 @@ export default function WaypointDetailScreen() {
         {/* Comments */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Comments</Text>
 
-        {!isApiConfigured() ? (
+        {!serverKnown ? (
+          <EmptyNote text="Comments aren’t available for imported trails." />
+        ) : !isApiConfigured() ? (
           <EmptyNote text="Comments are unavailable — no server is configured for this build." />
         ) : !commentWaypointId ? (
           <EmptyNote text="Comments aren’t supported for this waypoint." />

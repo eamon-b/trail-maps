@@ -1,5 +1,7 @@
 # Implementation Plan: User GPX Import (Web + Mobile)
 
+> **Status (2026-08-22):** implemented on branch `worktree-plan-gpx-import` — Phases 1–3 and all Phase 4 items except the on-demand bbox tile-pack server (explicitly out of v1 scope). Known follow-ups: Android `ACTION_SEND` payload (`EXTRA_STREAM`) needs a native reader; the My Guides badge does not reflect a borrowed offline pack.
+
 ## Summary
 
 Let users upload their own GPX file — in the web interface and in the Tracknotes mobile app — and have it become a first-class trail/guide with the full feature set of built-in trails: interactive map, elevation profile, classified waypoints, plan calculator (day splits / resupply / water carries), direction reversal, favorites, custom routes, GPS follow, and (where feasible) offline maps.

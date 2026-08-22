@@ -95,6 +95,12 @@
         <div class="export-buttons">
           <button id="export-csv-btn" class="export-btn" disabled>Download CSV</button>
           <button id="export-gpx-btn" class="export-btn" disabled>Download GPX</button>
+          <!-- Enabled by my-trail.ts as soon as the record is in hand: unlike
+               CSV/GPX it needs nothing from the viewer. -->
+          <button id="export-tracknotes-btn" class="export-btn" disabled
+                  title="Download this trail as a file the Tracknotes mobile app can open">
+            Export for Tracknotes
+          </button>
         </div>
       </div>
       <div class="waypoints-table-wrapper" id="waypoints-container">

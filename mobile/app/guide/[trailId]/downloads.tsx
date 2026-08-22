@@ -4,6 +4,15 @@
  * Download state comes from the downloads store (which wraps the filesystem
  * tile manager). The tile base URL is read from EXPO_PUBLIC_TILE_BASE_URL and
  * passed into the store — services never read env themselves.
+ *
+ * The screen never assumes the guide owns a pack. `offline-pack-resolver`
+ * decides which tile directory this guide actually maps to: its own for a
+ * bundled trail, a *borrowed* bundled pack for an import whose track sits
+ * inside one's coverage, or none at all. Everything below — the store key, the
+ * on-disk size, the update check, download / cancel / delete — is driven by
+ * that resolved pack id rather than by the route's trailId, so borrowing is a
+ * single substitution and an uncovered import disables the actions instead of
+ * requesting a pack the server has never heard of.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -11,13 +20,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../src/theme';
 import { radii, spacing, touchTarget, typography } from '../../../src/tokens';
-import { getTrailIndexEntry } from '../../../src/services/trail-loader';
+import { useGuide } from '../../../src/features/guide/GuideContext';
+import { useTrailTitle } from '../../../src/features/guide/use-trail-title';
+import { offlinePackPlan, resolveOfflinePack } from '../../../src/services/offline-pack-resolver';
 import { tileManager } from '../../../src/services/tile-manager';
-import { useDownloadsStore } from '../../../src/state/downloads-store';
+import { useDownloadsStore, type TrailDownload } from '../../../src/state/downloads-store';
 
 const TILE_BASE_URL = process.env.EXPO_PUBLIC_TILE_BASE_URL ?? '';
 
-const IDLE = { state: 'absent' as const, downloading: false, progress: 0 };
+const IDLE: TrailDownload = { state: 'absent', downloading: false, progress: 0 };
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 MB';
@@ -29,9 +40,17 @@ function formatBytes(bytes: number): string {
 export default function DownloadsScreen() {
   const { colors } = useTheme();
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
-  const entry = getTrailIndexEntry(trailId);
+  const { trail } = useGuide();
+  const title = useTrailTitle(trailId, trailId);
 
-  const download = useDownloadsStore((s) => s.byTrail[trailId]) ?? IDLE;
+  // Which pack this guide maps to (its own, a borrowed bundled one, or none).
+  const plan = useMemo(
+    () => offlinePackPlan(resolveOfflinePack(trailId, trail), trailId),
+    [trailId, trail],
+  );
+  const packTrailId = plan.packTrailId;
+
+  const download = useDownloadsStore((s) => (packTrailId ? s.byTrail[packTrailId] : undefined)) ?? IDLE;
   const startDownload = useDownloadsStore((s) => s.startDownload);
   const cancel = useDownloadsStore((s) => s.cancel);
   const deleteTiles = useDownloadsStore((s) => s.deleteTiles);
@@ -41,25 +60,31 @@ export default function DownloadsScreen() {
   // On-disk size, re-read whenever the download state changes.
   const [sizeBytes, setSizeBytes] = useState(0);
   useEffect(() => {
-    refreshStatus(trailId);
-    setSizeBytes(tileManager.getTrailStatus(trailId).totalSizeBytes);
-  }, [trailId, refreshStatus, download.state]);
+    if (!packTrailId) {
+      setSizeBytes(0);
+      return;
+    }
+    refreshStatus(packTrailId);
+    setSizeBytes(tileManager.getTrailStatus(packTrailId).totalSizeBytes);
+  }, [packTrailId, refreshStatus, download.state]);
 
   const missingBaseUrl = TILE_BASE_URL.length === 0;
+  const canDownload = plan.packAvailable && !missingBaseUrl && packTrailId != null;
 
   // Ask the server whether a newer pack exists — on open, and again once a
   // download finishes so the badge is re-derived rather than guessed. The store
   // ignores anything that isn't a complete pack and swallows network failures,
   // so this is a no-op when there is nothing to say.
   useEffect(() => {
-    if (missingBaseUrl) return;
-    void checkForUpdates([trailId], TILE_BASE_URL);
-  }, [trailId, checkForUpdates, missingBaseUrl, download.state, download.downloading]);
+    if (missingBaseUrl || !packTrailId) return;
+    void checkForUpdates([packTrailId], TILE_BASE_URL);
+  }, [packTrailId, checkForUpdates, missingBaseUrl, download.state, download.downloading]);
 
   const updateAvailable =
     !!download.updateAvailable && download.state === 'complete' && !download.downloading;
 
   const statusText = useMemo(() => {
+    if (!plan.packAvailable) return 'Offline maps unavailable';
     if (download.downloading) return `Downloading… ${Math.round(download.progress * 100)}%`;
     if (download.error) return `Error: ${download.error}`;
     switch (download.state) {
@@ -70,15 +95,16 @@ export default function DownloadsScreen() {
       default:
         return 'Not downloaded';
     }
-  }, [download]);
+  }, [download, plan.packAvailable]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.panel, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          {entry?.name ?? trailId}
-        </Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         <Text style={[styles.status, { color: colors.textSecondary }]}>{statusText}</Text>
+        {plan.note && (
+          <Text style={[styles.meta, { color: colors.textSecondary }]}>{plan.note}</Text>
+        )}
         {updateAvailable && (
           <Text style={[styles.badge, { color: colors.downloadActive, borderColor: colors.downloadActive }]}>
             Update available{download.remoteVersion ? ` (${download.remoteVersion})` : ''}
@@ -102,18 +128,18 @@ export default function DownloadsScreen() {
         )}
       </View>
 
-      {missingBaseUrl && (
+      {missingBaseUrl && plan.packAvailable && (
         <Text style={[styles.warning, { color: colors.warning }]}>
           EXPO_PUBLIC_TILE_BASE_URL is not set — downloads are disabled.
         </Text>
       )}
 
       <View style={styles.actions}>
-        {download.downloading ? (
+        {download.downloading && packTrailId ? (
           <ActionButton
             label="Cancel"
             variant="danger"
-            onPress={() => cancel(trailId)}
+            onPress={() => cancel(packTrailId)}
           />
         ) : (
           <ActionButton
@@ -125,18 +151,20 @@ export default function DownloadsScreen() {
                   : 'Download'
             }
             variant="accent"
-            disabled={missingBaseUrl}
-            onPress={() => startDownload(trailId, TILE_BASE_URL)}
+            disabled={!canDownload}
+            onPress={() => packTrailId && startDownload(packTrailId, TILE_BASE_URL)}
           />
         )}
 
-        {(download.state === 'complete' || download.state === 'partial') && !download.downloading && (
-          <ActionButton
-            label="Delete"
-            variant="danger"
-            onPress={() => deleteTiles(trailId)}
-          />
-        )}
+        {packTrailId &&
+          (download.state === 'complete' || download.state === 'partial') &&
+          !download.downloading && (
+            <ActionButton
+              label="Delete"
+              variant="danger"
+              onPress={() => deleteTiles(packTrailId)}
+            />
+          )}
       </View>
     </View>
   );

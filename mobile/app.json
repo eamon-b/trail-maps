@@ -15,6 +15,59 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location keeps tracking your hike when the screen is locked.",
         "UIBackgroundModes": [
           "location"
+        ],
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "GPX Track",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": [
+              "com.topografix.gpx"
+            ]
+          },
+          {
+            "CFBundleTypeName": "Tracknotes Trail",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": [
+              "com.tracknotes.app.trail"
+            ]
+          }
+        ],
+        "UTImportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.topografix.gpx",
+            "UTTypeDescription": "GPX Track",
+            "UTTypeConformsTo": [
+              "public.xml"
+            ],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "gpx"
+              ],
+              "public.mime-type": [
+                "application/gpx+xml"
+              ]
+            }
+          }
+        ],
+        "UTExportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.tracknotes.app.trail",
+            "UTTypeDescription": "Tracknotes Trail",
+            "UTTypeConformsTo": [
+              "public.json"
+            ],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "tracknotes.json"
+              ],
+              "public.mime-type": [
+                "application/json"
+              ]
+            }
+          }
         ]
       }
     },
@@ -38,6 +91,94 @@
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/gpx+xml"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "text/xml",
+              "pathPattern": ".*\\\\.gpx"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/xml",
+              "pathPattern": ".*\\\\.gpx"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.gpx"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/json",
+              "pathPattern": ".*\\\\.tracknotes\\\\.json"
+            }
+          ]
+        },
+        {
+          "action": "SEND",
+          "autoVerify": false,
+          "category": [
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "mimeType": "application/gpx+xml"
+            },
+            {
+              "mimeType": "text/xml"
+            },
+            {
+              "mimeType": "application/xml"
+            },
+            {
+              "mimeType": "application/octet-stream"
+            },
+            {
+              "mimeType": "application/json"
+            }
+          ]
+        }
       ]
     },
     "plugins": [

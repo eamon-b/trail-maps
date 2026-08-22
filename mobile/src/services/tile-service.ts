@@ -169,19 +169,23 @@ export function getTrailTileStatus(trailId: string): TrailTileStatus {
   const allPresent = files.every((f) => f.exists && f.sizeBytes > 0);
 
   // Read the saved manifest for the version string and expected file sizes.
+  // The whole read — including the existence probe — is guarded: this is called
+  // for ids that were never downloaded and may never be downloadable (a user-
+  // imported `u_` guide has no pack of its own), and "no pack on disk" has to
+  // report `absent`, never throw into the caller's render.
   let version: string | undefined;
   let expectedSizes: Map<string, number> | null = null;
-  const mf = manifestFile(trailId);
-  if (mf.exists) {
-    try {
+  try {
+    const mf = manifestFile(trailId);
+    if (mf.exists) {
       const parsed = JSON.parse(mf.textSync()) as TileManifest;
       version = parsed.version;
       if (Array.isArray(parsed.files) && parsed.files.length > 0) {
         expectedSizes = new Map(parsed.files.map((f) => [f.name, f.size]));
       }
-    } catch {
-      // corrupt manifest, ignore
     }
+  } catch {
+    // missing directory or corrupt manifest — treat as unverifiable
   }
 
   let state: TileStatusState;

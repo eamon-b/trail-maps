@@ -5,10 +5,18 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from '../src/theme';
 import { glyphSizes, spacing } from '../src/tokens';
 import { pickGpxFile } from '../src/features/import/import-gpx';
+import { useIncomingFile } from '../src/features/import/incoming-file';
 
 function ThemedStack() {
   const { colors } = useTheme();
   const router = useRouter();
+
+  // A GPX or .tracknotes.json opened from outside the app — a file manager's
+  // "open with", a downloaded attachment, the share sheet — arrives as a launch
+  // URL rather than through the picker below, and lands on the same review
+  // screen. Mounted here because it is the one component guaranteed to exist
+  // for the whole app lifetime.
+  useIncomingFile();
 
   // The picker runs here rather than on the import screen so that screen only
   // ever has to process a URI it was given — see app/import.tsx.

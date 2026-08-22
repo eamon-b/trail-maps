@@ -7,11 +7,18 @@
  * On either edge — and once when the guide opens — it drains the outbox and
  * pulls the active trail's delta. `runSync` is exported (and injectable) so the
  * edge logic is testable without native modules.
+ *
+ * A user-imported guide has no server side at all (see `services/server-trails`),
+ * so {@link useCommentSync} wires nothing for one: no initial catch-up, no
+ * network/foreground listeners, no request. Draining the outbox is skipped along
+ * with the rest — its rows can only belong to bundled trails, and they drain on
+ * the next bundled guide open / reconnect / foreground edge.
  */
 
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import * as Network from 'expo-network';
+import { isServerKnown } from '../services/server-trails';
 import { drainOutbox, pullTrail, type DrainResult, type PullResult } from './comment-sync';
 
 export interface RunSyncResult {
@@ -37,9 +44,16 @@ export function isReconnect(
 /**
  * Wire connectivity + foreground sync for the lifetime of a mounted guide.
  * Runs an initial sync on mount and on every reconnect / foreground edge.
+ *
+ * Called unconditionally by every guide (rules of hooks); the server-boundary
+ * gate is an early return *inside* the effect, so an imported guide subscribes
+ * to nothing and issues no request.
  */
 export function useCommentSync(trailId: string | null): void {
   useEffect(() => {
+    // An imported guide exists only on this device — nothing to sync with.
+    if (trailId !== null && !isServerKnown(trailId)) return;
+
     let lastConnected = true;
     let cancelled = false;
 

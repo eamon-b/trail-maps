@@ -12,6 +12,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatDistance } from '@lib/format-distance';
+import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { useTheme } from '../../../src/theme';
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore } from '../../../src/state/settings-store';
@@ -80,6 +81,13 @@ export default function PlanScreen() {
     [trail, startKm, endKm, startName, endName, prefs.dailyHours, prefs.pace],
   );
 
+  // Naismith's climbing term is silently zero for a trail with no profile, so
+  // the day splits look the same as a properly-derived plan while being
+  // optimistic on anything steep. Say so rather than let the number pass for
+  // more than it is. (An imported GPX can be given a profile from the import
+  // screen's "Fetch elevation".)
+  const distanceOnly = !trailElevationIsUsable(trail);
+
   const sectionKm = Math.max(0, inputs.endKm - inputs.startKm);
   const validSection = inputs.endKm > inputs.startKm && options.length >= 2;
 
@@ -120,7 +128,14 @@ export default function PlanScreen() {
             <SummaryStat label="Avg/day" value={formatDistance(plan.effectiveDailyKm, units)} />
           </View>
 
-          <Section title="Day splits">
+          <Section
+            title="Day splits"
+            subtitle={
+              distanceOnly
+                ? "Distance-only estimate — no elevation data, so climbing time isn't included."
+                : undefined
+            }
+          >
             <DaySplitList days={plan.days} targetHours={plan.targetHours} units={units} />
           </Section>
 
@@ -145,11 +160,23 @@ export default function PlanScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  /** One line of caveat under the heading, e.g. what the numbers can't account for. */
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
   const { colors } = useTheme();
   return (
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
+      {subtitle !== undefined && (
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+      )}
       {children}
     </View>
   );
@@ -190,4 +217,7 @@ const styles = StyleSheet.create({
 
   section: { gap: spacing.md },
   sectionTitle: { ...typography.titleLarge },
+  // Negative top margin pulls the caveat up against its heading, so the section
+  // gap still reads as separating the heading block from the content.
+  sectionSubtitle: { ...typography.bodySmall, marginTop: -spacing.xs },
 });

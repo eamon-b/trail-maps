@@ -37,6 +37,9 @@ Shared processing modules (used by both web and mobile):
 - `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
 - `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
 - `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`)
+- `track-simplify.ts` - `simplifyToTarget`/`truncatePoints` point-budget simplification (used by `build-mobile-trails.ts` and imports)
+- `elevation-backfill.ts` - Open-Elevation backfill for GPX without `<ele>` (`backfillElevation` batches of 100, ≤2000 samples interpolated by distance; `applyElevation` re-derives ascent/waypoint stats via `recomputeTrailElevation`); `trailHasElevation`/`trailElevationIsUsable` drive the "distance-only estimate" labels
+- `trail-handoff.ts` - `<slug>.tracknotes.json` web → mobile handoff format (`wrapTrailForHandoff`, strict `parseHandoffJson`)
 - `types.ts` - TypeScript interfaces
 - `plan-types.ts` - Plan data types shared with mobile
 - `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions
@@ -81,6 +84,10 @@ Shared processing modules (used by both web and mobile):
 - `trails/plan-template.html` - Template for plan visualization pages
 - `trails/plan-viewer.ts` - Interactive plan viewer
 - `trails/plan-state.ts` - Plan state management
+- `upload.html` / `upload.ts` - User GPX import: drag-drop → `importGpx` → report (+ optional elevation backfill) → IndexedDB
+- `my-trail.html` / `my-plan.html` (+ `.ts`) - Trail/plan pages for imported trails, booted from `?id=` via `imported-trails-db.ts` and the viewers' `preloadedTrail` argument; "Export for Tracknotes" handoff
+- `imported-trails-db.ts` - IndexedDB store (`tracknotes-imports`) for imported `ProcessedTrail`s; `index.html` lists them under "My trails"
+- `web-utils.ts` - `escapeHtml`, `getQueryParam` — every user-supplied string (trail names) must go through `escapeHtml`
 
 ### Trail Data (`data/trails/`)
 
@@ -246,13 +253,13 @@ Feature-sliced: UI lives with its feature, not in a global components dir.
   - `plan/` — plan inputs card, day-split list, resupply/water-carry cards, `plan-adapters.ts` (bridges to `@lib` calculators), `plan-inputs-store.ts`
   - `routes/` — route builder bar, route geometry, routes store
   - `comments/` — composer, display name, photo upload
-  - `import/` — `import-gpx.ts`: document picker → read file → `@lib/gpx-import` (fast-xml-parser adapter) → persist
+  - `import/` — `import-gpx.ts`: document picker → read file → `@lib/gpx-import` (fast-xml-parser adapter) or `@lib/trail-handoff` for `.tracknotes.json` → persist; `elevation-backfill-flow.ts`; `incoming-file.ts` (Android `ACTION_VIEW` / iOS document-type "open with" → stage into cache → `/import` modal; `ACTION_SEND` payloads are not yet read — needs a native `EXTRA_STREAM` reader). Intent filters / document types live in `app.json` and need a new dev build
   - `settings/`, `share/` — display-name section; check-in sharing
 - `api/` — comments API client (device auth, typed fetch wrapper, uuid via `globalThis.expo.uuidv4`)
 - `db/` — SQLite layer: `database.ts`, `schema.ts`, and repos (comments, favorites, outbox, routes, imported-trails)
 - `sync/` — comment sync engine, connectivity watcher, sync events
 - `state/` — Zustand stores: settings, downloads, favorites, identity
-- `services/` — trail-loader/assets/bounds (bundled + imported: `loadTrail`, `listAllTrails`, `isServerKnown`), imported-trail-store (JSON on disk), tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
+- `services/` — trail-loader/assets/bounds (bundled + imported: `loadTrail`, `listAllTrails`, `isServerKnown`), imported-trail-store (JSON at `Paths.document/trails/{id}.json` + `imported_trails` registry row), server-trails (`isServerKnown` — comment sync and the composer are gated off for `u_` ids, so no request ever carries an imported trail id), offline-pack-resolver (an import whose bbox sits inside a bundled trail's coverage borrows that pack; otherwise offline maps are unavailable), tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
 - `hooks/` — `useLocation` (GPS + trail snapping), `useGuidePosition`
 - `theme/` — ThemeContext, reduce-motion hook
 - `tokens/` — design tokens (colors, themes, typography, spacing, motion); raw palette is import-restricted and lint-enforced (`mobile/lint/design-token-restrictions.js`)

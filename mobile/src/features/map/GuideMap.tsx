@@ -171,6 +171,12 @@ export interface GuideMapHandle {
 
 export interface GuideMapProps {
   trailId: string;
+  /**
+   * Tile-pack directory to read offline tiles from. Equal to `trailId` for a
+   * bundled guide; an imported guide borrows a bundled trail's pack, so the two
+   * differ there (see `services/offline-pack-resolver`). Defaults to `trailId`.
+   */
+  tilePackId?: string;
   /** Which base map to render; also the map's remount key. */
   styleSource: MapStyleSource;
   /** Main-track display points for the trail polyline. */
@@ -350,6 +356,7 @@ export const GuideMap = memo(
   forwardRef<GuideMapHandle, GuideMapProps>(function GuideMap(
     {
       trailId,
+      tilePackId,
       styleSource,
       displayPoints,
       alternates,
@@ -388,13 +395,17 @@ export const GuideMap = memo(
     const [resolved, setResolved] = useState<{ style: object; source: MapStyleSource } | null>(
       null,
     );
+    // The offline tiles may belong to a *different* trail than this guide (an
+    // import borrowing a bundled pack), so style resolution keys on the pack,
+    // never on the route's trailId.
+    const packId = tilePackId ?? trailId;
     useEffect(() => {
       let cancelled = false;
       setResolved(null);
 
       const resolve = async (): Promise<{ style: object; resolution: MapStyleResolution }> => {
         if (styleSource === 'offline') {
-          const offline = await tileManager.getOfflineStyle(trailId);
+          const offline = await tileManager.getOfflineStyle(packId);
           if (offline) {
             return {
               style: offline.style,
@@ -454,7 +465,7 @@ export const GuideMap = memo(
       return () => {
         cancelled = true;
       };
-    }, [trailId, styleSource]);
+    }, [packId, styleSource]);
 
     const resolvedSource = resolved?.source ?? styleSource;
     const labelFont = useMemo(() => labelFontForSource(resolvedSource), [resolvedSource]);

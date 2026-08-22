@@ -90,8 +90,10 @@ const MIGRATIONS: Record<number, string> = {
   // Waypoints are referenced only implicitly (a snap point is just a trail
   // position), so there is no waypoint FK to break on data-version bumps —
   // routes reference stable trail geometry (km + lat/lon), not positional
-  // waypoint ids. Tracknotes has no `trails` table (trail data is bundled
-  // JSON), so `trail_id` is a plain scoping column, exactly like `favorites`.
+  // waypoint ids. Trail *content* never lives in SQLite (bundled trails are a
+  // Metro require() map; imported ones are JSON files on disk, registered in
+  // `imported_trails` at v4), so `trail_id` is a plain scoping column with no
+  // FK to point at, exactly like `favorites`.
   2: `
     CREATE TABLE IF NOT EXISTS routes (
       id TEXT PRIMARY KEY NOT NULL,

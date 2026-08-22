@@ -48,6 +48,19 @@ interface VariantWaypoint {
   description?: string;
 }
 
+/**
+ * A point on an alternate/side-trip polyline. Variant geometry is only ever
+ * read for lat/lon here, and the shared `ProcessedTrail` type stores variant
+ * points without a cumulative `dist`, so it stays optional — that is what makes
+ * a `ProcessedTrail` (e.g. a runtime GPX import) assignable to `Trail`.
+ */
+interface VariantPoint {
+  lat: number;
+  lon: number;
+  ele: number;
+  dist?: number;
+}
+
 interface RouteVariant {
   name: string;
   type: 'alternate' | 'side-trip';
@@ -55,7 +68,7 @@ interface RouteVariant {
   startDistance?: number;
   endDistance?: number;
   elevation?: { ascent?: number; descent?: number };
-  points?: TrackPoint[];
+  points?: VariantPoint[];
   waypoints?: VariantWaypoint[];
 }
 
@@ -1347,11 +1360,28 @@ function exportDatasheet(trail: Trail): void {
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${config.id || 'trail'}-datasheet.csv`;
+  link.download = `${exportBaseName(config)}-datasheet.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Filename stem for the CSV/GPX exports.
+ *
+ * Bundled trails keep their stable trail id (`heysen-datasheet.csv`). An
+ * imported trail's id is an opaque content hash (`u_1a2b3c…`), which makes a
+ * useless filename, so its user-visible name is slugified instead.
+ */
+function exportBaseName(config: { id: string; name?: string }): string {
+  if (config.id && !config.id.startsWith('u_')) return config.id;
+  const slug = String(config.name ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return slug || config.id || 'trail';
 }
 
 function escapeXml(text: unknown): string {
@@ -1411,7 +1441,7 @@ function exportGpx(trail: Trail): void {
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${config.id || 'trail'}.gpx`;
+  link.download = `${exportBaseName(config)}.gpx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1521,12 +1551,27 @@ function toggleDirection(): void {
   });
 }
 
-export async function initTrailViewer(trailId: string): Promise<void> {
-  const trail = await loadTrailData(trailId);
+/**
+ * Boot the trail page.
+ *
+ * @param trailId  The id everything persisted per-trail is keyed by (direction
+ *   preference, plan state on the plan page).
+ * @param preloadedTrail  An already-loaded trail — passed by the imported-trail
+ *   page (`my-trail.html`), which reads from IndexedDB instead of
+ *   `/data/generated/{id}.json`. When omitted the trail is fetched as before.
+ */
+export async function initTrailViewer(trailId: string, preloadedTrail?: Trail): Promise<void> {
+  const trail = preloadedTrail ?? await loadTrailData(trailId);
   if (!trail) {
     const panel = document.querySelector('.panel');
     if (panel) panel.innerHTML = '<p>Failed to load trail data.</p>';
     return;
+  }
+
+  // The direction preference is written under `config.id` but read under
+  // `trailId`; normalise so the two can never diverge for a preloaded trail.
+  if (trail.config.id !== trailId) {
+    trail.config.id = trailId;
   }
 
   trailState.originalTrail = trail;

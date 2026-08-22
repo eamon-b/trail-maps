@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trail Maps - Australian Long Distance Trails</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./my-trails.css">
 </head>
 <body>
   <div class="container landing">
@@ -27,6 +28,21 @@
       </div>
     </section>
 
+    <section class="feature-section" id="my-trails-section">
+      <div class="section-actions">
+        <h2>My trails</h2>
+        <a href="./upload.html" class="trail-nav-link">Import a GPX →</a>
+      </div>
+      <p>Trails imported from your own GPX files. They are stored in this browser only.</p>
+
+      <div id="my-trail-list" class="trail-grid" hidden></div>
+
+      <div id="no-my-trails" class="no-results">
+        <p>No imported trails yet.</p>
+        <p><a href="./upload.html">Import a GPX file</a> to get a full trail page and trip planner for your own route.</p>
+      </div>
+    </section>
+
     <footer>
       <p>Trail data is sourced from open mapping projects and trail organizations.</p>
       <p><a href="https://github.com/eamon-b/trail-maps" target="_blank">View on GitHub</a></p>
@@ -34,6 +50,9 @@
   </div>
 
   <script type="module">
+    import { escapeHtml, formatKm } from './web-utils.ts';
+    import { isIndexedDbAvailable, listTrailSummaries } from './imported-trails-db.ts';
+
     async function loadTrails() {
       const trailList = document.getElementById('trail-list');
       const noTrails = document.getElementById('no-trails');
@@ -53,11 +72,11 @@
         }
 
         trailList.innerHTML = trails.map(trail => `
-          <a href="./trails/${trail.id}/" class="trail-card">
-            <h2>${trail.name}</h2>
+          <a href="./trails/${encodeURIComponent(trail.id)}/" class="trail-card">
+            <h2>${escapeHtml(trail.name)}</h2>
             <p class="trail-meta">
-              <span class="trail-short-name">${trail.shortName}</span>
-              <span class="trail-length">${trail.lengthKm} km</span>
+              <span class="trail-short-name">${escapeHtml(trail.shortName)}</span>
+              <span class="trail-length">${escapeHtml(trail.lengthKm)} km</span>
             </p>
           </a>
         `).join('');
@@ -68,7 +87,39 @@
       }
     }
 
+    async function loadMyTrails() {
+      const list = document.getElementById('my-trail-list');
+      const empty = document.getElementById('no-my-trails');
+
+      if (!isIndexedDbAvailable()) return;
+
+      let summaries = [];
+      try {
+        summaries = await listTrailSummaries();
+      } catch (error) {
+        // No imports to show (or storage locked down) — keep the empty state.
+        return;
+      }
+
+      if (summaries.length === 0) return;
+
+      // Every field here traces back to a user-supplied GPX file: escape it all.
+      list.innerHTML = summaries.map(trail => `
+        <a href="./my-trail.html?id=${encodeURIComponent(trail.id)}" class="trail-card">
+          <h2>${escapeHtml(trail.name)}<span class="imported-badge">Imported</span></h2>
+          <p class="trail-meta">
+            <span class="trail-length">${escapeHtml(formatKm(trail.lengthKm))} km</span>
+            <span class="trail-added">Added ${escapeHtml(new Date(trail.createdAt).toLocaleDateString())}</span>
+          </p>
+        </a>
+      `).join('');
+
+      list.removeAttribute('hidden');
+      empty.setAttribute('hidden', '');
+    }
+
     loadTrails();
+    loadMyTrails();
   </script>
 </body>
 </html>

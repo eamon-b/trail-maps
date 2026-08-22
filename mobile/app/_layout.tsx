@@ -1,13 +1,33 @@
 import { Stack, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from '../src/theme';
 import { glyphSizes, spacing } from '../src/tokens';
+import { pickGpxFile } from '../src/features/import/import-gpx';
 
 function ThemedStack() {
   const { colors } = useTheme();
   const router = useRouter();
+
+  // The picker runs here rather than on the import screen so that screen only
+  // ever has to process a URI it was given — see app/import.tsx.
+  const onImport = async () => {
+    try {
+      const picked = await pickGpxFile();
+      if (!picked) return;
+      router.push({
+        pathname: '/import',
+        params: { uri: picked.uri, fileName: picked.fileName },
+      });
+    } catch (err: unknown) {
+      Alert.alert(
+        'Could not open that file',
+        err instanceof Error ? err.message : 'The file picker failed.',
+      );
+    }
+  };
+
   return (
     <>
       <Stack
@@ -22,22 +42,39 @@ function ThemedStack() {
           name="index"
           options={{
             title: 'Tracknotes',
-            // Same ⚙ affordance as the guide header — Settings is app-wide, so
-            // it must be reachable without opening a guide first.
+            // ＋ imports a GPX file as a new guide. ⚙ is the same affordance
+            // as the guide header — Settings is app-wide, so it must be
+            // reachable without opening a guide first.
             headerRight: () => (
-              <Pressable
-                accessibilityLabel="Settings"
-                accessibilityRole="button"
-                onPress={() => router.push('/settings')}
-                style={styles.headerButton}
-                hitSlop={spacing.sm}
-              >
-                <Text style={[styles.icon, { color: colors.accentText }]}>⚙</Text>
-              </Pressable>
+              <View style={styles.headerActions}>
+                <Pressable
+                  accessibilityLabel="Import GPX"
+                  accessibilityRole="button"
+                  onPress={() => void onImport()}
+                  style={styles.headerButton}
+                  hitSlop={spacing.sm}
+                >
+                  <Text style={[styles.icon, { color: colors.accentText }]}>＋</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Settings"
+                  accessibilityRole="button"
+                  onPress={() => router.push('/settings')}
+                  style={styles.headerButton}
+                  hitSlop={spacing.sm}
+                >
+                  <Text style={[styles.icon, { color: colors.accentText }]}>⚙</Text>
+                </Pressable>
+              </View>
             ),
           }}
         />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        {/* Modal: review an imported GPX before it becomes a guide. */}
+        <Stack.Screen
+          name="import"
+          options={{ title: 'Import GPX', presentation: 'modal' }}
+        />
         {/* Guide group renders its own nested Stack (header + provider). */}
         <Stack.Screen name="guide/[trailId]" options={{ headerShown: false }} />
       </Stack>
@@ -57,6 +94,10 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   headerButton: {
     paddingHorizontal: spacing.sm,
   },

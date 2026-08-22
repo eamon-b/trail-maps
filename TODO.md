@@ -1,20 +1,5 @@
 # TODO
 
-## Bugs and small fixes
-
-- blue bits on the map
-
-- testing files
-- change the name from trail-companion — app is now Tracknotes (`com.tracknotes.app`); root `package.json` is still `trail-maps`
-- remove the warning for long food or water carries
-- water carry info relies on good waypoints.
-  - add ability to add a custom waypoint, where you know that there is water?
-
-- upload all the grid tiles later - at public/data/tiles/grid
-    - will cost something like 20c/month to host
-
-- fix wierd blue bits when more zoomed in
-
 ## Bigger ideas
 
 - efficiency

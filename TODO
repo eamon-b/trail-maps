@@ -1,8 +1,0 @@
-# Done (2026-08-07)
-- [x] be able to click on alts/side trips and more info comes up
-      → tap any alternate/side-trip line on the guide map for an info card
-        (name, kind, length, ascent/descent, branch/rejoin km, waypoint count)
-- [x] icons on the map for the different types of features (just different
-      colored dots now). also make them slightly bigger
-      → 17 per-type glyph icons on white badges ringed in the category colour,
-        ~1.8x the old dot size; regenerate with `npm run build:map-icons` (mobile/)

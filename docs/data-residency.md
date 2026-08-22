@@ -29,8 +29,9 @@ Record the output and date below each time this is re-checked.
 
 ## Australian Privacy Principles (APP) posture
 
-The original analysis lives in `plans/part-6b-crowdsourcing-design.md` §8
-(superseded for comments design, still valid for the APP analysis). Summary:
+The original analysis lives in `docs/content-legal-posture.md` (extracted from
+the retired part-6b crowd-sourcing design; still valid for the APP analysis).
+Summary:
 
 - APP 8 (cross-border disclosure) applies if user content leaves Australia.
   The safe posture — and the one the draft policy takes — is to disclose that

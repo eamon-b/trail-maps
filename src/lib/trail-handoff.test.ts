@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   HANDOFF_EXTENSION,
   HANDOFF_FORMAT,
+  HANDOFF_MAX_POINTS,
   HANDOFF_VERSION,
   handoffFileName,
   handoffImportReport,
@@ -45,6 +46,13 @@ function makeTrail(overrides: Partial<ProcessedTrail> = {}): ProcessedTrail {
     direction: { default: 'Start → End', reversed: 'End → Start' },
     ...overrides,
   };
+}
+
+/** A copy of `source` without one key — the "field is absent" fixture shape. */
+function omit<T extends object, K extends keyof T>(source: T, key: K): Omit<T, K> {
+  const copy = { ...source };
+  delete copy[key];
+  return copy;
 }
 
 /** Round-trip a trail through the envelope and back. */
@@ -251,6 +259,115 @@ describe('parseHandoffJson', () => {
         trail: { config: trail.config, track: trail.track },
       });
       expect(() => parseHandoffJson(text)).toThrow(/missing its "waypoints" array/);
+    });
+
+    it('rejects a track longer than the handoff point cap', () => {
+      const trail = makeTrail();
+      // One over the cap, built cheaply — only the length is inspected before
+      // the rejection, so the points never have to be well-formed.
+      const points = new Array(HANDOFF_MAX_POINTS + 1).fill(trail.track.points[0]);
+      const text = JSON.stringify({
+        format: HANDOFF_FORMAT,
+        version: 1,
+        trail: { ...trail, track: { ...trail.track, points } },
+      });
+      expect(() => parseHandoffJson(text)).toThrow(/more than the 100000 this app will load/);
+    });
+  });
+
+  /**
+   * A handoff file arrives from a share sheet — i.e. from whoever sent it — and
+   * its `config.id` becomes a *path* on mobile
+   * (`{documentDir}/trails/{id}.json`). Anything that isn't an id this build
+   * could have minted has to be replaced, not trusted.
+   */
+  describe('untrusted ids', () => {
+    const hostile = [
+      'u_../../../../databases/tracknotes.db',
+      'u_/etc/passwd',
+      'u_a/b',
+      'u_..',
+      'u_UPPER',            // outside the minter's base36 alphabet
+      `u_${'a'.repeat(64)}`, // longer than anything hashString emits
+    ];
+
+    it.each(hostile)('re-mints a hostile id (%s) instead of keeping it', hostileId => {
+      const trail = makeTrail();
+      const text = JSON.stringify({
+        format: HANDOFF_FORMAT,
+        version: 1,
+        trail: { ...trail, config: { ...trail.config, id: hostileId } },
+      });
+      const parsed = parseHandoffJson(text);
+      expect(parsed.config.id).not.toBe(hostileId);
+      expect(parsed.config.id).toMatch(/^u_[a-z0-9]{1,40}$/);
+    });
+
+    it('still keeps a well-formed minted id', () => {
+      expect(roundTrip(makeTrail()).config.id).toBe('u_abc123');
+    });
+  });
+
+  describe('waypoints', () => {
+    /** Build a handoff file whose single waypoint is `waypoint`. */
+    function withWaypoint(waypoint: unknown): string {
+      const trail = makeTrail();
+      return JSON.stringify({
+        format: HANDOFF_FORMAT,
+        version: 1,
+        trail: { ...trail, waypoints: [waypoint] },
+      });
+    }
+
+    const good = {
+      id: 'uw_deadbeef01',
+      name: 'Hut',
+      type: 'hut',
+      lat: -33.87,
+      lon: 151.21,
+      elevation: 20,
+      distance: 0.15,
+      totalDistance: 0.15,
+      ascent: 10,
+      descent: 0,
+      totalAscent: 10,
+      totalDescent: 0,
+      trackIndex: 1,
+    };
+
+    it('keeps a well-formed waypoint verbatim', () => {
+      const [wp] = parseHandoffJson(withWaypoint(good)).waypoints;
+      expect(wp).toMatchObject(good);
+    });
+
+    it('rejects a non-numeric latitude rather than plotting NaN', () => {
+      expect(() => parseHandoffJson(withWaypoint({ ...good, lat: 'north' }))).toThrow(
+        /non-numeric waypoints\[0\]\.lat/
+      );
+    });
+
+    it('rejects an out-of-range longitude', () => {
+      expect(() => parseHandoffJson(withWaypoint({ ...good, lon: 999 }))).toThrow(
+        /out-of-range waypoints\[0\]\.lon/
+      );
+    });
+
+    it('zeroes a missing cumulative stat rather than letting NaN reach the plan', () => {
+      const [wp] = parseHandoffJson(withWaypoint(omit(good, 'totalDistance'))).waypoints;
+      expect(wp.totalDistance).toBe(0);
+    });
+
+    it('re-mints a registry waypoint id so no server id enters a local guide', () => {
+      const [wp] = parseHandoffJson(withWaypoint({ ...good, id: 'w_4f29a5cf' })).waypoints;
+      expect(wp.id).toMatch(/^uw_[a-z0-9]+$/);
+    });
+
+    it('mints an id for a waypoint that carries none', () => {
+      const text = withWaypoint(omit(good, 'id'));
+      const [wp] = parseHandoffJson(text).waypoints;
+      expect(wp.id).toMatch(/^uw_[a-z0-9]+$/);
+      // Deterministic, so re-importing the same file is not a new waypoint.
+      expect(parseHandoffJson(text).waypoints[0].id).toBe(wp.id);
     });
   });
 });

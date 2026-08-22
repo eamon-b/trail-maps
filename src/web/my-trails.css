@@ -90,6 +90,21 @@
   margin-bottom: 0;
 }
 
+/* The "Import a GPX →" call to action. `.trail-nav-link` is also defined in
+   trails/trail-page.css, which the landing page does not link — so without
+   this it renders as a default browser link. Same declarations, so the two
+   agree wherever both stylesheets happen to load. */
+.section-actions .trail-nav-link {
+  color: var(--accent-color, #2196F3);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.section-actions .trail-nav-link:hover {
+  text-decoration: underline;
+}
+
 /* ---- Imported trail page: delete control ---- */
 .danger-btn {
   padding: 0.5rem 1rem;

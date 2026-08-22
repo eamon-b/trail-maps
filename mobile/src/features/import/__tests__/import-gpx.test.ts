@@ -23,8 +23,10 @@ import {
 } from '../import-gpx';
 import { saveImportedTrail } from '../../../services/imported-trail-store';
 import { getDocumentAsync } from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import type { ImportReport } from '@lib/gpx-import';
 import { HANDOFF_FORMAT, serializeTrailHandoff } from '@lib/trail-handoff';
+import { backfillImportElevation } from '../elevation-backfill-flow';
 import type { ProcessedTrail } from '@lib/trail-types';
 
 // ---------------------------------------------------------------------------
@@ -32,12 +34,19 @@ import type { ProcessedTrail } from '@lib/trail-types';
 // ---------------------------------------------------------------------------
 
 const mockFiles: Record<string, string> = {};
+/** Overrides for the reported size, so a huge file needn't actually be built. */
+const mockSizes: Record<string, number> = {};
 
 jest.mock('expo-file-system', () => ({
   File: jest.fn().mockImplementation((uri: string) => ({
     uri,
     get exists() {
       return mockFiles[uri] !== undefined;
+    },
+    // The real `File.size` reports 0 for a file it cannot stat — which the
+    // importer treats as "unknown, let the parser's own caps decide".
+    get size() {
+      return mockSizes[uri] ?? mockFiles[uri]?.length ?? 0;
     },
     text: jest.fn(async () => {
       if (mockFiles[uri] === undefined) throw new Error(`ENOENT: ${uri}`);
@@ -75,6 +84,17 @@ const SAMPLE_GPX = `<?xml version="1.0" encoding="UTF-8"?>
   </trk>
 </gpx>`;
 
+/** Coordinates but no `<ele>` — what the backfill offer exists for. */
+const NO_ELEVATION_GPX = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Flat</name></metadata>
+  <trk><trkseg>
+    <trkpt lat="-33.8688" lon="151.2093"/>
+    <trkpt lat="-33.8700" lon="151.2100"/>
+    <trkpt lat="-33.8750" lon="151.2150"/>
+  </trkseg></trk>
+</gpx>`;
+
 /** A GPX with no name anywhere, so the file name has to fill in. */
 const UNNAMED_GPX = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
@@ -87,6 +107,7 @@ const UNNAMED_GPX = `<?xml version="1.0" encoding="UTF-8"?>
 beforeEach(() => {
   jest.clearAllMocks();
   for (const key of Object.keys(mockFiles)) delete mockFiles[key];
+  for (const key of Object.keys(mockSizes)) delete mockSizes[key];
   mockSave.mockResolvedValue(undefined);
 });
 
@@ -159,6 +180,44 @@ describe('importGpxFromUri', () => {
   it('propagates a parse failure', async () => {
     mockFiles['file:///cache/bad.gpx'] = '<gpx><trk></gpx>';
     await expect(importGpxFromUri('file:///cache/bad.gpx')).rejects.toThrow(/Invalid GPX XML/);
+  });
+
+  /**
+   * The size cap has to bite *before* the read, not inside `parseGpx`: the
+   * whole point is never to hold a 50 MB file as a JS string on a phone. The
+   * assertion that `text()` was not called is therefore the real one.
+   */
+  describe('size cap', () => {
+    it('refuses an oversized file without reading it', async () => {
+      const uri = 'file:///cache/huge.gpx';
+      mockFiles[uri] = SAMPLE_GPX;
+      mockSizes[uri] = 21 * 1024 * 1024;
+
+      await expect(importGpxFromUri(uri)).rejects.toThrow(/21\.0 MB — the limit is 20\.0 MB/);
+
+      const instance = (File as unknown as jest.Mock).mock.results[0].value as {
+        text: jest.Mock;
+      };
+      expect(instance.text).not.toHaveBeenCalled();
+    });
+
+    it('applies the cap to a handoff file too, not just GPX', async () => {
+      const uri = 'file:///cache/huge.tracknotes.json';
+      mockFiles[uri] = '{}';
+      mockSizes[uri] = 50 * 1024 * 1024;
+      await expect(importGpxFromUri(uri, { fileName: 'huge.tracknotes.json' })).rejects.toThrow(
+        /the limit is 20\.0 MB/,
+      );
+    });
+
+    it('reads a file the OS reports no size for and lets the parser judge it', async () => {
+      const uri = 'content://downloads/document/msf%3A99';
+      mockFiles[uri] = SAMPLE_GPX;
+      mockSizes[uri] = 0;
+      await expect(importGpxFromUri(uri)).resolves.toMatchObject({
+        report: { name: 'Phone Import' },
+      });
+    });
   });
 });
 
@@ -316,6 +375,45 @@ describe('saveImport', () => {
       pointCount: imported.report.pointCount,
       waypointCount: imported.report.waypointCount,
     });
+  });
+
+  /**
+   * The seam between the backfill offer and the registry row.
+   *
+   * `saveImport` reads `report.hasElevation`, so a backfill that updated only
+   * the trail would leave a guide flagged "no elevation" on disk while carrying
+   * a full profile — and the plan screen would go on calling its day splits
+   * distance-only. This reproduces exactly what `app/import.tsx` does: run the
+   * flow, spread the result over the import, then save.
+   */
+  it('records the backfilled profile on the registry row, not the original flat one', async () => {
+    mockFiles['file:///cache/flat.gpx'] = NO_ELEVATION_GPX;
+    const imported = await importGpxFromUri('file:///cache/flat.gpx');
+    expect(imported.report.hasElevation).toBe(false);
+
+    // The flow reads the global fetch, the way the app does on a device.
+    const previousFetch = (global as unknown as { fetch?: unknown }).fetch;
+    (global as unknown as { fetch: unknown }).fetch = async (
+      _url: string,
+      init: { body: string },
+    ) => {
+      const body = JSON.parse(init.body) as { locations: unknown[] };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ results: body.locations.map(() => ({ elevation: 120 })) }),
+      };
+    };
+    try {
+      const backfilled = await backfillImportElevation(imported, {});
+      await saveImport({ ...imported, ...backfilled }, 'Flat walk');
+    } finally {
+      (global as unknown as { fetch?: unknown }).fetch = previousFetch;
+    }
+
+    const [, savedTrail, meta] = mockSave.mock.calls[0];
+    expect(meta.hasElevation).toBe(true);
+    expect(savedTrail.config.elevationSource).toBe('backfilled');
   });
 });
 

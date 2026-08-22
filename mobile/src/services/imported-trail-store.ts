@@ -37,8 +37,23 @@ export function importedTrailsRoot(): Directory {
   return new Directory(Paths.document, 'trails');
 }
 
+/**
+ * The only id shape allowed to become a path.
+ *
+ * Trail ids reach this module from two places: `@lib/gpx-import`, which mints
+ * `u_<base36>`, and `@lib/trail-handoff`, which reads a `.tracknotes.json` that
+ * arrived from a share sheet — i.e. from whoever sent it. That parser already
+ * re-mints anything which is not a well-formed `u_` id, so this is the second
+ * lock on the same door: the id is interpolated straight into a file name, and
+ * a `..` or a `/` in it would write outside {documentDir}/trails.
+ */
+const SAFE_TRAIL_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
 /** Path to one imported trail's JSON: {documentDir}/trails/{id}.json */
 export function importedTrailFile(id: string): File {
+  if (!SAFE_TRAIL_ID.test(id)) {
+    throw new Error(`Refusing to use "${id}" as a trail file name.`);
+  }
   return new File(importedTrailsRoot(), `${id}.json`);
 }
 
@@ -87,10 +102,16 @@ export async function saveImportedTrail(
  * Returns null for a missing OR unparseable file rather than throwing: a torn
  * write and a deleted file are the same thing to every caller (show
  * "not found"), and a guide screen crashing on malformed JSON would be strictly
- * worse than the empty state.
+ * worse than the empty state. An id that isn't path-safe is "no such trail" too
+ * — `loadTrail` is reached with a raw route param, which nothing has vetted.
  */
 export async function readImportedTrail(id: string): Promise<TrailJson | null> {
-  const file = importedTrailFile(id);
+  let file: File;
+  try {
+    file = importedTrailFile(id);
+  } catch {
+    return null;
+  }
   if (!file.exists) return null;
   try {
     return JSON.parse(await file.text()) as TrailJson;

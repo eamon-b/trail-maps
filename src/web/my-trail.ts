@@ -7,7 +7,8 @@
  * handed in, because an imported trail exists nowhere but this browser.
  */
 
-import { initTrailViewer } from './trails/trail-viewer';
+import { clearDirectionPreference, initTrailViewer } from './trails/trail-viewer';
+import { clearPlanState } from './trails/plan-state';
 import { handoffFileName, serializeTrailHandoff } from '@lib/trail-handoff';
 import type { ProcessedTrail } from '@lib/trail-types';
 import { deleteTrail, getTrail, isIndexedDbAvailable } from './imported-trails-db';
@@ -90,6 +91,13 @@ function initDeleteButton(trailId: string, name: string): void {
     button.textContent = 'Deleting…';
     void deleteTrail(trailId)
       .then(() => {
+        // The IndexedDB record is only part of this trail; the plan and the
+        // direction toggle live in localStorage under the same id. Because that
+        // id is a content hash of the source GPX, re-importing the very same
+        // file lands on it again — so anything left behind here would reappear
+        // attached to what the user believes is a brand-new trail.
+        clearPlanState(trailId);
+        clearDirectionPreference(trailId);
         window.location.href = './';
       })
       .catch((err: unknown) => {
@@ -131,4 +139,16 @@ async function init(): Promise<void> {
   await initTrailViewer(record.id, record.trail);
 }
 
-void init();
+/**
+ * A throw inside the viewer would otherwise leave the page stuck on a
+ * half-drawn trail panel with an unhandled rejection in the console. The
+ * "not found" panel is a worse trail page and a much better error message.
+ */
+function initSafely(): void {
+  void init().catch((err: unknown) => {
+    console.error('Could not open this trail', err);
+    showPanel('missing-panel');
+  });
+}
+
+initSafely();

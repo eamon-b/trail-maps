@@ -43,6 +43,16 @@ export const HANDOFF_VERSION = 1;
 /** Double extension used for downloaded handoff files. */
 export const HANDOFF_EXTENSION = '.tracknotes.json';
 
+/**
+ * Track-point ceiling for a handoff file.
+ *
+ * The GPX branch of the importer is bounded by `GPX_MAX_POINT_COUNT`; without
+ * this the JSON branch would be the way around it, and it is the branch that
+ * takes files straight off a share sheet. The web exporter simplifies to 20k
+ * and the mobile importer to 5k, so anything past this was not written by us.
+ */
+export const HANDOFF_MAX_POINTS = 100000;
+
 /** The name `@lib/gpx-import` falls back to when a file names nothing. */
 const GENERIC_NAME = 'Imported trail';
 
@@ -149,6 +159,12 @@ export function parseHandoffJson(text: string): ProcessedTrail {
   if (!Array.isArray(rawPoints) || rawPoints.length === 0) {
     fail('This Tracknotes trail file has no track points.');
   }
+  if (rawPoints.length > HANDOFF_MAX_POINTS) {
+    fail(
+      `This Tracknotes trail file has ${rawPoints.length} track points, ` +
+        `more than the ${HANDOFF_MAX_POINTS} this app will load.`
+    );
+  }
   const points = rawPoints.map((p, i) => readTrackPoint(p, `track.points[${i}]`));
 
   if (!Array.isArray(trail.waypoints)) {
@@ -165,10 +181,11 @@ export function parseHandoffJson(text: string): ProcessedTrail {
 
   const name = readName(config.name) ?? readName(config.shortName) ?? GENERIC_NAME;
   const totalDistance = finiteOr(track.totalDistance, points[points.length - 1].dist);
+  const trailId = isImportedId(config.id) ? config.id : `u_${hashString(text)}`;
 
   const resolvedConfig: TrailConfig = {
     ...(config as Partial<TrailConfig>),
-    id: isImportedId(config.id) ? config.id : `u_${hashString(text)}`,
+    id: trailId,
     name,
     shortName: readName(config.shortName) ?? name,
     region: typeof config.region === 'string' ? config.region : 'Imported',
@@ -186,7 +203,7 @@ export function parseHandoffJson(text: string): ProcessedTrail {
       totalAscent: finiteOr(track.totalAscent, 0),
       totalDescent: finiteOr(track.totalDescent, 0),
     },
-    waypoints: trail.waypoints as EnrichedWaypoint[],
+    waypoints: trail.waypoints.map((w, i) => readWaypoint(w, i, trailId)),
     offTrailWaypoints: arrayOrEmpty<OffTrailWaypoint>(trail.offTrailWaypoints),
     alternates: arrayOrEmpty<RouteVariant>(trail.alternates),
     sideTrips: arrayOrEmpty<RouteVariant>(trail.sideTrips),
@@ -241,8 +258,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * An id this build could itself have minted: `u_` followed by the base36
+ * alphabet `hashString` emits, and nothing else.
+ *
+ * The alphabet is the security-relevant part, not a tidiness preference. On
+ * mobile the trail id becomes a *path* — `{documentDir}/trails/{id}.json` in
+ * `services/imported-trail-store` — and a handoff file arrives from a share
+ * sheet, i.e. from whoever sent it. A permissive "starts with `u_`" check would
+ * accept `u_../../../databases/tracknotes.db` and let a crafted file write
+ * outside the trails directory. Anything that fails this test is re-minted from
+ * the content hash below, so the file still imports; it just cannot choose
+ * where it lands.
+ */
+const IMPORTED_ID_PATTERN = /^u_[a-z0-9]{1,40}$/;
+
 function isImportedId(value: unknown): value is string {
-  return typeof value === 'string' && value.startsWith('u_') && value.length > 2;
+  return typeof value === 'string' && IMPORTED_ID_PATTERN.test(value);
+}
+
+/** Whether an id is a locally-minted imported *waypoint* id. */
+function isImportedWaypointId(value: unknown): value is string {
+  return typeof value === 'string' && /^uw_[a-z0-9]{1,40}$/.test(value);
 }
 
 function readName(value: unknown): string | null {
@@ -280,6 +317,55 @@ function readTrackPoint(value: unknown, where: string): TrackPoint {
   if (lat < -90 || lat > 90) fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
   if (lon < -180 || lon > 180) fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
   return { lat, lon, ele, dist };
+}
+
+/**
+ * Validate one waypoint, and guarantee its id is local-only.
+ *
+ * The numeric fields get the same treatment as track points, and for the same
+ * reason: `lat`/`lon` reach a MapLibre GeoJSON source and `totalDistance`
+ * reaches the Skia elevation profile and every plan calculator, so a NaN here
+ * surfaces as a blank or crashed pane rather than as a rejected file.
+ *
+ * The id is *re-minted* rather than rejected when it isn't already a `uw_` one.
+ * A handoff file can legitimately carry a bundled trail someone re-exported,
+ * whose waypoints hold registry (`w_…`) ids; those must not survive into a
+ * local-only guide, because the whole id-discipline story is that a `u_` trail
+ * contains nothing the server has ever heard of. Re-minting is deterministic on
+ * (trail id, index, name, position), so re-importing the same file is idempotent.
+ */
+function readWaypoint(value: unknown, index: number, trailId: string): EnrichedWaypoint {
+  const where = `waypoints[${index}]`;
+  if (!isRecord(value)) fail(`This Tracknotes trail file has a malformed ${where}.`);
+
+  const lat = requireFinite(value.lat, `${where}.lat`);
+  const lon = requireFinite(value.lon, `${where}.lon`);
+  if (lat < -90 || lat > 90) fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
+  if (lon < -180 || lon > 180) fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
+
+  const name = readName(value.name) ?? `Waypoint ${index + 1}`;
+  const id = isImportedWaypointId(value.id)
+    ? value.id
+    : `uw_${hashString(`${trailId}|${index}|${name}|${lat}|${lon}`)}`;
+
+  return {
+    ...(value as Partial<EnrichedWaypoint>),
+    id,
+    name,
+    lat,
+    lon,
+    type: typeof value.type === 'string' ? value.type : 'other',
+    // Cumulative stats drive the profile, the list and every day split; a
+    // missing one is a zero, not a NaN, so the guide still renders.
+    elevation: finiteOr(value.elevation, 0),
+    distance: finiteOr(value.distance, 0),
+    totalDistance: finiteOr(value.totalDistance, 0),
+    ascent: finiteOr(value.ascent, 0),
+    descent: finiteOr(value.descent, 0),
+    totalAscent: finiteOr(value.totalAscent, 0),
+    totalDescent: finiteOr(value.totalDescent, 0),
+    trackIndex: Number.isInteger(value.trackIndex) ? (value.trackIndex as number) : 0,
+  };
 }
 
 function requireFinite(value: unknown, where: string): number {

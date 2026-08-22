@@ -17,6 +17,10 @@ import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { loadPlanState, savePlanState } from './plan-state';
+// Escapes quotes as well as angle brackets, unlike a `textContent` round trip
+// through a detached div — this file interpolates waypoint names and types into
+// `title="…"` and `class="…"`, and an imported GPX supplies both.
+import { escapeHtml } from '../web-utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,12 +105,6 @@ function waypointIcon(type?: string): string {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function escapeHtml(text: unknown): string {
-  if (text == null) return '';
-  const d = document.createElement('div');
-  d.textContent = String(text);
-  return d.innerHTML;
-}
 
 function getMinMax(arr: number[]): { min: number; max: number } {
   if (arr.length === 0) return { min: 0, max: 0 };

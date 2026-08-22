@@ -1,60 +1,116 @@
 import type { GpxData, GpxTrack, GpxRoute, GpxWaypoint, GpxPoint } from './types';
+import { parseCoordinate } from './parse-coordinate';
+import { defaultXmlAdapter, type XmlAdapter, type XmlNode } from './xml-adapter';
+
+/**
+ * Maximum number of track/route points accepted from a single GPX file.
+ * Also the `maxPointCount` default in `GPX_OPTIMIZER_DEFAULTS` (which imports
+ * these constants from here — gpx-optimizer already depends on this module, so
+ * keeping the limits here avoids an import cycle).
+ */
+export const GPX_MAX_POINT_COUNT = 100000;
+
+/** Maximum accepted GPX source size, measured in UTF-16 code units. */
+export const GPX_MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+/** Size/point caps applied while parsing untrusted GPX. 0 disables a cap. */
+export interface GpxParseLimits {
+  maxFileSize?: number;
+  maxPointCount?: number;
+}
 
 /**
  * Parse GPX XML content into structured data.
  *
  * Supports:
- * - <trk> elements (tracks with track segments)
- * - <rte> elements (routes with route points)
- * - <wpt> elements (waypoints)
+ * - `<trk>` elements (tracks with track segments)
+ * - `<rte>` elements (routes with route points)
+ * - `<wpt>` elements (waypoints, including `<ele>` and `<type>`)
  *
- * Routes (<rte>) are converted to a track-like structure for compatibility
- * with existing processing functions.
+ * Platform-neutral: XML access goes through an injected {@link XmlAdapter}, so
+ * the same code runs under DOMParser (web), jsdom (build scripts) and
+ * fast-xml-parser (React Native). With no adapter the platform DOMParser is
+ * used.
+ *
+ * Coordinates are parsed strictly — a missing or unparseable `lat`/`lon`
+ * throws rather than silently plotting the point at 0°N 0°E. Elevations keep
+ * the historical lenient behaviour (`<ele>` absent ⇒ 0) because a missing
+ * elevation is normal, not corrupt.
  */
-export function parseGpx(xml: string): GpxData {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, 'text/xml');
-
-  // Check for parse errors
-  const parseError = doc.querySelector('parsererror');
-  if (parseError) {
-    throw new Error('Invalid GPX XML: ' + parseError.textContent);
+export function parseGpx(xml: string, adapter?: XmlAdapter, limits?: GpxParseLimits): GpxData {
+  const maxFileSize = limits?.maxFileSize ?? GPX_MAX_FILE_SIZE;
+  if (maxFileSize > 0 && xml.length > maxFileSize) {
+    throw new Error(
+      `GPX file too large: ${xml.length} characters exceeds the ${maxFileSize} character limit`
+    );
   }
 
-  // Parse tracks (<trk> elements with <trkseg> containing <trkpt>)
-  const tracks: GpxTrack[] = Array.from(doc.querySelectorAll('trk')).map(trk => ({
-    name: trk.querySelector('name')?.textContent || '',
-    segments: Array.from(trk.querySelectorAll('trkseg')).map(seg => ({
-      points: Array.from(seg.querySelectorAll('trkpt')).map(pt => ({
-        lat: parseFloat(pt.getAttribute('lat') || '0'),
-        lon: parseFloat(pt.getAttribute('lon') || '0'),
-        ele: parseFloat(pt.querySelector('ele')?.textContent || '0'),
-        time: pt.querySelector('time')?.textContent || null
-      }))
-    }))
+  const doc = (adapter ?? defaultXmlAdapter())(xml);
+  const maxPointCount = limits?.maxPointCount ?? GPX_MAX_POINT_COUNT;
+  let pointCount = 0;
+  const countPoints = (n: number): void => {
+    pointCount += n;
+    if (maxPointCount > 0 && pointCount > maxPointCount) {
+      throw new Error(
+        `GPX file has too many points: more than ${maxPointCount} track/route points`
+      );
+    }
+  };
+
+  // Tracks (<trk> → <trkseg> → <trkpt>)
+  const tracks: GpxTrack[] = doc.querySelectorAll('trk').map(trk => ({
+    name: text(trk.querySelector('name')) ?? '',
+    segments: trk.querySelectorAll('trkseg').map(seg => {
+      const trkpts = seg.querySelectorAll('trkpt');
+      countPoints(trkpts.length);
+      return { points: trkpts.map(pt => parsePoint(pt, 'trkpt')) };
+    }),
   }));
 
-  // Parse routes (<rte> elements with <rtept> children)
-  const routes: GpxRoute[] = Array.from(doc.querySelectorAll('rte')).map(rte => ({
-    name: rte.querySelector('name')?.textContent || '',
-    points: Array.from(rte.querySelectorAll('rtept')).map(pt => ({
-      lat: parseFloat(pt.getAttribute('lat') || '0'),
-      lon: parseFloat(pt.getAttribute('lon') || '0'),
-      ele: parseFloat(pt.querySelector('ele')?.textContent || '0'),
-      time: pt.querySelector('time')?.textContent || null
-    }))
-  }));
+  // Routes (<rte> → <rtept>)
+  const routes: GpxRoute[] = doc.querySelectorAll('rte').map(rte => {
+    const rtepts = rte.querySelectorAll('rtept');
+    countPoints(rtepts.length);
+    return {
+      name: text(rte.querySelector('name')) ?? '',
+      points: rtepts.map(pt => parsePoint(pt, 'rtept')),
+    };
+  });
 
-  // Parse waypoints (<wpt> elements)
-  const waypoints: GpxWaypoint[] = Array.from(doc.querySelectorAll('wpt')).map(wpt => ({
-    lat: parseFloat(wpt.getAttribute('lat') || '0'),
-    lon: parseFloat(wpt.getAttribute('lon') || '0'),
-    ele: parseFloat(wpt.querySelector('ele')?.textContent || '0'),
-    name: wpt.querySelector('name')?.textContent || '',
-    desc: wpt.querySelector('desc')?.textContent || ''
-  }));
+  // Waypoints (<wpt>)
+  const waypoints: GpxWaypoint[] = doc.querySelectorAll('wpt').map(wpt => {
+    const explicitType = text(wpt.querySelector('type'));
+    return {
+      lat: parseCoordinate(wpt.getAttribute('lat'), 'lat', 'wpt'),
+      lon: parseCoordinate(wpt.getAttribute('lon'), 'lon', 'wpt'),
+      ele: parseElevation(wpt),
+      name: text(wpt.querySelector('name')) ?? '',
+      desc: text(wpt.querySelector('desc')) ?? '',
+      type: explicitType ? explicitType : undefined,
+    };
+  });
 
-  return { tracks, routes, waypoints };
+  const metadata = doc.querySelector('metadata');
+  const metadataName = metadata ? text(metadata.querySelector('name')) : null;
+
+  return { tracks, routes, waypoints, metadataName };
+}
+
+function text(node: XmlNode | null): string | null {
+  return node ? node.textContent : null;
+}
+
+function parseElevation(node: XmlNode): number {
+  return parseFloat(text(node.querySelector('ele')) || '0');
+}
+
+function parsePoint(pt: XmlNode, context: string): GpxPoint {
+  return {
+    lat: parseCoordinate(pt.getAttribute('lat'), 'lat', context),
+    lon: parseCoordinate(pt.getAttribute('lon'), 'lon', context),
+    ele: parseElevation(pt),
+    time: text(pt.querySelector('time')) || null,
+  };
 }
 
 /**
@@ -94,6 +150,12 @@ export function generateGpx(
     }
     if (wpt.name) {
       xml += `    <name>${escapeXml(wpt.name)}</name>
+`;
+    }
+    // Emit the classified type so an export → import round trip keeps it
+    // instead of re-deriving it from the (already cleaned) name.
+    if (wpt.type) {
+      xml += `    <type>${escapeXml(wpt.type)}</type>
 `;
     }
     if (wpt.desc) {

@@ -6,6 +6,18 @@
  * through other services.
  */
 
+import type { TrackData } from '@lib/trail-types';
+
+/**
+ * The serialized shape of a bundled trail JSON.
+ *
+ * `@lib/gpx-import` produces a `ProcessedTrail` (`@lib/trail-types`), which is
+ * the exact same serialized shape with tighter waypoint/config types. The two
+ * are kept structurally compatible rather than merged: `TrailJson`'s optional
+ * waypoint fields and `[key: string]: unknown` escape hatch are what let the
+ * guide screens (and their tests) build partial trails, so it stays the app's
+ * read-side view while `ProcessedTrail` is the producer's write-side type.
+ */
 export interface TrailJson {
   config: {
     id: string;
@@ -32,13 +44,8 @@ export interface TrailJson {
     totalAscent?: number;
     totalDescent?: number;
   }[];
-  track: {
-    points: { lat: number; lon: number; ele: number; dist: number }[];
-    displayPoints: { lat: number; lon: number; ele: number; dist: number }[];
-    totalDistance: number;
-    totalAscent: number;
-    totalDescent: number;
-  };
+  /** Identical to the build pipeline's `TrackData` — shared, not re-declared. */
+  track: TrackData;
   [key: string]: unknown;
 }
 

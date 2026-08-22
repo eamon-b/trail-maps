@@ -44,6 +44,11 @@ export interface GpxData {
   tracks: GpxTrack[];
   routes: GpxRoute[];
   waypoints: GpxWaypoint[];
+  /**
+   * `<metadata><name>` when the file provides one. Optional so hand-built
+   * `GpxData` values (tests, the optimizer's round trip) stay valid.
+   */
+  metadataName?: string | null;
 }
 
 // GPX Splitter Types

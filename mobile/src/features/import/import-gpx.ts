@@ -49,6 +49,34 @@ import type { TrailJson } from '../../services/trail-assets';
 /** The name `@lib/gpx-import` falls back to when a file names nothing. */
 const GENERIC_NAME = 'Imported trail';
 
+/**
+ * Largest file this app will read into memory, in bytes.
+ *
+ * `@lib/gpx-parser`'s own cap is 50 MB, which is a *desktop* number and — more
+ * to the point — is checked one frame too late: by the time `parseGpx` sees the
+ * string, the whole file has already been read. Reading 50 MB of UTF-8 produces
+ * a ~100 MB JS string before fast-xml-parser's validate and parse passes each
+ * walk it again, which is an out-of-memory kill on a mid-range phone rather
+ * than an error message.
+ *
+ * 20 MB comfortably clears a verbose 100k-point Garmin track (extensions,
+ * heart rate, cadence) — the point cap below is what actually bounds the
+ * interesting case — while keeping peak memory in a range a phone survives.
+ */
+const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Caps handed to the shared parser, rather than letting it use its web
+ * defaults. `maxPointCount` matches `GPX_MAX_POINT_COUNT`; it is restated here
+ * so the mobile budget is visible at the call site rather than inherited.
+ */
+const MOBILE_PARSE_LIMITS = { maxFileSize: MAX_IMPORT_BYTES, maxPointCount: 100000 };
+
+/** Human-readable megabytes, for the size-cap message. */
+function megabytes(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 /** Coarse progress, for the screen's status line. */
 export type ImportStage = 'reading' | 'ingesting';
 
@@ -137,7 +165,18 @@ export async function importGpxFromUri(
 ): Promise<ImportedGpx> {
   options.onStage?.('reading');
   await yieldToUi();
-  const text = await new File(uri).text();
+
+  // Before the read, not after: the point of the cap is to never hold the
+  // bytes. `size` is 0 for a file the OS won't tell us about, which reads as
+  // "under the cap" and lets the parser's own limits have the last word.
+  const file = new File(uri);
+  const size = file.size ?? 0;
+  if (size > MAX_IMPORT_BYTES) {
+    throw new Error(
+      `That file is ${megabytes(size)} — the limit is ${megabytes(MAX_IMPORT_BYTES)}.`,
+    );
+  }
+  const text = await file.text();
 
   options.onStage?.('ingesting');
   await yieldToUi();
@@ -154,7 +193,7 @@ function ingestText(text: string, format: ImportFormat): ImportGpxResult {
     const trail = parseHandoffJson(text);
     return { trail, report: handoffImportReport(trail) };
   }
-  return importGpx(text, { adapter: fxpXmlAdapter });
+  return importGpx(text, { adapter: fxpXmlAdapter, limits: MOBILE_PARSE_LIMITS });
 }
 
 /**

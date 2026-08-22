@@ -5,6 +5,12 @@ import type * as Leaflet from 'leaflet';
 import { findNearestByDistance } from '@lib/track-geometry';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { getDirectionLabel as directionLabelFor } from '@lib/plan-direction';
+// Shared with the upload/my-trail pages, and — unlike a `textContent` round
+// trip through a detached div — it escapes quotes, so the same helper is safe
+// in an attribute value as in a text node. That matters here: `autoLinkUrls`
+// puts its result inside `href="…"`, and imported GPX supplies every waypoint
+// name, type and description on this page.
+import { escapeHtml } from '../web-utils';
 declare const L: typeof Leaflet;
 
 interface TrackPoint {
@@ -192,13 +198,6 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): (.
   };
 }
 
-// HTML escape helper for XSS prevention
-function escapeHtml(text: unknown): string {
-  if (text == null) return '';
-  const div = document.createElement('div');
-  div.textContent = String(text);
-  return div.innerHTML;
-}
 
 // Convert plain-text URLs to clickable links (after HTML escaping)
 function autoLinkUrls(text: string): string {
@@ -316,6 +315,12 @@ function createWaypointIcon(type?: string): L.DivIcon {
 
 function drawWaypointMarkers(waypoints: Waypoint[]): void {
   waypointMarkers = [];
+  // Leaflet is a CDN script, and `initMap` already degrades to a "map
+  // unavailable" panel when it doesn't arrive. Every other map mutation in
+  // `refreshDisplay` is guarded on `map`; these two were not, so reversing
+  // direction on a page whose Leaflet was blocked threw instead of just
+  // updating the table and the profile.
+  if (!map) return;
   if (!waypoints || waypoints.length === 0) return;
 
   waypoints.forEach((wp, index) => {
@@ -336,6 +341,7 @@ function drawWaypointMarkers(waypoints: Waypoint[]): void {
 function drawOffTrailWaypointMarkers(waypoints: OffTrailWaypoint[]): void {
   offTrailMarkers.forEach(m => { if (map && map.hasLayer(m)) map.removeLayer(m); });
   offTrailMarkers = [];
+  if (!map) return;
   if (!waypoints || waypoints.length === 0) return;
 
   waypoints.forEach(wp => {
@@ -1144,8 +1150,8 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
           role="button"
           aria-expanded="false"
           aria-controls="waypoint-detail-${waypointIndex}">
-        <td><span class="expand-chevron">&#9654;</span> ${wp.name || 'Unnamed'}${descIndicator}</td>
-        <td><span class="waypoint-type ${getTypeClass(wp.type)}">${wp.type || 'waypoint'}</span></td>
+        <td><span class="expand-chevron">&#9654;</span> ${escapeHtml(wp.name || 'Unnamed')}${descIndicator}</td>
+        <td><span class="waypoint-type ${getTypeClass(wp.type)}">${escapeHtml(wp.type || 'waypoint')}</span></td>
         <td class="numeric">${wp.elevation ?? '-'}</td>
         <td class="numeric">${wp.distance?.toFixed(1) ?? '-'}</td>
         <td class="numeric">${wp.totalDistance?.toFixed(1) ?? '-'}</td>
@@ -1504,6 +1510,25 @@ function saveDirectionPreference(trailId: string, isReversed: boolean): void {
   try {
     const prefs = JSON.parse(localStorage.getItem('trailDirectionPrefs') || '{}');
     prefs[trailId] = isReversed;
+    localStorage.setItem('trailDirectionPrefs', JSON.stringify(prefs));
+  } catch {
+    // localStorage may be unavailable
+  }
+}
+
+/**
+ * Forget one trail's direction preference.
+ *
+ * Needed only for imported trails, and needed *because* their ids are a content
+ * hash of the source file: delete a trail and re-import the same GPX and you
+ * land on the same id, so a preference left behind here would silently come
+ * back attached to what the user thinks is a fresh trail. Bundled trails keep
+ * theirs forever, which is the intended behaviour for them.
+ */
+export function clearDirectionPreference(trailId: string): void {
+  try {
+    const prefs = JSON.parse(localStorage.getItem('trailDirectionPrefs') || '{}');
+    delete prefs[trailId];
     localStorage.setItem('trailDirectionPrefs', JSON.stringify(prefs));
   } catch {
     // localStorage may be unavailable

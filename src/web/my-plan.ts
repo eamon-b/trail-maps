@@ -67,4 +67,10 @@ async function init(): Promise<void> {
   await initPlanViewer(record.id, record.trail);
 }
 
-void init();
+// A throw inside the viewer would otherwise leave a half-drawn planner and an
+// unhandled rejection in the console — no worse a trail than the "not found"
+// state, and far harder for the user to interpret.
+void init().catch((err: unknown) => {
+  console.error('Could not open this plan', err);
+  showMissing();
+});

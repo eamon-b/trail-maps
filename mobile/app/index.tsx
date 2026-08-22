@@ -52,9 +52,14 @@ export default function GuideListScreen() {
   );
 
   // Offline-tile statuses, for bundled trails only: tile packs are built
-  // server-side per bundled trailId, so an imported trail can never have one
-  // and asking the tile manager about it is a pointless filesystem probe.
-  // (Pack reuse for imports is Step 3.5.)
+  // server-side per bundled trailId, so no directory is ever named after an
+  // imported id and asking the tile manager about one is a pointless probe.
+  //
+  // An import can still *borrow* a bundled pack when its track sits inside that
+  // trail's coverage (`services/offline-pack-resolver`) — but the borrowed
+  // pack's status is hydrated under the bundled id, which is already in this
+  // list. Known gap: the imported card shows an "Imported" pill instead of a
+  // DownloadBadge, so a borrowed pack is not reflected here.
   useEffect(() => {
     hydrate(trails.filter((t) => t.source === 'bundled').map((t) => t.id));
   }, [hydrate, trails]);

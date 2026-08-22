@@ -141,6 +141,28 @@ describe('imported-trail-store — paths', () => {
       'file:///mock/document/trails/u_abc123.json',
     );
   });
+
+  it('accepts a bundled trail id, since delete is called with those too', () => {
+    expect(importedTrailFile('cape-to-cape').uri).toBe(
+      'file:///mock/document/trails/cape-to-cape.json',
+    );
+  });
+
+  /**
+   * The id becomes a path, and one route to it (`@lib/trail-handoff`) reads a
+   * file handed over by a share sheet. The handoff parser re-mints anything
+   * malformed, so this is the second lock on the same door — but it is the one
+   * standing between a crafted id and a write over the app's own database.
+   */
+  it.each([
+    'u_../../../../databases/tracknotes.db',
+    'u_/etc/passwd',
+    '../escape',
+    'has space',
+    '',
+  ])('refuses %p as a file name', (hostileId) => {
+    expect(() => importedTrailFile(hostileId)).toThrow(/Refusing to use/);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -239,6 +261,10 @@ describe('readImportedTrail', () => {
     mockFiles['file:///mock/document/trails/u_torn.json'] = '{"config":';
 
     expect(await readImportedTrail('u_torn')).toBeNull();
+  });
+
+  it('returns null for a path-unsafe id — loadTrail is reached with a raw route param', async () => {
+    expect(await readImportedTrail('../../secrets')).toBeNull();
   });
 });
 

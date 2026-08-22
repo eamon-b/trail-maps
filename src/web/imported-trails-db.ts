@@ -232,8 +232,15 @@ export async function getTrail<T = ImportedTrailData>(
 }
 
 /**
- * List stored trails' metadata (no trail payloads), newest first.
- * Ties on `createdAt` are broken by id so the order is deterministic.
+ * List stored trails' metadata, newest first. Ties on `createdAt` are broken by
+ * id so the order is deterministic.
+ *
+ * Note what this costs. IndexedDB has no projection, so `getAll()` structure-
+ * clones each *whole* record — full track included — and `toSummary` then
+ * throws the payload away. That is fine for the handful of imports a browser
+ * realistically holds and wrong at a hundred; the fix when it matters is a
+ * second object store holding only the summaries, written alongside the
+ * payload.
  */
 export async function listTrailSummaries(): Promise<ImportedTrailSummary[]> {
   const records = await runTransaction('readonly', (store) => {

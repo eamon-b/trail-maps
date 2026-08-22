@@ -20,7 +20,7 @@ import {
 } from './gpx-optimizer';
 import { classifyTracks, combineTracksGeographically } from './track-classification';
 import { classifyWaypoint } from './waypoint-classifier';
-import { cumulativeKm, detectSelfRetraces, extractSpur } from './track-spurs';
+import { cumulativeKm, detectSelfRetraces, extractSpur, type SelfRetrace } from './track-spurs';
 import {
   dedupeNearDuplicateWaypoints,
   WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS,
@@ -650,8 +650,10 @@ export interface BuildTrailDiagnostics {
   mainTracksCombined: number;
   /** Gaps found while chaining multiple main tracks. */
   gapWarnings: CombineTracksWarning[];
-  /** Human-readable self-retrace advisories. */
+  /** Human-readable self-retrace advisories (worded for trail.json authors). */
   selfRetraceWarnings: string[];
+  /** The same self-retraces, structured, so callers can word their own advice. */
+  selfRetraces: SelfRetrace[];
   /** Points on the built main route. */
   pointCount: number;
   /** Points in the simplified display copy. */
@@ -721,7 +723,8 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   }
 
   const selfRetraceWarnings: string[] = [];
-  for (const retrace of detectSelfRetraces(mainRoutePoints, { minRetraceKm: SELF_RETRACE_WARN_KM })) {
+  const selfRetraces = detectSelfRetraces(mainRoutePoints, { minRetraceKm: SELF_RETRACE_WARN_KM });
+  for (const retrace of selfRetraces) {
     const message =
       `  Warning: main route retraces ${retrace.retraceLengthKm.toFixed(1)} km around km ` +
       `${retrace.turnaroundKm.toFixed(1)} (${retrace.terminal ? 'terminal spur' : 'mid-route'}). ` +
@@ -979,6 +982,7 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     mainTracksCombined: selection.mainTrackCount,
     gapWarnings: selection.gapWarnings,
     selfRetraceWarnings,
+    selfRetraces,
     pointCount: points.length,
     displayPointCount: displayPoints.length,
     alternateCount: alternatesWithWaypoints.length,

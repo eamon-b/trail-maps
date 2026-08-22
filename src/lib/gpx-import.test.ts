@@ -128,6 +128,24 @@ describe('importGpx', () => {
     expect(report.warnings.some(w => /gap between/.test(w))).toBe(true);
   });
 
+  it('words a self-retrace for someone who can only edit their GPX', () => {
+    // 20 km north, then 5 km out-and-back along the same line: a terminal spur.
+    const pt = (i: number) => `<trkpt lat="${-33 + i * 0.001}" lon="151"><ele>10</ele></trkpt>`;
+    const north = Array.from({ length: 200 }, (_, i) => pt(i));
+    const spur = Array.from({ length: 45 }, (_, i) => pt(200 + i));
+    const back = Array.from({ length: 45 }, (_, i) => pt(244 - i));
+    const xml = `<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1">
+      <trk><name>Walk</name><trkseg>${[...north, ...spur, ...back].join('')}</trkseg></trk></gpx>`;
+    const { report } = importGpx(xml);
+
+    const retrace = report.warnings.find(w => /doubles back/.test(w));
+    expect(retrace).toBeDefined();
+    expect(retrace).toMatch(/at the end of the route/);
+    expect(retrace).toMatch(/own <trk> named "Side trip: …"/);
+    // Never the build script's advice — an importer has no trail.json.
+    expect(report.warnings.some(w => /trail\.json|extractSpurs/.test(w))).toBe(false);
+  });
+
   it('handles an <rte>-only file', () => {
     const { trail, report } = importGpx(fixture('route-only'));
     expect(trail.track.points).toHaveLength(4);

@@ -21,6 +21,7 @@ import { loadPlanState, savePlanState } from './plan-state';
 // through a detached div — this file interpolates waypoint names and types into
 // `title="…"` and `class="…"`, and an imported GPX supplies both.
 import { escapeHtml } from '../web-utils';
+import { onThemeChange, themeColor } from '../theme';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -221,7 +222,7 @@ async function loadTrailData(trailId: string): Promise<Trail | null> {
 function initMap(): void {
   if (typeof L === 'undefined') {
     const el = document.getElementById('plan-map');
-    if (el) el.innerHTML = '<p style="padding:2rem;text-align:center;color:#666">Map unavailable.</p>';
+    if (el) el.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-secondary)">Map unavailable.</p>';
     return;
   }
 
@@ -372,14 +373,19 @@ function drawElevationProfile(): void {
   // Cache max distance for hover calculation
   elevMaxDist = maxDist;
 
+  const axisColor = themeColor('--chart-text', '#666');
+  const gridColor = themeColor('--chart-grid', '#ddd');
+  const gridSoftColor = themeColor('--chart-grid-soft', '#eee');
+  const accentColor = themeColor('--chart-accent', '#3b82f6');
+
   // Elevation axis
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = axisColor;
   ctx.font = '11px system-ui, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (const tick of eleTicks) {
     const y = PAD.top + height - ((tick - eleMin) / eleRange) * height;
-    ctx.strokeStyle = '#ddd';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(PAD.left, y);
@@ -391,10 +397,10 @@ function drawElevationProfile(): void {
   // Distance axis
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = axisColor;
   for (const tick of distTicks) {
     const x = PAD.left + (tick / maxDist) * width;
-    ctx.strokeStyle = '#eee';
+    ctx.strokeStyle = gridSoftColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, PAD.top);
@@ -403,9 +409,9 @@ function drawElevationProfile(): void {
     ctx.fillText(`${Math.round(tick)} km`, x, PAD.top + height + 4);
   }
 
-  // Full trail — light grey
+  // Full trail — muted against the theme background
   ctx.beginPath();
-  ctx.strokeStyle = '#ccc';
+  ctx.strokeStyle = themeColor('--chart-muted-line', '#ccc');
   ctx.lineWidth = 2;
   pts.forEach((p, i) => {
     const x = PAD.left + (p.dist / maxDist) * width;
@@ -426,7 +432,7 @@ function drawElevationProfile(): void {
       const slice = pts.slice(lo, hi + 1);
 
       ctx.beginPath();
-      ctx.strokeStyle = '#3b82f6';
+      ctx.strokeStyle = accentColor;
       ctx.lineWidth = 3;
       slice.forEach((p, i) => {
         const x = PAD.left + (p.dist / maxDist) * width;
@@ -441,7 +447,7 @@ function drawElevationProfile(): void {
   // Stop markers on elevation
   activeStops().forEach(stop => {
     const x = PAD.left + (stop.km / maxDist) * width;
-    ctx.strokeStyle = '#3b82f6';
+    ctx.strokeStyle = accentColor;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
@@ -604,7 +610,7 @@ function renderStopList(): void {
   );
 
   if (waypoints.length === 0) {
-    container.innerHTML = '<p style="padding:1rem;font-size:0.85rem;color:#888;">No waypoints match.</p>';
+    container.innerHTML = '<p style="padding:1rem;font-size:0.85rem;color:var(--text-secondary);">No waypoints match.</p>';
     return;
   }
 
@@ -658,7 +664,7 @@ function renderDayDatasheet(day: ComputedDay | null): void {
       return `<div class="ds-row">
         <span class="ds-type-icon">${waypointIcon(wp.type)}</span>
         <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}</span>
-        <span class="ds-km">${km.toFixed(1)}<br><small style="color:#aaa">${deltaStr}</small></span>
+        <span class="ds-km">${km.toFixed(1)}<br><small style="color:var(--text-secondary)">${deltaStr}</small></span>
       </div>`;
     }).join('');
     return;
@@ -690,7 +696,7 @@ function renderDayDatasheet(day: ComputedDay | null): void {
     rows.push(`<div class="ds-row">
       <span class="ds-type-icon">${waypointIcon(wp.type)}</span>
       <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}</span>
-      <span class="ds-km">${km.toFixed(1)}<br><small style="color:#aaa">+${delta}</small></span>
+      <span class="ds-km">${km.toFixed(1)}<br><small style="color:var(--text-secondary)">+${delta}</small></span>
     </div>`);
     prevKm = km;
   });
@@ -952,4 +958,8 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
     drawElevationProfile();
     map?.invalidateSize();
   }, 150));
+
+  // The elevation profile is canvas-drawn, so it has to be repainted by hand
+  // when the theme changes.
+  onThemeChange(() => drawElevationProfile());
 }

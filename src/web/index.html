@@ -6,9 +6,28 @@
   <title>Trail Maps - Australian Long Distance Trails</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./my-trails.css">
+  <!-- Applies the saved theme before first paint so the page never flashes. See theme.ts. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('js');
+      var pref = 'system';
+      try { pref = localStorage.getItem('trail-maps-theme') || 'system'; } catch (e) { /* storage disabled */ }
+      if (pref !== 'light' && pref !== 'dark') pref = 'system';
+      root.dataset.themePref = pref;
+      root.dataset.theme = pref === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : pref;
+    })();
+  </script>
+  <script type="module" src="./theme.ts"></script>
 </head>
 <body>
   <div class="container landing">
+    <div class="page-bar page-bar-end">
+      <div data-theme-toggle></div>
+    </div>
+
     <header class="hero">
       <h1>Trail Maps</h1>
       <p class="tagline">Interactive maps and data for Australian hiking trails</p>

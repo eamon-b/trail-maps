@@ -8,6 +8,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   flex-direction: column;
   height: 100vh;
   min-width: 900px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* ---- Header bar ---- */
@@ -16,13 +18,13 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 1rem;
-  background: var(--bg-primary, #fff);
-  border-bottom: 1px solid var(--border-color, #ddd);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 #plan-header .back-link {
-  color: var(--accent-color, #2196F3);
+  color: var(--accent-color);
   text-decoration: none;
   font-weight: 500;
   white-space: nowrap;
@@ -32,7 +34,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 #plan-header .trail-title {
   font-weight: 600;
   font-size: 0.95rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 #plan-name-input {
@@ -40,7 +42,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   min-width: 120px;
   max-width: 300px;
   padding: 0.35rem 0.6rem;
-  border: 1px solid var(--border-color, #ccc);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 0.9rem;
 }
@@ -53,7 +55,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 }
 #plan-start-date {
   padding: 0.35rem 0.6rem;
-  border: 1px solid var(--border-color, #ccc);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 0.875rem;
 }
@@ -62,10 +64,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border-color, #ccc);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  background: var(--bg-primary, #fff);
-  color: var(--accent-color, #2196F3);
+  background: var(--bg-primary);
+  color: var(--accent-color);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -73,8 +75,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   transition: background 0.15s, border-color 0.15s;
 }
 #direction-toggle:hover {
-  background: var(--bg-secondary, #f0f7ff);
-  border-color: var(--accent-color, #2196F3);
+  background: var(--bg-secondary);
+  border-color: var(--accent-color);
 }
 #direction-toggle .direction-arrows {
   font-size: 0.95rem;
@@ -82,10 +84,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 }
 #save-status {
   font-size: 0.8rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
-#save-status.unsaved { color: #e65100; }
+#save-status.unsaved { color: var(--tint-warn-text); }
 
 /* ---- Three-panel area ---- */
 #plan-body {
@@ -100,13 +102,13 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 #left-panel {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-color, #ddd);
+  border-right: 1px solid var(--border-color);
   min-height: 0;
   overflow: hidden;
 }
 #left-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color, #ddd);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 .tab-btn {
@@ -118,14 +120,14 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   transition: color 0.15s, border-color 0.15s;
 }
 .tab-btn.active {
-  color: var(--accent-color, #2196F3);
-  border-bottom-color: var(--accent-color, #2196F3);
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
 }
-.tab-btn:hover { color: var(--accent-color, #2196F3); }
+.tab-btn:hover { color: var(--accent-color); }
 .tab-panel {
   display: none;
   flex: 1;
@@ -141,17 +143,17 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   padding: 0.5rem;
 }
 .day-card {
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.65rem 0.75rem;
   margin-bottom: 0.5rem;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.day-card:hover { background: var(--bg-secondary, #f5f5f5); }
+.day-card:hover { background: var(--bg-secondary); }
 .day-card.selected {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--select);
+  background: var(--tint-accent);
 }
 .day-card-header {
   display: flex;
@@ -160,10 +162,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   margin-bottom: 0.2rem;
 }
 .day-card-number { font-weight: 700; font-size: 0.9rem; }
-.day-card-date { font-size: 0.75rem; color: var(--text-secondary, #888); }
+.day-card-date { font-size: 0.75rem; color: var(--text-secondary); }
 .day-card-route {
   font-size: 0.8rem;
-  color: var(--text-secondary, #555);
+  color: var(--text-secondary);
   margin-bottom: 0.3rem;
   white-space: nowrap;
   overflow: hidden;
@@ -171,22 +173,22 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 }
 .day-card-stats {
   font-size: 0.75rem;
-  color: var(--text-secondary, #777);
+  color: var(--text-secondary);
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
 }
-.day-card-stats .water-info { color: #0284c7; }
+.day-card-stats .water-info { color: var(--water); }
 .days-empty {
   padding: 1.5rem 1rem;
   text-align: center;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 /* Collapsible sections (resupply, water carry) */
 .collapse-section {
-  border-top: 1px solid var(--border-color, #ddd);
+  border-top: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 .collapse-header {
@@ -199,10 +201,10 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   user-select: none;
 }
-.collapse-header:hover { background: var(--bg-secondary, #f5f5f5); }
+.collapse-header:hover { background: var(--bg-secondary); }
 .collapse-chevron { font-size: 0.65rem; transition: transform 0.15s; }
 .collapse-chevron.open { transform: rotate(90deg); }
 .collapse-body { display: none; padding: 0 0.5rem 0.5rem; }
@@ -210,14 +212,14 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .gap-item {
   font-size: 0.78rem;
   padding: 0.3rem 0.25rem;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: flex-start;
   gap: 0.4rem;
 }
 .gap-item:last-child { border-bottom: none; }
-.gap-warn { color: #dc2626; font-weight: 600; }
-.gap-ok { color: var(--text-secondary, #555); }
+.gap-warn { color: var(--danger); font-weight: 600; }
+.gap-ok { color: var(--text-secondary); }
 
 /* Stops tab */
 #stops-search {
@@ -227,7 +229,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 #stops-search input {
   width: 100%;
   padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border-color, #ccc);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 0.85rem;
 }
@@ -242,18 +244,18 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   gap: 0.5rem;
   padding: 0.45rem 0.75rem;
   cursor: pointer;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border-color);
   font-size: 0.8rem;
   transition: background 0.1s;
 }
-.stop-row:hover { background: var(--bg-secondary, #f5f5f5); }
-.stop-row.is-stop { background: #eff6ff; }
-.stop-row.is-stop:hover { background: #dbeafe; }
+.stop-row:hover { background: var(--bg-secondary); }
+.stop-row.is-stop { background: var(--tint-accent); }
+.stop-row.is-stop:hover { background: var(--tint-accent-strong); }
 .stop-check { font-size: 1rem; width: 1.1rem; flex-shrink: 0; }
 .stop-type-icon { font-size: 1rem; flex-shrink: 0; }
 .stop-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stop-km { color: var(--text-secondary, #888); white-space: nowrap; }
-.stop-gap { color: var(--text-secondary, #aaa); font-size: 0.72rem; white-space: nowrap; }
+.stop-km { color: var(--text-secondary); white-space: nowrap; }
+.stop-gap { color: var(--text-secondary); font-size: 0.72rem; white-space: nowrap; }
 
 /* ---- Center panel ---- */
 #center-panel {
@@ -268,7 +270,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 }
 #elevation-section {
   height: 160px;
-  border-top: 1px solid var(--border-color, #ddd);
+  border-top: 1px solid var(--border-color);
   flex-shrink: 0;
   position: relative;
 }
@@ -303,13 +305,13 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 #right-panel {
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border-color, #ddd);
+  border-left: 1px solid var(--border-color);
   overflow: hidden;
   min-height: 0;
 }
 #datasheet-header {
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--border-color, #ddd);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 #datasheet-title {
@@ -322,7 +324,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 }
 #datasheet-subtitle {
   font-size: 0.75rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 #datasheet-body {
   flex: 1;
@@ -335,15 +337,15 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.75rem;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border-color);
   font-size: 0.78rem;
 }
 .ds-row:last-child { border-bottom: none; }
 .ds-type-icon { text-align: center; }
 .ds-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ds-km { text-align: right; color: var(--text-secondary, #888); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ds-row.ds-start { font-weight: 700; background: var(--bg-secondary, #f9f9f9); }
-.ds-row.ds-end { font-weight: 700; background: var(--bg-secondary, #f9f9f9); }
+.ds-km { text-align: right; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ds-row.ds-start { font-weight: 700; background: var(--bg-secondary); }
+.ds-row.ds-end { font-weight: 700; background: var(--bg-secondary); }
 
 /* ---- Waypoint map markers ---- */
 .waypoint-marker {
@@ -367,7 +369,9 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .waypoint-marker.trailhead { background: #ffe082; }
 .waypoint-marker.endpoint { background: #ef9a9a; }
 .waypoint-marker.default { background: #e0e0e0; }
-.waypoint-marker.is-stop { border-color: #3b82f6; border-width: 3px; }
+/* Markers keep light pastel fills over the map, so their glyphs stay dark. */
+.waypoint-marker { color: #1f2937; }
+.waypoint-marker.is-stop { border-color: var(--select); border-width: 3px; }
 .stop-flag-icon {
   display: flex;
   align-items: center;
@@ -387,7 +391,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   display: none;
   padding: 2rem;
   text-align: center;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 @media (max-width: 900px) {
   #plan-shell { display: none; }

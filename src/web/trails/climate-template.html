@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Climate Data - {{TRAIL_NAME}} - Trail Maps</title>
   <link rel="stylesheet" href="../../styles.css">
+  <!-- Applies the saved theme before first paint so the page never flashes. See theme.ts. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('js');
+      var pref = 'system';
+      try { pref = localStorage.getItem('trail-maps-theme') || 'system'; } catch (e) { /* storage disabled */ }
+      if (pref !== 'light' && pref !== 'dark') pref = 'system';
+      root.dataset.themePref = pref;
+      root.dataset.theme = pref === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : pref;
+    })();
+  </script>
+  <script type="module" src="../../theme.ts"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     .climate-header {
@@ -16,10 +31,10 @@
       gap: 1rem;
       margin-top: 1rem;
       font-size: 0.875rem;
-      color: var(--text-secondary, #666);
+      color: var(--text-secondary);
     }
     .climate-meta-item {
-      background: var(--bg-secondary, #f5f5f5);
+      background: var(--bg-secondary);
       padding: 0.5rem 1rem;
       border-radius: 4px;
     }
@@ -28,7 +43,7 @@
       flex-wrap: wrap;
       gap: 0.5rem;
       margin: 1rem 0;
-      border-bottom: 2px solid var(--border-color, #ddd);
+      border-bottom: 2px solid var(--border-color);
       padding-bottom: 0.5rem;
     }
     .location-tab {
@@ -38,15 +53,15 @@
       border-radius: 4px 4px 0 0;
       cursor: pointer;
       font-size: 0.9rem;
-      color: var(--text-secondary, #666);
+      color: var(--text-secondary);
       transition: all 0.2s;
     }
     .location-tab:hover {
-      background: var(--bg-secondary, #f5f5f5);
+      background: var(--bg-secondary);
     }
     .location-tab.active {
-      background: var(--accent-color, #2196F3);
-      color: white;
+      background: var(--accent-color);
+      color: var(--on-primary);
     }
     .location-info {
       display: flex;
@@ -54,7 +69,7 @@
       gap: 1rem;
       margin: 1rem 0;
       padding: 1rem;
-      background: var(--bg-secondary, #f5f5f5);
+      background: var(--bg-secondary);
       border-radius: 8px;
     }
     .location-info-item {
@@ -80,10 +95,10 @@
     .climate-table td {
       padding: 0.5rem 0.75rem;
       text-align: center;
-      border-bottom: 1px solid var(--border-color, #ddd);
+      border-bottom: 1px solid var(--border-color);
     }
     .climate-table th {
-      background: var(--bg-secondary, #f5f5f5);
+      background: var(--bg-secondary);
       font-weight: 600;
       font-size: 0.75rem;
       text-transform: uppercase;
@@ -94,22 +109,22 @@
       font-weight: 500;
     }
     .climate-table tr:hover {
-      background: var(--bg-secondary, #f5f5f5);
+      background: var(--bg-secondary);
     }
     .climate-table .highlight-best {
-      background: #e8f5e9;
+      background: var(--row-good);
     }
     .climate-table .highlight-worst {
-      background: #ffebee;
+      background: var(--row-bad);
     }
     .temp-cell {
       font-variant-numeric: tabular-nums;
     }
     .temp-max {
-      color: #d32f2f;
+      color: var(--temp-max);
     }
     .temp-min {
-      color: #1976d2;
+      color: var(--temp-min);
     }
     .precip-cell {
       font-variant-numeric: tabular-nums;
@@ -121,7 +136,7 @@
       margin: 2rem 0;
     }
     .chart-wrapper {
-      background: var(--bg-secondary, #f5f5f5);
+      background: var(--bg-secondary);
       border-radius: 8px;
       padding: 1rem;
     }
@@ -142,7 +157,7 @@
       margin-top: 1rem;
     }
     .nav-links a {
-      color: var(--accent-color, #2196F3);
+      color: var(--accent-color);
       text-decoration: none;
       margin-right: 1rem;
     }
@@ -152,16 +167,17 @@
     .no-data {
       text-align: center;
       padding: 3rem;
-      color: var(--text-secondary, #666);
+      color: var(--text-secondary);
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <header>
+    <header class="page-bar">
       <nav class="breadcrumb">
         <a href="../../">Home</a> / <a href="./">{{TRAIL_SHORT_NAME}}</a> / <span>Climate</span>
       </nav>
+      <div data-theme-toggle></div>
     </header>
 
     <section class="panel active">
@@ -190,6 +206,8 @@
   </div>
 
   <script type="module">
+    import { onThemeChange, themeColor } from '../../theme.ts';
+
     const TRAIL_ID = '{{TRAIL_ID}}';
     const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
                          'July', 'August', 'September', 'October', 'November', 'December'];
@@ -328,6 +346,15 @@
 
       const labels = monthly.map(m => MONTH_SHORT[m.month - 1]);
 
+      // Chart.js paints to canvas, so it cannot use the CSS theme tokens
+      // directly — feed it the resolved colors instead.
+      Chart.defaults.color = themeColor('--chart-text', '#666');
+      Chart.defaults.borderColor = themeColor('--chart-grid', '#ddd');
+      const tempMaxColor = themeColor('--temp-max', '#d32f2f');
+      const tempMinColor = themeColor('--temp-min', '#1976d2');
+      const precipColor = themeColor('--chart-line', '#2196F3');
+      const rainyDaysColor = themeColor('--success', '#4caf50');
+
       // Temperature chart
       tempChart = new Chart(ctx1, {
         type: 'line',
@@ -337,16 +364,16 @@
             {
               label: 'Max Temp',
               data: monthly.map(m => m.avgTempMax),
-              borderColor: '#d32f2f',
-              backgroundColor: 'rgba(211, 47, 47, 0.1)',
+              borderColor: tempMaxColor,
+              backgroundColor: tempMaxColor,
               fill: false,
               tension: 0.3,
             },
             {
               label: 'Min Temp',
               data: monthly.map(m => m.avgTempMin),
-              borderColor: '#1976d2',
-              backgroundColor: 'rgba(25, 118, 210, 0.1)',
+              borderColor: tempMinColor,
+              backgroundColor: tempMinColor,
               fill: false,
               tension: 0.3,
             },
@@ -380,8 +407,8 @@
             {
               label: 'Precipitation (mm)',
               data: monthly.map(m => m.avgPrecipitation),
-              backgroundColor: 'rgba(33, 150, 243, 0.7)',
-              borderColor: '#2196F3',
+              backgroundColor: precipColor,
+              borderColor: precipColor,
               borderWidth: 1,
               yAxisID: 'y',
             },
@@ -389,8 +416,8 @@
               label: 'Rainy Days',
               data: monthly.map(m => m.avgRainyDays),
               type: 'line',
-              borderColor: '#4caf50',
-              backgroundColor: 'transparent',
+              borderColor: rainyDaysColor,
+              backgroundColor: rainyDaysColor,
               borderWidth: 2,
               pointRadius: 3,
               yAxisID: 'y1',
@@ -482,6 +509,11 @@
 
       climateData = trail.climate;
       renderClimateContent(climateData);
+
+      // Charts are canvas-drawn, so repaint them when the theme changes.
+      onThemeChange(() => {
+        if (climateData) updateCharts(climateData.locations[currentLocationIndex].monthly);
+      });
     }
 
     init();

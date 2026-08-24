@@ -5,16 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{TRAIL_NAME}} - Trail Maps</title>
   <link rel="stylesheet" href="../../styles.css">
+  <!-- Applies the saved theme before first paint so the page never flashes. See theme.ts. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('js');
+      var pref = 'system';
+      try { pref = localStorage.getItem('trail-maps-theme') || 'system'; } catch (e) { /* storage disabled */ }
+      if (pref !== 'light' && pref !== 'dark') pref = 'system';
+      root.dataset.themePref = pref;
+      root.dataset.theme = pref === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : pref;
+    })();
+  </script>
+  <script type="module" src="../../theme.ts"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="stylesheet" href="../trail-page.css">
 </head>
 <body>
   <div class="container trail-data">
-    <header>
+    <header class="page-bar">
       <nav class="breadcrumb">
         <a href="../../">Home</a> / <span>{{TRAIL_SHORT_NAME}}</span>
       </nav>
+      <div data-theme-toggle></div>
     </header>
 
     <section class="panel active">

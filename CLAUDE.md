@@ -76,7 +76,8 @@ Shared processing modules (used by both web and mobile):
 ### Web UI (`src/web/`)
 
 - `index.html` - Landing page with trail listing
-- `styles.css` - Global styles
+- `styles.css` - Global styles and the light/dark theme tokens
+- `theme.ts` - Light/dark/system theme: applies `data-theme` to `<html>`, renders the toggle, and exposes `onThemeChange()`/`themeColor()` so canvas and Chart.js code can follow the theme
 - `trails/trail-template.html` - Template for individual trail pages
 - `trails/trail-viewer.ts` - Interactive trail viewer (map, elevation profile, waypoints)
 - `trails/climate-template.html` - Template for climate data pages

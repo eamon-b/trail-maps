@@ -11,6 +11,7 @@ import { getDirectionLabel as directionLabelFor } from '@lib/plan-direction';
 // puts its result inside `href="…"`, and imported GPX supplies every waypoint
 // name, type and description on this page.
 import { escapeHtml } from '../web-utils';
+import { onThemeChange, themeColor } from '../theme';
 declare const L: typeof Leaflet;
 
 interface TrackPoint {
@@ -213,7 +214,7 @@ function initMap(trail: Trail): void {
   if (typeof L === 'undefined') {
     const mapContainer = document.getElementById('trail-map');
     if (mapContainer) {
-      mapContainer.innerHTML = '<p style="padding: 2rem; text-align: center; color: #666;">Map unavailable. Please check your internet connection or try disabling ad blockers.</p>';
+      mapContainer.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Map unavailable. Please check your internet connection or try disabling ad blockers.</p>';
     }
     console.error('Leaflet library failed to load');
     return;
@@ -253,7 +254,7 @@ function initMap(trail: Trail): void {
     console.error('Failed to initialize map:', error);
     const mapContainer = document.getElementById('trail-map');
     if (mapContainer) {
-      mapContainer.innerHTML = '<p style="padding: 2rem; text-align: center; color: #666;">Failed to load map. Please try refreshing the page.</p>';
+      mapContainer.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Failed to load map. Please try refreshing the page.</p>';
     }
   }
 }
@@ -1001,14 +1002,18 @@ function drawElevationProfile(points: TrackPoint[]): void {
   const eleMax = eleTicks.length > 0 ? Math.max(maxEle, eleTicks[eleTicks.length - 1]) : maxEle;
   const eleRange = eleMax - eleMin || 1;
 
+  const axisColor = themeColor('--chart-text', '#666');
+  const gridColor = themeColor('--chart-grid', '#ddd');
+  const gridSoftColor = themeColor('--chart-grid-soft', '#eee');
+
   // Draw elevation (Y) axis grid lines and labels
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = axisColor;
   ctx.font = '12px system-ui, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (const tick of eleTicks) {
     const y = padding.top + height - ((tick - eleMin) / eleRange) * height;
-    ctx.strokeStyle = '#ddd';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padding.left, y);
@@ -1022,7 +1027,7 @@ function drawElevationProfile(points: TrackPoint[]): void {
   ctx.textBaseline = 'top';
   for (const tick of distTicks) {
     const x = padding.left + (tick / maxDist) * width;
-    ctx.strokeStyle = '#eee';
+    ctx.strokeStyle = gridSoftColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, padding.top);
@@ -1033,7 +1038,7 @@ function drawElevationProfile(points: TrackPoint[]): void {
 
   // Draw elevation profile line
   ctx.beginPath();
-  ctx.strokeStyle = '#2196F3';
+  ctx.strokeStyle = themeColor('--chart-line', '#2196F3');
   ctx.lineWidth = 2;
 
   points.forEach((point, i) => {
@@ -1052,7 +1057,7 @@ function drawElevationProfile(points: TrackPoint[]): void {
   ctx.lineTo(padding.left + width, padding.top + height);
   ctx.lineTo(padding.left, padding.top + height);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(33, 150, 243, 0.1)';
+  ctx.fillStyle = themeColor('--chart-fill', 'rgba(33, 150, 243, 0.1)');
   ctx.fill();
 }
 
@@ -1751,4 +1756,12 @@ export async function initTrailViewer(trailId: string, preloadedTrail?: Trail): 
     }
     if (map) map.invalidateSize();
   }, 150));
+
+  // The elevation profile is canvas-drawn, so it has to be repainted by hand
+  // when the theme changes.
+  onThemeChange(() => {
+    if (trailState.currentTrail) {
+      drawElevationProfile(trailState.currentTrail.track.points);
+    }
+  });
 }

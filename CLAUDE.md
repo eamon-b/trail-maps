@@ -36,7 +36,7 @@ Shared processing modules (used by both web and mobile):
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.)
 - `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
 - `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
-- `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`). The user-facing spec of the pipeline is `docs/gpx-import.md` — keep it in step with behaviour changes here and in `trail-ingest.ts`
+- `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`). The user-facing spec of the pipeline is `docs/gpx-import.md` — keep it in step with behaviour changes here and in `trail-ingest.ts`. It is rendered into the site as `how-import-works.html` at build time (the `gpx-import-doc` plugin in `vite.config.ts`)
 - `elevation-backfill.ts` - Open-Elevation backfill for GPX without `<ele>` (`backfillElevation` batches of 100, ≤2000 samples interpolated by distance; `applyElevation` re-derives ascent/waypoint stats via `recomputeTrailElevation`); `trailHasElevation`/`trailElevationIsUsable` drive the "distance-only estimate" labels
 - `trail-handoff.ts` - `<slug>.tracknotes.json` web → mobile handoff format (`wrapTrailForHandoff`, strict `parseHandoffJson`)
 - `types.ts` - TypeScript interfaces
@@ -84,6 +84,7 @@ Shared processing modules (used by both web and mobile):
 - `trails/plan-viewer.ts` - Interactive plan viewer
 - `trails/plan-state.ts` - Plan state management
 - `upload.html` / `upload.ts` - User GPX import: drag-drop → `importGpx` → report (+ optional elevation backfill) → IndexedDB
+- `how-import-works.html` - "How your file is processed" page; the article body is `docs/gpx-import.md`, rendered at build time by the `gpx-import-doc` Vite plugin (GitHub-style heading ids, so `#anchors` against the doc keep working)
 - `my-trail.html` / `my-plan.html` (+ `.ts`) - Trail/plan pages for imported trails, booted from `?id=` via `imported-trails-db.ts` and the viewers' `preloadedTrail` argument; "Export for Tracknotes" handoff
 - `imported-trails-db.ts` - IndexedDB store (`tracknotes-imports`) for imported `ProcessedTrail`s; `index.html` lists them under "My trails"
 - `web-utils.ts` - `escapeHtml`, `getQueryParam` — every user-supplied string (trail names) must go through `escapeHtml`

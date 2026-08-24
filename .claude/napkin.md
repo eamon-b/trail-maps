@@ -9,8 +9,8 @@
 ## Execution & Validation (Highest Priority)
 1. **[2026-08-18] Lockfile "in sync" is npm-major-version-dependent — local npm 11 accepts locks that CI's npm 10 rejects**
    Do instead: validate with CI's exact npm: `npx -y npm@10.8.2 ci --dry-run` in both root and mobile/; if stale, regenerate with `npx -y npm@10.8.2 install --package-lock-only`.
-2. **[2026-07-29] `expo lint` serves stale results from its own cache**
-   Do instead: cache lives at `mobile/.expo/cache/eslint` (rm may be permission-blocked); `touch` the affected file to invalidate its entry, or verify with `npx eslint <path> --no-cache`.
+2. **[2026-08-24] Dev/preview servers started in the sandboxed Bash shell are NOT reachable from the user's Chrome (they bind [::1] in an isolated netns), and the host's port 4173 is occupied by an unrelated "Resupply" app — Chrome silently shows that app instead**
+   Do instead: for browser verification, start `vite preview`/`dev` with `dangerouslyDisableSandbox: true` + `run_in_background` on a non-default port (e.g. `--port 4599 --host 127.0.0.1`). Expect the first CDP screenshot after each navigation to time out or capture blank mid-render — retry once or twice before diagnosing.
 3. **[2026-07-29] Jest 29 only for jest-expo; dynamic `import()` fails in tests**
    Do instead: never install Jest 30; use static imports in test files (no `await import(...)` — needs --experimental-vm-modules).
 4. **[2026-07-29] Expo CLI invoked from repo root creates a stray `{"expo":{}}` app.json**

@@ -8,6 +8,13 @@
  */
 
 /* ---- Upload area: the label needs its children on their own lines ---- */
+/* The drop zone is a <label>, which is inline by default. An inline box with
+   block children fragments into empty line boxes, each painting its own bit
+   of the dashed border — so it must be a block. */
+.upload-area {
+  display: block;
+}
+
 .upload-area .upload-label {
   display: block;
   font-weight: 500;
@@ -60,6 +67,72 @@
 
 .cta-button:not(.primary):hover {
   border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ---- "How your file is processed" doc page (how-import-works.html) ----
+   The article body is docs/gpx-import.md, rendered at build time by the
+   gpx-import-doc plugin in vite.config.ts. */
+.doc-page {
+  text-align: left;
+}
+
+.doc-page h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.doc-page h2 {
+  font-size: 1.35rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.doc-page h3 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.doc-page p {
+  margin-bottom: 0.75rem;
+}
+
+.doc-page ul,
+.doc-page ol {
+  margin: 0 0 0.75rem 1.5rem;
+}
+
+.doc-page li {
+  margin-bottom: 0.25rem;
+}
+
+.doc-page code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+}
+
+.doc-page table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75rem 0 1rem;
+  font-size: 0.875rem;
+}
+
+.doc-page th,
+.doc-page td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.doc-page th {
+  background: var(--surface);
+}
+
+.doc-page a {
   color: var(--primary);
 }
 

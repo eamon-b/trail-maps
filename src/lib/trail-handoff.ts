@@ -236,6 +236,11 @@ export function handoffImportReport(trail: ProcessedTrail): ImportReport {
     pointCount,
     waypointCount: trail.waypoints.length,
     offTrailWaypointCount: trail.offTrailWaypoints.length,
+    // Classification happened on the other device, so there is no inference to
+    // report — but how many waypoints are still untyped is visible from the
+    // trail itself and is worth showing.
+    keywordTypedWaypointCount: 0,
+    unclassifiedWaypointCount: trail.waypoints.filter(w => !w.type || w.type === 'waypoint').length,
     tracksFound: 1,
     tracksCombined: 1,
     alternateCount: trail.alternates.length,

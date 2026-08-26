@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Waypoint names of the kind real user files carry: no CalTopo folders, no
+  `C:`/`WT:` prefixes, just words. Nothing here is classifiable without the
+  keyword tier, which is on for imports and off for the curated build.
+-->
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>Keyword Waypoints</name></metadata>
+  <wpt lat="-33.8688" lon="151.2093"><ele>10</ele><name>Northcliffe trailhead</name></wpt>
+  <wpt lat="-33.8800" lon="151.2200"><ele>20</ele><name>Wallaby Creek Campsite</name></wpt>
+  <wpt lat="-33.8900" lon="151.2300"><ele>30</ele><name>Water tank (rainwater)</name></wpt>
+  <wpt lat="-33.9000" lon="151.2400"><ele>40</ele><name>Coles Supermarket</name></wpt>
+  <wpt lat="-33.9100" lon="151.2500"><ele>50</ele><name>Hut 3</name></wpt>
+  <!-- Deliberately unclassifiable: a gap name matches no rule in either mode. -->
+  <wpt lat="-33.9200" lon="151.2600"><ele>60</ele><name>Heavitree Gap</name></wpt>
+  <!-- An explicit <type> must survive keyword inference (lookout would say poi). -->
+  <wpt lat="-33.9300" lon="151.2700"><ele>70</ele><name>Bay Lookout</name><type>mountain</type></wpt>
+  <trk>
+    <name>Keyword Track</name>
+    <trkseg>
+      <trkpt lat="-33.8688" lon="151.2093"><ele>10</ele></trkpt>
+      <trkpt lat="-33.8800" lon="151.2200"><ele>20</ele></trkpt>
+      <trkpt lat="-33.8900" lon="151.2300"><ele>30</ele></trkpt>
+      <trkpt lat="-33.9000" lon="151.2400"><ele>40</ele></trkpt>
+      <trkpt lat="-33.9100" lon="151.2500"><ele>50</ele></trkpt>
+      <trkpt lat="-33.9200" lon="151.2600"><ele>60</ele></trkpt>
+      <trkpt lat="-33.9300" lon="151.2700"><ele>70</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -103,6 +103,15 @@
           </button>
         </div>
       </div>
+      <div class="waypoint-filter-bar">
+        <div class="waypoint-filter" id="waypoint-filter" role="group" aria-label="Filter waypoints">
+          <button type="button" class="filter-btn" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="filter-btn" data-filter="water" aria-pressed="false">Water</button>
+          <button type="button" class="filter-btn" data-filter="resupply" aria-pressed="false">Food &amp; resupply</button>
+        </div>
+        <span class="waypoint-filter-count" id="waypoint-filter-count" aria-live="polite"></span>
+      </div>
+      <p class="waypoint-filter-summary" id="waypoint-filter-summary" aria-live="polite" hidden></p>
       <div class="waypoints-table-wrapper" id="waypoints-container">
         <p>Loading waypoints...</p>
       </div>

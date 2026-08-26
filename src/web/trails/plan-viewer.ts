@@ -16,6 +16,7 @@ import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
+import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
 import { loadPlanState, savePlanState } from './plan-state';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
@@ -662,7 +663,7 @@ function renderDayDatasheet(day: ComputedDay | null): void {
       const prevKm = i > 0 ? (waypoints[i - 1].totalDistance ?? 0) : null;
       const deltaStr = prevKm !== null ? `+${(km - prevKm).toFixed(1)} km` : 'start';
       return `<div class="ds-row">
-        <span class="ds-type-icon">${waypointIcon(wp.type)}</span>
+        <span class="ds-type-icon" title="${escapeHtml(waypointTypeLabel(wp.type))}">${waypointIcon(wp.type)}</span>
         <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}</span>
         <span class="ds-km">${km.toFixed(1)}<br><small style="color:var(--text-secondary)">${deltaStr}</small></span>
       </div>`;
@@ -694,7 +695,7 @@ function renderDayDatasheet(day: ComputedDay | null): void {
     if (Math.abs(km - day.startKm) < 0.01 || Math.abs(km - day.endKm) < 0.01) return;
     const delta = (km - prevKm).toFixed(1);
     rows.push(`<div class="ds-row">
-      <span class="ds-type-icon">${waypointIcon(wp.type)}</span>
+      <span class="ds-type-icon" title="${escapeHtml(waypointTypeLabel(wp.type))}">${waypointIcon(wp.type)}</span>
       <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}</span>
       <span class="ds-km">${km.toFixed(1)}<br><small style="color:var(--text-secondary)">+${delta}</small></span>
     </div>`);

@@ -5,6 +5,15 @@ import type * as Leaflet from 'leaflet';
 import { findNearestByDistance } from '@lib/track-geometry';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { getDirectionLabel as directionLabelFor } from '@lib/plan-direction';
+import {
+  isKnownWaypointType,
+  isResupplyWaypoint,
+  matchesWaypointFamily,
+  waypointTypeLabel,
+  WAYPOINT_TYPE_LABELS,
+  WAYPOINT_TYPES,
+  type WaypointFamily,
+} from '@lib/waypoint-taxonomy';
 // Shared with the upload/my-trail pages, and — unlike a `textContent` round
 // trip through a detached div — it escapes quotes, so the same helper is safe
 // in an attribute value as in a text node. That matters here: `autoLinkUrls`
@@ -22,6 +31,13 @@ interface TrackPoint {
 }
 
 interface Waypoint {
+  /**
+   * Stable waypoint id — from the committed registry for a bundled trail,
+   * minted as `uw_…` by the importer. It is how the category editor addresses a
+   * waypoint: the array index is a rendering detail that moves with the
+   * direction toggle and the filter.
+   */
+  id?: string;
   name?: string;
   type?: string;
   lat: number;
@@ -38,6 +54,8 @@ interface Waypoint {
 }
 
 interface VariantWaypoint {
+  /** Stable id, shared with the same waypoint on the main route. */
+  id?: string;
   name: string;
   type: string;
   lat: number;
@@ -85,6 +103,8 @@ interface DirectionConfig {
 }
 
 interface OffTrailWaypoint {
+  /** Stable id — see {@link Waypoint.id}. */
+  id?: string;
   name: string;
   lat: number;
   lon: number;
@@ -113,6 +133,28 @@ interface Trail {
   sideTrips?: RouteVariant[];
 }
 
+/**
+ * Optional capabilities the host page grants the viewer.
+ *
+ * The viewer is shared with the bundled trail pages, which are static build
+ * output: their trail JSON is generated from committed data and nothing on the
+ * page may edit it. So editing is opt-in — with no options passed the page
+ * renders exactly as it always has.
+ */
+export interface TrailViewerOptions {
+  /**
+   * Persist a corrected waypoint category, addressed by waypoint id.
+   *
+   * Supplied by `my-trail.html` (an imported GPX, stored in this browser's
+   * IndexedDB). Resolve once the change is durably stored — the viewer only
+   * then updates its in-memory trail, the badge, the map marker and the filter.
+   * Reject to have the `<select>` reverted and the reason shown inline.
+   */
+  onWaypointTypeChange?: (waypointId: string, nextType: string) => Promise<void> | void;
+}
+
+let viewerOptions: TrailViewerOptions = {};
+
 // Map state
 let map: L.Map | null = null;
 let hoverMarker: L.Marker | null = null;
@@ -136,6 +178,475 @@ const trailState = {
     return this.isReversed ? this.reversedTrail : this.originalTrail;
   }
 };
+
+// === Waypoints-table filter ===
+//
+// The datasheet answers two questions the unfiltered table cannot: "where can I
+// get water?" and "how long is each resupply leg?". `all` is the table as it has
+// always been; the two families come from @lib/waypoint-taxonomy so the web,
+// the build and mobile agree on what counts as water or food.
+//
+// State is module-level rather than per-render so it survives a re-render — the
+// direction toggle rebuilds the whole table via refreshDisplay().
+type WaypointFilter = 'all' | WaypointFamily;
+
+let waypointFilter: WaypointFilter = 'all';
+
+/** Human label for a filter, used in button labels and CSV headers. */
+const FILTER_LABELS: Record<WaypointFilter, string> = {
+  all: 'all waypoints',
+  water: 'water',
+  resupply: 'food & resupply',
+};
+
+/** Noun for the things a family filter shows, for the summary line. */
+const FILTER_NOUNS: Record<WaypointFamily, { one: string; many: string }> = {
+  water: { one: 'water source', many: 'water sources' },
+  resupply: { one: 'resupply point', many: 'resupply points' },
+};
+
+/**
+ * CSS class that colours a type badge. Unknown types (an imported GPX can name
+ * anything) deliberately get no class and fall back to the neutral chip.
+ *
+ * Module scope because the off-trail rows, the waypoint rows and the variant
+ * sub-tables all need it.
+ */
+function getTypeClass(type?: string): string {
+  const typeMap: Record<string, string> = {
+    'town': 'type-town',
+    'hut': 'type-hut',
+    'campsite': 'type-campsite',
+    'water': 'type-water',
+    'water-tank': 'type-water-tank',
+    'mountain': 'type-mountain',
+    'side-trip': 'type-side-trip',
+    'accommodation': 'type-accommodation',
+    'caravan-park': 'type-caravan-park',
+    'trailhead': 'type-trailhead',
+    'food': 'type-food',
+    'road-crossing': 'type-road-crossing',
+    'inlet-crossing': 'type-inlet-crossing',
+    'beach': 'type-beach',
+    'poi': 'type-poi',
+    'resupply': 'type-resupply',
+    'endpoint': 'type-endpoint'
+  };
+  return typeMap[type || ''] || '';
+}
+
+/**
+ * The type badge: a readable label, with the raw slug kept in `title` so the
+ * underlying value stays discoverable (it is what the GPX/CSV carries).
+ */
+function renderTypeBadge(type?: string): string {
+  const raw = type || 'waypoint';
+  return `<td><span class="waypoint-type ${getTypeClass(type)}" title="${escapeHtml(raw)}">${escapeHtml(waypointTypeLabel(type))}</span></td>`;
+}
+
+/**
+ * Row tint for a waypoint, driven by its type.
+ *
+ * Module scope because the category editor has to re-apply it after a change
+ * without re-rendering the whole table.
+ */
+function getRowClass(wp: { type?: string }): string {
+  if (wp.type === 'town') return 'highlight-town';
+  if (isResupplyWaypoint(wp.type)) return 'highlight-resupply';
+  return '';
+}
+
+const ROW_TYPE_CLASSES = ['highlight-town', 'highlight-resupply'] as const;
+
+// === Editable waypoint category ===
+//
+// Automatic classification cannot win every time: an imported GPX may carry no
+// `<type>` at all, or one from a vocabulary we do not know, so plenty of
+// waypoints land as "Unclassified" or as something the plan calculators ignore.
+// This control is the manual override, and it exists only where a correction can
+// actually be saved (see TrailViewerOptions.onWaypointTypeChange).
+
+/** True when this waypoint can be re-categorised on this page. */
+function canEditType(wp: { id?: string }): boolean {
+  return typeof viewerOptions.onWaypointTypeChange === 'function' && typeof wp.id === 'string' && wp.id !== '';
+}
+
+/**
+ * The `<option>` list: the canonical vocabulary, preceded by the file's own type
+ * when that is not one of ours.
+ *
+ * Keeping the foreign value is not politeness — dropping it would silently
+ * rewrite data the user never touched. Someone opening the panel of a
+ * `fire-trail` waypoint to read its coordinates must not lose that word.
+ */
+function typeOptionsHtml(current: string): string {
+  const options: string[] = [];
+  const currentIsCanonical = isKnownWaypointType(current);
+
+  if (current && !currentIsCanonical) {
+    options.push(
+      `<option value="${escapeHtml(current)}" selected>${escapeHtml(waypointTypeLabel(current))} (from your file)</option>`,
+    );
+  }
+
+  for (const type of WAYPOINT_TYPES) {
+    const selected = currentIsCanonical && type === current ? ' selected' : '';
+    options.push(`<option value="${type}"${selected}>${escapeHtml(WAYPOINT_TYPE_LABELS[type])}</option>`);
+  }
+
+  return options.join('');
+}
+
+/**
+ * The category editor for one detail panel, or '' when editing is not offered.
+ *
+ * `domKey` only has to be unique within the page — it is what ties the `<label>`
+ * to its `<select>` and to the status region beside it.
+ */
+function renderTypeEditor(domKey: string, wp: { id?: string; type?: string }): string {
+  if (!canEditType(wp)) return '';
+  const current = wp.type || 'waypoint';
+  const selectId = `waypoint-type-select-${domKey}`;
+  return `
+    <div class="waypoint-type-edit">
+      <label class="waypoint-type-edit-label" for="${escapeHtml(selectId)}">Category</label>
+      <select id="${escapeHtml(selectId)}" class="waypoint-type-select"
+              data-waypoint-id="${escapeHtml(wp.id!)}"
+              data-previous-type="${escapeHtml(current)}">
+        ${typeOptionsHtml(current)}
+      </select>
+      <span class="waypoint-type-edit-status" role="status" aria-live="polite"></span>
+      <a class="waypoint-type-help" href="./how-import-works.html#fixing-a-category"
+         target="_blank" rel="noopener">Waypoint types</a>
+    </div>
+  `;
+}
+
+/**
+ * A live region outside the table, for announcing a saved change when the table
+ * was re-rendered and the row the user was editing is no longer on screen —
+ * which is exactly what happens when they retype a water source to something
+ * else while the Water filter is on.
+ *
+ * Created lazily and only on a page that can edit, so bundled trail pages keep
+ * their markup untouched.
+ */
+function typeAnnounceRegion(): HTMLElement | null {
+  const existing = document.getElementById('waypoint-type-announce');
+  if (existing) return existing;
+
+  const container = document.getElementById('waypoints-container');
+  if (!container?.parentNode) return null;
+
+  const region = document.createElement('p');
+  region.id = 'waypoint-type-announce';
+  region.className = 'waypoint-type-announce';
+  region.setAttribute('role', 'status');
+  region.setAttribute('aria-live', 'polite');
+  region.hidden = true;
+  container.parentNode.insertBefore(region, container);
+  return region;
+}
+
+function announceTypeChange(message: string): void {
+  const region = typeAnnounceRegion();
+  if (!region) return;
+  region.textContent = message;
+  region.hidden = false;
+}
+
+function setSelectStatus(select: HTMLSelectElement, message: string, kind: 'pending' | 'ok' | 'error'): void {
+  const status = select.parentElement?.querySelector<HTMLElement>('.waypoint-type-edit-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('is-error', kind === 'error');
+  status.classList.toggle('is-ok', kind === 'ok');
+  // An error is not a polite update — it is the answer to what the user just
+  // did, and it must interrupt.
+  status.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+}
+
+/** Set `type` on every copy of this waypoint the viewer holds in memory. */
+function applyWaypointTypeLocally(waypointId: string, nextType: string): void {
+  // Both trails, because the reversed copy is built once and cached: leaving it
+  // stale would resurrect the old category the next time the user reverses.
+  for (const trail of [trailState.originalTrail, trailState.reversedTrail]) {
+    if (!trail) continue;
+    for (const wp of trail.waypoints ?? []) {
+      if (wp.id === waypointId) wp.type = nextType;
+    }
+    for (const wp of trail.offTrailWaypoints ?? []) {
+      if (wp.id === waypointId) wp.type = nextType;
+    }
+    for (const variant of [...(trail.alternates ?? []), ...(trail.sideTrips ?? [])]) {
+      for (const wp of variant.waypoints ?? []) {
+        if (wp.id === waypointId) wp.type = nextType;
+      }
+    }
+  }
+}
+
+/** Repaint the badge and the row tint of one already-rendered row. */
+function repaintRowType(row: HTMLElement, type: string, isMainWaypoint: boolean): void {
+  const badge = row.querySelector<HTMLElement>('.waypoint-type');
+  if (badge) {
+    badge.className = `waypoint-type ${getTypeClass(type)}`.trim();
+    badge.title = type;
+    badge.textContent = waypointTypeLabel(type);
+  }
+  if (isMainWaypoint) {
+    row.classList.remove(...ROW_TYPE_CLASSES);
+    const rowClass = getRowClass({ type });
+    if (rowClass) row.classList.add(rowClass);
+  }
+}
+
+/** Push the new icon (and popup text) onto the map markers for this waypoint. */
+function refreshMarkersForWaypoint(waypointId: string): void {
+  if (!map) return;
+  for (const { marker, waypoint, index } of waypointMarkers) {
+    if (waypoint.id !== waypointId) continue;
+    marker.setIcon(createWaypointIcon(waypoint.type));
+    marker.setPopupContent(waypointPopupHtml(waypoint, index));
+  }
+  const trail = trailState.currentTrail;
+  const offTrail = trail?.offTrailWaypoints ?? [];
+  // Off-trail markers are not indexed, and there are only a handful; redrawing
+  // them is cheaper to get right than tracking them individually.
+  if (offTrail.some(wp => wp.id === waypointId)) {
+    drawOffTrailWaypointMarkers(offTrail);
+  }
+}
+
+/** Find the (possibly re-rendered) select for a waypoint id. */
+function findTypeSelect(waypointId: string): HTMLSelectElement | null {
+  for (const select of document.querySelectorAll<HTMLSelectElement>('select.waypoint-type-select')) {
+    if (select.dataset.waypointId === waypointId) return select;
+  }
+  return null;
+}
+
+/**
+ * Save one category correction, then make the page tell the truth about it.
+ *
+ * Order matters: nothing on screen and nothing in memory changes until the
+ * host's write has resolved, so a failed save can never leave the user looking
+ * at a value that was not stored.
+ */
+async function handleWaypointTypeChange(select: HTMLSelectElement): Promise<void> {
+  const handler = viewerOptions.onWaypointTypeChange;
+  const waypointId = select.dataset.waypointId;
+  const previous = select.dataset.previousType ?? '';
+  const nextType = select.value;
+
+  if (!handler || !waypointId || nextType === previous) return;
+
+  select.disabled = true;
+  setSelectStatus(select, 'Saving…', 'pending');
+
+  try {
+    await handler(waypointId, nextType);
+  } catch (err) {
+    select.value = previous;
+    select.disabled = false;
+    setSelectStatus(
+      select,
+      `Not saved: ${err instanceof Error ? err.message : String(err)}`,
+      'error',
+    );
+    return;
+  }
+
+  select.disabled = false;
+  select.dataset.previousType = nextType;
+  applyWaypointTypeLocally(waypointId, nextType);
+  refreshMarkersForWaypoint(waypointId);
+
+  const label = waypointTypeLabel(nextType);
+  const detailRow = select.closest('tr');
+  const row = detailRow?.previousElementSibling as HTMLElement | null;
+  const isMainWaypoint = row?.hasAttribute('data-waypoint-index') ?? false;
+  if (row) repaintRowType(row, nextType, isMainWaypoint);
+
+  if (waypointFilter === 'all') {
+    // Nothing about the visible set can have changed, so the panel stays open
+    // and the user keeps their place — and their keyboard focus.
+    setSelectStatus(select, `Saved as ${label}`, 'ok');
+    return;
+  }
+
+  // Under a family filter the row may have just joined or left the table, and
+  // every leg and the summary line are measured between visible rows — so the
+  // table has to be rebuilt around the new type.
+  const trail = trailState.currentTrail;
+  if (!trail) return;
+  renderWaypoints(trail.waypoints, trail.alternates, trail.sideTrips, trail.offTrailWaypoints);
+
+  if (expandedWaypointIndex !== null) {
+    const wp = trail.waypoints?.[expandedWaypointIndex];
+    if (wp && document.getElementById(`waypoint-row-${expandedWaypointIndex}`)) {
+      expandWaypointDetail(expandedWaypointIndex, wp);
+    } else {
+      expandedWaypointIndex = null;
+    }
+  }
+
+  const reopened = findTypeSelect(waypointId);
+  if (reopened) {
+    setSelectStatus(reopened, `Saved as ${label}`, 'ok');
+    reopened.focus();
+  } else {
+    // The row is filtered out now. Say so where a screen reader will hear it,
+    // since the control the user was operating no longer exists.
+    announceTypeChange(`Saved as ${label}. That waypoint is no longer in the ${FILTER_LABELS[waypointFilter]} view.`);
+  }
+}
+
+/** One visible waypoint row, with the leg values the current filter implies. */
+interface WaypointLeg {
+  wp: Waypoint;
+  /** Index into the *unfiltered* waypoints array — the id every handler uses. */
+  waypointIndex: number;
+  /** km from the previous visible waypoint (from the trail start for the first). */
+  legKm: number | null;
+  legAscent: number | null;
+  legDescent: number | null;
+}
+
+/** Difference between two cumulative figures, or null if either is missing. */
+function cumulativeDelta(to: number | undefined, from: number | undefined): number | null {
+  if (to == null || from == null) return null;
+  return to - from;
+}
+
+/**
+ * The waypoints the filter shows, in trail order, each with its leg back to the
+ * previous *visible* waypoint.
+ *
+ * Unfiltered, the leg values are the stored per-waypoint ones, so the table is
+ * byte-identical to what it has always rendered. Filtered, they are recomputed
+ * as differences of the cumulative figures — which is exact, not an estimate:
+ * `totalDistance`/`totalAscent`/`totalDescent` are measured along the whole
+ * track, so B − A is the real distance and elevation between A and B including
+ * everything skipped in between. A missing cumulative figure yields null (the
+ * caller renders an em dash) rather than a stale number.
+ */
+function computeWaypointLegs(waypoints: Waypoint[], filter: WaypointFilter): WaypointLeg[] {
+  const visible = waypoints
+    .map((wp, waypointIndex) => ({ wp, waypointIndex }))
+    .filter(({ wp }) => filter === 'all' || matchesWaypointFamily(wp.type, filter));
+
+  if (filter === 'all') {
+    return visible.map(({ wp, waypointIndex }) => ({
+      wp,
+      waypointIndex,
+      legKm: wp.distance ?? null,
+      legAscent: wp.ascent ?? null,
+      legDescent: wp.descent ?? null,
+    }));
+  }
+
+  // Sort by trail position before differencing so a leg can never come out
+  // negative even if the source array is not in distance order.
+  visible.sort((a, b) => (a.wp.totalDistance ?? 0) - (b.wp.totalDistance ?? 0));
+
+  let prev: Waypoint | null = null;
+  return visible.map(({ wp, waypointIndex }) => {
+    const leg: WaypointLeg = {
+      wp,
+      waypointIndex,
+      // The first visible row's leg is measured from the trail start (km 0),
+      // which matches what the unfiltered column shows for waypoint 0 and is a
+      // genuine carry — start to first resupply is a leg you walk.
+      legKm: cumulativeDelta(wp.totalDistance, prev ? prev.totalDistance : 0),
+      legAscent: cumulativeDelta(wp.totalAscent, prev ? prev.totalAscent : 0),
+      legDescent: cumulativeDelta(wp.totalDescent, prev ? prev.totalDescent : 0),
+    };
+    prev = wp;
+    return leg;
+  });
+}
+
+/**
+ * One compact line describing the legs between the visible waypoints — for the
+ * resupply filter this is the actual deliverable ("how far between resupplies").
+ *
+ * The point-to-point legs are the gaps *between* two visible waypoints, so n
+ * visible waypoints give n−1 legs, and those are what the leg count and the
+ * average describe. The **longest** figure is deliberately wider than that: for
+ * water it also considers the walk from the start to the first source and from
+ * the last source to the end of the trail, because those are carries you make
+ * too — reporting "longest dry stretch" while ignoring a 120 km tail after the
+ * last tank would be actively misleading. `trailLengthKm` supplies the end
+ * position; pass 0 or omit it when it is unknown and the bounding stretches are
+ * simply left out.
+ */
+function summariseLegs(
+  legs: WaypointLeg[],
+  family: WaypointFamily,
+  trailLengthKm = 0,
+): string {
+  const noun = FILTER_NOUNS[family];
+  if (legs.length === 0) {
+    return `No ${noun.many} on this trail.`;
+  }
+  // A single resupply point really has nothing to measure. A single water
+  // source still does: the dry walk in to it and the dry walk out.
+  if (legs.length === 1 && family === 'resupply') {
+    return `Only one ${noun.one} on this trail — no legs to measure.`;
+  }
+
+  // Candidates for "longest": every point-to-point gap, plus (water only) the
+  // unavoidable stretches at each end of the trail.
+  const candidates: Array<{ km: number; from: string; to: string }> = [];
+  const nameOf = (leg: WaypointLeg) => leg.wp.name || 'Unnamed';
+
+  // legs[i] carries the gap from legs[i - 1], so the gaps are indices 1..n-1.
+  let total = 0;
+  let measured = 0;
+  for (let i = 1; i < legs.length; i++) {
+    const km = legs[i].legKm;
+    if (km == null) continue;
+    total += km;
+    measured++;
+    candidates.push({ km, from: nameOf(legs[i - 1]), to: nameOf(legs[i]) });
+  }
+
+  if (family === 'water') {
+    const firstKm = legs[0].legKm;
+    if (firstKm != null && firstKm > 0) {
+      candidates.push({ km: firstKm, from: 'trail start', to: nameOf(legs[0]) });
+    }
+    const lastAt = legs[legs.length - 1].wp.totalDistance;
+    if (trailLengthKm > 0 && lastAt != null && trailLengthKm > lastAt) {
+      candidates.push({
+        km: trailLengthKm - lastAt,
+        from: nameOf(legs[legs.length - 1]),
+        to: 'trail end',
+      });
+    }
+  }
+
+  const gapCount = legs.length - 1;
+  const parts = [`${legs.length} ${legs.length === 1 ? noun.one : noun.many}`];
+  if (gapCount > 0) {
+    parts.push(`${gapCount} ${gapCount === 1 ? 'leg' : 'legs'}`);
+  }
+
+  const longest = candidates.reduce<(typeof candidates)[number] | null>(
+    (best, c) => (best === null || c.km > best.km ? c : best),
+    null,
+  );
+  if (longest) {
+    const label = family === 'water' ? 'longest dry stretch' : 'longest leg';
+    parts.push(`${label} ${longest.km.toFixed(1)} km (${longest.from} → ${longest.to})`);
+  }
+  if (measured > 0) {
+    parts.push(`average ${(total / measured).toFixed(1)} km`);
+  }
+
+  return parts.join(' · ');
+}
 
 // Waypoint icon configuration
 const WAYPOINT_ICONS: Record<string, { icon: string }> = {
@@ -314,6 +825,20 @@ function createWaypointIcon(type?: string): L.DivIcon {
   });
 }
 
+/**
+ * Marker popup body. Extracted so a category change can rewrite it in place
+ * rather than by rebuilding every marker on the map.
+ */
+function waypointPopupHtml(wp: Waypoint, index: number): string {
+  return `
+      <strong>${escapeHtml(wp.name || 'Waypoint')}</strong><br>
+      ${escapeHtml(wp.type || 'waypoint')}<br>
+      ${(wp.totalDistance || 0).toFixed(1)} km along trail
+      ${wp.elevation ? `<br>${Math.round(wp.elevation)}m elevation` : ''}
+      <br><a href="#" class="popup-show-in-table" data-waypoint-index="${index}">Show in table</a>
+    `;
+}
+
 function drawWaypointMarkers(waypoints: Waypoint[]): void {
   waypointMarkers = [];
   // Leaflet is a CDN script, and `initMap` already degrades to a "map
@@ -327,13 +852,7 @@ function drawWaypointMarkers(waypoints: Waypoint[]): void {
   waypoints.forEach((wp, index) => {
     const marker = L.marker([wp.lat, wp.lon], {
       icon: createWaypointIcon(wp.type)
-    }).addTo(map!).bindPopup(`
-      <strong>${escapeHtml(wp.name || 'Waypoint')}</strong><br>
-      ${escapeHtml(wp.type || 'waypoint')}<br>
-      ${(wp.totalDistance || 0).toFixed(1)} km along trail
-      ${wp.elevation ? `<br>${Math.round(wp.elevation)}m elevation` : ''}
-      <br><a href="#" class="popup-show-in-table" data-waypoint-index="${index}">Show in table</a>
-    `);
+    }).addTo(map!).bindPopup(waypointPopupHtml(wp, index));
 
     waypointMarkers.push({ marker, waypoint: wp, index });
   });
@@ -525,6 +1044,7 @@ function expandWaypointDetail(waypointIndex: number, wp: Waypoint): void {
             <a href="#" class="waypoint-show-on-map" data-waypoint-index="${waypointIndex}">Show on map</a>
             ${coordsHtml}
           </div>
+          ${renderTypeEditor(`wp-${waypointIndex}`, wp)}
         </div>
       </td>
     </tr>
@@ -624,7 +1144,7 @@ function expandVariantDetail(variantKey: string, variant: RouteVariant): void {
         <tr class="variant-waypoint-row" data-variant-key="${escapeHtml(variantKey)}" data-variant-wp-index="${i}"
             tabindex="0" role="button" aria-expanded="false">
           <td><span class="expand-chevron">&#9654;</span> ${escapeHtml(wp.name)}${descIndicator}</td>
-          <td><span class="waypoint-type">${escapeHtml(wp.type)}</span></td>
+          ${renderTypeBadge(wp.type)}
           <td class="numeric">${wp.elevation}</td>
           <td class="numeric">${wp.distance.toFixed(1)}</td>
           <td class="numeric">${wp.totalDistance.toFixed(1)}</td>
@@ -815,6 +1335,7 @@ function expandOffTrailDetail(index: number, wp: OffTrailWaypoint): void {
             <a href="#" class="off-trail-show-on-map" data-off-trail-index="${index}">Show on map</a>
             ${coordsHtml}
           </div>
+          ${renderTypeEditor(`off-${index}`, wp)}
         </div>
       </td>
     </tr>
@@ -1066,84 +1587,72 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
 
   if ((!waypoints || waypoints.length === 0) && (!offTrailWaypoints || offTrailWaypoints.length === 0)) {
     container.innerHTML = '<p>No waypoints defined</p>';
+    updateFilterChrome(0, 0, null);
     return;
   }
 
-  const resupplyKeywords = ['grocer', 'market', 'foodland', 'iga', 'wool', 'coles', 'general', 'servo'];
+  const filter = waypointFilter;
+  const isFiltered = filter !== 'all';
 
-  function isResupply(wp: Waypoint): boolean {
-    const text = ((wp.name || '') + ' ' + (wp.description || '')).toLowerCase();
-    return resupplyKeywords.some(kw => text.includes(kw));
-  }
-
-  function getRowClass(wp: Waypoint): string {
-    if (wp.type === 'town') return 'highlight-town';
-    if (isResupply(wp)) return 'highlight-resupply';
-    return '';
-  }
-
-  function getTypeClass(type?: string): string {
-    const typeMap: Record<string, string> = {
-      'town': 'type-town',
-      'hut': 'type-hut',
-      'campsite': 'type-campsite',
-      'water': 'type-water',
-      'water-tank': 'type-water-tank',
-      'mountain': 'type-mountain',
-      'side-trip': 'type-side-trip',
-      'accommodation': 'type-accommodation',
-      'caravan-park': 'type-caravan-park',
-      'trailhead': 'type-trailhead',
-      'food': 'type-food',
-      'road-crossing': 'type-road-crossing',
-      'inlet-crossing': 'type-inlet-crossing',
-      'beach': 'type-beach',
-      'poi': 'type-poi',
-      'resupply': 'type-resupply',
-      'endpoint': 'type-endpoint'
-    };
-    return typeMap[type || ''] || '';
-  }
+  // Row highlighting is type-driven, like the filter (see `getRowClass` at
+  // module scope). It used to be a keyword scan of the name and description
+  // ('grocer', 'iga', 'coles', …), which meant three different notions of
+  // "resupply" in one file; the shared taxonomy is the single one.
 
   interface TableRow {
     rowType: 'waypoint' | 'variant-start' | 'variant-end';
     distance: number;
     data: Waypoint | RouteVariant;
     waypointIndex?: number;
+    leg?: WaypointLeg;
   }
 
   const allVariants = [...(alternates || []), ...(sideTrips || [])];
   const tableRows: TableRow[] = [];
 
-  (waypoints || []).forEach((wp, waypointIndex) => {
+  // The legs are computed over the filtered set, so a filtered "Leg (km)" is the
+  // gap from the previous *visible* row rather than from the previous waypoint
+  // in the unfiltered list.
+  const legs = computeWaypointLegs(waypoints || [], filter);
+  for (const leg of legs) {
     tableRows.push({
       rowType: 'waypoint',
-      distance: wp.totalDistance ?? 0,
-      data: wp,
-      waypointIndex
+      distance: leg.wp.totalDistance ?? 0,
+      data: leg.wp,
+      waypointIndex: leg.waypointIndex,
+      leg,
     });
-  });
+  }
 
-  for (const variant of allVariants) {
-    if (variant.startDistance != null) {
-      tableRows.push({
-        rowType: 'variant-start',
-        distance: variant.startDistance,
-        data: variant
-      });
-    }
-    if (variant.type === 'alternate' && variant.endDistance != null) {
-      tableRows.push({
-        rowType: 'variant-end',
-        distance: variant.endDistance,
-        data: variant
-      });
+  // Route-variant markers are navigational furniture — "this alternate branches
+  // here" — not places you can get water or food, so a family filter drops them
+  // rather than leaving rows in the table that answer neither question and break
+  // up the leg reading.
+  if (!isFiltered) {
+    for (const variant of allVariants) {
+      if (variant.startDistance != null) {
+        tableRows.push({
+          rowType: 'variant-start',
+          distance: variant.startDistance,
+          data: variant
+        });
+      }
+      if (variant.type === 'alternate' && variant.endDistance != null) {
+        tableRows.push({
+          rowType: 'variant-end',
+          distance: variant.endDistance,
+          data: variant
+        });
+      }
     }
   }
 
   tableRows.sort((a, b) => a.distance - b.distance);
 
-  function renderWaypointRow(wp: Waypoint, waypointIndex: number): string {
+  const numeric = (value: number | null | undefined, digits = 0): string =>
+    value == null ? '—' : value.toFixed(digits);
+
+  function renderWaypointRow(wp: Waypoint, waypointIndex: number, leg: WaypointLeg): string {
     const descIndicator = wp.description
       ? ' <span class="has-description-indicator" title="Has additional info"></span>'
       : '';
@@ -1156,12 +1665,12 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
           aria-expanded="false"
           aria-controls="waypoint-detail-${waypointIndex}">
         <td><span class="expand-chevron">&#9654;</span> ${escapeHtml(wp.name || 'Unnamed')}${descIndicator}</td>
-        <td><span class="waypoint-type ${getTypeClass(wp.type)}">${escapeHtml(wp.type || 'waypoint')}</span></td>
+        ${renderTypeBadge(wp.type)}
         <td class="numeric">${wp.elevation ?? '-'}</td>
-        <td class="numeric">${wp.distance?.toFixed(1) ?? '-'}</td>
+        <td class="numeric">${isFiltered ? numeric(leg.legKm, 1) : (wp.distance?.toFixed(1) ?? '-')}</td>
         <td class="numeric">${wp.totalDistance?.toFixed(1) ?? '-'}</td>
-        <td class="numeric">${wp.ascent ?? '-'}</td>
-        <td class="numeric">${wp.descent ?? '-'}</td>
+        <td class="numeric">${isFiltered ? numeric(leg.legAscent) : (wp.ascent ?? '-')}</td>
+        <td class="numeric">${isFiltered ? numeric(leg.legDescent) : (wp.descent ?? '-')}</td>
         <td class="numeric">${wp.totalAscent ?? '-'}</td>
         <td class="numeric">${wp.totalDescent ?? '-'}</td>
       </tr>
@@ -1214,8 +1723,17 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
     `;
   }
 
-  // Render off-trail waypoint rows
-  const offTrail = offTrailWaypoints || [];
+  // Off-trail waypoints, unlike variant markers, are real places: a water source
+  // 200 m off the trail is exactly what the water filter is for. So they stay,
+  // filtered to the family. Their leg cells are already em dashes — an off-trail
+  // point has no position along the track, so no honest leg can be derived.
+  const allOffTrail = offTrailWaypoints || [];
+  const offTrail = isFiltered
+    ? allOffTrail
+        .map((wp, index) => ({ wp, index }))
+        .filter(({ wp }) => matchesWaypointFamily(wp.type, filter))
+    : allOffTrail.map((wp, index) => ({ wp, index }));
+
   function renderOffTrailRow(wp: OffTrailWaypoint, index: number): string {
     const descIndicator = wp.description
       ? ' <span class="has-description-indicator" title="Has additional info"></span>'
@@ -1231,7 +1749,7 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
           role="button"
           aria-expanded="false">
         <td><span class="expand-chevron">&#9654;</span> ${escapeHtml(wp.name || 'Unnamed')}${descIndicator}</td>
-        <td><span class="waypoint-type ${getTypeClass(wp.type)}">${escapeHtml(wp.type || 'waypoint')}</span></td>
+        ${renderTypeBadge(wp.type)}
         <td class="numeric">-</td>
         <td class="numeric off-trail-distance">${distLabel} off-trail</td>
         <td class="numeric">-</td>
@@ -1247,8 +1765,18 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
     <tr class="off-trail-header-row">
       <td colspan="9"><strong>Off-trail waypoints</strong> <span class="off-trail-count">(${offTrail.length})</span></td>
     </tr>
-    ${offTrail.map((wp, i) => renderOffTrailRow(wp, i)).join('')}
+    ${offTrail.map(({ wp, index }) => renderOffTrailRow(wp, index)).join('')}
   ` : '';
+
+  // Retitled under a filter so nobody reads a between-visible-rows gap as the
+  // per-waypoint leg it is not.
+  const legHeader = isFiltered ? 'Leg (km)' : 'Dist (km)';
+  const gainHeader = isFiltered ? 'Leg Gain (m)' : 'Gain (m)';
+  const lossHeader = isFiltered ? 'Leg Loss (m)' : 'Loss (m)';
+
+  const emptyRow = tableRows.length === 0 && offTrail.length === 0
+    ? `<tr class="waypoints-empty-row"><td colspan="9">No ${escapeHtml(FILTER_LABELS[filter])} waypoints on this trail.</td></tr>`
+    : '';
 
   const tableHtml = `
     <table class="waypoints-table">
@@ -1257,10 +1785,10 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
           <th>Location</th>
           <th>Type</th>
           <th>Elev (m)</th>
-          <th>Dist (km)</th>
+          <th>${legHeader}</th>
           <th>Total (km)</th>
-          <th>Gain (m)</th>
-          <th>Loss (m)</th>
+          <th>${gainHeader}</th>
+          <th>${lossHeader}</th>
           <th>Total Gain</th>
           <th>Total Loss</th>
         </tr>
@@ -1268,7 +1796,7 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
       <tbody>
         ${tableRows.map(row => {
           if (row.rowType === 'waypoint') {
-            return renderWaypointRow(row.data as Waypoint, row.waypointIndex!);
+            return renderWaypointRow(row.data as Waypoint, row.waypointIndex!, row.leg!);
           } else if (row.rowType === 'variant-start') {
             return renderVariantRow(row.data as RouteVariant, true);
           } else {
@@ -1276,15 +1804,80 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
           }
         }).join('')}
         ${offTrailSection}
+        ${emptyRow}
       </tbody>
     </table>
   `;
 
   container.innerHTML = tableHtml;
+
+  updateFilterChrome(
+    legs.length,
+    (waypoints || []).length,
+    // Read the length off the trail rather than the module's `maxDistance`,
+    // which the chart sets later in the boot sequence and is still 0 on the
+    // first render.
+    isFiltered
+      ? summariseLegs(legs, filter, trailState.currentTrail?.track.totalDistance ?? 0)
+      : null,
+  );
+}
+
+/**
+ * Keep the filter bar's own chrome in step with the rendered table: pressed
+ * state, the "23 of 187 waypoints" count, the leg summary and the CSV button
+ * label. Called from `renderWaypoints` so the direction toggle refreshes it too.
+ */
+function updateFilterChrome(visible: number, total: number, summary: string | null): void {
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('#waypoint-filter [data-filter]')) {
+    btn.setAttribute('aria-pressed', btn.dataset.filter === waypointFilter ? 'true' : 'false');
+  }
+
+  const count = document.getElementById('waypoint-filter-count');
+  if (count) {
+    count.textContent = waypointFilter === 'all'
+      ? `${total} waypoint${total === 1 ? '' : 's'}`
+      : `${visible} of ${total} waypoints`;
+  }
+
+  const summaryEl = document.getElementById('waypoint-filter-summary');
+  if (summaryEl) {
+    summaryEl.textContent = summary ?? '';
+    summaryEl.hidden = summary == null;
+  }
+
+  const csvBtn = document.getElementById('export-csv-btn');
+  if (csvBtn) {
+    csvBtn.textContent = waypointFilter === 'all'
+      ? 'Download CSV'
+      : `Download CSV (${FILTER_LABELS[waypointFilter]})`;
+  }
+}
+
+/** Switch the datasheet filter and re-render the table around it. */
+function setWaypointFilter(next: WaypointFilter): void {
+  if (next === waypointFilter) return;
+  waypointFilter = next;
+
+  // Any open detail row belongs to the old table; the re-render drops the
+  // markup, so the "what is expanded" state has to be dropped with it.
+  expandedWaypointIndex = null;
+  expandedVariantKey = null;
+  expandedVariantWaypointIndex = null;
+  expandedOffTrailIndex = null;
+
+  const trail = trailState.currentTrail;
+  if (!trail) return;
+  renderWaypoints(trail.waypoints, trail.alternates, trail.sideTrips, trail.offTrailWaypoints);
 }
 
 function exportDatasheet(trail: Trail): void {
   const { config, track, waypoints, alternates, sideTrips } = trail;
+
+  // The CSV is what is on screen: same filter, same recomputed leg column.
+  const filter = waypointFilter;
+  const isFiltered = filter !== 'all';
+  const legs = computeWaypointLegs(waypoints || [], filter);
 
   const lines: string[] = [];
 
@@ -1294,19 +1887,27 @@ function exportDatasheet(trail: Trail): void {
   lines.push(`# Total Ascent: ${Math.round(track.totalAscent)} m`);
   lines.push(`# Total Descent: ${Math.round(track.totalDescent)} m`);
   lines.push(`# Generated: ${new Date().toISOString().split('T')[0]}`);
+  if (isFiltered) {
+    lines.push(`# View: ${FILTER_LABELS[filter]} only (${legs.length} of ${(waypoints || []).length} waypoints)`);
+    lines.push(`# ${summariseLegs(legs, filter, track.totalDistance)}`);
+    lines.push('# Leg columns are measured from the previous row in this file, not from the previous waypoint on the trail.');
+  }
   lines.push('');
 
-  lines.push('Location,Type,Elevation (m),Distance (km),Total (km),Gain (m),Loss (m),Total Gain (m),Total Loss (m),Notes');
+  lines.push(isFiltered
+    ? 'Location,Type,Elevation (m),Leg (km),Total (km),Leg Gain (m),Leg Loss (m),Total Gain (m),Total Loss (m),Notes'
+    : 'Location,Type,Elevation (m),Distance (km),Total (km),Gain (m),Loss (m),Total Gain (m),Total Loss (m),Notes');
 
-  for (const wp of waypoints || []) {
+  for (const leg of legs) {
+    const wp = leg.wp;
     const row = [
       `"${(wp.name || 'Unnamed').replace(/"/g, '""')}"`,
       wp.type || 'waypoint',
       wp.elevation ?? '',
-      wp.distance?.toFixed(1) ?? '',
+      leg.legKm?.toFixed(1) ?? '',
       wp.totalDistance?.toFixed(1) ?? '',
-      wp.ascent ?? '',
-      wp.descent ?? '',
+      isFiltered ? (leg.legAscent?.toFixed(0) ?? '') : (wp.ascent ?? ''),
+      isFiltered ? (leg.legDescent?.toFixed(0) ?? '') : (wp.descent ?? ''),
       wp.totalAscent ?? '',
       wp.totalDescent ?? '',
       `"${(wp.description || '').replace(/"/g, '""')}"`
@@ -1314,7 +1915,9 @@ function exportDatasheet(trail: Trail): void {
     lines.push(row.join(','));
   }
 
-  if (alternates && alternates.length > 0) {
+  // Alternates and side trips are hidden from the table under a filter, so the
+  // export leaves them out too — it exports the view, not the trail.
+  if (!isFiltered && alternates && alternates.length > 0) {
     lines.push('');
     lines.push('# Alternate Routes');
     lines.push('Name,Type,Distance (km),Ascent (m),Descent (m),Start Distance (km),End Distance (km)');
@@ -1332,7 +1935,7 @@ function exportDatasheet(trail: Trail): void {
     }
   }
 
-  if (sideTrips && sideTrips.length > 0) {
+  if (!isFiltered && sideTrips && sideTrips.length > 0) {
     lines.push('');
     lines.push('# Side Trips');
     lines.push('Name,Type,Distance (km),Ascent (m),Descent (m),Start Distance (km)');
@@ -1349,8 +1952,12 @@ function exportDatasheet(trail: Trail): void {
     }
   }
 
-  const offTrail = trail.offTrailWaypoints;
-  if (offTrail && offTrail.length > 0) {
+  // Off-trail waypoints stay visible under a filter (a spring 200 m off-trail is
+  // a real water source), so they stay in the export — filtered to the family.
+  const offTrail = (trail.offTrailWaypoints || []).filter(
+    wp => !isFiltered || matchesWaypointFamily(wp.type, filter),
+  );
+  if (offTrail.length > 0) {
     lines.push('');
     lines.push('# Off-Trail Waypoints');
     lines.push('Name,Type,Distance From Trail (m),Notes');
@@ -1371,7 +1978,9 @@ function exportDatasheet(trail: Trail): void {
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${exportBaseName(config)}-datasheet.csv`;
+  link.download = isFiltered
+    ? `${exportBaseName(config)}-datasheet-${filter}.csv`
+    : `${exportBaseName(config)}-datasheet.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1589,8 +2198,15 @@ function toggleDirection(): void {
  * @param preloadedTrail  An already-loaded trail — passed by the imported-trail
  *   page (`my-trail.html`), which reads from IndexedDB instead of
  *   `/data/generated/{id}.json`. When omitted the trail is fetched as before.
+ * @param options  Opt-in capabilities. Omitted by every bundled trail page, so
+ *   those pages render exactly as they always have.
  */
-export async function initTrailViewer(trailId: string, preloadedTrail?: Trail): Promise<void> {
+export async function initTrailViewer(
+  trailId: string,
+  preloadedTrail?: Trail,
+  options?: TrailViewerOptions,
+): Promise<void> {
+  viewerOptions = options ?? {};
   const trail = preloadedTrail ?? await loadTrailData(trailId);
   if (!trail) {
     const panel = document.querySelector('.panel');
@@ -1627,7 +2243,15 @@ export async function initTrailViewer(trailId: string, preloadedTrail?: Trail): 
   // Set initial direction label from config
   updateDirectionUI(trailState.isReversed);
 
-  document.querySelector('.waypoints-table tbody')?.addEventListener('click', (e) => {
+  // Delegate from the container, not the tbody.
+  //
+  // The table is re-rendered wholesale (`container.innerHTML = …`) by the
+  // direction toggle and now by the filter, so a listener bound to the tbody is
+  // thrown away with the first re-render and every row silently stops
+  // expanding. `#waypoints-container` is in the page markup and outlives them.
+  const waypointsContainer = document.getElementById('waypoints-container');
+
+  waypointsContainer?.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
     // Handle "Show on map" link clicks in waypoint detail panels
@@ -1686,8 +2310,16 @@ export async function initTrailViewer(trailId: string, preloadedTrail?: Trail): 
     }
   });
 
+  // The category editor. Delegated like everything else in this table, because
+  // the detail panel carrying the <select> is created and destroyed on every
+  // expand/collapse and on every re-render.
+  waypointsContainer?.addEventListener('change', (e) => {
+    const select = (e.target as HTMLElement).closest<HTMLSelectElement>('select.waypoint-type-select');
+    if (select) void handleWaypointTypeChange(select);
+  });
+
   // Keyboard accessibility for waypoint and variant rows
-  document.querySelector('.waypoints-table tbody')?.addEventListener('keydown', (e: Event) => {
+  waypointsContainer?.addEventListener('keydown', (e: Event) => {
     const keyEvent = e as KeyboardEvent;
     if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
       const target = e.target as HTMLElement;
@@ -1734,6 +2366,16 @@ export async function initTrailViewer(trailId: string, preloadedTrail?: Trail): 
   });
 
   document.getElementById('reverse-direction-btn')?.addEventListener('click', toggleDirection);
+
+  // Datasheet filter. Delegated from the group so the three buttons need no
+  // individual wiring, and keyboard use comes free — they are real <button>s.
+  document.getElementById('waypoint-filter')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-filter]');
+    const next = btn?.dataset.filter;
+    if (next === 'all' || next === 'water' || next === 'resupply') {
+      setWaypointFilter(next);
+    }
+  });
 
   const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
   const exportGpxBtn = document.getElementById('export-gpx-btn') as HTMLButtonElement;

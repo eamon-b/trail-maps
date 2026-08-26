@@ -14,6 +14,7 @@
 import type { SectionConfig, ComputedDay, PlanTrackPoint, PlanWaypoint } from './plan-types';
 import { calculateElevationBetween, findNearestByDistance } from './track-geometry';
 import type { ElevationPoint } from './track-geometry';
+import { isWaterWaypoint } from './waypoint-taxonomy';
 
 /** Trail shape accepted by computeDays (subset of the full Trail interfaces). */
 export interface PlanTrail {
@@ -189,7 +190,7 @@ export function kmAtHours(
 
 /**
  * Count water sources between two km positions on the trail.
- * Includes waypoints of type 'water' and 'water-tank'.
+ * Membership is the water family in `waypoint-taxonomy`.
  */
 export function countWaterSources(
   startKm: number,
@@ -198,8 +199,7 @@ export function countWaterSources(
 ): number {
   return waypoints.filter(wp => {
     const km = wp.totalDistance ?? 0;
-    const isWater = wp.type === 'water' || wp.type === 'water-tank';
-    return isWater && km > startKm && km <= endKm;
+    return isWaterWaypoint(wp.type) && km > startKm && km <= endKm;
   }).length;
 }
 

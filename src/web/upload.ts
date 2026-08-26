@@ -143,6 +143,21 @@ function renderStats(ui: Elements, result: ImportGpxResult): void {
   if (report.offTrailWaypointCount > 0) {
     rows.push(['Off-trail waypoints', String(report.offTrailWaypointCount)]);
   }
+  // What the classifier managed, and what it did not. The second number is the
+  // one that matters: those waypoints carry no meaning for the plan calculator
+  // (no water carry, no resupply leg) until someone gives them a category, so
+  // the report has to name them rather than let them disappear into the total.
+  if (report.keywordTypedWaypointCount > 0) {
+    rows.push(['Categorised from their names', String(report.keywordTypedWaypointCount)]);
+  }
+  if (report.waypointCount + report.offTrailWaypointCount > 0) {
+    rows.push([
+      'Not categorised',
+      report.unclassifiedWaypointCount === 0
+        ? 'none — every waypoint has a category'
+        : `${report.unclassifiedWaypointCount} waypoint${report.unclassifiedWaypointCount === 1 ? '' : 's'}`,
+    ]);
+  }
   if (report.tracksFound > 1) {
     rows.push(['Tracks in file', `${report.tracksFound} (${report.tracksCombined} joined into the main route)`]);
   }

@@ -355,6 +355,65 @@
   display: flex;
   gap: 0.5rem;
 }
+/* Datasheet filter: All | Water | Food & resupply, plus the visible/total count */
+.waypoint-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.waypoint-filter {
+  display: inline-flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.waypoint-filter .filter-btn {
+  padding: 0.4rem 0.85rem;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: none;
+  border-left: 1px solid var(--border-color);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+.waypoint-filter .filter-btn:first-child {
+  border-left: none;
+}
+.waypoint-filter .filter-btn:hover:not([aria-pressed="true"]) {
+  background: var(--tint-accent);
+  color: var(--text);
+}
+.waypoint-filter .filter-btn[aria-pressed="true"] {
+  background: var(--accent-color);
+  color: var(--on-primary);
+}
+.waypoint-filter .filter-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+}
+.waypoint-filter-count {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.waypoint-filter-summary {
+  margin: 0 0 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--accent-color);
+  border-radius: 0 4px 4px 0;
+  background: var(--tint-accent);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.waypoints-empty-row td {
+  padding: 1.25rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
 /* Direction controls in trail-meta */
 .direction-controls {
   display: flex;
@@ -470,6 +529,54 @@
 .waypoint-detail-coords a {
   color: var(--link);
   margin-left: 0.25rem;
+}
+/* Editable waypoint category — imported trails only (see TrailViewerOptions) */
+.waypoint-type-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+.waypoint-type-edit-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.waypoint-type-select {
+  font: inherit;
+  padding: 0.25rem 0.4rem;
+  color: var(--text);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  max-width: 14rem;
+}
+.waypoint-type-select:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.waypoint-type-edit-status {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.waypoint-type-edit-status.is-ok {
+  color: var(--success);
+}
+.waypoint-type-edit-status.is-error {
+  color: var(--danger);
+}
+.waypoint-type-help {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--link);
+}
+.waypoint-type-announce {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--success);
 }
 /* Variant expandable state */
 .variant-row.variant-expandable { cursor: pointer; }

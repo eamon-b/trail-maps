@@ -58,10 +58,33 @@ export {
 } from './waypoint-dedupe';
 
 // Waypoint Classification
-export type { ClassificationResult, WaypointPrefixRule } from './waypoint-classifier';
+export type {
+  ClassificationResult,
+  WaypointPrefixRule,
+  WaypointKeywordRule,
+} from './waypoint-classifier';
 export {
   classifyWaypoint,
+  inferWaypointTypeFromKeywords,
   FOLDER_TYPE_MAP,
   DEFAULT_PREFIX_RULES,
+  KEYWORD_RULES,
   KNOWN_TOWNS,
 } from './waypoint-classifier';
+
+// Waypoint Taxonomy — the vocabulary of types and the water/resupply families
+export type { WaypointType, WaypointFamily } from './waypoint-taxonomy';
+export {
+  WAYPOINT_TYPES,
+  WAYPOINT_TYPE_LABELS,
+  waypointTypeLabel,
+  isKnownWaypointType,
+  WATER_TYPES,
+  WATER_TYPE_ALIASES,
+  RESUPPLY_TYPES,
+  RESUPPLY_TYPE_ALIASES,
+  isWaterWaypoint,
+  isResupplyWaypoint,
+  WAYPOINT_FAMILIES,
+  matchesWaypointFamily,
+} from './waypoint-taxonomy';

@@ -19,7 +19,7 @@ import {
   calculateElevationStats,
 } from './gpx-optimizer';
 import { classifyTracks, combineTracksGeographically } from './track-classification';
-import { classifyWaypoint } from './waypoint-classifier';
+import { classifyWaypoint, inferWaypointTypeFromKeywords } from './waypoint-classifier';
 import { cumulativeKm, detectSelfRetraces, extractSpur, type SelfRetrace } from './track-spurs';
 import {
   dedupeNearDuplicateWaypoints,
@@ -93,6 +93,28 @@ export interface ParsedGpxResult {
   name: string | null;
 }
 
+export interface FlattenGpxOptions {
+  /**
+   * Guess a waypoint's type from words in its name ("Wallaby Creek Campsite" →
+   * `campsite`) when no folder, known town or name prefix identifies it.
+   *
+   * Default false, and the split is deliberate:
+   * - **curated trails** (`scripts/build-trails.ts`) get their types from
+   *   CalTopo folders and hand-written `C:`/`WT:` prefixes, which are
+   *   authoritative. Guessing from words there would only add noise, and would
+   *   churn the pinned `public/data/generated/*.json` that
+   *   `data/waypoint-ids.json` is built alongside — so it stays off.
+   * - **user-imported GPX** (`gpx-import.ts`) follows no such convention, so
+   *   without inference every waypoint lands on `waypoint` and the plan
+   *   calculators see no water and no resupply at all. It stays on there.
+   *
+   * `importGpx` enables the equivalent flag on {@link BuildTrailOptions}
+   * instead, so the pass runs exactly once and its counts reach the import
+   * report. This flag is for callers that stop at flattening.
+   */
+  inferWaypointTypesFromKeywords?: boolean;
+}
+
 /**
  * Flatten a parsed {@link GpxData} into the shape {@link buildTrail} consumes.
  *
@@ -108,7 +130,7 @@ export interface ParsedGpxResult {
  * trip keeps the classified type instead of re-deriving it from a name whose
  * prefix has already been stripped.
  */
-export function flattenGpx(data: GpxData): ParsedGpxResult {
+export function flattenGpx(data: GpxData, options: FlattenGpxOptions = {}): ParsedGpxResult {
   const tracks: ParsedGpxTrack[] = data.tracks.map(track => ({
     name: track.name || 'Unnamed',
     points: track.segments.flatMap(segment => segment.points),
@@ -123,7 +145,9 @@ export function flattenGpx(data: GpxData): ParsedGpxResult {
   }
 
   const waypoints: TrailWaypoint[] = data.waypoints.map(wpt => {
-    const classification = classifyWaypoint(wpt.name || 'Unnamed');
+    const classification = classifyWaypoint(wpt.name || 'Unnamed', {
+      inferFromKeywords: options.inferWaypointTypesFromKeywords,
+    });
     return {
       name: classification.cleanedName,
       lat: wpt.lat,
@@ -607,6 +631,20 @@ export interface BuildTrailOptions {
    * On for user imports, off for the build script.
    */
   combineUnclassifiedTracks?: boolean;
+  /**
+   * Guess a type from words in the waypoint's name for any waypoint still
+   * typed `waypoint` (or untyped) once `resolveWaypoints` has run.
+   *
+   * Default false. Same rationale as {@link FlattenGpxOptions.inferWaypointTypesFromKeywords}:
+   * on for user imports, off for the curated build, whose folder/prefix
+   * conventions are authoritative and whose generated JSON is pinned.
+   *
+   * This is the flag `importGpx` sets, in preference to `flattenGpx`'s: running
+   * here also covers waypoints a `resolveWaypoints` hook introduces, and lets
+   * the run report `keywordTypedWaypointCount`. Enabling both is redundant
+   * rather than wrong — the second pass would simply find nothing to type.
+   */
+  inferWaypointTypesFromKeywords?: boolean;
   /** Elevation cleaning; entirely off by default. */
   elevation?: ElevationCleaningOptions;
   /** Mint stable ids for the source waypoints before enrichment. */
@@ -662,6 +700,13 @@ export interface BuildTrailDiagnostics {
   sideTripCount: number;
   waypointCount: number;
   offTrailWaypointCount: number;
+  /**
+   * Source waypoints whose type came from keyword inference (0 unless
+   * `inferWaypointTypesFromKeywords` was set).
+   */
+  keywordTypedWaypointCount: number;
+  /** Source waypoints still typed `waypoint` after every tier had a go. */
+  unclassifiedWaypointCount: number;
 }
 
 /**
@@ -800,6 +845,30 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   if (options.resolveWaypoints) {
     waypoints = options.resolveWaypoints(waypoints, config);
   }
+
+  // Last-resort typing for user imports: guess from words in the name. Only
+  // touches waypoints nothing else has typed, so a folder, a known town, a name
+  // prefix or an explicit GPX `<type>` all still win. Runs after
+  // `resolveWaypoints` so waypoints that hook introduces are covered too, and
+  // before id minting — which hashes name/lat/lon, never type, so no id moves.
+  //
+  // Copies rather than mutates: with no `resolveWaypoints` hook, `waypoints` IS
+  // `gpx.waypoints`, and typing in place would edit the caller's parsed result.
+  // A second `buildTrail` on the same `ParsedGpxResult` would then report
+  // `keywordTypedWaypointCount: 0` because the first call had already done the
+  // work — and any caller reusing a parsed file (both directions, a re-import)
+  // would silently get a different trail the second time.
+  let keywordTypedWaypointCount = 0;
+  if (options.inferWaypointTypesFromKeywords) {
+    waypoints = waypoints.map(wp => {
+      if (wp.type && wp.type !== 'waypoint') return wp;
+      const inferred = inferWaypointTypeFromKeywords(wp.name);
+      if (!inferred) return wp;
+      keywordTypedWaypointCount++;
+      return { ...wp, type: inferred };
+    });
+  }
+  const unclassifiedWaypointCount = waypoints.filter(wp => !wp.type || wp.type === 'waypoint').length;
 
   const alternates: RouteVariant[] = [];
   const sideTrips: RouteVariant[] = [];
@@ -989,6 +1058,8 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     sideTripCount: sideTripsWithWaypoints.length,
     waypointCount: outputWaypoints.length,
     offTrailWaypointCount: offTrailWaypoints.length,
+    keywordTypedWaypointCount,
+    unclassifiedWaypointCount,
   });
 
   return {

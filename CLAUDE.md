@@ -33,7 +33,8 @@ Shared processing modules (used by both web and mobile):
 - `gpx-optimizer.ts` - Track simplification (Douglas-Peucker), elevation spike removal/smoothing, elevation stats
 - `track-simplify.ts` - Target-point-count simplification + coordinate truncation (the mobile point budget)
 - `track-classification.ts` - Classify main/alternate/side-trip tracks
-- `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.)
+- `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.). Five tiers: CalTopo folder → `KNOWN_TOWNS` → name prefix (`C:`/`WT:`…, delimiter required) → `KEYWORD_RULES` word matching → `waypoint`. The keyword tier is opt-in (`inferFromKeywords`) and is **on for user imports, off for the curated build** — guessing types for curated trails would churn `public/data/generated/*.json` for no gain
+- `waypoint-taxonomy.ts` - The waypoint type vocabulary (`WAYPOINT_TYPES`, `WAYPOINT_TYPE_LABELS`, `waypointTypeLabel`) and the water/resupply family predicates (`isWaterWaypoint`, `isResupplyWaypoint`, `matchesWaypointFamily`). These predicates are the single home of rules that used to be duplicated across `water-carry-calculator`, `day-calculator` and `resupply-calculator`; they also accept the type aliases real-world GPX uses (`spring`, `supermarket`, …), which our own classifier never emits
 - `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
 - `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
 - `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`). The user-facing spec of the pipeline is `docs/gpx-import.md` — keep it in step with behaviour changes here and in `trail-ingest.ts`. It is rendered into the site as `how-import-works.html` at build time (the `gpx-import-doc` plugin in `vite.config.ts`)
@@ -43,8 +44,8 @@ Shared processing modules (used by both web and mobile):
 - `plan-types.ts` - Plan data types shared with mobile
 - `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions
 - `day-calculator.ts` - Hiking time estimation and day splitting
-- `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight)
-- `water-carry-calculator.ts` - Water carry distance calculations
+- `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight); which waypoints count comes from `isResupplyWaypoint` in `waypoint-taxonomy.ts`
+- `water-carry-calculator.ts` - Water carry distance calculations; which waypoints count comes from `isWaterWaypoint` in `waypoint-taxonomy.ts`
 
 **XML adapters:** GPX parsing is injected, not hard-wired, so one parser serves three runtimes. `parseGpx` defaults to `DOMParser` (web); build scripts pass `jsdomXmlAdapter` (`scripts/lib/xml-adapter-jsdom.ts` — jsdom must never reach `src/lib`); mobile passes `fxpXmlAdapter` (`src/lib/xml-adapter-fxp.ts`). A parity test (`src/lib/xml-adapter.test.ts`) asserts the fast-xml-parser and DOMParser backends produce deep-equal `GpxData` for every fixture.
 
@@ -79,7 +80,7 @@ Shared processing modules (used by both web and mobile):
 - `styles.css` - Global styles and the light/dark theme tokens
 - `theme.ts` - Light/dark/system theme: applies `data-theme` to `<html>`, renders the toggle, and exposes `onThemeChange()`/`themeColor()` so canvas and Chart.js code can follow the theme
 - `trails/trail-template.html` - Template for individual trail pages
-- `trails/trail-viewer.ts` - Interactive trail viewer (map, elevation profile, waypoints)
+- `trails/trail-viewer.ts` - Interactive trail viewer (map, elevation profile, waypoints). The waypoints table ("datasheet") filters to the water or food/resupply family via `@lib/waypoint-taxonomy`; when filtered, the leg columns are recomputed between *visible* rows so resupply-leg distances read directly off the table. Row interaction is delegated from `#waypoints-container`, not the tbody, because every re-render replaces the tbody
 - `trails/climate-template.html` - Template for climate data pages
 - `trails/plan-template.html` - Template for plan visualization pages
 - `trails/plan-viewer.ts` - Interactive plan viewer

@@ -8,6 +8,7 @@
  */
 
 import type { PlanWaypoint, ResupplyGap, ComputedDay } from './plan-types';
+import { isResupplyWaypoint } from './waypoint-taxonomy';
 
 export type { ResupplyGap };
 
@@ -34,13 +35,6 @@ export interface ResupplyAnalysis {
   hasResupplyData: boolean;
 }
 
-// Waypoint types that let a hiker obtain food supplies. Mirrors the town
-// family in the mobile guide's waypoint taxonomy (waypoint-category.ts):
-// 'town', 'food', and standalone 'resupply' caches. Note 'accommodation' and
-// 'caravan-park' are deliberately excluded — they map to the *shelter* family
-// and do not reliably mean food can be obtained.
-const RESUPPLY_TYPES = new Set(['town', 'food', 'resupply']);
-
 /** Default daily hiking distance for estimating days between resupply */
 export const DEFAULT_DAILY_KM = 20;
 
@@ -52,10 +46,14 @@ export const DEFAULT_GRAMS_PER_DAY = 680;
 
 /**
  * Extract resupply points from trail waypoints, sorted by km.
+ *
+ * Membership is the resupply family in `waypoint-taxonomy`, which is where the
+ * reasoning about what counts (and why 'accommodation'/'caravan-park' do not)
+ * now lives.
  */
 export function extractResupplyPoints(waypoints: PlanWaypoint[]): ResupplyPoint[] {
   return waypoints
-    .filter(wp => wp.type && RESUPPLY_TYPES.has(wp.type))
+    .filter(wp => isResupplyWaypoint(wp.type))
     .map(wp => ({
       name: wp.name ?? 'Resupply',
       km: wp.totalDistance ?? 0,

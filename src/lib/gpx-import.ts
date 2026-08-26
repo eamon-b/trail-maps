@@ -82,6 +82,16 @@ export interface ImportReport {
   waypointCount: number;
   /** Waypoints too far from the route to be matched. */
   offTrailWaypointCount: number;
+  /**
+   * Waypoints whose type was guessed from words in their name ("Wallaby Creek
+   * Campsite" → `campsite`) because nothing else identified them.
+   */
+  keywordTypedWaypointCount: number;
+  /**
+   * Waypoints still typed `waypoint` after every tier had a go — the ones a
+   * user may want to retype by hand.
+   */
+  unclassifiedWaypointCount: number;
   /** `<trk>` (or fallback `<rte>`) tracks found in the file. */
   tracksFound: number;
   /** How many of them were chained together into the main route. */
@@ -109,6 +119,11 @@ export interface ImportGpxResult {
  */
 export function importGpx(xmlText: string, options: ImportGpxOptions = {}): ImportGpxResult {
   const parsed = parseGpx(xmlText, options.adapter, options.limits);
+  // Keyword inference is enabled once, on `buildTrail` below, not here as well:
+  // the pass only ever types waypoints nothing else has typed, so doing it in
+  // both places would leave `buildTrail` nothing to do and report zero
+  // keyword-typed waypoints. `flattenGpx` offers the same flag for callers that
+  // stop at flattening.
   const gpx = flattenGpx(parsed);
 
   const sourcePointCount = gpx.tracks.reduce((sum, t) => sum + t.points.length, 0);
@@ -159,6 +174,11 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
     config,
     targetDisplayPoints: options.targetDisplayPoints,
     combineUnclassifiedTracks: true,
+    // A user's file has no CalTopo folders and no `C:`/`WT:` prefixes, so
+    // without keyword inference every waypoint lands on 'waypoint' and the plan
+    // calculators find no water and no resupply at all. The curated build
+    // leaves this off — its folder/prefix data is authoritative.
+    inferWaypointTypesFromKeywords: true,
     duplicateWaypointIds: 'suffix',
     mintWaypointIds: mintImportedWaypointIds,
     elevation: cleanElevation
@@ -203,6 +223,8 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
     pointCount: built.pointCount,
     waypointCount: built.waypointCount,
     offTrailWaypointCount: built.offTrailWaypointCount,
+    keywordTypedWaypointCount: built.keywordTypedWaypointCount,
+    unclassifiedWaypointCount: built.unclassifiedWaypointCount,
     tracksFound: built.tracksFound,
     tracksCombined: built.mainTracksCombined,
     alternateCount: built.alternateCount,

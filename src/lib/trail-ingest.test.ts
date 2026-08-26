@@ -9,7 +9,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { parseGpx } from './gpx-parser';
-import { buildTrail, flattenGpx, type ParsedGpxResult } from './trail-ingest';
+import {
+  buildTrail,
+  flattenGpx,
+  type BuildTrailDiagnostics,
+  type ParsedGpxResult,
+} from './trail-ingest';
 import type { TrailConfig } from './trail-types';
 
 const FIXTURES = resolve(__dirname, '../../tests/fixtures/gpx');
@@ -224,5 +229,142 @@ describe('buildTrail', () => {
     expect(trail.climateLocations).toHaveLength(1);
     // Climate itself is file-system state; the build script stitches it on.
     expect(trail.climate).toBeNull();
+  });
+
+  describe('keyword type inference (inferWaypointTypesFromKeywords)', () => {
+    // The build script must NOT set this: curated trails get their types from
+    // CalTopo folders and hand-written prefixes, and the generated JSON is
+    // pinned alongside data/waypoint-ids.json.
+    it('is off by default — keyword-named waypoints stay unclassified', () => {
+      const trail = buildTrail(load('keyword-waypoints'), { config: config() });
+      const types = new Map(trail.waypoints.map(w => [w.name, w.type]));
+
+      expect(types.get('Northcliffe trailhead')).toBe('waypoint');
+      expect(types.get('Wallaby Creek Campsite')).toBe('waypoint');
+      expect(types.get('Water tank (rainwater)')).toBe('waypoint');
+      expect(types.get('Coles Supermarket')).toBe('waypoint');
+      expect(types.get('Hut 3')).toBe('waypoint');
+    });
+
+    it('reports zero keyword-typed waypoints when off', () => {
+      const seen: BuildTrailDiagnostics[] = [];
+      buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        onDiagnostics: d => seen.push(d),
+      });
+      expect(seen[0].keywordTypedWaypointCount).toBe(0);
+      // Everything except the explicitly typed "Bay Lookout" is unclassified.
+      expect(seen[0].unclassifiedWaypointCount).toBe(6);
+    });
+
+    it('types waypoints from their names when on', () => {
+      const trail = buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+      });
+      const types = new Map(trail.waypoints.map(w => [w.name, w.type]));
+
+      expect(types.get('Northcliffe trailhead')).toBe('trailhead');
+      expect(types.get('Wallaby Creek Campsite')).toBe('campsite');
+      expect(types.get('Water tank (rainwater)')).toBe('water-tank');
+      expect(types.get('Coles Supermarket')).toBe('food');
+      expect(types.get('Hut 3')).toBe('hut');
+      // No rule matches this one — it stays unclassified rather than guessing.
+      expect(types.get('Heavitree Gap')).toBe('waypoint');
+    });
+
+    it('never overrides an explicit <wpt><type>', () => {
+      const trail = buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+      });
+      // "Lookout" would infer `poi`; the file said `mountain`.
+      expect(trail.waypoints.find(w => w.name === 'Bay Lookout')?.type).toBe('mountain');
+    });
+
+    it('does not rename the waypoints it types', () => {
+      const trail = buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+      });
+      expect(trail.waypoints.map(w => w.name)).toEqual([
+        'Northcliffe trailhead',
+        'Wallaby Creek Campsite',
+        'Water tank (rainwater)',
+        'Coles Supermarket',
+        'Hut 3',
+        'Heavitree Gap',
+        'Bay Lookout',
+      ]);
+    });
+
+    it('counts what it typed and what it could not', () => {
+      const seen: BuildTrailDiagnostics[] = [];
+      buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+        onDiagnostics: d => seen.push(d),
+      });
+      expect(seen[0].keywordTypedWaypointCount).toBe(5);
+      expect(seen[0].unclassifiedWaypointCount).toBe(1);
+    });
+
+    it('leaves waypoint ids untouched — the minter hashes name/lat/lon, not type', () => {
+      const minter = (wps: { name: string }[]) => wps.map((wp, i) => `id_${i}_${wp.name}`);
+      const off = buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        mintWaypointIds: minter,
+      });
+      const on = buildTrail(load('keyword-waypoints'), {
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+        mintWaypointIds: minter,
+      });
+      expect(on.waypoints.map(w => w.id)).toEqual(off.waypoints.map(w => w.id));
+    });
+
+    it('flattenGpx exposes the same flag for callers that stop at flattening', () => {
+      const xml = readFileSync(resolve(FIXTURES, 'keyword-waypoints.gpx'), 'utf-8');
+      const off = flattenGpx(parseGpx(xml));
+      const on = flattenGpx(parseGpx(xml), { inferWaypointTypesFromKeywords: true });
+
+      expect(off.waypoints.find(w => w.name === 'Hut 3')?.type).toBe('waypoint');
+      expect(on.waypoints.find(w => w.name === 'Hut 3')?.type).toBe('hut');
+      // Names are untouched either way.
+      expect(on.waypoints.map(w => w.name)).toEqual(off.waypoints.map(w => w.name));
+    });
+
+    it('does not mutate the parsed GPX it was handed', () => {
+      // With no resolveWaypoints hook, buildTrail's working array IS
+      // gpx.waypoints. Typing in place would make a second build of the same
+      // parsed file report nothing inferred, and would leak types back to a
+      // caller that reuses the parse.
+      const gpx = load('keyword-waypoints');
+      const seen: BuildTrailDiagnostics[] = [];
+      const opts = () => ({
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+        onDiagnostics: (d: BuildTrailDiagnostics) => seen.push(d),
+      });
+
+      const first = buildTrail(gpx, opts());
+      expect(gpx.waypoints.find(w => w.name === 'Hut 3')?.type).toBe('waypoint');
+
+      const second = buildTrail(gpx, opts());
+      expect(seen[0].keywordTypedWaypointCount).toBe(5);
+      expect(seen[1].keywordTypedWaypointCount).toBe(5);
+      expect(second.waypoints.map(w => w.type)).toEqual(first.waypoints.map(w => w.type));
+    });
+
+    it('also types waypoints a resolveWaypoints hook introduces', () => {
+      const trail = buildTrail(load('simple-trail'), {
+        config: config(),
+        inferWaypointTypesFromKeywords: true,
+        resolveWaypoints: () => [
+          { name: 'Riverside Campground', lat: -33.9, lon: 151.25, type: 'waypoint' },
+        ],
+      });
+      expect(trail.waypoints[0].type).toBe('campsite');
+    });
   });
 });

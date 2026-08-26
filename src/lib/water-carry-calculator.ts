@@ -8,6 +8,7 @@
  */
 
 import type { PlanWaypoint, WaterGap } from './plan-types';
+import { isWaterWaypoint } from './waypoint-taxonomy';
 
 export type { WaterGap };
 
@@ -26,8 +27,6 @@ export interface WaterCarryAnalysis {
   hasWaterData: boolean;
 }
 
-const WATER_TYPES = new Set(['water', 'water-tank']);
-
 /** Default threshold for a "dry stretch" warning in km */
 export const DEFAULT_DRY_STRETCH_KM = 15;
 
@@ -38,7 +37,7 @@ const SEASONAL_KEYWORDS = ['seasonal', 'dry in summer', 'dries up', 'unreliable'
  */
 export function extractWaterSources(waypoints: PlanWaypoint[]): WaterSource[] {
   return waypoints
-    .filter(wp => wp.type && WATER_TYPES.has(wp.type))
+    .filter(wp => isWaterWaypoint(wp.type))
     .map(wp => {
       let seasonalNote: string | undefined;
       if (wp.description) {

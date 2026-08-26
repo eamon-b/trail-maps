@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { hashString, importGpx, mintImportedWaypointIds } from './gpx-import';
 import { fxpXmlAdapter } from './xml-adapter-fxp';
+import { isResupplyWaypoint, isWaterWaypoint } from './waypoint-taxonomy';
 
 const FIXTURES = resolve(__dirname, '../../tests/fixtures/gpx');
 const fixture = (name: string): string => readFileSync(resolve(FIXTURES, `${name}.gpx`), 'utf-8');
@@ -239,5 +240,61 @@ describe('mintImportedWaypointIds', () => {
     expect(mintImportedWaypointIds([{ name: 'Same', lat: 1, lon: 2, type: 'waypoint' }], config)[0]).toBe(
       ids[0]
     );
+  });
+
+  describe('waypoint type inference from names', () => {
+    // A user's GPX has no CalTopo folders and no `C:`/`WT:` prefixes, so without
+    // keyword inference every waypoint would land on 'waypoint' and the plan
+    // calculators would find no water and no resupply at all.
+    it('types keyword-named waypoints', () => {
+      const { trail } = importGpx(fixture('keyword-waypoints'));
+      const types = new Map(trail.waypoints.map(w => [w.name, w.type]));
+
+      expect(types.get('Northcliffe trailhead')).toBe('trailhead');
+      expect(types.get('Wallaby Creek Campsite')).toBe('campsite');
+      expect(types.get('Water tank (rainwater)')).toBe('water-tank');
+      expect(types.get('Coles Supermarket')).toBe('food');
+      expect(types.get('Hut 3')).toBe('hut');
+    });
+
+    it('leaves a name no rule matches unclassified rather than guessing', () => {
+      const { trail } = importGpx(fixture('keyword-waypoints'));
+      expect(trail.waypoints.find(w => w.name === 'Heavitree Gap')?.type).toBe('waypoint');
+    });
+
+    it('does not rename the waypoints it types', () => {
+      const { trail } = importGpx(fixture('keyword-waypoints'));
+      expect(trail.waypoints.map(w => w.name)).toEqual([
+        'Northcliffe trailhead',
+        'Wallaby Creek Campsite',
+        'Water tank (rainwater)',
+        'Coles Supermarket',
+        'Hut 3',
+        'Heavitree Gap',
+        'Bay Lookout',
+      ]);
+    });
+
+    it('reports how many were inferred and how many are still unclassified', () => {
+      const { report } = importGpx(fixture('keyword-waypoints'));
+      expect(report.keywordTypedWaypointCount).toBe(5);
+      expect(report.unclassifiedWaypointCount).toBe(1);
+    });
+
+    it('reports zero inferred when nothing needs inferring', () => {
+      // Both waypoints in this fixture are typed by an explicit <type> or a
+      // `C:` prefix, so the keyword tier has nothing to do.
+      const { report } = importGpx(fixture('waypoint-types'));
+      expect(report.keywordTypedWaypointCount).toBe(0);
+      expect(report.unclassifiedWaypointCount).toBe(0);
+    });
+
+    it('feeds the water and resupply plan families', () => {
+      // The point of the whole tier: an imported trail now has a water source
+      // and a resupply point for the plan calculators to work with.
+      const { trail } = importGpx(fixture('keyword-waypoints'));
+      expect(trail.waypoints.filter(w => isWaterWaypoint(w.type))).toHaveLength(1);
+      expect(trail.waypoints.filter(w => isResupplyWaypoint(w.type))).toHaveLength(1);
+    });
   });
 });

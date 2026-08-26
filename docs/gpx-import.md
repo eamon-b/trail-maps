@@ -113,27 +113,112 @@ within 500 m of the route get a km position and show in the list and on the
 profile; anything further away is kept as "off-trail" (on the map, not in the
 distance list). The report gives both counts.
 
-A waypoint's **type** (the icon and how the plan treats it) comes from, in
-order:
+### 9. Waypoints are given a type
 
-1. the GPX `<type>` element, taken as-is — the types the guide understands
-   are `campsite`, `hut`, `water`, `water-tank`, `town`, `resupply`,
-   `accommodation`, `trailhead`, `caravan-park`, `road-crossing`,
-   `side-trip`, `mountain`, `beach`, `food`, `inlet-crossing`, `poi` and
-   `endpoint`;
-2. a prefix on the name, which is then stripped — `C:` campsite, `H:` hut,
-   `W:` water, `WT:` water tank, `T:` town, `TH:` trailhead, `CP:` caravan
-   park, `ST:` side trip, `M:` mountain, `F:` food, `IC:` inlet crossing,
-   `S:`/`E:` start/end point (a space after the letter works too:
-   `C Long Gully`);
-3. a well-known town name;
-4. otherwise "point of interest".
+A waypoint's **type** is the whole reason the guide can plan: it decides the
+icon, whether the point counts as water, and whether it counts as a place to
+buy food. The types the guide understands are `campsite`, `hut`, `water`,
+`water-tank`, `town`, `resupply`, `food`, `accommodation`, `caravan-park`,
+`trailhead`, `road-crossing`, `inlet-crossing`, `side-trip`, `mountain`,
+`beach`, `endpoint`, `poi`, and `waypoint` for "not categorised".
 
-Towns and resupply points are what the plan calculator uses for resupply
-legs; water and water-tank points drive the water-carry distances; campsites
-and huts are the candidate overnight stops.
+The type is decided by the first of these that produces an answer:
 
-### 9. Identity
+1. **The GPX `<type>` element**, taken as-is and never overridden. If your
+   file says `<type>campsite</type>`, that is the type — including a word of
+   your own the guide has never heard of, which is kept verbatim and shown
+   with a tidied-up label.
+2. **A prefix on the name**, which is then *stripped from the name*:
+
+   | Prefix | Type | Prefix | Type |
+   | --- | --- | --- | --- |
+   | `C:` | campsite | `TH:` | trailhead |
+   | `W:` | water | `CP:` | caravan park |
+   | `WT:` | water tank | `IC:` | inlet crossing |
+   | `H:` | hut | `ST:` | side trip |
+   | `T:` | town | `M:` | mountain |
+   | `F:` | food | `S:` / `E:` | start / end point |
+
+   A space works instead of the colon (`C Long Gully`), and road crossings
+   are the space form only: `R Bogong High Plains Rd`. The delimiter is
+   required, which is why `Campsite Area` and `Eastern Access` are left
+   alone rather than being read as `C`- and `E`-prefixed.
+3. **A built-in list of Australian trail towns** (Alice Springs, Walhalla,
+   Pemberton, Quorn and about two dozen others) → `town`. This outranks
+   prefixes, so `Mt Hotham` is a town rather than a mountain.
+4. **Words anywhere in the name** — see below. *Imported files only.*
+5. Otherwise the waypoint is left **not categorised**, rather than guessed at.
+
+#### Types guessed from the name
+
+Most GPX files in the wild use none of the conventions above: they just have
+names like `Wallaby Creek Campsite` or `Coles Supermarket`. So for a file you
+import, the guide reads the name for these words. (Trails built into the app
+skip this step — their waypoints are already categorised by hand, and guessing
+would only add noise.)
+
+| Words in the name | Type |
+| --- | --- |
+| caravan park, holiday park, tourist park | caravan park |
+| road crossing, highway crossing, hwy crossing | road crossing |
+| side trip | side trip |
+| inlet crossing | inlet crossing |
+| water tank, rainwater, tank water | water tank |
+| drinking water, potable water, water source, water point, water tap, water pump, water trough, waterhole, soak, bore, trough, tap | water |
+| campsite, camp site, campground, camping area, camping ground, tentsite, tent site, bush camp, free camp | campsite |
+| hut, shelter, refuge | hut |
+| hotel, motel, hostel, lodge, B&B, bed and breakfast, guesthouse, backpackers, cabin, resort, pub, tavern | accommodation |
+| general store, corner store, village store, store, post office, food drop, food cache, food parcel, supermarket, grocery, roadhouse, bakery, takeaway, kiosk, cafe, deli, IGA, Foodland, Coles, Woolworths | food |
+| resupply | resupply |
+| trailhead, trail head, track head, car park, carpark, parking | trailhead |
+| summit, trig point, trig, peak, Mt, Mount | mountain |
+| lookout, viewpoint, waterfall, rest area, picnic area, picnic table, toilet | point of interest |
+| beach | beach |
+| trail start, trail end, route end, end point, terminus, start, finish | start / end point |
+
+Whole words only, plurals included, so `Huts` matches and `Hutchinson` does
+not; earlier rows win, so `Caravan Park` is not read as parking and
+`Side trip: Mt Ossa` is a side trip rather than a mountain. **The name itself
+is never changed** by this step — only a prefix is ever stripped.
+
+Some words are deliberately *not* used, because in Australian place names they
+mean the wrong thing far too often: bare `creek`, `river`, `spring`, `dam` and
+`well` are not read as water (Falls Creek is a town, Spring Gully is a road),
+bare `camp` is not read as a campsite (Camp Road), and a town is never guessed
+from its name, because inventing a resupply would quietly shorten how much
+food the plan tells you to carry. A `pub` is filed as accommodation rather
+than food for the same reason: accommodation never counts towards resupply, so
+a guess can never make a food carry look shorter than it is.
+
+The import report tells you how many waypoints were typed this way and how
+many are still uncategorised.
+
+#### Fixing a category
+
+Guessing from words is never going to be right every time, so on an imported
+trail's page you can set the category yourself: open a waypoint's row in the
+waypoint list and choose from the **Category** menu. The change is saved with
+the trail and is picked up by the plan calculator, the map icon and the
+water/food filters. Trails built into the app are read-only.
+
+#### What the types are used for
+
+- **Town, food and resupply points** are the resupply stops: the plan
+  calculator measures food carries between them, and the waypoint list can be
+  filtered down to just these to read the leg distances off directly.
+- **Water and water tank** points drive the water-carry distances and the
+  water filter.
+- **Campsites and huts** are the candidate overnight stops when the plan
+  splits the walk into days.
+- **Accommodation and caravan parks** are shown but deliberately *not*
+  counted as resupply — a bed is not a shop.
+
+Common words other people's files use are understood as aliases here even
+though the guide never writes them itself: a waypoint typed `spring`,
+`creek`, `tap` or `bore` counts as water, and one typed `supermarket`,
+`store`, `roadhouse` or `post-office` counts as resupply.
+
+### 10. Identity
 
 - The trail id is `u_` followed by a hash of the file's contents, so
   importing the same file twice updates the existing guide instead of adding
@@ -151,13 +236,25 @@ and huts are the candidate overnight stops.
 | *The route doubles back on itself* | An out-and-back inside the main route | Leave it if it's the walk; otherwise make it a `Side trip:` track |
 | *N waypoints off trail* | Further than 500 m from the route | Move them closer, or accept they're map-only |
 
+Alongside these notes the report counts **categorised from their names** and
+**not categorised** — how many waypoints were typed from their words in
+[step 9](#9-waypoints-are-given-a-type), and how many are still uncategorised
+and worth [setting by hand](#fixing-a-category).
+
 ## Preparing a good file
 
 - One `<trk>` for the whole walk, or one per day/leg — both work.
 - Name side trips and alternates so they are recognised (`Side trip: …`,
   `Alt: …`).
-- Put useful waypoints in the file with a type prefix (`C:`, `W:`, `T:`…) so
-  the plan calculator can use them.
+- Put useful waypoints in the file, and give each one a category the importer
+  can see, so the plan calculator can use it. Any of these works: a `<type>`
+  element, a prefix on the name (`C:`, `W:`, `T:`…), or simply a descriptive
+  name — `Wallaby Creek Campsite` and `Water tank at the shelter` are both
+  categorised correctly on their words alone. Water sources and food stops are
+  the two that change the plan, so they are the two worth getting right.
+- Anything the importer could not categorise is listed in the report, and you
+  can set its category from the trail page afterwards — no need to edit the
+  file and import again.
 - Keep the route walking in the direction you want km 0 to be; the guide can
   be reversed on screen, but the file's first point is the start.
 - Include `<ele>`, preferably from a DEM-corrected export rather than a

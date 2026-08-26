@@ -118,6 +118,17 @@ describe('upload.html', () => {
     expect(stats).toMatch(/Tracks in file: 4/);
     expect(Number($('report-stats').textContent?.match(/Waypoints: (\d+)/)?.[1])).toBeGreaterThan(0);
 
+    // Classification is a guess, so the report has to account for it: how many
+    // types were read out of the names, and how many waypoints are still
+    // uncategorised and therefore invisible to the plan calculator.
+    expect(stats).toMatch(/Not categorised:/);
+    const note = $('report').textContent ?? '';
+    expect(note).toContain('Category');
+    expect(
+      $('report').querySelector('a[href*="types-guessed-from-the-name"]'),
+      'the report links to how categories are worked out',
+    ).not.toBeNull();
+
     expect(($('trail-name') as HTMLInputElement).value).toBe('Cape to Cape Track');
     // Elevation is present, so the backfill offer stays hidden.
     expect($('elevation-backfill').hidden).toBe(true);
@@ -200,6 +211,17 @@ describe('the full import journey', () => {
     expect(($('plan-link') as HTMLAnchorElement).getAttribute('href')).toBe(
       `./my-plan.html?id=${id}`,
     );
+
+    // Type badges read as labels ("Water tank", not "water-tank"), with the raw
+    // slug kept in `title` so the underlying value stays discoverable.
+    const badges = [...$('waypoints-container').querySelectorAll('.waypoint-type')];
+    expect(badges.length).toBeGreaterThan(0);
+    for (const badge of badges) {
+      expect(badge.getAttribute('title')).toBeTruthy();
+      expect(badge.textContent, 'badge shows a label, not a slug').not.toMatch(/-/);
+    }
+    // The filter bar reports what is on screen out of the whole set.
+    expect($('waypoint-filter-count').textContent).toMatch(/^\d+ waypoints$/);
 
     // --- reverse direction (must not re-fetch: there is nothing to fetch) --
     const firstWaypointBefore = $('waypoints-container').querySelector('tbody tr')?.textContent;

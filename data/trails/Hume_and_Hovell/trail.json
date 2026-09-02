@@ -7,6 +7,9 @@
   "gpxFile": "Hume_and_Hovell.gpx",
   "geojsonFile": "Hume_and_Hovell.json",
   "description": "Historic walking track following the route of explorers Hamilton Hume and William Hovell from 1824.",
+  "dataSource": {
+    "text": "Track and waypoints mapped for this site from the official Hume and Hovell Track route."
+  },
   "direction": {
     "default": "SOBO",
     "reversed": "NOBO"

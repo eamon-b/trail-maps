@@ -39,6 +39,16 @@ export interface SpurExtractionConfig {
   toKm?: number;
 }
 
+/**
+ * Where a trail's GPX track came from. `text` is the sentence shown to
+ * readers; `url` links back to the guide when the track is someone else's.
+ */
+export interface TrailDataSource {
+  text: string;
+  url?: string;
+  linkText?: string;
+}
+
 export interface TrailConfig {
   id: string;
   name: string;
@@ -62,6 +72,12 @@ export interface TrailConfig {
   climateLocations?: ClimateLocationConfig[];
   description?: string;
   direction?: DirectionConfig;
+  /**
+   * Provenance of the GPX track: who made it and, when it is someone else's
+   * work, where to find the guide it came from. Rendered as an attribution
+   * note on the trail page.
+   */
+  dataSource?: TrailDataSource;
   /** Marks a trail produced by the runtime GPX importer rather than the build. */
   source?: 'imported';
   /**

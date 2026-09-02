@@ -18,6 +18,21 @@
   text-transform: uppercase;
   opacity: 0.7;
 }
+.trail-source {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+.trail-source strong {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-right: 0.35rem;
+}
+.trail-source-link {
+  color: var(--accent-color);
+}
 .trail-nav-link {
   color: var(--accent-color);
   text-decoration: none;

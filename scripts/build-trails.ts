@@ -409,6 +409,33 @@ function applyTrailDescriptions(trailDir: string, config: TrailConfig, waypoints
 }
 
 /**
+ * Render the "where this track came from" note for a trail page.
+ *
+ * Most of our tracks are someone else's work, so the note carries a link back
+ * to the guide it was digitised from. Trails without a `dataSource` render
+ * nothing rather than an empty box.
+ */
+function renderDataSource(config: TrailConfig): string {
+  const dataSource = config.dataSource;
+  if (!dataSource?.text) return '';
+
+  // Only http(s) links get rendered — anything else (javascript:, data:) is
+  // dropped and the note degrades to plain text.
+  let link = '';
+  if (dataSource.url && /^https?:\/\//i.test(dataSource.url)) {
+    const label = dataSource.linkText || dataSource.url;
+    link =
+      ` <a href="${escapeHtml(dataSource.url)}" class="trail-source-link"` +
+      ` target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+  }
+
+  return (
+    `<p class="trail-source"><strong>Track data</strong> ` +
+    `${escapeHtml(dataSource.text)}${link}</p>`
+  );
+}
+
+/**
  * Generate an HTML page for a trail from the template
  */
 function generateTrailPage(trail: ProcessedTrail): void {
@@ -424,7 +451,10 @@ function generateTrailPage(trail: ProcessedTrail): void {
     .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
     .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
     .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name))
-    .replace(/\{\{TRAIL_REGION\}\}/g, escapeHtml(trail.config.region || 'Unknown'));
+    .replace(/\{\{TRAIL_REGION\}\}/g, escapeHtml(trail.config.region || 'Unknown'))
+    // Function form: the rendered note is already-escaped HTML and must not be
+    // reinterpreted for `$&`-style replacement patterns.
+    .replace(/\{\{TRAIL_DATA_SOURCE\}\}/g, () => renderDataSource(trail.config));
 
   // Create trail directory and write HTML
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);

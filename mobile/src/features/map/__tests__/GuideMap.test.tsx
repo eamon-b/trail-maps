@@ -14,6 +14,7 @@
 
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { mapInk } from '../map-style';
 import { GuideMap } from '../GuideMap';
 import { tileManager } from '../../../services/tile-manager';
 import { getOnlineMapStyle } from '../../../services/online-style-service';
@@ -21,18 +22,31 @@ import { WAYPOINT_ICON_NAMES } from '../waypoint-icons';
 
 // jest.mock is hoisted above the imports above, so the mocked deps are in place
 // before GuideMap's module evaluates.
-jest.mock('@maplibre/maplibre-react-native', () => ({
+/** The `mapStyle` of every <Map> render, in order — including renders of a
+ * Map instance that is torn down again within the same act() batch, which the
+ * committed tree alone cannot show. */
+const mockMapRenders: unknown[] = [];
+jest.mock('@maplibre/maplibre-react-native', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const MockMap = React.forwardRef((props: Record<string, unknown>, ref) => {
+    mockMapRenders.push(props.mapStyle);
+    return React.createElement('Map', { ...props, ref });
+  });
+  MockMap.displayName = 'Map';
+  return {
   __esModule: true,
-  Map: 'Map',
+  Map: MockMap,
   Camera: 'Camera',
   GeoJSONSource: 'GeoJSONSource',
   Layer: 'Layer',
   Images: 'Images',
   LogManager: { onLog: jest.fn() },
-}));
+  };
+});
 
+let mockIsDark = false;
 jest.mock('../../../theme', () => ({
-  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
+  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }), isDark: mockIsDark }),
 }));
 
 jest.mock('../../../services/tile-manager', () => ({
@@ -108,6 +122,7 @@ const mapViews = (tree: ReactTestRenderer) => tree.root.findAll((n) => nodeType(
 let warnSpy: jest.SpyInstance;
 beforeEach(() => {
   jest.clearAllMocks();
+  mockIsDark = false;
   warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => {
@@ -142,12 +157,76 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    expect(getOfflineStyle).toHaveBeenCalledWith('heysen');
+    expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'light');
     expect(getOnline).not.toHaveBeenCalled();
     expect(mapViews(tree)).toHaveLength(1);
     expect(mapViews(tree)[0].props.mapStyle).toBe(OFFLINE_STYLE);
     // Offline topo tiles ship Open Sans glyphs.
     expect(labelFontOf(tree, 'guide-waypoints-labels')).toEqual(['Open Sans Regular']);
+  });
+
+  it('resolves the dark basemap when the app theme is dark', async () => {
+    mockIsDark = true;
+    getOfflineStyle.mockResolvedValue(offlineResult());
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    act(() => {
+      TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="offline" displayPoints={points} />,
+      );
+    });
+    await flush();
+    expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'dark');
+  });
+
+  it('re-resolves the style when the app flips to dark, rather than repainting a live map', async () => {
+    // Handing a mounted MapLibre map a new style object is the mid-flight style
+    // reload that can take down the native renderer, so a theme flip has to go
+    // back through resolution (and, via the remount key, a fresh <Map>).
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} />,
+      );
+    });
+    await flush();
+    expect(getOnline).toHaveBeenCalledTimes(1);
+    expect(getOnline).toHaveBeenLastCalledWith('light');
+
+    // Control: a prop change on its own must not re-resolve the style.
+    // (GuideMap is memo'd, and this suite stubs useTheme as a plain function
+    // rather than a context, so a prop change is also what lets the re-render
+    // through — in the app a context update re-renders a memo'd consumer.)
+    act(() => {
+      tree.update(<GuideMap trailId="heysen" styleSource="online" displayPoints={points} waypoints={[]} />);
+    });
+    await flush();
+    expect(getOnline).toHaveBeenCalledTimes(1);
+
+    mockIsDark = true;
+    const DARK_STYLE = { version: 8, sources: {}, layers: [], name: 'dark' };
+    let resolveDark!: (style: object) => void;
+    getOnline.mockImplementationOnce(() => new Promise((r) => { resolveDark = r; }));
+    const rendersBeforeFlip = mockMapRenders.length;
+    act(() => {
+      tree.update(<GuideMap trailId="heysen" styleSource="online" displayPoints={points} />);
+    });
+    // Between the flip and the dark style resolving, the only style on hand is
+    // the light one. Mounting it under the new remount key would flash the
+    // light basemap and init a native map that is torn down a frame later, so
+    // nothing may be mounted until the dark style is in.
+    expect(getOnline).toHaveBeenCalledTimes(2);
+    expect(getOnline).toHaveBeenLastCalledWith('dark');
+    expect(mapViews(tree)).toHaveLength(0);
+    // …and not even transiently: a Map mounted-then-unmounted inside the same
+    // batch never shows in the committed tree, but it does render.
+    expect(mockMapRenders.slice(rendersBeforeFlip)).toEqual([]);
+
+    await act(async () => { resolveDark(DARK_STYLE); });
+    await flush();
+    expect(mapViews(tree)).toHaveLength(1);
+    expect(mapViews(tree)[0].props.mapStyle).toBe(DARK_STYLE);
+    expect(mockMapRenders.slice(rendersBeforeFlip)).not.toContain(ONLINE_STYLE);
   });
 
   it('falls back online when an offline pack is missing at mount time', async () => {
@@ -160,7 +239,7 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    expect(getOfflineStyle).toHaveBeenCalledWith('heysen');
+    expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'light');
     expect(getOnline).toHaveBeenCalled();
     expect(mapViews(tree)).toHaveLength(1);
   });
@@ -384,7 +463,7 @@ describe('GuideMap', () => {
         ['get', 'color'],
       ],
     ]);
-    expect(style.circleColor).toBe('#ffffff');
+    expect(style.circleColor).toBe(mapInk('light').badge);
     // Bigger than the 5 px dot it replaces, and favorites are bigger still.
     expect(style.circleRadius).toEqual(['case', ['get', 'favorite'], 11, 9]);
   });

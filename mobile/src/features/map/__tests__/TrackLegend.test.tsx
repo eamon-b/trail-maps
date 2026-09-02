@@ -6,13 +6,20 @@
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { TrackLegend } from '../TrackLegend';
-import { TRACK_COLORS } from '../map-style';
+import { trackColors } from '../map-style';
 
 // Chrome colours come from the theme; track colours must not, so a
-// single-colour theme stub also proves the swatches bypass it.
+// single-colour theme stub also proves the swatches bypass it. `isDark` is the
+// one thing the legend does read, because the map repaints the tracks in dark
+// mode and the key has to follow.
+let mockIsDark = false;
 jest.mock('../../../theme', () => ({
-  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
+  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }), isDark: mockIsDark }),
 }));
+
+beforeEach(() => {
+  mockIsDark = false;
+});
 
 const render = (props: React.ComponentProps<typeof TrackLegend>): ReactTestRenderer => {
   let tree!: ReactTestRenderer;
@@ -62,8 +69,19 @@ describe('TrackLegend', () => {
 
   it('swatches use the map’s own track colours', () => {
     const json = rendered(render({ hasAlternates: true, hasSideTrips: true }));
-    expect(json).toContain(TRACK_COLORS.main);
-    expect(json).toContain(TRACK_COLORS.alternate);
-    expect(json).toContain(TRACK_COLORS.sideTrip);
+    const track = trackColors('light');
+    expect(json).toContain(track.main);
+    expect(json).toContain(track.alternate);
+    expect(json).toContain(track.sideTrip);
+  });
+
+  it('follows the map into dark mode instead of naming colours it no longer paints', () => {
+    mockIsDark = true;
+    const json = rendered(render({ hasAlternates: true, hasSideTrips: true }));
+    const dark = trackColors('dark');
+    expect(json).toContain(dark.main);
+    expect(json).toContain(dark.alternate);
+    expect(json).toContain(dark.sideTrip);
+    expect(json).not.toContain(trackColors('light').main);
   });
 });

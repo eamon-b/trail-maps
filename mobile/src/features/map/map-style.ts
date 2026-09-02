@@ -7,15 +7,29 @@
  * Why a remount key: swapping a live MapLibre `mapStyle` object at runtime
  * forces the native renderer to reload its style graph mid-flight, which can
  * terminate the renderer on some devices (see the old app's TrailMap). Instead
- * we key the `<Map>` on the *source* — when a download finishes and the source
- * flips from 'online' to 'offline', React unmounts the old map and mounts a
- * fresh one with the new style already resolved.
+ * we key the `<Map>` on the *source and theme* — when a download finishes and
+ * the source flips from 'online' to 'offline', or the app theme flips light to
+ * dark, React unmounts the old map and mounts a fresh one with the new style
+ * already resolved.
  */
 
 import type { TileStatusState } from '../../services/tile-service';
 
 /** Which base map the guide should render: bundled offline tiles or online. */
 export type MapStyleSource = 'offline' | 'online';
+
+/**
+ * Which palette the base map and the overlays drawn on it are painted in.
+ *
+ * This tracks the app theme (see the guide map's `useTheme().isDark`) rather
+ * than being its own setting: before it existed the map pane stayed a bright
+ * rectangle in an otherwise dark app (issue #33). Both base maps have a dark
+ * counterpart — OpenFreeMap's `dark` style online, the dark palette patch in
+ * `assets/topo-style-dark.json` offline — and every overlay colour below has a
+ * dark variant, because violet alternates and teal side trips tuned for a cream
+ * basemap are dark-on-dark once the ground drops to #14.
+ */
+export type MapTheme = 'light' | 'dark';
 
 /** Extra context beyond on-disk state that forces the map online. */
 export interface StyleSourceOptions {
@@ -47,15 +61,22 @@ export function resolveStyleSource(
 }
 
 /**
- * The `<Map>` remount key. Identical to the source today, but centralised
- * so the "remount on source change" contract has one authority and one test.
+ * The `<Map>` remount key — the one authority (and one test) for the
+ * "remount, never hot-swap" contract.
  *
  * Pass the source that *actually* resolved, not the one that was requested: a
  * requested-offline map that fell back online must not reuse the offline map's
  * key, or React keeps the old native map instance alive across the swap.
+ *
+ * The theme is part of the key for the same reason the source is: light and dark
+ * are two different style documents (a different online style URL, a different
+ * offline palette), and handing a live map a new style object is exactly the
+ * mid-flight style reload that can terminate the native renderer. Flipping the
+ * phone to dark mode therefore mounts a fresh map on the already-resolved dark
+ * style instead of repainting the live one.
  */
-export function mapRemountKey(source: MapStyleSource): string {
-  return `guide-map-${source}`;
+export function mapRemountKey(source: MapStyleSource, theme: MapTheme): string {
+  return `guide-map-${source}-${theme}`;
 }
 
 /**
@@ -85,7 +106,7 @@ export interface MapStyleResolution {
   resolved: MapStyleSource;
   /** Offline style mounted, but contour layers were dropped. */
   contoursDropped: boolean;
-  /** Neither base map could be loaded; FALLBACK_MAP_STYLE is mounted. */
+  /** Neither base map could be loaded; fallbackMapStyle() is mounted. */
   fallback: boolean;
   /** Validation / error detail behind the degradation, when known. */
   reason?: string;
@@ -129,13 +150,11 @@ export function isRedownloadFixable(degradation: MapDegradation): boolean {
 }
 
 /**
- * Track cartography — the three track classes the guide draws.
+ * Track cartography — the three track classes the guide draws, per map theme.
  *
- * These are MapLibre paint values, not RN styles, and they are deliberately
- * theme-INDEPENDENT: both base maps (online Liberty and the bundled offline
- * topo style) are light in either app theme, so the tracks are tuned once for
- * legibility against pale-green landcover, orange roads, and blue water. The
- * same rule already governs MARKER_STROKE / LABEL_TEXT in GuideMap.
+ * These are MapLibre paint values, not RN styles, so the design-token lint (which
+ * targets RN styles) does not reach them; they are hand-tuned against the two
+ * base maps rather than pulled from the app palette.
  *
  * Hue budget on the map — every overlay owns a hue so nothing is ambiguous:
  *   red     main track          (FarOut's convention: the trail itself)
@@ -144,20 +163,82 @@ export function isRedownloadFixable(degradation: MapDegradation): boolean {
  *   amber   custom route overlay (GuideMap: the user's own drawn route)
  *   blue    GPS puck            (never used for a track, so blue always = you)
  *
- * The previous palette painted alternates in the muted brand green, one ramp
- * step from the main track's green — indistinguishable at a glance, which is
- * what made alternates and side trips read as "missing" from the map.
+ * The hues are the same in both themes — a violet line means "alternate" whether
+ * or not the phone is in dark mode — but the *values* are not: #7B2CBF violet and
+ * #0B7285 teal sit at roughly the luminance of the dark basemap itself, so on
+ * dark they lift to tints that clear the ground while staying inside their hue.
+ * Only the casing changes role: on the cream basemap it is opaque white (an
+ * outline that separates the track from busy landcover), on dark it is a soft
+ * white glow at 40%, because an opaque white outline on near-black out-shouts the
+ * red line it is meant to support.
  */
-export const TRACK_COLORS = {
-  /** Main track: strong red, the most prominent line on the map. */
-  main: '#D92B2B',
-  /** White casing under the main track so it reads over any basemap clutter. */
-  mainCasing: '#FFFFFF',
-  /** Alternate routes: violet. */
-  alternate: '#7B2CBF',
-  /** Side trips: deep teal. */
-  sideTrip: '#0B7285',
+const TRACK_PALETTES = {
+  light: {
+    /** Main track: strong red, the most prominent line on the map. */
+    main: '#D92B2B',
+    /** White outline under the main track so it reads over basemap clutter. */
+    mainCasing: '#FFFFFF',
+    /** Alternate routes: violet. */
+    alternate: '#7B2CBF',
+    /** Side trips: deep teal. */
+    sideTrip: '#0B7285',
+  },
+  dark: {
+    /** Main track: the same red lifted to clear a near-black ground. */
+    main: '#FF5A4E',
+    /** Soft white glow rather than a hard outline (see the note above). */
+    mainCasing: 'rgba(255, 255, 255, 0.4)',
+    /** Alternate routes: violet, tinted. */
+    alternate: '#B18AFF',
+    /** Side trips: teal, tinted. */
+    sideTrip: '#2FD4C0',
+  },
 } as const;
+
+export type TrackColors = (typeof TRACK_PALETTES)[MapTheme];
+
+/**
+ * Track colours for a map theme. Everything that paints a track class goes
+ * through this — the map layers, the legend swatches, and the variant info
+ * card — so a swatch can never disagree with the line it describes.
+ */
+export function trackColors(theme: MapTheme): TrackColors {
+  return TRACK_PALETTES[theme];
+}
+
+/**
+ * Ink for the overlays drawn on top of the basemap: waypoint badges, their
+ * labels, and the GPS puck's stroke.
+ *
+ * The badge itself stays a white disc in both themes — the glyph PNGs are dark
+ * ink on transparency, and the category colour lives in the ring — so a marker
+ * reads as the same object on either basemap. Labels do flip: dark text in a
+ * white halo is a row of bright chips on a dark map, so dark mode inverts it to
+ * light text in a near-black halo.
+ */
+const MAP_INK = {
+  light: {
+    /** Marker/puck outline against the basemap. */
+    stroke: '#FFFFFF',
+    /** Waypoint badge fill (the disc the glyph sits on). */
+    badge: '#FFFFFF',
+    labelText: '#1A1A1A',
+    labelHalo: '#FFFFFF',
+  },
+  dark: {
+    stroke: '#FFFFFF',
+    badge: '#FFFFFF',
+    labelText: '#F1F3F5',
+    labelHalo: 'rgba(0, 0, 0, 0.85)',
+  },
+} as const;
+
+export type MapInk = (typeof MAP_INK)[MapTheme];
+
+/** Overlay ink for a map theme (see MAP_INK). */
+export function mapInk(theme: MapTheme): MapInk {
+  return MAP_INK[theme];
+}
 
 /**
  * Dash patterns, in multiples of each layer's own line width (MapLibre's unit).
@@ -246,16 +327,22 @@ export function isBasemapGeometryNoise(log: MapLogEvent): boolean {
  * resolved. Keeping the native renderer on a real (if empty) style object lets
  * the trail overlays stay usable instead of crashing on a null/unreachable
  * style. This is a MapLibre style document, not an RN stylesheet.
+ *
+ * It is themed for the same reason the real base maps are: a neutral pale card
+ * behind the trail line is the wrong backdrop in a dark app, and the overlays
+ * drawn over it are already picking their colours from the same theme.
  */
-export const FALLBACK_MAP_STYLE = {
-  version: 8 as const,
-  sources: {},
-  layers: [
-    {
-      id: 'fallback-background',
-      type: 'background' as const,
-      // MapLibre paint value (neutral map backdrop), not an RN style color.
-      paint: { 'background-color': '#E8ECE6' },
-    },
-  ],
-};
+export function fallbackMapStyle(theme: MapTheme) {
+  return {
+    version: 8 as const,
+    sources: {},
+    layers: [
+      {
+        id: 'fallback-background',
+        type: 'background' as const,
+        // MapLibre paint value (neutral map backdrop), not an RN style color.
+        paint: { 'background-color': theme === 'dark' ? '#14161A' : '#E8ECE6' },
+      },
+    ],
+  };
+}

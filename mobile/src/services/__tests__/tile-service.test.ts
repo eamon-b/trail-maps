@@ -15,10 +15,12 @@ import {
   getTrailTileStatus,
   deleteTrailTiles,
   downloadTrailTiles,
+  packFileNames,
   validateMbtiles,
   validateMbtilesCached,
   clearMbtilesValidationCache,
 } from '../tile-service';
+import { isTileFileName, nextTileFileName, type TileFileName } from '../tile-paths';
 import { Directory, File } from 'expo-file-system';
 import { openDatabaseAsync } from 'expo-sqlite';
 
@@ -92,7 +94,21 @@ jest.mock('expo-file-system', () => {
       get exists() { return mockDirs[key]?.exists ?? false; },
       create: jest.fn(() => { mockDirs[key] = { exists: true, deleted: false }; }),
       delete: jest.fn(() => { mockDirs[key] = { exists: false, deleted: true }; }),
-      list: jest.fn(() => []),
+      // Direct children only, as the native list() returns — enough for the
+      // superseded-generation sweep to have something to walk.
+      list: jest.fn(() =>
+        Object.keys(mockFiles)
+          .filter((fileUri) => fileUri.startsWith(`${uri}/`) && mockFiles[fileUri].exists)
+          .filter((fileUri) => !fileUri.slice(uri.length + 1).includes('/'))
+          .map((fileUri) => ({
+            get name() { return fileUri.slice(uri.length + 1); },
+            get uri() { return fileUri; },
+            delete: jest.fn(() => {
+              mockFiles[fileUri] = { exists: false, size: 0 };
+              delete mockFileContents[fileUri];
+            }),
+          })),
+      ),
       get name() { return parts[parts.length - 1]; },
     };
   });
@@ -853,8 +869,14 @@ describe('downloadTrailTiles atomic updates', () => {
     const manifest = JSON.parse(mockFileContents[fileKey('manifest.json')]);
     expect(manifest.version).toBe('v2');
 
-    expect(mockFiles[fileKey('base.mbtiles')]).toEqual({ exists: true, size: NEW_SIZES.base });
-    expect(mockFiles[fileKey('contours.mbtiles')]).toEqual({
+    // The replaced files land on new paths (see the #45 tests below), and the
+    // manifest is what says which.
+    const live = packFileNames(TRAIL_ID);
+    expect(mockFiles[fileKey(live['base.mbtiles'])]).toEqual({
+      exists: true,
+      size: NEW_SIZES.base,
+    });
+    expect(mockFiles[fileKey(live['contours.mbtiles'])]).toEqual({
       exists: true,
       size: NEW_SIZES.contours,
     });
@@ -958,15 +980,19 @@ describe('downloadTrailTiles integrity verification', () => {
     landDownloads((name) => MD5[name]);
   });
 
-  it('fetches the content-addressed key but stores the file under its plain name', async () => {
+  it('fetches the content-addressed key but stores the file under a local name', async () => {
     await downloadTrailTiles(TRAIL_ID, BASE_URL);
 
     expect(requestedObjects()).toEqual([
       KEYS['base.mbtiles'],
       KEYS['contours.mbtiles'],
     ]);
-    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBe(true);
-    expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBe(true);
+    // The remote key never reaches the disk: on-device names are the logical
+    // ones plus a local generation suffix.
+    const live = packFileNames(TRAIL_ID);
+    expect(live['base.mbtiles']).toBe('base-1.mbtiles');
+    expect(mockFiles[fileKey(live['base.mbtiles'])]?.exists).toBe(true);
+    expect(mockFiles[fileKey(live['contours.mbtiles'])]?.exists).toBe(true);
   });
 
   it('accepts downloads whose MD5 matches the manifest', async () => {
@@ -1049,7 +1075,8 @@ describe('downloadTrailTiles integrity verification', () => {
     await downloadTrailTiles(TRAIL_ID, BASE_URL);
 
     expect(requestedObjects()).toContain(KEYS['base.mbtiles']);
-    expect(mockFiles[fileKey('base.mbtiles')]?.md5).toBe(MD5['base.mbtiles']);
+    const live = packFileNames(TRAIL_ID);
+    expect(mockFiles[fileKey(live['base.mbtiles'])]?.md5).toBe(MD5['base.mbtiles']);
   });
 
   it('skips an existing file whose MD5 already matches the manifest', async () => {
@@ -1061,5 +1088,259 @@ describe('downloadTrailTiles integrity verification', () => {
 
     expect(mockDownloadFileAsync).not.toHaveBeenCalled();
     expect(getTrailTileStatus(TRAIL_ID).version).toBe('v2');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pack file generations — the fix for #45 (stale native mbtiles handle)
+// ---------------------------------------------------------------------------
+
+describe('tile file name generations', () => {
+  it('appends a generation, then counts up', () => {
+    expect(nextTileFileName('base.mbtiles')).toBe('base-1.mbtiles');
+    expect(nextTileFileName('base-1.mbtiles')).toBe('base-2.mbtiles');
+    expect(nextTileFileName('base-9.mbtiles')).toBe('base-10.mbtiles');
+    expect(nextTileFileName('contours.mbtiles')).toBe('contours-1.mbtiles');
+  });
+
+  it('recognises every generation of a tile file, and nothing else', () => {
+    expect(isTileFileName('base.mbtiles')).toBe(true);
+    expect(isTileFileName('base-7.mbtiles')).toBe(true);
+    expect(isTileFileName('contours-12.mbtiles')).toBe(true);
+
+    // Neither the manifest nor in-flight staging files may be swept.
+    expect(isTileFileName('manifest.json')).toBe(false);
+    expect(isTileFileName('base.mbtiles.part')).toBe(false);
+    expect(isTileFileName('base-1.mbtiles.part')).toBe(false);
+    expect(isTileFileName('basemap.mbtiles')).toBe(false);
+    expect(isTileFileName('base-x.mbtiles')).toBe(false);
+  });
+});
+
+describe('offline pack generations (#45)', () => {
+  const TRAIL_ID = 'cape-to-cape';
+  const BASE_URL = 'https://tiles.example.com';
+  const GLYPHS_PATH = '/mock/document/fonts';
+  const SIZES = { 'base.mbtiles': 5_000_000, 'contours.mbtiles': 2_000_000 } as const;
+
+  function fileKey(name: string): string {
+    return `file:///mock/document/tiles/${TRAIL_ID}/${name}`;
+  }
+
+  function makeManifest(localNames?: Record<string, string>) {
+    return {
+      trailId: TRAIL_ID,
+      version: 'v1',
+      files: [
+        { name: 'base.mbtiles', size: SIZES['base.mbtiles'], sha256: 'a' },
+        { name: 'contours.mbtiles', size: SIZES['contours.mbtiles'], sha256: 'b' },
+      ],
+      totalSize: SIZES['base.mbtiles'] + SIZES['contours.mbtiles'],
+      bounds: [0, 0, 0, 0],
+      zoomRange: [8, 14],
+      ...(localNames ? { localNames } : {}),
+    };
+  }
+
+  /** Put a complete pack on the mock filesystem under the given disk names. */
+  function installPack(localNames?: Record<TileFileName, string>) {
+    for (const name of ['base.mbtiles', 'contours.mbtiles'] as TileFileName[]) {
+      mockFiles[fileKey(localNames?.[name] ?? name)] = { exists: true, size: SIZES[name] };
+    }
+    const json = JSON.stringify(makeManifest(localNames));
+    mockFiles[fileKey('manifest.json')] = { exists: true, size: json.length };
+    mockFileContents[fileKey('manifest.json')] = json;
+  }
+
+  /** The path in the style's basemap mbtiles:// URL. */
+  function basemapUrl(): string {
+    const style = buildTopoStyle(TRAIL_ID, GLYPHS_PATH) as {
+      sources: Record<string, { url: string }>;
+    };
+    return style.sources.basemap.url;
+  }
+
+  function contourUrl(): string {
+    const style = buildTopoStyle(TRAIL_ID, GLYPHS_PATH) as {
+      sources: Record<string, { url: string }>;
+    };
+    return style.sources.contour.url;
+  }
+
+  const mockDownloadFileAsync = (File as unknown as { downloadFileAsync: jest.Mock })
+    .downloadFileAsync;
+
+  beforeEach(() => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeManifest(),
+    }) as unknown as typeof fetch;
+    mockDownloadFileAsync.mockImplementation(async (_url: string, dest: { uri: string }) => {
+      const logical = (dest.uri.split('/').pop() ?? '').replace('.part', '') as TileFileName;
+      mockFiles[dest.uri] = { exists: true, size: SIZES[logical] };
+    });
+  });
+
+  // ----- back-compat: packs already on devices -----
+
+  it('uses the plain names for a legacy pack whose manifest names no generation', () => {
+    installPack();
+    useDb(fakeDb());
+
+    expect(packFileNames(TRAIL_ID)).toEqual({
+      'base.mbtiles': 'base.mbtiles',
+      'contours.mbtiles': 'contours.mbtiles',
+    });
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+    expect(basemapUrl()).toBe(`mbtiles:///mock/document/tiles/${TRAIL_ID}/base.mbtiles`);
+    expect(contourUrl()).toBe(`mbtiles:///mock/document/tiles/${TRAIL_ID}/contours.mbtiles`);
+  });
+
+  it('validates a legacy pack under its plain name (no re-download needed)', async () => {
+    installPack();
+    useDb(fakeDb());
+
+    await expect(validateMbtilesCached(TRAIL_ID, 'base.mbtiles')).resolves.toEqual({ ok: true });
+    expect(mockOpenDatabaseAsync).toHaveBeenCalledWith(
+      'base.mbtiles',
+      { useNewConnection: true },
+      `/mock/document/tiles/${TRAIL_ID}`,
+    );
+  });
+
+  it('reads a generation-named pack straight from the manifest', async () => {
+    installPack({ 'base.mbtiles': 'base-3.mbtiles', 'contours.mbtiles': 'contours-3.mbtiles' });
+    useDb(fakeDb());
+
+    const status = getTrailTileStatus(TRAIL_ID);
+    expect(status.state).toBe('complete');
+    // The logical names stay the vocabulary of status, progress and the UI.
+    expect(status.files.map((f) => f.name)).toEqual(['base.mbtiles', 'contours.mbtiles']);
+    expect(status.totalSizeBytes).toBe(SIZES['base.mbtiles'] + SIZES['contours.mbtiles']);
+
+    expect(basemapUrl()).toBe(`mbtiles:///mock/document/tiles/${TRAIL_ID}/base-3.mbtiles`);
+    await validateMbtilesCached(TRAIL_ID, 'base.mbtiles');
+    expect(mockOpenDatabaseAsync).toHaveBeenCalledWith(
+      'base-3.mbtiles',
+      { useNewConnection: true },
+      `/mock/document/tiles/${TRAIL_ID}`,
+    );
+  });
+
+  // ----- the bug: a repair re-download must change the native path -----
+
+  it('gives the basemap a URL the process has never opened after a re-download', async () => {
+    // The issue's repro: base.mbtiles is damaged in place, so the banner offers
+    // "Re-download" and the server manifest has not changed. contours is fine.
+    installPack();
+    mockOpenDatabaseAsync.mockImplementation(async (name: string) =>
+      (name === 'base.mbtiles'
+        ? fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) })
+        : fakeDb()) as never,
+    );
+
+    const before = basemapUrl();
+    expect(before).toContain('/base.mbtiles');
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    const after = basemapUrl();
+    expect(after).not.toBe(before);
+    expect(after).toBe(`mbtiles:///mock/document/tiles/${TRAIL_ID}/base-1.mbtiles`);
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+
+    // contours was never replaced, so its handle is still good and its path
+    // must not churn — a needless remount of a healthy source helps nobody.
+    expect(contourUrl()).toBe(`mbtiles:///mock/document/tiles/${TRAIL_ID}/contours.mbtiles`);
+  });
+
+  it('sweeps the superseded generation once the new manifest is on disk', async () => {
+    installPack();
+    mockOpenDatabaseAsync.mockImplementation(async (name: string) =>
+      (name === 'base.mbtiles'
+        ? fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) })
+        : fakeDb()) as never,
+    );
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    // The old basemap — hundreds of MB on a real device — is gone; the live
+    // generation and the untouched contours file remain.
+    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBe(false);
+    expect(mockFiles[fileKey('base-1.mbtiles')]?.exists).toBe(true);
+    expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBe(true);
+    expect(mockFileContents[fileKey('manifest.json')]).toBeDefined();
+  });
+
+  it('keeps counting up across successive re-downloads', async () => {
+    installPack({ 'base.mbtiles': 'base-1.mbtiles', 'contours.mbtiles': 'contours-1.mbtiles' });
+    mockOpenDatabaseAsync.mockImplementation(async (name: string) =>
+      (name === 'base-1.mbtiles'
+        ? fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) })
+        : fakeDb()) as never,
+    );
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(packFileNames(TRAIL_ID)['base.mbtiles']).toBe('base-2.mbtiles');
+    expect(mockFiles[fileKey('base-1.mbtiles')]?.exists).toBe(false);
+  });
+
+  it('still records the new name when the manifest fetch fails', async () => {
+    // Repairing a damaged pack while the manifest request 404s or times out:
+    // the stored manifest is the only place the new name can be recorded, so it
+    // is rewritten in place rather than the file being promoted over the path
+    // MapLibre has open.
+    installPack();
+    global.fetch = jest.fn().mockResolvedValue({ ok: false }) as unknown as typeof fetch;
+    mockOpenDatabaseAsync.mockImplementation(async (name: string) =>
+      (name === 'base.mbtiles'
+        ? fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) })
+        : fakeDb()) as never,
+    );
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    const manifest = JSON.parse(mockFileContents[fileKey('manifest.json')]);
+    expect(manifest.version).toBe('v1');
+    expect(manifest.localNames['base.mbtiles']).toBe('base-1.mbtiles');
+    expect(basemapUrl()).toContain('/base-1.mbtiles');
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+  });
+
+  it('keeps a healthy file when repairing a partial versioned pack', async () => {
+    // Only contours is broken. Repairing must not re-fetch the basemap just
+    // because the pack is 'partial' — that is hundreds of megabytes.
+    installPack({ 'base.mbtiles': 'base-1.mbtiles', 'contours.mbtiles': 'contours-1.mbtiles' });
+    delete mockFiles[fileKey('contours-1.mbtiles')];
+    useDb(fakeDb());
+
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('partial');
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    expect(
+      mockDownloadFileAsync.mock.calls.map((call: unknown[]) => call[0] as string),
+    ).toEqual([`${BASE_URL}/${TRAIL_ID}/contours.mbtiles`]);
+    expect(packFileNames(TRAIL_ID)).toEqual({
+      'base.mbtiles': 'base-1.mbtiles',
+      'contours.mbtiles': 'contours-2.mbtiles',
+    });
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
+  });
+
+  it('records the on-disk names in the manifest for a fresh download', async () => {
+    useDb(fakeDb());
+
+    await downloadTrailTiles(TRAIL_ID, BASE_URL);
+
+    // Even a first download names its files: deleting a pack and downloading it
+    // again in the same session hits the same path-keyed native cache.
+    const manifest = JSON.parse(mockFileContents[fileKey('manifest.json')]);
+    expect(manifest.localNames).toEqual({
+      'base.mbtiles': 'base-1.mbtiles',
+      'contours.mbtiles': 'contours-1.mbtiles',
+    });
+    expect(getTrailTileStatus(TRAIL_ID).state).toBe('complete');
   });
 });

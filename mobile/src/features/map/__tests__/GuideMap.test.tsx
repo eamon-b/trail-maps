@@ -22,15 +22,27 @@ import { WAYPOINT_ICON_NAMES } from '../waypoint-icons';
 
 // jest.mock is hoisted above the imports above, so the mocked deps are in place
 // before GuideMap's module evaluates.
-jest.mock('@maplibre/maplibre-react-native', () => ({
+/** The `mapStyle` of every <Map> render, in order — including renders of a
+ * Map instance that is torn down again within the same act() batch, which the
+ * committed tree alone cannot show. */
+const mockMapRenders: unknown[] = [];
+jest.mock('@maplibre/maplibre-react-native', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const MockMap = React.forwardRef((props: Record<string, unknown>, ref) => {
+    mockMapRenders.push(props.mapStyle);
+    return React.createElement('Map', { ...props, ref });
+  });
+  MockMap.displayName = 'Map';
+  return {
   __esModule: true,
-  Map: 'Map',
+  Map: MockMap,
   Camera: 'Camera',
   GeoJSONSource: 'GeoJSONSource',
   Layer: 'Layer',
   Images: 'Images',
   LogManager: { onLog: jest.fn() },
-}));
+  };
+});
 
 let mockIsDark = false;
 jest.mock('../../../theme', () => ({
@@ -192,12 +204,29 @@ describe('GuideMap', () => {
     expect(getOnline).toHaveBeenCalledTimes(1);
 
     mockIsDark = true;
+    const DARK_STYLE = { version: 8, sources: {}, layers: [], name: 'dark' };
+    let resolveDark!: (style: object) => void;
+    getOnline.mockImplementationOnce(() => new Promise((r) => { resolveDark = r; }));
+    const rendersBeforeFlip = mockMapRenders.length;
     act(() => {
       tree.update(<GuideMap trailId="heysen" styleSource="online" displayPoints={points} />);
     });
-    await flush();
+    // Between the flip and the dark style resolving, the only style on hand is
+    // the light one. Mounting it under the new remount key would flash the
+    // light basemap and init a native map that is torn down a frame later, so
+    // nothing may be mounted until the dark style is in.
     expect(getOnline).toHaveBeenCalledTimes(2);
     expect(getOnline).toHaveBeenLastCalledWith('dark');
+    expect(mapViews(tree)).toHaveLength(0);
+    // …and not even transiently: a Map mounted-then-unmounted inside the same
+    // batch never shows in the committed tree, but it does render.
+    expect(mockMapRenders.slice(rendersBeforeFlip)).toEqual([]);
+
+    await act(async () => { resolveDark(DARK_STYLE); });
+    await flush();
+    expect(mapViews(tree)).toHaveLength(1);
+    expect(mapViews(tree)[0].props.mapStyle).toBe(DARK_STYLE);
+    expect(mockMapRenders.slice(rendersBeforeFlip)).not.toContain(ONLINE_STYLE);
   });
 
   it('falls back online when an offline pack is missing at mount time', async () => {

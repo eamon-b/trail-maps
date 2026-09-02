@@ -394,9 +394,17 @@ export const GuideMap = memo(
     // downstream (label font, remount key) must follow what mounted, not what
     // was asked for — otherwise we hand Liberty's Noto Sans glyph server a
     // request for Open Sans and every label renders as an empty box.
-    const [resolved, setResolved] = useState<{ style: object; source: MapStyleSource } | null>(
-      null,
-    );
+    // `theme` records which palette the style was built for. The theme is
+    // read during render but resolution runs in an effect, so on a flip there
+    // is one render where `mapTheme` is already new while `resolved` still
+    // holds the old theme's style — mounting that under the new remount key
+    // would flash the old basemap (and cost an extra native map init) before
+    // the re-resolved style arrives. That render shows the spinner instead.
+    const [resolved, setResolved] = useState<{
+      style: object;
+      source: MapStyleSource;
+      theme: MapTheme;
+    } | null>(null);
     // The offline tiles may belong to a *different* trail than this guide (an
     // import borrowing a bundled pack), so style resolution keys on the pack,
     // never on the route's trailId.
@@ -446,7 +454,7 @@ export const GuideMap = memo(
       resolve()
         .then(({ style, resolution }) => {
           if (cancelled) return;
-          setResolved({ style, source: resolution.resolved });
+          setResolved({ style, source: resolution.resolved, theme: mapTheme });
           onStyleResolvedRef.current?.(resolution);
         })
         .catch((error) => {
@@ -454,7 +462,7 @@ export const GuideMap = memo(
           if (cancelled) return;
           // The bare fallback style ships no glyphs at all, so 'online' here is
           // only about keeping the label stack on a defined value.
-          setResolved({ style: fallbackMapStyle(mapTheme), source: 'online' });
+          setResolved({ style: fallbackMapStyle(mapTheme), source: 'online', theme: mapTheme });
           onStyleResolvedRef.current?.({
             requested: styleSource,
             resolved: 'online',
@@ -779,7 +787,7 @@ export const GuideMap = memo(
       [builderMode, onMapPress, onBackgroundPress],
     );
 
-    if (!resolved) {
+    if (!resolved || resolved.theme !== mapTheme) {
       return (
         <View style={[styles.loading, { backgroundColor: colors.background }]}>
           <ActivityIndicator size="small" color={colors.accent} />
@@ -790,7 +798,7 @@ export const GuideMap = memo(
 
     return (
       <MapLibreMap
-        key={mapRemountKey(resolved.source, mapTheme)}
+        key={mapRemountKey(resolved.source, resolved.theme)}
         style={styles.map}
         mapStyle={resolved.style as StyleSpecification}
         logo={false}

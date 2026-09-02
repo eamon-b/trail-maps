@@ -1,6 +1,6 @@
 appId: com.tracknotes.app
 ---
-# Plan screen — the live per-trail planner reached from a guide's header (▤).
+# Plan screen — the live per-trail planner reached from a guide's header.
 # Opens a guide, taps the "Plan" header action, and verifies the inputs card,
 # summary, and day splits render and survive a pace-driven recompute.
 #
@@ -17,7 +17,8 @@ appId: com.tracknotes.app
     visible: "Elevation"
     timeout: 30000
 
-# Open the planner from the header action (accessibilityLabel "Plan", glyph ▤).
+# Open the planner from the header action (icon-only — selected by its
+# accessibilityLabel "Plan").
 - tapOn: "Plan"
 
 # Inputs card renders: section controls, daily-hours stepper, pace control.

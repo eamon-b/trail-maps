@@ -1,9 +1,9 @@
 import { Stack, useRouter } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from '../src/theme';
-import { glyphSizes, spacing } from '../src/tokens';
+import { HeaderActions, HeaderIconButton } from '../src/navigation/HeaderIconButton';
 import { pickGpxFile } from '../src/features/import/import-gpx';
 import { useIncomingFile } from '../src/features/import/incoming-file';
 
@@ -50,30 +50,22 @@ function ThemedStack() {
           name="index"
           options={{
             title: 'Tracknotes',
-            // ＋ imports a GPX file as a new guide. ⚙ is the same affordance
-            // as the guide header — Settings is app-wide, so it must be
-            // reachable without opening a guide first.
+            // `plus` imports a GPX file as a new guide. `cog` is the same
+            // affordance — and the same icon — as the guide header: Settings is
+            // app-wide, so it must be reachable without opening a guide first.
             headerRight: () => (
-              <View style={styles.headerActions}>
-                <Pressable
+              <HeaderActions>
+                <HeaderIconButton
+                  name="plus"
                   accessibilityLabel="Import GPX"
-                  accessibilityRole="button"
                   onPress={() => void onImport()}
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>＋</Text>
-                </Pressable>
-                <Pressable
+                />
+                <HeaderIconButton
+                  name="cog"
                   accessibilityLabel="Settings"
-                  accessibilityRole="button"
                   onPress={() => router.push('/settings')}
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>⚙</Text>
-                </Pressable>
-              </View>
+                />
+              </HeaderActions>
             ),
           }}
         />
@@ -100,16 +92,3 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  headerButton: {
-    paddingHorizontal: spacing.sm,
-  },
-  icon: {
-    fontSize: glyphSizes.lg,
-  },
-});

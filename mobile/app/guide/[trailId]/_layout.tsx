@@ -3,13 +3,16 @@
  *
  * Wraps its screens in a GuideProvider so `index` and `downloads` share a
  * single loaded (and direction-applied) trail. The header exposes the guide
- * title plus quick actions: offline maps and app settings.
+ * title plus icon-only quick actions: routes, plan, offline maps and app
+ * settings.
  */
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../../src/theme';
-import { glyphSizes, spacing } from '../../../src/tokens';
+import {
+  HeaderActions,
+  HeaderIconButton,
+} from '../../../src/navigation/HeaderIconButton';
 import { GuideProvider } from '../../../src/features/guide/GuideContext';
 import { useTrailTitle } from '../../../src/features/guide/use-trail-title';
 import { GuidePositionProvider } from '../../../src/features/guide/GuidePositionContext';
@@ -37,60 +40,47 @@ export default function GuideLayout() {
           name="index"
           options={{
             title,
+            // `routes` (a branching path) for alternates, `calendar-check` for
+            // the day-split planner, `download` for tile packs, `cog` for the
+            // app-wide settings the root header also links to.
             headerRight: () => (
-              <View style={styles.headerActions}>
-                <Pressable
+              <HeaderActions>
+                <HeaderIconButton
+                  name="routes"
                   accessibilityLabel="Routes"
-                  accessibilityRole="button"
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/routes',
                       params: { trailId },
                     })
                   }
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>⋔</Text>
-                </Pressable>
-                <Pressable
+                />
+                <HeaderIconButton
+                  name="calendar-check"
                   accessibilityLabel="Plan"
-                  accessibilityRole="button"
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/plan',
                       params: { trailId },
                     })
                   }
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>▤</Text>
-                </Pressable>
-                <Pressable
+                />
+                <HeaderIconButton
+                  name="download"
                   accessibilityLabel="Offline maps"
-                  accessibilityRole="button"
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/downloads',
                       params: { trailId },
                     })
                   }
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>⤓</Text>
-                </Pressable>
-                <Pressable
+                />
+                <HeaderIconButton
+                  name="cog"
                   accessibilityLabel="Settings"
-                  accessibilityRole="button"
                   onPress={() => router.push('/settings')}
-                  style={styles.headerButton}
-                  hitSlop={spacing.sm}
-                >
-                  <Text style={[styles.icon, { color: colors.accentText }]}>⚙</Text>
-                </Pressable>
-              </View>
+                />
+              </HeaderActions>
             ),
           }}
         />
@@ -104,16 +94,3 @@ export default function GuideLayout() {
     </GuideProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  headerActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  headerButton: {
-    paddingHorizontal: spacing.sm,
-  },
-  icon: {
-    fontSize: glyphSizes.lg,
-  },
-});

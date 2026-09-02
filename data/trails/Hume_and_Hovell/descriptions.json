@@ -10,47 +10,47 @@
     {
       "waypointId": "w_54de1796",
       "name": "Yass caravan park",
-      "description": "Caravan park on the edge of Yass, the first place to camp or shower after leaving Cooma Cottage. Yass itself has shops and food, so it is the obvious place to finish stocking up."
+      "description": "Caravan park on the edge of Yass, the first camping and showers after Cooma Cottage. Yass itself has shops and food."
     },
     {
       "waypointId": "w_fe919aa9",
       "name": "Crown rest site",
-      "description": "Rest site on crown land in the farmland country south of Yass. A simple place to stop or shelter; assume nothing in the way of facilities or water."
+      "description": "Rest site on crown land in the farmland country south of Yass. A simple place to stop or shelter, with no facilities or water marked."
     },
     {
       "waypointId": "w_0ea9676b",
       "name": "Billy Grace reserve",
-      "description": "Riverside camping reserve near Wee Jasper, on the flats beside the Goodradigbee. Open ground close to the Fitzpatrick trackhead, with river water that should be treated."
+      "description": "Riverside camping reserve near Wee Jasper, on the flats beside the Goodradigbee. Open ground close to the Fitzpatrick trackhead; the water is untreated river water."
     },
     {
       "waypointId": "w_eae5f76f",
       "name": "Brindabella road",
-      "description": "Crossing of Brindabella Road in the mountain country west of Canberra. It is a winding, mostly unsealed road with light traffic, and a plausible access point for a lift or a food drop."
+      "description": "Crossing of Brindabella Road in the mountain country west of Canberra. It is a winding, mostly unsealed road with light traffic, and is reachable by vehicle for lifts and food drops."
     },
     {
       "waypointId": "w_66f41d32",
       "name": "Browns creek",
-      "description": "Creekside campsite in the hills above the Blowering valley. Basic bush camping, with the creek as the water source — treat it, and expect it to be low late in a dry season."
+      "description": "Creekside campsite in the hills above the Blowering valley. Basic bush camping, with the creek as the water source — untreated, and low late in a dry season."
     },
     {
       "waypointId": "w_62879a43",
       "name": "CLOSED C - Ben Smith campsite",
-      "description": "Flagged as closed in the track data, so plan a night either side of it rather than here. Check current NPWS and Hume and Hovell Track notices before relying on any campsite through this section."
+      "description": "Flagged as closed in the track data. NPWS and Hume and Hovell Track notices carry the current status of campsites through this section."
     },
     {
       "waypointId": "w_fe7d1507",
       "name": "Paddys river dam actual",
-      "description": "The corrected position for the Paddys River Dam campsite, about a kilometre along the track from the other pin of the same name. Treat the two as one stop rather than two."
+      "description": "The corrected position for the Paddys River Dam campsite, about a kilometre along the track from the other pin of the same name. The two pins are the same site."
     },
     {
       "waypointId": "w_2b576c8d",
       "name": "Wymah road start",
-      "description": "Where the track joins Wymah Road for a road section of roughly eight kilometres, ending at the matching Wymah road end marker. Walk on the verge and watch for traffic."
+      "description": "Where the track joins Wymah Road for a road section of roughly eight kilometres, ending at the matching Wymah road end marker. The road is open to traffic and walked on the verge."
     },
     {
       "waypointId": "w_30a54c45",
       "name": "lake Hume turnoff",
-      "description": "Turnoff toward Lake Hume and the caravan park on its shore, the main accommodation option in this part of the walk. Worth confirming it is open and taking bookings before you plan a night there."
+      "description": "Turnoff toward Lake Hume and the caravan park on its shore, the main accommodation in this part of the walk. Opening seasons and booking arrangements vary."
     },
     {
       "waypointId": "w_0467a95e",
@@ -60,12 +60,12 @@
     {
       "waypointId": "w_4cf83e0b",
       "name": "C? Bowna rest area",
-      "description": "Rest area near Bowna on the Lake Hume side of the track. The question mark in the name flags that camping here is unconfirmed, so keep a fallback in mind rather than counting on it."
+      "description": "Rest area near Bowna on the Lake Hume side of the track. The question mark in the name flags that camping here is unconfirmed."
     },
     {
       "waypointId": "w_6af21e38",
       "name": "Cafe and takeaway",
-      "description": "Cafe and takeaway as the track comes in toward Albury, a well-placed last food stop before the finish. Hours are worth checking rather than assuming."
+      "description": "Cafe and takeaway as the track comes in toward Albury, the last food before the finish. Opening hours vary."
     },
     {
       "waypointId": "w_3251395d",
@@ -75,12 +75,12 @@
     {
       "waypointId": "w_1e7ca666",
       "name": "Tumut valley holiday park",
-      "description": "Holiday park in Tumut, off the track and the usual base for a town night through this section — a shower, a bed or a powered site while you resupply in town. Worth booking ahead over holidays."
+      "description": "Holiday park in Tumut, off the track and the usual base for a town night through this section — showers, beds and powered sites, with the town's shops for resupply. Sites fill over holiday periods."
     },
     {
       "waypointId": "w_a73a9b3d",
       "name": "Restaurant area",
-      "description": "An off-track pin marking somewhere to eat rather than a named venue, so treat it as a lead to check rather than a meal you can count on. Opening days are limited in the small places along this stretch."
+      "description": "An off-track pin marking an eating area rather than a named venue. Opening days are limited in the small places along this stretch."
     }
   ]
 }

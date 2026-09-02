@@ -96,13 +96,13 @@ export function ElevationPane() {
   // The profile's zoom window is already a focus window, so leaving hands it
   // over as-is; arriving zooms to the incoming section unless the profile is
   // effectively there already (which would fight a zoom the user just made).
-  const windowRef = useRef(window);
-  windowRef.current = window;
+  // `useGuidePaneFocus` re-reads these handlers on every render, so they can
+  // close over `window` directly — no ref needed to keep them current.
   useGuidePaneFocus('elevation', {
-    capture: () => windowRef.current,
+    capture: () => window,
     apply: (focus) => {
       const next = clampWindow(focus.startKm, focus.endKm, totalKm);
-      if (isSameFocus(windowRef.current, next)) return;
+      if (isSameFocus(window, next)) return;
       setWindow(next);
     },
   });

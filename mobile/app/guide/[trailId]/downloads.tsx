@@ -15,7 +15,7 @@
  * requesting a pack the server has never heard of.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../src/theme';
@@ -57,16 +57,24 @@ export default function DownloadsScreen() {
   const refreshStatus = useDownloadsStore((s) => s.refreshStatus);
   const checkForUpdates = useDownloadsStore((s) => s.checkForUpdates);
 
-  // On-disk size, re-read whenever the download state changes.
-  const [sizeBytes, setSizeBytes] = useState(0);
+  // Re-derive the store's on-disk state on open and whenever it moves. This is
+  // the only part of the pair that belongs in an effect: it writes to an
+  // external store, it doesn't set local state.
   useEffect(() => {
-    if (!packTrailId) {
-      setSizeBytes(0);
-      return;
-    }
-    refreshStatus(packTrailId);
-    setSizeBytes(tileManager.getTrailStatus(packTrailId).totalSizeBytes);
+    if (packTrailId) refreshStatus(packTrailId);
   }, [packTrailId, refreshStatus, download.state]);
+
+  // On-disk size, re-read whenever the download state changes. Derived rather
+  // than held in state: `getTrailStatus` is a handful of file stats, and the
+  // download state is exactly what makes the previous answer stale. `absent`
+  // means no pack file exists, so it short-circuits the stat calls.
+  const sizeBytes = useMemo(
+    () =>
+      packTrailId && download.state !== 'absent'
+        ? tileManager.getTrailStatus(packTrailId).totalSizeBytes
+        : 0,
+    [packTrailId, download.state],
+  );
 
   const missingBaseUrl = TILE_BASE_URL.length === 0;
   const canDownload = plan.packAvailable && !missingBaseUrl && packTrailId != null;

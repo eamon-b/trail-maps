@@ -23,7 +23,14 @@
  * window exact even when intermediate frames are throttled or suppressed.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import {
   Canvas,
@@ -284,21 +291,26 @@ export function ElevationProfile({
   // in flight — gesture-handler cancels an in-progress gesture if the
   // GestureDetector's config is swapped out.
   const windowRef = useRef(window);
-  windowRef.current = window;
   const layoutRef = useRef({ left, chartWidth });
-  layoutRef.current = { left, chartWidth };
   const onWindowChangeRef = useRef(onWindowChange);
-  onWindowChangeRef.current = onWindowChange;
-
-  // Latest render state for tap handling (avoids stale gesture closures).
+  /** Latest render state for tap handling (avoids stale gesture closures). */
   const tapStateRef = useRef({ metrics, markers, points, onWaypointTap, onScrub });
-  tapStateRef.current = { metrics, markers, points, onWaypointTap, onScrub };
-
   const lastPushRef = useRef(0);
   const reduceMotionRef = useRef(reduceMotion);
-  reduceMotionRef.current = reduceMotion;
   const totalKmRef = useRef(totalKm);
-  totalKmRef.current = totalKm;
+
+  // Refs may not be written during render, so they are refreshed in a *layout*
+  // effect (no dep array — every commit). Layout effects run synchronously on
+  // commit, before anything is painted or can be touched, so a gesture still
+  // cannot observe a frame-old window, layout or callback.
+  useLayoutEffect(() => {
+    windowRef.current = window;
+    layoutRef.current = { left, chartWidth };
+    onWindowChangeRef.current = onWindowChange;
+    tapStateRef.current = { metrics, markers, points, onWaypointTap, onScrub };
+    reduceMotionRef.current = reduceMotion;
+    totalKmRef.current = totalKm;
+  });
 
   const pushWindow = useCallback((next: KmWindow, immediate: boolean) => {
     // Under reduce-motion, skip the continuous mid-gesture updates and only
@@ -371,36 +383,53 @@ export function ElevationProfile({
     s.onScrub?.({ km: nearest.dist, ele: nearest.ele });
   }, []);
 
+  // The seven `react-hooks/refs` suppressions below are all the same false
+  // positive, and the only ones in the app. The compiler cannot see inside
+  // `Gesture.Pan().onStart(fn)`, so handing it a worklet that (via runOnJS)
+  // reaches a ref-backed callback looks like a ref escaping into render. These
+  // worklets only ever run from a touch, never during render — the values they
+  // read are written in the layout effect above, one commit earlier. Removing
+  // the suppressions means rebuilding the gesture whenever the window changes,
+  // which is what the ref plumbing exists to avoid (see the note above), and
+  // whether RNGH preserves an in-flight drag across that is a device question
+  // this cannot be settled without.
   const gesture = useMemo(() => {
     // One finger drags the trail along the x-axis; `maxPointers(1)` keeps a
     // second finger from stealing the pinch.
     const pan = Gesture.Pan()
       .minDistance(PAN_MIN_DISTANCE)
       .maxPointers(1)
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onStart(() => {
         runOnJS(beginGesture)(0);
       })
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onUpdate((e) => {
         runOnJS(applyPan)(e.translationX, false);
       })
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onEnd((e) => {
         runOnJS(applyPan)(e.translationX, true);
       });
 
     // Pinch zooms the x-axis only; the y-axis keeps auto-fitting the window.
     const pinch = Gesture.Pinch()
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onStart((e) => {
         runOnJS(beginGesture)(e.focalX);
       })
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onUpdate((e) => {
         runOnJS(applyPinch)(e.scale, false);
       })
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onEnd((e) => {
         runOnJS(applyPinch)(e.scale, true);
       });
 
     const tap = Gesture.Tap()
       .maxDistance(12)
+      // eslint-disable-next-line react-hooks/refs -- worklet, runs on touch only
       .onEnd((e) => {
         runOnJS(handleTap)(e.x, e.y);
       });

@@ -17,7 +17,7 @@
  * arriving fits the camera to whatever range the previous pane was showing.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../theme';
@@ -101,12 +101,10 @@ export function MapPane() {
   );
 
   // Dismissal is per-degradation, so a *different* problem still gets a banner,
-  // and per-trail, so dismissing on one guide doesn't silence another.
+  // and per-trail, so dismissing on one guide doesn't silence another — the
+  // per-trail half is the `key={trailId}` GuideView mounts this pane with,
+  // which resets every state below rather than clearing them from an effect.
   const [dismissed, setDismissed] = useState<MapDegradation | null>(null);
-  useEffect(() => {
-    setDismissed(null);
-    setResolution(null);
-  }, [trailId]);
 
   const onRedownload = useCallback(() => {
     if (!packTrailId) return;
@@ -161,11 +159,6 @@ export function MapPane() {
     [],
   );
   const clearVariant = useCallback(() => setSelectedVariantId(null), []);
-
-  // Switching trails must not leave another trail's variant selected.
-  useEffect(() => {
-    setSelectedVariantId(null);
-  }, [trailId]);
 
   // --- Route builder + active-route overlay --------------------------------
   const [building, setBuilding] = useState(false);

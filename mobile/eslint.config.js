@@ -15,21 +15,6 @@ module.exports = defineConfig([
       globals: { jest: 'readonly' },
     },
   },
-  // eslint-config-expo 57 (Expo SDK 57) turns on the React Compiler-aware
-  // eslint-plugin-react-hooks rules. They flag ~20 pre-existing spots — the
-  // Skia elevation profile's render-time ref reads, and several
-  // "reset derived state when the trail changes" effects — none of which this
-  // SDK upgrade touched. Downgraded to warnings so the signal survives without
-  // the upgrade PR carrying an unrelated hooks refactor — issue #41 tracks the
-  // actual cleanup and restoring these to 'error'.
-  {
-    files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
-    rules: {
-      'react-hooks/refs': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/purity': 'warn',
-    },
-  },
   // Design-token enforcement: no raw colors / numeric font sizes in styles.
   // Disabling requires a justification comment, e.g.
   //   // eslint-disable-next-line no-restricted-syntax -- MapLibre expression, not an RN style

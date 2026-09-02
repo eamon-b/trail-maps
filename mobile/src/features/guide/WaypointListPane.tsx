@@ -105,26 +105,30 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   // --- Pane focus ----------------------------------------------------------
   // The rows currently on screen, tracked through FlatList's viewability
   // callback. `onViewableItemsChanged` must keep one identity for the list's
-  // lifetime (FlatList throws otherwise), hence the ref-held handler.
+  // lifetime (FlatList throws otherwise).
   const visibleItemsRef = useRef<Waypoint[]>([]);
-  const dataRef = useRef(data);
-  dataRef.current = data;
   // Optional-chained: the pane only ever reads distances off the rows, so a
   // trail handed in without track geometry still lists fine (focusFromItems
   // falls back to the last row's distance when it has no total to clamp to).
   const totalKm = trail.track?.totalDistance || 0;
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    visibleItemsRef.current = viewableItems
-      .map((token) => token.item as Waypoint)
-      .filter((item): item is Waypoint => item != null);
-  }).current;
+  // A lazy state initialiser, not a ref: state is created once and never
+  // replaced, which is the identity guarantee FlatList wants, and unlike
+  // `useRef(fn).current` it isn't a ref read during render.
+  const [onViewableItemsChanged] = useState(() => {
+    return ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      visibleItemsRef.current = viewableItems
+        .map((token) => token.item as Waypoint)
+        .filter((item): item is Waypoint => item != null);
+    };
+  });
 
+  // `useGuidePaneFocus` re-reads these handlers on every render, so `apply` can
+  // close over `data` directly rather than mirroring it into a ref.
   useGuidePaneFocus('list', {
     capture: () => focusFromItems(visibleItemsRef.current, totalKm),
     apply: (focus) => {
-      const rows = dataRef.current;
-      const index = firstIndexInFocus(rows, focus);
+      const index = firstIndexInFocus(data, focus);
       if (index < 0) return;
       // Not animated: this lands while the pane is being revealed, and an
       // animated scroll from the old offset would be a distracting fly-past.

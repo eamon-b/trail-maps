@@ -125,7 +125,12 @@ export function useGuidePaneFocus(pane: GuidePaneKey, handlers: PaneFocusHandler
   const ctx = useContext(GuideFocusContext);
   const registerPane = ctx?.registerPane;
   const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
+  // Refreshed in a layout effect rather than during render: layout effects run
+  // synchronously on commit, so the handlers a pane switch reads are always the
+  // ones from the render the user is looking at.
+  React.useLayoutEffect(() => {
+    handlersRef.current = handlers;
+  });
 
   React.useEffect(() => {
     if (!registerPane) return;

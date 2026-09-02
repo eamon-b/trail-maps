@@ -59,13 +59,15 @@ export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocat
   const [isTracking, setIsTracking] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('undetermined');
 
+  // The track fixes are snapped against, plus the previous nearest index that
+  // keeps each snap windowed. Refs because the location callback is registered
+  // once and cannot close over props; swapped together in one effect because a
+  // new track invalidates the old hint index (a direction reversal renumbers
+  // every point), so the two must never be observed out of step.
   const trackPointsRef = useRef(trackPoints);
-  trackPointsRef.current = trackPoints;
-
-  // Previous nearest index — feeds the windowed snap. Reset when the track
-  // changes (e.g. a direction reversal renumbers every point).
   const hintRef = useRef<number | undefined>(undefined);
   useEffect(() => {
+    trackPointsRef.current = trackPoints;
     hintRef.current = undefined;
   }, [trackPoints]);
 

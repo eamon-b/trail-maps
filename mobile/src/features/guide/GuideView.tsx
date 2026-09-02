@@ -77,7 +77,10 @@ function GuidePanes() {
 
       <View style={styles.panes}>
         <FrozenPane active={pane === 'map'}>
-          <MapPane />
+          {/* Keyed on the trail: everything the map pane holds (a dismissed
+              degradation banner, the style it resolved, a selected variant, an
+              in-progress route) belongs to one trail and must not carry over. */}
+          <MapPane key={trailId} />
         </FrozenPane>
         <FrozenPane active={pane === 'elevation'}>
           <ElevationPane />

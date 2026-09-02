@@ -9,7 +9,7 @@
  * direction flip recomputes the whole plan for free.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatDistance } from '@lib/format-distance';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
@@ -42,14 +42,19 @@ export default function PlanScreen() {
   const options = useMemo(() => sectionOptions(trail), [trail]);
   const lastIdx = Math.max(0, options.length - 1);
 
-  // Section is local (direction-safe): reset to full trail whenever the trail's
-  // direction flips, since the km behind each index changes meaning.
-  const [startIdx, setStartIdx] = useState(0);
-  const [endIdx, setEndIdx] = useState(lastIdx);
-  useEffect(() => {
-    setStartIdx(0);
-    setEndIdx(Math.max(0, options.length - 1));
-  }, [direction, options.length]);
+  // Section is local (direction-safe): the picked indices only mean anything
+  // against the option list they were picked from, so they are stamped with it
+  // and fall back to the full trail *during render* when it changes — a
+  // direction flip changes the km behind every index, and an effect-driven
+  // reset would show one render of the old indices against the new options.
+  const optionsKey = `${direction}:${options.length}`;
+  const [section, setSection] = useState({ key: optionsKey, startIdx: 0, endIdx: lastIdx });
+  const active =
+    section.key === optionsKey ? section : { key: optionsKey, startIdx: 0, endIdx: lastIdx };
+  const { startIdx, endIdx } = active;
+  const setStartIdx = (idx: number) => setSection({ ...active, startIdx: idx });
+  const setEndIdx = (idx: number) => setSection({ ...active, endIdx: idx });
+  const resetSection = () => setSection({ key: optionsKey, startIdx: 0, endIdx: lastIdx });
 
   const startOption = options[startIdx];
   const endOption = options[endIdx];
@@ -107,10 +112,7 @@ export default function PlanScreen() {
         onEndIdx={setEndIdx}
         onDailyHours={(h) => setDailyHours(trailId, h)}
         onPace={(p) => setPace(trailId, p)}
-        onResetSection={() => {
-          setStartIdx(0);
-          setEndIdx(lastIdx);
-        }}
+        onResetSection={resetSection}
       />
 
       {!validSection ? (

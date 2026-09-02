@@ -30,7 +30,13 @@ const EMPTY: ReadonlyMap<string, WaterAggregate> = new Map();
 
 /** Aggregated water status per waypoint id (empty until the first read lands). */
 export function useWaterStatus(trailId: string): ReadonlyMap<string, WaterAggregate> {
-  const [byWaypoint, setByWaypoint] = useState<ReadonlyMap<string, WaterAggregate>>(EMPTY);
+  // The read carries the trail it was made for, so switching trails falls back
+  // to EMPTY *during render* — the chips never flash the previous trail's
+  // verdicts, and no effect has to clear them in a second render pass.
+  const [loaded, setLoaded] = useState<{
+    trailId: string;
+    byWaypoint: ReadonlyMap<string, WaterAggregate>;
+  }>({ trailId, byWaypoint: EMPTY });
   const aliveRef = useRef(true);
 
   useEffect(() => {
@@ -40,32 +46,38 @@ export function useWaterStatus(trailId: string): ReadonlyMap<string, WaterAggreg
     };
   }, []);
 
-  const load = useCallback(async () => {
+  // The read is separated from the state write so both callers below can do the
+  // write in a promise callback — setState in an effect *body* cascades renders.
+  const read = useCallback(async (): Promise<ReadonlyMap<string, WaterAggregate>> => {
     try {
       const db = await getDatabase();
       const now = Date.now();
       const rows = await listWaterReportsByTrail(db, trailId, waterWindowStartIso(now));
-      if (!aliveRef.current) return;
-      setByWaypoint(buildWaterStatusMap(rows, now));
+      return buildWaterStatusMap(rows, now);
     } catch (error) {
       // Never surface a chip-sized failure to the pane; log once and stay empty.
       console.warn('Water status unavailable', error);
-      if (aliveRef.current) setByWaypoint(EMPTY);
+      return EMPTY;
     }
   }, [trailId]);
 
+  const load = useCallback(() => {
+    void read().then((byWaypoint) => {
+      if (aliveRef.current) setLoaded({ trailId, byWaypoint });
+    });
+  }, [read, trailId]);
+
   useEffect(() => {
-    setByWaypoint(EMPTY);
-    void load();
+    load();
   }, [load]);
 
   useEffect(
     () =>
       onSyncChange((change) => {
-        if (change.trailId == null || change.trailId === trailId) void load();
+        if (change.trailId == null || change.trailId === trailId) load();
       }),
     [load, trailId],
   );
 
-  return byWaypoint;
+  return loaded.trailId === trailId ? loaded.byWaypoint : EMPTY;
 }

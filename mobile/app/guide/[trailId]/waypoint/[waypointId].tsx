@@ -121,21 +121,43 @@ export default function WaypointDetailScreen() {
   // Ephemeral per-session "Reported" acknowledgement; the report itself is
   // durable in the outbox and idempotent server-side, so nothing is persisted.
   const [reportedIds, setReportedIds] = useState<string[]>([]);
+  // The clock the feed's relative dates ("3 h ago") are measured against,
+  // stamped when the rows are read. Reading `Date.now()` during render would
+  // make a row's output depend on when React happened to re-render it; one
+  // clock per read also keeps every row in the feed on the same reference.
+  const [feedNowMs, setFeedNowMs] = useState(0);
 
-  const load = useCallback(async () => {
-    if (!commentWaypointId) {
-      setComments([]);
-      setTotalComments(0);
-      setSyncedDescription(null);
-      return;
-    }
+  // The cache read is separated from the state write so the effects below can
+  // do the write in a promise callback — setState in an effect *body* cascades
+  // renders — and so one re-read lands as a single render rather than three.
+  const readFeed = useCallback(async () => {
+    // No comments channel (imported guide, or a waypoint with no stable id):
+    // nothing to read, and the render branches to a note before it looks at any
+    // of the feed state, which is still at its initial value.
+    if (!commentWaypointId) return null;
     const db = await getDatabase();
-    setComments(
-      await commentsRepo.listByWaypoint(db, trailId, commentWaypointId, { limit: visibleCount }),
-    );
-    setTotalComments(await commentsRepo.countByWaypoint(db, trailId, commentWaypointId));
-    setSyncedDescription(await waypointMetaRepo.getDescription(db, trailId, commentWaypointId));
+    return {
+      rows: await commentsRepo.listByWaypoint(db, trailId, commentWaypointId, {
+        limit: visibleCount,
+      }),
+      total: await commentsRepo.countByWaypoint(db, trailId, commentWaypointId),
+      description: await waypointMetaRepo.getDescription(db, trailId, commentWaypointId),
+      nowMs: Date.now(),
+    };
   }, [trailId, commentWaypointId, visibleCount]);
+
+  /** Re-read the cached feed and show it. Returns once the rows are on screen. */
+  const load = useCallback(
+    () =>
+      readFeed().then((feed) => {
+        if (!feed) return;
+        setComments(feed.rows);
+        setTotalComments(feed.total);
+        setSyncedDescription(feed.description);
+        setFeedNowMs(feed.nowMs);
+      }),
+    [readFeed],
+  );
 
   // Hydrate identity + favorites, load the cached feed, then pull in the
   // background and re-read.
@@ -294,6 +316,7 @@ export default function WaypointDetailScreen() {
               <CommentItem
                 key={c.id}
                 comment={c}
+                nowMs={feedNowMs}
                 isMine={isMine}
                 // Only a synced comment by someone else can be reported — a
                 // local row isn't on the server to moderate yet.
@@ -509,6 +532,7 @@ function PhotoThumbnails({
 
 function CommentItem({
   comment,
+  nowMs,
   isMine,
   canReport,
   reported,
@@ -518,6 +542,8 @@ function CommentItem({
   onRetry,
 }: {
   comment: CommentWithSyncState;
+  /** Reference clock for the relative date — stamped when the feed was read. */
+  nowMs: number;
   isMine: boolean;
   canReport: boolean;
   reported: boolean;
@@ -540,7 +566,7 @@ function CommentItem({
           {comment.authorName ?? 'Anonymous'}
         </Text>
         <Text style={[styles.date, { color: colors.textSecondary }]}>
-          {relativeDate(comment.createdAt, Date.now())}
+          {relativeDate(comment.createdAt, nowMs)}
         </Text>
       </View>
 

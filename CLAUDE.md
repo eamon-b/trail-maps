@@ -97,7 +97,7 @@ Each trail has its own directory containing:
 - `*.gpx` - Original GPX track data
 - `trail.json` - Trail metadata and waypoints
 - `climate.json` - Climate data for locations along the trail
-- `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
+- `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). The prose is factual and non-prescriptive — it describes the place and its water, never instructs the walker or addresses them as "you". See `scripts/lib/waypoint-descriptions.ts`.
 
 ### Generated Data (`public/data/generated/`)
 

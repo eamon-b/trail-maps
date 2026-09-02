@@ -117,20 +117,34 @@ describe('loadCuratedDescriptions', () => {
 
 const registry: WaypointRegistry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf-8'));
 
+// A trail's directory name is not its build id: `AAWT` builds `aawt` and
+// `Hume_and_Hovell` builds `hume-and-hovell`. Both the loader's trailId check
+// and the registry are keyed by the build id, so read it from trail.json
+// rather than assuming the directory name (which only matched while every
+// authored trail happened to have a lowercase directory).
 const trailsWithDescriptions = fs
   .readdirSync(TRAILS_DIR, { withFileTypes: true })
   .filter(entry => entry.isDirectory())
   .map(entry => entry.name)
   .filter(name => fs.existsSync(path.join(TRAILS_DIR, name, DESCRIPTIONS_FILENAME)))
-  .sort();
+  .map(dir => {
+    const config = JSON.parse(
+      fs.readFileSync(path.join(TRAILS_DIR, dir, 'trail.json'), 'utf-8')
+    ) as { id?: string };
+    if (typeof config.id !== 'string' || config.id.length === 0) {
+      throw new Error(`data/trails/${dir}/trail.json has no "id"`);
+    }
+    return { dir, trailId: config.id };
+  })
+  .sort((a, b) => a.trailId.localeCompare(b.trailId));
 
 describe('committed descriptions.json files', () => {
   it('includes the Cape to Cape first pass', () => {
-    expect(trailsWithDescriptions).toContain('cape_to_cape');
+    expect(trailsWithDescriptions.map(entry => entry.trailId)).toContain('cape_to_cape');
   });
 
-  it.each(trailsWithDescriptions)('%s parses and every id is in the registry', trailId => {
-    const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, trailId), trailId);
+  it.each(trailsWithDescriptions)('$trailId parses and every id is in the registry', ({ dir, trailId }) => {
+    const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, dir), trailId);
     expect(entries.length).toBeGreaterThan(0);
 
     const knownIds = new Set((registry[trailId] ?? []).map(entry => entry.id));
@@ -138,8 +152,8 @@ describe('committed descriptions.json files', () => {
     expect(unknown.map(entry => `${entry.waypointId} (${entry.name ?? '?'})`)).toEqual([]);
   });
 
-  it.each(trailsWithDescriptions)('%s stays plain text and reasonably short', trailId => {
-    const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, trailId), trailId);
+  it.each(trailsWithDescriptions)('$trailId stays plain text and reasonably short', ({ dir, trailId }) => {
+    const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, dir), trailId);
     for (const entry of entries) {
       // Rendered as plain text on mobile and HTML-escaped on the web; markup
       // here would show up literally in both places.

@@ -39,6 +39,16 @@ jest.mock('expo-asset', () => ({
   },
 }));
 
+// @expo/vector-icons loads its .ttf through expo-asset when an icon mounts,
+// which the Asset mock above cannot satisfy (`source instanceof Asset` throws
+// on a plain object). Icons have no behaviour worth exercising beyond the props
+// they are handed, so render them as a host component that keeps those props
+// visible to assertions.
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => ({
+  __esModule: true,
+  default: 'MaterialCommunityIcons',
+}));
+
 // Reanimated v4 mock — must not require 'react-native-reanimated/mock'
 // which tries to load native worklets module
 jest.mock('react-native-worklets', () => ({}));

@@ -300,4 +300,4 @@ Maestro test flows live in `mobile/maestro/`. They run locally against the emula
 ~/.maestro/bin/maestro record mobile/maestro/new-flow.yaml
 ```
 
-**Flows**: `app-launch.yaml` (launch → "My Guides"), `plan-screen.yaml` (guide → Plan → day splits/water carries). Both start via `shared/launch-dev.yaml`, which deep-links the dev client into Metro — don't run `maestro test mobile/maestro/` on the directory, since that would execute the shared launcher as a standalone flow.
+**Flows** (7): `app-launch.yaml` (launch → "My Guides"), `plan-screen.yaml` (guide → Plan → day splits/water carries), `guide-list.yaml`, `view-map.yaml`, `toggle-views.yaml`, `waypoint-detail.yaml`, `add-comment-offline.yaml`. They all start via `shared/launch-dev.yaml`, which deep-links the dev client into Metro — don't run `maestro test mobile/maestro/` on the directory, since that would execute the shared launcher as a standalone flow.

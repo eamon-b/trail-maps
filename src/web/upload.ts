@@ -227,6 +227,13 @@ function renderElevationBackfill(ui: Elements, result: ImportGpxResult): void {
 async function handleFetchElevation(ui: Elements): Promise<void> {
   if (!pending) return;
 
+  // The file input and drop zone stay live during the (minute-long) fetch, so
+  // the user can import a different file mid-flight. Pin the import this fetch
+  // belongs to and bail if `pending` has been replaced (or cleared) by the time
+  // the network round-trip resolves, rather than writing the old file's
+  // elevation onto the new preview (or throwing on a null `pending`).
+  const target = pending;
+
   show(ui.elevationError, false);
   ui.fetchElevationBtn.disabled = true;
   ui.elevationProgress.textContent = 'Fetching elevation…';
@@ -234,20 +241,27 @@ async function handleFetchElevation(ui: Elements): Promise<void> {
 
   let withElevation: ImportGpxResult['trail'];
   try {
-    const elevations = await backfillElevation(pending.trail.track.points, {
+    const elevations = await backfillElevation(target.trail.track.points, {
       onProgress: (done, total) => {
         ui.elevationProgress.textContent =
           `Fetching elevation… ${done.toLocaleString()} / ${total.toLocaleString()} points`;
       },
     });
-    withElevation = applyElevation(pending.trail, elevations);
+    withElevation = applyElevation(target.trail, elevations);
   } catch (err) {
+    // A newer import already owns the UI — its own state, not an error message
+    // for a file the user has moved on from, should be showing.
+    if (pending !== target) return;
     ui.elevationError.textContent = `Could not fetch elevation: ${messageOf(err)}`;
     show(ui.elevationError, true);
     show(ui.elevationProgress, false);
     ui.fetchElevationBtn.disabled = false;
     return;
   }
+
+  // The import moved on while the fetch was in flight: don't overwrite the new
+  // preview's trail with this (now stale) file's elevation.
+  if (pending !== target) return;
 
   show(ui.elevationProgress, false);
 

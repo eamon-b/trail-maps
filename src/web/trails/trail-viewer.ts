@@ -491,6 +491,19 @@ async function handleWaypointTypeChange(select: HTMLSelectElement): Promise<void
     }
   }
 
+  // Off-trail rows stay visible under a filter (a water source 200 m off-trail
+  // is exactly what the water filter is for), so an edited one is very often
+  // still on screen — re-expand it too, or findTypeSelect below finds nothing
+  // and we wrongly tell the user their waypoint left the view.
+  if (expandedOffTrailIndex !== null) {
+    const wp = trail.offTrailWaypoints?.[expandedOffTrailIndex];
+    if (wp && document.getElementById(`off-trail-row-${expandedOffTrailIndex}`)) {
+      expandOffTrailDetail(expandedOffTrailIndex, wp);
+    } else {
+      expandedOffTrailIndex = null;
+    }
+  }
+
   const reopened = findTypeSelect(waypointId);
   if (reopened) {
     setSelectStatus(reopened, `Saved as ${label}`, 'ok');
@@ -1871,6 +1884,16 @@ function setWaypointFilter(next: WaypointFilter): void {
   renderWaypoints(trail.waypoints, trail.alternates, trail.sideTrips, trail.offTrailWaypoints);
 }
 
+/**
+ * Quote a value for one CSV field: wrap in double quotes and double any inner
+ * quote (RFC 4180). Every free-text column must go through this — waypoint
+ * `type` is an editable, arbitrary string on imported trails, so an unquoted
+ * comma in it would shift every later column in the row.
+ */
+function csvQuote(value: unknown): string {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
 function exportDatasheet(trail: Trail): void {
   const { config, track, waypoints, alternates, sideTrips } = trail;
 
@@ -1902,7 +1925,7 @@ function exportDatasheet(trail: Trail): void {
     const wp = leg.wp;
     const row = [
       `"${(wp.name || 'Unnamed').replace(/"/g, '""')}"`,
-      wp.type || 'waypoint',
+      csvQuote(wp.type || 'waypoint'),
       wp.elevation ?? '',
       leg.legKm?.toFixed(1) ?? '',
       wp.totalDistance?.toFixed(1) ?? '',
@@ -1924,7 +1947,7 @@ function exportDatasheet(trail: Trail): void {
     for (const alt of alternates) {
       const row = [
         `"${(alt.name || 'Unnamed').replace(/"/g, '""')}"`,
-        alt.type || 'alternate',
+        csvQuote(alt.type || 'alternate'),
         alt.distance ?? '',
         alt.elevation?.ascent ?? '',
         alt.elevation?.descent ?? '',
@@ -1942,7 +1965,7 @@ function exportDatasheet(trail: Trail): void {
     for (const trip of sideTrips) {
       const row = [
         `"${(trip.name || 'Unnamed').replace(/"/g, '""')}"`,
-        trip.type || 'side-trip',
+        csvQuote(trip.type || 'side-trip'),
         trip.distance ?? '',
         trip.elevation?.ascent ?? '',
         trip.elevation?.descent ?? '',
@@ -1964,7 +1987,7 @@ function exportDatasheet(trail: Trail): void {
     for (const wp of offTrail) {
       const row = [
         `"${(wp.name || 'Unnamed').replace(/"/g, '""')}"`,
-        wp.type || 'waypoint',
+        csvQuote(wp.type || 'waypoint'),
         wp.distanceFromTrail,
         `"${(wp.description || '').replace(/"/g, '""')}"`
       ];

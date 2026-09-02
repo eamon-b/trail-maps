@@ -421,8 +421,9 @@ describe('the CSV export', () => {
     expect(csv).toContain('# View: food & resupply only (2 of 7 waypoints)');
     expect(csv).toContain('# 2 resupply points · 1 leg · longest leg 49.0 km (Melrose → Hawker)');
     expect(csv).toContain('Location,Type,Elevation (m),Leg (km),Total (km),Leg Gain (m),Leg Loss (m)');
-    // Hawker's leg is the recomputed 49.0, not the stored 28.0.
-    expect(csv).toMatch(/"Hawker",supermarket,\d+,49\.0,61\.0,950,820,1200,900/);
+    // Hawker's leg is the recomputed 49.0, not the stored 28.0. Type is CSV-quoted
+    // (an editable, arbitrary string may contain a comma).
+    expect(csv).toMatch(/"Hawker","supermarket",\d+,49\.0,61\.0,950,820,1200,900/);
     expect(csv).not.toContain('Bluff Lookout');
     // Nothing hidden from the table may appear in the export of it.
     expect(csv).not.toContain('# Alternate Routes');

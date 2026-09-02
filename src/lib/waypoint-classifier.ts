@@ -226,6 +226,11 @@ export const KEYWORD_RULES: WaypointKeywordRule[] = [
       // Bare `tap` survives word-boundary matching cleanly ("Tapin Tops" and
       // "Tapawera" do not match) and means exactly one thing on a trail.
       'tap',
+      // Bare `water` catches the common minimalist name ("Water", "Water 1",
+      // "Water (seasonal)"). Word-boundary matching keeps "Freshwater" and
+      // "Backwater" out; missing it under-reports a dry stretch, which on an
+      // Australian trail is the dangerous direction to err.
+      'water',
     ],
     type: 'water',
   },

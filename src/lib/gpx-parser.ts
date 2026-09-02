@@ -101,7 +101,11 @@ function text(node: XmlNode | null): string | null {
 }
 
 function parseElevation(node: XmlNode): number {
-  return parseFloat(text(node.querySelector('ele')) || '0');
+  // A non-numeric <ele> (e.g. "N/A", "unknown") parses to NaN, which would then
+  // poison ascent totals and Naismith time estimates while hasElevation's
+  // Number.isFinite check silently suppresses any warning. Treat it as 0.
+  const value = parseFloat(text(node.querySelector('ele')) || '0');
+  return Number.isFinite(value) ? value : 0;
 }
 
 function parsePoint(pt: XmlNode, context: string): GpxPoint {
@@ -144,7 +148,7 @@ export function generateGpx(
   for (const wpt of waypoints) {
     xml += `  <wpt lat="${wpt.lat}" lon="${wpt.lon}">
 `;
-    if (wpt.ele !== 0) {
+    if (Number.isFinite(wpt.ele) && wpt.ele !== 0) {
       xml += `    <ele>${wpt.ele}</ele>
 `;
     }
@@ -175,7 +179,7 @@ export function generateGpx(
   for (const pt of points) {
     xml += `      <trkpt lat="${pt.lat}" lon="${pt.lon}">
 `;
-    if (pt.ele !== 0) {
+    if (Number.isFinite(pt.ele) && pt.ele !== 0) {
       xml += `        <ele>${pt.ele}</ele>
 `;
     }

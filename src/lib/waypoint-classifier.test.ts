@@ -533,6 +533,22 @@ describe('waypoint-classifier', () => {
         expect(typeOf('Cattle trough')).toBe('water');
       });
 
+      it('treats the bare word "water" as a source (the minimalist name)', () => {
+        // A common real-world name; missing it dropped the point from the dry-
+        // stretch analysis, under-reporting water — the dangerous direction.
+        expect(typeOf('Water')).toBe('water');
+        expect(typeOf('Water 1')).toBe('water');
+        expect(typeOf('Water (seasonal)')).toBe('water');
+        expect(typeOf('WATER')).toBe('water');
+      });
+
+      it('does not treat compound words containing "water" as a source', () => {
+        // Word-boundary matching keeps place names out.
+        expect(typeOf('Freshwater Creek')).toBe('waypoint');
+        expect(typeOf('Backwater')).toBe('waypoint');
+        expect(typeOf('Stormwater drain')).toBe('waypoint');
+      });
+
       it('separates built tanks from open sources', () => {
         expect(typeOf('Water tank')).toBe('water-tank');
         expect(typeOf('Water tanks')).toBe('water-tank');

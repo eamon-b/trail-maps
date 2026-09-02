@@ -53,6 +53,22 @@ describe('parseGpx', () => {
     expect(data.tracks[0].segments[0].points.map(p => p.ele)).toEqual([0, 0, 0]);
   });
 
+  it('coerces a non-numeric <ele> to 0 instead of NaN', () => {
+    // A NaN here poisons ascent totals and Naismith time estimates downstream,
+    // and hasElevation's Number.isFinite check would suppress any warning.
+    const xml = `<?xml version="1.0"?>
+      <gpx xmlns="http://www.topografix.com/GPX/1/1">
+        <trk><name>Bad Ele</name><trkseg>
+          <trkpt lat="1" lon="2"><ele>N/A</ele></trkpt>
+          <trkpt lat="1.1" lon="2.1"><ele>unknown</ele></trkpt>
+          <trkpt lat="1.2" lon="2.2"><ele>42</ele></trkpt>
+        </trkseg></trk>
+      </gpx>`;
+    const eles = parseGpx(xml).tracks[0].segments[0].points.map(p => p.ele);
+    expect(eles).toEqual([0, 0, 42]);
+    expect(eles.every(e => Number.isFinite(e))).toBe(true);
+  });
+
   it('parses <rte> as routes', () => {
     const data = parseGpx(fixture('route-only'));
     expect(data.tracks).toHaveLength(0);

@@ -77,22 +77,45 @@ function parseArgs(argv: string[]): Options {
   return options;
 }
 
+/**
+ * A trail's directory name is not its id: `AAWT` builds `aawt` and
+ * `Hume_and_Hovell` builds `hume-and-hovell`. The API path, the registry and
+ * the `trailId` inside descriptions.json all use the id, so carry both.
+ */
+interface AuthoredTrail {
+  /** Directory under data/trails/ holding the descriptions file. */
+  dir: string;
+  /** The trail's build id, from its trail.json. */
+  trailId: string;
+}
+
 /** Every trail directory that has authored descriptions, in stable order. */
-function findTrailsWithDescriptions(only?: string): string[] {
+function findTrailsWithDescriptions(only?: string): AuthoredTrail[] {
   const entries = fs
     .readdirSync(TRAILS_DIR, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name)
     .filter(name => fs.existsSync(path.join(TRAILS_DIR, name, DESCRIPTIONS_FILENAME)))
-    .sort();
+    .map(dir => {
+      const configPath = path.join(TRAILS_DIR, dir, 'trail.json');
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as { id?: string };
+      if (typeof config.id !== 'string' || config.id.length === 0) {
+        throw new Error(`${configPath}: missing "id"`);
+      }
+      return { dir, trailId: config.id };
+    })
+    .sort((a, b) => a.trailId.localeCompare(b.trailId));
 
   if (!only) return entries;
-  if (!entries.includes(only)) {
+  // Accept either the id (what the API wants) or the directory name (what a
+  // shell tab-completes), since the two differ for some trails.
+  const match = entries.find(entry => entry.trailId === only || entry.dir === only);
+  if (!match) {
     throw new Error(
-      `Trail "${only}" has no ${DESCRIPTIONS_FILENAME}. Trails with curated descriptions: ${entries.join(', ') || '(none)'}`
+      `Trail "${only}" has no ${DESCRIPTIONS_FILENAME}. Trails with curated descriptions: ${entries.map(entry => entry.trailId).join(', ') || '(none)'}`
     );
   }
-  return [only];
+  return [match];
 }
 
 async function putDescription(
@@ -123,9 +146,9 @@ async function putDescription(
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
-  const trailIds = findTrailsWithDescriptions(options.trailId);
+  const trails = findTrailsWithDescriptions(options.trailId);
 
-  if (trailIds.length === 0) {
+  if (trails.length === 0) {
     console.log(`No trail has a ${DESCRIPTIONS_FILENAME} yet — nothing to upload.`);
     return;
   }
@@ -143,8 +166,8 @@ async function main(): Promise<void> {
   }
 
   let total = 0;
-  for (const trailId of trailIds) {
-    const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, trailId), trailId);
+  for (const { dir, trailId } of trails) {
+    const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, dir), trailId);
     console.log(`\n${trailId}: ${entries.length} description(s)`);
 
     for (const entry of entries) {
@@ -163,8 +186,8 @@ async function main(): Promise<void> {
 
   console.log(
     options.dryRun
-      ? `\nDry run: ${total} description(s) would be uploaded across ${trailIds.length} trail(s).`
-      : `\nUploaded ${total} description(s) across ${trailIds.length} trail(s).`
+      ? `\nDry run: ${total} description(s) would be uploaded across ${trails.length} trail(s).`
+      : `\nUploaded ${total} description(s) across ${trails.length} trail(s).`
   );
 }
 

@@ -1,0 +1,86 @@
+{
+  "trailId": "hume-and-hovell",
+  "note": "Gap-fill only, keyed by the stable ids in data/waypoint-ids.json. This file deliberately covers just the waypoints that carried no description in the source data; the 29 main-list waypoints and 3 off-track waypoints that already carry first-hand field notes are absent here and keep them, which is the point — those notes are primary data, and descriptions.json overrides source text. Applied by scripts/build-trails.ts and uploadable to the comments API with scripts/upload-descriptions.ts. Listed north to south, matching the km order of the generated trail data, with off-track waypoints appended at the end.",
+  "descriptions": [
+    {
+      "waypointId": "w_bb19d698",
+      "name": "Cooma Cottage",
+      "description": "Historic homestead just outside Yass, once Hamilton Hume's home and now the northern end of the track that carries his name. The walk starts here and runs south to Albury."
+    },
+    {
+      "waypointId": "w_54de1796",
+      "name": "Yass caravan park",
+      "description": "Caravan park on the edge of Yass, the first place to camp or shower after leaving Cooma Cottage. Yass itself has shops and food, so it is the obvious place to finish stocking up."
+    },
+    {
+      "waypointId": "w_fe919aa9",
+      "name": "Crown rest site",
+      "description": "Rest site on crown land in the farmland country south of Yass. A simple place to stop or shelter; assume nothing in the way of facilities or water."
+    },
+    {
+      "waypointId": "w_0ea9676b",
+      "name": "Billy Grace reserve",
+      "description": "Riverside camping reserve near Wee Jasper, on the flats beside the Goodradigbee. Open ground close to the Fitzpatrick trackhead, with river water that should be treated."
+    },
+    {
+      "waypointId": "w_eae5f76f",
+      "name": "Brindabella road",
+      "description": "Crossing of Brindabella Road in the mountain country west of Canberra. It is a winding, mostly unsealed road with light traffic, and a plausible access point for a lift or a food drop."
+    },
+    {
+      "waypointId": "w_66f41d32",
+      "name": "Browns creek",
+      "description": "Creekside campsite in the hills above the Blowering valley. Basic bush camping, with the creek as the water source — treat it, and expect it to be low late in a dry season."
+    },
+    {
+      "waypointId": "w_62879a43",
+      "name": "CLOSED C - Ben Smith campsite",
+      "description": "Flagged as closed in the track data, so plan a night either side of it rather than here. Check current NPWS and Hume and Hovell Track notices before relying on any campsite through this section."
+    },
+    {
+      "waypointId": "w_fe7d1507",
+      "name": "Paddys river dam actual",
+      "description": "The corrected position for the Paddys River Dam campsite, about a kilometre along the track from the other pin of the same name. Treat the two as one stop rather than two."
+    },
+    {
+      "waypointId": "w_2b576c8d",
+      "name": "Wymah road start",
+      "description": "Where the track joins Wymah Road for a road section of roughly eight kilometres, ending at the matching Wymah road end marker. Walk on the verge and watch for traffic."
+    },
+    {
+      "waypointId": "w_30a54c45",
+      "name": "lake Hume turnoff",
+      "description": "Turnoff toward Lake Hume and the caravan park on its shore, the main accommodation option in this part of the walk. Worth confirming it is open and taking bookings before you plan a night there."
+    },
+    {
+      "waypointId": "w_0467a95e",
+      "name": "Wymah road end",
+      "description": "The track leaves Wymah Road here and returns to trail, closing out the road section that began at the Wymah road start marker."
+    },
+    {
+      "waypointId": "w_4cf83e0b",
+      "name": "C? Bowna rest area",
+      "description": "Rest area near Bowna on the Lake Hume side of the track. The question mark in the name flags that camping here is unconfirmed, so keep a fallback in mind rather than counting on it."
+    },
+    {
+      "waypointId": "w_6af21e38",
+      "name": "Cafe and takeaway",
+      "description": "Cafe and takeaway as the track comes in toward Albury, a well-placed last food stop before the finish. Hours are worth checking rather than assuming."
+    },
+    {
+      "waypointId": "w_3251395d",
+      "name": "Hovell tree",
+      "description": "The southern end of the track: the river red gum beside the Murray at Albury that William Hovell marked on the 1824 expedition. It stands in a riverside park, with the town's full services close by."
+    },
+    {
+      "waypointId": "w_1e7ca666",
+      "name": "Tumut valley holiday park",
+      "description": "Holiday park in Tumut, off the track and the usual base for a town night through this section — a shower, a bed or a powered site while you resupply in town. Worth booking ahead over holidays."
+    },
+    {
+      "waypointId": "w_a73a9b3d",
+      "name": "Restaurant area",
+      "description": "An off-track pin marking somewhere to eat rather than a named venue, so treat it as a lead to check rather than a meal you can count on. Opening days are limited in the small places along this stretch."
+    }
+  ]
+}

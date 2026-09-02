@@ -17,9 +17,60 @@ import {
   fontsRoot,
   uriToPath,
   manifestFile,
+  nextTileFileName,
+  isTileFileName,
 } from './tile-paths';
 
 export type { TileFileName };
+
+// ---------------------------------------------------------------------------
+// Pack file names
+// ---------------------------------------------------------------------------
+
+/**
+ * The manifest as saved on device: the server's manifest plus a record of the
+ * names its files actually landed under.
+ *
+ * `localNames` is written here and never published by the server — see
+ * {@link nextTileFileName} for why each promotion picks a new name. Packs
+ * downloaded before that, and manifest-less legacy packs, have no `localNames`;
+ * every reader below falls back to the plain logical name, so those keep
+ * working untouched and without a re-download.
+ */
+type StoredManifest = TileManifest & { localNames?: Record<string, string> };
+
+/** Read a trail's saved manifest, or null when it is absent or unreadable. */
+function readStoredManifest(trailId: string): StoredManifest | null {
+  // Guarded end to end, existence probe included: this runs for ids that were
+  // never downloaded and may never be downloadable (a user-imported `u_` guide
+  // has no pack of its own), and "no pack on disk" has to be an answer, never a
+  // throw into the caller's render.
+  try {
+    const mf = manifestFile(trailId);
+    if (!mf.exists) return null;
+    return JSON.parse(mf.textSync()) as StoredManifest;
+  } catch {
+    return null;
+  }
+}
+
+/** On-disk name for each logical tile file, per a (possibly absent) manifest. */
+function resolveFileNames(manifest: StoredManifest | null): Record<TileFileName, string> {
+  const names = {} as Record<TileFileName, string>;
+  for (const name of TILE_FILES) names[name] = manifest?.localNames?.[name] ?? name;
+  return names;
+}
+
+/**
+ * On-disk names for a trail's tile files, keyed by logical name.
+ *
+ * The logical names (`base.mbtiles`, `contours.mbtiles`) stay the vocabulary of
+ * the manifest, the progress callbacks and the UI; only the bytes on disk carry
+ * a generation suffix.
+ */
+export function packFileNames(trailId: string): Record<TileFileName, string> {
+  return resolveFileNames(readStoredManifest(trailId));
+}
 
 // ---------------------------------------------------------------------------
 // Font glyph provisioning
@@ -152,9 +203,15 @@ export interface TrailTileStatus {
  */
 export function getTrailTileStatus(trailId: string): TrailTileStatus {
   const dir = trailTilesDir(trailId);
+
+  // The manifest is read first because, as well as the version and the expected
+  // sizes, it is what names the files on disk (see packFileNames).
+  const manifest = readStoredManifest(trailId);
+  const diskNames = resolveFileNames(manifest);
+
   const files: TileFileStatus[] = TILE_FILES.map((name) => {
     try {
-      const file = new File(dir, name);
+      const file = new File(dir, diskNames[name]);
       if (file.exists) {
         return { name, exists: true, sizeBytes: file.size ?? 0 };
       }
@@ -168,24 +225,16 @@ export function getTrailTileStatus(trailId: string): TrailTileStatus {
   const anyPresent = files.some((f) => f.exists && f.sizeBytes > 0);
   const allPresent = files.every((f) => f.exists && f.sizeBytes > 0);
 
-  // Read the saved manifest for the version string and expected file sizes.
-  // The whole read — including the existence probe — is guarded: this is called
-  // for ids that were never downloaded and may never be downloadable (a user-
-  // imported `u_` guide has no pack of its own), and "no pack on disk" has to
-  // report `absent`, never throw into the caller's render.
-  let version: string | undefined;
+  // Expected sizes are keyed by *logical* name, which is what the manifest and
+  // `files` above both use — only the bytes on disk carry a generation suffix.
+  const version = manifest?.version;
   let expectedSizes: Map<string, number> | null = null;
   try {
-    const mf = manifestFile(trailId);
-    if (mf.exists) {
-      const parsed = JSON.parse(mf.textSync()) as TileManifest;
-      version = parsed.version;
-      if (Array.isArray(parsed.files) && parsed.files.length > 0) {
-        expectedSizes = new Map(parsed.files.map((f) => [f.name, f.size]));
-      }
+    if (manifest && Array.isArray(manifest.files) && manifest.files.length > 0) {
+      expectedSizes = new Map(manifest.files.map((f) => [f.name, f.size]));
     }
   } catch {
-    // missing directory or corrupt manifest — treat as unverifiable
+    // corrupt manifest — treat as unverifiable
   }
 
   let state: TileStatusState;
@@ -248,7 +297,7 @@ export async function validateMbtiles(
   trailId: string,
   fileName: TileFileName,
 ): Promise<MbtilesValidation> {
-  return validateMbtilesFile(trailId, fileName);
+  return validateMbtilesFile(trailId, packFileNames(trailId)[fileName]);
 }
 
 /**
@@ -325,9 +374,10 @@ async function validateMbtilesFile(
 }
 
 /**
- * Cache of validation results keyed by trailId/fileName/size so the map
+ * Cache of validation results keyed by trailId/on-disk name/size so the map
  * screen doesn't reopen the database on every style build. The size in the
- * key invalidates the entry when the file is re-downloaded or truncated.
+ * key invalidates the entry when the file is re-downloaded or truncated, and
+ * the on-disk name does the same across generations.
  */
 const validationCache = new Map<string, MbtilesValidation>();
 
@@ -335,18 +385,19 @@ export async function validateMbtilesCached(
   trailId: string,
   fileName: TileFileName,
 ): Promise<MbtilesValidation> {
+  const diskName = packFileNames(trailId)[fileName];
   let size = 0;
   try {
-    const file = new File(trailTilesDir(trailId), fileName);
+    const file = new File(trailTilesDir(trailId), diskName);
     size = file.exists ? file.size ?? 0 : 0;
   } catch {
     size = 0;
   }
-  const key = `${trailId}/${fileName}:${size}`;
+  const key = `${trailId}/${diskName}:${size}`;
   const cached = validationCache.get(key);
   if (cached) return cached;
 
-  const result = await validateMbtiles(trailId, fileName);
+  const result = await validateMbtilesFile(trailId, diskName);
   validationCache.set(key, result);
   return result;
 }
@@ -527,6 +578,12 @@ export async function downloadTrailTiles(
   // existing manifest must survive untouched until the new files are in place.
   const isUpdate = getTrailTileStatus(trailId).state === 'complete';
 
+  // What the pack's files are called on disk right now. Files kept this run
+  // stay under these names; files replaced this run move to the next
+  // generation of them (see nextTileFileName).
+  const storedManifest = readStoredManifest(trailId);
+  const currentNames = resolveFileNames(storedManifest);
+
   // Clear staging files left behind by an earlier interrupted run.
   for (const name of TILE_FILES) deletePart(dir, name);
 
@@ -556,12 +613,20 @@ export async function downloadTrailTiles(
       // on-disk sizes against these expected sizes and reports a
       // truncated/missing file as 'partial' instead of a false-positive
       // 'complete'. There is no older pack to invalidate.
-      manifestFile(trailId).write(JSON.stringify(manifest));
+      //
+      // The names carry over: this branch also covers repairing a *partial*
+      // pack, whose surviving files are on disk under the names the old
+      // manifest gave them. Dropping those here would hide a perfectly good
+      // file from the skip check below and re-download it for nothing.
+      manifestFile(trailId).write(JSON.stringify({ ...manifest, localNames: currentNames }));
     }
     // Update: the new manifest is staged in memory and written only after every
     // file has downloaded, validated and been renamed into place. Writing it
     // now would make the *old* files mismatch the *new* sizes, downgrading a
     // perfectly good pack to 'partial' the moment anything goes wrong.
+    //
+    // Either way phase 3 rewrites it once the files are installed, because only
+    // then are the on-disk names known.
   }
 
   let bytesDownloaded = 0;
@@ -582,7 +647,7 @@ export async function downloadTrailTiles(
       throw new Error('Cancelled');
     }
 
-    const dest = new File(dir, name);
+    const dest = new File(dir, currentNames[name]);
     const expectedSize = expectedSizes.get(name);
     const md5 = expectedMd5.get(name);
 
@@ -668,14 +733,33 @@ export async function downloadTrailTiles(
   }
 
   // ---- Phase 2: promote all validated .part files at once -------------------
+  /**
+   * The manifest that will record where the promoted files went: the new one
+   * when the server had it, otherwise the one already on disk (a manifest fetch
+   * can fail while a perfectly good pack sits there).
+   */
+  const record = manifest ?? storedManifest;
+  /** On-disk names once this run's promotions are done, by logical name. */
+  const newNames = { ...currentNames };
   try {
     for (const name of staged) {
-      const dest = new File(dir, name);
+      // A promoted file lands on a *new* path rather than over the old one:
+      // maplibre-native keeps the SQLite handle for an mbtiles:// path open for
+      // the life of the process, so renaming a new inode over a path it already
+      // has open leaves the map reading the old file until the app is
+      // force-stopped (#45) — which, after a repair re-download, means it goes
+      // on reading the damaged one. Phase 3 records where the file went; with
+      // no manifest at all — none fetched and none on disk — there is nowhere
+      // to record it, so those packs keep the plain names they always had.
+      const target = record ? nextTileFileName(currentNames[name]) : name;
+      const dest = new File(dir, target);
       // rename()/move() reject an existing destination on both platforms, so
-      // unlink first. An fd MapLibre already holds keeps the old inode alive,
-      // so this cannot tear a read in progress.
+      // unlink first — the target is normally free, but a run interrupted
+      // between phases 2 and 3 can leave one behind. An fd MapLibre already
+      // holds keeps the old inode alive, so this cannot tear a read in progress.
       if (dest.exists) dest.delete();
-      new File(dir, `${name}${PART_SUFFIX}`).rename(name);
+      new File(dir, `${name}${PART_SUFFIX}`).rename(target);
+      newNames[name] = target;
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -689,9 +773,43 @@ export async function downloadTrailTiles(
   if (staged.length > 0) clearMbtilesValidationCache(trailId);
 
   // ---- Phase 3: promote the manifest ---------------------------------------
-  // Only now does getTrailTileStatus start comparing against the new sizes.
-  if (manifest && isUpdate) {
-    manifestFile(trailId).write(JSON.stringify(manifest));
+  // Only now does getTrailTileStatus start comparing against the new sizes —
+  // and learn which generation of each file is the live one. Rewriting the
+  // *stored* manifest when no new one was fetched changes nothing but those
+  // names, which is exactly what a manifest-less re-download still has to say.
+  if (record) {
+    manifestFile(trailId).write(JSON.stringify({ ...record, localNames: newNames }));
+  }
+
+  // ---- Phase 4: sweep superseded generations -------------------------------
+  // Strictly after the manifest naming the live files is on disk, so an
+  // interruption here costs dead bytes rather than a pack the app cannot find.
+  // A basemap runs to hundreds of megabytes; keeping one copy per re-download
+  // is not an option.
+  if (staged.length > 0) sweepSupersededTiles(dir, new Set(Object.values(newNames)));
+}
+
+/**
+ * Delete every tile file in a pack directory that is not a live generation.
+ *
+ * `manifest.json` and in-flight `{name}.part` staging files are not tile file
+ * names, so they are never touched. Failures are swallowed: a file that will
+ * not delete is wasted space, not a broken pack, and the next promotion sweeps
+ * again.
+ */
+function sweepSupersededTiles(dir: Directory, live: Set<string>): void {
+  try {
+    for (const entry of dir.list()) {
+      const name = entry.name;
+      if (live.has(name) || !isTileFileName(name)) continue;
+      try {
+        entry.delete();
+      } catch {
+        // See above — nothing useful to do.
+      }
+    }
+  } catch {
+    // list() throws if the directory went away underneath us; nothing to sweep.
   }
 }
 
@@ -739,14 +857,19 @@ export function buildTopoStyle(
   const includeContours = options?.includeContours ?? true;
   const dir = trailTilesDir(trailId);
   const basePath = uriToPath(dir.uri);
+  // Generation-suffixed once the pack has been re-downloaded (see
+  // packFileNames / nextTileFileName). The URL has to name the file that is
+  // actually on disk — and a URL the process has not opened before is what
+  // makes maplibre-native open the new file instead of its cached handle (#45).
+  const names = packFileNames(trailId);
 
   // Deep clone the template to avoid mutating the bundled module
   const style = JSON.parse(JSON.stringify(TOPO_STYLE_TEMPLATE));
 
   // Interpolate source URLs
-  style.sources.basemap.url = `mbtiles://${basePath}/base.mbtiles`;
+  style.sources.basemap.url = `mbtiles://${basePath}/${names['base.mbtiles']}`;
   if (includeContours) {
-    style.sources.contour.url = `mbtiles://${basePath}/contours.mbtiles`;
+    style.sources.contour.url = `mbtiles://${basePath}/${names['contours.mbtiles']}`;
   } else {
     delete style.sources.contour;
     style.layers = style.layers.filter(

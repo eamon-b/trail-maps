@@ -18,7 +18,7 @@
     "build:tiles:bibbulmun": "tsx scripts/build-tiles.ts --trail bibbulmun",
     "build:contours-australia": "tsx scripts/build-contours-australia.ts",
     "experiment:contours": "tsx scripts/contour-experiment.ts",
-    "sync:style": "cp scripts/topo-style.json mobile/assets/topo-style.json",
+    "sync:style": "cp scripts/topo-style.json mobile/assets/topo-style.json && cp scripts/topo-style-dark.json mobile/assets/topo-style-dark.json",
     "fetch:fonts": "tsx scripts/fetch-font-glyphs.ts",
     "upload:tiles": "bash scripts/upload-tiles.sh",
     "upload:descriptions": "tsx scripts/upload-descriptions.ts",

@@ -14,6 +14,7 @@
 
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { mapInk } from '../map-style';
 import { GuideMap } from '../GuideMap';
 import { tileManager } from '../../../services/tile-manager';
 import { getOnlineMapStyle } from '../../../services/online-style-service';
@@ -31,8 +32,9 @@ jest.mock('@maplibre/maplibre-react-native', () => ({
   LogManager: { onLog: jest.fn() },
 }));
 
+let mockIsDark = false;
 jest.mock('../../../theme', () => ({
-  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
+  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }), isDark: mockIsDark }),
 }));
 
 jest.mock('../../../services/tile-manager', () => ({
@@ -108,6 +110,7 @@ const mapViews = (tree: ReactTestRenderer) => tree.root.findAll((n) => nodeType(
 let warnSpy: jest.SpyInstance;
 beforeEach(() => {
   jest.clearAllMocks();
+  mockIsDark = false;
   warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => {
@@ -142,12 +145,59 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    expect(getOfflineStyle).toHaveBeenCalledWith('heysen');
+    expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'light');
     expect(getOnline).not.toHaveBeenCalled();
     expect(mapViews(tree)).toHaveLength(1);
     expect(mapViews(tree)[0].props.mapStyle).toBe(OFFLINE_STYLE);
     // Offline topo tiles ship Open Sans glyphs.
     expect(labelFontOf(tree, 'guide-waypoints-labels')).toEqual(['Open Sans Regular']);
+  });
+
+  it('resolves the dark basemap when the app theme is dark', async () => {
+    mockIsDark = true;
+    getOfflineStyle.mockResolvedValue(offlineResult());
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    act(() => {
+      TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="offline" displayPoints={points} />,
+      );
+    });
+    await flush();
+    expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'dark');
+  });
+
+  it('re-resolves the style when the app flips to dark, rather than repainting a live map', async () => {
+    // Handing a mounted MapLibre map a new style object is the mid-flight style
+    // reload that can take down the native renderer, so a theme flip has to go
+    // back through resolution (and, via the remount key, a fresh <Map>).
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} />,
+      );
+    });
+    await flush();
+    expect(getOnline).toHaveBeenCalledTimes(1);
+    expect(getOnline).toHaveBeenLastCalledWith('light');
+
+    // Control: a prop change on its own must not re-resolve the style.
+    // (GuideMap is memo'd, and this suite stubs useTheme as a plain function
+    // rather than a context, so a prop change is also what lets the re-render
+    // through — in the app a context update re-renders a memo'd consumer.)
+    act(() => {
+      tree.update(<GuideMap trailId="heysen" styleSource="online" displayPoints={points} waypoints={[]} />);
+    });
+    await flush();
+    expect(getOnline).toHaveBeenCalledTimes(1);
+
+    mockIsDark = true;
+    act(() => {
+      tree.update(<GuideMap trailId="heysen" styleSource="online" displayPoints={points} />);
+    });
+    await flush();
+    expect(getOnline).toHaveBeenCalledTimes(2);
+    expect(getOnline).toHaveBeenLastCalledWith('dark');
   });
 
   it('falls back online when an offline pack is missing at mount time', async () => {
@@ -160,7 +210,7 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    expect(getOfflineStyle).toHaveBeenCalledWith('heysen');
+    expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'light');
     expect(getOnline).toHaveBeenCalled();
     expect(mapViews(tree)).toHaveLength(1);
   });
@@ -384,7 +434,7 @@ describe('GuideMap', () => {
         ['get', 'color'],
       ],
     ]);
-    expect(style.circleColor).toBe('#ffffff');
+    expect(style.circleColor).toBe(mapInk('light').badge);
     // Bigger than the 5 px dot it replaces, and favorites are bigger still.
     expect(style.circleRadius).toEqual(['case', ['get', 'favorite'], 11, 9]);
   });

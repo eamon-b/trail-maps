@@ -9,6 +9,9 @@ import { File, Directory } from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import { openDatabaseAsync } from 'expo-sqlite';
 import type { TileManifest } from '@lib/types';
+// Type-only (erased at build): the map's palette vocabulary lives with the rest
+// of the map cartography, and map-style already takes TileStatusState from here.
+import type { MapTheme } from '../features/map/map-style';
 import {
   TILE_FILES,
   type TileFileName,
@@ -708,6 +711,14 @@ export function deleteTrailTiles(trailId: string): void {
 
 // Single source of truth: scripts/topo-style.json, copied to mobile/assets/
 const TOPO_STYLE_TEMPLATE = require('../../assets/topo-style.json');
+/**
+ * Dark palette for that template: `{ [layerId]: paintOverrides }`, merged over
+ * the matching layer's paint block. It carries no structure of its own — no
+ * sources, no filters, no layer order — so contour tiers and layer ordering stay
+ * single-sourced in topo-style.json and only the colours are stated twice.
+ * A layer with no entry keeps its light paint (see `topo-style-dark.json`).
+ */
+const TOPO_STYLE_DARK_PALETTE = require('../../assets/topo-style-dark.json');
 
 export interface TopoStyleOptions {
   /**
@@ -716,6 +727,27 @@ export interface TopoStyleOptions {
    * instead of MapLibre crashing on a bad contour source.
    */
   includeContours?: boolean;
+  /**
+   * Which palette to paint the basemap in (default 'light'). The offline map
+   * follows the app theme; see MapTheme in features/map/map-style.
+   */
+  theme?: MapTheme;
+}
+
+/**
+ * Merge the dark palette's paint overrides into an already-cloned style.
+ *
+ * Unknown layer ids are ignored rather than throwing: the palette is data, and
+ * a stale entry must not be able to blank the offline map on a device. A test
+ * asserts every id in the palette exists in the template, which is where that
+ * drift is meant to be caught.
+ */
+function applyDarkPalette(style: { layers: { id: string; paint?: Record<string, unknown> }[] }): void {
+  for (const layer of style.layers) {
+    const overrides = (TOPO_STYLE_DARK_PALETTE as Record<string, Record<string, unknown>>)[layer.id];
+    if (!overrides) continue;
+    layer.paint = { ...(layer.paint ?? {}), ...overrides };
+  }
 }
 
 /**
@@ -737,6 +769,7 @@ export function buildTopoStyle(
   options?: TopoStyleOptions,
 ): object {
   const includeContours = options?.includeContours ?? true;
+  const theme = options?.theme ?? 'light';
   const dir = trailTilesDir(trailId);
   const basePath = uriToPath(dir.uri);
 
@@ -756,6 +789,10 @@ export function buildTopoStyle(
 
   // Interpolate glyph path
   style.glyphs = `file://${glyphsPath}/{fontstack}/{range}.pbf`;
+
+  // Repaint last, so a dropped contour source can never leave dark overrides
+  // attached to a layer that is no longer there.
+  if (theme === 'dark') applyDarkPalette(style);
 
   return style;
 }

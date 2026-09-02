@@ -5,17 +5,17 @@
  * them, the way FarOut's map key does. Only the classes actually present on the
  * trail get a row, so a trail with no side trips never advertises one.
  *
- * The swatches reuse the map's own paint constants (TRACK_COLORS / TRACK_DASH)
+ * The swatches reuse the map's own paint constants (trackColors / TRACK_DASH)
  * rather than theme tokens, so the key can never drift from the lines it
- * describes — those colours are deliberately theme-independent because both
- * base maps are light in either app theme.
+ * describes — including in dark mode, where the map switches to the tinted
+ * track palette and these swatches switch with it.
  */
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
-import { TRACK_COLORS } from './map-style';
+import { trackColors } from './map-style';
 
 /** Swatch stroke: `solid` bar, or N short segments approximating the dash. */
 type Stroke = 'solid' | 'dashed' | 'dotted';
@@ -30,7 +30,8 @@ export interface TrackLegendProps {
 }
 
 export function TrackLegend({ hasAlternates, hasSideTrips }: TrackLegendProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const track = trackColors(isDark ? 'dark' : 'light');
 
   // With neither variant class there is nothing to disambiguate — the only line
   // on the map is the trail, so the key would be noise.
@@ -46,12 +47,12 @@ export function TrackLegend({ hasAlternates, hasSideTrips }: TrackLegendProps) {
       accessibilityRole="summary"
       accessibilityLabel="Map key"
     >
-      <LegendRow color={TRACK_COLORS.main} stroke="solid" label="Trail" />
+      <LegendRow color={track.main} stroke="solid" label="Trail" />
       {hasAlternates && (
-        <LegendRow color={TRACK_COLORS.alternate} stroke="dashed" label="Alternate" />
+        <LegendRow color={track.alternate} stroke="dashed" label="Alternate" />
       )}
       {hasSideTrips && (
-        <LegendRow color={TRACK_COLORS.sideTrip} stroke="dotted" label="Side trip" />
+        <LegendRow color={track.sideTrip} stroke="dotted" label="Side trip" />
       )}
     </View>
   );

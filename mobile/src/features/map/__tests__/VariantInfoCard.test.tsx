@@ -6,13 +6,18 @@
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { VariantInfoCard } from '../VariantInfoCard';
-import { TRACK_COLORS } from '../map-style';
+import { trackColors } from '../map-style';
 import { variantInfo } from '../variant-info';
 import type { MapVariant } from '../map-geojson';
 
+let mockIsDark = false;
 jest.mock('../../../theme', () => ({
-  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
+  useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }), isDark: mockIsDark }),
 }));
+
+beforeEach(() => {
+  mockIsDark = false;
+});
 
 const ALTERNATE: MapVariant = {
   name: 'Alternative High Route',
@@ -108,8 +113,8 @@ describe('VariantInfoCard', () => {
         onDismiss: jest.fn(),
       }).toJSON(),
     );
-    expect(alternate).toContain(TRACK_COLORS.alternate);
-    expect(alternate).not.toContain(TRACK_COLORS.sideTrip);
+    expect(alternate).toContain(trackColors('light').alternate);
+    expect(alternate).not.toContain(trackColors('light').sideTrip);
 
     const sideTrip = JSON.stringify(
       render({
@@ -118,7 +123,20 @@ describe('VariantInfoCard', () => {
         onDismiss: jest.fn(),
       }).toJSON(),
     );
-    expect(sideTrip).toContain(TRACK_COLORS.sideTrip);
+    expect(sideTrip).toContain(trackColors('light').sideTrip);
+  });
+
+  it('swatches the dark palette when the app is dark, matching the repainted map', () => {
+    mockIsDark = true;
+    const json = JSON.stringify(
+      render({
+        info: variantInfo(ALTERNATE, 'alternate', 'alternate-0'),
+        unit: 'km',
+        onDismiss: jest.fn(),
+      }).toJSON(),
+    );
+    expect(json).toContain(trackColors('dark').alternate);
+    expect(json).not.toContain(trackColors('light').alternate);
   });
 
   it('dismisses on the close button', () => {

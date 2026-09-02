@@ -4,7 +4,12 @@
  * Renders one trail as three visually distinct track classes — solid red main
  * track (over a white casing), long-dashed violet alternates, finely dotted teal
  * side trips — plus clustered, data-driven waypoint markers with labels at
- * hiking zooms. Track paint lives in map-style's TRACK_COLORS/TRACK_DASH.
+ * hiking zooms. Track paint lives in map-style's trackColors/TRACK_DASH.
+ *
+ * The whole map — base style, tracks, markers and labels — follows the app
+ * theme through `mapTheme`: a dark app gets a dark basemap with the overlay
+ * palette tuned for it (issue #33). Because light and dark are two different
+ * style documents, the theme is part of the remount key; see below.
  * Plan/measure interactions from the old app are intentionally absent — this is
  * the read-only guide view.
  *
@@ -25,7 +30,7 @@
  * concrete style *object* is fetched in JS and only then handed to a freshly
  * keyed <Map>. Swapping a live map's style object mid-flight can crash the
  * native renderer, so the map is remounted (via `mapRemountKey`) whenever the
- * source flips between online and offline.
+ * source flips between online and offline, or the theme between light and dark.
  *
  * GPS puck is deliberately out for now (location wiring is a later phase);
  * `currentPosition` is plumbed so that phase has a seam and nothing else needs
@@ -77,17 +82,19 @@ import {
 } from './map-geojson';
 import { WAYPOINT_ICON_IMAGES } from './waypoint-icon-images';
 import {
-  FALLBACK_MAP_STYLE,
+  fallbackMapStyle,
   isBasemapGeometryNoise,
   isContourTileLoadFailure,
   labelFontForSource,
+  mapInk,
   mapRemountKey,
-  TRACK_COLORS,
   TRACK_DASH,
   TRACK_WIDTHS,
+  trackColors,
   trackWidthExpression,
   type MapStyleResolution,
   type MapStyleSource,
+  type MapTheme,
 } from './map-style';
 
 // (MapLibre RN 11 dropped setAccessToken/getAccessToken with no replacement —
@@ -108,22 +115,12 @@ LogManager.onLog((log: { level: string; message: string; tag?: string }) => {
 });
 
 /**
- * Cartographic paint values for the marker/label overlays. These are MapLibre
- * paint properties (not RN styles) chosen for legibility against the light
- * basemap in either app theme, so they are intentionally fixed rather than
- * routed through the theme. The design-token lint targets RN styles only.
+ * Cartographic paint values for the marker/label overlays come from
+ * `mapInk(mapTheme)` in map-style: MapLibre paint properties (not RN styles,
+ * which is why the design-token lint does not reach them), tuned against the
+ * basemap rather than against the app's surfaces. The badge disc and the marker
+ * /puck strokes stay white in both themes; only the label ink inverts.
  */
-const MARKER_STROKE = '#ffffff';
-/**
- * Marker badge fill. The glyph PNGs are dark ink on transparency, so the disc
- * behind them is white in either app theme — the category colour moves to the
- * ring (circleStrokeColor), which is still theme-resolved.
- */
-const MARKER_BADGE = '#ffffff';
-const LABEL_TEXT = '#1a1a1a';
-const LABEL_HALO = '#ffffff';
-/** Puck ring/dot stroke against the basemap (paint prop, not an RN style). */
-const PUCK_STROKE = '#ffffff';
 /** Zoom below which the accuracy circle is hidden (unreadable at overview). */
 const ACCURACY_CIRCLE_MIN_ZOOM = 8;
 /** Only draw the accuracy circle when the fix is this uncertain (metres). */
@@ -254,46 +251,20 @@ const ROUTE_STRAIGHT_FILTER = [
 const ROUTE_VERTEX_FILTER = ['==', ['geometry-type'], 'Point'] as FilterSpecification;
 
 // --- Track paint --------------------------------------------------------------
-// The three track classes are theme-independent map cartography (see
-// TRACK_COLORS in map-style): main = solid red over a white casing, alternates =
-// long-dashed violet, side trips = finely dotted teal. Defined at module level
-// because nothing here depends on the app theme or on props, so the layers never
-// re-paint.
+// The three track classes: main = solid red over a casing, alternates =
+// long-dashed violet, side trips = finely dotted teal (see trackColors in
+// map-style for the palette and the hue budget). Built once per theme at module
+// level rather than per render — nothing here depends on props, and a stable
+// object identity per theme keeps MapLibre from re-painting the layers.
 
-/** White outline under the main track; makes the red read over any basemap. */
-const MAIN_TRACK_CASING_STYLE = {
-  lineColor: TRACK_COLORS.mainCasing,
-  lineWidth: trackWidthExpression(TRACK_WIDTHS.mainCasing) as unknown as number,
-  lineOpacity: 0.8,
-  lineCap: 'round' as const,
-  lineJoin: 'round' as const,
-};
-
-const MAIN_TRACK_STYLE = {
-  lineColor: TRACK_COLORS.main,
-  lineWidth: trackWidthExpression(TRACK_WIDTHS.main) as unknown as number,
-  lineOpacity: 1,
-  lineCap: 'round' as const,
-  lineJoin: 'round' as const,
-};
-
-const ALTERNATE_TRACK_STYLE = {
-  lineColor: TRACK_COLORS.alternate,
-  lineWidth: trackWidthExpression(TRACK_WIDTHS.alternate) as unknown as number,
-  lineOpacity: 1,
-  lineCap: 'butt' as const,
-  lineJoin: 'round' as const,
-  lineDasharray: TRACK_DASH.alternate as unknown as number[],
-};
-
-const SIDE_TRIP_TRACK_STYLE = {
-  lineColor: TRACK_COLORS.sideTrip,
-  lineWidth: trackWidthExpression(TRACK_WIDTHS.sideTrip) as unknown as number,
-  lineOpacity: 1,
-  lineCap: 'round' as const,
-  lineJoin: 'round' as const,
-  lineDasharray: TRACK_DASH.sideTrip as unknown as number[],
-};
+/**
+ * Hit slop around the touch point for the variant sources (±22 px). MapLibre RN
+ * 11 takes the hitbox as edge insets rather than v10's {width, height} box, so
+ * these are the half-extents of the same 44 x 44 target.
+ */
+const VARIANT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
+/** Waypoint markers are bigger now, so their hitbox grew with them. */
+const WAYPOINT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
 
 /**
  * Invisible fat line over each variant, purely as a tap target: a 3 px dotted
@@ -304,22 +275,6 @@ const SIDE_TRIP_TRACK_STYLE = {
  * index the tap query walks.
  */
 const VARIANT_HIT_WIDTH = 20;
-const VARIANT_HIT_STYLE = {
-  lineColor: TRACK_COLORS.alternate,
-  lineWidth: VARIANT_HIT_WIDTH,
-  lineOpacity: 0,
-  lineCap: 'round' as const,
-  lineJoin: 'round' as const,
-};
-
-/**
- * Hit slop around the touch point for the variant sources (±22 px). MapLibre RN
- * 11 takes the hitbox as edge insets rather than v10's {width, height} box, so
- * these are the half-extents of the same 44 x 44 target.
- */
-const VARIANT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
-/** Waypoint markers are bigger now, so their hitbox grew with them. */
-const WAYPOINT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
 
 /**
  * Halo drawn under the selected variant's dashes while its info card is open —
@@ -336,14 +291,56 @@ function variantHighlightStyle(color: string, baseWidth: number) {
   };
 }
 
-const ALTERNATE_HIGHLIGHT_STYLE = variantHighlightStyle(
-  TRACK_COLORS.alternate,
-  TRACK_WIDTHS.alternate,
-);
-const SIDE_TRIP_HIGHLIGHT_STYLE = variantHighlightStyle(
-  TRACK_COLORS.sideTrip,
-  TRACK_WIDTHS.sideTrip,
-);
+function buildTrackStyles(theme: MapTheme) {
+  const track = trackColors(theme);
+  return {
+    /** Outline (light) or soft glow (dark) under the main track. */
+    mainCasing: {
+      lineColor: track.mainCasing,
+      lineWidth: trackWidthExpression(TRACK_WIDTHS.mainCasing) as unknown as number,
+      lineOpacity: 0.8,
+      lineCap: 'round' as const,
+      lineJoin: 'round' as const,
+    },
+    main: {
+      lineColor: track.main,
+      lineWidth: trackWidthExpression(TRACK_WIDTHS.main) as unknown as number,
+      lineOpacity: 1,
+      lineCap: 'round' as const,
+      lineJoin: 'round' as const,
+    },
+    alternate: {
+      lineColor: track.alternate,
+      lineWidth: trackWidthExpression(TRACK_WIDTHS.alternate) as unknown as number,
+      lineOpacity: 1,
+      lineCap: 'butt' as const,
+      lineJoin: 'round' as const,
+      lineDasharray: TRACK_DASH.alternate as unknown as number[],
+    },
+    sideTrip: {
+      lineColor: track.sideTrip,
+      lineWidth: trackWidthExpression(TRACK_WIDTHS.sideTrip) as unknown as number,
+      lineOpacity: 1,
+      lineCap: 'round' as const,
+      lineJoin: 'round' as const,
+      lineDasharray: TRACK_DASH.sideTrip as unknown as number[],
+    },
+    variantHit: {
+      lineColor: track.alternate,
+      lineWidth: VARIANT_HIT_WIDTH,
+      lineOpacity: 0,
+      lineCap: 'round' as const,
+      lineJoin: 'round' as const,
+    },
+    alternateHighlight: variantHighlightStyle(track.alternate, TRACK_WIDTHS.alternate),
+    sideTripHighlight: variantHighlightStyle(track.sideTrip, TRACK_WIDTHS.sideTrip),
+  };
+}
+
+const TRACK_STYLES: Record<MapTheme, ReturnType<typeof buildTrackStyles>> = {
+  light: buildTrackStyles('light'),
+  dark: buildTrackStyles('dark'),
+};
 
 /** Matches only the selected variant; matches nothing when none is selected. */
 function selectedVariantFilter(
@@ -378,7 +375,12 @@ export const GuideMap = memo(
     },
     ref,
   ) {
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
+    // The map's own palette: which base style is fetched, which ink the tracks,
+    // markers and labels are drawn in, and (with the source) the remount key.
+    const mapTheme: MapTheme = isDark ? 'dark' : 'light';
+    const trackStyles = TRACK_STYLES[mapTheme];
+    const ink = mapInk(mapTheme);
     const cameraRef = useRef<CameraRef>(null);
 
     // Held in a ref so a parent re-rendering with a new callback identity does
@@ -405,7 +407,7 @@ export const GuideMap = memo(
 
       const resolve = async (): Promise<{ style: object; resolution: MapStyleResolution }> => {
         if (styleSource === 'offline') {
-          const offline = await tileManager.getOfflineStyle(packId);
+          const offline = await tileManager.getOfflineStyle(packId, mapTheme);
           if (offline) {
             return {
               style: offline.style,
@@ -421,7 +423,7 @@ export const GuideMap = memo(
           // Pack missing or damaged between the store read and here — the map
           // goes online, and says so.
           return {
-            style: await getOnlineMapStyle(),
+            style: await getOnlineMapStyle(mapTheme),
             resolution: {
               requested: 'offline',
               resolved: 'online',
@@ -431,7 +433,7 @@ export const GuideMap = memo(
           };
         }
         return {
-          style: await getOnlineMapStyle(),
+          style: await getOnlineMapStyle(mapTheme),
           resolution: {
             requested: 'online',
             resolved: 'online',
@@ -452,7 +454,7 @@ export const GuideMap = memo(
           if (cancelled) return;
           // The bare fallback style ships no glyphs at all, so 'online' here is
           // only about keeping the label stack on a defined value.
-          setResolved({ style: FALLBACK_MAP_STYLE, source: 'online' });
+          setResolved({ style: fallbackMapStyle(mapTheme), source: 'online' });
           onStyleResolvedRef.current?.({
             requested: styleSource,
             resolved: 'online',
@@ -465,7 +467,7 @@ export const GuideMap = memo(
       return () => {
         cancelled = true;
       };
-    }, [packId, styleSource]);
+    }, [packId, styleSource, mapTheme]);
 
     const resolvedSource = resolved?.source ?? styleSource;
     const labelFont = useMemo(() => labelFontForSource(resolvedSource), [resolvedSource]);
@@ -590,10 +592,10 @@ export const GuideMap = memo(
       () => ({
         circleRadius: 5,
         circleColor: colors.warning,
-        circleStrokeColor: MARKER_STROKE,
+        circleStrokeColor: ink.stroke,
         circleStrokeWidth: 2,
       }),
-      [colors.warning],
+      [colors.warning, ink.stroke],
     );
 
     // The badge: a white disc ringed in the waypoint's category color, with the
@@ -615,7 +617,7 @@ export const GuideMap = memo(
           FAVORITE_MARKER_RADIUS,
           MARKER_RADIUS,
         ] as unknown as number,
-        circleColor: MARKER_BADGE,
+        circleColor: ink.badge,
         circleStrokeColor: [
           'case',
           ['get', 'favorite'],
@@ -639,7 +641,7 @@ export const GuideMap = memo(
           MARKER_RING_WIDTH,
         ] as unknown as number,
       }),
-      [colors.waypointFavorite, colors.waterFlowing, colors.waterLow, colors.waterDry],
+      [ink.badge, colors.waypointFavorite, colors.waterFlowing, colors.waterLow, colors.waterDry],
     );
 
     // Per-type glyph over the badge. `iconAllowOverlap` + `iconIgnorePlacement`
@@ -660,10 +662,10 @@ export const GuideMap = memo(
         circleColor: colors.accent,
         circleOpacity: 0.85,
         circleRadius: ['step', ['get', 'point_count'], 14, 10, 18, 25, 22] as unknown as number,
-        circleStrokeColor: MARKER_STROKE,
+        circleStrokeColor: ink.stroke,
         circleStrokeWidth: 2,
       }),
-      [colors.accent],
+      [colors.accent, ink.stroke],
     );
 
     const clusterCountStyle = useMemo(
@@ -682,8 +684,8 @@ export const GuideMap = memo(
         textField: ['get', 'name'] as unknown as string,
         textFont: labelFont,
         textSize: 13,
-        textColor: LABEL_TEXT,
-        textHaloColor: LABEL_HALO,
+        textColor: ink.labelText,
+        textHaloColor: ink.labelHalo,
         textHaloWidth: 2.5,
         // In ems; clears the taller badge (favorites reach 14.5 px from center).
         textOffset: [0, 1.5] as [number, number],
@@ -691,17 +693,17 @@ export const GuideMap = memo(
         textMaxWidth: 15,
         textAllowOverlap: false,
       }),
-      [labelFont],
+      [labelFont, ink.labelText, ink.labelHalo],
     );
 
     const userDotStyle = useMemo(
       () => ({
         circleRadius: 6,
         circleColor: colors.gps,
-        circleStrokeColor: PUCK_STROKE,
+        circleStrokeColor: ink.stroke,
         circleStrokeWidth: 2,
       }),
-      [colors.gps],
+      [colors.gps, ink.stroke],
     );
 
     const userAccuracyStyle = useMemo(
@@ -788,7 +790,7 @@ export const GuideMap = memo(
 
     return (
       <MapLibreMap
-        key={mapRemountKey(resolved.source)}
+        key={mapRemountKey(resolved.source, mapTheme)}
         style={styles.map}
         mapStyle={resolved.style as StyleSpecification}
         logo={false}
@@ -811,14 +813,14 @@ export const GuideMap = memo(
             onPress={builderMode ? undefined : handleVariantPress}
             hitbox={VARIANT_HITBOX}
           >
-            <Layer type="line" id="guide-alternates-hit" style={VARIANT_HIT_STYLE} />
+            <Layer type="line" id="guide-alternates-hit" style={trackStyles.variantHit} />
             <Layer
               type="line"
               id="guide-alternates-highlight"
               filter={highlightFilter}
-              style={ALTERNATE_HIGHLIGHT_STYLE}
+              style={trackStyles.alternateHighlight}
             />
-            <Layer type="line" id="guide-alternates-layer" style={ALTERNATE_TRACK_STYLE} />
+            <Layer type="line" id="guide-alternates-layer" style={trackStyles.alternate} />
           </GeoJSONSource>
         )}
 
@@ -830,14 +832,14 @@ export const GuideMap = memo(
             onPress={builderMode ? undefined : handleVariantPress}
             hitbox={VARIANT_HITBOX}
           >
-            <Layer type="line" id="guide-side-trips-hit" style={VARIANT_HIT_STYLE} />
+            <Layer type="line" id="guide-side-trips-hit" style={trackStyles.variantHit} />
             <Layer
               type="line"
               id="guide-side-trips-highlight"
               filter={highlightFilter}
-              style={SIDE_TRIP_HIGHLIGHT_STYLE}
+              style={trackStyles.sideTripHighlight}
             />
-            <Layer type="line" id="guide-side-trips-layer" style={SIDE_TRIP_TRACK_STYLE} />
+            <Layer type="line" id="guide-side-trips-layer" style={trackStyles.sideTrip} />
           </GeoJSONSource>
         )}
 
@@ -845,8 +847,8 @@ export const GuideMap = memo(
             trail itself always wins where the three classes overlap */}
         {trailLine && (
           <GeoJSONSource id="guide-trail-line" data={trailLine}>
-            <Layer type="line" id="guide-trail-line-casing" style={MAIN_TRACK_CASING_STYLE} />
-            <Layer type="line" id="guide-trail-line-layer" style={MAIN_TRACK_STYLE} />
+            <Layer type="line" id="guide-trail-line-casing" style={trackStyles.mainCasing} />
+            <Layer type="line" id="guide-trail-line-layer" style={trackStyles.main} />
           </GeoJSONSource>
         )}
 

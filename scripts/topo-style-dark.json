@@ -1,0 +1,37 @@
+{
+  "$comment": "Dark palette for the offline topo style. This is a PATCH, not a style: each key is a layer id in topo-style.json and each value is merged over that layer's paint block by buildTopoStyle() in mobile/src/services/tile-service.ts. Structure (sources, filters, zooms, layer order) is never duplicated here, so a change to the contour tiers or a new layer only has to be made once — a layer with no entry keeps its light paint, and a test asserts every id below still exists in the template. Palette rationale: a near-neutral #14 ground with desaturated landcover, so the red main track, the amber route overlay and the white waypoint badges are the only saturated things on screen; contour lines keep their warm tan hue but lift in value and opacity, because brown-on-dark loses the contrast brown-on-cream gets for free.",
+  "background": { "background-color": "#14161a" },
+  "earth": { "fill-color": "#14161a" },
+  "landcover-grassland": { "fill-color": "#1e2a1c", "fill-opacity": 0.55 },
+  "landcover-forest": { "fill-color": "#19291d", "fill-opacity": 0.6 },
+  "landcover-scrub": { "fill-color": "#232a20", "fill-opacity": 0.45 },
+  "landuse-park": { "fill-color": "#1c2a1e", "fill-opacity": 0.4 },
+  "water": { "fill-color": "#16303f" },
+  "waterway": { "line-color": "#1d4257" },
+  "contour-regular": {
+    "line-color": "rgb(150, 121, 92)",
+    "line-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.28, 13, 0.34, 14, 0.5, 15, 0.6]
+  },
+  "contour-index": {
+    "line-color": "rgb(178, 143, 105)",
+    "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.35, 11, 0.45, 12, 0.6, 14, 0.75]
+  },
+  "contour-major-index": {
+    "line-color": "rgb(205, 167, 124)",
+    "line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 11, 0.7, 13, 0.78, 15, 0.85]
+  },
+  "contour-label": {
+    "text-color": "rgb(214, 180, 142)",
+    "text-halo-color": "rgba(0, 0, 0, 0.8)",
+    "text-halo-width": 1.5
+  },
+  "road-path": { "line-color": "#5a5348" },
+  "road-minor": { "line-color": "#3d4149" },
+  "road-major": { "line-color": "#4f4a35" },
+  "road-highway": { "line-color": "#5e4a33" },
+  "building": { "fill-color": "#23272d", "fill-opacity": 0.75 },
+  "place-village": { "text-color": "#c5cbd4", "text-halo-color": "rgba(0, 0, 0, 0.85)" },
+  "place-town": { "text-color": "#d3d9e1", "text-halo-color": "rgba(0, 0, 0, 0.85)" },
+  "place-city": { "text-color": "#e6ebf1", "text-halo-color": "rgba(0, 0, 0, 0.85)" },
+  "peak": { "text-color": "#c9a87f", "text-halo-color": "rgba(0, 0, 0, 0.8)" }
+}

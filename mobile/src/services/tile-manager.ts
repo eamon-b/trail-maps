@@ -20,6 +20,7 @@ import {
   type ProgressCallback,
 } from './tile-service';
 import { tilesRoot } from './tile-paths';
+import type { MapTheme } from '../features/map/map-style';
 
 /**
  * What `getOfflineStyle` actually managed to resolve.
@@ -119,8 +120,14 @@ export class TileManager {
    * invalid contours degrade to a style without contour layers. Both cases are
    * degradations the user paid for and should be told about, so the reason is
    * returned as well as logged.
+   *
+   * `theme` picks the basemap palette (default light); the guide map passes the
+   * app theme so the offline map is dark in a dark app.
    */
-  async getOfflineStyle(trailId: string): Promise<OfflineStyleResult | null> {
+  async getOfflineStyle(
+    trailId: string,
+    theme: MapTheme = 'light',
+  ): Promise<OfflineStyleResult | null> {
     if (!this.isTrailDownloaded(trailId)) return null;
 
     const base = await validateMbtilesCached(trailId, 'base.mbtiles');
@@ -141,7 +148,7 @@ export class TileManager {
     }
 
     const glyphsPath = await provisionGlyphs();
-    const style = buildTopoStyle(trailId, glyphsPath, { includeContours: contours.ok });
+    const style = buildTopoStyle(trailId, glyphsPath, { includeContours: contours.ok, theme });
     return {
       style,
       contoursDropped: !contours.ok,

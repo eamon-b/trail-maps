@@ -217,6 +217,69 @@ describe('buildTopoStyle', () => {
     expect(layerTypes.has('line')).toBe(true);
     expect(layerTypes.has('symbol')).toBe(true);
   });
+
+  // --- dark palette -------------------------------------------------------
+  // The dark theme is a paint patch over the same template (see
+  // assets/topo-style-dark.json): structure single-sourced, colours stated once
+  // per theme.
+  describe('dark theme', () => {
+    const layersOf = (theme?: 'light' | 'dark') =>
+      (buildTopoStyle(TRAIL_ID, GLYPHS_PATH, theme ? { theme } : undefined) as {
+        layers: { id: string; type: string; paint?: Record<string, unknown> }[];
+      }).layers;
+
+    it('defaults to the light palette', () => {
+      expect(layersOf()).toEqual(layersOf('light'));
+    });
+
+    it('repaints the ground dark without touching structure', () => {
+      const light = layersOf('light');
+      const dark = layersOf('dark');
+
+      expect(dark.map((l) => l.id)).toEqual(light.map((l) => l.id));
+      expect(dark.map((l) => l.type)).toEqual(light.map((l) => l.type));
+
+      const background = dark.find((l) => l.id === 'background');
+      expect(background?.paint?.['background-color']).toBe('#14161a');
+      expect(dark.find((l) => l.id === 'earth')?.paint?.['fill-color']).toBe('#14161a');
+    });
+
+    it('leaves filters and zoom ranges to the light template', () => {
+      // The dark file carries paint only. If it ever grows a filter, the two
+      // themes can disagree about which contour lines exist at which zoom.
+      const strip = (l: Record<string, unknown>) => {
+        const { paint: _paint, ...rest } = l;
+        return rest;
+      };
+      expect(layersOf('dark').map(strip)).toEqual(layersOf('light').map(strip));
+    });
+
+    it('patches every layer of the template, so nothing is left light on a dark map', () => {
+      const light = layersOf('light');
+      const dark = layersOf('dark');
+      light.forEach((layer, i) => {
+        expect(dark[i].paint).not.toEqual(layer.paint);
+      });
+    });
+
+    it('has no stale layer ids — every palette entry still exists in the template', () => {
+      // The other direction of the same contract: an id that no longer exists
+      // silently paints nothing, and the map would look half-repainted.
+      const palette = require('../../../assets/topo-style-dark.json') as Record<string, unknown>;
+      const ids = new Set(layersOf('light').map((l) => l.id));
+      const stale = Object.keys(palette).filter((k) => !k.startsWith('$') && !ids.has(k));
+      expect(stale).toEqual([]);
+    });
+
+    it('still drops the contour layers when contours are unusable', () => {
+      const style = buildTopoStyle(TRAIL_ID, GLYPHS_PATH, {
+        theme: 'dark',
+        includeContours: false,
+      }) as { sources: Record<string, unknown>; layers: { source?: string }[] };
+      expect(style.sources.contour).toBeUndefined();
+      expect(style.layers.some((l) => l.source === 'contour')).toBe(false);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

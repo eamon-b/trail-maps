@@ -165,9 +165,30 @@ describe('TileManager', () => {
     const result = await manager.getOfflineStyle('heysen');
 
     expect(mockProvisionGlyphs).toHaveBeenCalled();
-    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts', { includeContours: true });
+    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts', {
+      includeContours: true,
+      theme: 'light',
+    });
     expect(result).toEqual({ style: expectedStyle, contoursDropped: false, reason: undefined });
     expect(result?.style).toBe(expectedStyle);
+  });
+
+  it('getOfflineStyle builds the dark basemap when the app theme is dark', async () => {
+    mockGetStatus.mockReturnValue({
+      trailId: 'heysen',
+      files: [],
+      complete: true,
+      state: 'complete' as const,
+      totalSizeBytes: 10000,
+    });
+    mockProvisionGlyphs.mockResolvedValue('/mock/fonts');
+
+    await manager.getOfflineStyle('heysen', 'dark');
+
+    expect(mockBuildStyle).toHaveBeenCalledWith('heysen', '/mock/fonts', {
+      includeContours: true,
+      theme: 'dark',
+    });
   });
 
   it('getOfflineStyle returns null (online fallback) when base.mbtiles fails validation', async () => {
@@ -207,7 +228,10 @@ describe('TileManager', () => {
 
     const result = await manager.getOfflineStyle('aawt');
 
-    expect(mockBuildStyle).toHaveBeenCalledWith('aawt', '/mock/fonts', { includeContours: false });
+    expect(mockBuildStyle).toHaveBeenCalledWith('aawt', '/mock/fonts', {
+      includeContours: false,
+      theme: 'light',
+    });
     // The degradation is machine-readable (for the map's banner), not just a warn.
     expect(result).toMatchObject({
       contoursDropped: true,

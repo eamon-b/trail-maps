@@ -15,7 +15,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { DistanceUnit } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, touchTarget, typography } from '../../tokens';
-import { TRACK_COLORS } from './map-style';
+import { trackColors } from './map-style';
 import {
   variantElevationLine,
   variantJunctionLine,
@@ -32,7 +32,7 @@ export interface VariantInfoCardProps {
 }
 
 export function VariantInfoCard({ info, unit, onDismiss }: VariantInfoCardProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const length = variantLengthLine(info, unit);
   const elevation = variantElevationLine(info, unit);
@@ -40,9 +40,10 @@ export function VariantInfoCard({ info, unit, onDismiss }: VariantInfoCardProps)
   const waypoints = variantWaypointLine(info);
 
   // The swatch reuses the map's own track colours (not theme tokens) so the
-  // card can never disagree with the line the user just tapped.
-  const swatchColor =
-    info.kind === 'alternate' ? TRACK_COLORS.alternate : TRACK_COLORS.sideTrip;
+  // card can never disagree with the line the user just tapped — including in
+  // dark mode, where the map draws the tinted palette.
+  const track = trackColors(isDark ? 'dark' : 'light');
+  const swatchColor = info.kind === 'alternate' ? track.alternate : track.sideTrip;
 
   return (
     <View

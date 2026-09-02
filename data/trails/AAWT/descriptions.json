@@ -5,17 +5,17 @@
     {
       "waypointId": "w_2b8b4dba",
       "name": "O'Sheas Mill Site",
-      "description": "Old timber mill site in the Tyers valley, now a flat clearing used as the first camp out of Walhalla. Water comes from the river beside it rather than a tank, so treat what you collect."
+      "description": "Old timber mill site in the Tyers valley, now a flat clearing used as the first camp out of Walhalla. The water is the river beside it rather than a tank, and it is untreated."
     },
     {
       "waypointId": "w_59a5dc47",
       "name": "Tyers River East",
-      "description": "The east branch of the Tyers River at the O'Sheas Mill Site clearing. Bigger than the creeks up on the ridge, but still river water in forest country — treat it before drinking."
+      "description": "The east branch of the Tyers River at the O'Sheas Mill Site clearing. Bigger than the creeks up on the ridge, but still untreated river water in forest country."
     },
     {
       "waypointId": "w_2eb3fd64",
       "name": "Mountain Monarchs",
-      "description": "Camp among tall wet forest on the long climb from the Tyers valley towards the Baw Baw plateau. No water is marked at the site, so fill down at the river before you start up."
+      "description": "Camp among tall wet forest on the long climb from the Tyers valley towards the Baw Baw plateau. No water is marked at the site; the nearest is the river down at the foot of the climb."
     },
     {
       "waypointId": "w_c0412b2e",
@@ -50,52 +50,52 @@
     {
       "waypointId": "w_5445ab41",
       "name": "Stronarchs Campsite",
-      "description": "Camp on the ridge falling away from the Baw Baw plateau towards the Thomson River. It sits high above the river, so carry water up for the night."
+      "description": "Camp on the ridge falling away from the Baw Baw plateau towards the Thomson River. It sits high above the river, with no water at the site."
     },
     {
       "waypointId": "w_90877460",
       "name": "Thomson River",
-      "description": "The Thomson River at the foot of the long descent off the Baw Baw plateau, and the largest water on this stretch. Treat it, and take on what you need before the climb out."
+      "description": "The Thomson River at the foot of the long descent off the Baw Baw plateau, and the largest water on this stretch. It is untreated, and the climb out to the north is long."
     },
     {
       "waypointId": "w_6252a410",
       "name": "Thomson River",
-      "description": "Another access point to the Thomson as the track works along the valley. A good place to drink and refill, after treating."
+      "description": "Another access point to the Thomson as the track works along the valley. Reliable running water, untreated."
     },
     {
       "waypointId": "w_c976732e",
       "name": "Thomson River Campsite",
-      "description": "Camp on the flats beside the Thomson River, the low point between the Baw Baw plateau and the climb north. Shaded, with river water alongside that needs treating."
+      "description": "Camp on the flats beside the Thomson River, the low point between the Baw Baw plateau and the climb north. Shaded, with untreated river water alongside."
     },
     {
       "waypointId": "w_cc1e80df",
       "name": "Thomson River",
-      "description": "River access at the Thomson River camping area. Fill properly here — the climb north is long and the ridges above carry little water."
+      "description": "River access at the Thomson River camping area. The climb north from here is long, and the ridges above carry little water."
     },
     {
       "waypointId": "w_e6c9658d",
       "name": "Jordan River",
-      "description": "The Jordan River in the low country between the Thomson and the ranges to the north. A river rather than a trickle, but still treat what you take."
+      "description": "The Jordan River in the low country between the Thomson and the ranges to the north. A river rather than a trickle, and untreated."
     },
     {
       "waypointId": "w_466f1382",
       "name": "Blue Jacket Campsite",
-      "description": "Camp near the Jordan River at Blue Jacket, in old goldfields country. River water is close by; treat it, and expect a warm, low-altitude night compared with the plateau behind."
+      "description": "Camp near the Jordan River at Blue Jacket, in old goldfields country. River water is close by and untreated, and nights here are warmer than up on the plateau behind."
     },
     {
       "waypointId": "w_c6ee8493",
       "name": "Jordan River",
-      "description": "The last marked access to the Jordan River before the long climb north. Load up here, and treat what you carry."
+      "description": "The last marked access to the Jordan River before the long climb north. Untreated river water, and the largest source on this stretch."
     },
     {
       "waypointId": "w_1563456f",
       "name": "bobs hut",
-      "description": "The water source at Bob's Hut. Like most creeks at this height it runs with the season, so check it rather than assume it, and treat what you collect."
+      "description": "The water source at Bob's Hut. Like most creeks at this height it runs with the season, and the water is untreated."
     },
     {
       "waypointId": "w_72c22192",
       "name": "Bob's Hut",
-      "description": "Small timber hut in the ranges north of the Jordan River, one of the old high-country huts kept as a shelter rather than as accommodation. Camp outside if others are using it and leave it as you found it."
+      "description": "Small timber hut in the ranges north of the Jordan River, one of the old high-country huts kept as a shelter rather than as accommodation. There is camping outside it, and it is left unlocked for whoever needs it."
     },
     {
       "waypointId": "w_5dde2c99",
@@ -105,17 +105,17 @@
     {
       "waypointId": "w_6fb2b724",
       "name": "Black River",
-      "description": "The Black River, down in the valley between the ranges. Larger than the ridge creeks either side, though still to be treated — and there is a stiff climb out whichever way you are heading."
+      "description": "The Black River, down in the valley between the ranges. Larger than the ridge creeks either side, and untreated; the climb out is stiff in both directions."
     },
     {
       "waypointId": "w_c04801c8",
       "name": "Middle Ridge Rd 1",
-      "description": "Creek crossing on Middle Ridge Road, up in the snow gums. Good after rain and unreliable in a dry late summer, so look before you plan on it, and treat what you take."
+      "description": "Creek crossing on Middle Ridge Road, up in the snow gums. It runs after rain and is unreliable in a dry late summer, and the water is untreated."
     },
     {
       "waypointId": "w_94f45afe",
       "name": "Middle Ridge Rd 2",
-      "description": "A second creek on Middle Ridge Road. If the first crossing was dry expect the same here, and plan the section on what you are carrying rather than on what is marked."
+      "description": "A second creek on Middle Ridge Road, at much the same height as the first and drying at much the same time. The water is untreated."
     },
     {
       "waypointId": "w_dda5e4ef",
@@ -135,12 +135,12 @@
     {
       "waypointId": "w_b010e191",
       "name": "Low Saddle Rd",
-      "description": "Creek on Low Saddle Road, the nearest marked water to the Low Saddle camp. A small mountain creek: fine after rain, easily dry in a hot spell, and worth treating."
+      "description": "Creek on Low Saddle Road, the nearest marked water to the Low Saddle camp. A small mountain creek: it runs after rain, dries in a hot spell, and is untreated."
     },
     {
       "waypointId": "w_3ed1c0c3",
       "name": "Nobs Track",
-      "description": "Creek crossing on Nobs Track, high in the snow gums. Small and seasonal — carry enough to reach it comfortably, and treat whatever you find."
+      "description": "Creek crossing on Nobs Track, high in the snow gums. Small, seasonal and untreated."
     },
     {
       "waypointId": "w_3c99a282",
@@ -155,17 +155,17 @@
     {
       "waypointId": "w_87007c41",
       "name": "Hellfire Creek",
-      "description": "Hellfire Creek, a small alpine stream in the Howitt country. Snowmelt keeps it going into early summer and it fades later in the season, so treat what you collect."
+      "description": "Hellfire Creek, a small alpine stream in the Howitt country. Snowmelt keeps it going into early summer and it fades later in the season. The water is untreated."
     },
     {
       "waypointId": "w_72d65596",
       "name": "Hellfire Creek Campsite",
-      "description": "Camp beside Hellfire Creek, one of the last sheltered sites before the high open ground around Mt Howitt. Check the creek is running before you plan the night around it, and treat the water."
+      "description": "Camp beside Hellfire Creek, one of the last sheltered sites before the high open ground around Mt Howitt. The creek is seasonal and the water untreated."
     },
     {
       "waypointId": "w_00176641",
       "name": "Howitt Creek",
-      "description": "Alpine creek on the approach to Mt Howitt, high in the snow gums. It runs hard with snowmelt and weakens through summer, so treat what you take and have a fallback if it is dry."
+      "description": "Alpine creek on the approach to Mt Howitt, high in the snow gums. It runs hard with snowmelt, weakens through summer and can be dry late in the season. The water is untreated."
     },
     {
       "waypointId": "w_22444fe9",
@@ -175,7 +175,7 @@
     {
       "waypointId": "w_47d92b0c",
       "name": "Camp Creek",
-      "description": "Camp Creek, the marked water for the Mt Speculation camping area. Seasonal like everything at this height — treat it, and expect little more than a trickle late in summer."
+      "description": "Camp Creek, the marked water for the Mt Speculation camping area. Seasonal like everything at this height, untreated, and often little more than a trickle late in summer."
     },
     {
       "waypointId": "w_c28efa5b",
@@ -185,42 +185,42 @@
     {
       "waypointId": "w_22a67673",
       "name": "Speculation Rd",
-      "description": "Creek on Speculation Road, the nearest marked water to Catherine Saddle. Small and seasonal — check it rather than count on it in late summer, and treat what you take."
+      "description": "Creek on Speculation Road, the nearest marked water to Catherine Saddle. Small, seasonal and untreated, and it can be dry in late summer."
     },
     {
       "waypointId": "w_baa71afa",
       "name": "Viking Saddle",
-      "description": "Camp in the saddle below The Viking, at the foot of one of the steepest and most exposed climbs on the whole trail. No water is marked here, so arrive carrying enough."
+      "description": "Camp in the saddle below The Viking, at the foot of one of the steepest and most exposed climbs on the whole trail. No water is marked here."
     },
     {
       "waypointId": "w_e96c2d61",
       "name": "Viking Saddle",
-      "description": "A second marked pitch in Viking Saddle. Like its neighbour it has no water, so fill before you drop into the saddle for the night."
+      "description": "A second marked pitch in Viking Saddle. Like its neighbour it has no water; the nearest marked sources are on the tracks either side."
     },
     {
       "waypointId": "w_6ae71876",
       "name": "Barry Saddle",
-      "description": "Rainwater tank at Barry Saddle, one of the tanks that make the dry Barry Mountains section workable. Tank levels depend on recent rain and on other walkers, so treat the water and never assume it is full."
+      "description": "Rainwater tank at Barry Saddle, one of the tanks that make the dry Barry Mountains section workable. The water is untreated, and the level depends on recent rain and on other walkers."
     },
     {
       "waypointId": "w_6bcdd5a3",
       "name": "Barry Saddle Campsite",
-      "description": "Camp at Barry Saddle beside the tank, a natural break after the Viking. Carry a reserve in case the tank is low when you get there."
+      "description": "Camp at Barry Saddle beside the tank, the usual break after the Viking. The tank is the only water, and its level varies."
     },
     {
       "waypointId": "w_2c119080",
       "name": "Selwyn Track",
-      "description": "Roadside camp on the Selwyn Track in the Barry Mountains — dry ridge country where the marked water is tanks rather than creeks. Plan the day around the tanks."
+      "description": "Roadside camp on the Selwyn Track in the Barry Mountains — dry ridge country where the marked water is tanks rather than creeks."
     },
     {
       "waypointId": "w_399de7a7",
       "name": "East Riley Rd",
-      "description": "Rainwater tank on East Riley Road in the Barry Mountains. Check it as soon as you arrive, because a tank in this dry ridge country can be empty, and treat what you draw."
+      "description": "Rainwater tank on East Riley Road in the Barry Mountains. The water is untreated, and tanks in this dry ridge country are sometimes empty."
     },
     {
       "waypointId": "w_2771b2db",
       "name": "South Selwyn",
-      "description": "Tank on the South Selwyn section of the Barry Mountains, high on the ridge with no creek at hand. Treat the water and fill right up — the next marked source is several hours on."
+      "description": "Tank on the South Selwyn section of the Barry Mountains, high on the ridge with no creek at hand. The water is untreated, and the next marked source is several hours on."
     },
     {
       "waypointId": "w_42a846ec",
@@ -230,7 +230,7 @@
     {
       "waypointId": "w_9aba3a4e",
       "name": "Mt Selwyn Creek",
-      "description": "Creek below Mt Selwyn, the first natural water after a long stretch of tank-fed ridge walking. Treat it, and don't assume it is running in a dry late summer."
+      "description": "Creek below Mt Selwyn, the first natural water after a long stretch of tank-fed ridge walking. It is untreated, and it can stop running in a dry late summer."
     },
     {
       "waypointId": "w_d32594f1",
@@ -240,27 +240,27 @@
     {
       "waypointId": "w_4bf2fa0b",
       "name": "The Twins",
-      "description": "Rainwater tank at The Twins, high on the ridge with no creek nearby. Check the level before you commit to camping here, and treat whatever you take."
+      "description": "Rainwater tank at The Twins, high on the ridge with no creek nearby. The water is untreated and the level varies with recent rain and use."
     },
     {
       "waypointId": "w_b6411721",
       "name": "Twins Track 1",
-      "description": "Camp on the Twins Track, high under snow gums near The Twins. A tank stands close by, but arrive ready to be self-sufficient for water."
+      "description": "Camp on the Twins Track, high under snow gums near The Twins. A tank stands close by, and there is no natural water at the site."
     },
     {
       "waypointId": "w_6569e958",
       "name": "Twins Track 2",
-      "description": "A second camp along the Twins Track, a little lower and often better sheltered than the first. Water means the tank behind you or the creek ahead."
+      "description": "A second camp along the Twins Track, a little lower and often better sheltered than the first. The water here is the tank back at the first camp or the creek further along the track."
     },
     {
       "waypointId": "w_1fac6e47",
       "name": "Twins Track",
-      "description": "Creek crossing high on the Twins Track. At this altitude the flow is driven by snowmelt and does not last, so treat it and have a plan if the bed is dry."
+      "description": "Creek crossing high on the Twins Track. At this altitude the flow is driven by snowmelt and does not last into the drier months. The water is untreated."
     },
     {
       "waypointId": "w_f09437eb",
       "name": "Blowhard Hut",
-      "description": "Small hut on Blowhard Spur, on the approach to Mt Hotham. A shelter for a break or an emergency rather than a bookable bed; camp outside if it is occupied."
+      "description": "Small hut on Blowhard Spur, on the approach to Mt Hotham. A shelter for a break or for weather rather than a bookable bed, with camping outside it."
     },
     {
       "waypointId": "w_b403445f",
@@ -270,42 +270,42 @@
     {
       "waypointId": "w_44d4a5fd",
       "name": "Derrick Hut",
-      "description": "Small alpine hut on the high ground north of Hotham, built as a refuge for skiers and walkers caught out by weather. Keep it clear for emergencies and camp outside in good conditions."
+      "description": "Small alpine hut on the high ground north of Hotham, built as a refuge for skiers and walkers caught out by weather. It is kept for that purpose, with camping outside in good conditions."
     },
     {
       "waypointId": "w_be558f86",
       "name": "Dibbins Hut",
-      "description": "Historic cattlemen's hut on the Cobungra River flats below Mt Loch, one of the classic stops on the crossing between Hotham and the Bogong High Plains. River water at hand, and it needs treating."
+      "description": "Historic cattlemen's hut on the Cobungra River flats below Mt Loch, one of the classic stops on the crossing between Hotham and the Bogong High Plains. The river runs alongside and the water is untreated."
     },
     {
       "waypointId": "w_ae9e919d",
       "name": "Dibbins Hut",
-      "description": "A second marker for the Dibbins Hut site on the Cobungra flats. Grassy camping around the hut with the river alongside; treat the water before drinking."
+      "description": "A second marker for the Dibbins Hut site on the Cobungra flats. Grassy camping around the hut, with untreated river water alongside."
     },
     {
       "waypointId": "w_39285cdd",
       "name": "Cope Saddle Hut",
-      "description": "Small shelter hut at Cope Saddle on the Bogong High Plains, in open alpine country with next to nothing between you and the wind. A refuge rather than a place to plan a night in."
+      "description": "Small shelter hut at Cope Saddle on the Bogong High Plains, in open alpine country with nothing to break the wind. It is a refuge rather than an overnight hut, and there is no water marked at it."
     },
     {
       "waypointId": "w_a58b8962",
       "name": "Pretty Valley Ck Trib",
-      "description": "Small tributary in the Pretty Valley on the Bogong High Plains, fed by snowmelt and the bogs above. The flow falls away through summer, so treat what you collect and check it before relying on it."
+      "description": "Small tributary in the Pretty Valley on the Bogong High Plains, fed by snowmelt and the bogs above. The flow falls away through summer, and the water is untreated."
     },
     {
       "waypointId": "w_056dc132",
       "name": "Cope Hut",
-      "description": "One of the best-known huts on the Bogong High Plains, built in the early days of alpine skiing and long used as a base by skiers and walkers. There is camping around it, and any water nearby is alpine seepage — treat it."
+      "description": "One of the best-known huts on the Bogong High Plains, built in the early days of alpine skiing and long used as a base by skiers and walkers. There is camping around it, and any water nearby is untreated alpine seepage."
     },
     {
       "waypointId": "w_76602783",
       "name": "Wallaces Hut",
-      "description": "The oldest surviving cattlemen's hut on the Bogong High Plains, built by the Wallace brothers in the 1880s and now a heritage site. Day visitors are common; camp in the snow gums nearby rather than in the hut."
+      "description": "The oldest surviving cattlemen's hut on the Bogong High Plains, built by the Wallace brothers in the 1880s and now a heritage site. Day visitors are common, and there is camping in the snow gums nearby."
     },
     {
       "waypointId": "w_4fa3636a",
       "name": "Langford West Aqueduct 2",
-      "description": "Water at the Langford West aqueduct, part of the old channel system that moves high-plains water for the hydro scheme. There can be water here when the surface creeks are thin, but check it rather than count on it, and treat what you take."
+      "description": "Water at the Langford West aqueduct, part of the old channel system that moves high-plains water for the hydro scheme. It sometimes holds water when the surface creeks are thin, and it is untreated."
     },
     {
       "waypointId": "w_10a02b66",
@@ -315,12 +315,12 @@
     {
       "waypointId": "w_243f2dde",
       "name": "Langford Gap",
-      "description": "Marked water at Langford Gap, where the high plains road crosses this open country. Alpine water here is seasonal and often shallow — treat it and carry a reserve."
+      "description": "Marked water at Langford Gap, where the high plains road crosses this open country. Alpine water here is seasonal, often shallow, and untreated."
     },
     {
       "waypointId": "w_9477c1b5",
       "name": "Langford East Aqueduct",
-      "description": "The eastern arm of the Langford aqueduct on the high plains. Like the western channel it can be low or stagnant depending on the season, so look before you plan on it and treat anything you take."
+      "description": "The eastern arm of the Langford aqueduct on the high plains. Like the western channel it can be low or stagnant depending on the season, and the water is untreated."
     },
     {
       "waypointId": "w_ef93114e",
@@ -330,22 +330,22 @@
     {
       "waypointId": "w_95f930c0",
       "name": "Duane Creek",
-      "description": "The creek at Ropers Hut, at the top of Duane Spur. It is the last marked water before the long descent to Big River, and like everything up here it is seasonal — treat it."
+      "description": "The creek at Ropers Hut, at the top of Duane Spur. It is the last marked water before the long descent to Big River, seasonal like everything up here, and untreated."
     },
     {
       "waypointId": "w_b26df4e5",
       "name": "Ropers Hut",
-      "description": "Hut on the northern edge of the Bogong High Plains, at the head of the long descent to Big River, and rebuilt after fire went through this country. A creek runs nearby; treat the water and fill before the drop."
+      "description": "Hut on the northern edge of the Bogong High Plains, at the head of the long descent to Big River, and rebuilt after fire went through this country. A creek runs nearby, and its water is untreated."
     },
     {
       "waypointId": "w_3231517e",
       "name": "Big River 1",
-      "description": "A second marked pitch on the Big River flats. Whichever you use, take on water and food here — the climb out is long and steep in either direction."
+      "description": "A second marked pitch on the Big River flats, with the river alongside. The climb out is long and steep in either direction."
     },
     {
       "waypointId": "w_8ac1d596",
       "name": "Big River",
-      "description": "Big River at the bottom of the Duane Spur descent, a genuine river and the low point between the Bogong High Plains and Mt Wills. Crossings can be deep and pushy after rain or heavy snowmelt; treat the water."
+      "description": "Big River at the bottom of the Duane Spur descent, a genuine river and the low point between the Bogong High Plains and Mt Wills. Crossings can be deep and pushy after rain or heavy snowmelt, and the water is untreated."
     },
     {
       "waypointId": "w_b52df981",
@@ -355,27 +355,27 @@
     {
       "waypointId": "w_79a1d5a6",
       "name": "T Spur",
-      "description": "Marked water well up the T Spur climb out of Big River. It is a small alpine source that can fail late in the season, so start the climb carrying enough rather than banking on it."
+      "description": "Marked water well up the T Spur climb out of Big River. It is a small alpine source that can fail late in the season."
     },
     {
       "waypointId": "w_babf4ec7",
       "name": "Big River Rd",
-      "description": "Creek on Big River Road on the approach to Mt Wills. Small and seasonal like the rest of the ridge water; check it is flowing before you plan the night around it, and treat it."
+      "description": "Creek on Big River Road on the approach to Mt Wills. Small and seasonal like the rest of the ridge water, and untreated."
     },
     {
       "waypointId": "w_10e581c2",
       "name": "Mt Wills Hut",
-      "description": "Hut high on Mt Wills among the snow gums and alpine ash, a classic overnight stop on this section. No water is marked up on the ridge, so carry what you need for the night."
+      "description": "Hut high on Mt Wills among the snow gums and alpine ash, a classic overnight stop on this section. No water is marked up on the ridge."
     },
     {
       "waypointId": "w_7ff46a9e",
       "name": "Gill Creek",
-      "description": "Creek well down the long descent from Mt Wills towards the Mitta Mitta. Lower and better sheltered than the ridge creeks, but still seasonal — treat what you take."
+      "description": "Creek well down the long descent from Mt Wills towards the Mitta Mitta. Lower and better sheltered than the ridge creeks, but still seasonal, and untreated."
     },
     {
       "waypointId": "w_f187fb42",
       "name": "Four Mile Ck",
-      "description": "Small creek in the low country above the Mitta Mitta valley. Worth a look rather than a plan in a dry spell, and treat anything you collect."
+      "description": "Small creek in the low country above the Mitta Mitta valley. It thins out in a dry spell, and the water is untreated."
     },
     {
       "waypointId": "w_4e42de30",
@@ -385,27 +385,27 @@
     {
       "waypointId": "w_dbbb750e",
       "name": "Mitta Mitta River",
-      "description": "The Mitta Mitta at Taylors Crossing. It drains a large mountain catchment and carries water when the high creeks have stopped, but it is river water — treat it before drinking."
+      "description": "The Mitta Mitta at Taylors Crossing. It drains a large mountain catchment and carries water when the high creeks have stopped, and it is untreated river water."
     },
     {
       "waypointId": "w_fd92107b",
       "name": "Kennedys Hut",
-      "description": "Old hut in the Mitta Mitta valley near Taylors Crossing, down in dry, low country a long way below the alps either side. The river close by is the water; treat it."
+      "description": "Old hut in the Mitta Mitta valley near Taylors Crossing, down in dry, low country a long way below the alps either side. The river close by is the water, untreated."
     },
     {
       "waypointId": "w_26c04569",
       "name": "Morass Ck (Treat - Farmland)",
-      "description": "Morass Creek, running through farmland as the name on the waypoint warns. Stock and paddock runoff make treatment essential rather than optional here, and the flow varies with the season."
+      "description": "Morass Creek, running through farmland as the name on the waypoint notes. Stock and paddock runoff are upstream of it, and the flow varies with the season."
     },
     {
       "waypointId": "w_16abb09e",
       "name": "Johnies Top",
-      "description": "Rainwater tank high on Johnies Top, on the long dry climb towards the Cobberas. There is no creek up here, so check the tank as soon as you reach it and treat what you draw."
+      "description": "Rainwater tank high on Johnies Top, on the long dry climb towards the Cobberas. There is no creek up here, the water is untreated, and the tank level varies."
     },
     {
       "waypointId": "w_d06306a3",
       "name": "Corner Creek",
-      "description": "Creek in the valley country on the way towards Buenba. A modest mountain stream: good after rain, thin in a dry late summer, and worth treating."
+      "description": "Creek in the valley country on the way towards Buenba. A modest mountain stream: good after rain, thin in a dry late summer, and untreated."
     },
     {
       "waypointId": "w_53bd0a46",
@@ -415,22 +415,22 @@
     {
       "waypointId": "w_72246685",
       "name": "Buenba Creek",
-      "description": "Buenba Creek on the flats of the same name, the marked water for the camping here. Grazing country in places upstream, so treat it, and expect less of it as summer wears on."
+      "description": "Buenba Creek on the flats of the same name, the marked water for the camping here. There is grazing country upstream in places, the water is untreated, and the flow drops as summer wears on."
     },
     {
       "waypointId": "w_dabc7c8b",
       "name": "Buckwong Track",
-      "description": "Creek crossing on the Buckwong Track in the Cobberas country. Small, seasonal and best treated; the creek at the hut ahead is the other option nearby."
+      "description": "Creek crossing on the Buckwong Track in the Cobberas country. Small, seasonal and untreated; the creek at the hut ahead is the other source nearby."
     },
     {
       "waypointId": "w_afd602f5",
       "name": "Buckwong Hut",
-      "description": "Hut on Buckwong Creek in the Cobberas foothills, a welcome bit of shelter in a remote stretch. The creek close by is the water and needs treating."
+      "description": "Hut on Buckwong Creek in the Cobberas foothills, a welcome bit of shelter in a remote stretch. The creek close by is the water, untreated."
     },
     {
       "waypointId": "w_b1b29731",
       "name": "Buckwong Creek",
-      "description": "Buckwong Creek at the hut, the marked water for this section. Rain and snowmelt drive it, so it can be low late in the season — treat what you collect."
+      "description": "Buckwong Creek at the hut, the marked water for this section. Rain and snowmelt drive it, so it can be low late in the season, and the water is untreated."
     },
     {
       "waypointId": "w_2f90197e",
@@ -440,22 +440,22 @@
     {
       "waypointId": "w_159ea872",
       "name": "Dead Horse Ck",
-      "description": "Dead Horse Creek, in the remote country south of Limestone Creek. A small stream that runs with the season, so treat it and don't build the day around it in a dry spell."
+      "description": "Dead Horse Creek, in the remote country south of Limestone Creek. A small stream that runs with the season and can be dry in a dry spell. The water is untreated."
     },
     {
       "waypointId": "w_255458b4",
       "name": "Limestone Creek",
-      "description": "Limestone Creek, in a valley with vehicle access and a well-used camping area. Larger than most creeks on this section though still seasonal, and it should be treated."
+      "description": "Limestone Creek, in a valley with vehicle access and a well-used camping area. Larger than most creeks on this section though still seasonal, and untreated."
     },
     {
       "waypointId": "w_be8f685d",
       "name": "Claire Creek",
-      "description": "Small creek near Limestone Creek. Useful as a top-up rather than a destination; check it rather than assume it, and treat what you take."
+      "description": "Small creek near Limestone Creek. A modest flow that varies with the season, and untreated."
     },
     {
       "waypointId": "w_926fb2a7",
       "name": "Cowombat Flat Tk 1",
-      "description": "Creek on the Cowombat Flat Track, up in the Cobberas. High, small and seasonal — treat it, and carry enough that finding it dry is not a problem."
+      "description": "Creek on the Cowombat Flat Track, up in the Cobberas. High, small, seasonal and untreated."
     },
     {
       "waypointId": "w_e6505f12",
@@ -465,7 +465,7 @@
     {
       "waypointId": "w_63f905fa",
       "name": "Cowombat Flat Tk 2",
-      "description": "A second creek on the Cowombat Flat Track. If the first was dry expect the same here, and treat whatever you do find."
+      "description": "A second creek on the Cowombat Flat Track, at much the same height as the first and drying at much the same time. The water is untreated."
     },
     {
       "waypointId": "w_ba94e335",
@@ -475,97 +475,97 @@
     {
       "waypointId": "w_f3cd5b68",
       "name": "Murray River",
-      "description": "The Murray River at Cowombat Flat, barely more than a stream this close to its source. Treat what you take, and expect headwater flow rather than a river."
+      "description": "The Murray River at Cowombat Flat, barely more than a stream this close to its source. Headwater flow rather than a river, and untreated."
     },
     {
       "waypointId": "w_8e7404ad",
       "name": "Pilot Creek",
-      "description": "Creek below The Pilot with good camping on the grassy ground beside it. Headwater country, so the flow is seasonal — check it before relying on it and treat what you collect."
+      "description": "Creek below The Pilot with good camping on the grassy ground beside it. Headwater country, so the flow is seasonal, and the water is untreated."
     },
     {
       "waypointId": "w_7a2fa81b",
       "name": "Tin Mine Creek",
-      "description": "Creek in the old Tin Mine country of southern Kosciuszko National Park. A small mountain stream that varies a lot with the season; treat what you collect."
+      "description": "Creek in the old Tin Mine country of southern Kosciuszko National Park. A small mountain stream that varies a lot with the season, and untreated."
     },
     {
       "waypointId": "w_b510b8ae",
       "name": "Ingeegoodbee River",
-      "description": "The Ingeegoodbee River at the Tin Mine Huts, the marked water for this camp. A small upland river: check the level rather than assume it, and treat what you take."
+      "description": "The Ingeegoodbee River at the Tin Mine Huts, the marked water for this camp. A small upland river whose level varies with the season, and untreated."
     },
     {
       "waypointId": "w_fbeed8e6",
       "name": "Tin Mine Huts",
-      "description": "Historic huts at the old Tin Mine workings in southern Kosciuszko, remnants of the district's mining and grazing past. A landmark stop — camp outside and leave the huts as you find them."
+      "description": "Historic huts at the old Tin Mine workings in southern Kosciuszko, remnants of the district's mining and grazing past. A landmark stop, with camping outside the huts."
     },
     {
       "waypointId": "w_c365c405",
       "name": "Cascade Trail",
-      "description": "Creek on the Cascade Trail in southern Kosciuszko. Snowmelt-fed and seasonal like the rest of the water up here; treat what you collect."
+      "description": "Creek on the Cascade Trail in southern Kosciuszko. Snowmelt-fed and seasonal like the rest of the water up here, and untreated."
     },
     {
       "waypointId": "w_21693fed",
       "name": "Cascade Hut",
-      "description": "Historic grazing hut on the Cascade Trail, one of the best-kept old huts in the park and a popular day-walk destination. Open grassy surrounds for camping; leave the hut clear for shelter."
+      "description": "Historic grazing hut on the Cascade Trail, one of the best-kept old huts in the park and a popular day-walk destination. Open grassy surrounds for camping, with the hut kept as a shelter rather than accommodation."
     },
     {
       "waypointId": "w_36687f96",
       "name": "Cascade Creek 1",
-      "description": "Cascade Creek at the hut. A clear alpine stream, and like all of them it should be checked rather than assumed and treated before drinking."
+      "description": "Cascade Creek at the hut. A clear alpine stream, seasonal like all of them, and untreated."
     },
     {
       "waypointId": "w_c2dad473",
       "name": "Cascade Creek 2",
-      "description": "A second crossing of Cascade Creek along the trail. Same water and the same caution: treat it, and take what you need before the climb ahead."
+      "description": "A second crossing of Cascade Creek along the trail. The same water, untreated, and the last of it before the climb ahead."
     },
     {
       "waypointId": "w_a4ba20b2",
       "name": "Thredbo River 1",
-      "description": "The upper Thredbo River, high in its catchment. A river rather than a creek, though still snow-fed and thinner late in summer — treat it."
+      "description": "The upper Thredbo River, high in its catchment. A river rather than a creek, though still snow-fed and thinner late in summer. The water is untreated."
     },
     {
       "waypointId": "w_9fdf6d99",
       "name": "Thredbo River 2",
-      "description": "A second access to the upper Thredbo. Worth filling properly: the climb onto the Main Range is long and there is no shelter once you are up there."
+      "description": "A second access to the upper Thredbo, and the last water before the climb onto the Main Range, which is long and has no shelter on it."
     },
     {
       "waypointId": "w_edb1e5c8",
       "name": "Snowy River 1",
-      "description": "The infant Snowy River, high on the Main Range at around 2,040 m and the highest marked water on the trail. Snowmelt drives it, so it is at its strongest in spring; treat what you take."
+      "description": "The infant Snowy River, high on the Main Range at around 2,040 m and the highest marked water on the trail. Snowmelt drives it, so it is at its strongest in spring. The water is untreated."
     },
     {
       "waypointId": "w_935a025a",
       "name": "Anton Anderson Saddle",
-      "description": "Camp in a saddle high on the Main Range, well above the treeline. Superb country and completely exposed — pitch low, peg well, and check the park's current alpine camping restrictions before choosing a spot."
+      "description": "Camp in a saddle high on the Main Range, well above the treeline. Superb country and completely exposed to wind. The park applies alpine camping restrictions across the Main Range, and they set where camping is permitted."
     },
     {
       "waypointId": "w_6cb5818f",
       "name": "Pounds Creek Trib",
-      "description": "Small tributary of Pounds Creek high on the Main Range, fed by snowmelt and alpine bog. It runs best early in the season; treat what you collect."
+      "description": "Small tributary of Pounds Creek high on the Main Range, fed by snowmelt and alpine bog. It runs best early in the season, and the water is untreated."
     },
     {
       "waypointId": "w_76d23735",
       "name": "Consett Stephen Pass",
-      "description": "High pass camp on the northern Main Range, at around 1,910 m. Magnificent and entirely open to the weather; check current alpine camping restrictions before pitching."
+      "description": "High pass camp on the northern Main Range, at around 1,910 m. Magnificent and entirely open to the weather, and within the park's alpine camping restrictions."
     },
     {
       "waypointId": "w_0247ab67",
       "name": "Whites River Hut",
-      "description": "Shelter hut near the Munyang River in the Snowy Mountains, one of the huts kept for emergency use in this exposed country. Camp outside; the river is close by for water."
+      "description": "Shelter hut near the Munyang River in the Snowy Mountains, one of the huts kept for emergency use in this exposed country. There is camping outside it, and the river close by for water."
     },
     {
       "waypointId": "w_50f15165",
       "name": "Munyang River",
-      "description": "The Munyang River at Whites River Hut. An upland river fed by the range above — treat it, and note that flows drop away through summer."
+      "description": "The Munyang River at Whites River Hut. An upland river fed by the range above, untreated, with flows that drop away through summer."
     },
     {
       "waypointId": "w_fd245dde",
       "name": "Dickie Cooper Creek 1",
-      "description": "Creek on the high ground near Schlink Pass. Bog- and snowmelt-fed, small, and seasonal; treat what you take."
+      "description": "Creek on the high ground near Schlink Pass. Bog- and snowmelt-fed, small, seasonal and untreated."
     },
     {
       "waypointId": "w_a916cd47",
       "name": "Dickie Cooper Creek 2",
-      "description": "A second crossing of Dickie Cooper Creek. Handy for a quick top-up near Schlink Hut, after treating."
+      "description": "A second crossing of Dickie Cooper Creek, near Schlink Hut. The same untreated bog-fed water."
     },
     {
       "waypointId": "w_64766767",
@@ -575,107 +575,107 @@
     {
       "waypointId": "w_d495c839",
       "name": "Dickie Cooper Creek 3",
-      "description": "The last marked crossing of Dickie Cooper Creek north of Schlink Pass. Treat it, and fill before the open country ahead."
+      "description": "The last marked crossing of Dickie Cooper Creek north of Schlink Pass, and the last water before the open country ahead. It is untreated."
     },
     {
       "waypointId": "w_31a45293",
       "name": "Valentines Hut",
-      "description": "Small hut in the Valentine country north of Schlink Pass, in open snow-grass surrounds. A shelter rather than accommodation — camp outside and keep it clear."
+      "description": "Small hut in the Valentine country north of Schlink Pass, in open snow-grass surrounds. A shelter rather than accommodation, with camping outside."
     },
     {
       "waypointId": "w_511fa42f",
       "name": "Back Flat Creek",
-      "description": "Creek in the broad snow-grass flats south of Jagungal. Bog-fed water that is often tannin-stained and slow-moving; treat it."
+      "description": "Creek in the broad snow-grass flats south of Jagungal. Bog-fed water that is often tannin-stained and slow-moving, and untreated."
     },
     {
       "waypointId": "w_4ef31bcc",
       "name": "Grey Mare Hut",
-      "description": "Marked water at Grey Mare Hut, in the old mining country west of Jagungal. Alpine creek water — check that it is running and treat it before drinking."
+      "description": "Marked water at Grey Mare Hut, in the old mining country west of Jagungal. Alpine creek water, seasonal and untreated."
     },
     {
       "waypointId": "w_b902046f",
       "name": "Tooma River",
-      "description": "The Tooma River in its headwaters below Jagungal. A river by name and a small one at this altitude, so treat it and don't count on a strong flow late in summer."
+      "description": "The Tooma River in its headwaters below Jagungal. A river by name and a small one at this altitude, with a flow that weakens late in summer. The water is untreated."
     },
     {
       "waypointId": "w_4d8bfc63",
       "name": "Tumut River",
-      "description": "The upper Tumut in the Jagungal country. Snow-fed headwaters: fuller early in the season, thinner later, and always worth treating."
+      "description": "The upper Tumut in the Jagungal country. Snow-fed headwaters: fuller early in the season, thinner later, and untreated."
     },
     {
       "waypointId": "w_f20e91c6",
       "name": "Tumut River Trib",
-      "description": "Small tributary of the upper Tumut on the way past Jagungal. Seasonal and easily reduced to a damp line in dry years; treat what you take."
+      "description": "Small tributary of the upper Tumut on the way past Jagungal. Seasonal, easily reduced to a damp line in dry years, and untreated."
     },
     {
       "waypointId": "w_69ba7f83",
       "name": "O' Keefes Hut",
-      "description": "Hut in the open country near Mt Jagungal and a familiar landmark in the Jagungal Wilderness. Creek water nearby; camp outside and leave the hut for shelter."
+      "description": "Hut in the open country near Mt Jagungal and a familiar landmark in the Jagungal Wilderness. There is creek water nearby and camping outside the hut, which is kept as a shelter."
     },
     {
       "waypointId": "w_f70a4978",
       "name": "Hut Creek",
-      "description": "The creek beside O'Keefes Hut. Like most water in the Jagungal Wilderness it comes from bog and snowmelt, so check it rather than assume it, and treat it."
+      "description": "The creek beside O'Keefes Hut. Like most water in the Jagungal Wilderness it comes from bog and snowmelt, so the flow is seasonal, and it is untreated."
     },
     {
       "waypointId": "w_8189a28c",
       "name": "Bogong Creek",
-      "description": "Creek in the snow-grass country north of Jagungal. Small and seasonal — a top-up rather than a source to build a day around, and treat what you take."
+      "description": "Creek in the snow-grass country north of Jagungal. Small, seasonal and untreated."
     },
     {
       "waypointId": "w_a2dd4430",
       "name": "Doubtful Creek",
-      "description": "Doubtful Creek, a name worth taking at face value in late summer. Treat what you collect and carry enough that a dry bed does not matter."
+      "description": "Doubtful Creek, and the name holds in late summer, when the bed can be dry. The water is untreated."
     },
     {
       "waypointId": "w_333db8a4",
       "name": "Diggers Creek",
-      "description": "Creek in the old grazing country north of Jagungal. A modest flow that falls away through summer; treat it before drinking."
+      "description": "Creek in the old grazing country north of Jagungal. A modest flow that falls away through summer, and untreated."
     },
     {
       "waypointId": "w_0b7beb2d",
       "name": "Mackays Hut",
-      "description": "Hut in the Jagungal Wilderness, one of the chain of grazing-era shelters through this country. The creek nearby is the water; camp outside and leave the hut clear."
+      "description": "Hut in the Jagungal Wilderness, one of the chain of grazing-era shelters through this country. The creek nearby is the water, and there is camping outside the hut."
     },
     {
       "waypointId": "w_dfd0a81d",
       "name": "Tibeaudo Creek",
-      "description": "The creek at Mackays Hut. Bog-fed alpine water: treat it, and expect it to be slow or low in a dry season."
+      "description": "The creek at Mackays Hut. Bog-fed alpine water, untreated, and slow or low in a dry season."
     },
     {
       "waypointId": "w_2271e3d2",
       "name": "McKeahnies Creek",
-      "description": "Creek in the rolling country between Jagungal and the Tantangara plains. Seasonal, so check it before planning a camp around it, and treat what you take."
+      "description": "Creek in the rolling country between Jagungal and the Tantangara plains. Seasonal and untreated."
     },
     {
       "waypointId": "w_65a1b65c",
       "name": "Barneys Creek",
-      "description": "Small creek in the same open country. Fine as a top-up once treated, but not a source to count on in late summer."
+      "description": "Small creek in the same open country. A modest flow, untreated, and unreliable in late summer."
     },
     {
       "waypointId": "w_0552367d",
       "name": "Nine Mile Creek",
-      "description": "Creek high on the long, thinly watered stretch towards the Eucumbene. Small and seasonal — check it, treat it, and carry a reserve either way."
+      "description": "Creek high on the long, thinly watered stretch towards the Eucumbene. Small, seasonal and untreated."
     },
     {
       "waypointId": "w_641dfbfa",
       "name": "Eucumbene River",
-      "description": "The Eucumbene River in its upper valley, one of the larger crossings on this section. Treat it, and take on water before the climb out."
+      "description": "The Eucumbene River in its upper valley, one of the larger crossings on this section. Untreated, and the last water before the climb out."
     },
     {
       "waypointId": "w_1290a628",
       "name": "Chance Creek",
-      "description": "Creek between the Eucumbene and the Tantangara country. As the name suggests, worth a look rather than a certainty — and treat anything you find."
+      "description": "Creek between the Eucumbene and the Tantangara country. As the name suggests it is an uncertain source, and the water is untreated."
     },
     {
       "waypointId": "w_13909982",
       "name": "Tantangara Creek",
-      "description": "Tantangara Creek in the open grassy country above the reservoir. Brumbies range through here, which is another reason to treat the water properly."
+      "description": "Tantangara Creek in the open grassy country above the reservoir. Brumbies range through this country and use the creek, and the water is untreated."
     },
     {
       "waypointId": "w_7def2e75",
       "name": "Witzes Hut",
-      "description": "Old grazing hut on the plains near Tantangara, in open country with big skies and very little shelter. Camp outside and leave the hut for weather."
+      "description": "Old grazing hut on the plains near Tantangara, in open country with big skies and very little shelter. It is kept as a shelter rather than accommodation, with camping outside."
     },
     {
       "waypointId": "w_ffe2ac93",
@@ -685,67 +685,67 @@
     {
       "waypointId": "w_febc680c",
       "name": "Bullocks Hill Trail",
-      "description": "Creek crossing on the Bullocks Hill Trail near Tantangara. Open grazing country with brumbies about, so treat the water, and expect it to be low in a dry summer."
+      "description": "Creek crossing on the Bullocks Hill Trail near Tantangara. Open grazing country with brumbies about, the water untreated, and the flow low in a dry summer."
     },
     {
       "waypointId": "w_479fb77e",
       "name": "Tantangara Creek",
-      "description": "A second crossing of Tantangara Creek, lower in its valley. Larger here than up on the plain, but still seasonal and still to be treated."
+      "description": "A second crossing of Tantangara Creek, lower in its valley. Larger here than up on the plain, but still seasonal and untreated."
     },
     {
       "waypointId": "w_31cbbe82",
       "name": "Murrumbidgee River",
-      "description": "The upper Murrumbidgee, one of the bigger river crossings on the trail. Depth varies with recent rain, and the water needs treating like everything else."
+      "description": "The upper Murrumbidgee, one of the bigger river crossings on the trail. Depth varies with recent rain, and the water is untreated."
     },
     {
       "waypointId": "w_7aecad8d",
       "name": "Dairymans Creek",
-      "description": "Creek in the grazing-era country north of the Murrumbidgee. A modest source that thins through summer; treat what you collect."
+      "description": "Creek in the grazing-era country north of the Murrumbidgee. A modest source that thins through summer, and untreated."
     },
     {
       "waypointId": "w_d970cf4e",
       "name": "Bally Creek 2",
-      "description": "Creek on the approach to Ghost Gully. Small and seasonal, and better checked on arrival than counted on from a distance. Treat what you take."
+      "description": "Creek on the approach to Ghost Gully. Small, seasonal and untreated."
     },
     {
       "waypointId": "w_052b0278",
       "name": "Ghost Gully Camping Area",
-      "description": "Established camping area with vehicle access in the Long Plain country, which makes it a practical spot for a food drop or a lift out. Open ground and cold, clear nights."
+      "description": "Established camping area with vehicle access in the Long Plain country, which puts it within reach of food drops and lifts. Open ground and cold, clear nights."
     },
     {
       "waypointId": "w_5201f2f1",
       "name": "Boundary Creek",
-      "description": "The creek at Ghost Gully, the marked water for the camping area. Open grazing country upstream — treat it, and check the flow in a dry spell."
+      "description": "The creek at Ghost Gully, the marked water for the camping area. Open grazing country upstream, the water untreated, and the flow low in a dry spell."
     },
     {
       "waypointId": "w_e5cbc0d2",
       "name": "Hainsworth Hut",
-      "description": "Hut on Dip Creek in the northern Kosciuszko country, another of the grazing-era shelters along this stretch. The creek beside it is the water; camp outside."
+      "description": "Hut on Dip Creek in the northern Kosciuszko country, another of the grazing-era shelters along this stretch. The creek beside it is the water, and there is camping outside."
     },
     {
       "waypointId": "w_ead9cfca",
       "name": "Dip Creek 1",
-      "description": "Dip Creek at Hainsworth Hut. Small upland water that runs with the season; treat it before drinking."
+      "description": "Dip Creek at Hainsworth Hut. Small upland water that runs with the season, and untreated."
     },
     {
       "waypointId": "w_911ac820",
       "name": "Dip Creek 2",
-      "description": "A second marked point on Dip Creek just past the hut. Same creek and the same caution — check it is running, and treat it."
+      "description": "A second marked point on Dip Creek just past the hut. The same seasonal, untreated creek water."
     },
     {
       "waypointId": "w_2a331f75",
       "name": "Morris Creek",
-      "description": "Creek in the forested country between Dip Creek and the Bimberi approaches. Seasonal and best treated; carry enough not to depend on it."
+      "description": "Creek in the forested country between Dip Creek and the Bimberi approaches. Seasonal and untreated."
     },
     {
       "waypointId": "w_ee81cc0f",
       "name": "Seventeen Flat Creek",
-      "description": "Creek on the flats of the same name. Slow, grassy-banked water that suits filtering more than dipping a bottle; treat it whatever you do."
+      "description": "Creek on the flats of the same name. Slow, grassy-banked water that is shallow to draw from, and untreated."
     },
     {
       "waypointId": "w_a606f3a6",
       "name": "Pocket Ck",
-      "description": "Small creek in the plains country before Oldfields Hut. A top-up rather than a plan, and treat what you take."
+      "description": "Small creek in the plains country before Oldfields Hut. A modest seasonal flow, untreated."
     },
     {
       "waypointId": "w_21799a69",
@@ -755,47 +755,47 @@
     {
       "waypointId": "w_128a877d",
       "name": "Goodradigbee River",
-      "description": "The Goodradigbee River in its upper valley near Oldfields Hut. Larger and more open than the ridge creeks; brumbies and stock have long used this country, so treat it."
+      "description": "The Goodradigbee River in its upper valley near Oldfields Hut. Larger and more open than the ridge creeks; brumbies and stock have long used this country, and the water is untreated."
     },
     {
       "waypointId": "w_e69be09b",
       "name": "Dunns Flat Creek 1",
-      "description": "Creek on Dunns Flat, on the climb towards the Bimberi country. Small and seasonal — treat it, and top up before the higher ground."
+      "description": "Creek on Dunns Flat, on the climb towards the Bimberi country. Small, seasonal and untreated, and the last water before the higher ground."
     },
     {
       "waypointId": "w_95a2b35d",
       "name": "Dunns Flat Creek 2",
-      "description": "A second crossing of Dunns Flat Creek, higher in the catchment and correspondingly smaller. Treat what you take."
+      "description": "A second crossing of Dunns Flat Creek, higher in the catchment and correspondingly smaller. The water is untreated."
     },
     {
       "waypointId": "w_409951ea",
       "name": "Murray Gap Trail",
-      "description": "Marked water on the Murray Gap Trail, near the crossing into the ACT and the Bimberi Wilderness. High, small and seasonal; carry enough for the gap itself."
+      "description": "Marked water on the Murray Gap Trail, near the crossing into the ACT and the Bimberi Wilderness. High, small, seasonal and untreated."
     },
     {
       "waypointId": "w_16b2a783",
       "name": "Little Bimberi Creek",
-      "description": "Creek below Little Bimberi in the Bimberi Wilderness. Steep wooded country where the water is cold, small and seasonal — treat it."
+      "description": "Creek below Little Bimberi in the Bimberi Wilderness. Steep wooded country where the water is cold, small, seasonal and untreated."
     },
     {
       "waypointId": "w_43fa9f06",
       "name": "Bimberi Creek",
-      "description": "Bimberi Creek in the wilderness valley below the range. A better-sized creek than the ridge water above, though still seasonal; treat what you take."
+      "description": "Bimberi Creek in the wilderness valley below the range. A better-sized creek than the ridge water above, though still seasonal, and untreated."
     },
     {
       "waypointId": "w_c377feac",
       "name": "Cotter River",
-      "description": "The upper Cotter River in Namadgi, the catchment that supplies Canberra's water. A substantial stream by the standards of this section — treat it, and tread lightly in the catchment."
+      "description": "The upper Cotter River in Namadgi, the catchment that supplies Canberra's water. A substantial stream by the standards of this section, untreated, and within a declared water catchment."
     },
     {
       "waypointId": "w_acd5a313",
       "name": "Pond Creek 1",
-      "description": "Creek on the climb from the Cotter towards Cotter Gap. Small and seasonal; treat it, and fill here if it is running rather than banking on the gap."
+      "description": "Creek on the climb from the Cotter towards Cotter Gap. Small, seasonal and untreated, and the last certain water below the gap."
     },
     {
       "waypointId": "w_23f5a73a",
       "name": "Pond Creek 2",
-      "description": "A second marked point on Pond Creek, up near Cotter Gap and the camping there. Higher in the catchment means less water — check it and treat it."
+      "description": "A second marked point on Pond Creek, up near Cotter Gap and the camping there. Higher in the catchment means less water, and it is untreated."
     },
     {
       "waypointId": "w_a4d33f40",
@@ -805,52 +805,52 @@
     {
       "waypointId": "w_c5ed487e",
       "name": "Sawpit Creek",
-      "description": "Creek in the Namadgi forest north of Cotter Gap. Seasonal like the rest of the water through here, so check it rather than assume it after a dry run of weeks, and treat what you take."
+      "description": "Creek in the Namadgi forest north of Cotter Gap. Seasonal like the rest of the water through here, and untreated."
     },
     {
       "waypointId": "w_2121963c",
       "name": "Orroral River",
-      "description": "The Orroral River in its broad valley in Namadgi, lower and warmer country than the range behind. Treat the water, and expect the flow to drop away through summer."
+      "description": "The Orroral River in its broad valley in Namadgi, lower and warmer country than the range behind. The water is untreated, and the flow drops away through summer."
     },
     {
       "waypointId": "w_bd9f9e69",
       "name": "Honeysuckle Campground",
-      "description": "Formal campground at Honeysuckle Creek, on the site of the tracking station that carried the Apollo 11 moonwalk pictures. Vehicle access makes it an easy meeting or resupply point near the northern end."
+      "description": "Formal campground at Honeysuckle Creek, on the site of the tracking station that carried the Apollo 11 moonwalk pictures. It has sealed vehicle access near the northern end of the trail."
     },
     {
       "waypointId": "w_5d8570cf",
       "name": "Booroomba Creek 1",
-      "description": "Creek below the Booroomba country in Namadgi, on the last stretch towards Tharwa. Small, seasonal, and to be treated."
+      "description": "Creek below the Booroomba country in Namadgi, on the last stretch towards Tharwa. Small, seasonal and untreated."
     },
     {
       "waypointId": "w_9094a9d6",
       "name": "Booroomba Creek 2",
-      "description": "A second crossing of Booroomba Creek, lower down the valley. Handy for a last fill on the walk out; treat it."
+      "description": "A second crossing of Booroomba Creek, lower down the valley, and the last creek before the walk out. The water is untreated."
     },
     {
       "waypointId": "w_c5ee11fd",
       "name": "Georges Creek",
-      "description": "The last marked water on the trail, in low forest near the northern end in Namadgi, with under ten kilometres of walking left. Treat it like all the rest."
+      "description": "The last marked water on the trail, in low forest near the northern end in Namadgi, with under ten kilometres of walking left. Like all the rest of it, untreated."
     },
     {
       "waypointId": "w_06812cbf",
       "name": "Thomson Bridge Campground",
-      "description": "Vehicle-accessible campground by the Thomson River bridge, close to the southern end of the trail. The road access makes it a practical place to start, to finish a first day, or to leave a food drop."
+      "description": "Vehicle-accessible campground by the Thomson River bridge, close to the southern end of the trail. The road access puts it within reach of food drops and lifts."
     },
     {
       "waypointId": "w_f674898b",
       "name": "low saddle road 2",
-      "description": "A second marked water point on Low Saddle Road, away from the main line. Small ridge-country water: check it rather than count on it, and treat what you take."
+      "description": "A second marked water point on Low Saddle Road, away from the main line. Small ridge-country water: seasonal and untreated."
     },
     {
       "waypointId": "w_bb6df7a5",
       "name": "Nobs Track",
-      "description": "Another water point on Nobs Track, off the main line. Like everything at this height it runs with the season, so treat what you find and carry enough not to depend on it."
+      "description": "Another water point on Nobs Track, off the main line. Like everything at this height it runs with the season, and it is untreated."
     },
     {
       "waypointId": "w_7916d161",
       "name": "Macalister Springs",
-      "description": "Spring below Mt Howitt and the classic water stop for this part of the trail. Being spring-fed it tends to hold on when surface creeks thin, but treat it, and still check it in a dry season."
+      "description": "Spring below Mt Howitt and the classic water stop for this part of the trail. Being spring-fed it tends to hold on when surface creeks thin, though it too drops in a dry season. The water is untreated."
     },
     {
       "waypointId": "w_e749a67a",
@@ -860,42 +860,42 @@
     {
       "waypointId": "w_b3bffe54",
       "name": "Mt Murray Campsite",
-      "description": "Camp on the Mt Murray side trip in the Barry Mountains country. High, open ground with no water marked at the site, so carry up what you need for the night."
+      "description": "Camp on the Mt Murray side trip in the Barry Mountains country. High, open ground, with no water marked at the site."
     },
     {
       "waypointId": "w_002030e0",
       "name": "Mt Hotham",
-      "description": "Alpine resort village on the Great Alpine Road, and the obvious resupply and exit point on the Victorian half of the trail. What is open changes a great deal with the season, so confirm services and transport before you plan a food drop around it."
+      "description": "Alpine resort village on the Great Alpine Road, and the main resupply and exit point on the Victorian half of the trail. What is open changes a great deal with the season, and much of the village closes outside the snow season."
     },
     {
       "waypointId": "w_0d5727ee",
       "name": "Spargo Hut",
-      "description": "Old hut in the high country near Mt Hotham, from the days when this was cattle and mining ground. Shelter for weather rather than a place to book a night; camp outside."
+      "description": "Old hut in the high country near Mt Hotham, from the days when this was cattle and mining ground. It is shelter for weather rather than a bookable bed, with camping outside."
     },
     {
       "waypointId": "w_56397749",
       "name": "Youngs Hut",
-      "description": "One of the old cattlemen's huts in the high country off the main line. Small and simple, and best thought of as shelter rather than a planned bed for the night."
+      "description": "One of the old cattlemen's huts in the high country off the main line. Small and simple, and kept as shelter rather than accommodation."
     },
     {
       "waypointId": "w_00191a0a",
       "name": "High Plains Creek",
-      "description": "Creek out on the Bogong High Plains away from the main line. Alpine water fed by snowmelt and bog, so it fades through summer; treat what you collect."
+      "description": "Creek out on the Bogong High Plains away from the main line. Alpine water fed by snowmelt and bog, so it fades through summer, and it is untreated."
     },
     {
       "waypointId": "w_d52acf87",
       "name": "Ryder's Huts",
-      "description": "Cattlemen's-era huts in the Bogong High Plains country, off the main line. Historic fabric worth leaving untouched; camp outside and use them only for shelter."
+      "description": "Cattlemen's-era huts in the Bogong High Plains country, off the main line. Historic fabric kept as shelter, with camping outside."
     },
     {
       "waypointId": "w_19d06a12",
       "name": "Langford West Aqueduct 1",
-      "description": "The first marked point on the Langford West aqueduct, part of the old channel system that moves water across the high plains. There may or may not be water running in it, so look before you plan on it and treat what you take."
+      "description": "The first marked point on the Langford West aqueduct, part of the old channel system that moves water across the high plains. Whether it is running depends on the season, and the water is untreated."
     },
     {
       "waypointId": "w_d6b5f96f",
       "name": "Falls Creek",
-      "description": "Alpine resort village at the edge of the Bogong High Plains, with sealed road access and the services of a small village. Much quieter outside the snow season, so check what is trading before relying on it for a resupply."
+      "description": "Alpine resort village at the edge of the Bogong High Plains, with sealed road access and the services of a small village. Much quieter outside the snow season, when many businesses close."
     },
     {
       "waypointId": "w_b607deef",
@@ -905,17 +905,17 @@
     {
       "waypointId": "w_b6d0a029",
       "name": "Kelly Hut",
-      "description": "The second of the pair of high plains huts on this side trip. Simple, historic and exposed — worth the look, and worth leaving exactly as you found it."
+      "description": "The second of the pair of high plains huts on this side trip. Simple, historic and exposed, and kept as shelter rather than accommodation."
     },
     {
       "waypointId": "w_1bd54e79",
       "name": "Johnston Hut",
-      "description": "Small hut in the Bogong High Plains country off the main line. Old grazing-era fabric: use it for shelter, camp outside, and carry everything out with you."
+      "description": "Small hut in the Bogong High Plains country off the main line. Old grazing-era fabric kept as shelter, with camping outside and no facilities of any kind."
     },
     {
       "waypointId": "w_c3fefd3f",
       "name": "Big River",
-      "description": "Big River on the Mt Bogong alternate route, a separate crossing from the one on the main line. A real river, so crossings can be deep after rain, and the water needs treating."
+      "description": "Big River on the Mt Bogong alternate route, a separate crossing from the one on the main line. A real river, so crossings can be deep after rain, and the water is untreated."
     },
     {
       "waypointId": "w_1645d5d1",
@@ -925,12 +925,12 @@
     {
       "waypointId": "w_3e3fb00d",
       "name": "Bogong Creek Saddle",
-      "description": "A second marked pitch at Bogong Creek Saddle on the Mt Bogong alternate. Fill down at the river before you settle in — this is the bottom of a long, steep climb."
+      "description": "A second marked pitch at Bogong Creek Saddle on the Mt Bogong alternate. There is no water at the saddle; the river is down at the bottom of a long, steep climb."
     },
     {
       "waypointId": "w_c0755009",
       "name": "Cairn Creek Hut",
-      "description": "Small hut in the Big River country below Mt Bogong, away from the main line. Remote and simple, and a useful refuge if the weather catches you on the climb."
+      "description": "Small hut in the Big River country below Mt Bogong, away from the main line. Remote and simple, and kept as a refuge for weather on the climb."
     },
     {
       "waypointId": "w_5b29deff",
@@ -940,32 +940,32 @@
     {
       "waypointId": "w_3072c4bb",
       "name": "Camp Creek",
-      "description": "The creek at Cleve Cole Hut on Mt Bogong, not to be confused with the Camp Creek at Mt Speculation on the main line. High alpine water: seasonal, and to be treated."
+      "description": "The creek at Cleve Cole Hut on Mt Bogong, not to be confused with the Camp Creek at Mt Speculation on the main line. High alpine water: seasonal and untreated."
     },
     {
       "waypointId": "w_a9b5ab88",
       "name": "Glen Wills wilderness retreat",
-      "description": "Accommodation at Glen Wills, an old goldfields locality on the road near Mt Wills and one of the few off-trail options on this stretch. Availability and access need arranging ahead."
+      "description": "Accommodation at Glen Wills, an old goldfields locality on the road near Mt Wills and one of the few off-trail options on this stretch. It takes bookings rather than walk-ins, and access is by road."
     },
     {
       "waypointId": "w_101183da",
       "name": "Omeo",
-      "description": "Town in the high country well away from the trail, reached by road rather than on foot, and the usual full-resupply option for the Victorian sections. Getting there means a lift or a shuttle, so arrange it ahead."
+      "description": "Town in the high country well away from the trail, reached by road rather than on foot, and the usual full-resupply option for the Victorian sections. Reaching it means a lift or a shuttle."
     },
     {
       "waypointId": "w_38fbcc63",
       "name": "Limestone Caves and Hut",
-      "description": "Hut in the limestone country around Limestone Creek, with the caves that give this side trip its name nearby. Caves need proper light and real care; the hut is shelter rather than accommodation."
+      "description": "Hut in the limestone country around Limestone Creek, with the caves that give this side trip its name nearby. The caves are unlit and undeveloped; the hut is shelter rather than accommodation."
     },
     {
       "waypointId": "w_68963ecd",
       "name": "Bogong Creek Trib",
-      "description": "Small tributary in the Thredbo valley country away from the main line. A minor source that runs with the season, so treat it and don't build a plan around it."
+      "description": "Small tributary in the Thredbo valley country away from the main line. A minor source that runs with the season, and untreated."
     },
     {
       "waypointId": "w_c1602095",
       "name": "Thredbo",
-      "description": "Resort village in the Thredbo valley below the Main Range, and the main resupply and exit point on the New South Wales side. What is open and running varies with the season, so confirm before planning around it."
+      "description": "Resort village in the Thredbo valley below the Main Range, and the main resupply and exit point on the New South Wales side. What is open and running varies with the season."
     },
     {
       "waypointId": "w_1a8229dd",
@@ -975,152 +975,152 @@
     {
       "waypointId": "w_2f7bc0b0",
       "name": "Snowy River 2",
-      "description": "A second marked point on the young Snowy River high in its catchment. Snowmelt-driven and strongest early in the season; treat what you take."
+      "description": "A second marked point on the young Snowy River high in its catchment. Snowmelt-driven, strongest early in the season, and untreated."
     },
     {
       "waypointId": "w_f929176a",
       "name": "Seamans Hut",
-      "description": "Stone memorial hut on the high slopes below Kosciuszko, built after skiers died in this country and kept as an emergency refuge ever since. Shelter only — camping is outside, and restricted up here."
+      "description": "Stone memorial hut on the high slopes below Kosciuszko, built after skiers died in this country and kept as an emergency refuge ever since. It is shelter only, and camping on this part of the Main Range is restricted by the park."
     },
     {
       "waypointId": "w_018874da",
       "name": "Wilkinson's Creek Campsite",
-      "description": "Camp beside Wilkinsons Creek in the high country below the Main Range. Alpine ground with camping restrictions in force, so check the park's current rules before choosing a pitch."
+      "description": "Camp beside Wilkinsons Creek in the high country below the Main Range. Alpine ground, with the park's camping restrictions in force over this country."
     },
     {
       "waypointId": "w_972a26a3",
       "name": "Wilkinsons Creek",
-      "description": "Wilkinsons Creek, a snowmelt-fed alpine stream high in the Kosciuszko country. It runs hardest in spring and thins later in the season; treat what you collect."
+      "description": "Wilkinsons Creek, a snowmelt-fed alpine stream high in the Kosciuszko country. It runs hardest in spring and thins later in the season, and the water is untreated."
     },
     {
       "waypointId": "w_0bdcbf10",
       "name": "Opera House",
-      "description": "Small hut in the high Kosciuszko country with a memorable name and none of the grandeur to match it. Treat it as an emergency shelter, camp outside, and leave it clean."
+      "description": "Small hut in the high Kosciuszko country with a memorable name and none of the grandeur to match it. An emergency shelter, with camping outside."
     },
     {
       "waypointId": "w_c4a62291",
       "name": "Horse Camp Hut",
-      "description": "Old hut in the Snowy Mountains off the main line, from the days when this was grazing and horse country. A refuge in weather rather than a place to plan a night around."
+      "description": "Old hut in the Snowy Mountains off the main line, from the days when this was grazing and horse country. A refuge in weather rather than accommodation."
     },
     {
       "waypointId": "w_5690f0a9",
       "name": "Disappointment Ridge Hut",
-      "description": "Small hut on the high ground near Schlink Pass. Simple shelter in exposed country; camp outside, and keep it free for anyone who gets caught out."
+      "description": "Small hut on the high ground near Schlink Pass. Simple shelter in exposed country, kept clear for anyone caught out, with camping outside."
     },
     {
       "waypointId": "w_7fa86e17",
       "name": "Munyang River",
-      "description": "Another marked point on the Munyang River, away from the main line. An upland river fed by the range above, with flows falling off through summer — treat it before drinking."
+      "description": "Another marked point on the Munyang River, away from the main line. An upland river fed by the range above, with flows falling off through summer, and untreated."
     },
     {
       "waypointId": "w_ad459021",
       "name": "Tin Hut",
-      "description": "Well-known hut in the Valentine and Schlink country of Kosciuszko National Park. Exposed, treeless ground all around; use the hut for shelter and camp outside."
+      "description": "Well-known hut in the Valentine and Schlink country of Kosciuszko National Park. Exposed, treeless ground all around; the hut is shelter and camping is outside it."
     },
     {
       "waypointId": "w_aea3ff7d",
       "name": "Mawsons Hut",
-      "description": "Hut in the Kosciuszko high country off the main line, one of the chain of old grazing-era shelters through this district. Camp outside and leave it as you found it."
+      "description": "Hut in the Kosciuszko high country off the main line, one of the chain of old grazing-era shelters through this district. Camping is outside the hut."
     },
     {
       "waypointId": "w_b05ccf04",
       "name": "Derschkos Hut",
-      "description": "Small hut in the Jagungal country away from the main line. Another of the grazing-era shelters here — useful in weather, and not somewhere to plan a bed for the night."
+      "description": "Small hut in the Jagungal country away from the main line. Another of the grazing-era shelters here, kept as a refuge in weather rather than accommodation."
     },
     {
       "waypointId": "w_dd25d452",
       "name": "Brooks Hut",
-      "description": "Old hut in the northern Kosciuszko country off the main line. Simple shelter in open, cold ground; treat it as a refuge and camp outside it."
+      "description": "Old hut in the northern Kosciuszko country off the main line. Simple shelter in open, cold ground, with camping outside it."
     },
     {
       "waypointId": "w_a09e997d",
       "name": "Adaminaby",
-      "description": "Town out on the tablelands away from the trail, and a common road-access resupply and exit for the northern Kosciuszko sections. A working town rather than a resort, but you need transport to reach it."
+      "description": "Town out on the tablelands away from the trail, and a common road-access resupply and exit for the northern Kosciuszko sections. A working town rather than a resort, and it is only reachable by vehicle."
     },
     {
       "waypointId": "w_014e6a06",
       "name": "Happy Jacks Creek",
-      "description": "Creek in the Happy Jacks country of northern Kosciuszko, away from the main line. Seasonal upland water — check it is running, and treat what you take."
+      "description": "Creek in the Happy Jacks country of northern Kosciuszko, away from the main line. Seasonal upland water, untreated."
     },
     {
       "waypointId": "w_100e5e3e",
       "name": "Happys Hut",
-      "description": "Hut in the Happy Jacks country, another of the old shelters scattered through northern Kosciuszko. The creek nearby is the water; camp outside the hut."
+      "description": "Hut in the Happy Jacks country, another of the old shelters scattered through northern Kosciuszko. The creek nearby is the water, and camping is outside the hut."
     },
     {
       "waypointId": "w_d9c03630",
       "name": "Broken Dam Creek",
-      "description": "The creek at Broken Dam Hut, reached on a side trip. Small upland water that varies with the season, so treat it and look at it before relying on it."
+      "description": "The creek at Broken Dam Hut, reached on a side trip. Small upland water that varies with the season, and untreated."
     },
     {
       "waypointId": "w_6fbc75bf",
       "name": "Broken Dam Hut",
-      "description": "Old hut in the northern Kosciuszko country, the point of this side trip. A simple grazing-era shelter with a creek nearby; camp outside and leave it as you found it."
+      "description": "Old hut in the northern Kosciuszko country, the point of this side trip. A simple grazing-era shelter with a creek nearby, and camping outside."
     },
     {
       "waypointId": "w_912169cb",
       "name": "Four Mile Creek",
-      "description": "Creek at Four Mile Hut in the old Kiandra goldfields country — a different Four Mile from the one on the main line far to the south. Seasonal water, and it should be treated."
+      "description": "Creek at Four Mile Hut in the old Kiandra goldfields country — a different Four Mile from the one on the main line far to the south. Seasonal water, untreated."
     },
     {
       "waypointId": "w_0fecf167",
       "name": "Four Mile Hut",
-      "description": "Miner's hut from the Kiandra goldfields era, later caught up in this district's long skiing history. A well-loved little building: use it for shelter, camp outside, and leave it be."
+      "description": "Miner's hut from the Kiandra goldfields era, later caught up in this district's long skiing history. A small, well-loved building kept as shelter, with camping outside."
     },
     {
       "waypointId": "w_b56a1e68",
       "name": "Long Plain Homestead",
-      "description": "Heritage grazing homestead out on Long Plain, in open, frost-prone country. Historic fabric worth respecting — camp outside rather than in the buildings."
+      "description": "Heritage grazing homestead out on Long Plain, in open, frost-prone country. The buildings are heritage fabric rather than walkers' shelter, and camping is outside them."
     },
     {
       "waypointId": "w_f38d0c89",
       "name": "Yorkies Creek",
-      "description": "Creek on Long Plain away from the main line. Slow, open-country water in grazing and brumby country, so treat it properly, and expect less of it late in summer."
+      "description": "Creek on Long Plain away from the main line. Slow, open-country water in grazing and brumby country, untreated, and lower late in summer."
     },
     {
       "waypointId": "w_8d5c13c2",
       "name": "Bally Creek 1",
-      "description": "The creek at Millers Hut, a separate marker from the Bally Creek point on the main line. Seasonal plains-country water — treat it, and check it rather than assume it."
+      "description": "The creek at Millers Hut, a separate marker from the Bally Creek point on the main line. Seasonal plains-country water, untreated."
     },
     {
       "waypointId": "w_61282266",
       "name": "Millers Hut",
-      "description": "Small hut on the plains of northern Kosciuszko, reached on a side trip, with a creek alongside. Grazing-era shelter: use it for weather and camp outside."
+      "description": "Small hut on the plains of northern Kosciuszko, reached on a side trip, with a creek alongside. A grazing-era shelter, with camping outside."
     },
     {
       "waypointId": "w_fb477287",
       "name": "Old Currango Homestead",
-      "description": "Slab-built homestead on the Currango plains, said to be among the oldest surviving buildings in the park. Heritage fabric — look rather than lean, and camp well clear of the walls."
+      "description": "Slab-built homestead on the Currango plains, said to be among the oldest surviving buildings in the park. It is fragile heritage fabric, and camping is well clear of the walls."
     },
     {
       "waypointId": "w_c674312f",
       "name": "Bill Jones Hut",
-      "description": "Small hut in the northern Kosciuszko plains country, the point of this side trip. Simple, historic and easily damaged; camp outside and leave it clean."
+      "description": "Small hut in the northern Kosciuszko plains country, the point of this side trip. Simple, historic and easily damaged, with camping outside."
     },
     {
       "waypointId": "w_0bb1e0d4",
       "name": "Cave Creek",
-      "description": "Creek in the limestone country of Cooleman Plain, where the water runs through gorge and cave systems. Karst water carries whatever is on the surface upstream, so treat it carefully."
+      "description": "Creek in the limestone country of Cooleman Plain, where the water runs through gorge and cave systems. Karst water carries whatever is on the surface upstream, and it is untreated."
     },
     {
       "waypointId": "w_cb2e8628",
       "name": "Magpie Flat Campground",
-      "description": "Camping area in the Blue Waterholes country on Cooleman Plain, with vehicle access. Open and popular ground; the creek nearby is the water, and it needs treating."
+      "description": "Camping area in the Blue Waterholes country on Cooleman Plain, with vehicle access. Open and popular ground; the creek nearby is the water, untreated."
     },
     {
       "waypointId": "w_c21445c6",
       "name": "Pockets Hut",
-      "description": "Hut in the northern Kosciuszko plains country, reached on a side trip. One of the old grazing shelters here — camp outside, and leave it for anyone caught out."
+      "description": "Hut in the northern Kosciuszko plains country, reached on a side trip. One of the old grazing shelters here, kept clear for anyone caught out, with camping outside."
     },
     {
       "waypointId": "w_7a238df6",
       "name": "Gurrangorambla Creek",
-      "description": "Creek in the northern Kosciuszko country away from the main line. Open grazing and brumby country upstream, so treat the water, and expect it to be low in a dry summer."
+      "description": "Creek in the northern Kosciuszko country away from the main line. Open grazing and brumby country upstream, the water untreated, and low in a dry summer."
     },
     {
       "waypointId": "w_7628cc94",
       "name": "Orroral Homestead",
-      "description": "Heritage homestead in the Orroral valley in Namadgi, near the site of the old space tracking station that gives this side trip its other half. Open grassy valley; look, but leave the buildings alone."
+      "description": "Heritage homestead in the Orroral valley in Namadgi, near the site of the old space tracking station that gives this side trip its other half. Open grassy valley, with the buildings closed to entry."
     }
   ]
 }

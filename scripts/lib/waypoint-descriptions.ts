@@ -18,6 +18,13 @@ import * as path from 'path';
  *
  * Editing: a trail's file lives at `data/trails/<trail>/descriptions.json`.
  * It is optional; trails without one build exactly as before.
+ *
+ * Voice: descriptions state what is there — facilities, water and its source,
+ * seasonality, access, history — and stop at the facts. They do not instruct
+ * the walker ("treat the water", "fill up here", "check before you rely on
+ * it", "carry enough for the night") or address them in the second person.
+ * Deciding where to camp and how much water to carry is the walker's, not
+ * ours; the text's job is to give them what they need to decide.
  */
 
 /** Filename looked up inside each trail directory. */

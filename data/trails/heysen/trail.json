@@ -6,6 +6,11 @@
   "lengthKm": 39.6,
   "gpxFile": "Heysen.gpx",
   "description": "Trail data auto-generated from Heysen.gpx.",
+  "dataSource": {
+    "text": "Track and waypoints digitised from The Adventure Gene's Heysen Trail notes.",
+    "url": "https://theadventuregene.com/hiking/australia/",
+    "linkText": "The Adventure Gene — Australian trail guides"
+  },
   "trackClassification": {
     "mainRoutePatterns": ["^Map \\d+[A-D]$"],
     "alternatePatterns": ["Alternative", "Alternatve", "\\bAlt\\b"],

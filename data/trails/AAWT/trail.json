@@ -13,6 +13,11 @@
     "ignorePatterns": ["^C "]
   },
   "description": "Trail data auto-generated from AAWT_2025.gpx",
+  "dataSource": {
+    "text": "Track and waypoints digitised from The Adventure Gene's AAWT hiking guide.",
+    "url": "https://theadventuregene.com/aawt-track-guide/",
+    "linkText": "The Adventure Gene — AAWT guide"
+  },
   "direction": {
     "default": "NOBO",
     "reversed": "SOBO"

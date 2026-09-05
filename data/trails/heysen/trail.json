@@ -7,9 +7,9 @@
   "gpxFile": "Heysen.gpx",
   "description": "Trail data auto-generated from Heysen.gpx.",
   "dataSource": {
-    "text": "Track and waypoints digitised from The Adventure Gene's Heysen Trail notes.",
-    "url": "https://theadventuregene.com/hiking/australia/",
-    "linkText": "The Adventure Gene — Australian trail guides"
+    "text": "Track and waypoints from the official Heysen Trail website.",
+    "url": "https://heysentrail.asn.au/",
+    "linkText": "Friends of the Heysen Trail"
   },
   "trackClassification": {
     "mainRoutePatterns": ["^Map \\d+[A-D]$"],

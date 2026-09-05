@@ -1,0 +1,396 @@
+{
+  "trailId": "bibbulmun",
+  "note": "Curated waypoint descriptions, keyed by the stable ids in data/waypoint-ids.json. Applied by scripts/build-trails.ts (overriding any description from the GPX/GeoJSON source) and uploadable to the comments API with scripts/upload-descriptions.ts. Listed north to south, matching the km order of the generated trail data, with off-route waypoints appended at the end. Campsite facilities are described in the general terms that hold across the track's shelters; the state of any individual rainwater tank is not something this text can promise.",
+  "descriptions": [
+    {
+      "waypointId": "w_012fc955",
+      "name": "Kalamunda MTB park",
+      "description": "Mountain bike park in the Perth Hills with a cafe and toilets, and the first easy stop out of Kalamunda, before the walking settles into jarrah forest."
+    },
+    {
+      "waypointId": "w_04f58448",
+      "name": "Hewitt's Hill Campsite",
+      "description": "The first Bibbulmun shelter south of Kalamunda, close enough to walk to in an afternoon. Standard setup: three-sided timber shelter with a sleeping platform, tent sites, pit toilet, picnic table and a rainwater tank. Tank water is untreated."
+    },
+    {
+      "waypointId": "w_56ed070d",
+      "name": "Mundaring Weir hotel",
+      "description": "Pub near Mundaring Weir, a long-standing stop for a meal and a cold drink early in the walk. Opening hours vary."
+    },
+    {
+      "waypointId": "w_ec8412df",
+      "name": "Ball Creek Campsite",
+      "description": "Timber shelter camp in the jarrah forest above Ball Creek, with a sleeping platform, tent sites, toilet and rainwater tank. The creek is seasonal and generally runs only in winter and spring."
+    },
+    {
+      "waypointId": "w_d0e33bd6",
+      "name": "Helena Campsite",
+      "description": "Campsite on the slopes above the Helena valley, with the usual shelter, sleeping platform, tent sites, toilet and tank. Tank water is untreated, and levels can be low by the end of summer."
+    },
+    {
+      "waypointId": "w_d620b9d7",
+      "name": "Waalegh Campsite",
+      "description": "Ridge-top shelter with long views out over the Darling Scarp, one of the better outlooks in the northern section. Shelter, tent sites, toilet and a rainwater tank; there is no natural water up here."
+    },
+    {
+      "waypointId": "w_2a184480",
+      "name": "Beraking Campsite",
+      "description": "Jarrah and wandoo forest camp with the standard three-sided shelter, sleeping platform, tent sites, toilet and tank. The tank is untreated rainwater and the only water here."
+    },
+    {
+      "waypointId": "w_39205f30",
+      "name": "Mt Dale",
+      "description": "Camp marked near Mount Dale, a granite-topped hill in the Perth Hills forest. Facilities here are basic and may not include a tank; there is no dependable water."
+    },
+    {
+      "waypointId": "w_461973da",
+      "name": "Brookton Campsite",
+      "description": "Forest shelter camp close to the Brookton Highway crossing, with sleeping platform, tent sites, toilet and rainwater tank. A common first or last night for people walking just the northern section."
+    },
+    {
+      "waypointId": "w_ef2a8f05",
+      "name": "Brookton Highway",
+      "description": "Sealed road crossing where the track meets Brookton Highway. Traffic runs steadily between Perth and the Wheatbelt, and the road is also used for lifts and food drops."
+    },
+    {
+      "waypointId": "w_e90a862e",
+      "name": "Canning Campsite",
+      "description": "Shelter camp near the Canning River, with sleeping platform, tent sites, toilet and a rainwater tank. The river can run in winter and spring but is not dependable, and any water here is untreated."
+    },
+    {
+      "waypointId": "w_c12c3909",
+      "name": "Monadnocks Campsite",
+      "description": "Camp among the Monadnocks, the granite domes that give this stretch its steep climbs. Usual shelter, tent sites, toilet and tank; the stages either side are steep in both directions."
+    },
+    {
+      "waypointId": "w_7bde6dd8",
+      "name": "Mt Cooke Campsite",
+      "description": "Camp below Mount Cooke, the high point of the Darling Range and the biggest climb in the northern half. Shelter, tent sites, toilet and a tank, which is the only water and is untreated."
+    },
+    {
+      "waypointId": "w_bba497f9",
+      "name": "Nerang Campsite",
+      "description": "Quiet jarrah-forest shelter with sleeping platform, tent sites, toilet and tank. It sits in a long run of forest, with no town on the track between Dwellingup and Collie."
+    },
+    {
+      "waypointId": "w_0e50da43",
+      "name": "Ginger Creek",
+      "description": "Camp marked at Ginger Creek in the forest shortly before the Albany Highway crossing. Facilities are basic and the creek is seasonal."
+    },
+    {
+      "waypointId": "w_8208b89c",
+      "name": "Albany Highway",
+      "description": "Where the track meets Albany Highway, marked here as a camp. The highway is a fast sealed road between Perth and the south coast, and a common place to arrange a lift or a drop."
+    },
+    {
+      "waypointId": "w_9a957877",
+      "name": "White Horse",
+      "description": "Camp marked in the White Horse Hills country between Albany Highway and Mount Wells. It is a basic bush site rather than a full Bibbulmun shelter, with no water."
+    },
+    {
+      "waypointId": "w_7c242c0f",
+      "name": "Mt Wells",
+      "description": "One of the few Bibbulmun camps with an enclosed hut rather than an open shelter — a former forestry building on Mount Wells, with an old fire lookout nearby. Tent sites, toilet and an untreated rainwater tank."
+    },
+    {
+      "waypointId": "w_569f8c31",
+      "name": "Chadora",
+      "description": "Forest shelter camp in the jarrah south of Mount Wells, with sleeping platform, tent sites, toilet and rainwater tank. The last camp before the walk down into Dwellingup."
+    },
+    {
+      "waypointId": "w_2d1372b1",
+      "name": "Dwelingup",
+      "description": "Small jarrah timber town sitting right on the track, and the first proper resupply south of Perth, with shops, food, beds and a campground. A common spot for a rest day or a posted resupply box."
+    },
+    {
+      "waypointId": "w_3d04d500",
+      "name": "Swamp Oak Campsite",
+      "description": "Shelter camp in the forest south of Dwellingup, with sleeping platform, tent sites, toilet and tank. An easy first night out of town on a mostly gentle stage."
+    },
+    {
+      "waypointId": "w_e249b628",
+      "name": "Murray Campsite",
+      "description": "Camp above the Murray River, one of the more scenic spots in this section, with shelter, tent sites, toilet and a rainwater tank. The river runs below the camp, and its water is untreated."
+    },
+    {
+      "waypointId": "w_40279bd8",
+      "name": "Dookanelly Campsite",
+      "description": "Standard Bibbulmun shelter in the forest, with sleeping platform, tent sites, toilet and rainwater tank. The stages either side of it are long."
+    },
+    {
+      "waypointId": "w_88aa033f",
+      "name": "Possum Springs Campsite",
+      "description": "Forest campsite named for springs nearby, with the usual shelter, tent sites, toilet and tank. Springs in this country are seasonal; the tank is the year-round water and is untreated."
+    },
+    {
+      "waypointId": "w_c0d04450",
+      "name": "Yourdamung Campsite",
+      "description": "Shelter camp near Yourdamung Lake in the forest north of Collie, with sleeping platform, tent sites, toilet and tank. The lake is shallow and seasonal."
+    },
+    {
+      "waypointId": "w_841eb18d",
+      "name": "Harris Dam campsite",
+      "description": "Camp near Harris Dam, the reservoir that supplies Collie. It is a drinking-water catchment with access restrictions on the water itself; the campsite tank is the water available here."
+    },
+    {
+      "waypointId": "w_57dadd26",
+      "name": "Collie",
+      "description": "Coal and power town, and the largest centre anywhere near the middle of the track, with supermarkets, pubs, accommodation and transport connections. The standard mid-track resupply and rest stop."
+    },
+    {
+      "waypointId": "w_56045bcd",
+      "name": "Yabberup Campsite",
+      "description": "Quiet forest shelter with sleeping platform, tent sites, toilet and rainwater tank, and the first camp out of Collie. Tank water is untreated and levels vary."
+    },
+    {
+      "waypointId": "w_6da6b772",
+      "name": "Mumbullup Pub",
+      "description": "Small country tavern near the track between Collie and Balingup, a long-standing walkers' stop for a meal and a cold drink. It is a tiny settlement and the hours are limited."
+    },
+    {
+      "waypointId": "w_cb987df8",
+      "name": "Noggenup Campsite",
+      "description": "Shelter camp in the forest with sleeping platform, tent sites, toilet and a rainwater tank. The tank is the only water here and can run low."
+    },
+    {
+      "waypointId": "w_69984f1d",
+      "name": "Grimwade Campsite",
+      "description": "Camp in the forest near the old timber settlement of Grimwade, with the usual shelter, tent sites, toilet and tank. The last night before the descent into the Balingup valley."
+    },
+    {
+      "waypointId": "w_6d9cbefd",
+      "name": "Balingup",
+      "description": "Small hills town in a green farming valley, known for its gardens and craft shops, with a store, food and accommodation. A pleasant short-stop resupply, smaller than Collie."
+    },
+    {
+      "waypointId": "w_70a537b3",
+      "name": "Blackwood camp",
+      "description": "Shelter camp above the Blackwood River, with sleeping platform, tent sites, toilet and rainwater tank. The river is a genuine watercourse, untreated, and the valley sides are steep either way out."
+    },
+    {
+      "waypointId": "w_25402ab3",
+      "name": "Gregory Brook campsite",
+      "description": "Campsite by Gregory Brook in mixed jarrah and karri country, with shelter, tent sites, toilet and tank. The brook is seasonal, and water from either source is untreated."
+    },
+    {
+      "waypointId": "w_85a52eae",
+      "name": "Broackman Highway",
+      "description": "Where the track meets Brockman Highway, marked here as a camp. It is a sealed road and an access point for lifts and drops, not a serviced campsite."
+    },
+    {
+      "waypointId": "w_d80fb0ed",
+      "name": "Willow springs",
+      "description": "Willow Springs shelter camp in the forest, with sleeping platform, tent sites, toilet and a rainwater tank. The spring that gives it the name is seasonal."
+    },
+    {
+      "waypointId": "w_abffd746",
+      "name": "Donnelly River Village",
+      "description": "Former timber mill town, now a small holiday village on the track with a general store and cottage accommodation, and tame kangaroos and emus wandering the streets. The store is a village shop rather than a supermarket."
+    },
+    {
+      "waypointId": "w_45669674",
+      "name": "Tom road campsite",
+      "description": "Forest shelter camp off Tom Road, with sleeping platform, tent sites, toilet and rainwater tank. A straightforward overnight stop in tall timber; the tank water is untreated."
+    },
+    {
+      "waypointId": "w_08207378",
+      "name": "Greens Island? (non-bibb)",
+      "description": "Marked as a camping option off the official Bibbulmun route, and the question mark in the name means the source itself was unsure. There are no facilities and no water."
+    },
+    {
+      "waypointId": "w_65c040a4",
+      "name": "Boarding House campsite",
+      "description": "Shelter camp deep in the karri country, with sleeping platform, tent sites, toilet and a rainwater tank. There is no dependable water beyond the tank, which is untreated."
+    },
+    {
+      "waypointId": "w_411e59f7",
+      "name": "Beavis Campsite",
+      "description": "Standard Bibbulmun camp in the forest between Donnelly River and Pemberton, with shelter, tent sites, toilet and a rainwater tank. The tank is untreated and is the only water here."
+    },
+    {
+      "waypointId": "w_a1a66e95",
+      "name": "Beedelup Campsite",
+      "description": "Campsite in Beedelup National Park, karri forest country not far from Beedelup Falls. Shelter, tent sites, toilet and rainwater tank; the falls run hard after winter rain and thin out by late summer."
+    },
+    {
+      "waypointId": "w_93b31a1e",
+      "name": "Pemberton",
+      "description": "Karri forest town and one of the best resupply points on the southern half, with a supermarket, cafes, pubs and a range of accommodation. A common rest-day stop before the forest run to Northcliffe."
+    },
+    {
+      "waypointId": "w_22dd9e01",
+      "name": "Gloucester Tree",
+      "description": "Giant karri fitted with a spiral of steel pegs as a fire lookout tree, and one of the few still open to climb. There is a picnic area at the base, a few kilometres along the track out of Pemberton."
+    },
+    {
+      "waypointId": "w_45856e78",
+      "name": "Warren Campsite",
+      "description": "Shelter camp in the Warren River valley, among some of the tallest karri on the whole track. Sleeping platform, tent sites, toilet and a tank; the river runs close by and its water is untreated."
+    },
+    {
+      "waypointId": "w_ac5bfadb",
+      "name": "Schafer Campsite",
+      "description": "Forest campsite with the usual three-sided shelter, sleeping platform, tent sites, toilet and rainwater tank. The last camp before the walk into Northcliffe."
+    },
+    {
+      "waypointId": "w_92d0bdd1",
+      "name": "Northcliffe",
+      "description": "Small timber and farming town on the track, with a store, a pub and modest accommodation. The store is small, and this is the last town before the long remote stretch to Walpole."
+    },
+    {
+      "waypointId": "w_f84f600f",
+      "name": "Gardner Campsite",
+      "description": "First camp south of Northcliffe, in the low forest and swamp country that opens this remote section. Shelter, tent sites, toilet and a rainwater tank, with no dependable natural water nearby."
+    },
+    {
+      "waypointId": "w_827a02b9",
+      "name": "Lake Maringup Campsite",
+      "description": "Camp beside Lake Maringup, a large shallow tannin-stained lake in remote wetland country. Shelter, tent sites, toilet and a tank; the lake water is dark and untreated, and the lake shrinks a long way in a dry year."
+    },
+    {
+      "waypointId": "w_ec52ce46",
+      "name": "Dog Pool campsite",
+      "description": "Campsite by a pool on the Shannon River, one of the few places in this section with real running water. Shelter, tent sites, toilet and tank; the river water is tannin-stained and untreated."
+    },
+    {
+      "waypointId": "w_c7eaf696",
+      "name": "Mt Chance Campsite",
+      "description": "Camp below Mount Chance, a granite rise in an otherwise flat run of heath and swamp, with a short climb to a view over the country. Shelter, tent sites, toilet and a rainwater tank."
+    },
+    {
+      "waypointId": "w_b785b2a4",
+      "name": "Woolbales",
+      "description": "Camp near the Woolbales Hills in remote heathland, big skies and very little shade. Shelter, tent sites, toilet and a tank that is the only water, in a section with nothing natural either side."
+    },
+    {
+      "waypointId": "w_db3c8d31",
+      "name": "Long Point",
+      "description": "Campsite on a rise looking out over Broke Inlet, one of the standout outlooks on the southern half. The usual shelter, tent sites, toilet and rainwater tank; the inlet is brackish, so the tank is the only fresh water."
+    },
+    {
+      "waypointId": "w_910756dc",
+      "name": "Mount Clare",
+      "description": "Shelter camp near Mount Clare, the last night out for most walkers before Walpole. Sleeping platform, tent sites, toilet and a tank of untreated rainwater."
+    },
+    {
+      "waypointId": "w_341ecfc2",
+      "name": "Walpole",
+      "description": "Small town on the Walpole and Nornalup inlets, with a store, pub, cafes and accommodation, and the resupply that ends the long remote stretch from Northcliffe. The track turns coastal from here."
+    },
+    {
+      "waypointId": "w_ff19f4f4",
+      "name": "Franklin River Campsite",
+      "description": "Campsite near the Frankland River in tall tingle and karri forest. Shelter, sleeping platform, tent sites, toilet and rainwater tank; the river runs nearby and its water is tannin-stained and untreated."
+    },
+    {
+      "waypointId": "w_6d5a8aa6",
+      "name": "Tree Top Walk",
+      "description": "The Valley of the Giants Tree Top Walk: a steel walkway carried up through the crowns of huge red tingle trees, with a ground-level boardwalk among the buttressed trunks below. A paid attraction with a visitor centre, and some of the biggest trees on the track."
+    },
+    {
+      "waypointId": "w_c25989e4",
+      "name": "Giants Campsite",
+      "description": "Camp in the tingle forest close to the Valley of the Giants, within an easy walk of the Tree Top Walk. Shelter, tent sites, toilet and a rainwater tank."
+    },
+    {
+      "waypointId": "w_cd19e56d",
+      "name": "Sout Coast highway",
+      "description": "Crossing of the South Coast Highway, the main sealed road along this coast. Traffic moves fast here, and the road is the usual place to arrange a lift into Walpole or Denmark."
+    },
+    {
+      "waypointId": "w_125cb15d",
+      "name": "Rame Head Campsite",
+      "description": "Coastal campsite on the headland at Rame Head, with a wide view over the Southern Ocean. Shelter, tent sites, toilet and rainwater tank; the site is exposed to the coastal wind."
+    },
+    {
+      "waypointId": "w_8bc16e54",
+      "name": "Peaceful Bay",
+      "description": "Small holiday settlement on the coast with a caravan park and a general store — a village shop rather than a full resupply. Things are quiet outside the holiday seasons."
+    },
+    {
+      "waypointId": "w_d6f5853b",
+      "name": "Canoe crossing",
+      "description": "One of the Bibbulmun's set pieces: canoes are left on the inlet banks for walkers, with the convention that one is left on each side for whoever comes next. It is open water, exposed to wind and chop, and conditions vary through the day."
+    },
+    {
+      "waypointId": "w_5373331a",
+      "name": "Boat harbour campsite",
+      "description": "Coastal camp near Boat Harbour, tucked into the scrub behind the beach. Shelter, tent sites, toilet and a rainwater tank; there is no fresh water along this coast, so the untreated tank is the only supply."
+    },
+    {
+      "waypointId": "w_07fbb620",
+      "name": "Parry Beach (paid)",
+      "description": "Vehicle-accessible beachside campground rather than a Bibbulmun shelter, so a fee applies and it fills up in holiday periods. Being a road camp it usually has better facilities than the track sites."
+    },
+    {
+      "waypointId": "w_8e97eefb",
+      "name": "Parry Inlet",
+      "description": "Inlet crossing just along from Parry Beach. It is usually a shallow wade or a walk across the sandbar, but it can be deep and flowing after rain or once the bar opens."
+    },
+    {
+      "waypointId": "w_7ec14a80",
+      "name": "William bay campsite",
+      "description": "Campsite in William Bay National Park, the granite and white-sand country that takes in Greens Pool and Elephant Rocks. Shelter, tent sites, toilet and a rainwater tank."
+    },
+    {
+      "waypointId": "w_58492f3f",
+      "name": "Denmark",
+      "description": "Riverside town on Wilson Inlet with supermarkets, cafes, pubs and plenty of accommodation — the largest resupply between Walpole and Albany."
+    },
+    {
+      "waypointId": "w_01004440",
+      "name": "Wilson Inlet (risky crossing if flowing)",
+      "description": "Crossing of the Wilson Inlet sandbar. With the bar closed it is a walk on sand; once it has been opened or is flowing, the channel is fast and deep and impassable on foot, and the alternative is the road around the inlet."
+    },
+    {
+      "waypointId": "w_0dc56575",
+      "name": "Nullaki Campsite",
+      "description": "Camp on the Nullaki Peninsula, in coastal heath between the inlet and the ocean. Shelter, tent sites, toilet and rainwater tank, and no natural water at all."
+    },
+    {
+      "waypointId": "w_aca8b71c",
+      "name": "West Cape Howe Campsite",
+      "description": "Campsite in West Cape Howe National Park, near the southernmost point of Western Australia, with cliffs and exposed heath. Shelter, tent sites, toilet and a rainwater tank; the wind here is relentless."
+    },
+    {
+      "waypointId": "w_0b648a94",
+      "name": "Shelly Beach (non-bibb)",
+      "description": "Road-accessible campground near Shelly Beach rather than an official Bibbulmun site. Fees and booking rules may apply, and the facilities are those of a national park camp, not a track shelter."
+    },
+    {
+      "waypointId": "w_507a5399",
+      "name": "Torbay Campsite",
+      "description": "Bibbulmun shelter camp near Torbay, back in the coastal scrub. Sleeping platform, tent sites, toilet and rainwater tank; the water is untreated and the tank can be low late in a dry summer."
+    },
+    {
+      "waypointId": "w_5b9ae2c1",
+      "name": "Cosy Corner (non-bibb)",
+      "description": "Coastal camping and day-use area off the official route rather than a Bibbulmun site. It is vehicle-accessible and popular with campers and fishers, and busy over summer."
+    },
+    {
+      "waypointId": "w_d7ea31e1",
+      "name": "Torbay Inlet",
+      "description": "Inlet crossing near Torbay. Usually a shallow wade or a sandbar walk, but depth and flow change with rain and with whether the bar is open."
+    },
+    {
+      "waypointId": "w_7bc6c7fd",
+      "name": "Muttonbird Campsite",
+      "description": "Coastal shelter camp near Muttonbird Beach, open to the Southern Ocean. Shelter, tent sites, toilet and a tank of untreated rainwater, which is the only water here."
+    },
+    {
+      "waypointId": "w_8bfc21c9",
+      "name": "Sandpatch Campsite",
+      "description": "The last camp before Albany, up on the Sandpatch where the wind farm turbines line the cliffs. Shelter, tent sites, toilet and rainwater tank — and very little cover from the wind that runs the turbines."
+    },
+    {
+      "waypointId": "w_1a7c6b2c",
+      "name": "Albany",
+      "description": "The southern end of the Bibbulmun Track, on King George Sound. The walk finishes at the terminus marker on the Albany waterfront, and the town has full services and transport back to Perth."
+    },
+    {
+      "waypointId": "w_c26919f6",
+      "name": "Can hitch from here",
+      "description": "Marked on the hitch-into-Denmark variation as a place walkers try for a lift rather than walk the road in. It is a roadside spot with no facilities, and traffic is light."
+    }
+  ]
+}

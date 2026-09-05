@@ -1,0 +1,251 @@
+{
+  "trailId": "larapinta",
+  "note": "Curated waypoint descriptions, keyed by the stable ids in data/waypoint-ids.json. Applied by scripts/build-trails.ts (overriding any description from the GPX/GeoJSON source) and uploadable to the comments API with scripts/upload-descriptions.ts. Listed east to west, from the Alice Springs Telegraph Station to Redbank Gorge, matching the km order of the generated trail data, with the off-route and alternate-route waypoints appended at the end in the same east-to-west order.",
+  "descriptions": [
+    {
+      "waypointId": "w_a672f71f",
+      "name": "Alice Springs Telegraph Station",
+      "description": "Water tank at the trail's eastern trailhead, beside the reserve's day-use area and toilets. It is on the edge of town, and like every other tank on the trail it is filled by vehicle."
+    },
+    {
+      "waypointId": "w_8a913bc3",
+      "name": "Telegraph Station Trailhead",
+      "description": "The eastern end of the Larapinta Trail, at the historic Alice Springs Telegraph Station reserve on the edge of town. Section 1 starts here, and it is the easiest trailhead of all to reach — most walkers begin or finish with a short lift from Alice Springs."
+    },
+    {
+      "waypointId": "w_15ab1436",
+      "name": "Wallaby Gap",
+      "description": "Tank and small camp at a gap in the low hills west of Alice Springs, the usual first night for walkers who start in the afternoon. The tank is refilled by vehicle rather than fed by a spring, and its level varies."
+    },
+    {
+      "waypointId": "w_20e85086",
+      "name": "Simpons Gap Trailhead",
+      "description": "Section 1 ends and Section 2 begins at the Simpsons Gap trailhead, reached by road from Alice Springs along Larapinta Drive. It has sealed road access and day-visitor facilities, and is used for food drops and lifts."
+    },
+    {
+      "waypointId": "w_0f2e1a6f",
+      "name": "Simpsons Gap",
+      "description": "Walkers' camp near the Simpsons Gap trailhead, with tent sites and toilets close by. Drinking water comes from a carted tank and is untreated; the level depends on the last vehicle visit."
+    },
+    {
+      "waypointId": "w_b6428184",
+      "name": "Simpsons Gap",
+      "description": "Simpsons Gap itself is a narrow cleft in the range with a waterhole that often holds through the dry, and black-footed rock-wallabies on the scree at dawn and dusk. The gap is a significant place for Arrernte people, and signage at the site sets out where access is permitted."
+    },
+    {
+      "waypointId": "w_d03870da",
+      "name": "Mulga Camp",
+      "description": "Tank and camp in mulga scrub midway through the long Section 2 walk. Shade is thin around the tank in the middle of the day, and the water is carted in, so the level falls at the end of a dry stretch."
+    },
+    {
+      "waypointId": "w_2c14e5b2",
+      "name": "Jay Creek",
+      "description": "Tank and camp at Jay Creek, at the western end of Section 2. The creek itself only runs after rain, and the tank level depends on the next vehicle visit. Standley Chasm is the next water on the trail."
+    },
+    {
+      "waypointId": "w_706b8959",
+      "name": "Jay Creek Trailhead",
+      "description": "The boundary between Sections 2 and 3, with vehicle access used for food drops and shuttles. Some country around Jay Creek is significant to Traditional Owners, and the trail is routed and signposted to avoid restricted areas."
+    },
+    {
+      "waypointId": "w_aca7b106",
+      "name": "Millers Flat",
+      "description": "Creekside camp among river gums in the foothills below the Chewings Range on Section 3. An alternative high route branches near here along the ridgeline instead of the valley floor. There is no dependable water at the flat."
+    },
+    {
+      "waypointId": "w_0d0eb8e6",
+      "name": "Kiosk: Standley Chasm",
+      "description": "Kiosk at the Standley Chasm visitor area, selling meals, coffee and cold drinks when it is open. Hours are seasonal and it does not stock enough to restock a food bag, but it is the first cooked meal most walkers get after leaving Alice Springs."
+    },
+    {
+      "waypointId": "w_dd6e26d4",
+      "name": "R: Standley Chasm",
+      "description": "One of the standard food-drop points on the trail. Boxes are arranged in advance and brought in by vehicle, and sit in the heat with the ants until they are collected."
+    },
+    {
+      "waypointId": "w_67abb4ad",
+      "name": "Standley Chasm",
+      "description": "Campground at Standley Chasm, run alongside the visitor area and the most comfortable stop on the eastern half of the trail. It sits on Aboriginal-owned land, and the operators run check-in and set where camping happens."
+    },
+    {
+      "waypointId": "w_8bfa58d2",
+      "name": "Standley Chasm Trailhead",
+      "description": "Section 3 ends and Section 4 begins here, at the end of the road in from Larapinta Drive. The chasm — a narrow red-walled cleft, lit through the middle of the day — is an Aboriginal-owned visitor site with a front counter at the entrance."
+    },
+    {
+      "waypointId": "w_d8163d57",
+      "name": "Brinkley Bluff",
+      "description": "Exposed camp on the crest of the Chewings Range, one of the high points of the whole trail and known for its sunsets and sunrises. There is no water and nothing to break the wind."
+    },
+    {
+      "waypointId": "w_3fe92e09",
+      "name": "Stuart's Pass",
+      "description": "Camp in the pass below the Brinkley Bluff descent, low enough to escape the worst of the ridge wind. It is a bush site with no facilities and no water."
+    },
+    {
+      "waypointId": "w_1cf09005",
+      "name": "4/5 Junction",
+      "description": "Camp at the junction where Section 4 ends and Section 5 begins, in the Birthday Waterhole area. A side track leads out to the Birthday Waterhole trailhead, a road-access point used for drops and pickups; the waterhole itself is seasonal."
+    },
+    {
+      "waypointId": "w_f283c631",
+      "name": "Fringe Lily Creek",
+      "description": "Small camp in a creek gully on Section 5, named for the fringe lilies that flower here after rain. Any water in the creek is seasonal."
+    },
+    {
+      "waypointId": "w_dfe1bb40",
+      "name": "Hugh Gorge Junction",
+      "description": "Camp where the trail meets Hugh Gorge, at the top of the walk down through it. The gorge is rock-hopping country with pools that sometimes have to be waded, and the descent takes most of a half day."
+    },
+    {
+      "waypointId": "w_e0a5c31e",
+      "name": "Hugh Gorge Trailhead",
+      "description": "The boundary between Sections 5 and 6, at the mouth of Hugh Gorge. Vehicle access is by a rough track rather than a sealed road, so it sees far fewer visitors than the trailheads further west."
+    },
+    {
+      "waypointId": "w_03479f8e",
+      "name": "Hugh Gorge",
+      "description": "Tank at the Hugh Gorge trailhead camp, the last water before Section 6 — the longest stretch between trailheads on the trail. The water is carted in and the level varies."
+    },
+    {
+      "waypointId": "w_b268c8fc",
+      "name": "Ghost Gum Flat",
+      "description": "Open camp among ghost gums on the long Section 6 walk, a common first night out from Hugh Gorge. Shade is patchy through the middle of the day and there is no dependable water."
+    },
+    {
+      "waypointId": "w_409f844e",
+      "name": "Rocky Gully",
+      "description": "Camp in a stony gully partway along Section 6, the longest section on the trail. Water through the section is a matter of carted tanks and seasonal pools; Hugh Gorge and Ellery Creek are the fixed sources at either end."
+    },
+    {
+      "waypointId": "w_b1668fab",
+      "name": "Ellery Creek North",
+      "description": "Walkers' camp on the northern side of Ellery Creek, near Ellery Creek Big Hole. The Big Hole holds water year round and is a well-known swim, but it is deep and cold enough that people get into trouble in it."
+    },
+    {
+      "waypointId": "w_05e13503",
+      "name": "Ellery Creek Trailhead",
+      "description": "Section 6 ends and Section 7 begins at Ellery Creek, a busy day-visitor site with a car park and toilets reached from Namatjira Drive. The sealed road access makes it one of the easier places for shuttles and food drops."
+    },
+    {
+      "waypointId": "w_51223d01",
+      "name": "R: Ellery Creek",
+      "description": "Food-drop point at the Ellery Creek trailhead. Boxes are delivered by vehicle and held until they are collected, through heat and ants."
+    },
+    {
+      "waypointId": "w_a565dcc6",
+      "name": "Ellery Creek South",
+      "description": "The second of the two walkers' camps at Ellery Creek, on the southern side of the crossing. Facilities are basic and the tank is refilled by vehicle; the water is untreated."
+    },
+    {
+      "waypointId": "w_fceaac4b",
+      "name": "Serpentine Gorge",
+      "description": "Camp at the end of Section 7, near the mouth of Serpentine Gorge and below the ridge the trail climbs heading west. A steep lookout track climbs above the gorge from here."
+    },
+    {
+      "waypointId": "w_58d2a239",
+      "name": "R: Serpentine Gorge",
+      "description": "Food-drop point at the Serpentine Gorge trailhead, the last one before the remote country of Sections 8 and 9. Drops come in by vehicle and are arranged in advance."
+    },
+    {
+      "waypointId": "w_4e43a0ad",
+      "name": "Serpentine Gorge Trailhead",
+      "description": "The boundary between Sections 7 and 8, with car-park access off Namatjira Drive and a walk in to the gorge mouth. The waterhole there is significant to Traditional Owners, and signs at the entrance set out the conditions of access, including entering the water."
+    },
+    {
+      "waypointId": "w_cdc52d70",
+      "name": "Serpentine Gorge, Larapinta Trail campsite",
+      "description": "The tank at the Serpentine Gorge walkers' camp, beside the trailhead. It is topped up by vehicle, the water is untreated, and the level can be low late in the season. It is the last tank before Section 8."
+    },
+    {
+      "waypointId": "w_4f29a5cf",
+      "name": "Serpentine Chalet Dam",
+      "description": "Bush camp beside the small dam built to supply the old chalet. It holds water after rain and can be dry otherwise, and the water is untreated."
+    },
+    {
+      "waypointId": "w_a7b5c8c4",
+      "name": "Serpentine Chalet Dam Trailhead",
+      "description": "Section 8 ends and Section 9 begins at Serpentine Chalet Dam, reached only by a rough four-wheel-drive track off Namatjira Drive. The ruins of the Serpentine Chalet, a short-lived mid-century tourist camp, lie nearby."
+    },
+    {
+      "waypointId": "w_e4cceadd",
+      "name": "Waterfall Gorge",
+      "description": "Sheltered camp in the gorge on Section 9, in the broken country between the Chewings ridgeline and Ormiston. Water here depends entirely on recent rain — the name describes the shape of the place, not a supply."
+    },
+    {
+      "waypointId": "w_670e1459",
+      "name": "Mt Giles Lookout",
+      "description": "High, open camp looking across to Mt Giles, one of the best places on the trail to watch the light change on the ranges at dawn. There is no water and no shade, and winter nights here are cold and windy."
+    },
+    {
+      "waypointId": "w_314d25b4",
+      "name": "Kiosk: Ormiston Gorge",
+      "description": "Kiosk at the Ormiston Gorge visitor area with meals, coffee, cold drinks and a few basics. Opening hours are seasonal and shorter in the hot months."
+    },
+    {
+      "waypointId": "w_3dc49b64",
+      "name": "Ormiston Gorge",
+      "description": "Campground at Ormiston Gorge, the most developed stop on the western half of the trail, with toilets and usually hot showers. It is shared with car-based visitors and is busy through the cooler walking months."
+    },
+    {
+      "waypointId": "w_839266d5",
+      "name": "Ormiston Gorge Trailhead",
+      "description": "Section 9 ends and Section 10 begins here, at the sealed road access off Namatjira Drive. The Ormiston Pound walk, a half-day loop through the gorge, starts from the same car park."
+    },
+    {
+      "waypointId": "w_e7667f46",
+      "name": "R: Ormiston Gorge",
+      "description": "Food-drop point at Ormiston Gorge, the last one before the finish at Redbank Gorge. There is a kiosk and a campground here as well."
+    },
+    {
+      "waypointId": "w_3a02aaa7",
+      "name": "George Creek",
+      "description": "Creek camp just west of Ormiston Gorge on the short Section 10 walk out to the Finke. It is a bush site with no facilities, and any water in the creek bed is seasonal."
+    },
+    {
+      "waypointId": "w_013ce1c7",
+      "name": "Finke River",
+      "description": "Camp on the Finke, a broad sandy river bed and one of the oldest watercourses in the world. Water sits in scattered waterholes rather than a running stream, and the sand makes for slow walking wherever the trail follows the bed."
+    },
+    {
+      "waypointId": "w_2bbddefe",
+      "name": "Finke River Trailhead",
+      "description": "The boundary between Sections 10 and 11, where a vehicle track reaches the river. Access is rough, and the Glen Helen area out on Namatjira Drive is the nearest place with any services; what operates there varies by season."
+    },
+    {
+      "waypointId": "w_c65a691f",
+      "name": "Hill Top",
+      "description": "Ridge camp on Section 11 with a long view west to Mt Sonder. It is exposed and dry, with no water between here and the Finke below."
+    },
+    {
+      "waypointId": "w_7d1c866d",
+      "name": "Rocky Bar Gap",
+      "description": "Camp in a gap in the range on the last full section of the trail, sheltered between the ridgelines. It is a bush site with no facilities and no dependable water."
+    },
+    {
+      "waypointId": "w_93f929d7",
+      "name": "Redbank",
+      "description": "Walkers' camp at Redbank Gorge, the end of the through-walk and the base for the Mt Sonder climb. Most people camp here the night before and set off in the dark to be on the summit at sunrise."
+    },
+    {
+      "waypointId": "w_b6e87871",
+      "name": "Redbank Gorge",
+      "description": "Tank at the Redbank Gorge camping area, and the last water before the Mt Sonder climb, which has none on it. It is topped up by vehicle and the level varies."
+    },
+    {
+      "waypointId": "w_766c3fd2",
+      "name": "Redbank Gorge Trailhead",
+      "description": "Section 11 ends here and Section 12, the return climb of Mt Sonder, begins. The gorge itself is a narrow chasm holding a deep, cold waterhole. Mt Sonder is a significant place to Arrernte people, and signage at the trailhead sets out the conditions of access."
+    },
+    {
+      "waypointId": "w_ca5efda1",
+      "name": "Ellery Creek North",
+      "description": "The Ellery Creek North camp as it is marked on the alternative high-route approach, which drops off the ridge to the creek rather than following the valley in. Facilities are basic and the tank is refilled by vehicle; the water is untreated and the level varies."
+    },
+    {
+      "waypointId": "w_aa151485",
+      "name": "Counts Point",
+      "description": "High point on the Chewings ridgeline in Section 9 and the best viewpoint on the trail, with a long look west down the ranges towards Mt Sonder. It is exposed and waterless."
+    }
+  ]
+}

@@ -10,12 +10,12 @@
     {
       "waypointId": "w_cd183495",
       "name": "Deepdene Beach Start (5.5km)",
-      "description": "Where the track drops onto Deepdene Beach for a long stretch of sand. Soft sand makes for slow going, so allow extra time and use the firmer strip near the waterline."
+      "description": "Where the track drops onto Deepdene Beach for a long stretch of sand. The sand is soft above the waterline and firmer near it, and the walking is slower than on formed track."
     },
     {
       "waypointId": "w_077cff01",
       "name": "Deepdene Campsite",
-      "description": "Basic hikers' campsite set back behind the dunes near Deepdene Beach, with tent sites and a toilet. There is no natural water here; treat anything you collect from a tank and don't count on the tank holding water late in summer."
+      "description": "Basic hikers' campsite set back behind the dunes near Deepdene Beach, with tent sites and a toilet. There is no natural water; the only supply is an untreated rainwater tank, which can be empty late in summer."
     },
     {
       "waypointId": "w_bd275418",
@@ -25,7 +25,7 @@
     {
       "waypointId": "w_4c97face",
       "name": "Hamelin Bay Beach Start (6.5km)",
-      "description": "Start of the long beach walk along Hamelin Bay. Check the tide before you set out — the sand is much firmer and faster on a falling or low tide — and expect little shade the whole way."
+      "description": "Start of the long beach walk along Hamelin Bay. The sand is firmest on a falling or low tide, and there is almost no shade the whole way."
     },
     {
       "waypointId": "w_4ec1d492",
@@ -45,17 +45,17 @@
     {
       "waypointId": "w_808bb2ce",
       "name": "Point Rd Campsite",
-      "description": "Small hikers' campsite off Point Road, with tent sites and a basic toilet. Any water here is rainwater at best, so carry what you need and treat whatever you collect."
+      "description": "Small hikers' campsite off Point Road, with tent sites and a basic toilet. Any water here is untreated rainwater, and the supply is unreliable."
     },
     {
       "waypointId": "w_888629a6",
       "name": "Contos Campsite",
-      "description": "The largest campground on the track: a vehicle-accessible DBCA campground near Conto Beach, with toilets and drive-in sites. Camping fees apply, and the road access makes it a practical spot for a food drop or a lift."
+      "description": "The largest campground on the track: a vehicle-accessible DBCA campground near Conto Beach, with toilets and drive-in sites. Camping fees apply, and the road access reaches it for food drops and lifts."
     },
     {
       "waypointId": "w_45c70cb4",
       "name": "Redgate Beach Start (2.3km)",
-      "description": "The track drops to Redgate Beach for a short stretch of sand. It is an exposed, unpatrolled surf beach with strong rips — fine to walk, but not a safe swim in any swell."
+      "description": "The track drops to Redgate Beach for a short stretch of sand. It is an exposed, unpatrolled surf beach with strong rips."
     },
     {
       "waypointId": "w_9866af0f",
@@ -70,12 +70,12 @@
     {
       "waypointId": "w_b76d9ab6",
       "name": "Margaret River Mouth",
-      "description": "Where the Margaret River meets the sea below Prevelly, beside the well-known Surfers Point breaks. The mouth can be open and running after winter rain — look at it before committing to a crossing, and take the inland detour to the road bridge if it is not safely wadeable."
+      "description": "Where the Margaret River meets the sea below Prevelly, beside the well-known Surfers Point breaks. The mouth can be open and running after winter rain, when it is not wadeable; the alternative is an inland detour to the road bridge."
     },
     {
       "waypointId": "w_1823e0c7",
       "name": "Kilcarnup Beach Start (2.1km)",
-      "description": "The track joins the sand here for the walk along Kilcarnup Beach, north of the Margaret River mouth. Soft in places; the firmer sand near the water is easier walking."
+      "description": "The track joins the sand here for the walk along Kilcarnup Beach, north of the Margaret River mouth. The sand is soft in places and firmer near the water."
     },
     {
       "waypointId": "w_5495b8d6",
@@ -85,27 +85,27 @@
     {
       "waypointId": "w_ff9ac775",
       "name": "Ellensbrook Campsite",
-      "description": "Hikers' campsite in the bush near Ellensbrook, with tent sites and a basic toilet. Plan to carry water in, and treat any tank water you do find."
+      "description": "Hikers' campsite in the bush near Ellensbrook, with tent sites and a basic toilet. There is no reliable water; any tank water is untreated."
     },
     {
       "waypointId": "w_bf7909d4",
       "name": "Ellensbrook Homestead",
-      "description": "Historic mid-1800s homestead in a sheltered gully, now a National Trust heritage property. Opening times are limited, so check before counting on going inside — but the shady grounds and the short walk to the falls behind it make an easy break just off the track."
+      "description": "Historic mid-1800s homestead in a sheltered gully, now a National Trust heritage property. Opening times are limited. The grounds are shaded and there is a short walk to the falls behind it, just off the track."
     },
     {
       "waypointId": "w_1042b1df",
       "name": "Gracetown",
-      "description": "Small coastal village on Cowaramup Bay with a general store and a caravan park. Good for snacks, drinks and a top-up rather than a full resupply — there is no supermarket, so plan bigger shops around Margaret River."
+      "description": "Small coastal village on Cowaramup Bay with a general store and a caravan park. The store carries snacks and drinks rather than a full resupply — there is no supermarket, and the nearest is in Margaret River."
     },
     {
       "waypointId": "w_7209018a",
       "name": "Moses Rock Campsite",
-      "description": "Hikers' campsite in the coastal heath near Moses Rock, with tent sites and a basic toilet. Treat any tank water, and don't rely on the tank in a dry summer."
+      "description": "Hikers' campsite in the coastal heath near Moses Rock, with tent sites and a basic toilet. The only water is an untreated rainwater tank, which can be empty in a dry summer."
     },
     {
       "waypointId": "w_9863ffae",
       "name": "Quinninup Falls",
-      "description": "Seasonal waterfall in a sheltered gully a short detour off the track. It runs after winter and spring rain and can be dry by late summer, so don't plan on it as a water source."
+      "description": "Seasonal waterfall in a sheltered gully a short detour off the track. It runs after winter and spring rain and can be dry by late summer."
     },
     {
       "waypointId": "w_fdbbdbbb",
@@ -120,12 +120,12 @@
     {
       "waypointId": "w_236ca161",
       "name": "Canal Rocks",
-      "description": "Granite outcrop split by narrow sea channels, with a car park and a footbridge over the canal — one of the busier day-visitor spots on this coast. A good place for a break, but there is no drinking water."
+      "description": "Granite outcrop split by narrow sea channels, with a car park and a footbridge over the canal — one of the busier day-visitor spots on this coast. There is no drinking water."
     },
     {
       "waypointId": "w_048ddf7c",
       "name": "Smiths Beach Start (1.7km)",
-      "description": "The track drops to Smiths Beach for a short walk on sand. It is a popular surf beach with vehicle access, so expect company in the holidays."
+      "description": "The track drops to Smiths Beach for a short walk on sand. It is a popular surf beach with vehicle access and is busy in the holidays."
     },
     {
       "waypointId": "w_ea44b5aa",
@@ -140,12 +140,12 @@
     {
       "waypointId": "w_1aa84d7e",
       "name": "Mount Duckworth Campsite",
-      "description": "Hikers' campsite on the slopes of Mount Duckworth, the closest camp to the northern end of the track, with tent sites and a basic toilet. Carry water in rather than counting on a tank."
+      "description": "Hikers' campsite on the slopes of Mount Duckworth, the closest camp to the northern end of the track, with tent sites and a basic toilet. There is no reliable water source here."
     },
     {
       "waypointId": "w_3e042ac7",
       "name": "Sugarloaf Rock",
-      "description": "A large granite sea stack just offshore and the most photographed landmark on the track, with a car park and lookout above it. Seabirds nest on and around the rock, so stay on the formed paths."
+      "description": "A large granite sea stack just offshore and the most photographed landmark on the track, with a car park and lookout above it. Seabirds nest on and around the rock, and formed paths run through the area."
     },
     {
       "waypointId": "w_3e1dc6db",

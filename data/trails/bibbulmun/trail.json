@@ -8,9 +8,7 @@
   "geojsonFile": "Bibbulmun_Track.json",
   "description": "Trail data auto-generated from Bibbulmun_Track.gpx. Edit trail.json to customize.",
   "dataSource": {
-    "text": "Track and waypoints digitised from The Adventure Gene's Bibbulmun Track planning guide.",
-    "url": "https://theadventuregene.com/bibbulmun-track-planning-guide/",
-    "linkText": "The Adventure Gene — Bibbulmun Track guide"
+    "text": "Track and waypoints mapped for this site."
   },
   "direction": {
     "default": "SOBO",

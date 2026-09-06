@@ -1,0 +1,648 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-09-06T10:35:55.432Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://overpass.private.coffee/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 9045419217,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.2709772,
+      "lon": 115.0513062,
+      "name": "Deepdene Campsite",
+      "tags": {
+        "name": "Deepdene Campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 15.634473527866554,
+      "distanceFromTrail": 0.401311202639767
+    },
+    {
+      "id": 311313627,
+      "type": "way",
+      "category": "camping",
+      "lat": -34.2213323,
+      "lon": 115.0309609,
+      "name": "Hamelin Bay Caravan Park",
+      "tags": {
+        "name": "Hamelin Bay Caravan Park",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 24.81050034907503,
+      "distanceFromTrail": 0.19039975970108822
+    },
+    {
+      "id": 9064105419,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.0925511,
+      "lon": 115.017138,
+      "name": "Point Rd",
+      "tags": {
+        "name": "Point Rd",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 43.90306947219469,
+      "distanceFromTrail": 0.007793352029595325
+    },
+    {
+      "id": 9064105919,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0823417,
+      "lon": 115.0129324,
+      "name": null,
+      "tags": {
+        "drinking_water": "no",
+        "drinking_water:legal": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 45.59914000641112,
+      "distanceFromTrail": 0.13468032389273177
+    },
+    {
+      "id": 9064106218,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.082306,
+      "lon": 115.0128796,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 45.59914000641112,
+      "distanceFromTrail": 0.129872652438015
+    },
+    {
+      "id": 9064106219,
+      "type": "node",
+      "category": "water",
+      "lat": -34.082361,
+      "lon": 115.0128295,
+      "name": null,
+      "tags": {
+        "drinking_water": "no",
+        "drinking_water:legal": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 45.59914000641112,
+      "distanceFromTrail": 0.12522532789715196
+    },
+    {
+      "id": 310199076,
+      "type": "way",
+      "category": "camping",
+      "lat": -34.0806353,
+      "lon": 115.0147544,
+      "name": "Conto Campground - Leeuwin-Naturaliste National Park",
+      "tags": {
+        "caravans": "yes",
+        "drinking_water": "yes",
+        "fee": "yes",
+        "name": "Conto Campground - Leeuwin-Naturaliste National Park",
+        "power_supply": "no",
+        "sanitary_dump_station": "no",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://exploreparks.dbca.wa.gov.au/site/conto-campground"
+      },
+      "distanceAlongTrail": 45.59914000641112,
+      "distanceFromTrail": 0.356969547355714
+    },
+    {
+      "id": 4430040793,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.9921348,
+      "lon": 114.9942691,
+      "name": "The Common",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "The Common",
+        "name:en": "The Common",
+        "opening_hours": "Mo-Fr 16:00-22:00; Sa,Su 12:00-23:59",
+        "phone": "+61 8 9757 1583",
+        "website": "https://www.thecommonbistro.com.au/"
+      },
+      "distanceAlongTrail": 61.282713011993934,
+      "distanceFromTrail": 1.319232795422376
+    },
+    {
+      "id": 461689533,
+      "type": "way",
+      "category": "resupply",
+      "lat": -33.9906417,
+      "lon": 114.9911984,
+      "name": "White Elephant Cafe",
+      "tags": {
+        "addr:country": "AU",
+        "addr:postcode": "6285",
+        "addr:state": "WA",
+        "addr:street": "Gnarabup Road",
+        "addr:suburb": "Gnarabup",
+        "amenity": "cafe",
+        "building": "commercial",
+        "cuisine": "burger;breakfast;coffee_shop;cake;fish_and_chips",
+        "email": "enquiries@whiteelephantcafe.com.au",
+        "internet_access": "yes",
+        "internet_access:fee": "no",
+        "name": "White Elephant Cafe",
+        "opening_hours": "Mo-Su 07:00-15:00",
+        "phone": "+61 8 9757 1990",
+        "smoking": "no",
+        "website": "https://www.whiteelephantcafe.com.au/"
+      },
+      "distanceAlongTrail": 61.282713011993934,
+      "distanceFromTrail": 1.409779694766047
+    },
+    {
+      "id": 387618924,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.9806972,
+      "lon": 114.9948273,
+      "name": "Prevelly Caravan Park",
+      "tags": {
+        "addr:housenumber": "99",
+        "addr:street": "Mitchell Drive",
+        "cabins": "yes",
+        "drinking_water": "yes",
+        "fee": "yes",
+        "name": "Prevelly Caravan Park",
+        "power_supply": "yes",
+        "sanitary_dump_station": "yes",
+        "shower": "yes",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "caravan_site",
+        "website": "https://prevellycaravanpark.com.au/"
+      },
+      "distanceAlongTrail": 62.25748325589716,
+      "distanceFromTrail": 0.5216780999817667
+    },
+    {
+      "id": 2506661367,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.9784664,
+      "lon": 114.9945481,
+      "name": "Sea Garden",
+      "tags": {
+        "addr:housenumber": "9",
+        "addr:street": "Mitchell Drive",
+        "amenity": "restaurant",
+        "name": "Sea Garden",
+        "phone": "+61 8 9757 1044",
+        "website": "https://www.theseagardencafe.com/"
+      },
+      "distanceAlongTrail": 62.27230581859712,
+      "distanceFromTrail": 0.43203740466812357
+    },
+    {
+      "id": 2506661369,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.9787483,
+      "lon": 114.9945534,
+      "name": null,
+      "tags": {
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 62.27230581859712,
+      "distanceFromTrail": 0.4397793793983926
+    },
+    {
+      "id": 4568829225,
+      "type": "node",
+      "category": "water",
+      "lat": -33.977735,
+      "lon": 114.9900332,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "check_date": "2024-04-05",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 64.21390573301805,
+      "distanceFromTrail": 0.5324169231145802
+    },
+    {
+      "id": 11770661401,
+      "type": "node",
+      "category": "water",
+      "lat": -33.9719237,
+      "lon": 114.9873064,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 64.4431673514264,
+      "distanceFromTrail": 0.022396048207757743
+    },
+    {
+      "id": 461991227,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.9677023,
+      "lon": 115.0169013,
+      "name": null,
+      "tags": {
+        "amenity": "fire_station",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 64.80796843681927,
+      "distanceFromTrail": 0.03182927081106206
+    },
+    {
+      "id": 4998946183,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.9132146,
+      "lon": 115.0008934,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 73.87248729592241,
+      "distanceFromTrail": 0.05953094622767211
+    },
+    {
+      "id": 2663600799,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.8785719,
+      "lon": 114.9832234,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 78.96575545731297,
+      "distanceFromTrail": 0.010293416347304277
+    },
+    {
+      "id": 1826016763,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.864754,
+      "lon": 114.9882019,
+      "name": null,
+      "tags": {
+        "amenity": "fuel",
+        "operator": "Gull"
+      },
+      "distanceAlongTrail": 81.69609463537715,
+      "distanceFromTrail": 0.06988190696745421
+    },
+    {
+      "id": 1826016758,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.8647965,
+      "lon": 114.9882958,
+      "name": "The Bay Store",
+      "tags": {
+        "name": "The Bay Store",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 81.70332513409353,
+      "distanceFromTrail": 0.07660653600616067
+    },
+    {
+      "id": 11896298076,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.7787878,
+      "lon": 114.9969637,
+      "name": "Moses Rock Walk-in Campsite",
+      "tags": {
+        "access": "yes",
+        "caravans": "no",
+        "fee": "no",
+        "name": "Moses Rock Walk-in Campsite",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 93.01850820285922,
+      "distanceFromTrail": 0.010411053323993641
+    },
+    {
+      "id": 10711226705,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.715936,
+      "lon": 114.9824591,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 101.53558314535849,
+      "distanceFromTrail": 0.008915808185328266
+    },
+    {
+      "id": 4574521442,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6694974,
+      "lon": 115.0306722,
+      "name": "Cape Lavender",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Cape Lavender",
+        "opening_hours": "Mo-Su 09:30-17:00",
+        "website": "https://www.lavenderonline.com.au/"
+      },
+      "distanceAlongTrail": 111.3167084297492,
+      "distanceFromTrail": 1.2973269668193272
+    },
+    {
+      "id": 4574521449,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6694042,
+      "lon": 115.0295204,
+      "name": "Barnyard1978",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Barnyard1978",
+        "website": "https://www.barnyard1978.com.au/"
+      },
+      "distanceAlongTrail": 111.3167084297492,
+      "distanceFromTrail": 1.2404386581834184
+    },
+    {
+      "id": 7260552186,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6657132,
+      "lon": 115.0311675,
+      "name": "Cape Lavender",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Cape Lavender"
+      },
+      "distanceAlongTrail": 111.3167084297492,
+      "distanceFromTrail": 0.9798890929771328
+    },
+    {
+      "id": 1852842284,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6455792,
+      "lon": 115.0320564,
+      "name": "Yallingup Post Office",
+      "tags": {
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "check_date:opening_hours": "2026-01-02",
+        "name": "Yallingup Post Office",
+        "opening_hours:signed": "no",
+        "operator": "Australia Post"
+      },
+      "distanceAlongTrail": 112.720911438332,
+      "distanceFromTrail": 0.46865733073134885
+    },
+    {
+      "id": 3907670057,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.6463388,
+      "lon": 115.0321813,
+      "name": "Caves Caravan Park",
+      "tags": {
+        "name": "Caves Caravan Park",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 112.720911438332,
+      "distanceFromTrail": 0.44525731945366875
+    },
+    {
+      "id": 4568354227,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6457834,
+      "lon": 115.0323156,
+      "name": "Yallingup Gugelhupf",
+      "tags": {
+        "check_date": "2023-10-29",
+        "name": "Yallingup Gugelhupf",
+        "payment:cash": "yes",
+        "payment:mastercard": "yes",
+        "payment:visa": "yes",
+        "shop": "bakery",
+        "website": "https://yallingup-gugelhupf.edan.io",
+        "wheelchair": "no"
+      },
+      "distanceAlongTrail": 112.720911438332,
+      "distanceFromTrail": 0.4797729237746663
+    },
+    {
+      "id": 8099103713,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6453751,
+      "lon": 115.0312777,
+      "name": null,
+      "tags": {
+        "amenity": "pub"
+      },
+      "distanceAlongTrail": 112.720911438332,
+      "distanceFromTrail": 0.4199965424400536
+    },
+    {
+      "id": 8099135347,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6450864,
+      "lon": 115.0312623,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant"
+      },
+      "distanceAlongTrail": 112.720911438332,
+      "distanceFromTrail": 0.438657478987647
+    },
+    {
+      "id": 870734594,
+      "type": "way",
+      "category": "resupply",
+      "lat": -33.6456301,
+      "lon": 115.0311708,
+      "name": "Pizza Shack",
+      "tags": {
+        "amenity": "restaurant",
+        "brand": "Caves House Hotel",
+        "building": "yes",
+        "cuisine": "pizza;curry",
+        "name": "Pizza Shack",
+        "phone": "+61 8 9750 1888"
+      },
+      "distanceAlongTrail": 112.720911438332,
+      "distanceFromTrail": 0.39560660864532726
+    },
+    {
+      "id": 310072613,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.6404615,
+      "lon": 115.0255587,
+      "name": "Yallingup Beach Holiday Park",
+      "tags": {
+        "name": "Yallingup Beach Holiday Park",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 113.01406035544663,
+      "distanceFromTrail": 0.074097933087485
+    },
+    {
+      "id": 546787226,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.6412374,
+      "lon": 115.0268549,
+      "name": "Yallingup Volunteer Fire Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "name": "Yallingup Volunteer Fire Brigade"
+      },
+      "distanceAlongTrail": 113.01406035544663,
+      "distanceFromTrail": 0.22152554461822388
+    },
+    {
+      "id": 546787241,
+      "type": "way",
+      "category": "resupply",
+      "lat": -33.6400067,
+      "lon": 115.0255439,
+      "name": "Reception/Kiosk",
+      "tags": {
+        "building": "yes",
+        "name": "Reception/Kiosk",
+        "shop": "kiosk"
+      },
+      "distanceAlongTrail": 113.01556108254944,
+      "distanceFromTrail": 0.05310807243063037
+    },
+    {
+      "id": 4568350105,
+      "type": "node",
+      "category": "water",
+      "lat": -33.6394228,
+      "lon": 115.025508,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 113.11071124508837,
+      "distanceFromTrail": 0.007072022723561363
+    },
+    {
+      "id": 4568351766,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.6395339,
+      "lon": 115.0263829,
+      "name": "Lagoon Yallingup",
+      "tags": {
+        "addr:housenumber": "6",
+        "addr:postcode": "6282",
+        "addr:state": "WA",
+        "addr:street": "Dawson Drive",
+        "addr:suburb": "Yallingup",
+        "addr:unit": "2",
+        "amenity": "restaurant",
+        "cuisine": "seafood",
+        "internet_access": "yes",
+        "name": "Lagoon Yallingup",
+        "phone": "+61 8 9756 6999",
+        "website": "https://www.lagoonyallingup.com.au/"
+      },
+      "distanceAlongTrail": 113.12690299908091,
+      "distanceFromTrail": 0.06815484307933944
+    },
+    {
+      "id": 4568353257,
+      "type": "node",
+      "category": "water",
+      "lat": -33.6389724,
+      "lon": 115.0259756,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "check_date": "2025-03-22",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 113.18498297207667,
+      "distanceFromTrail": 0.012389152331094196
+    },
+    {
+      "id": 842940810,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.6158147,
+      "lon": 115.0272718,
+      "name": "Mount Duckworth Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Mount Duckworth Campsite",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 116.19860274567985,
+      "distanceFromTrail": 0.02332244256275117
+    },
+    {
+      "id": 845455353,
+      "type": "node",
+      "category": "water",
+      "lat": -33.6158068,
+      "lon": 115.0275173,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 116.19860274567985,
+      "distanceFromTrail": 0.04605117397568846
+    },
+    {
+      "id": 1160738687,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.5435335,
+      "lon": 115.0325354,
+      "name": "Bunkers Beach Cafe",
+      "tags": {
+        "addr:postcode": "6281",
+        "addr:street": "Bunker Bay",
+        "amenity": "cafe",
+        "name": "Bunkers Beach Cafe",
+        "website": "www.bunkersbeachcafe.com.au"
+      },
+      "distanceAlongTrail": 126.63967207109411,
+      "distanceFromTrail": 1.2644036333179136
+    },
+    {
+      "id": 3737251586,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.5392001,
+      "lon": 115.0196627,
+      "name": "Cape Naturaliste Lighthouse Tea Rooms",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Cape Naturaliste Lighthouse Tea Rooms",
+        "opening_hours": "Mo-Su,PH 09:00-16:30"
+      },
+      "distanceAlongTrail": 126.67409142817786,
+      "distanceFromTrail": 0.002734430438486923
+    }
+  ]
+}

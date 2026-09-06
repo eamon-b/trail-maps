@@ -32,6 +32,8 @@ import type {
   RouteVariant,
   TrackPoint,
   TrailConfig,
+  TrailPOI,
+  TrailPOICategory,
 } from './trail-types';
 
 /** Envelope discriminator. Present so a stray `.json` fails loudly. */
@@ -179,6 +181,7 @@ export function parseHandoffJson(text: string): ProcessedTrail {
       ? rawDisplay.map((p, i) => readTrackPoint(p, `track.displayPoints[${i}]`))
       : points;
 
+  const pois = readPOIs(trail.pois);
   const name = readName(config.name) ?? readName(config.shortName) ?? GENERIC_NAME;
   const totalDistance = finiteOr(track.totalDistance, points[points.length - 1].dist);
   const trailId = isImportedId(config.id) ? config.id : `u_${hashString(text)}`;
@@ -212,6 +215,7 @@ export function parseHandoffJson(text: string): ProcessedTrail {
       ? (trail.climateLocations as ClimateLocationConfig[])
       : null,
     direction: isRecord(trail.direction) ? (trail.direction as unknown as DirectionConfig) : null,
+    ...(pois ? { pois } : {}),
   };
 }
 
@@ -319,9 +323,66 @@ function readTrackPoint(value: unknown, where: string): TrackPoint {
   const lon = requireFinite(value.lon, `${where}.lon`);
   const ele = requireFinite(value.ele, `${where}.ele`);
   const dist = requireFinite(value.dist, `${where}.dist`);
-  if (lat < -90 || lat > 90) fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
-  if (lon < -180 || lon > 180) fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
+  if (lat < -90 || lat > 90)
+    fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
+  if (lon < -180 || lon > 180)
+    fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
   return { lat, lon, ele, dist };
+}
+
+/** The five OSM POI families `@lib/trail-pois` produces. */
+const POI_CATEGORIES: readonly TrailPOICategory[] = [
+  'water',
+  'camping',
+  'resupply',
+  'transport',
+  'emergency',
+];
+
+/**
+ * Read the optional `pois` array.
+ *
+ * Deliberately the loosest validator here, and deliberately non-fatal: POIs are
+ * decoration. They carry no registry id, drive no calculation and can be
+ * re-fetched or removed from the trail page in a click, so a malformed entry is
+ * dropped rather than allowed to reject a file whose *trail* is perfectly good.
+ * Contrast `readTrackPoint`, where a bad number silently corrupts every
+ * distance downstream and refusing the file is the kinder answer.
+ *
+ * The fields that are checked are the ones a consumer would otherwise crash on:
+ * finite coordinates and distances, and a category from the known set (an
+ * unknown one would render as an unstyled or missing map icon).
+ *
+ * @returns undefined when the file has no usable POIs, so `pois` stays absent —
+ * which is what "never fetched" looks like everywhere else.
+ */
+function readPOIs(value: unknown): TrailPOI[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const pois: TrailPOI[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const { id, type, category, lat, lon, distanceAlongTrail, distanceFromTrail } = entry;
+    if (typeof id !== 'number' || !Number.isFinite(id)) continue;
+    if (typeof type !== 'string') continue;
+    if (!POI_CATEGORIES.includes(category as TrailPOICategory)) continue;
+    if (typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90) continue;
+    if (typeof lon !== 'number' || !Number.isFinite(lon) || lon < -180 || lon > 180) continue;
+
+    pois.push({
+      id,
+      type,
+      category: category as TrailPOICategory,
+      lat,
+      lon,
+      name: typeof entry.name === 'string' ? entry.name : null,
+      tags: isRecord(entry.tags) ? (entry.tags as Record<string, string>) : {},
+      distanceAlongTrail: finiteOr(distanceAlongTrail, 0),
+      distanceFromTrail: finiteOr(distanceFromTrail, 0),
+    });
+  }
+
+  return pois.length > 0 ? pois : undefined;
 }
 
 /**
@@ -345,8 +406,10 @@ function readWaypoint(value: unknown, index: number, trailId: string): EnrichedW
 
   const lat = requireFinite(value.lat, `${where}.lat`);
   const lon = requireFinite(value.lon, `${where}.lon`);
-  if (lat < -90 || lat > 90) fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
-  if (lon < -180 || lon > 180) fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
+  if (lat < -90 || lat > 90)
+    fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
+  if (lon < -180 || lon > 180)
+    fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
 
   const name = readName(value.name) ?? `Waypoint ${index + 1}`;
   const id = isImportedWaypointId(value.id)

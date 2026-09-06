@@ -66,7 +66,7 @@ Shared processing modules (used by both web and mobile):
 - `remote/` - Remote-machine world build: bootstrap, detached shard driver, status, R2 upload (runbook: `docs/world-contours-remote-build.md`)
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
-- `fetch-pois.ts` - Fetches points of interest
+- `fetch-pois.ts` - Fetches OSM POIs along each trail corridor via the shared `gpx-tools` library (`npm run fetch:pois [trail-id]`). Reads track geometry from `public/data/generated/{id}.json` (so `build:trails` must have run) and writes the results to `data/trails/<dir>/pois.json` — in the repo, where a rebuild cannot wipe them. `--endpoint <url>` / `OVERPASS_ENDPOINT` and `--timeout <seconds>` pick the Overpass instance; the combination that works as of 2026-09 is `--endpoint https://overpass.private.coffee/api/interpreter --timeout 120` (`overpass-api.de` is unreachable from the dev box, `overpass.kumi.systems` answers 504)
 - `fetch-font-glyphs.ts` - Fetches font glyphs for map label rendering
 - `build-tiles.ts` - Builds map tiles for offline use
 - `build-grid-tiles.ts` - Builds grid-based map tiles
@@ -97,6 +97,7 @@ Each trail has its own directory containing:
 - `*.gpx` - Original GPX track data
 - `trail.json` - Trail metadata and waypoints
 - `climate.json` - Climate data for locations along the trail
+- `pois.json` - Optional OpenStreetMap points of interest along the trail, written by `fetch-pois.ts` and folded into the generated JSON's `pois` array by `build-trails.ts`. POIs are kept **separate from waypoints**: they are never merged into `waypoints` and never enter `data/waypoint-ids.json`. Shape: `{ source, attribution, fetchedAt, searchRadiusKm, endpoint, rejected, pois }`, where `pois` holds everything fetched (sorted by `distanceAlongTrail`, then key) and `rejected` is a hand-edited list of `<type>/<id>` keys the build drops. A re-fetch carries `rejected` over unchanged, so review work survives a refresh. `build-mobile-trails.ts` strips `pois` — the app has no POI UI yet. See `scripts/lib/trail-pois-file.ts`.
 - `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
 
 ### Generated Data (`public/data/generated/`)

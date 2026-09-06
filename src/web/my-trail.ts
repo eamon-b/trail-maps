@@ -7,12 +7,18 @@
  * handed in, because an imported trail exists nowhere but this browser.
  */
 
-import { clearDirectionPreference, initTrailViewer } from './trails/trail-viewer';
+import { clearDirectionPreference, initTrailViewer, setTrailPois } from './trails/trail-viewer';
 import { clearPlanState } from './trails/plan-state';
 import { handoffFileName, serializeTrailHandoff } from '@lib/trail-handoff';
-import type { ProcessedTrail } from '@lib/trail-types';
-import { deleteTrail, getTrail, isIndexedDbAvailable, putTrail } from './imported-trails-db';
-import { getQueryParam } from './web-utils';
+import type { ProcessedTrail, TrailPOI } from '@lib/trail-types';
+import {
+  deleteTrail,
+  getTrail,
+  isIndexedDbAvailable,
+  putTrail,
+  updateTrailPois,
+} from './imported-trails-db';
+import { escapeHtml, getQueryParam } from './web-utils';
 
 function panel(id: string): HTMLElement | null {
   return document.getElementById(id);
@@ -135,7 +141,7 @@ function setWaypointType(trail: ProcessedTrail, waypointId: string, nextType: st
 async function saveWaypointType(
   trailId: string,
   waypointId: string,
-  nextType: string,
+  nextType: string
 ): Promise<void> {
   if (!isIndexedDbAvailable()) {
     throw new Error("this browser can't store changes (IndexedDB is unavailable)");
@@ -166,14 +172,244 @@ let typeWriteQueue: Promise<void> = Promise.resolve();
 function queueWaypointTypeWrite(
   trailId: string,
   waypointId: string,
-  nextType: string,
+  nextType: string
 ): Promise<void> {
   const run = typeWriteQueue.then(() => saveWaypointType(trailId, waypointId, nextType));
   typeWriteQueue = run.then(
     () => undefined,
-    () => undefined,
+    () => undefined
   );
   return run;
+}
+
+// === OpenStreetMap points of interest ===
+//
+// A bundled trail's `pois` array is build output (`scripts/fetch-pois.ts`). An
+// imported trail has no build, so the browser asks Overpass itself — see
+// `./poi-enrich`. Everything below is the panel around that call: progress,
+// cancellation, persistence, and handing the result to the viewer.
+
+/** Panel copy for the five OSM POI families. */
+const POI_CATEGORY_LABELS: Record<string, string> = {
+  water: 'Water',
+  camping: 'Camping',
+  resupply: 'Shops & resupply',
+  transport: 'Transport',
+  emergency: 'Emergency',
+};
+
+function countByCategory(pois: TrailPOI[]): Array<[string, number]> {
+  const counts = new Map<string, number>();
+  for (const poi of pois) {
+    counts.set(poi.category, (counts.get(poi.category) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+/**
+ * Wire the "Find points of interest" panel.
+ *
+ * `trail` is the same object the viewer holds, so writing `pois` onto it keeps
+ * the in-memory trail, the stored record and the map in step without a reload.
+ * The stored record is updated through `updateTrailPois`, which re-reads inside
+ * its own transaction — enrichment takes minutes, and a waypoint category the
+ * user fixed meanwhile must not be written back over.
+ */
+function initPoiPanel(trailId: string, trail: ProcessedTrail): void {
+  const findBtn = document.getElementById('find-pois-btn') as HTMLButtonElement | null;
+  const cancelBtn = document.getElementById('cancel-pois-btn') as HTMLButtonElement | null;
+  const removeBtn = document.getElementById('remove-pois-btn') as HTMLButtonElement | null;
+  const progress = document.getElementById('poi-progress');
+  const progressBar = document.getElementById('poi-progress-bar') as HTMLProgressElement | null;
+  const progressText = document.getElementById('poi-progress-text');
+  const countsList = document.getElementById('poi-counts');
+  const warning = document.getElementById('poi-warning');
+  const attribution = document.getElementById('poi-attribution');
+  const blurb = document.getElementById('poi-blurb');
+  if (!findBtn || !cancelBtn || !removeBtn) return;
+
+  /** Dev override, e.g. `?overpass=https://overpass.kumi.systems/api/interpreter`. */
+  const endpointOverride = getQueryParam(window.location.search, 'overpass') ?? undefined;
+
+  let controller: AbortController | null = null;
+
+  /** The panel's "never searched" copy, restored when the POIs are removed. */
+  const defaultBlurb = blurb?.textContent ?? '';
+
+  const setWarning = (message: string | null): void => {
+    if (!warning) return;
+    // textContent: an Overpass failure message is server-supplied text.
+    warning.textContent = message ?? '';
+    warning.hidden = message === null;
+  };
+
+  const setProgress = (message: string, current?: number, total?: number): void => {
+    if (progressText) progressText.textContent = message;
+    if (progressBar) {
+      if (typeof current === 'number' && typeof total === 'number' && total > 0) {
+        progressBar.max = total;
+        progressBar.value = current;
+      } else {
+        // Removing `value` is what makes a <progress> indeterminate.
+        progressBar.removeAttribute('value');
+      }
+    }
+    if (progress) progress.hidden = false;
+  };
+
+  /**
+   * What the panel believes it has.
+   *
+   * Deliberately not read back off `trail.pois`: the viewer owns that field
+   * once it has been handed a list, and it writes `[]` where the panel means
+   * "never searched". Those are different sentences to the user.
+   */
+  let panelPois: TrailPOI[] | null = trail.pois ?? null;
+
+  /** Reflect what the panel currently has. */
+  const render = (): void => {
+    const pois = panelPois;
+    const found = pois?.length ?? 0;
+
+    if (countsList) {
+      countsList.hidden = !pois || found === 0;
+      countsList.innerHTML = pois
+        ? countByCategory(pois)
+            .map(
+              ([category, count]) =>
+                `<li class="poi-count">${escapeHtml(
+                  POI_CATEGORY_LABELS[category] ?? category
+                )}: ${escapeHtml(count)}</li>`
+            )
+            .join('')
+        : '';
+    }
+    if (attribution) attribution.hidden = !pois;
+    removeBtn.hidden = !pois;
+    findBtn.textContent = pois ? 'Search again' : 'Find points of interest (OpenStreetMap)';
+    if (blurb) {
+      if (!pois) {
+        blurb.textContent = defaultBlurb;
+      } else if (found === 0) {
+        blurb.textContent =
+          'No OpenStreetMap points of interest were found within 2 km of this trail.';
+      } else {
+        blurb.textContent =
+          `${found} OpenStreetMap point${found === 1 ? '' : 's'} of interest within 2 km of this trail. ` +
+          'They are shown on the map only — your waypoints are untouched.';
+      }
+    }
+  };
+
+  const setBusy = (busy: boolean): void => {
+    findBtn.disabled = busy;
+    removeBtn.disabled = busy;
+    cancelBtn.hidden = !busy;
+    if (progress) progress.hidden = !busy;
+  };
+
+  /**
+   * Persist first, then show. A POI that was not stored must not look stored,
+   * so this writes IndexedDB before it touches the page.
+   *
+   * `trail` is the object the viewer and the Tracknotes export both hold, so it
+   * is updated too — otherwise an export taken straight after a search would
+   * ship the trail without its POIs.
+   */
+  const store = async (pois: TrailPOI[] | null): Promise<void> => {
+    const saved = await updateTrailPois(trailId, pois);
+    panelPois = pois;
+    if (pois === null) {
+      delete trail.pois;
+    } else {
+      trail.pois = pois;
+    }
+    render();
+    // Clearing is `[]`, not `undefined`: the viewer sorts what it is given, and
+    // an empty list is how it is told to draw nothing.
+    setTrailPois(pois ?? []);
+    if (!saved) {
+      setWarning(
+        'These points of interest could not be saved — this trail is no longer in ' +
+          "this browser's storage. They will disappear when you reload the page."
+      );
+    }
+  };
+
+  findBtn.disabled = false;
+  render();
+
+  findBtn.addEventListener('click', () => {
+    if (controller) return;
+    controller = new AbortController();
+    const signal = controller.signal;
+
+    setWarning(null);
+    setBusy(true);
+    setProgress('Preparing the search corridor…');
+
+    void (async () => {
+      try {
+        const { enrichImportedTrail } = await import('./poi-enrich');
+        const result = await enrichImportedTrail(trail, {
+          signal,
+          endpoint: endpointOverride,
+          onProgress: p => setProgress(p.message, p.current, p.total),
+        });
+
+        try {
+          await store(result.pois);
+        } catch (err: unknown) {
+          setWarning(
+            `Found ${result.pois.length} points of interest, but they could not be saved: ` +
+              `${err instanceof Error ? err.message : String(err)}`
+          );
+          return;
+        }
+
+        if (result.failedChunks.length > 0) {
+          setWarning(
+            `${result.failedChunks.length} of ${result.queryChunks} search areas failed, ` +
+              'so part of the trail was not covered. Searching again will retry them. ' +
+              `(${result.failedChunks[0].error})`
+          );
+        }
+      } catch (err: unknown) {
+        if (signal.aborted) {
+          setWarning('Search cancelled. Nothing was changed.');
+        } else {
+          console.error('POI search failed', err);
+          setWarning(
+            `Could not reach OpenStreetMap: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      } finally {
+        controller = null;
+        setBusy(false);
+      }
+    })();
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    controller?.abort();
+    cancelBtn.hidden = true;
+    setProgress('Cancelling…');
+  });
+
+  removeBtn.addEventListener('click', () => {
+    if (!window.confirm('Remove the OpenStreetMap points of interest from this trail?')) {
+      return;
+    }
+    setWarning(null);
+    removeBtn.disabled = true;
+    void store(null)
+      .catch((err: unknown) => {
+        setWarning(`Could not remove them: ${err instanceof Error ? err.message : String(err)}`);
+      })
+      .finally(() => {
+        removeBtn.disabled = false;
+      });
+  });
 }
 
 function initDeleteButton(trailId: string, name: string): void {
@@ -200,7 +436,9 @@ function initDeleteButton(trailId: string, name: string): void {
       .catch((err: unknown) => {
         button.disabled = false;
         button.textContent = 'Delete trail';
-        window.alert(`Could not delete this trail: ${err instanceof Error ? err.message : String(err)}`);
+        window.alert(
+          `Could not delete this trail: ${err instanceof Error ? err.message : String(err)}`
+        );
       });
   });
 }
@@ -232,6 +470,7 @@ async function init(): Promise<void> {
   const name = record.trail.config.name || record.name;
   applyTrailIdentity(name, record.id);
   initTracknotesExport(record.trail);
+  initPoiPanel(storedId, record.trail);
   initDeleteButton(record.id, name);
 
   // The panel must be laid out before the viewer runs: Leaflet and the

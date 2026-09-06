@@ -23,6 +23,7 @@ import {
   DESCRIPTIONS_FILENAME,
   loadCuratedDescriptions,
 } from './lib/waypoint-descriptions.js';
+import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -571,6 +572,17 @@ async function main() {
     try {
       const processed = await processTrail(trailDir, waypointRegistry, needsAutoGen);
 
+      // OSM points of interest are fetched separately (npm run fetch:pois) and
+      // committed to data/trails/<dir>/pois.json, because this directory is
+      // gitignored and rewritten wholesale on every build. They are never
+      // merged into `waypoints` and never enter the waypoint-id registry; the
+      // file's hand-edited `rejected` keys are dropped here. A trail with no
+      // pois.json gets no `pois` key at all.
+      const pois = readTrailPOIsForBuild(trailDir);
+      if (pois) {
+        processed.pois = pois;
+      }
+
       // Write processed data
       const outputPath = path.join(OUTPUT_DIR, `${processed.config.id}.json`);
       fs.writeFileSync(outputPath, JSON.stringify(processed, null, 2));
@@ -578,6 +590,9 @@ async function main() {
       console.log(`    Distance: ${processed.track.totalDistance.toFixed(1)} km`);
       console.log(`    Elevation: +${Math.round(processed.track.totalAscent)}m / -${Math.round(processed.track.totalDescent)}m`);
       console.log(`    Waypoints: ${processed.waypoints.length} on-trail, ${processed.offTrailWaypoints.length} off-trail`);
+      if (pois) {
+        console.log(`    POIs: ${pois.length} (OpenStreetMap)`);
+      }
 
       // Generate HTML pages for this trail
       generateTrailPage(processed);

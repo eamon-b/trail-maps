@@ -175,6 +175,31 @@ export interface TrackData {
 }
 
 /** A fully processed trail — the serialized form of a generated trail JSON. */
+/** The five OpenStreetMap POI families the enrichment catalog produces. */
+export type TrailPOICategory = 'water' | 'camping' | 'resupply' | 'transport' | 'emergency';
+
+/**
+ * An OpenStreetMap point of interest near the trail, found by `scripts/fetch-pois.ts`
+ * (bundled trails) or by the in-browser enrichment (imported trails). Kept separate
+ * from waypoints: POIs are uncurated, carry no registry id, and can be hidden or
+ * rejected without touching the waypoint data. Data is © OpenStreetMap contributors (ODbL).
+ */
+export interface TrailPOI {
+  /** OSM element id. Only unique together with `type`. */
+  id: number;
+  /** OSM element type: 'node' | 'way' | 'relation'. */
+  type: string;
+  category: TrailPOICategory;
+  lat: number;
+  lon: number;
+  name: string | null;
+  tags: Record<string, string>;
+  /** km along the trail, on the same scale as `track.points[].dist` and `waypoints[].totalDistance`. */
+  distanceAlongTrail: number;
+  /** Cross-track distance from the trail, km. */
+  distanceFromTrail: number;
+}
+
 export interface ProcessedTrail {
   config: TrailConfig;
   track: TrackData;
@@ -185,4 +210,6 @@ export interface ProcessedTrail {
   climate: Record<string, unknown> | null;
   climateLocations: ClimateLocationConfig[] | null;
   direction: DirectionConfig | null;
+  /** OSM points of interest near the trail, sorted by `distanceAlongTrail`. Absent when never fetched. */
+  pois?: TrailPOI[];
 }

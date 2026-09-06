@@ -189,11 +189,12 @@ function queueWaypointTypeWrite(
 // `./poi-enrich`. Everything below is the panel around that call: progress,
 // cancellation, persistence, and handing the result to the viewer.
 
-/** Panel copy for the five OSM POI families. */
+/** Panel copy for the six OSM POI families. */
 const POI_CATEGORY_LABELS: Record<string, string> = {
   water: 'Water',
   camping: 'Camping',
   resupply: 'Shops & resupply',
+  restaurant: 'Restaurants & cafes',
   transport: 'Transport',
   emergency: 'Emergency',
 };

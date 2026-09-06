@@ -226,6 +226,40 @@ though the guide never writes them itself: a waypoint typed `spring`,
 - Waypoint ids are minted locally (`uw_…`) and never sent to the comments
   service; imported trails have no shared comments.
 
+## Points of interest (optional)
+
+Waypoints come from your file. **Points of interest** come from
+[OpenStreetMap](https://www.openstreetmap.org/), and they are opt-in: on an
+imported trail's page, **Find points of interest** searches a 2 km-wide corridor
+along the whole route — the main line plus every alternate and side trip — for
+water, campsites, shops and other resupply, transport, and emergency services.
+
+- The search runs **from your browser straight to OpenStreetMap's Overpass API**.
+  Nothing is uploaded to us, but the shape of your route does leave your device:
+  the query is the route corridor. This is the only step besides elevation
+  backfill that touches the network.
+- A long trail is split into several queries, sent one at a time a couple of
+  seconds apart because that is what the free Overpass servers ask for. A route
+  of a few hundred kilometres takes a minute or two. Progress shows which area
+  is being fetched, and **Cancel** stops it — nothing is saved until it finishes.
+- If some areas fail (a busy server, a dropped connection) the results from the
+  rest are still kept, and a note tells you the coverage is partial. Searching
+  again retries.
+- Results are **stored with the trail in this browser**, like everything else
+  about an import, and are included when you export the trail for the mobile
+  app.
+
+Points of interest are kept **separate from your waypoints**. They are shown on
+the map, never merged into the waypoint list, and never counted by the plan
+calculator — an OSM tap is not a water source you have checked. Nothing about
+your file is changed by the search, and **Remove points of interest** deletes
+them again in a click. If a point turns out to matter, add it to your GPX as a
+proper waypoint and re-import.
+
+Point-of-interest data is © OpenStreetMap contributors and is used under the
+[Open Database License](https://opendatacommons.org/licenses/odbl/); the
+attribution is shown on the trail page whenever POIs are loaded.
+
 ## Reading the "Worth knowing" notes
 
 | Note | Meaning | What you can do |

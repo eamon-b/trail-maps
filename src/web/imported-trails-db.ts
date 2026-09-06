@@ -13,7 +13,7 @@
  * "your browser can't store imported trails" state rather than try/catch each call.
  */
 
-import type { ProcessedTrail } from '@lib/trail-types';
+import type { ProcessedTrail, TrailPOI } from '@lib/trail-types';
 
 /** The stored trail payload — the shared processed-trail shape from `@lib`. */
 export type ImportedTrailData = ProcessedTrail;
@@ -163,7 +163,7 @@ function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
  */
 async function runTransaction<T>(
   mode: IDBTransactionMode,
-  work: (store: IDBObjectStore) => Promise<T>,
+  work: (store: IDBObjectStore) => Promise<T>
 ): Promise<T> {
   if (!isIndexedDbAvailable()) throw new IndexedDbUnavailableError();
 
@@ -212,23 +212,58 @@ function toSummary(record: ImportedTrailSummary): ImportedTrailSummary {
 }
 
 /** Insert or replace a stored trail (keyed by `record.id`). */
-export async function putTrail<T = ImportedTrailData>(record: ImportedTrailRecord<T>): Promise<void> {
+export async function putTrail<T = ImportedTrailData>(
+  record: ImportedTrailRecord<T>
+): Promise<void> {
   if (!record || typeof record.id !== 'string' || record.id === '') {
     throw new TypeError('putTrail requires a record with a non-empty string id');
   }
-  await runTransaction('readwrite', async (store) => {
+  await runTransaction('readwrite', async store => {
     await requestToPromise(store.put(record));
   });
 }
 
 /** Fetch one stored trail, or null when no record has that id. */
 export async function getTrail<T = ImportedTrailData>(
-  id: string,
+  id: string
 ): Promise<ImportedTrailRecord<T> | null> {
-  const record = await runTransaction('readonly', (store) =>
-    requestToPromise(store.get(id) as IDBRequest<ImportedTrailRecord<T> | undefined>),
+  const record = await runTransaction('readonly', store =>
+    requestToPromise(store.get(id) as IDBRequest<ImportedTrailRecord<T> | undefined>)
   );
   return record ?? null;
+}
+
+/**
+ * Attach (or clear) the OpenStreetMap POIs of one stored trail.
+ *
+ * Read-modify-write inside a *single* transaction, unlike the waypoint-type
+ * corrections in `my-trail.ts`: enrichment finishes minutes after it starts, so
+ * the record it read at the beginning is exactly the copy most likely to have
+ * gone stale meanwhile. Re-reading here means a category the user fixed while
+ * the query was running is not written back over.
+ *
+ * Pass `null` to remove the field entirely — an absent `pois` is what "never
+ * fetched" looks like everywhere else, so a stored empty array would read as
+ * "searched, found nothing".
+ *
+ * @returns false when no record has that id (deleted in another tab, say).
+ */
+export async function updateTrailPois(id: string, pois: TrailPOI[] | null): Promise<boolean> {
+  return runTransaction('readwrite', async store => {
+    const record = await requestToPromise(
+      store.get(id) as IDBRequest<ImportedTrailRecord | undefined>
+    );
+    if (!record) return false;
+
+    if (pois === null) {
+      delete record.trail.pois;
+    } else {
+      record.trail.pois = pois;
+    }
+
+    await requestToPromise(store.put(record));
+    return true;
+  });
 }
 
 /**
@@ -243,7 +278,7 @@ export async function getTrail<T = ImportedTrailData>(
  * payload.
  */
 export async function listTrailSummaries(): Promise<ImportedTrailSummary[]> {
-  const records = await runTransaction('readonly', (store) => {
+  const records = await runTransaction('readonly', store => {
     const source: IDBObjectStore | IDBIndex = store.indexNames.contains(CREATED_AT_INDEX)
       ? store.index(CREATED_AT_INDEX)
       : store;
@@ -257,7 +292,7 @@ export async function listTrailSummaries(): Promise<ImportedTrailSummary[]> {
 
 /** Delete a stored trail. Resolves normally when the id is not present. */
 export async function deleteTrail(id: string): Promise<void> {
-  await runTransaction('readwrite', async (store) => {
+  await runTransaction('readwrite', async store => {
     await requestToPromise(store.delete(id));
   });
 }

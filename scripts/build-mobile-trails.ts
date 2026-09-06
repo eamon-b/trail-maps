@@ -32,6 +32,8 @@ const NAME_FIXES: Record<string, { name: string; shortName: string }> = {
 
 interface TrailJson {
   config: Record<string, unknown>;
+  /** Present only for trails with a data/trails/<dir>/pois.json; stripped below. */
+  pois?: unknown;
   track: {
     points: TrackPoint[];
     displayPoints: TrackPoint[];
@@ -112,6 +114,12 @@ function simplifyMainTrack(
 }
 
 export function processTrail(trail: TrailJson): TrailJson {
+  // The app has no POI UI yet, so the `...trail` spread below would ship the
+  // whole `pois` array into the bundled asset for nothing. Drop it here rather
+  // than upstream: the web build still wants POIs in the generated JSON.
+  const trailWithoutPois: TrailJson = { ...trail };
+  delete trailWithoutPois.pois;
+
   // Simplify main track points
   const simplifiedMain = simplifyMainTrack(trail.track.points, trail.track.breaks, TARGET_POINTS);
   const simplifiedPoints = simplifiedMain.points;
@@ -135,7 +143,7 @@ export function processTrail(trail: TrailJson): TrailJson {
   });
 
   return {
-    ...trail,
+    ...trailWithoutPois,
     config: trail.config,
     track: {
       points: truncatePoints(simplifiedPoints),

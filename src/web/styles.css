@@ -58,6 +58,15 @@
   --water: #0284c7;
   --select: #3b82f6;
 
+  /* OpenStreetMap POI categories (markers, chips, checkbox dots) */
+  --poi-water: #0ea5e9;
+  --poi-camping: #16a34a;
+  --poi-resupply: #d97706;
+  --poi-transport: #7c3aed;
+  --poi-emergency: #dc2626;
+  --poi-other: #64748b;
+  --poi-surface: #f1f5f9;
+
   /* Canvas + Chart.js colors (read from JS via themeColor()) */
   --chart-text: #666666;
   --chart-grid: #dddddd;
@@ -130,6 +139,14 @@
     --temp-min: #60a5fa;
     --water: #38bdf8;
 
+    --poi-water: #38bdf8;
+    --poi-camping: #4ade80;
+    --poi-resupply: #fbbf24;
+    --poi-transport: #a78bfa;
+    --poi-emergency: #f87171;
+    --poi-other: #94a3b8;
+    --poi-surface: #223049;
+
     --chart-text: #94a3b8;
     --chart-grid: #33415a;
     --chart-grid-soft: #253148;
@@ -182,6 +199,14 @@
   --temp-max: #f87171;
   --temp-min: #60a5fa;
   --water: #38bdf8;
+
+  --poi-water: #38bdf8;
+  --poi-camping: #4ade80;
+  --poi-resupply: #fbbf24;
+  --poi-transport: #a78bfa;
+  --poi-emergency: #f87171;
+  --poi-other: #94a3b8;
+  --poi-surface: #223049;
 
   --chart-text: #94a3b8;
   --chart-grid: #33415a;
@@ -1353,4 +1378,257 @@ input::placeholder {
   background: var(--surface);
   color: var(--text);
   border-color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+ * OpenStreetMap points of interest
+ *
+ * A second, uncurated layer over the trail: OSM taps, campsites, shops, bus
+ * stops and clinics near the corridor. Everything here reads *quieter* than the
+ * curated waypoint chrome on purpose — smaller markers, muted rows, a hairline
+ * category dot — so the eye can tell "our data" from "the map's data" without
+ * reading a word. Lives here rather than in trails/trail-page.css because the
+ * imported-trail page (my-trail.html) shows the same control.
+ *
+ * Colours come from the --poi-* tokens at the top of this file, so light and
+ * dark are handled by the theme rather than by anything below.
+ * ------------------------------------------------------------------------- */
+
+.poi-control {
+  margin: 0 0 0.75rem 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 6px;
+  background: var(--bg-secondary, var(--bg-subtle));
+  font-size: 0.8125rem;
+}
+
+.poi-control-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.poi-master {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.poi-control-count {
+  color: var(--text-secondary, var(--text-muted));
+  font-variant-numeric: tabular-nums;
+}
+
+.poi-cat-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin-top: 0.55rem;
+}
+
+.poi-cat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem 0.2rem 0.3rem;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 999px;
+  background: var(--bg-primary, var(--surface));
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* A category the trail has none of: still listed, so the absence is visible. */
+.poi-cat-toggle.is-empty {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.poi-cat-count {
+  color: var(--text-secondary, var(--text-muted));
+  font-variant-numeric: tabular-nums;
+}
+
+.poi-control-note {
+  margin: 0.55rem 0 0 0;
+  color: var(--text-secondary, var(--text-muted));
+  font-size: 0.75rem;
+}
+
+.poi-attribution {
+  white-space: nowrap;
+}
+
+/* The category chip, shared by popups and datasheet rows. The dot carries the
+ * category colour so the chip itself stays a neutral surface — five saturated
+ * pills in a table column would shout louder than the waypoint badges. */
+.poi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  border: 1px solid var(--poi-accent, var(--poi-other));
+  background: var(--poi-surface);
+  color: var(--text);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.poi-badge-icon {
+  font-size: 0.8em;
+  line-height: 1;
+}
+
+.poi-cat-water { --poi-accent: var(--poi-water); }
+.poi-cat-camping { --poi-accent: var(--poi-camping); }
+.poi-cat-resupply { --poi-accent: var(--poi-resupply); }
+.poi-cat-transport { --poi-accent: var(--poi-transport); }
+.poi-cat-emergency { --poi-accent: var(--poi-emergency); }
+.poi-cat-other { --poi-accent: var(--poi-other); }
+
+.poi-cat-toggle {
+  border-left: 4px solid var(--poi-accent, var(--poi-other));
+}
+
+/* The "this row is not ours" badge. */
+.poi-source-badge {
+  display: inline-block;
+  padding: 0.05rem 0.3rem;
+  margin-right: 0.35rem;
+  border: 1px solid var(--text-secondary, var(--text-muted));
+  border-radius: 3px;
+  color: var(--text-secondary, var(--text-muted));
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  vertical-align: 1px;
+}
+
+a.poi-source-badge:hover {
+  color: var(--link);
+  border-color: var(--link);
+}
+
+/*
+ * Datasheet rows. `tbody tr.poi-row` outranks trails/trail-page.css's
+ * `.waypoints-table tr:hover`, which is loaded after this file — without the
+ * extra class the hover rule would repaint a POI row as a waypoint row.
+ */
+.waypoints-table tbody tr.poi-row {
+  background: transparent;
+  color: var(--text-secondary, var(--text-muted));
+  font-style: italic;
+}
+
+.waypoints-table tbody tr.poi-row:hover {
+  background: var(--bg-secondary, var(--bg-subtle));
+}
+
+.waypoints-table tbody tr.poi-row td:first-child {
+  border-left: 3px solid var(--border-color, var(--border));
+}
+
+.waypoints-table tbody tr.poi-row .poi-badge,
+.waypoints-table tbody tr.poi-row .poi-source-badge {
+  font-style: normal;
+}
+
+.poi-show-on-map {
+  margin-left: 0.4rem;
+  color: var(--link);
+  font-size: 0.75rem;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.waypoints-table tbody tr.poi-row td.poi-off-trail {
+  font-size: 0.75rem;
+}
+
+.poi-table-attribution {
+  margin: 0.35rem 0 0 0;
+  color: var(--text-secondary, var(--text-muted));
+  font-size: 0.72rem;
+}
+
+/*
+ * Map markers. 16px against the waypoints' 24px, and the viewer additionally
+ * pins the layer below the waypoint markers with a negative zIndexOffset — a
+ * curated waypoint must never disappear behind an OSM node at the same spot.
+ */
+.poi-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 9px;
+  background: var(--surface);
+  border: 2px solid var(--poi-accent, var(--poi-other));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.poi-marker.poi-cat-water { --poi-accent: var(--poi-water); }
+.poi-marker.poi-cat-camping { --poi-accent: var(--poi-camping); }
+.poi-marker.poi-cat-resupply { --poi-accent: var(--poi-resupply); }
+.poi-marker.poi-cat-transport { --poi-accent: var(--poi-transport); }
+.poi-marker.poi-cat-emergency { --poi-accent: var(--poi-emergency); }
+
+/* Popups. The wrapper is already themed further up this file. */
+.poi-popup {
+  min-width: 180px;
+  max-width: 260px;
+}
+
+.poi-popup-name {
+  display: block;
+  font-size: 0.95em;
+}
+
+.poi-popup-meta {
+  margin: 0.25rem 0;
+}
+
+.poi-popup-dist {
+  color: var(--text-secondary, var(--text-muted));
+  font-size: 0.85em;
+}
+
+.poi-tags {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.5rem;
+  margin: 0.4rem 0 0 0;
+  font-size: 0.85em;
+}
+
+.poi-tags dt {
+  color: var(--text-secondary, var(--text-muted));
+  white-space: nowrap;
+}
+
+.poi-tags dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.poi-osm-link {
+  display: inline-block;
+  margin-top: 0.45rem;
+  color: var(--link);
+}
+
+.poi-popup .poi-attribution {
+  margin-top: 0.3rem;
+  color: var(--text-secondary, var(--text-muted));
+  font-size: 0.75em;
+  white-space: normal;
 }

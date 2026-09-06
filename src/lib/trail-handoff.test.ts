@@ -182,11 +182,7 @@ describe('parseHandoffJson', () => {
         JSON.stringify({ format: 'gaia-trail', version: 1, trail: {} }),
         /not a Tracknotes trail file \(format "gaia-trail"/,
       ],
-      [
-        'a missing format',
-        JSON.stringify({ version: 1, trail: {} }),
-        /format missing/,
-      ],
+      ['a missing format', JSON.stringify({ version: 1, trail: {} }), /format missing/],
       [
         'a non-integer version',
         JSON.stringify({ format: HANDOFF_FORMAT, version: '1', trail: {} }),
@@ -287,7 +283,7 @@ describe('parseHandoffJson', () => {
       'u_/etc/passwd',
       'u_a/b',
       'u_..',
-      'u_UPPER',            // outside the minter's base36 alphabet
+      'u_UPPER', // outside the minter's base36 alphabet
       `u_${'a'.repeat(64)}`, // longer than anything hashString emits
     ];
 
@@ -368,6 +364,66 @@ describe('parseHandoffJson', () => {
       expect(wp.id).toMatch(/^uw_[a-z0-9]+$/);
       // Deterministic, so re-importing the same file is not a new waypoint.
       expect(parseHandoffJson(text).waypoints[0].id).toBe(wp.id);
+    });
+  });
+});
+
+describe('parseHandoffJson: points of interest', () => {
+  /** A POI as `@lib/trail-pois` writes one. */
+  const poi = {
+    id: 12345,
+    type: 'node',
+    category: 'water',
+    lat: -33.87,
+    lon: 151.21,
+    name: 'Tap',
+    tags: { amenity: 'drinking_water', name: 'Tap' },
+    distanceAlongTrail: 0.4,
+    distanceFromTrail: 0.02,
+  };
+
+  /** Round-trip a trail whose `pois` array is exactly `pois`. */
+  function withPois(pois: unknown): ProcessedTrail {
+    const trail = { ...makeTrail(), pois } as ProcessedTrail;
+    return roundTrip(trail);
+  }
+
+  it('carries POIs through the envelope', () => {
+    expect(withPois([poi]).pois).toEqual([poi]);
+  });
+
+  it('leaves pois absent when the file has none', () => {
+    expect(roundTrip(makeTrail()).pois).toBeUndefined();
+    expect(withPois([]).pois).toBeUndefined();
+  });
+
+  it('drops a malformed POI rather than rejecting the file', () => {
+    const parsed = withPois([
+      poi,
+      { ...poi, id: 2, lat: 'north' },
+      { ...poi, id: 3, category: 'unicorn' },
+      { ...poi, id: 4, lon: 999 },
+      'not an object',
+    ]);
+    expect(parsed.pois?.map(p => p.id)).toEqual([12345]);
+    // The trail itself is untouched by a bad POI.
+    expect(parsed.track.points).toHaveLength(3);
+  });
+
+  it('defaults the optional fields of an otherwise valid POI', () => {
+    const [parsed] = withPois([
+      { id: 9, type: 'way', category: 'camping', lat: -33.87, lon: 151.21 },
+    ]).pois!;
+    expect(parsed).toEqual({
+      id: 9,
+      type: 'way',
+      category: 'camping',
+      lat: -33.87,
+      lon: 151.21,
+      name: null,
+      tags: {},
+      distanceAlongTrail: 0,
+      distanceFromTrail: 0,
     });
   });
 });

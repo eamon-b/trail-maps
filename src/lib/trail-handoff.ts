@@ -330,11 +330,12 @@ function readTrackPoint(value: unknown, where: string): TrackPoint {
   return { lat, lon, ele, dist };
 }
 
-/** The five OSM POI families `@lib/trail-pois` produces. */
+/** The six OSM POI families `@lib/trail-pois` produces. */
 const POI_CATEGORIES: readonly TrailPOICategory[] = [
   'water',
   'camping',
   'resupply',
+  'restaurant',
   'transport',
   'emergency',
 ];

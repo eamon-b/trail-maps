@@ -203,7 +203,14 @@ describe('the POI filter state', () => {
       poi({ category: 'water' }),
       poi({ category: 'emergency' }),
     ]);
-    expect(counts).toEqual({ water: 2, camping: 0, resupply: 0, transport: 0, emergency: 1 });
+    expect(counts).toEqual({
+      water: 2,
+      camping: 0,
+      resupply: 0,
+      restaurant: 0,
+      transport: 0,
+      emergency: 1,
+    });
   });
 });
 

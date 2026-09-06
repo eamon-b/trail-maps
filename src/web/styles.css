@@ -62,6 +62,7 @@
   --poi-water: #0ea5e9;
   --poi-camping: #16a34a;
   --poi-resupply: #d97706;
+  --poi-restaurant: #db2777;
   --poi-transport: #7c3aed;
   --poi-emergency: #dc2626;
   --poi-other: #64748b;
@@ -142,6 +143,7 @@
     --poi-water: #38bdf8;
     --poi-camping: #4ade80;
     --poi-resupply: #fbbf24;
+    --poi-restaurant: #f472b6;
     --poi-transport: #a78bfa;
     --poi-emergency: #f87171;
     --poi-other: #94a3b8;
@@ -203,6 +205,7 @@
   --poi-water: #38bdf8;
   --poi-camping: #4ade80;
   --poi-resupply: #fbbf24;
+  --poi-restaurant: #f472b6;
   --poi-transport: #a78bfa;
   --poi-emergency: #f87171;
   --poi-other: #94a3b8;
@@ -1488,6 +1491,7 @@ input::placeholder {
 .poi-cat-water { --poi-accent: var(--poi-water); }
 .poi-cat-camping { --poi-accent: var(--poi-camping); }
 .poi-cat-resupply { --poi-accent: var(--poi-resupply); }
+.poi-cat-restaurant { --poi-accent: var(--poi-restaurant); }
 .poi-cat-transport { --poi-accent: var(--poi-transport); }
 .poi-cat-emergency { --poi-accent: var(--poi-emergency); }
 .poi-cat-other { --poi-accent: var(--poi-other); }
@@ -1579,6 +1583,7 @@ a.poi-source-badge:hover {
 .poi-marker.poi-cat-water { --poi-accent: var(--poi-water); }
 .poi-marker.poi-cat-camping { --poi-accent: var(--poi-camping); }
 .poi-marker.poi-cat-resupply { --poi-accent: var(--poi-resupply); }
+.poi-marker.poi-cat-restaurant { --poi-accent: var(--poi-restaurant); }
 .poi-marker.poi-cat-transport { --poi-accent: var(--poi-transport); }
 .poi-marker.poi-cat-emergency { --poi-accent: var(--poi-emergency); }
 

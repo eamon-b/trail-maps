@@ -150,7 +150,7 @@ describe('processTrailData', () => {
     expect(result.pois[0].distanceAlongTrail).toBeLessThan(22);
   });
 
-  it('queries a corridor for all five POI types', async () => {
+  it('queries a corridor for all six POI types', async () => {
     const seen = { areas: [] as OverpassArea[], types: [] as POIType[][] };
     const result = await processTrailData(makeTrail(), fixedFetcher([], seen));
 
@@ -158,7 +158,7 @@ describe('processTrailData', () => {
     expect(seen.areas).toHaveLength(1);
     expect(seen.areas[0]).toHaveProperty('corridor');
     expect(seen.types[0].sort()).toEqual(
-      ['camping', 'emergency', 'resupply', 'transport', 'water'].sort()
+      ['camping', 'emergency', 'restaurant', 'resupply', 'transport', 'water'].sort()
     );
   });
 

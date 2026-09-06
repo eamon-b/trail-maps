@@ -584,6 +584,9 @@ export function enrichVariantWaypoints(
         totalDescent: Math.round(runningDescent),
         variantTrackIndex: visit.trackIndex,
         description: visit.waypoint.description,
+        // Only present on OSM-enriched rows; left off entirely otherwise so the
+        // curated output is byte-identical.
+        ...(visit.waypoint.source !== undefined ? { source: visit.waypoint.source } : {}),
       });
 
       prevTrackIndex = visit.trackIndex;

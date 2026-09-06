@@ -86,6 +86,12 @@ export interface TrailWaypoint {
   description?: string;
   /** Ids of near-duplicate waypoints merged into this one (see dedupeWaypoints). */
   mergedIds?: string[];
+  /**
+   * Where the waypoint came from when it is not part of the trail's own
+   * curated data. `'osm'` marks rows appended from `data/trails/<trail>/pois.json`
+   * (OpenStreetMap, ODbL) by the build; absent for GPX / CalTopo / CSV rows.
+   */
+  source?: string;
 }
 
 /** A waypoint matched to the main route and enriched with cumulative stats. */
@@ -130,6 +136,8 @@ export interface VariantWaypoint {
   totalAscent: number;
   totalDescent: number;
   variantTrackIndex: number;
+  /** See {@link TrailWaypoint.source}. */
+  source?: string;
   description?: string;
   mergedIds?: string[];
 }

@@ -23,6 +23,7 @@ import {
   DESCRIPTIONS_FILENAME,
   loadCuratedDescriptions,
 } from './lib/waypoint-descriptions.js';
+import { parsePoisFile, POIS_FILENAME, poisFileToWaypoints } from './lib/poi-enrichment.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -128,7 +129,9 @@ function findGeojsonFile(trailDir: string, explicitFile?: string): string | null
   const jsonFiles = files.filter(f =>
     f.toLowerCase().endsWith('.json') &&
     f !== 'trail.json' &&
-    f !== 'climate.json'
+    f !== 'climate.json' &&
+    f !== DESCRIPTIONS_FILENAME &&
+    f !== POIS_FILENAME
   );
 
   for (const file of jsonFiles) {
@@ -381,7 +384,32 @@ function resolveTrailWaypoints(
     }
   }
 
-  return waypoints;
+  // OpenStreetMap enrichment last, so every curated source above is the merge
+  // baseline and an OSM row can never displace a curated one.
+  return appendOsmWaypoints(trailDir, config, waypoints);
+}
+
+/**
+ * Append the reviewed OSM waypoints from data/trails/<trail>/pois.json
+ * (written by `npm run fetch:pois`). Optional; trails without the file build
+ * exactly as before. Entries in the file's `rejected` list, and anything a
+ * curated waypoint already covers, are skipped and logged.
+ */
+function appendOsmWaypoints(trailDir: string, config: TrailConfig, waypoints: Waypoint[]): Waypoint[] {
+  const poisPath = path.join(trailDir, POIS_FILENAME);
+  if (!fs.existsSync(poisPath)) return waypoints;
+
+  const file = parsePoisFile(JSON.parse(fs.readFileSync(poisPath, 'utf-8')), poisPath);
+  if (file.trailId !== config.id) {
+    throw new Error(`${poisPath}: trailId "${file.trailId}" does not match trail "${config.id}"`);
+  }
+
+  const { waypoints: osmWaypoints, skipped } = poisFileToWaypoints(file, waypoints);
+  console.log(`  ✓ ${POIS_FILENAME}: ${osmWaypoints.length} OSM waypoints added, ${skipped.length} skipped`);
+  for (const s of skipped) {
+    if (s.reason !== 'in rejected list') console.log(`    - ${s.name} (${s.osmId}): ${s.reason}`);
+  }
+  return [...waypoints, ...osmWaypoints];
 }
 
 /**

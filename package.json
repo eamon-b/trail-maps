@@ -13,6 +13,7 @@
     "build": "npm run fetch:climate && npm run build:trails && tsc && vite build",
     "build:trails": "tsx scripts/build-trails.ts",
     "fetch:climate": "tsx scripts/fetch-climate.ts",
+    "fetch:pois": "tsx scripts/fetch-pois.ts",
     "fetch:elevation": "tsx scripts/fetch-elevation.ts",
     "build:tiles": "tsx scripts/build-tiles.ts",
     "build:tiles:bibbulmun": "tsx scripts/build-tiles.ts --trail bibbulmun",

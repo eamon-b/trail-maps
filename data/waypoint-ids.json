@@ -43,6 +43,13 @@
       "lon": 148.38577443787727
     },
     {
+      "id": "w_02dfa77f",
+      "name": "Cobungra Gap",
+      "type": "poi",
+      "lat": -36.946154,
+      "lon": 147.185462
+    },
+    {
       "id": "w_052b0278",
       "name": "Ghost Gully Camping Area",
       "type": "campsite",
@@ -92,6 +99,13 @@
       "lon": 148.27464021005272
     },
     {
+      "id": "w_0d1410c4",
+      "name": "Saint Phillack Saddle",
+      "type": "campsite",
+      "lat": -37.829271,
+      "lon": 146.291652
+    },
+    {
       "id": "w_0d5727ee",
       "name": "Spargo Hut",
       "type": "hut",
@@ -99,11 +113,39 @@
       "lon": 147.16295907418825
     },
     {
+      "id": "w_0f0c0a63",
+      "name": "Hot Doggies",
+      "type": "food",
+      "lat": -36.981661,
+      "lon": 147.142538
+    },
+    {
+      "id": "w_0f89cb5c",
+      "name": "Long View",
+      "type": "poi",
+      "lat": -36.749887,
+      "lon": 147.347267
+    },
+    {
+      "id": "w_0fe60fe9",
+      "name": "Bullwheel Bar & Bistro",
+      "type": "food",
+      "lat": -36.49373,
+      "lon": 148.287589
+    },
+    {
       "id": "w_0fecf167",
       "name": "Four Mile Hut",
       "type": "hut",
       "lat": -35.9297670563222,
       "lon": 148.47833680558713
+    },
+    {
+      "id": "w_0ff53126",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.174639,
+      "lon": 146.653815
     },
     {
       "id": "w_100e5e3e",
@@ -134,6 +176,13 @@
       "lon": 147.47397094120848
     },
     {
+      "id": "w_11f09d2b",
+      "name": "Shelter",
+      "type": "hut",
+      "lat": -36.974356,
+      "lon": 147.137661
+    },
+    {
       "id": "w_128a877d",
       "name": "Goodradigbee River",
       "type": "water",
@@ -153,6 +202,13 @@
       "type": "water",
       "lat": -35.81873128325527,
       "lon": 148.56481520721024
+    },
+    {
+      "id": "w_1442048a",
+      "name": "The General",
+      "type": "food",
+      "lat": -36.992131,
+      "lon": 147.14882
     },
     {
       "id": "w_1563456f",
@@ -195,6 +251,13 @@
       "type": "water",
       "lat": -35.67316237021498,
       "lon": 148.82706481020747
+    },
+    {
+      "id": "w_18c12706",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -36.919579,
+      "lon": 147.173418
     },
     {
       "id": "w_19d06a12",
@@ -244,6 +307,13 @@
       "type": "hut",
       "lat": -36.583206830559895,
       "lon": 148.25765468738683
+    },
+    {
+      "id": "w_216f1a0c",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -37.537261,
+      "lon": 146.399835
     },
     {
       "id": "w_21799a69",
@@ -316,6 +386,13 @@
       "lon": 146.89651
     },
     {
+      "id": "w_29561bdf",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -37.439325,
+      "lon": 146.392423
+    },
+    {
       "id": "w_2a331f75",
       "name": "Morris Creek",
       "type": "water",
@@ -328,6 +405,13 @@
       "type": "campsite",
       "lat": -37.92480786158686,
       "lon": 146.38463596021253
+    },
+    {
+      "id": "w_2c090f20",
+      "name": "Spring",
+      "type": "water",
+      "lat": -36.899439,
+      "lon": 147.30775
     },
     {
       "id": "w_2c119080",
@@ -393,11 +477,32 @@
       "lon": 148.45707116713538
     },
     {
+      "id": "w_3611f0fe",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.583069,
+      "lon": 148.974225
+    },
+    {
       "id": "w_36687f96",
       "name": "Cascade Creek 1",
       "type": "water",
       "lat": -36.58252,
       "lon": 148.25995
+    },
+    {
+      "id": "w_379ba87a",
+      "name": "The Cheese Hut",
+      "type": "hut",
+      "lat": -35.609536,
+      "lon": 148.664775
+    },
+    {
+      "id": "w_37e4f807",
+      "name": "Hotham Hotel",
+      "type": "food",
+      "lat": -36.982111,
+      "lon": 147.142828
     },
     {
       "id": "w_38fbcc63",
@@ -421,11 +526,25 @@
       "lon": 146.8299
     },
     {
+      "id": "w_3c206c1e",
+      "name": "Thomson",
+      "type": "poi",
+      "lat": -37.959817,
+      "lon": 146.419533
+    },
+    {
       "id": "w_3c99a282",
       "name": "Chesters Yard",
       "type": "campsite",
       "lat": -37.2368372880213,
       "lon": 146.59645231954192
+    },
+    {
+      "id": "w_3d26086c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.628791,
+      "lon": 148.955578
     },
     {
       "id": "w_3e3fb00d",
@@ -463,6 +582,13 @@
       "lon": 146.94849522917576
     },
     {
+      "id": "w_439014b6",
+      "name": "Buenba Flat South #3",
+      "type": "campsite",
+      "lat": -36.705763,
+      "lon": 147.913834
+    },
+    {
       "id": "w_43fa9f06",
       "name": "Bimberi Creek",
       "type": "water",
@@ -498,6 +624,13 @@
       "lon": 148.56179021340327
     },
     {
+      "id": "w_47a237bc",
+      "name": "Walhalla",
+      "type": "poi",
+      "lat": -37.950434,
+      "lon": 146.449568
+    },
+    {
       "id": "w_47d92b0c",
       "name": "Camp Creek",
       "type": "water",
@@ -517,6 +650,13 @@
       "type": "water",
       "lat": -36.15085756816558,
       "lon": 148.3701754287785
+    },
+    {
+      "id": "w_4e3c326c",
+      "name": "Blairs hut",
+      "type": "hut",
+      "lat": -36.919702,
+      "lon": 147.173302
     },
     {
       "id": "w_4e42de30",
@@ -540,6 +680,13 @@
       "lon": 147.31097
     },
     {
+      "id": "w_504e4705",
+      "name": "Saint Phillack Saddle",
+      "type": "poi",
+      "lat": -37.829096,
+      "lon": 146.291811
+    },
+    {
       "id": "w_50f15165",
       "name": "Munyang River",
       "type": "water",
@@ -552,6 +699,13 @@
       "type": "water",
       "lat": -36.21253034323286,
       "lon": 148.3454080861586
+    },
+    {
+      "id": "w_51397cc9",
+      "name": "Australian Alps Walking Track",
+      "type": "hut",
+      "lat": -37.943078,
+      "lon": 146.449448
     },
     {
       "id": "w_5201f2f1",
@@ -575,6 +729,13 @@
       "lon": 146.2162742609386
     },
     {
+      "id": "w_55dfd18c",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -37.172407,
+      "lon": 146.653323
+    },
+    {
       "id": "w_56397749",
       "name": "Youngs Hut",
       "type": "hut",
@@ -587,6 +748,13 @@
       "type": "hut",
       "lat": -36.32637788290125,
       "lon": 148.41418419073906
+    },
+    {
+      "id": "w_572193d7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.982233,
+      "lon": 147.141991
     },
     {
       "id": "w_59a5dc47",
@@ -610,6 +778,20 @@
       "lon": 147.3273031249753
     },
     {
+      "id": "w_5c26daad",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -37.016128,
+      "lon": 147.074406
+    },
+    {
+      "id": "w_5d13a17c",
+      "name": "Spring",
+      "type": "water",
+      "lat": -37.235207,
+      "lon": 146.594128
+    },
+    {
       "id": "w_5d8570cf",
       "name": "Booroomba Creek 1",
       "type": "water",
@@ -624,6 +806,20 @@
       "lon": 146.38461499554248
     },
     {
+      "id": "w_5f4f313c",
+      "name": "Walhalla Lodge Hotel",
+      "type": "food",
+      "lat": -37.946034,
+      "lon": 146.450078
+    },
+    {
+      "id": "w_60a134fb",
+      "name": "Cotter Flat",
+      "type": "campsite",
+      "lat": -35.64902,
+      "lon": 148.832351
+    },
+    {
       "id": "w_61282266",
       "name": "Millers Hut",
       "type": "hut",
@@ -636,6 +832,20 @@
       "type": "water",
       "lat": -37.70622336143519,
       "lon": 146.26965468171542
+    },
+    {
+      "id": "w_62c6ddd0",
+      "name": "Timms Lookout",
+      "type": "poi",
+      "lat": -36.798899,
+      "lon": 147.302157
+    },
+    {
+      "id": "w_62f5830d",
+      "name": "Arlberg",
+      "type": "accommodation",
+      "lat": -36.98456,
+      "lon": 147.145088
     },
     {
       "id": "w_63f905fa",
@@ -687,6 +897,13 @@
       "lon": 148.53300451148655
     },
     {
+      "id": "w_663a7e02",
+      "name": "Kiandra Rest Area",
+      "type": "poi",
+      "lat": -35.873426,
+      "lon": 148.494897
+    },
+    {
       "id": "w_68963ecd",
       "name": "Bogong Creek Trib",
       "type": "water",
@@ -727,6 +944,13 @@
       "type": "campsite",
       "lat": -37.42652,
       "lon": 146.41025
+    },
+    {
+      "id": "w_6ea38575",
+      "name": "Joyce Brockoff Hut",
+      "type": "food",
+      "lat": -36.973316,
+      "lon": 147.146327
     },
     {
       "id": "w_6eb22ab8",
@@ -827,6 +1051,20 @@
       "lon": 148.23661938205018
     },
     {
+      "id": "w_7a4de5b6",
+      "name": "Star Hotel",
+      "type": "accommodation",
+      "lat": -37.941446,
+      "lon": 146.452217
+    },
+    {
+      "id": "w_7a61adac",
+      "name": "Cootapatamba Lookout",
+      "type": "poi",
+      "lat": -36.470304,
+      "lon": 148.271859
+    },
+    {
       "id": "w_7aecad8d",
       "name": "Dairymans Creek",
       "type": "water",
@@ -862,11 +1100,25 @@
       "lon": 148.40705322244935
     },
     {
+      "id": "w_822b1ba1",
+      "name": "Rawson",
+      "type": "town",
+      "lat": -37.956819,
+      "lon": 146.399667
+    },
+    {
       "id": "w_87007c41",
       "name": "Hellfire Creek",
       "type": "water",
       "lat": -37.18981972011491,
       "lon": 146.62956872117135
+    },
+    {
+      "id": "w_88971df3",
+      "name": "Kittys Cafe",
+      "type": "food",
+      "lat": -37.941963,
+      "lon": 146.450889
     },
     {
       "id": "w_89010617",
@@ -876,11 +1128,25 @@
       "lon": 148.89398
     },
     {
+      "id": "w_89302429",
+      "name": "Lake Cootapatamba Lookout",
+      "type": "poi",
+      "lat": -36.46439,
+      "lon": 148.269823
+    },
+    {
       "id": "w_8ac1d596",
       "name": "Big River",
       "type": "water",
       "lat": -36.78814560697842,
       "lon": 147.33677645193444
+    },
+    {
+      "id": "w_8af852ad",
+      "name": "Kosciusko Lookout",
+      "type": "poi",
+      "lat": -36.479567,
+      "lon": 148.277817
     },
     {
       "id": "w_8d5c13c2",
@@ -923,6 +1189,13 @@
       "type": "water",
       "lat": -35.92989624548116,
       "lon": 148.47882692869283
+    },
+    {
+      "id": "w_91a1af21",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -37.830631,
+      "lon": 146.293944
     },
     {
       "id": "w_926fb2a7",
@@ -981,6 +1254,20 @@
       "lon": 146.9530481356739
     },
     {
+      "id": "w_9bd4cf4c",
+      "name": "Walhalla General Store",
+      "type": "resupply",
+      "lat": -37.941871,
+      "lon": 146.450966
+    },
+    {
+      "id": "w_9d6decbf",
+      "name": "Well",
+      "type": "water",
+      "lat": -35.625453,
+      "lon": 148.950832
+    },
+    {
       "id": "w_9fba7475",
       "name": "Camp Creek",
       "type": "water",
@@ -1009,6 +1296,13 @@
       "lon": 148.43069170699908
     },
     {
+      "id": "w_a460bc46",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.67745,
+      "lon": 148.754994
+    },
+    {
       "id": "w_a4ba20b2",
       "name": "Thredbo River 1",
       "type": "water",
@@ -1035,6 +1329,20 @@
       "type": "water",
       "lat": -35.67918,
       "lon": 148.73813
+    },
+    {
+      "id": "w_a75f4612",
+      "name": "Walhalla Bandstand",
+      "type": "poi",
+      "lat": -37.941489,
+      "lon": 146.451828
+    },
+    {
+      "id": "w_a80e06f3",
+      "name": "Cypress Pine Lookout",
+      "type": "poi",
+      "lat": -35.535793,
+      "lon": 149.04919
     },
     {
       "id": "w_a916cd47",
@@ -1149,6 +1457,13 @@
       "lon": 147.33693
     },
     {
+      "id": "w_b554ab2d",
+      "name": "Walhalla",
+      "type": "town",
+      "lat": -37.942307,
+      "lon": 146.451139
+    },
+    {
       "id": "w_b56a1e68",
       "name": "Long Plain Homestead",
       "type": "hut",
@@ -1168,6 +1483,13 @@
       "type": "campsite",
       "lat": -37.02839,
       "lon": 147.03928
+    },
+    {
+      "id": "w_b647c67f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.236717,
+      "lon": 146.596546
     },
     {
       "id": "w_b6d0a029",
@@ -1233,6 +1555,20 @@
       "lon": 148.0718363403763
     },
     {
+      "id": "w_bf251fb3",
+      "name": "NW Spur Spring",
+      "type": "water",
+      "lat": -36.895235,
+      "lon": 147.133344
+    },
+    {
+      "id": "w_bfd44965",
+      "name": "Eagles Nest",
+      "type": "food",
+      "lat": -36.49377,
+      "lon": 148.287664
+    },
+    {
       "id": "w_c0412b2e",
       "name": "Mushroom Rocks",
       "type": "campsite",
@@ -1259,6 +1595,20 @@
       "type": "town",
       "lat": -36.50406,
       "lon": 148.3064
+    },
+    {
+      "id": "w_c1818c56",
+      "name": "Diamantina Horse Yards",
+      "type": "campsite",
+      "lat": -36.91132,
+      "lon": 147.170063
+    },
+    {
+      "id": "w_c1b8f477",
+      "name": "Grey Horse Cafe",
+      "type": "food",
+      "lat": -37.941638,
+      "lon": 146.452129
     },
     {
       "id": "w_c21445c6",
@@ -1380,6 +1730,13 @@
       "lon": 147.87327480927843
     },
     {
+      "id": "w_d244eb46",
+      "name": "Renes Lookout",
+      "type": "poi",
+      "lat": -37.001641,
+      "lon": 147.10008
+    },
+    {
       "id": "w_d32594f1",
       "name": "Murrays Hut Site",
       "type": "campsite",
@@ -1392,6 +1749,13 @@
       "type": "water",
       "lat": -36.25651,
       "lon": 148.37834
+    },
+    {
+      "id": "w_d4d82e21",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -37.021104,
+      "lon": 147.070575
     },
     {
       "id": "w_d52acf87",
@@ -1420,6 +1784,13 @@
       "type": "water",
       "lat": -35.95332005815553,
       "lon": 148.49752502894728
+    },
+    {
+      "id": "w_d9ec1842",
+      "name": "Hotham Supermarket",
+      "type": "resupply",
+      "lat": -36.981636,
+      "lon": 147.142536
     },
     {
       "id": "w_dabc7c8b",
@@ -1464,6 +1835,13 @@
       "lon": 148.46648245197565
     },
     {
+      "id": "w_e25ab1f9",
+      "name": "Blue Lake lookout",
+      "type": "poi",
+      "lat": -36.407548,
+      "lon": 148.306444
+    },
+    {
       "id": "w_e4ee0516",
       "name": "Whitelaw Hut Site",
       "type": "campsite",
@@ -1504,6 +1882,20 @@
       "type": "hut",
       "lat": -37.17213732877336,
       "lon": 146.67038732994672
+    },
+    {
+      "id": "w_e83423b8",
+      "name": "Cabramurra",
+      "type": "town",
+      "lat": -35.932518,
+      "lon": 148.447645
+    },
+    {
+      "id": "w_e895f3a4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.530989,
+      "lon": 149.065562
     },
     {
       "id": "w_e96c2d61",
@@ -1548,6 +1940,13 @@
       "lon": 147.1129587631299
     },
     {
+      "id": "w_f1314dae",
+      "name": "Guest Shelter",
+      "type": "hut",
+      "lat": -36.962235,
+      "lon": 147.15417
+    },
+    {
       "id": "w_f187fb42",
       "name": "Four Mile Ck",
       "type": "water",
@@ -1576,6 +1975,13 @@
       "lon": 148.17141954334954
     },
     {
+      "id": "w_f5b630db",
+      "name": "Chill Bar and Cafe",
+      "type": "food",
+      "lat": -36.981928,
+      "lon": 147.142643
+    },
+    {
       "id": "w_f674898b",
       "name": "low saddle road 2",
       "type": "water",
@@ -1590,6 +1996,13 @@
       "lon": 148.4026739562649
     },
     {
+      "id": "w_f84e73f9",
+      "name": "Danny's Lookout",
+      "type": "poi",
+      "lat": -36.984749,
+      "lon": 147.113426
+    },
+    {
       "id": "w_f874b459",
       "name": "Grey Mare Hut",
       "type": "water",
@@ -1602,6 +2015,20 @@
       "type": "hut",
       "lat": -36.450109651633475,
       "lon": 148.28277339281894
+    },
+    {
+      "id": "w_f939601e",
+      "name": "Tharwa",
+      "type": "town",
+      "lat": -35.510448,
+      "lon": 149.063635
+    },
+    {
+      "id": "w_fad1da5d",
+      "name": "Westons Hut",
+      "type": "hut",
+      "lat": -36.916953,
+      "lon": 147.187673
     },
     {
       "id": "w_fb477287",
@@ -1669,6 +2096,27 @@
       "lon": 116.1292
     },
     {
+      "id": "w_05de1b8f",
+      "name": "Conspicuous Cliff Lookout",
+      "type": "poi",
+      "lat": -35.037984,
+      "lon": 116.842302
+    },
+    {
+      "id": "w_06af73bf",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -33.358012,
+      "lon": 116.154825
+    },
+    {
+      "id": "w_076fa822",
+      "name": "Kalamunda Pharmacy",
+      "type": "poi",
+      "lat": -31.970996,
+      "lon": 116.05639
+    },
+    {
       "id": "w_07fbb620",
       "name": "Parry Beach (paid)",
       "type": "campsite",
@@ -1681,6 +2129,27 @@
       "type": "campsite",
       "lat": -34.19941,
       "lon": 115.94432
+    },
+    {
+      "id": "w_08f50a70",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -32.944263,
+      "lon": 116.18466
+    },
+    {
+      "id": "w_0953c4b5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.447308,
+      "lon": 116.056702
+    },
+    {
+      "id": "w_096919e6",
+      "name": "Department of Parks & Wildlife: Arcadia Campsite",
+      "type": "hut",
+      "lat": -33.426218,
+      "lon": 115.973386
     },
     {
       "id": "w_0b648a94",
@@ -1697,11 +2166,32 @@
       "lon": 117.4550172002886
     },
     {
+      "id": "w_0dc95305",
+      "name": "Collie Post Office",
+      "type": "resupply",
+      "lat": -33.357587,
+      "lon": 116.155518
+    },
+    {
       "id": "w_0e50da43",
       "name": "Ginger Creek",
       "type": "campsite",
       "lat": -32.56834,
       "lon": 116.44422
+    },
+    {
+      "id": "w_102a819a",
+      "name": "Northcliffe Hotel Motel",
+      "type": "accommodation",
+      "lat": -34.630627,
+      "lon": 116.123702
+    },
+    {
+      "id": "w_116b66b2",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.039194,
+      "lon": 117.455061
     },
     {
       "id": "w_125cb15d",
@@ -1711,11 +2201,130 @@
       "lon": 116.86058259158467
     },
     {
+      "id": "w_1612f58b",
+      "name": "Northcliffe Newsagent and General Store",
+      "type": "resupply",
+      "lat": -34.632546,
+      "lon": 116.123319
+    },
+    {
+      "id": "w_17385047",
+      "name": "1849 Backpackers",
+      "type": "accommodation",
+      "lat": -35.026532,
+      "lon": 117.883086
+    },
+    {
+      "id": "w_1866a9c7",
+      "name": "Little India",
+      "type": "food",
+      "lat": -35.023701,
+      "lon": 117.883731
+    },
+    {
+      "id": "w_1948dc0a",
+      "name": "Waypoints",
+      "type": "food",
+      "lat": -32.712419,
+      "lon": 116.062683
+    },
+    {
+      "id": "w_19900470",
+      "name": "The Albany Hotel",
+      "type": "food",
+      "lat": -35.022714,
+      "lon": 117.883666
+    },
+    {
+      "id": "w_19e3526d",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.972039,
+      "lon": 116.058575
+    },
+    {
+      "id": "w_1a25a4ec",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -34.631844,
+      "lon": 116.12454
+    },
+    {
       "id": "w_1a7c6b2c",
       "name": "Albany",
       "type": "town",
       "lat": -35.02288,
       "lon": 117.88335
+    },
+    {
+      "id": "w_1acf92c2",
+      "name": "IGA",
+      "type": "resupply",
+      "lat": -32.714173,
+      "lon": 116.062249
+    },
+    {
+      "id": "w_1b72dd35",
+      "name": "ALDI",
+      "type": "resupply",
+      "lat": -31.973537,
+      "lon": 116.058226
+    },
+    {
+      "id": "w_1b831740",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -35.011415,
+      "lon": 116.644287
+    },
+    {
+      "id": "w_1c1aee19",
+      "name": "Philippine Magic Cafe",
+      "type": "food",
+      "lat": -34.976458,
+      "lon": 116.7307
+    },
+    {
+      "id": "w_1d14ca22",
+      "name": "Etmilyn",
+      "type": "poi",
+      "lat": -32.738275,
+      "lon": 116.139099
+    },
+    {
+      "id": "w_1f429aa2",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.022868,
+      "lon": 117.88311
+    },
+    {
+      "id": "w_1f6272d4",
+      "name": "Highway",
+      "type": "resupply",
+      "lat": -35.017372,
+      "lon": 117.877961
+    },
+    {
+      "id": "w_1fdbabf5",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.082723,
+      "lon": 117.557497
+    },
+    {
+      "id": "w_20c7b5f1",
+      "name": "Little Italy",
+      "type": "food",
+      "lat": -35.023502,
+      "lon": 117.88371
+    },
+    {
+      "id": "w_20d24c90",
+      "name": "IGA",
+      "type": "resupply",
+      "lat": -35.027406,
+      "lon": 117.884201
     },
     {
       "id": "w_22dd9e01",
@@ -1725,11 +2334,60 @@
       "lon": 116.05678
     },
     {
+      "id": "w_23e5f30b",
+      "name": "The Kalamunda Hotel",
+      "type": "food",
+      "lat": -31.97218,
+      "lon": 116.059794
+    },
+    {
+      "id": "w_2511bb9d",
+      "name": "Coles",
+      "type": "resupply",
+      "lat": -33.35769,
+      "lon": 116.15249
+    },
+    {
       "id": "w_25402ab3",
       "name": "Gregory Brook campsite",
       "type": "campsite",
       "lat": -33.98250377872235,
       "lon": 115.937983668329
+    },
+    {
+      "id": "w_255d2f71",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.023566,
+      "lon": 117.882874
+    },
+    {
+      "id": "w_25d24699",
+      "name": "Golden Wattle Cafe Bakery",
+      "type": "food",
+      "lat": -34.97647,
+      "lon": 116.731016
+    },
+    {
+      "id": "w_25d640f4",
+      "name": "Coles",
+      "type": "resupply",
+      "lat": -31.972815,
+      "lon": 116.059419
+    },
+    {
+      "id": "w_26b2c796",
+      "name": "Rest Point Caravan Park",
+      "type": "caravan-park",
+      "lat": -34.987012,
+      "lon": 116.719542
+    },
+    {
+      "id": "w_2740da71",
+      "name": "Northcliffe Farm and Trade",
+      "type": "resupply",
+      "lat": -34.633925,
+      "lon": 116.123807
     },
     {
       "id": "w_2a184480",
@@ -1739,11 +2397,46 @@
       "lon": 116.29762
     },
     {
+      "id": "w_2bcb46e8",
+      "name": "Reminisce Cafe",
+      "type": "food",
+      "lat": -34.969923,
+      "lon": 117.367167
+    },
+    {
       "id": "w_2d1372b1",
       "name": "Dwelingup",
       "type": "town",
       "lat": -32.713562754758286,
       "lon": 116.06133808525206
+    },
+    {
+      "id": "w_2e7c8b61",
+      "name": "Blue Wren Cafe",
+      "type": "food",
+      "lat": -32.714509,
+      "lon": 116.062485
+    },
+    {
+      "id": "w_316040d5",
+      "name": "Little Grove",
+      "type": "town",
+      "lat": -35.0627,
+      "lon": 117.865186
+    },
+    {
+      "id": "w_3216b03d",
+      "name": "Skeleton Bridge",
+      "type": "poi",
+      "lat": -33.378278,
+      "lon": 116.124195
+    },
+    {
+      "id": "w_32ab8b3c",
+      "name": "Beedelup Falls",
+      "type": "poi",
+      "lat": -34.418172,
+      "lon": 115.867987
     },
     {
       "id": "w_341ecfc2",
@@ -1753,6 +2446,34 @@
       "lon": 116.73249
     },
     {
+      "id": "w_3536e7c3",
+      "name": "Cosy Corner Lookout",
+      "type": "poi",
+      "lat": -35.065088,
+      "lon": 117.642397
+    },
+    {
+      "id": "w_3698fd7e",
+      "name": "Camp Kennedy",
+      "type": "campsite",
+      "lat": -35.054339,
+      "lon": 117.653999
+    },
+    {
+      "id": "w_378d4f6d",
+      "name": "Shelter",
+      "type": "hut",
+      "lat": -34.632655,
+      "lon": 116.122584
+    },
+    {
+      "id": "w_38a5c510",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.079061,
+      "lon": 117.646675
+    },
+    {
       "id": "w_39205f30",
       "name": "Mt Dale",
       "type": "campsite",
@@ -1760,11 +2481,39 @@
       "lon": 116.29768
     },
     {
+      "id": "w_3a2c5f44",
+      "name": "BP",
+      "type": "resupply",
+      "lat": -34.97638,
+      "lon": 116.731247
+    },
+    {
+      "id": "w_3c488a99",
+      "name": "Dwellingup",
+      "type": "poi",
+      "lat": -32.711693,
+      "lon": 116.062896
+    },
+    {
+      "id": "w_3cc38d4e",
+      "name": "Karri Gully Picnic Site",
+      "type": "campsite",
+      "lat": -34.007674,
+      "lon": 115.941198
+    },
+    {
       "id": "w_3d04d500",
       "name": "Swamp Oak Campsite",
       "type": "campsite",
       "lat": -32.78105079083427,
       "lon": 116.11765623092651
+    },
+    {
+      "id": "w_3d2d1144",
+      "name": "Subway",
+      "type": "food",
+      "lat": -31.972385,
+      "lon": 116.059258
     },
     {
       "id": "w_40279bd8",
@@ -1781,6 +2530,13 @@
       "lon": 115.84091824004146
     },
     {
+      "id": "w_4141d5b5",
+      "name": "Big Brook Arboretum",
+      "type": "poi",
+      "lat": -34.405424,
+      "lon": 116.001948
+    },
+    {
       "id": "w_45669674",
       "name": "Tom road campsite",
       "type": "campsite",
@@ -1795,11 +2551,46 @@
       "lon": 116.09761021858544
     },
     {
+      "id": "w_45c38d19",
+      "name": "The mushroom at no 61",
+      "type": "food",
+      "lat": -33.785987,
+      "lon": 115.984635
+    },
+    {
       "id": "w_461973da",
       "name": "Brookton Campsite",
       "type": "campsite",
       "lat": -32.18636133436321,
       "lon": 116.29825150998778
+    },
+    {
+      "id": "w_4738bf5a",
+      "name": "Club Hotel",
+      "type": "food",
+      "lat": -33.357149,
+      "lon": 116.14937
+    },
+    {
+      "id": "w_481b125a",
+      "name": "Northcliffe Hotel",
+      "type": "accommodation",
+      "lat": -34.630908,
+      "lon": 116.123784
+    },
+    {
+      "id": "w_499a7497",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.045695,
+      "lon": 116.86062
+    },
+    {
+      "id": "w_4b608e26",
+      "name": "BP Pemberton",
+      "type": "resupply",
+      "lat": -34.443585,
+      "lon": 116.036874
     },
     {
       "id": "w_507a5399",
@@ -1809,6 +2600,34 @@
       "lon": 117.646918184607
     },
     {
+      "id": "w_50ff6cdc",
+      "name": "Harbourside",
+      "type": "accommodation",
+      "lat": -35.027462,
+      "lon": 117.854114
+    },
+    {
+      "id": "w_51106f64",
+      "name": "Kronkup",
+      "type": "town",
+      "lat": -35.06702,
+      "lon": 117.625491
+    },
+    {
+      "id": "w_519e4f7f",
+      "name": "Kalamunda District Hospital",
+      "type": "poi",
+      "lat": -31.966955,
+      "lon": 116.060189
+    },
+    {
+      "id": "w_51dc8e1f",
+      "name": "Pemberton Backpackers",
+      "type": "accommodation",
+      "lat": -34.447453,
+      "lon": 116.029656
+    },
+    {
       "id": "w_5373331a",
       "name": "Boat harbour campsite",
       "type": "campsite",
@@ -1816,11 +2635,25 @@
       "lon": 117.06794
     },
     {
+      "id": "w_5562342a",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -31.983963,
+      "lon": 116.064775
+    },
+    {
       "id": "w_56045bcd",
       "name": "Yabberup Campsite",
       "type": "campsite",
       "lat": -33.46371957581418,
       "lon": 116.07757475265596
+    },
+    {
+      "id": "w_566b67dc",
+      "name": "Collie Hospital",
+      "type": "poi",
+      "lat": -33.351393,
+      "lon": 116.162129
     },
     {
       "id": "w_569f8c31",
@@ -1851,11 +2684,46 @@
       "lon": 117.36867995925952
     },
     {
+      "id": "w_5b061749",
+      "name": "Balingup Pharmacy",
+      "type": "poi",
+      "lat": -33.785996,
+      "lon": 115.984072
+    },
+    {
       "id": "w_5b9ae2c1",
       "name": "Cosy Corner (non-bibb)",
       "type": "campsite",
       "lat": -35.060085068432116,
       "lon": 117.6465460999091
+    },
+    {
+      "id": "w_619d6fc4",
+      "name": "Pemberton Phamacy",
+      "type": "poi",
+      "lat": -34.445344,
+      "lon": 116.03397
+    },
+    {
+      "id": "w_63d487f9",
+      "name": "Glen Mervyn Dam",
+      "type": "poi",
+      "lat": -33.502618,
+      "lon": 116.101411
+    },
+    {
+      "id": "w_6518bee3",
+      "name": "Albany Bali Style Accommodation",
+      "type": "accommodation",
+      "lat": -35.032553,
+      "lon": 117.849683
+    },
+    {
+      "id": "w_6520f3f9",
+      "name": "YHA Pemberton",
+      "type": "accommodation",
+      "lat": -34.44664,
+      "lon": 116.033831
     },
     {
       "id": "w_65c040a4",
@@ -1865,11 +2733,39 @@
       "lon": 115.93251120802377
     },
     {
+      "id": "w_6755e9ca",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.973852,
+      "lon": 116.903384
+    },
+    {
+      "id": "w_6917332f",
+      "name": "Karri Valley Resort",
+      "type": "accommodation",
+      "lat": -34.421529,
+      "lon": 115.863238
+    },
+    {
       "id": "w_69984f1d",
       "name": "Grimwade Campsite",
       "type": "campsite",
       "lat": -33.65687667745331,
       "lon": 116.02516435107198
+    },
+    {
+      "id": "w_69ec21c2",
+      "name": "Zambrero",
+      "type": "food",
+      "lat": -31.971978,
+      "lon": 116.058686
+    },
+    {
+      "id": "w_6be56ae7",
+      "name": "Denmark Hospital",
+      "type": "poi",
+      "lat": -34.955969,
+      "lon": 117.357565
     },
     {
       "id": "w_6d5a8aa6",
@@ -1893,11 +2789,74 @@
       "lon": 116.11252
     },
     {
+      "id": "w_6db8202f",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -35.019244,
+      "lon": 117.88434
+    },
+    {
+      "id": "w_6fa786d9",
+      "name": "Whalley‘s Beachway United",
+      "type": "resupply",
+      "lat": -35.016909,
+      "lon": 117.891151
+    },
+    {
       "id": "w_70a537b3",
       "name": "Blackwood camp",
       "type": "campsite",
       "lat": -33.87688204302544,
       "lon": 115.96544828403981
+    },
+    {
+      "id": "w_712a9c0b",
+      "name": "Vibe Kalamunda",
+      "type": "resupply",
+      "lat": -31.973579,
+      "lon": 116.05932
+    },
+    {
+      "id": "w_71ab9dc7",
+      "name": "John Rate Lookout",
+      "type": "poi",
+      "lat": -34.985082,
+      "lon": 116.679027
+    },
+    {
+      "id": "w_72d3e22e",
+      "name": "Balingup Tavern",
+      "type": "food",
+      "lat": -33.78592,
+      "lon": 115.98041
+    },
+    {
+      "id": "w_745c1507",
+      "name": "Treetop Walk",
+      "type": "accommodation",
+      "lat": -34.975845,
+      "lon": 116.73491
+    },
+    {
+      "id": "w_74d25f16",
+      "name": "Priceline",
+      "type": "poi",
+      "lat": -35.01928,
+      "lon": 117.884941
+    },
+    {
+      "id": "w_7a7f3780",
+      "name": "Cafe Brasil",
+      "type": "food",
+      "lat": -34.445512,
+      "lon": 116.0336
+    },
+    {
+      "id": "w_7b0569c6",
+      "name": "Balingup Post Office",
+      "type": "resupply",
+      "lat": -33.786127,
+      "lon": 115.98158
     },
     {
       "id": "w_7bc6c7fd",
@@ -1928,6 +2887,27 @@
       "lon": 117.23822386075095
     },
     {
+      "id": "w_7f249f8d",
+      "name": "Mount Cuthbert",
+      "type": "poi",
+      "lat": -32.351454,
+      "lon": 116.25468
+    },
+    {
+      "id": "w_7ff9a8c7",
+      "name": "Walpole Hotel",
+      "type": "accommodation",
+      "lat": -34.975951,
+      "lon": 116.727222
+    },
+    {
+      "id": "w_81eb8d7b",
+      "name": "Pemberton District Hospital",
+      "type": "poi",
+      "lat": -34.445066,
+      "lon": 116.031564
+    },
+    {
       "id": "w_8208b89c",
       "name": "Albany Highway",
       "type": "campsite",
@@ -1949,6 +2929,27 @@
       "lon": 116.16104385076545
     },
     {
+      "id": "w_847ceadd",
+      "name": "Perth Hills Centre",
+      "type": "campsite",
+      "lat": -31.954235,
+      "lon": 116.176556
+    },
+    {
+      "id": "w_84a63e78",
+      "name": "Northcliffe LPO",
+      "type": "resupply",
+      "lat": -34.633969,
+      "lon": 116.12372
+    },
+    {
+      "id": "w_84d16117",
+      "name": "Ampol",
+      "type": "resupply",
+      "lat": -33.359676,
+      "lon": 116.152631
+    },
+    {
       "id": "w_85a52eae",
       "name": "Broackman Highway",
       "type": "campsite",
@@ -1956,11 +2957,67 @@
       "lon": 115.93149181223008
     },
     {
+      "id": "w_86745074",
+      "name": "Dwellingup Community Hotel",
+      "type": "food",
+      "lat": -32.713585,
+      "lon": 116.061822
+    },
+    {
       "id": "w_88aa033f",
       "name": "Possum Springs Campsite",
       "type": "campsite",
       "lat": -33.061935390828346,
       "lon": 116.29621499814989
+    },
+    {
+      "id": "w_88e687c7",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -32.712245,
+      "lon": 116.062947
+    },
+    {
+      "id": "w_897d8598",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.033218,
+      "lon": 117.067871
+    },
+    {
+      "id": "w_8a2ae48b",
+      "name": "Delaney Lookout",
+      "type": "poi",
+      "lat": -34.990477,
+      "lon": 116.744784
+    },
+    {
+      "id": "w_8a3d7c10",
+      "name": "Gloucester Ridge Winery & Cafe Restaurant",
+      "type": "food",
+      "lat": -34.44939,
+      "lon": 116.051889
+    },
+    {
+      "id": "w_8b1e1ee1",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -34.445571,
+      "lon": 116.032797
+    },
+    {
+      "id": "w_8b55e472",
+      "name": "Cosy Corner (East)",
+      "type": "caravan-park",
+      "lat": -35.058614,
+      "lon": 117.646212
+    },
+    {
+      "id": "w_8b9c8959",
+      "name": "Golden View",
+      "type": "poi",
+      "lat": -31.959805,
+      "lon": 116.157321
     },
     {
       "id": "w_8bc16e54",
@@ -1991,6 +3048,20 @@
       "lon": 116.64572954177856
     },
     {
+      "id": "w_91aa66be",
+      "name": "Federal Hotel",
+      "type": "accommodation",
+      "lat": -33.361573,
+      "lon": 116.159081
+    },
+    {
+      "id": "w_92611d66",
+      "name": "Karri Gully Picnic Site",
+      "type": "poi",
+      "lat": -34.00761,
+      "lon": 115.94107
+    },
+    {
       "id": "w_92d0bdd1",
       "name": "Northcliffe",
       "type": "town",
@@ -2005,6 +3076,20 @@
       "lon": 116.03495509813483
     },
     {
+      "id": "w_9823f735",
+      "name": "Coles",
+      "type": "resupply",
+      "lat": -35.019868,
+      "lon": 117.882435
+    },
+    {
+      "id": "w_99d152b3",
+      "name": "Mandalay Beach",
+      "type": "poi",
+      "lat": -35.00184,
+      "lon": 116.533729
+    },
+    {
       "id": "w_9a957877",
       "name": "White Horse",
       "type": "campsite",
@@ -2012,11 +3097,109 @@
       "lon": 116.33600913345086
     },
     {
+      "id": "w_9b78da88",
+      "name": "Cascades",
+      "type": "poi",
+      "lat": -34.474735,
+      "lon": 116.03017
+    },
+    {
+      "id": "w_9c98d6fc",
+      "name": "Alky Pool",
+      "type": "poi",
+      "lat": -33.378833,
+      "lon": 116.122666
+    },
+    {
+      "id": "w_9da83699",
+      "name": "Walpole Pharmacy",
+      "type": "poi",
+      "lat": -34.976411,
+      "lon": 116.730793
+    },
+    {
+      "id": "w_9e5c9bf8",
+      "name": "Pioneer Park",
+      "type": "poi",
+      "lat": -34.975794,
+      "lon": 116.73078
+    },
+    {
+      "id": "w_9f2b861a",
+      "name": "Oaks Picnic Area",
+      "type": "poi",
+      "lat": -33.801902,
+      "lon": 115.995197
+    },
+    {
+      "id": "w_a0e6d038",
+      "name": "Rock Salt",
+      "type": "food",
+      "lat": -35.02673,
+      "lon": 117.855749
+    },
+    {
       "id": "w_a1a66e95",
       "name": "Beedelup Campsite",
       "type": "campsite",
       "lat": -34.411937639446855,
       "lon": 115.87705822111215
+    },
+    {
+      "id": "w_a27d980c",
+      "name": "School Bunkrooms",
+      "type": "accommodation",
+      "lat": -34.104207,
+      "lon": 115.975084
+    },
+    {
+      "id": "w_a2d86763",
+      "name": "Perth Hills YHA",
+      "type": "accommodation",
+      "lat": -31.951989,
+      "lon": 116.164605
+    },
+    {
+      "id": "w_a3aa3754",
+      "name": "ALDI",
+      "type": "resupply",
+      "lat": -35.018229,
+      "lon": 117.881402
+    },
+    {
+      "id": "w_a73597e3",
+      "name": "Round Tuit Campground",
+      "type": "campsite",
+      "lat": -34.633804,
+      "lon": 116.143125
+    },
+    {
+      "id": "w_a78a42e6",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.042916,
+      "lon": 117.725202
+    },
+    {
+      "id": "w_a97582f9",
+      "name": "Walpole YHA hostel",
+      "type": "accommodation",
+      "lat": -34.975653,
+      "lon": 116.735413
+    },
+    {
+      "id": "w_aa504c53",
+      "name": "Chicken Treat",
+      "type": "food",
+      "lat": -33.357767,
+      "lon": 116.151137
+    },
+    {
+      "id": "w_aa9649b9",
+      "name": "Mutton Bird Lookout",
+      "type": "poi",
+      "lat": -35.046007,
+      "lon": 117.692824
     },
     {
       "id": "w_abffd746",
@@ -2040,11 +3223,109 @@
       "lon": 117.55776042297754
     },
     {
+      "id": "w_ae3c4043",
+      "name": "Bibbulmun Track Northern Terminus",
+      "type": "trailhead",
+      "lat": -31.973158,
+      "lon": 116.060682
+    },
+    {
+      "id": "w_b115919b",
+      "name": "Source Kitchen",
+      "type": "food",
+      "lat": -34.446997,
+      "lon": 116.030554
+    },
+    {
+      "id": "w_b16611f1",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.972913,
+      "lon": 116.06048
+    },
+    {
+      "id": "w_b27505e0",
+      "name": "Balingup Transit Park",
+      "type": "campsite",
+      "lat": -33.782341,
+      "lon": 115.986367
+    },
+    {
+      "id": "w_b4304c5a",
+      "name": "Best Western Pemberton",
+      "type": "accommodation",
+      "lat": -34.444109,
+      "lon": 116.036348
+    },
+    {
+      "id": "w_b4ec0324",
+      "name": "Caltex",
+      "type": "resupply",
+      "lat": -34.976509,
+      "lon": 116.73046
+    },
+    {
+      "id": "w_b504409d",
+      "name": "Silver Chain Health Service",
+      "type": "poi",
+      "lat": -34.978196,
+      "lon": 116.732819
+    },
+    {
+      "id": "w_b550de99",
+      "name": "Walpole IGA Pioneer Store",
+      "type": "resupply",
+      "lat": -34.976577,
+      "lon": 116.730343
+    },
+    {
+      "id": "w_b5e753eb",
+      "name": "IGA Pemberton",
+      "type": "resupply",
+      "lat": -34.446122,
+      "lon": 116.034162
+    },
+    {
+      "id": "w_b612d869",
+      "name": "Workers Club",
+      "type": "food",
+      "lat": -34.644731,
+      "lon": 116.123428
+    },
+    {
+      "id": "w_b6f781f3",
+      "name": "BP",
+      "type": "resupply",
+      "lat": -32.713923,
+      "lon": 116.062708
+    },
+    {
+      "id": "w_b7434379",
+      "name": "Amcal",
+      "type": "poi",
+      "lat": -35.022258,
+      "lon": 117.883636
+    },
+    {
       "id": "w_b785b2a4",
       "name": "Woolbales",
       "type": "campsite",
       "lat": -34.94430038557663,
       "lon": 116.56589152683388
+    },
+    {
+      "id": "w_b9528f1b",
+      "name": "Kalamunda IGA Food Market",
+      "type": "resupply",
+      "lat": -31.971642,
+      "lon": 116.056388
+    },
+    {
+      "id": "w_ba1b0855",
+      "name": "Youngs siding General Store",
+      "type": "resupply",
+      "lat": -35.013319,
+      "lon": 117.522674
     },
     {
       "id": "w_bba497f9",
@@ -2082,11 +3363,46 @@
       "lon": 117.51622
     },
     {
+      "id": "w_c4654bd7",
+      "name": "Peacefull Bay Caravan Park",
+      "type": "campsite",
+      "lat": -35.03901,
+      "lon": 116.929461
+    },
+    {
+      "id": "w_c639ee60",
+      "name": "Lakeside Restaurant",
+      "type": "food",
+      "lat": -34.421506,
+      "lon": 115.863383
+    },
+    {
+      "id": "w_c6420bf8",
+      "name": "Coalmine Beach Holiday Park",
+      "type": "caravan-park",
+      "lat": -34.989577,
+      "lon": 116.738662
+    },
+    {
+      "id": "w_c7403f6f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.633164,
+      "lon": 116.124528
+    },
+    {
       "id": "w_c7eaf696",
       "name": "Mt Chance Campsite",
       "type": "campsite",
       "lat": -34.83315440232727,
       "lon": 116.51010058933738
+    },
+    {
+      "id": "w_ca69ce3a",
+      "name": "Jaspers",
+      "type": "food",
+      "lat": -34.446577,
+      "lon": 116.031407
     },
     {
       "id": "w_cb987df8",
@@ -2096,6 +3412,13 @@
       "lon": 116.09881686093384
     },
     {
+      "id": "w_cbd77c4d",
+      "name": "Pemberton General Store",
+      "type": "resupply",
+      "lat": -34.444716,
+      "lon": 116.035431
+    },
+    {
       "id": "w_cd19e56d",
       "name": "Sout Coast highway",
       "type": "road-crossing",
@@ -2103,11 +3426,60 @@
       "lon": 116.90583
     },
     {
+      "id": "w_cd858aa2",
+      "name": "Balingup General and Liquor Store",
+      "type": "resupply",
+      "lat": -33.784156,
+      "lon": 115.984141
+    },
+    {
       "id": "w_d0e33bd6",
       "name": "Helena Campsite",
       "type": "campsite",
       "lat": -31.9818,
       "lon": 116.24853
+    },
+    {
+      "id": "w_d1602e4b",
+      "name": "Monkey Rock",
+      "type": "poi",
+      "lat": -35.011629,
+      "lon": 117.299068
+    },
+    {
+      "id": "w_d1ab0313",
+      "name": "Hills View Pharmacy",
+      "type": "poi",
+      "lat": -31.967575,
+      "lon": 116.060527
+    },
+    {
+      "id": "w_d1f7e27d",
+      "name": "Collie River Valley Tourist Park",
+      "type": "caravan-park",
+      "lat": -33.362323,
+      "lon": 116.144323
+    },
+    {
+      "id": "w_d2961f3b",
+      "name": "Cosy Corner",
+      "type": "campsite",
+      "lat": -35.067195,
+      "lon": 117.643272
+    },
+    {
+      "id": "w_d2de4ddb",
+      "name": "IGA Fine Food Market",
+      "type": "resupply",
+      "lat": -34.959304,
+      "lon": 117.353919
+    },
+    {
+      "id": "w_d546e2ef",
+      "name": "Collieup Pool",
+      "type": "poi",
+      "lat": -33.377711,
+      "lon": 116.125284
     },
     {
       "id": "w_d620b9d7",
@@ -2138,11 +3510,25 @@
       "lon": 115.92593672097028
     },
     {
+      "id": "w_d84d4f36",
+      "name": "Hilton Garden Inn Albany",
+      "type": "accommodation",
+      "lat": -35.029524,
+      "lon": 117.886859
+    },
+    {
       "id": "w_db3c8d31",
       "name": "Long Point",
       "type": "campsite",
       "lat": -35.01983662549648,
       "lon": 116.5842573124299
+    },
+    {
+      "id": "w_e0358cd3",
+      "name": "IGA Local Grocer",
+      "type": "resupply",
+      "lat": -34.958864,
+      "lon": 117.35544
     },
     {
       "id": "w_e249b628",
@@ -2152,11 +3538,46 @@
       "lon": 116.13866626591684
     },
     {
+      "id": "w_e60d2289",
+      "name": "Pemberton LPO",
+      "type": "resupply",
+      "lat": -34.444901,
+      "lon": 116.034865
+    },
+    {
+      "id": "w_e6d993ab",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.954397,
+      "lon": 116.166352
+    },
+    {
+      "id": "w_e755960b",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -35.073833,
+      "lon": 117.818967
+    },
+    {
       "id": "w_e90a862e",
       "name": "Canning Campsite",
       "type": "campsite",
       "lat": -32.24221,
       "lon": 116.25485
+    },
+    {
+      "id": "w_e9856327",
+      "name": "Ocean Beach Holiday Park",
+      "type": "campsite",
+      "lat": -35.021867,
+      "lon": 117.32312
+    },
+    {
+      "id": "w_ead6bd40",
+      "name": "Hilltop Lookout",
+      "type": "poi",
+      "lat": -34.981748,
+      "lon": 116.769131
     },
     {
       "id": "w_ec52ce46",
@@ -2173,11 +3594,60 @@
       "lon": 116.19846
     },
     {
+      "id": "w_ee7e5b79",
+      "name": "Hut",
+      "type": "hut",
+      "lat": -34.990474,
+      "lon": 116.744742
+    },
+    {
+      "id": "w_eece7da6",
+      "name": "Dog Rock Motel",
+      "type": "accommodation",
+      "lat": -35.019486,
+      "lon": 117.885714
+    },
+    {
+      "id": "w_ef223a9e",
+      "name": "Domino's",
+      "type": "food",
+      "lat": -33.358275,
+      "lon": 116.152655
+    },
+    {
       "id": "w_ef2a8f05",
       "name": "Brookton Highway",
       "type": "road-crossing",
       "lat": -32.20295,
       "lon": 116.29415
+    },
+    {
+      "id": "w_ef95dbd2",
+      "name": "Sixdegrees",
+      "type": "accommodation",
+      "lat": -35.026502,
+      "lon": 117.886329
+    },
+    {
+      "id": "w_f1fdabe3",
+      "name": "Packing Shed Cafe",
+      "type": "food",
+      "lat": -33.785954,
+      "lon": 115.984212
+    },
+    {
+      "id": "w_f2cfd5ad",
+      "name": "Naughty Noodle Bar",
+      "type": "food",
+      "lat": -34.6317,
+      "lon": 116.123911
+    },
+    {
+      "id": "w_f4816bfb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.01644,
+      "lon": 117.238137
     },
     {
       "id": "w_f84f600f",
@@ -2187,11 +3657,60 @@
       "lon": 116.17977892735917
     },
     {
+      "id": "w_f88c9522",
+      "name": "Allanson",
+      "type": "town",
+      "lat": -33.33493,
+      "lon": 116.099404
+    },
+    {
+      "id": "w_f89ae001",
+      "name": "Rivermouth Caravan Park",
+      "type": "caravan-park",
+      "lat": -34.969865,
+      "lon": 117.3667
+    },
+    {
+      "id": "w_fad3bd3b",
+      "name": "Ridge Motel",
+      "type": "accommodation",
+      "lat": -33.357941,
+      "lon": 116.143911
+    },
+    {
+      "id": "w_fcdd2d6e",
+      "name": "Denmark Australia Post",
+      "type": "resupply",
+      "lat": -34.961468,
+      "lon": 117.356185
+    },
+    {
+      "id": "w_fe8eb62d",
+      "name": "Mount Vincent",
+      "type": "poi",
+      "lat": -32.362919,
+      "lon": 116.253485
+    },
+    {
       "id": "w_ff19f4f4",
       "name": "Franklin River Campsite",
       "type": "campsite",
       "lat": -34.95012943365928,
       "lon": 116.81158929832955
+    },
+    {
+      "id": "w_ffabc0bc",
+      "name": "Harris River Dam",
+      "type": "poi",
+      "lat": -33.255291,
+      "lon": 116.137598
+    },
+    {
+      "id": "w_fffc564b",
+      "name": "Glen Mervyn Dam",
+      "type": "campsite",
+      "lat": -33.496732,
+      "lon": 116.098641
     }
   ],
   "cape_to_cape": [
@@ -2217,6 +3736,27 @@
       "lon": 114.98864
     },
     {
+      "id": "w_10479b4a",
+      "name": "Prevelly Caravan Park",
+      "type": "caravan-park",
+      "lat": -33.980697,
+      "lon": 114.994827
+    },
+    {
+      "id": "w_143baf8f",
+      "name": "Inhidup Natural Spa",
+      "type": "poi",
+      "lat": -33.680163,
+      "lon": 114.992407
+    },
+    {
+      "id": "w_17d802ac",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.971924,
+      "lon": 114.987306
+    },
+    {
       "id": "w_1823e0c7",
       "name": "Kilcarnup Beach Start (2.1km)",
       "type": "beach",
@@ -2231,6 +3771,13 @@
       "lon": 115.02727
     },
     {
+      "id": "w_1d13fc2d",
+      "name": "Yallingup Post Office",
+      "type": "resupply",
+      "lat": -33.645579,
+      "lon": 115.032056
+    },
+    {
       "id": "w_236ca161",
       "name": "Canal Rocks",
       "type": "poi",
@@ -2243,6 +3790,27 @@
       "type": "town",
       "lat": -33.97728,
       "lon": 114.99349
+    },
+    {
+      "id": "w_35f21cd8",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.615807,
+      "lon": 115.027517
+    },
+    {
+      "id": "w_3b61766f",
+      "name": "Cape Naturaliste Lighthouse Tea Rooms",
+      "type": "food",
+      "lat": -33.5392,
+      "lon": 115.019663
+    },
+    {
+      "id": "w_3cb20916",
+      "name": "Homestead Rooms",
+      "type": "accommodation",
+      "lat": -33.644917,
+      "lon": 115.031596
     },
     {
       "id": "w_3e042ac7",
@@ -2273,6 +3841,13 @@
       "lon": 114.99973
     },
     {
+      "id": "w_4b8eb30f",
+      "name": "Lagoon Yallingup",
+      "type": "food",
+      "lat": -33.639534,
+      "lon": 115.026383
+    },
+    {
       "id": "w_4c97face",
       "name": "Hamelin Bay Beach Start (6.5km)",
       "type": "beach",
@@ -2287,11 +3862,25 @@
       "lon": 115.03088
     },
     {
+      "id": "w_51138c47",
+      "name": "The Bay Store",
+      "type": "resupply",
+      "lat": -33.864796,
+      "lon": 114.988296
+    },
+    {
       "id": "w_5495b8d6",
       "name": "Kilcarnup Beach End (2.1km)",
       "type": "beach",
       "lat": -33.94667,
       "lon": 114.99296
+    },
+    {
+      "id": "w_57406845",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.639423,
+      "lon": 115.025508
     },
     {
       "id": "w_5be983d4",
@@ -2315,11 +3904,32 @@
       "lon": 114.99717
     },
     {
+      "id": "w_77f1fc44",
+      "name": "Sea Garden",
+      "type": "food",
+      "lat": -33.978466,
+      "lon": 114.994548
+    },
+    {
+      "id": "w_78664bb5",
+      "name": "Hamelin Bay Caravan Park",
+      "type": "campsite",
+      "lat": -34.221332,
+      "lon": 115.030961
+    },
+    {
       "id": "w_808bb2ce",
       "name": "Point Rd Campsite",
       "type": "campsite",
       "lat": -34.09255,
       "lon": 115.01712
+    },
+    {
+      "id": "w_82083372",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -33.715936,
+      "lon": 114.982459
     },
     {
       "id": "w_888629a6",
@@ -2329,11 +3939,25 @@
       "lon": 115.01543
     },
     {
+      "id": "w_8a2b71c0",
+      "name": "Redgate Beach",
+      "type": "poi",
+      "lat": -34.039118,
+      "lon": 114.998833
+    },
+    {
       "id": "w_946d76a3",
       "name": "Yallingup",
       "type": "town",
       "lat": -33.63954,
       "lon": 115.02626
+    },
+    {
+      "id": "w_982ce11d",
+      "name": "Meekadarribee",
+      "type": "poi",
+      "lat": -33.91046,
+      "lon": 114.996554
     },
     {
       "id": "w_9863ffae",
@@ -2348,6 +3972,34 @@
       "type": "beach",
       "lat": -34.01866,
       "lon": 115.00132
+    },
+    {
+      "id": "w_a146de94",
+      "name": "Yallingup Beach Holiday Park",
+      "type": "campsite",
+      "lat": -33.640462,
+      "lon": 115.025559
+    },
+    {
+      "id": "w_b2b7d64f",
+      "name": "Caves House Hotel Yallingup",
+      "type": "accommodation",
+      "lat": -33.645226,
+      "lon": 115.031266
+    },
+    {
+      "id": "w_b5a86d16",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.638972,
+      "lon": 115.025976
+    },
+    {
+      "id": "w_b66d5381",
+      "name": "Ali's View",
+      "type": "poi",
+      "lat": -33.67077,
+      "lon": 115.000758
     },
     {
       "id": "w_b76d9ab6",
@@ -2378,6 +4030,13 @@
       "lon": 115.0804
     },
     {
+      "id": "w_d36ee5b9",
+      "name": "Yallingup Gugelhupf",
+      "type": "food",
+      "lat": -33.645783,
+      "lon": 115.032316
+    },
+    {
       "id": "w_daacc724",
       "name": "Boranup Forest",
       "type": "poi",
@@ -2390,6 +4049,13 @@
       "type": "beach",
       "lat": -33.64945,
       "lon": 115.02251
+    },
+    {
+      "id": "w_efee7160",
+      "name": "Sand Patches",
+      "type": "poi",
+      "lat": -33.554454,
+      "lon": 115.015082
     },
     {
       "id": "w_fdbbdbbb",
@@ -2478,6 +4144,34 @@
       "lon": 138.04040499999996
     },
     {
+      "id": "w_07b23d9a",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.923072,
+      "lon": 138.724847
+    },
+    {
+      "id": "w_07b2b1f9",
+      "name": "Georgetown Parking Area",
+      "type": "campsite",
+      "lat": -33.360593,
+      "lon": 138.393699
+    },
+    {
+      "id": "w_08320f24",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.974255,
+      "lon": 138.709022
+    },
+    {
+      "id": "w_08bcb9ba",
+      "name": "Yilki Store",
+      "type": "resupply",
+      "lat": -35.574636,
+      "lon": 138.602179
+    },
+    {
       "id": "w_0967358d",
       "name": "Alpana Station",
       "type": "accommodation",
@@ -2490,6 +4184,13 @@
       "type": "accommodation",
       "lat": -32.29715,
       "lon": 137.98371900000006
+    },
+    {
+      "id": "w_0b4ebad2",
+      "name": "Hawker Hospital",
+      "type": "poi",
+      "lat": -31.893494,
+      "lon": 138.427971
     },
     {
       "id": "w_0b873c07",
@@ -2520,6 +4221,20 @@
       "lon": 138.26852499999995
     },
     {
+      "id": "w_0c9392b5",
+      "name": "Veg Out",
+      "type": "resupply",
+      "lat": -35.554601,
+      "lon": 138.621556
+    },
+    {
+      "id": "w_0dadbb6c",
+      "name": "The Railway Hotel",
+      "type": "food",
+      "lat": -33.352863,
+      "lon": 138.205979
+    },
+    {
       "id": "w_0db1fe34",
       "name": "Melrose Caravan Park and Campground",
       "type": "caravan-park",
@@ -2527,11 +4242,60 @@
       "lon": 138.18685
     },
     {
+      "id": "w_0ddffd20",
+      "name": "BP AM/PM Crafers",
+      "type": "resupply",
+      "lat": -34.997136,
+      "lon": 138.703975
+    },
+    {
+      "id": "w_0e313938",
+      "name": "Bridgewater Pharmacy",
+      "type": "poi",
+      "lat": -35.008994,
+      "lon": 138.759823
+    },
+    {
+      "id": "w_0fff2c75",
+      "name": "Jarvis Hill Lookout",
+      "type": "poi",
+      "lat": -31.904882,
+      "lon": 138.364587
+    },
+    {
+      "id": "w_107c7119",
+      "name": "Brid",
+      "type": "food",
+      "lat": -34.982637,
+      "lon": 138.726131
+    },
+    {
+      "id": "w_10a900b8",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.067417,
+      "lon": 138.960547
+    },
+    {
+      "id": "w_10f6c086",
+      "name": "Foodland",
+      "type": "resupply",
+      "lat": -34.523729,
+      "lon": 138.962183
+    },
+    {
       "id": "w_11665626",
       "name": "Myponga",
       "type": "town",
       "lat": -35.39083,
       "lon": 138.46344999999997
+    },
+    {
+      "id": "w_12931596",
+      "name": "Melrose Caravan Park",
+      "type": "campsite",
+      "lat": -32.824377,
+      "lon": 138.186847
     },
     {
       "id": "w_12de8609",
@@ -2555,11 +4319,25 @@
       "lon": 138.29923800000006
     },
     {
+      "id": "w_15095f8e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.970551,
+      "lon": 138.704972
+    },
+    {
       "id": "w_15e10335",
       "name": "Parachilna Gorge Trailhead",
       "type": "trailhead",
       "lat": -31.135407,
       "lon": 138.529761
+    },
+    {
+      "id": "w_16e25595",
+      "name": "Oppy's Burra IGA",
+      "type": "resupply",
+      "lat": -33.682401,
+      "lon": 138.938792
     },
     {
       "id": "w_17a2c408",
@@ -2597,6 +4375,20 @@
       "lon": 138.74231099999997
     },
     {
+      "id": "w_1a832b8c",
+      "name": "Mylor Post Office",
+      "type": "resupply",
+      "lat": -35.043568,
+      "lon": 138.759784
+    },
+    {
+      "id": "w_1bc183d9",
+      "name": "Mylor General Store",
+      "type": "food",
+      "lat": -35.043693,
+      "lon": 138.759703
+    },
+    {
       "id": "w_1c2612f7",
       "name": "Crystal Brook",
       "type": "town",
@@ -2611,11 +4403,46 @@
       "lon": 138.74706000000003
     },
     {
+      "id": "w_1c55329d",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.060357,
+      "lon": 138.095503
+    },
+    {
       "id": "w_1ce32055",
       "name": "Sugargum Dam ‘walk-in’ site",
       "type": "campsite",
       "lat": -32.790304,
       "lon": 138.10735899999997
+    },
+    {
+      "id": "w_1d3aa20d",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -35.631518,
+      "lon": 138.481304
+    },
+    {
+      "id": "w_1d5c5b99",
+      "name": "Chemplus Hahndorf",
+      "type": "poi",
+      "lat": -35.029995,
+      "lon": 138.810289
+    },
+    {
+      "id": "w_1e56ee4f",
+      "name": "Bridgewater Inn",
+      "type": "food",
+      "lat": -35.009108,
+      "lon": 138.757253
+    },
+    {
+      "id": "w_1ea0f02a",
+      "name": "Throngrove Manor Hotel",
+      "type": "accommodation",
+      "lat": -34.996668,
+      "lon": 138.717198
     },
     {
       "id": "w_1f8900f9",
@@ -2630,6 +4457,27 @@
       "type": "campsite",
       "lat": -31.411524,
       "lon": 138.560425
+    },
+    {
+      "id": "w_20af7bf8",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.986962,
+      "lon": 138.718681
+    },
+    {
+      "id": "w_20ba51d5",
+      "name": "Burra Motor Company / BP Burra",
+      "type": "resupply",
+      "lat": -33.68191,
+      "lon": 138.93965
+    },
+    {
+      "id": "w_21a250c1",
+      "name": "Bridle Gap",
+      "type": "poi",
+      "lat": -31.583062,
+      "lon": 138.544727
     },
     {
       "id": "w_21eb96f8",
@@ -2660,11 +4508,39 @@
       "lon": 138.945741
     },
     {
+      "id": "w_2452691c",
+      "name": "2b Nourished",
+      "type": "food",
+      "lat": -34.340548,
+      "lon": 138.915746
+    },
+    {
+      "id": "w_2497ace8",
+      "name": "Third Falls",
+      "type": "poi",
+      "lat": -34.911516,
+      "lon": 138.71575
+    },
+    {
+      "id": "w_24bec025",
+      "name": "Royal Exchange Hotel",
+      "type": "food",
+      "lat": -33.671731,
+      "lon": 138.928088
+    },
+    {
       "id": "w_24d49c80",
       "name": "Longhill ‘walk-in’ site",
       "type": "campsite",
       "lat": -32.755444,
       "lon": 138.07118200000002
+    },
+    {
+      "id": "w_24ee0485",
+      "name": "Montacute Post Office",
+      "type": "resupply",
+      "lat": -34.893259,
+      "lon": 138.735109
     },
     {
       "id": "w_25b66c0e",
@@ -2693,6 +4569,13 @@
       "type": "campsite",
       "lat": -31.277761,
       "lon": 138.58038299999998
+    },
+    {
+      "id": "w_27bcc18c",
+      "name": "Australia Post",
+      "type": "resupply",
+      "lat": -34.525139,
+      "lon": 138.958542
     },
     {
       "id": "w_27ca0270",
@@ -2737,11 +4620,46 @@
       "lon": 138.10727499999996
     },
     {
+      "id": "w_2ac93159",
+      "name": "Hawker Town Park",
+      "type": "campsite",
+      "lat": -31.8875,
+      "lon": 138.42111
+    },
+    {
       "id": "w_2acda080",
       "name": "Cladich Pavilions",
       "type": "accommodation",
       "lat": -35.010822,
       "lon": 138.73663399999998
+    },
+    {
+      "id": "w_2b65e44d",
+      "name": "Victor Harbor Holiday Park",
+      "type": "caravan-park",
+      "lat": -35.55852,
+      "lon": 138.608366
+    },
+    {
+      "id": "w_2c280ce3",
+      "name": "Unpowered camp\\caravan sites",
+      "type": "campsite",
+      "lat": -31.524781,
+      "lon": 138.606168
+    },
+    {
+      "id": "w_2d55f1d9",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.67964,
+      "lon": 138.93707
+    },
+    {
+      "id": "w_2e7c8dd4",
+      "name": "Drakes",
+      "type": "resupply",
+      "lat": -35.348,
+      "lon": 138.621278
     },
     {
       "id": "w_2ef7082c",
@@ -2756,6 +4674,13 @@
       "type": "poi",
       "lat": -34.974113,
       "lon": 138.70899199999997
+    },
+    {
+      "id": "w_30f5b19e",
+      "name": "Mogas",
+      "type": "resupply",
+      "lat": -31.887424,
+      "lon": 138.423127
     },
     {
       "id": "w_32a07bf2",
@@ -2791,6 +4716,20 @@
       "type": "campsite",
       "lat": -32.525533,
       "lon": 138.035704
+    },
+    {
+      "id": "w_349d0330",
+      "name": "Old Ghan Resturant & Gallery",
+      "type": "food",
+      "lat": -31.885403,
+      "lon": 138.418186
+    },
+    {
+      "id": "w_3699c02d",
+      "name": "Unpowered",
+      "type": "campsite",
+      "lat": -35.560377,
+      "lon": 138.612725
     },
     {
       "id": "w_3753da0b",
@@ -2849,11 +4788,25 @@
       "lon": 138.99589200000003
     },
     {
+      "id": "w_3af11b2a",
+      "name": "Wilpena Pound Resort Campground",
+      "type": "campsite",
+      "lat": -31.525747,
+      "lon": 138.60396
+    },
+    {
       "id": "w_3be34ab5",
       "name": "Webb Gap",
       "type": "campsite",
       "lat": -33.97808,
       "lon": 138.96057
+    },
+    {
+      "id": "w_3c50f80a",
+      "name": "Same But different",
+      "type": "food",
+      "lat": -35.027168,
+      "lon": 138.808266
     },
     {
       "id": "w_3d1dc7a7",
@@ -2877,11 +4830,46 @@
       "lon": 138.37794410000004
     },
     {
+      "id": "w_3f2caa5e",
+      "name": "Burra Hospital",
+      "type": "poi",
+      "lat": -33.685433,
+      "lon": 138.934632
+    },
+    {
+      "id": "w_41534715",
+      "name": "Sealink Cape Jervis",
+      "type": "poi",
+      "lat": -35.606085,
+      "lon": 138.094406
+    },
+    {
+      "id": "w_41882aaa",
+      "name": "Whale Lookout",
+      "type": "poi",
+      "lat": -35.598616,
+      "lon": 138.584404
+    },
+    {
+      "id": "w_419e4012",
+      "name": "Coles",
+      "type": "resupply",
+      "lat": -35.008867,
+      "lon": 138.760287
+    },
+    {
       "id": "w_41aa0f8f",
       "name": "Lochnagar Barossa",
       "type": "accommodation",
       "lat": -34.5116092,
       "lon": 138.9652936
+    },
+    {
+      "id": "w_41e2d74f",
+      "name": "information Square",
+      "type": "water",
+      "lat": -34.524651,
+      "lon": 138.959184
     },
     {
       "id": "w_41f1b560",
@@ -2919,6 +4907,13 @@
       "lon": 138.41675
     },
     {
+      "id": "w_42dc706f",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -35.55289,
+      "lon": 138.620124
+    },
+    {
       "id": "w_4382f414",
       "name": "Yanyanna Hut",
       "type": "hut",
@@ -2947,6 +4942,13 @@
       "lon": 138.43820000000005
     },
     {
+      "id": "w_44bada4a",
+      "name": "Woodfired Pizza & Italian Eatery",
+      "type": "food",
+      "lat": -33.682272,
+      "lon": 138.939744
+    },
+    {
       "id": "w_45a922a3",
       "name": "Rocky Paddock Campground",
       "type": "campsite",
@@ -2968,6 +4970,13 @@
       "lon": 138.89271499999995
     },
     {
+      "id": "w_48414850",
+      "name": "Kapunda Hospital",
+      "type": "poi",
+      "lat": -34.330316,
+      "lon": 138.921401
+    },
+    {
       "id": "w_48af1b86",
       "name": "Quorn",
       "type": "town",
@@ -2980,6 +4989,13 @@
       "type": "town",
       "lat": -35.0422,
       "lon": 138.76007900000002
+    },
+    {
+      "id": "w_493d96e3",
+      "name": "The Clubhouse",
+      "type": "food",
+      "lat": -34.524663,
+      "lon": 138.961044
     },
     {
       "id": "w_4b0d5205",
@@ -2996,6 +5012,20 @@
       "lon": 138.9547629
     },
     {
+      "id": "w_4f9bc7a4",
+      "name": "Teas on the Terrace",
+      "type": "food",
+      "lat": -32.346896,
+      "lon": 138.038783
+    },
+    {
+      "id": "w_4fafdc0b",
+      "name": "Kitchen 2C",
+      "type": "resupply",
+      "lat": -35.030045,
+      "lon": 138.810326
+    },
+    {
       "id": "w_5062515b",
       "name": "Calabrinda Creek ‘walk-in’ site",
       "type": "campsite",
@@ -3008,6 +5038,27 @@
       "type": "accommodation",
       "lat": -32.8267185,
       "lon": 138.18943049999996
+    },
+    {
+      "id": "w_50dbb878",
+      "name": "Burra Creek Gorge - Worlds End Reserve (Mid)",
+      "type": "campsite",
+      "lat": -33.83352,
+      "lon": 139.049923
+    },
+    {
+      "id": "w_51b5e6d8",
+      "name": "Bliss",
+      "type": "food",
+      "lat": -34.340407,
+      "lon": 138.915502
+    },
+    {
+      "id": "w_52e766af",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.331296,
+      "lon": 138.238612
     },
     {
       "id": "w_5344f125",
@@ -3029,6 +5080,20 @@
       "type": "hut",
       "lat": -34.168823,
       "lon": 138.83136000000002
+    },
+    {
+      "id": "w_54d72471",
+      "name": "Georgetown General Store",
+      "type": "food",
+      "lat": -33.359377,
+      "lon": 138.392812
+    },
+    {
+      "id": "w_55656ee8",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.704762,
+      "lon": 138.091944
     },
     {
       "id": "w_557f2087",
@@ -3059,6 +5124,20 @@
       "lon": 138.61382
     },
     {
+      "id": "w_56e1d84b",
+      "name": "Shell Get & Go Hahndorf",
+      "type": "resupply",
+      "lat": -35.028385,
+      "lon": 138.809439
+    },
+    {
+      "id": "w_56ef5cdd",
+      "name": "Liberty Victor Harbor",
+      "type": "resupply",
+      "lat": -35.558135,
+      "lon": 138.613493
+    },
+    {
       "id": "w_571d76df",
       "name": "Endilloe Lodge Bed & Breakfast",
       "type": "accommodation",
@@ -3073,6 +5152,20 @@
       "lon": 138.959562
     },
     {
+      "id": "w_578457ae",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.982923,
+      "lon": 138.736602
+    },
+    {
+      "id": "w_57a58c47",
+      "name": "Drakes",
+      "type": "resupply",
+      "lat": -35.55169,
+      "lon": 138.622206
+    },
+    {
       "id": "w_57ce9409",
       "name": "Great Northern Lodge",
       "type": "accommodation",
@@ -3080,11 +5173,25 @@
       "lon": 138.04303000000004
     },
     {
+      "id": "w_5ab35c8b",
+      "name": "Crystal Brook Hospital",
+      "type": "poi",
+      "lat": -33.354396,
+      "lon": 138.21345
+    },
+    {
       "id": "w_5b74cd4b",
       "name": "Spalding Escape",
       "type": "accommodation",
       "lat": -33.498496,
       "lon": 138.61041999999998
+    },
+    {
+      "id": "w_5be3c1d0",
+      "name": "Kapunda Foodland",
+      "type": "resupply",
+      "lat": -34.343763,
+      "lon": 138.912522
     },
     {
       "id": "w_5c952f28",
@@ -3115,6 +5222,20 @@
       "lon": 138.49986
     },
     {
+      "id": "w_5de02a6f",
+      "name": "Crafers Cottages",
+      "type": "accommodation",
+      "lat": -34.995297,
+      "lon": 138.713817
+    },
+    {
+      "id": "w_5e38f0ca",
+      "name": "IGA Wilpena General Store",
+      "type": "resupply",
+      "lat": -31.527245,
+      "lon": 138.606152
+    },
+    {
       "id": "w_613317dc",
       "name": "Kookaburra Creek Bush Retreat",
       "type": "accommodation",
@@ -3136,6 +5257,27 @@
       "lon": 138.14063
     },
     {
+      "id": "w_62e2a877",
+      "name": "Mount Remarkable Hotel",
+      "type": "food",
+      "lat": -32.825766,
+      "lon": 138.187791
+    },
+    {
+      "id": "w_62e8ae1e",
+      "name": "Old Willows",
+      "type": "poi",
+      "lat": -32.405582,
+      "lon": 137.97095
+    },
+    {
+      "id": "w_6376d66f",
+      "name": "Gumeracha",
+      "type": "town",
+      "lat": -34.822224,
+      "lon": 138.886692
+    },
+    {
       "id": "w_64050645",
       "name": "Burra Creek Gorge Reserve (Worlds End)",
       "type": "campsite",
@@ -3155,6 +5297,13 @@
       "type": "hut",
       "lat": -34.683683,
       "lon": 138.96687299999996
+    },
+    {
+      "id": "w_6622ad29",
+      "name": "Hunts Fuel",
+      "type": "resupply",
+      "lat": -33.49871,
+      "lon": 138.607574
     },
     {
       "id": "w_663bca99",
@@ -3185,6 +5334,13 @@
       "lon": 138.01074199999994
     },
     {
+      "id": "w_69a76258",
+      "name": "IGA",
+      "type": "resupply",
+      "lat": -35.557729,
+      "lon": 138.616099
+    },
+    {
       "id": "w_6af99f81",
       "name": "Wilmington",
       "type": "town",
@@ -3199,6 +5355,13 @@
       "lon": 138.85150099999998
     },
     {
+      "id": "w_6c8629c6",
+      "name": "The Summit Cafe and Function Centre",
+      "type": "food",
+      "lat": -34.974117,
+      "lon": 138.709277
+    },
+    {
       "id": "w_70950a93",
       "name": "Pigeon Bore",
       "type": "water",
@@ -3206,11 +5369,25 @@
       "lon": 138.557727
     },
     {
+      "id": "w_70cb1c0f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.681089,
+      "lon": 138.50485
+    },
+    {
       "id": "w_721d0707",
       "name": "Doughboy Reserve",
       "type": "campsite",
       "lat": -32.896671,
       "lon": 138.237524
+    },
+    {
+      "id": "w_7375e83f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.449772,
+      "lon": 139.119664
     },
     {
       "id": "w_73eb3717",
@@ -3241,6 +5418,20 @@
       "lon": 138.1961
     },
     {
+      "id": "w_76868f14",
+      "name": "North Kapunda Hotel",
+      "type": "food",
+      "lat": -34.340773,
+      "lon": 138.915804
+    },
+    {
+      "id": "w_788dc3e4",
+      "name": "Shelter",
+      "type": "hut",
+      "lat": -34.987065,
+      "lon": 138.718511
+    },
+    {
       "id": "w_7acab284",
       "name": "Tanunda Hotel Apartments",
       "type": "accommodation",
@@ -3253,6 +5444,13 @@
       "type": "accommodation",
       "lat": -34.340979,
       "lon": 138.91513399999997
+    },
+    {
+      "id": "w_7bc22ec7",
+      "name": "Jumbucks Restaurant",
+      "type": "food",
+      "lat": -33.678761,
+      "lon": 138.935953
     },
     {
       "id": "w_7c4dd996",
@@ -3274,6 +5472,34 @@
       "type": "hut",
       "lat": -32.296364,
       "lon": 137.98272700000007
+    },
+    {
+      "id": "w_7d4a321c",
+      "name": "Stirling District Hospital",
+      "type": "poi",
+      "lat": -35.00725,
+      "lon": 138.71463
+    },
+    {
+      "id": "w_7d6055e7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.800969,
+      "lon": 138.140627
+    },
+    {
+      "id": "w_7d9d9f2d",
+      "name": "Stanley Bridge Tavern",
+      "type": "food",
+      "lat": -35.007859,
+      "lon": 138.790526
+    },
+    {
+      "id": "w_7da58ed7",
+      "name": "Gepetto's",
+      "type": "food",
+      "lat": -35.027077,
+      "lon": 138.808577
     },
     {
       "id": "w_7e187a2a",
@@ -3318,11 +5544,32 @@
       "lon": 138.56801199999995
     },
     {
+      "id": "w_8116f96c",
+      "name": "Devil’s Peak B&B Bush Camp",
+      "type": "campsite",
+      "lat": -32.421847,
+      "lon": 137.970531
+    },
+    {
+      "id": "w_81646502",
+      "name": "Forreston",
+      "type": "town",
+      "lat": -34.797341,
+      "lon": 138.899543
+    },
+    {
       "id": "w_81f27de0",
       "name": "Mt Little Station",
       "type": "accommodation",
       "lat": -31.73373,
       "lon": 138.39856
+    },
+    {
+      "id": "w_824ac451",
+      "name": "Black Gap",
+      "type": "poi",
+      "lat": -31.59224,
+      "lon": 138.524444
     },
     {
       "id": "w_82a87596",
@@ -3374,11 +5621,25 @@
       "lon": 138.96028
     },
     {
+      "id": "w_86528f5c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.454492,
+      "lon": 138.719026
+    },
+    {
       "id": "w_866ca50b",
       "name": "Alligator Lodge",
       "type": "accommodation",
       "lat": -32.72546,
       "lon": 138.08305399999995
+    },
+    {
+      "id": "w_86870b38",
+      "name": "Coopers Fresh",
+      "type": "resupply",
+      "lat": -34.340167,
+      "lon": 138.916078
     },
     {
       "id": "w_88a3da5f",
@@ -3388,11 +5649,39 @@
       "lon": 138.39288
     },
     {
+      "id": "w_89a0abdb",
+      "name": "Hahndorf IGA",
+      "type": "resupply",
+      "lat": -35.032695,
+      "lon": 138.812129
+    },
+    {
       "id": "w_8a67a214",
       "name": "Spalding Oval",
       "type": "campsite",
       "lat": -33.49962,
       "lon": 138.60574999999994
+    },
+    {
+      "id": "w_8aa0a316",
+      "name": "Burra LPO",
+      "type": "resupply",
+      "lat": -33.682301,
+      "lon": 138.938977
+    },
+    {
+      "id": "w_8aac9381",
+      "name": "Quorn District and Memorial Hospital",
+      "type": "poi",
+      "lat": -32.351042,
+      "lon": 138.038578
+    },
+    {
+      "id": "w_8b667960",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.819097,
+      "lon": 139.046255
     },
     {
       "id": "w_8cbf45f2",
@@ -3416,11 +5705,32 @@
       "lon": 138.46011999999996
     },
     {
+      "id": "w_8e763fc4",
+      "name": "Bon Accord Hotel",
+      "type": "accommodation",
+      "lat": -33.67125,
+      "lon": 138.922263
+    },
+    {
+      "id": "w_8fb67d6f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.97778,
+      "lon": 138.96076
+    },
+    {
       "id": "w_90e6cbb2",
       "name": "Marrabel ‘Walk-in’ site",
       "type": "campsite",
       "lat": -34.139612,
       "lon": 138.87835100000007
+    },
+    {
+      "id": "w_91758008",
+      "name": "Mylor Conservation Park YHA",
+      "type": "accommodation",
+      "lat": -35.03865,
+      "lon": 138.766146
     },
     {
       "id": "w_919fff9c",
@@ -3437,6 +5747,13 @@
       "lon": 138.11442799999998
     },
     {
+      "id": "w_9259b8d1",
+      "name": "BP",
+      "type": "resupply",
+      "lat": -33.349692,
+      "lon": 138.206052
+    },
+    {
       "id": "w_92b405f9",
       "name": "Old Telegraph Station Bed and Breakfast",
       "type": "accommodation",
@@ -3451,11 +5768,39 @@
       "lon": 138.041968
     },
     {
+      "id": "w_9508209e",
+      "name": "Beetaloo Tank Campsite",
+      "type": "campsite",
+      "lat": -33.197456,
+      "lon": 138.187424
+    },
+    {
       "id": "w_9555e0ce",
       "name": "Mt Compass",
       "type": "town",
       "lat": -35.348831,
       "lon": 138.62115500000004
+    },
+    {
+      "id": "w_95b63250",
+      "name": "TerryWhite Chemmart",
+      "type": "poi",
+      "lat": -33.682038,
+      "lon": 138.938586
+    },
+    {
+      "id": "w_95d17f9b",
+      "name": "Crystal Brook Foodland",
+      "type": "resupply",
+      "lat": -33.352244,
+      "lon": 138.206515
+    },
+    {
+      "id": "w_968545f6",
+      "name": "The CookOBurra",
+      "type": "food",
+      "lat": -33.681291,
+      "lon": 138.938703
     },
     {
       "id": "w_96dafb81",
@@ -3472,11 +5817,32 @@
       "lon": 138.5605230305
     },
     {
+      "id": "w_99704d9a",
+      "name": "Beach House Cafe",
+      "type": "food",
+      "lat": -35.574875,
+      "lon": 138.601916
+    },
+    {
       "id": "w_99b44500",
       "name": "Old Shed – Main Camp – Caroona Creek Conservation Park",
       "type": "hut",
       "lat": -33.44786,
       "lon": 139.14079
+    },
+    {
+      "id": "w_99f2a909",
+      "name": "Spalding LPO",
+      "type": "resupply",
+      "lat": -33.500031,
+      "lon": 138.609044
+    },
+    {
+      "id": "w_9a21d549",
+      "name": "Sealink Terminal Cape Jervis",
+      "type": "poi",
+      "lat": -35.606327,
+      "lon": 138.094295
     },
     {
       "id": "w_9a98f75c",
@@ -3535,11 +5901,74 @@
       "lon": 139.04646
     },
     {
+      "id": "w_a03c9cc6",
+      "name": "Ampol Melrose",
+      "type": "resupply",
+      "lat": -32.825284,
+      "lon": 138.187881
+    },
+    {
+      "id": "w_a0be87a8",
+      "name": "TerryWhite Chemmart",
+      "type": "poi",
+      "lat": -34.340189,
+      "lon": 138.915695
+    },
+    {
       "id": "w_a14f01b0",
       "name": "The Manna of Hahndorf",
       "type": "accommodation",
       "lat": -35.0320454,
       "lon": 138.81145289999995
+    },
+    {
+      "id": "w_a1559559",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.354333,
+      "lon": 138.361247
+    },
+    {
+      "id": "w_a16d659d",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.182226,
+      "lon": 138.007315
+    },
+    {
+      "id": "w_a23a479c",
+      "name": "South Coast District Hospital",
+      "type": "poi",
+      "lat": -35.561471,
+      "lon": 138.606805
+    },
+    {
+      "id": "w_a354c82a",
+      "name": "Boulder",
+      "type": "poi",
+      "lat": -32.818559,
+      "lon": 138.17848
+    },
+    {
+      "id": "w_a4ebd07a",
+      "name": "iOR Petroleum",
+      "type": "resupply",
+      "lat": -33.669063,
+      "lon": 138.9224
+    },
+    {
+      "id": "w_a57520da",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.051073,
+      "lon": 138.146632
+    },
+    {
+      "id": "w_a588d5e3",
+      "name": "Amanti Pizza",
+      "type": "food",
+      "lat": -34.52425,
+      "lon": 138.960492
     },
     {
       "id": "w_a5e68e4b",
@@ -3577,11 +6006,53 @@
       "lon": 138.62274200000002
     },
     {
+      "id": "w_a875f0b4",
+      "name": "Flinders Food Co",
+      "type": "food",
+      "lat": -31.887549,
+      "lon": 138.421487
+    },
+    {
+      "id": "w_a877ae8b",
+      "name": "Gnadenfrei",
+      "type": "town",
+      "lat": -34.48401,
+      "lon": 138.937333
+    },
+    {
       "id": "w_a9f99a33",
       "name": "Sunset Ridge Accommodation",
       "type": "accommodation",
       "lat": -31.868966,
       "lon": 138.38564299999996
+    },
+    {
+      "id": "w_aa26b0a0",
+      "name": "Whaler's Seaside Dining",
+      "type": "food",
+      "lat": -35.586578,
+      "lon": 138.598345
+    },
+    {
+      "id": "w_aa388c39",
+      "name": "Hawker General Store",
+      "type": "resupply",
+      "lat": -31.887217,
+      "lon": 138.422737
+    },
+    {
+      "id": "w_aabc43a6",
+      "name": "Tanunda War Memorial Hospital",
+      "type": "poi",
+      "lat": -34.528496,
+      "lon": 138.961109
+    },
+    {
+      "id": "w_aaf52225",
+      "name": "Well",
+      "type": "water",
+      "lat": -31.837215,
+      "lon": 138.397794
     },
     {
       "id": "w_ab245cf6",
@@ -3619,6 +6090,20 @@
       "lon": 138.56107
     },
     {
+      "id": "w_ac6d882b",
+      "name": "Hawker tourist information",
+      "type": "resupply",
+      "lat": -31.88747,
+      "lon": 138.423074
+    },
+    {
+      "id": "w_aca4def6",
+      "name": "OTR Kapunda",
+      "type": "resupply",
+      "lat": -34.339027,
+      "lon": 138.91702
+    },
+    {
       "id": "w_ad54d6a8",
       "name": "Meaney’s Rest",
       "type": "accommodation",
@@ -3626,11 +6111,25 @@
       "lon": 138.42229399999997
     },
     {
+      "id": "w_adb9cec3",
+      "name": "Kupsch Bakery",
+      "type": "food",
+      "lat": -33.353008,
+      "lon": 138.20652
+    },
+    {
       "id": "w_aecdaa67",
       "name": "Fromms Farm",
       "type": "hut",
       "lat": -34.72469,
       "lon": 138.96555
+    },
+    {
+      "id": "w_af015f37",
+      "name": "The Cuddlee Cafe",
+      "type": "food",
+      "lat": -34.840947,
+      "lon": 138.828897
     },
     {
       "id": "w_af3e11f1",
@@ -3668,11 +6167,32 @@
       "lon": 138.9418177
     },
     {
+      "id": "w_b20732a2",
+      "name": "Sidewood",
+      "type": "resupply",
+      "lat": -35.02069,
+      "lon": 138.794545
+    },
+    {
       "id": "w_b24a5fb6",
       "name": "Cudlee Creek",
       "type": "town",
       "lat": -34.839745,
       "lon": 138.81664999999998
+    },
+    {
+      "id": "w_b2c1e516",
+      "name": "Amcal",
+      "type": "poi",
+      "lat": -35.55714,
+      "lon": 138.617537
+    },
+    {
+      "id": "w_b3862e4a",
+      "name": "Victor Harbour Beachfront Holiday Park",
+      "type": "caravan-park",
+      "lat": -35.559832,
+      "lon": 138.611817
     },
     {
       "id": "w_b3b79b9f",
@@ -3696,6 +6216,13 @@
       "lon": 138.926155
     },
     {
+      "id": "w_b4d3fb83",
+      "name": "Hawker Post Office",
+      "type": "resupply",
+      "lat": -31.887196,
+      "lon": 138.422686
+    },
+    {
       "id": "w_b5fb287d",
       "name": "Cudlee Creek Restaurant Tavern and Caravan Park",
       "type": "caravan-park",
@@ -3703,11 +6230,25 @@
       "lon": 138.81707299999994
     },
     {
+      "id": "w_b6e03b96",
+      "name": "Wozza's Vault Cafe",
+      "type": "food",
+      "lat": -32.826104,
+      "lon": 138.187483
+    },
+    {
       "id": "w_b7644849",
       "name": "Rocky Creek Hut & ‘Walk in’ site",
       "type": "hut",
       "lat": -35.146038,
       "lon": 138.73872400000005
+    },
+    {
+      "id": "w_b7da288e",
+      "name": "Scenic Hotel",
+      "type": "food",
+      "lat": -34.922817,
+      "lon": 138.724604
     },
     {
       "id": "w_b87391f4",
@@ -3722,6 +6263,27 @@
       "type": "accommodation",
       "lat": -34.16108,
       "lon": 138.74691000000007
+    },
+    {
+      "id": "w_b966aca0",
+      "name": "Heysen Trail 6.0 km",
+      "type": "trailhead",
+      "lat": -32.805383,
+      "lon": 138.164522
+    },
+    {
+      "id": "w_b9f604b0",
+      "name": "Hahndorf Fruit & Veg Market",
+      "type": "resupply",
+      "lat": -35.020225,
+      "lon": 138.79898
+    },
+    {
+      "id": "w_ba349ec6",
+      "name": "Wilpena Pound Resort",
+      "type": "accommodation",
+      "lat": -31.529567,
+      "lon": 138.602853
     },
     {
       "id": "w_ba586ff7",
@@ -3745,6 +6307,20 @@
       "lon": 138.960785
     },
     {
+      "id": "w_bc86c9d6",
+      "name": "Norton Summit Community Postal Agency",
+      "type": "resupply",
+      "lat": -34.923525,
+      "lon": 138.724855
+    },
+    {
+      "id": "w_bcaea473",
+      "name": "Over the Edge",
+      "type": "food",
+      "lat": -32.826418,
+      "lon": 138.187382
+    },
+    {
       "id": "w_bd21dbf0",
       "name": "Barossa Motel",
       "type": "accommodation",
@@ -3757,6 +6333,13 @@
       "type": "accommodation",
       "lat": -31.645199,
       "lon": 138.58145100000002
+    },
+    {
+      "id": "w_be30b572",
+      "name": "Woolshed Flat",
+      "type": "poi",
+      "lat": -32.45408,
+      "lon": 137.975301
     },
     {
       "id": "w_be4d28bb",
@@ -3787,6 +6370,13 @@
       "lon": 139.119681
     },
     {
+      "id": "w_bfd6398e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.135125,
+      "lon": 138.529924
+    },
+    {
       "id": "w_c04ed919",
       "name": "Cape Jervis Tavern",
       "type": "accommodation",
@@ -3794,11 +6384,39 @@
       "lon": 138.10794799999996
     },
     {
+      "id": "w_c122be13",
+      "name": "Foodland",
+      "type": "resupply",
+      "lat": -35.015683,
+      "lon": 138.735606
+    },
+    {
+      "id": "w_c14c4858",
+      "name": "Burra Roadhouse",
+      "type": "resupply",
+      "lat": -33.683045,
+      "lon": 138.937634
+    },
+    {
+      "id": "w_c1a39115",
+      "name": "Melrose CPA",
+      "type": "resupply",
+      "lat": -32.826357,
+      "lon": 138.18699
+    },
+    {
       "id": "w_c300cbdf",
       "name": "Parachilna Gorge ‘walk-in’ site",
       "type": "campsite",
       "lat": -31.1393,
       "lon": 138.5312
+    },
+    {
+      "id": "w_c3a820d4",
+      "name": "Four Seasons of Nosh",
+      "type": "food",
+      "lat": -34.52648,
+      "lon": 138.956844
     },
     {
       "id": "w_c3b1c9a2",
@@ -3822,6 +6440,20 @@
       "lon": 138.1914948
     },
     {
+      "id": "w_c672ab66",
+      "name": "Helga's Hideaway",
+      "type": "accommodation",
+      "lat": -35.367329,
+      "lon": 138.636232
+    },
+    {
+      "id": "w_c699397c",
+      "name": "Hallett General Store",
+      "type": "resupply",
+      "lat": -33.411543,
+      "lon": 138.892497
+    },
+    {
       "id": "w_c73fcb48",
       "name": "Arkaba Conservancy",
       "type": "accommodation",
@@ -3829,11 +6461,32 @@
       "lon": 138.50419999999997
     },
     {
+      "id": "w_c8650a82",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -31.331048,
+      "lon": 138.627643
+    },
+    {
+      "id": "w_c9b8433a",
+      "name": "Mobil",
+      "type": "resupply",
+      "lat": -35.010347,
+      "lon": 138.748588
+    },
+    {
       "id": "w_c9e6b917",
       "name": "Murray Town",
       "type": "town",
       "lat": -32.936972,
       "lon": 138.24043800000004
+    },
+    {
+      "id": "w_c9ea7f43",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.418988,
+      "lon": 138.536014
     },
     {
       "id": "w_cbb4c496",
@@ -3850,11 +6503,25 @@
       "lon": 138.23844899999995
     },
     {
+      "id": "w_ccbfa0fd",
+      "name": "Kapunda Post Office",
+      "type": "resupply",
+      "lat": -34.341215,
+      "lon": 138.915337
+    },
+    {
       "id": "w_ccfca739",
       "name": "Barossa Weintal Resort",
       "type": "accommodation",
       "lat": -34.5125969,
       "lon": 138.9757929
+    },
+    {
+      "id": "w_cdebbf61",
+      "name": "Tyne House Bed and Breakfast",
+      "type": "accommodation",
+      "lat": -34.996699,
+      "lon": 138.704943
     },
     {
       "id": "w_ce369dc6",
@@ -3892,6 +6559,34 @@
       "lon": 138.916747
     },
     {
+      "id": "w_d2c03aae",
+      "name": "Cape Jervis bay",
+      "type": "poi",
+      "lat": -35.60541,
+      "lon": 138.094645
+    },
+    {
+      "id": "w_d4d052db",
+      "name": "Store 54 Cafe & Food Market",
+      "type": "resupply",
+      "lat": -32.825362,
+      "lon": 138.188037
+    },
+    {
+      "id": "w_d55a59fe",
+      "name": "Spalding CPA",
+      "type": "resupply",
+      "lat": -33.498643,
+      "lon": 138.607631
+    },
+    {
+      "id": "w_d63d8343",
+      "name": "The Old Mill",
+      "type": "food",
+      "lat": -35.026584,
+      "lon": 138.808271
+    },
+    {
       "id": "w_d6bc3ad3",
       "name": "Burra Hotel",
       "type": "accommodation",
@@ -3913,11 +6608,25 @@
       "lon": 138.36132499999997
     },
     {
+      "id": "w_d712b4e1",
+      "name": "Stone Road Camp Site",
+      "type": "campsite",
+      "lat": -35.318841,
+      "lon": 138.6852
+    },
+    {
       "id": "w_d72b6c8c",
       "name": "Yapari Ngawanthi / Cliffs ‘walk-in’ site",
       "type": "hut",
       "lat": -35.630357936,
       "lon": 138.25761359199998
+    },
+    {
+      "id": "w_d73bfd4a",
+      "name": "Kent Reserve",
+      "type": "poi",
+      "lat": -35.564116,
+      "lon": 138.611527
     },
     {
       "id": "w_d77430fa",
@@ -3948,6 +6657,20 @@
       "lon": 138.230545
     },
     {
+      "id": "w_da2cfce8",
+      "name": "IGA Quorn",
+      "type": "resupply",
+      "lat": -32.345683,
+      "lon": 138.042361
+    },
+    {
+      "id": "w_dbf2bb6f",
+      "name": "Cudlee Creek Tavern & Caravan Park",
+      "type": "campsite",
+      "lat": -34.83972,
+      "lon": 138.81611
+    },
+    {
       "id": "w_dd3e5efa",
       "name": "Cleland Cottage (formerly Mt Lofty Cottage YHA)",
       "type": "accommodation",
@@ -3969,6 +6692,13 @@
       "lon": 138.93814
     },
     {
+      "id": "w_de1229eb",
+      "name": "Perrys",
+      "type": "resupply",
+      "lat": -31.527237,
+      "lon": 138.60646
+    },
+    {
       "id": "w_dee5e4c4",
       "name": "Beautiful Valley Caravan Park",
       "type": "caravan-park",
@@ -3976,11 +6706,32 @@
       "lon": 138.1082
     },
     {
+      "id": "w_e0019ad0",
+      "name": "Second Falls",
+      "type": "poi",
+      "lat": -34.908514,
+      "lon": 138.709436
+    },
+    {
       "id": "w_e0ae188d",
       "name": "Hahndorf",
       "type": "town",
       "lat": -35.0296666667,
       "lon": 138.81078333330004
+    },
+    {
+      "id": "w_e0b36f83",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.546628,
+      "lon": 138.588918
+    },
+    {
+      "id": "w_e130bae4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.19758,
+      "lon": 138.187368
     },
     {
       "id": "w_e1e73ddc",
@@ -4011,11 +6762,25 @@
       "lon": 138.60762
     },
     {
+      "id": "w_e664972e",
+      "name": "Horrocks Pass",
+      "type": "campsite",
+      "lat": -32.641597,
+      "lon": 138.037275
+    },
+    {
       "id": "w_e78a9769",
       "name": "Oldham House B&B",
       "type": "accommodation",
       "lat": -34.33917,
       "lon": 138.91927999999996
+    },
+    {
+      "id": "w_e7da5152",
+      "name": "Trailhead",
+      "type": "trailhead",
+      "lat": -34.816578,
+      "lon": 138.849817
     },
     {
       "id": "w_e90489ef",
@@ -4039,6 +6804,27 @@
       "lon": 138.42621
     },
     {
+      "id": "w_e980ead4",
+      "name": "Georgetown General Store",
+      "type": "resupply",
+      "lat": -33.359359,
+      "lon": 138.392776
+    },
+    {
+      "id": "w_eaac7d16",
+      "name": "Royal Hotel",
+      "type": "food",
+      "lat": -33.352361,
+      "lon": 138.207567
+    },
+    {
+      "id": "w_eb4d60f9",
+      "name": "Hawker Memorial Hospital",
+      "type": "poi",
+      "lat": -31.893354,
+      "lon": 138.427643
+    },
+    {
       "id": "w_ebe3a7cc",
       "name": "Scotts Shelter",
       "type": "hut",
@@ -4058,6 +6844,13 @@
       "type": "accommodation",
       "lat": -35.0297124,
       "lon": 138.81017569999995
+    },
+    {
+      "id": "w_ef07bfc8",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.865131,
+      "lon": 138.931229
     },
     {
       "id": "w_ef4d5138",
@@ -4081,11 +6874,32 @@
       "lon": 138.63790900000004
     },
     {
+      "id": "w_f234f3d1",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.168899,
+      "lon": 138.831091
+    },
+    {
+      "id": "w_f29eb178",
+      "name": "Harvest Mylor Café",
+      "type": "food",
+      "lat": -35.042363,
+      "lon": 138.759947
+    },
+    {
       "id": "w_f358f4a0",
       "name": "Kapunda",
       "type": "town",
       "lat": -34.339077,
       "lon": 138.91667200000006
+    },
+    {
+      "id": "w_f39ca033",
+      "name": "Crystal Brook Post Office",
+      "type": "resupply",
+      "lat": -33.35301,
+      "lon": 138.205689
     },
     {
       "id": "w_f3a2f4ea",
@@ -4100,6 +6914,20 @@
       "type": "accommodation",
       "lat": -33.411914,
       "lon": 138.89234399999998
+    },
+    {
+      "id": "w_f455caf9",
+      "name": "Quandong Cafe",
+      "type": "food",
+      "lat": -32.346827,
+      "lon": 138.041467
+    },
+    {
+      "id": "w_f4b64ddc",
+      "name": "Georgetown Hotel",
+      "type": "food",
+      "lat": -33.359594,
+      "lon": 138.392927
     },
     {
       "id": "w_f4e6e3c9",
@@ -4144,6 +6972,20 @@
       "lon": 138.259857
     },
     {
+      "id": "w_f7ffe5f2",
+      "name": "Deep View Lookout",
+      "type": "poi",
+      "lat": -34.902278,
+      "lon": 138.707083
+    },
+    {
+      "id": "w_f819e25f",
+      "name": "Norton Summit YHA",
+      "type": "accommodation",
+      "lat": -34.90497,
+      "lon": 138.7407
+    },
+    {
       "id": "w_f8611294",
       "name": "Cartapo Creek Hobby Farm",
       "type": "campsite",
@@ -4158,11 +7000,39 @@
       "lon": 138.89040999999997
     },
     {
+      "id": "w_f87ec2b8",
+      "name": "Spalding General Store",
+      "type": "food",
+      "lat": -33.498607,
+      "lon": 138.60765
+    },
+    {
+      "id": "w_f94d76a9",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -35.027677,
+      "lon": 138.80857
+    },
+    {
       "id": "w_f968253e",
       "name": "Quandong Apartments",
       "type": "accommodation",
       "lat": -32.346805,
       "lon": 138.04157399999997
+    },
+    {
+      "id": "w_fa4ec330",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -34.838972,
+      "lon": 138.816335
+    },
+    {
+      "id": "w_fb11f8aa",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.611618,
+      "lon": 138.993857
     },
     {
       "id": "w_fbbbcb7c",
@@ -4179,14 +7049,63 @@
       "lon": 138.80536499999994
     },
     {
+      "id": "w_fc5cbf51",
+      "name": "The Avenues Picnic Area",
+      "type": "poi",
+      "lat": -35.207694,
+      "lon": 138.710759
+    },
+    {
+      "id": "w_fce59e79",
+      "name": "Spalding General Store",
+      "type": "resupply",
+      "lat": -33.498574,
+      "lon": 138.607668
+    },
+    {
+      "id": "w_fd99301e",
+      "name": "Montacute",
+      "type": "town",
+      "lat": -34.892027,
+      "lon": 138.737944
+    },
+    {
+      "id": "w_fde059ea",
+      "name": "Ruin",
+      "type": "poi",
+      "lat": -33.408375,
+      "lon": 139.013093
+    },
+    {
       "id": "w_fef350de",
       "name": "Burra Bed & Breakfast",
       "type": "accommodation",
       "lat": -33.679307,
       "lon": 138.94219099999998
+    },
+    {
+      "id": "w_ffd24c59",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.351772,
+      "lon": 138.208177
     }
   ],
   "hume-and-hovell": [
+    {
+      "id": "w_01d33c20",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.841118,
+      "lon": 148.911693
+    },
+    {
+      "id": "w_03d44ca8",
+      "name": "ALDI",
+      "type": "resupply",
+      "lat": -34.844555,
+      "lon": 148.91286
+    },
     {
       "id": "w_0467a95e",
       "name": "Wymah road end",
@@ -4202,6 +7121,34 @@
       "lon": 148.28422
     },
     {
+      "id": "w_08db2ea6",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.087636,
+      "lon": 146.923167
+    },
+    {
+      "id": "w_09deb0cb",
+      "name": "Ampol Foodary",
+      "type": "resupply",
+      "lat": -34.806721,
+      "lon": 148.882313
+    },
+    {
+      "id": "w_0ad838f5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.091329,
+      "lon": 146.917073
+    },
+    {
+      "id": "w_0d905af2",
+      "name": "Clifton Motel",
+      "type": "accommodation",
+      "lat": -36.083351,
+      "lon": 146.922842
+    },
+    {
       "id": "w_0ea9676b",
       "name": "Billy Grace reserve",
       "type": "campsite",
@@ -4209,11 +7156,109 @@
       "lon": 148.68156
     },
     {
+      "id": "w_100d94ea",
+      "name": "KFC",
+      "type": "food",
+      "lat": -34.806817,
+      "lon": 148.883266
+    },
+    {
+      "id": "w_1020a75b",
+      "name": "Coles",
+      "type": "resupply",
+      "lat": -36.081443,
+      "lon": 146.913582
+    },
+    {
+      "id": "w_115521b4",
+      "name": "Sundowner Motor Inn",
+      "type": "accommodation",
+      "lat": -34.829273,
+      "lon": 148.908702
+    },
+    {
+      "id": "w_16c7e58f",
+      "name": "Tootsie",
+      "type": "food",
+      "lat": -34.849403,
+      "lon": 148.917358
+    },
+    {
+      "id": "w_1c2fb266",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -36.043465,
+      "lon": 146.990993
+    },
+    {
+      "id": "w_1d59328e",
+      "name": "Albury Riverside Bakery",
+      "type": "food",
+      "lat": -36.084876,
+      "lon": 146.909989
+    },
+    {
+      "id": "w_1da34688",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.084292,
+      "lon": 146.907797
+    },
+    {
       "id": "w_1e7ca666",
       "name": "Tumut valley holiday park",
       "type": "caravan-park",
       "lat": -35.34205,
       "lon": 148.24542
+    },
+    {
+      "id": "w_1fa5529c",
+      "name": "Buddong Falls (Lower)",
+      "type": "poi",
+      "lat": -35.639854,
+      "lon": 148.249221
+    },
+    {
+      "id": "w_222fa419",
+      "name": "Almar Organics",
+      "type": "resupply",
+      "lat": -36.091268,
+      "lon": 146.913969
+    },
+    {
+      "id": "w_240a83ea",
+      "name": "Albury City Pharmacy",
+      "type": "poi",
+      "lat": -36.079818,
+      "lon": 146.919876
+    },
+    {
+      "id": "w_259f9632",
+      "name": "Yass District Hospital",
+      "type": "poi",
+      "lat": -34.844101,
+      "lon": 148.90673
+    },
+    {
+      "id": "w_25f36f3f",
+      "name": "IGA",
+      "type": "resupply",
+      "lat": -34.827027,
+      "lon": 148.909646
+    },
+    {
+      "id": "w_27eac2d5",
+      "name": "Garden Court Motel",
+      "type": "accommodation",
+      "lat": -36.085153,
+      "lon": 146.920457
+    },
+    {
+      "id": "w_27eb8953",
+      "name": "Harris Farm Markets",
+      "type": "resupply",
+      "lat": -36.076218,
+      "lon": 146.925748
     },
     {
       "id": "w_2b576c8d",
@@ -4228,6 +7273,20 @@
       "type": "caravan-park",
       "lat": -35.99059,
       "lon": 147.15283
+    },
+    {
+      "id": "w_31bc86fc",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.087297,
+      "lon": 146.925291
+    },
+    {
+      "id": "w_32255276",
+      "name": "Albury",
+      "type": "poi",
+      "lat": -36.083969,
+      "lon": 146.924495
     },
     {
       "id": "w_3251395d",
@@ -4258,11 +7317,32 @@
       "lon": 147.04525
     },
     {
+      "id": "w_38a39d41",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.0872,
+      "lon": 146.904359
+    },
+    {
+      "id": "w_38da9bf3",
+      "name": "Hilltop",
+      "type": "accommodation",
+      "lat": -36.077836,
+      "lon": 146.93662
+    },
+    {
       "id": "w_3908730d",
       "name": "Windy point",
       "type": "campsite",
       "lat": -35.49599,
       "lon": 148.24186
+    },
+    {
+      "id": "w_3efbb407",
+      "name": "Miller's Pharmacy",
+      "type": "poi",
+      "lat": -34.842143,
+      "lon": 148.911656
     },
     {
       "id": "w_40fbf879",
@@ -4272,11 +7352,60 @@
       "lon": 148.00998
     },
     {
+      "id": "w_42629062",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.088993,
+      "lon": 146.936127
+    },
+    {
+      "id": "w_450531ae",
+      "name": "Foodary",
+      "type": "resupply",
+      "lat": -34.844592,
+      "lon": 148.913942
+    },
+    {
+      "id": "w_45b1e804",
+      "name": "Insight Private Hospital",
+      "type": "poi",
+      "lat": -36.081674,
+      "lon": 146.910858
+    },
+    {
+      "id": "w_4aa632ed",
+      "name": "Ampol",
+      "type": "resupply",
+      "lat": -34.806667,
+      "lon": 148.882001
+    },
+    {
+      "id": "w_4c795b09",
+      "name": "Hume Inn",
+      "type": "accommodation",
+      "lat": -36.085172,
+      "lon": 146.91037
+    },
+    {
+      "id": "w_4cb49764",
+      "name": "Hume and Hovell Walking Track",
+      "type": "trailhead",
+      "lat": -36.084798,
+      "lon": 146.908182
+    },
+    {
       "id": "w_4cf83e0b",
       "name": "C? Bowna rest area",
       "type": "campsite",
       "lat": -35.95236,
       "lon": 147.10393
+    },
+    {
+      "id": "w_4e6aba99",
+      "name": "Reflections Burrinjuck Waters Holiday Park",
+      "type": "campsite",
+      "lat": -34.981071,
+      "lon": 148.621287
     },
     {
       "id": "w_4f55061e",
@@ -4291,6 +7420,27 @@
       "type": "trailhead",
       "lat": -35.82506,
       "lon": 148.06137
+    },
+    {
+      "id": "w_51459167",
+      "name": "TerryWhite Chemmart",
+      "type": "poi",
+      "lat": -36.080993,
+      "lon": 146.916726
+    },
+    {
+      "id": "w_529aa325",
+      "name": "Coolabah Tree Cafe",
+      "type": "food",
+      "lat": -34.80686,
+      "lon": 148.882282
+    },
+    {
+      "id": "w_5435b308",
+      "name": "Albury Wodonga Health - Albury Campus",
+      "type": "poi",
+      "lat": -36.078556,
+      "lon": 146.938137
     },
     {
       "id": "w_54de1796",
@@ -4328,11 +7478,67 @@
       "lon": 147.31809
     },
     {
+      "id": "w_69865171",
+      "name": "Norths Lookout",
+      "type": "poi",
+      "lat": -35.860254,
+      "lon": 147.412732
+    },
+    {
+      "id": "w_6a0c8882",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.839321,
+      "lon": 148.908213
+    },
+    {
       "id": "w_6af21e38",
       "name": "Cafe and takeaway",
       "type": "food",
       "lat": -36.0436,
       "lon": 146.99014
+    },
+    {
+      "id": "w_6ba6ff9e",
+      "name": "Table Top",
+      "type": "town",
+      "lat": -35.937194,
+      "lon": 147.029967
+    },
+    {
+      "id": "w_6e0e8c76",
+      "name": "McDonald's",
+      "type": "food",
+      "lat": -36.075397,
+      "lon": 146.94718
+    },
+    {
+      "id": "w_7209ccd6",
+      "name": "Domino's",
+      "type": "food",
+      "lat": -34.827265,
+      "lon": 148.909079
+    },
+    {
+      "id": "w_729b7de6",
+      "name": "Colonial Lodge Motor Inn",
+      "type": "accommodation",
+      "lat": -34.850594,
+      "lon": 148.919437
+    },
+    {
+      "id": "w_733c37b1",
+      "name": "Cafe Musette",
+      "type": "food",
+      "lat": -36.083571,
+      "lon": 146.923855
+    },
+    {
+      "id": "w_76236bfa",
+      "name": "Table Top",
+      "type": "town",
+      "lat": -35.969056,
+      "lon": 147.006911
     },
     {
       "id": "w_76fbcba2",
@@ -4349,6 +7555,41 @@
       "lon": 147.04083
     },
     {
+      "id": "w_7f368ef7",
+      "name": "Yambla View",
+      "type": "poi",
+      "lat": -35.908917,
+      "lon": 147.311717
+    },
+    {
+      "id": "w_7fafe0a3",
+      "name": "Priceline Pharmacy",
+      "type": "poi",
+      "lat": -34.84176,
+      "lon": 148.911315
+    },
+    {
+      "id": "w_885b9cab",
+      "name": "Astron Fuels",
+      "type": "resupply",
+      "lat": -34.848172,
+      "lon": 148.916154
+    },
+    {
+      "id": "w_8886a04d",
+      "name": "The Liberty",
+      "type": "food",
+      "lat": -34.843676,
+      "lon": 148.912404
+    },
+    {
+      "id": "w_892b09d5",
+      "name": "Kinross Woolshed",
+      "type": "food",
+      "lat": -36.036756,
+      "lon": 146.99758
+    },
+    {
       "id": "w_8a843bdc",
       "name": "The captain camp",
       "type": "campsite",
@@ -4363,11 +7604,88 @@
       "lon": 148.23189
     },
     {
+      "id": "w_8ca4ee99",
+      "name": "Careys Reserve",
+      "type": "campsite",
+      "lat": -35.091921,
+      "lon": 148.673837
+    },
+    {
+      "id": "w_8e2b9ff1",
+      "name": "Lake Mannus Day Use Area",
+      "type": "poi",
+      "lat": -35.810948,
+      "lon": 147.977603
+    },
+    {
+      "id": "w_8fac71c5",
+      "name": "Cafe Dolcetto",
+      "type": "food",
+      "lat": -34.84274,
+      "lon": 148.911557
+    },
+    {
+      "id": "w_902204c2",
+      "name": "Hi-way Motor Inn",
+      "type": "accommodation",
+      "lat": -34.851171,
+      "lon": 148.9206
+    },
+    {
+      "id": "w_960c46dc",
+      "name": "BP",
+      "type": "resupply",
+      "lat": -36.088809,
+      "lon": 146.909372
+    },
+    {
+      "id": "w_9743dc50",
+      "name": "Roma Restaurant & Pizzeria",
+      "type": "food",
+      "lat": -36.084994,
+      "lon": 146.909907
+    },
+    {
+      "id": "w_98493a1c",
+      "name": "ALDI",
+      "type": "resupply",
+      "lat": -36.075964,
+      "lon": 146.924584
+    },
+    {
+      "id": "w_9e90be44",
+      "name": "East Albury IGA",
+      "type": "resupply",
+      "lat": -36.076306,
+      "lon": 146.939529
+    },
+    {
+      "id": "w_9fbab227",
+      "name": "Blooms The Chemist",
+      "type": "poi",
+      "lat": -36.080922,
+      "lon": 146.912707
+    },
+    {
+      "id": "w_a05c7935",
+      "name": "Tanks Bakery",
+      "type": "food",
+      "lat": -34.827312,
+      "lon": 148.909336
+    },
+    {
       "id": "w_a73a9b3d",
       "name": "Restaurant area",
       "type": "food",
       "lat": -36.08103,
       "lon": 146.91811
+    },
+    {
+      "id": "w_ab350f7b",
+      "name": "Buddong Falls (Upper)",
+      "type": "poi",
+      "lat": -35.640482,
+      "lon": 148.246872
     },
     {
       "id": "w_abca0163",
@@ -4377,11 +7695,53 @@
       "lon": 148.67279
     },
     {
+      "id": "w_ac77d54e",
+      "name": "Eastern Hill Lookout",
+      "type": "poi",
+      "lat": -36.088013,
+      "lon": 146.939272
+    },
+    {
+      "id": "w_ae0190c1",
+      "name": "The Royal Hotel Yass",
+      "type": "accommodation",
+      "lat": -34.842471,
+      "lon": 148.911171
+    },
+    {
+      "id": "w_b3f3c5fe",
+      "name": "BP Shop",
+      "type": "resupply",
+      "lat": -36.035768,
+      "lon": 146.971005
+    },
+    {
+      "id": "w_b4c164f9",
+      "name": "Yass",
+      "type": "town",
+      "lat": -34.841863,
+      "lon": 148.911005
+    },
+    {
+      "id": "w_b572671f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.083407,
+      "lon": 146.926207
+    },
+    {
       "id": "w_b6e4705c",
       "name": "Paddys river dam",
       "type": "campsite",
       "lat": -35.71631,
       "lon": 148.16744
+    },
+    {
+      "id": "w_b9c7fb07",
+      "name": "Coles",
+      "type": "resupply",
+      "lat": -36.044472,
+      "lon": 146.996292
     },
     {
       "id": "w_bb19d698",
@@ -4396,6 +7756,20 @@
       "type": "campsite",
       "lat": -35.38557,
       "lon": 148.45647
+    },
+    {
+      "id": "w_bbc6d5a6",
+      "name": "The Border Cancer Hospital",
+      "type": "poi",
+      "lat": -36.077486,
+      "lon": 146.938694
+    },
+    {
+      "id": "w_c147cb22",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -36.079844,
+      "lon": 146.919639
     },
     {
       "id": "w_c18b2dee",
@@ -4419,6 +7793,27 @@
       "lon": 148.67418
     },
     {
+      "id": "w_c69ea68f",
+      "name": "Clementine Bakery",
+      "type": "food",
+      "lat": -34.841367,
+      "lon": 148.910335
+    },
+    {
+      "id": "w_c922804f",
+      "name": "La Maison Cafe",
+      "type": "food",
+      "lat": -36.093036,
+      "lon": 146.903832
+    },
+    {
+      "id": "w_cb5e72a7",
+      "name": "Reflections Wee Jasper Campground",
+      "type": "caravan-park",
+      "lat": -35.139437,
+      "lon": 148.680176
+    },
+    {
       "id": "w_cc5807a7",
       "name": "Buddong hut",
       "type": "campsite",
@@ -4431,6 +7826,13 @@
       "type": "caravan-park",
       "lat": -35.99617,
       "lon": 147.15004
+    },
+    {
+      "id": "w_cf622ad6",
+      "name": "Albury Paddlesteamer",
+      "type": "accommodation",
+      "lat": -36.089417,
+      "lon": 146.909253
     },
     {
       "id": "w_d2a0bdf8",
@@ -4454,6 +7856,20 @@
       "lon": 148.62356
     },
     {
+      "id": "w_d48c5abb",
+      "name": "McDonald's",
+      "type": "food",
+      "lat": -34.806804,
+      "lon": 148.882657
+    },
+    {
+      "id": "w_d6df1c5c",
+      "name": "Mobil Mart",
+      "type": "resupply",
+      "lat": -34.840403,
+      "lon": 148.91037
+    },
+    {
       "id": "w_d7f3dcf9",
       "name": "Blowering camp",
       "type": "campsite",
@@ -4466,6 +7882,20 @@
       "type": "trailhead",
       "lat": -35.37303,
       "lon": 148.41629
+    },
+    {
+      "id": "w_dc6ab802",
+      "name": "Buddong Falls (Mid)",
+      "type": "poi",
+      "lat": -35.640679,
+      "lon": 148.248284
+    },
+    {
+      "id": "w_df0b6982",
+      "name": "Hovell Tree Inn",
+      "type": "accommodation",
+      "lat": -36.086104,
+      "lon": 146.910134
     },
     {
       "id": "w_e34a01ce",
@@ -4482,11 +7912,25 @@
       "lon": 147.94122
     },
     {
+      "id": "w_ead6fdef",
+      "name": "Jones Bridge Camp Site",
+      "type": "campsite",
+      "lat": -35.373117,
+      "lon": 148.257263
+    },
+    {
       "id": "w_eae5f76f",
       "name": "Brindabella road",
       "type": "road-crossing",
       "lat": -35.28989,
       "lon": 148.53599
+    },
+    {
+      "id": "w_ecffdcc1",
+      "name": "Fountain Court Motor Inn",
+      "type": "accommodation",
+      "lat": -36.07808,
+      "lon": 146.922089
     },
     {
       "id": "w_f1d70ad9",
@@ -4496,11 +7940,46 @@
       "lon": 148.09433
     },
     {
+      "id": "w_f2bbefa9",
+      "name": "Woolworths",
+      "type": "resupply",
+      "lat": -34.845565,
+      "lon": 148.914918
+    },
+    {
+      "id": "w_f47e40e5",
+      "name": "River Deck Cafe",
+      "type": "food",
+      "lat": -36.08725,
+      "lon": 146.904175
+    },
+    {
+      "id": "w_f589d048",
+      "name": "Mercy Health Albury",
+      "type": "poi",
+      "lat": -36.069197,
+      "lon": 146.91661
+    },
+    {
       "id": "w_f65adcad",
       "name": "Samual Bollard",
       "type": "campsite",
       "lat": -35.89899,
       "lon": 147.32892
+    },
+    {
+      "id": "w_f92779e7",
+      "name": "Paddys River Dam Day Use Area",
+      "type": "poi",
+      "lat": -35.71595,
+      "lon": 148.167578
+    },
+    {
+      "id": "w_faa4153a",
+      "name": "Wee Jasper General Store",
+      "type": "resupply",
+      "lat": -35.110952,
+      "lon": 148.678447
     },
     {
       "id": "w_fadc709c",
@@ -4522,9 +8001,37 @@
       "type": "waypoint",
       "lat": -34.82554,
       "lon": 148.76889
+    },
+    {
+      "id": "w_febf1f27",
+      "name": "The Ripe Tomato",
+      "type": "food",
+      "lat": -36.076121,
+      "lon": 146.945576
+    },
+    {
+      "id": "w_ffefe086",
+      "name": "Ebden & Olive Cafe",
+      "type": "food",
+      "lat": -36.089593,
+      "lon": 146.916798
     }
   ],
   "larapinta": [
+    {
+      "id": "w_0077fa10",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.664139,
+      "lon": 132.795414
+    },
+    {
+      "id": "w_0095b790",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.767049,
+      "lon": 133.000945
+    },
     {
       "id": "w_013ce1c7",
       "name": "Finke River",
@@ -4538,6 +8045,20 @@
       "type": "water-tank",
       "lat": -23.70309,
       "lon": 133.25907
+    },
+    {
+      "id": "w_0355b925",
+      "name": "Hugh View",
+      "type": "poi",
+      "lat": -23.720268,
+      "lon": 133.23799
+    },
+    {
+      "id": "w_03cab5b2",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.629794,
+      "lon": 132.646083
     },
     {
       "id": "w_05e13503",
@@ -4568,11 +8089,32 @@
       "lon": 132.72667
     },
     {
+      "id": "w_0e71e775",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.697915,
+      "lon": 133.320571
+    },
+    {
       "id": "w_0f2e1a6f",
       "name": "Simpsons Gap",
       "type": "campsite",
       "lat": -23.67876,
       "lon": 133.71752
+    },
+    {
+      "id": "w_0fe771d2",
+      "name": "Hilltop Lookout",
+      "type": "poi",
+      "lat": -23.606345,
+      "lon": 132.637275
+    },
+    {
+      "id": "w_13e179fa",
+      "name": "Arenge View",
+      "type": "poi",
+      "lat": -23.6709,
+      "lon": 133.629983
     },
     {
       "id": "w_15ab1436",
@@ -4587,6 +8129,13 @@
       "type": "campsite",
       "lat": -23.71808,
       "lon": 133.34829
+    },
+    {
+      "id": "w_1fc3b082",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.616389,
+      "lon": 132.642665
     },
     {
       "id": "w_20e85086",
@@ -4608,6 +8157,13 @@
       "type": "water-tank",
       "lat": -23.66383,
       "lon": 133.5378
+    },
+    {
+      "id": "w_2f107624",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.675721,
+      "lon": 133.765639
     },
     {
       "id": "w_314d25b4",
@@ -4645,11 +8201,39 @@
       "lon": 133.37741
     },
     {
+      "id": "w_40166adb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.727288,
+      "lon": 132.910341
+    },
+    {
       "id": "w_409f844e",
       "name": "Rocky Gully",
       "type": "campsite",
       "lat": -23.7588,
       "lon": 133.16812
+    },
+    {
+      "id": "w_42192fcb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.718072,
+      "lon": 133.348502
+    },
+    {
+      "id": "w_4b927126",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.671211,
+      "lon": 132.806884
+    },
+    {
+      "id": "w_4d7158c7",
+      "name": "Larapinta Trail Information",
+      "type": "hut",
+      "lat": -23.670823,
+      "lon": 133.884991
     },
     {
       "id": "w_4e43a0ad",
@@ -4673,6 +8257,20 @@
       "lon": 133.07294
     },
     {
+      "id": "w_54587778",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.739038,
+      "lon": 133.191831
+    },
+    {
+      "id": "w_575a4698",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.756502,
+      "lon": 133.14535
+    },
+    {
       "id": "w_58d2a239",
       "name": "R: Serpentine Gorge",
       "type": "resupply",
@@ -4685,6 +8283,27 @@
       "type": "campsite",
       "lat": -23.75874,
       "lon": 133.168
+    },
+    {
+      "id": "w_5c42917a",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.754035,
+      "lon": 133.117263
+    },
+    {
+      "id": "w_5c8a5f07",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.652891,
+      "lon": 132.770894
+    },
+    {
+      "id": "w_62524f7d",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.708013,
+      "lon": 133.409252
     },
     {
       "id": "w_6580bb42",
@@ -4715,6 +8334,20 @@
       "lon": 133.5379
     },
     {
+      "id": "w_743d1ac6",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.667843,
+      "lon": 132.788169
+    },
+    {
+      "id": "w_74cf7228",
+      "name": "Bridle Path Lookout",
+      "type": "poi",
+      "lat": -23.714388,
+      "lon": 133.433585
+    },
+    {
       "id": "w_766c3fd2",
       "name": "Redbank Gorge Trailhead",
       "type": "trailhead",
@@ -4722,11 +8355,32 @@
       "lon": 132.51831
     },
     {
+      "id": "w_7761c7c8",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.576883,
+      "lon": 132.558726
+    },
+    {
       "id": "w_7833c0da",
       "name": "Standley Chasm",
       "type": "campsite",
       "lat": -23.72189,
       "lon": 133.47015
+    },
+    {
+      "id": "w_7a962f3f",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.77107,
+      "lon": 133.097454
+    },
+    {
+      "id": "w_7ad0ca39",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.738717,
+      "lon": 132.938977
     },
     {
       "id": "w_7d1c866d",
@@ -4757,11 +8411,88 @@
       "lon": 133.46935
     },
     {
+      "id": "w_8c630fea",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.71613,
+      "lon": 133.388995
+    },
+    {
+      "id": "w_900df36a",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.641141,
+      "lon": 132.648561
+    },
+    {
+      "id": "w_908ff06f",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.753764,
+      "lon": 133.105257
+    },
+    {
+      "id": "w_90a70b51",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.754484,
+      "lon": 132.98034
+    },
+    {
+      "id": "w_932a19c8",
+      "name": "Lookout",
+      "type": "poi",
+      "lat": -23.678852,
+      "lon": 132.822336
+    },
+    {
       "id": "w_93f929d7",
       "name": "Redbank",
       "type": "campsite",
       "lat": -23.57678,
       "lon": 132.51959
+    },
+    {
+      "id": "w_98c54f78",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.680306,
+      "lon": 133.716968
+    },
+    {
+      "id": "w_9b6da099",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.632465,
+      "lon": 132.72439
+    },
+    {
+      "id": "w_9f0fdc7c",
+      "name": "Hermits Hideaway",
+      "type": "campsite",
+      "lat": -23.673718,
+      "lon": 132.812499
+    },
+    {
+      "id": "w_a1f37aa8",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.700567,
+      "lon": 133.322572
+    },
+    {
+      "id": "w_a2f12feb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.658241,
+      "lon": 132.678899
+    },
+    {
+      "id": "w_a3cdef50",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -23.578982,
+      "lon": 132.521424
     },
     {
       "id": "w_a565dcc6",
@@ -4785,6 +8516,20 @@
       "lon": 132.91015
     },
     {
+      "id": "w_a7e7808d",
+      "name": "Shelter",
+      "type": "hut",
+      "lat": -23.664061,
+      "lon": 133.537702
+    },
+    {
+      "id": "w_a9bdc955",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.608645,
+      "lon": 132.602387
+    },
+    {
       "id": "w_aa151485",
       "name": "Counts Point",
       "type": "campsite",
@@ -4799,11 +8544,25 @@
       "lon": 133.49315
     },
     {
+      "id": "w_ade1dfa3",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.779742,
+      "lon": 133.072467
+    },
+    {
       "id": "w_ae1352c0",
       "name": "Wallaby Gap",
       "type": "water-tank",
       "lat": -23.66833,
       "lon": 133.79496
+    },
+    {
+      "id": "w_aeaccd46",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.779863,
+      "lon": 133.049953
     },
     {
       "id": "w_b1668fab",
@@ -4841,6 +8600,62 @@
       "lon": 132.51864
     },
     {
+      "id": "w_b710095e",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.703487,
+      "lon": 132.878981
+    },
+    {
+      "id": "w_b85094f5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.772351,
+      "lon": 133.073271
+    },
+    {
+      "id": "w_beb58370",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.651076,
+      "lon": 132.703433
+    },
+    {
+      "id": "w_bfd476e4",
+      "name": "Mount Sonder Lookout",
+      "type": "poi",
+      "lat": -23.570502,
+      "lon": 132.534854
+    },
+    {
+      "id": "w_c18a1050",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -23.678569,
+      "lon": 133.717631
+    },
+    {
+      "id": "w_c3a1fe43",
+      "name": "Ellery Creek Big Hole",
+      "type": "poi",
+      "lat": -23.779515,
+      "lon": 133.072947
+    },
+    {
+      "id": "w_c3d8f076",
+      "name": "Fig Spring",
+      "type": "water",
+      "lat": -23.696945,
+      "lon": 133.485249
+    },
+    {
+      "id": "w_c52572c5",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.748456,
+      "lon": 132.97159
+    },
+    {
       "id": "w_c65a691f",
       "name": "Hill Top",
       "type": "campsite",
@@ -4853,6 +8668,13 @@
       "type": "campsite",
       "lat": -23.77276,
       "lon": 133.07277
+    },
+    {
+      "id": "w_ca67611b",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.697561,
+      "lon": 133.312039
     },
     {
       "id": "w_cdc52d70",
@@ -4897,6 +8719,13 @@
       "lon": 133.25918
     },
     {
+      "id": "w_e161f9e4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -23.759063,
+      "lon": 133.1682
+    },
+    {
       "id": "w_e4cceadd",
       "name": "Waterfall Gorge",
       "type": "campsite",
@@ -4911,11 +8740,25 @@
       "lon": 132.7269
     },
     {
+      "id": "w_ea25a0b7",
+      "name": "Reveal Saddle",
+      "type": "poi",
+      "lat": -23.712258,
+      "lon": 133.429194
+    },
+    {
       "id": "w_ee5920ee",
       "name": "Serpentine Chalet Dam",
       "type": "campsite",
       "lat": -23.72719,
       "lon": 132.91019
+    },
+    {
+      "id": "w_f0286b1e",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.600632,
+      "lon": 132.569341
     },
     {
       "id": "w_f131389e",
@@ -4939,11 +8782,46 @@
       "lon": 133.61289
     },
     {
+      "id": "w_f4ade95d",
+      "name": "Gastrolobium Saddle",
+      "type": "poi",
+      "lat": -23.707367,
+      "lon": 133.474854
+    },
+    {
+      "id": "w_fae43494",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.777766,
+      "lon": 133.023977
+    },
+    {
+      "id": "w_fbaf38f4",
+      "name": "Mint Bush Spring",
+      "type": "water",
+      "lat": -23.718226,
+      "lon": 133.357531
+    },
+    {
       "id": "w_fceaac4b",
       "name": "Serpentine Gorge",
       "type": "campsite",
       "lat": -23.75484,
       "lon": 132.98086
+    },
+    {
+      "id": "w_ff0df396",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.698872,
+      "lon": 133.322074
+    },
+    {
+      "id": "w_ff79beac",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -23.659081,
+      "lon": 132.778371
     }
   ]
 }

@@ -11,6 +11,7 @@ npm run build          # Full production build (climate + trails + TS compile + 
 npm run build:trails   # Build trail pages from data/trails/
 npm run fetch:climate  # Fetch climate data for trail locations
 npm run fetch:elevation # Fetch elevation data
+npm run fetch:pois     # Fetch OpenStreetMap POIs along each trail into data/trails/<trail>/pois.json (docs/poi-enrichment.md)
 npm run build:tiles    # Build map tiles
 npm run fetch:fonts    # Fetch font glyphs for map labels
 npm test               # Run all tests with Vitest
@@ -66,7 +67,7 @@ Shared processing modules (used by both web and mobile):
 - `remote/` - Remote-machine world build: bootstrap, detached shard driver, status, R2 upload (runbook: `docs/world-contours-remote-build.md`)
 - `fetch-climate.ts` - Fetches historical climate data for trail locations
 - `fetch-elevation.ts` - Fetches elevation data
-- `fetch-pois.ts` - Fetches points of interest
+- `fetch-pois.ts` - Fetches OpenStreetMap POIs (water, huts, campsites, shops, towns, lookouts…) along each built route (padded bounding-box Overpass queries per route chunk, then an exact per-rule distance filter against the full-resolution track) and writes `data/trails/<trail>/pois.json` for review; the rules, corridor geometry and curated-vs-OSM merge live in `lib/poi-enrichment.ts` (tested). `build-trails.ts` appends the reviewed entries as `source: 'osm'` waypoints. Spec: `docs/poi-enrichment.md`
 - `fetch-font-glyphs.ts` - Fetches font glyphs for map label rendering
 - `build-tiles.ts` - Builds map tiles for offline use
 - `build-grid-tiles.ts` - Builds grid-based map tiles
@@ -97,6 +98,7 @@ Each trail has its own directory containing:
 - `*.gpx` - Original GPX track data
 - `trail.json` - Trail metadata and waypoints
 - `climate.json` - Climate data for locations along the trail
+- `pois.json` - Optional OpenStreetMap enrichment written by `npm run fetch:pois` (never hand-edit entries; add an `osmId` to `rejected` to keep it out). `build-trails.ts` appends its entries as extra waypoints after every curated source, dropping anything a curated waypoint already covers, so curated rows are never displaced. See `docs/poi-enrichment.md`
 - `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
 
 ### Generated Data (`public/data/generated/`)

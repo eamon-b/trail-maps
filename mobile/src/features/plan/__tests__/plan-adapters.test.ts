@@ -21,9 +21,18 @@ import { buildTimeIndex, hoursBetweenIndexed, type TimeIndex } from '@lib/day-ca
 import { resolveGuideTrail } from '../../guide/guide-trail';
 import type { TrailJson } from '../../../services/trail-assets';
 
-// Real bundled fixtures: work in Jest via the require() map.
-const cape = require('../../../../assets/trails/cape_to_cape.json') as TrailJson;
-const aawt = require('../../../../assets/trails/aawt.json') as TrailJson;
+// Real bundled fixtures: work in Jest via the require() map. Rows the build
+// appended from OpenStreetMap (`source: "osm"`, see data/trails/<trail>/pois.json)
+// are stripped so the counts and "no water waypoints" premises below track the
+// curated data rather than the most recent Overpass fetch.
+function curatedOnly(trail: TrailJson): TrailJson {
+  return {
+    ...trail,
+    waypoints: trail.waypoints.filter((w) => (w as { source?: string }).source !== 'osm'),
+  };
+}
+const cape = curatedOnly(require('../../../../assets/trails/cape_to_cape.json') as TrailJson);
+const aawt = curatedOnly(require('../../../../assets/trails/aawt.json') as TrailJson);
 
 /** Build the Naismith time index the splitter consumes. */
 function indexOf(trail: TrailJson): TimeIndex {

@@ -1,389 +1,428 @@
 /**
- * Pre-fetch POI data for trail corridors at build time.
+ * Fetch OpenStreetMap points of interest along each built trail and write
+ * them to `data/trails/<trail>/pois.json` for review. `build-trails.ts` then
+ * appends the reviewed entries as extra waypoints (`source: 'osm'`).
  *
- * This script queries the Overpass API to find water sources, camping,
- * resupply points, transport, and emergency services along each trail.
- * Results are saved to the processed trail JSON files.
+ * What counts as "interesting", how far off the track it may sit, and how OSM
+ * candidates are reconciled with the curated waypoints all live in
+ * `scripts/lib/poi-enrichment.ts` — this file is the network and file I/O.
  *
- * Usage: tsx scripts/fetch-pois.ts [trail-id]
- *   - With no arguments: processes all trails
- *   - With trail-id: processes only that trail
+ * Usage: npm run fetch:pois [-- trail-id ...] [--offline]
+ *   - no ids:     every trail under data/trails/
+ *   - --offline:  reuse the last raw Overpass responses (node_modules/.cache)
+ *                 instead of querying — for iterating on the rules
+ *
+ * Prerequisite: `npm run build:trails` (reads the built route from
+ * public/data/generated/<id>.json). Curated waypoints there are the merge
+ * baseline; the build's own OSM rows are ignored via `source: 'osm'`.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { haversineDistance as haversineDistanceMeters } from '../src/lib/distance.js';
+import * as fs from "fs";
+import * as net from "net";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
-/** Calculate haversine distance in km */
-function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  return haversineDistanceMeters(lat1, lon1, lat2, lon2) / 1000;
-}
+// Node's happy-eyeballs gives each resolved address 250 ms by default. On a
+// slow link that is not enough for the IPv4 handshake, so `fetch` falls over
+// to IPv6 and, where that route is dead, times out — "fetch failed ETIMEDOUT"
+// while curl to the same host works. Give each family a real chance.
+net.setDefaultAutoSelectFamilyAttemptTimeout(3000);
+import {
+  findWaypointVisits,
+  DEFAULT_WAYPOINT_MAX_DISTANCE_METERS,
+} from "../src/lib/trail-ingest.js";
+import type {
+  ProcessedTrail,
+  TrackPoint,
+  TrailWaypoint,
+} from "../src/lib/trail-types.js";
+import {
+  buildCorridor,
+  buildOverpassQuery,
+  candidateToPoiEntry,
+  classifyOsmElement,
+  mergeOsmCandidates,
+  nearestOnTrack,
+  parsePoisFile,
+  planQueryBoxes,
+  POIS_FILE_NOTE,
+  POIS_FILE_SOURCE,
+  POIS_FILENAME,
+  type CuratedWaypointLike,
+  type LatLon,
+  type OsmCandidate,
+  type OsmTags,
+  type PoisFile,
+} from "./lib/poi-enrichment.js";
 
-interface TrailPoint {
-  lat: number;
-  lon: number;
-  ele: number;
-  dist: number;
-}
-
-interface ProcessedTrail {
-  config: {
-    id: string;
-    name: string;
-    [key: string]: unknown;
-  };
-  track: {
-    points: TrailPoint[];
-    totalDistance: number;
-    totalAscent: number;
-    totalDescent: number;
-  };
-  waypoints: Record<string, unknown>[];
-  climate: Record<string, unknown> | null;
-  pois?: POI[];
-}
-
-interface POI {
-  id: number;
-  type: string;
-  category: string;
-  lat: number;
-  lon: number;
-  name: string | null;
-  tags: Record<string, string>;
-  distanceAlongTrail?: number;
-}
-
-interface Bounds {
-  south: number;
-  north: number;
-  west: number;
-  east: number;
-}
-
-// Handle both Windows and Unix paths from import.meta.url
-const SCRIPTS_DIR = path.dirname(
-  process.platform === 'win32'
-    ? new URL(import.meta.url).pathname.slice(1).replace(/\//g, '\\')
-    : new URL(import.meta.url).pathname
+const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, "..");
+const DATA_DIR = path.join(PROJECT_ROOT, "data/trails");
+const GENERATED_DIR = path.join(PROJECT_ROOT, "public/data/generated");
+const RAW_CACHE_DIR = path.join(
+  PROJECT_ROOT,
+  "node_modules/.cache/trail-maps-pois"
 );
-const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '..');
-const GENERATED_DIR = path.join(PROJECT_ROOT, 'data/generated');
 
-const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
-const BUFFER_KM = 2; // Search within 2km of trail
-const MAX_DEGREES_PER_QUERY = 1.0; // Keep queries smaller for reliability
-const DELAY_BETWEEN_QUERIES_MS = 2000; // Overpass rate limiting
+/** Tried in turn on retry: the main instance first, then public mirrors. */
+const OVERPASS_ENDPOINTS = process.env.OVERPASS_ENDPOINT
+  ? [process.env.OVERPASS_ENDPOINT]
+  : [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://overpass.private.coffee/api/interpreter",
+    ];
+const USER_AGENT =
+  "trail-maps-poi-fetch/2 (+https://github.com/eamon-b/trail-maps)";
+const DELAY_BETWEEN_QUERIES_MS = 3000;
+const RETRY_DELAYS_MS = [10_000, 30_000, 60_000, 120_000];
+const QUERY_TIMEOUT_S = 180;
 
-// POI type definitions matching the API
-const POI_CATEGORIES: Record<string, string[]> = {
-  water: [
-    'node["amenity"="drinking_water"]',
-    'node["natural"="spring"]',
-    'node["man_made"="water_tap"]',
-  ],
-  camping: [
-    'node["tourism"="camp_site"]',
-    'node["tourism"="alpine_hut"]',
-    'node["tourism"="wilderness_hut"]',
-    'node["amenity"="shelter"]',
-  ],
-  resupply: [
-    'node["shop"="supermarket"]',
-    'node["shop"="convenience"]',
-    'node["shop"="general"]',
-    'node["amenity"="cafe"]',
-    'node["amenity"="restaurant"]',
-  ],
-  transport: [
-    'node["highway"="bus_stop"]',
-    'node["railway"="station"]',
-    'node["railway"="halt"]',
-  ],
-  emergency: [
-    'node["amenity"="hospital"]',
-    'node["amenity"="pharmacy"]',
-    'node["amenity"="police"]',
-  ],
-};
+interface OverpassElement {
+  type: "node" | "way" | "relation";
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: OsmTags;
+}
+
+interface OverpassResponse {
+  elements?: OverpassElement[];
+  remark?: string;
+}
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getBoundsFromPoints(points: TrailPoint[], bufferKm: number): Bounds {
-  const lats = points.map(p => p.lat);
-  const lons = points.map(p => p.lon);
-
-  // Approximate degrees per km
-  const avgLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const latBuffer = bufferKm / 111;
-  const lonBuffer = bufferKm / (111 * Math.cos(avgLat * Math.PI / 180));
-
-  return {
-    south: Math.min(...lats) - latBuffer,
-    north: Math.max(...lats) + latBuffer,
-    west: Math.min(...lons) - lonBuffer,
-    east: Math.max(...lons) + lonBuffer,
-  };
-}
-
-function splitBounds(bounds: Bounds, maxDegrees: number): Bounds[] {
-  const latSpan = bounds.north - bounds.south;
-  const lonSpan = bounds.east - bounds.west;
-
-  if (latSpan <= maxDegrees && lonSpan <= maxDegrees) {
-    return [bounds];
-  }
-
-  const latChunks = Math.ceil(latSpan / maxDegrees);
-  const lonChunks = Math.ceil(lonSpan / maxDegrees);
-  const latStep = latSpan / latChunks;
-  const lonStep = lonSpan / lonChunks;
-
-  const chunks: Bounds[] = [];
-
-  for (let i = 0; i < latChunks; i++) {
-    for (let j = 0; j < lonChunks; j++) {
-      chunks.push({
-        south: bounds.south + i * latStep,
-        north: bounds.south + (i + 1) * latStep,
-        west: bounds.west + j * lonStep,
-        east: bounds.west + (j + 1) * lonStep,
-      });
+/** POST one query, retrying on rate limits, gateway errors and network hiccups. */
+async function runOverpassQuery(query: string): Promise<OverpassElement[]> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    if (attempt > 0) {
+      const delay = RETRY_DELAYS_MS[attempt - 1];
+      process.stdout.write(
+        ` ${lastError?.message ?? "failed"}; retry ${attempt} in ${delay / 1000}s…`
+      );
+      await sleep(delay);
     }
-  }
-
-  return chunks;
-}
-
-function buildOverpassQuery(bounds: Bounds, categories: string[]): string {
-  const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
-
-  const queries: string[] = [];
-  for (const category of categories) {
-    const selectors = POI_CATEGORIES[category] || [];
-    for (const selector of selectors) {
-      queries.push(`${selector}(${bbox});`);
-    }
-  }
-
-  return `
-    [out:json][timeout:30];
-    (
-      ${queries.join('\n      ')}
-    );
-    out center;
-  `;
-}
-
-async function fetchPOIsForBounds(
-  bounds: Bounds,
-  categories: string[]
-): Promise<{ elements: Array<{ id: number; type: string; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> }> {
-  const query = buildOverpassQuery(bounds, categories);
-
-  const response = await fetch(OVERPASS_ENDPOINT, {
-    method: 'POST',
-    body: `data=${encodeURIComponent(query)}`,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Overpass API error: ${response.status} - ${errorText.slice(0, 200)}`);
-  }
-
-  return response.json();
-}
-
-function categorizePOI(tags: Record<string, string>): string {
-  if (tags.amenity === 'drinking_water' || tags.natural === 'spring' || tags.man_made === 'water_tap') {
-    return 'water';
-  }
-  if (tags.tourism === 'camp_site' || tags.tourism === 'alpine_hut' || tags.tourism === 'wilderness_hut' || tags.amenity === 'shelter') {
-    return 'camping';
-  }
-  if (tags.shop || tags.amenity === 'cafe' || tags.amenity === 'restaurant') {
-    return 'resupply';
-  }
-  if (tags.highway === 'bus_stop' || tags.railway) {
-    return 'transport';
-  }
-  if (tags.amenity === 'hospital' || tags.amenity === 'pharmacy' || tags.amenity === 'police') {
-    return 'emergency';
-  }
-  return 'other';
-}
-
-function findNearestTrailPoint(
-  poi: { lat: number; lon: number },
-  points: TrailPoint[]
-): { distance: number; distanceAlongTrail: number } {
-  let minDistance = Infinity;
-  let distanceAlongTrail = 0;
-
-  for (const point of points) {
-    const dist = haversineDistanceKm(poi.lat, poi.lon, point.lat, point.lon);
-    if (dist < minDistance) {
-      minDistance = dist;
-      distanceAlongTrail = point.dist;
-    }
-  }
-
-  return { distance: minDistance, distanceAlongTrail };
-}
-
-async function processTrail(trailPath: string): Promise<boolean> {
-  const trailId = path.basename(trailPath, '.json');
-  console.log(`\nProcessing: ${trailId}`);
-
-  const content = fs.readFileSync(trailPath, 'utf-8');
-  const trail: ProcessedTrail = JSON.parse(content);
-
-  if (trail.track.points.length === 0) {
-    console.log('  No track points found. Skipping.');
-    return false;
-  }
-
-  // Get bounding box for trail with buffer
-  const bounds = getBoundsFromPoints(trail.track.points, BUFFER_KM);
-  console.log(`  Trail bounds: ${bounds.south.toFixed(2)},${bounds.west.toFixed(2)} to ${bounds.north.toFixed(2)},${bounds.east.toFixed(2)}`);
-
-  // Split into chunks if needed
-  const chunks = splitBounds(bounds, MAX_DEGREES_PER_QUERY);
-  console.log(`  Querying ${chunks.length} area(s)...`);
-
-  const categories = Object.keys(POI_CATEGORIES);
-  const allPOIs: Map<number, POI> = new Map(); // Dedupe by OSM ID
-
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    process.stdout.write(`  Fetching chunk ${i + 1}/${chunks.length}...`);
-
+    const endpoint = OVERPASS_ENDPOINTS[attempt % OVERPASS_ENDPOINTS.length];
     try {
-      const result = await fetchPOIsForBounds(chunk, categories);
-      const elements = result.elements || [];
-
-      for (const el of elements) {
-        const lat = el.lat || el.center?.lat;
-        const lon = el.lon || el.center?.lon;
-        if (!lat || !lon) continue;
-
-        const tags = el.tags || {};
-        const category = categorizePOI(tags);
-
-        // Find distance to trail
-        const { distance, distanceAlongTrail } = findNearestTrailPoint({ lat, lon }, trail.track.points);
-
-        // Only include POIs within buffer distance
-        if (distance <= BUFFER_KM) {
-          allPOIs.set(el.id, {
-            id: el.id,
-            type: el.type,
-            category,
-            lat,
-            lon,
-            name: tags.name || null,
-            tags,
-            distanceAlongTrail,
-          });
-        }
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: `data=${encodeURIComponent(query)}`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": USER_AGENT,
+        },
+        signal: AbortSignal.timeout((QUERY_TIMEOUT_S + 30) * 1000),
+      });
+      if (
+        response.status === 429 ||
+        response.status === 502 ||
+        response.status === 503 ||
+        response.status === 504
+      ) {
+        lastError = new Error(`Overpass ${response.status}`);
+        continue;
       }
-
-      console.log(` found ${elements.length} elements`);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Overpass ${response.status}: ${text.slice(0, 200)}`);
+      }
+      const json = (await response.json()) as OverpassResponse;
+      // Overpass reports runtime failures (timeouts, memory) as 200 + remark.
+      if (json.remark && /error|timed out|runtime/i.test(json.remark)) {
+        lastError = new Error(`Overpass remark: ${json.remark.slice(0, 200)}`);
+        continue;
+      }
+      return json.elements ?? [];
     } catch (error) {
-      console.log(` FAILED: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-
-    // Rate limiting between chunks
-    if (i < chunks.length - 1) {
-      await sleep(DELAY_BETWEEN_QUERIES_MS);
+      if (error instanceof Error && error.message.startsWith("Overpass "))
+        throw error;
+      lastError = error instanceof Error ? error : new Error(String(error));
     }
   }
+  throw lastError ?? new Error("Overpass query failed");
+}
 
-  const pois = Array.from(allPOIs.values());
+/** Every element in every query box, deduped by `type/id`. */
+async function fetchCorridorElements(
+  chunks: LatLon[][]
+): Promise<OverpassElement[]> {
+  const queries = planQueryBoxes(chunks);
+  const byId = new Map<string, OverpassElement>();
+  for (let i = 0; i < queries.length; i++) {
+    process.stdout.write(
+      `  Query ${i + 1}/${queries.length} (${queries[i].length} box(es))…`
+    );
+    const elements = await runOverpassQuery(
+      buildOverpassQuery(queries[i], QUERY_TIMEOUT_S)
+    );
+    for (const el of elements) byId.set(`${el.type}/${el.id}`, el);
+    console.log(` ${elements.length} elements`);
+    if (i < queries.length - 1) await sleep(DELAY_BETWEEN_QUERIES_MS);
+  }
+  return [...byId.values()];
+}
 
-  // Sort by distance along trail
-  pois.sort((a, b) => (a.distanceAlongTrail || 0) - (b.distanceAlongTrail || 0));
+interface TrailSource {
+  trailDir: string;
+  trailId: string;
+  trail: ProcessedTrail;
+}
 
-  // Count by category
-  const counts: Record<string, number> = {};
-  for (const poi of pois) {
-    counts[poi.category] = (counts[poi.category] || 0) + 1;
+/** Map data/trails/<dir> → built trail via trail.json's id. */
+function loadTrailSources(requestedIds: string[]): TrailSource[] {
+  const dirs = fs
+    .readdirSync(DATA_DIR)
+    .map((name) => path.join(DATA_DIR, name))
+    .filter(
+      (p) =>
+        fs.statSync(p).isDirectory() &&
+        fs.existsSync(path.join(p, "trail.json"))
+    );
+
+  const sources: TrailSource[] = [];
+  for (const trailDir of dirs) {
+    const config = JSON.parse(
+      fs.readFileSync(path.join(trailDir, "trail.json"), "utf-8")
+    ) as { id: string };
+    if (requestedIds.length > 0 && !requestedIds.includes(config.id)) continue;
+    const builtPath = path.join(GENERATED_DIR, `${config.id}.json`);
+    if (!fs.existsSync(builtPath)) {
+      throw new Error(
+        `${builtPath} not found — run "npm run build:trails" first`
+      );
+    }
+    sources.push({
+      trailDir,
+      trailId: config.id,
+      trail: JSON.parse(fs.readFileSync(builtPath, "utf-8")) as ProcessedTrail,
+    });
   }
 
-  console.log(`  Total POIs found: ${pois.length}`);
-  for (const [cat, count] of Object.entries(counts)) {
-    console.log(`    - ${cat}: ${count}`);
+  const found = new Set(sources.map((s) => s.trailId));
+  const missing = requestedIds.filter((id) => !found.has(id));
+  if (missing.length > 0)
+    throw new Error(`Unknown trail id(s): ${missing.join(", ")}`);
+  return sources;
+}
+
+/** All curated waypoints in the built trail, from every view, minus OSM rows. */
+function curatedWaypoints(trail: ProcessedTrail): CuratedWaypointLike[] {
+  const rows: CuratedWaypointLike[] = [
+    ...trail.waypoints,
+    ...trail.offTrailWaypoints,
+  ];
+  for (const variant of [...trail.alternates, ...trail.sideTrips]) {
+    for (const wp of variant.waypoints ?? []) rows.push(wp);
+  }
+  return rows.filter((w) => w.source !== "osm");
+}
+
+function readExistingRejected(poisPath: string): string[] {
+  if (!fs.existsSync(poisPath)) return [];
+  const existing = parsePoisFile(
+    JSON.parse(fs.readFileSync(poisPath, "utf-8")),
+    poisPath
+  );
+  return existing.rejected;
+}
+
+async function processTrail(
+  source: TrailSource,
+  offline: boolean
+): Promise<number> {
+  const { trailDir, trailId, trail } = source;
+  console.log(`\n${trailId}`);
+  console.log("-".repeat(trailId.length));
+
+  const mainTrack: TrackPoint[] = trail.track.points;
+  const variantTracks: LatLon[][] = [
+    ...trail.alternates,
+    ...trail.sideTrips,
+  ].map((v) => v.points);
+  const chunks = buildCorridor([mainTrack, ...variantTracks]);
+  console.log(
+    `  Route ${trail.track.totalDistance.toFixed(0)} km + ${variantTracks.length} variant(s) → ${chunks.length} corridor chunk(s)`
+  );
+
+  // Raw Overpass elements — cached so rule tweaks don't re-query.
+  const cachePath = path.join(RAW_CACHE_DIR, `${trailId}.json`);
+  let elements: OverpassElement[];
+  if (offline) {
+    if (!fs.existsSync(cachePath))
+      throw new Error(`--offline but no cache at ${cachePath}`);
+    elements = JSON.parse(
+      fs.readFileSync(cachePath, "utf-8")
+    ) as OverpassElement[];
+    console.log(
+      `  Using ${elements.length} cached elements from ${path.relative(PROJECT_ROOT, cachePath)}`
+    );
+  } else {
+    elements = await fetchCorridorElements(chunks);
+    fs.mkdirSync(RAW_CACHE_DIR, { recursive: true });
+    fs.writeFileSync(cachePath, JSON.stringify(elements));
+    console.log(`  ${elements.length} distinct elements in corridor`);
   }
 
-  // Save to trail data
-  trail.pois = pois;
-  fs.writeFileSync(trailPath, JSON.stringify(trail, null, 2));
-  console.log(`  Updated ${trailPath}`);
+  // Classify, locate against the track, and keep what sits inside its rule's radius.
+  const candidates: OsmCandidate[] = [];
+  const outsideRadius: Record<string, number> = {};
+  let unclassified = 0;
+  for (const el of elements) {
+    const lat = el.lat ?? el.center?.lat;
+    const lon = el.lon ?? el.center?.lon;
+    if (lat === undefined || lon === undefined) continue;
+    const tags = el.tags ?? {};
+    const classified = classifyOsmElement(tags);
+    if (!classified) {
+      unclassified++;
+      continue;
+    }
+    const onMain = nearestOnTrack({ lat, lon }, mainTrack);
+    if (!onMain) continue;
+    let distanceFromTrackM = onMain.distanceM;
+    for (const variant of variantTracks) {
+      const onVariant = nearestOnTrack(
+        { lat, lon },
+        variant.map((p) => ({ ...p, dist: 0 }))
+      );
+      if (onVariant && onVariant.distanceM < distanceFromTrackM)
+        distanceFromTrackM = onVariant.distanceM;
+    }
+    if (distanceFromTrackM > classified.rule.radiusM) {
+      outsideRadius[classified.rule.kind] =
+        (outsideRadius[classified.rule.kind] ?? 0) + 1;
+      continue;
+    }
+    candidates.push({
+      osmId: `${el.type}/${el.id}`,
+      name: classified.name,
+      type: classified.rule.type,
+      kind: classified.rule.kind,
+      lat,
+      lon,
+      distanceFromTrackM,
+      trailKm: onMain.km,
+      tags,
+    });
+  }
+  console.log(
+    `  ${candidates.length} candidates (${unclassified} elements matched no rule, ${Object.values(
+      outsideRadius
+    ).reduce((a, b) => a + b, 0)} outside their rule's radius)`
+  );
 
-  return pois.length > 0;
+  // Reconcile with the curated waypoints.
+  const curated = curatedWaypoints(trail);
+  const merged = mergeOsmCandidates(candidates, curated);
+
+  // A waypoint the main route passes twice fans into two rows that share an
+  // id, which the build refuses. Skip those rather than break the build.
+  const maxDist =
+    trail.config.waypointMaxDistance ?? DEFAULT_WAYPOINT_MAX_DISTANCE_METERS;
+  const kept: OsmCandidate[] = [];
+  const multiVisit: OsmCandidate[] = [];
+  for (const c of merged.kept) {
+    const asWaypoint: TrailWaypoint = {
+      name: c.name,
+      lat: c.lat,
+      lon: c.lon,
+      type: c.type,
+    };
+    const visits = findWaypointVisits([asWaypoint], mainTrack, maxDist);
+    if (visits.length > 1) multiVisit.push(c);
+    else kept.push(c);
+  }
+
+  const reasonCounts: Record<string, number> = {};
+  for (const r of merged.rejected) {
+    const bucket = r.reason.split(" ").slice(0, 3).join(" ");
+    reasonCounts[bucket] = (reasonCounts[bucket] ?? 0) + 1;
+  }
+  console.log(`  ${merged.rejected.length} dropped as already covered:`);
+  for (const [reason, count] of Object.entries(reasonCounts))
+    console.log(`    - ${reason}…: ${count}`);
+  if (multiVisit.length > 0) {
+    console.log(
+      `  ${multiVisit.length} skipped because the route passes them twice:`
+    );
+    for (const c of multiVisit)
+      console.log(`    - ${c.name} (${c.kind}, ${c.osmId})`);
+  }
+
+  const byType: Record<string, number> = {};
+  for (const c of kept) byType[c.type] = (byType[c.type] ?? 0) + 1;
+  console.log(`  ${kept.length} new waypoints:`);
+  for (const [type, count] of Object.entries(byType).sort())
+    console.log(`    - ${type}: ${count}`);
+
+  const poisPath = path.join(trailDir, POIS_FILENAME);
+  const rejected = readExistingRejected(poisPath);
+  const file: PoisFile = {
+    trailId,
+    note: POIS_FILE_NOTE,
+    source: POIS_FILE_SOURCE,
+    fetchedAt: new Date().toISOString(),
+    rejected,
+    pois: kept.map(candidateToPoiEntry),
+  };
+  fs.writeFileSync(poisPath, `${JSON.stringify(file, null, 2)}\n`);
+  console.log(
+    `  Wrote ${path.relative(PROJECT_ROOT, poisPath)}${rejected.length ? ` (kept ${rejected.length} rejected id(s))` : ""}`
+  );
+  return kept.length;
 }
 
 async function main() {
-  console.log('POI Fetch Script');
-  console.log('================');
-
   const args = process.argv.slice(2);
-  const specificTrail = args[0];
+  const offline = args.includes("--offline");
+  const ids = args.filter((a) => !a.startsWith("--"));
 
+  console.log("POI Fetch (OpenStreetMap via Overpass)");
+  console.log("======================================");
   if (!fs.existsSync(GENERATED_DIR)) {
-    console.error(`\nError: Generated data directory not found: ${GENERATED_DIR}`);
-    console.error('Run "npm run build:trails" first to generate trail data.');
-    process.exit(1);
+    throw new Error(
+      `${GENERATED_DIR} not found — run "npm run build:trails" first`
+    );
   }
 
-  // Find trail files to process
-  let trailFiles: string[];
+  const sources = loadTrailSources(ids);
+  console.log(
+    `${sources.length} trail(s)${offline ? " (offline, from cache)" : ""}`
+  );
 
-  if (specificTrail) {
-    const trailPath = path.join(GENERATED_DIR, `${specificTrail}.json`);
-    if (!fs.existsSync(trailPath)) {
-      console.error(`\nError: Trail not found: ${specificTrail}`);
-      console.error(`Expected file: ${trailPath}`);
-      process.exit(1);
-    }
-    trailFiles = [trailPath];
-  } else {
-    trailFiles = fs.readdirSync(GENERATED_DIR)
-      .filter(f => f.endsWith('.json') && f !== 'index.json')
-      .map(f => path.join(GENERATED_DIR, f));
-  }
-
-  if (trailFiles.length === 0) {
-    console.log('\nNo trail files found to process.');
-    return;
-  }
-
-  console.log(`\nFound ${trailFiles.length} trail(s) to process.`);
-
-  let updatedCount = 0;
-
-  for (const trailFile of trailFiles) {
+  let total = 0;
+  const failed: string[] = [];
+  for (let i = 0; i < sources.length; i++) {
     try {
-      const updated = await processTrail(trailFile);
-      if (updated) updatedCount++;
+      total += await processTrail(sources[i], offline);
     } catch (error) {
-      console.error(`  Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(
+        `  ✗ ${sources[i].trailId}: ${error instanceof Error ? error.message : String(error)}`
+      );
+      failed.push(sources[i].trailId);
     }
-
-    // Delay between trails to be nice to Overpass
-    if (trailFiles.indexOf(trailFile) < trailFiles.length - 1) {
+    if (!offline && i < sources.length - 1)
       await sleep(DELAY_BETWEEN_QUERIES_MS);
-    }
   }
 
-  console.log(`\n================`);
-  console.log(`Done. Updated ${updatedCount} trail(s) with POI data.`);
+  console.log(
+    `\nDone: ${total} OSM waypoints across ${sources.length - failed.length} trail(s).`
+  );
+  console.log(
+    "Next: review data/trails/*/pois.json, then `npm run build:trails` to apply."
+  );
+  if (failed.length > 0) {
+    console.error(`Failed: ${failed.join(", ")}`);
+    process.exitCode = 1;
+  }
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
+main().catch((error) => {
+  console.error("Fatal:", error instanceof Error ? error.message : error);
   process.exit(1);
 });

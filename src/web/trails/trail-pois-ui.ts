@@ -23,11 +23,12 @@
 import type { TrailPOI, TrailPOICategory } from '@lib/trail-types';
 import { escapeHtml } from '../web-utils';
 
-/** The five families the enrichment produces, in the order the UI lists them. */
+/** The six families the enrichment produces, in the order the UI lists them. */
 export const POI_CATEGORIES: readonly TrailPOICategory[] = [
   'water',
   'camping',
   'resupply',
+  'restaurant',
   'transport',
   'emergency',
 ] as const;
@@ -36,6 +37,7 @@ export const POI_CATEGORY_LABELS: Record<TrailPOICategory, string> = {
   water: 'Water',
   camping: 'Camping',
   resupply: 'Resupply',
+  restaurant: 'Food & drink',
   transport: 'Transport',
   emergency: 'Emergency',
 };
@@ -48,6 +50,7 @@ export const POI_CATEGORY_ICONS: Record<TrailPOICategory, string> = {
   water: '\u{1F4A7}',
   camping: '⛺',
   resupply: '\u{1F6D2}',
+  restaurant: '\u{1F37D}\uFE0F',
   transport: '\u{1F68C}',
   emergency: '\u{1F3E5}',
 };
@@ -56,7 +59,7 @@ export const POI_CATEGORY_ICONS: Record<TrailPOICategory, string> = {
 export const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 
 /**
- * True for one of the five known categories. Guards against a hand-edited or
+ * True for one of the six known categories. Guards against a hand-edited or
  * future-versioned trail JSON carrying something else.
  */
 export function isPoiCategory(value: unknown): value is TrailPOICategory {
@@ -301,7 +304,14 @@ export const POI_FILTER_STORAGE_KEY = 'trail-maps-poi-filter';
 export function defaultPoiFilterState(): PoiFilterState {
   return {
     enabled: true,
-    categories: { water: true, camping: true, resupply: true, transport: true, emergency: true },
+    categories: {
+      water: true,
+      camping: true,
+      resupply: true,
+      restaurant: true,
+      transport: true,
+      emergency: true,
+    },
   };
 }
 
@@ -348,6 +358,7 @@ export function countPoisByCategory(pois: readonly TrailPOI[]): Record<TrailPOIC
     water: 0,
     camping: 0,
     resupply: 0,
+    restaurant: 0,
     transport: 0,
     emergency: 0,
   };
@@ -360,7 +371,7 @@ export function countPoisByCategory(pois: readonly TrailPOI[]): Record<TrailPOIC
 /**
  * The POIs the current filter shows.
  *
- * An unknown category (not one of the five) is shown whenever the master switch
+ * An unknown category (not one of the six) is shown whenever the master switch
  * is on: no checkbox could turn it off, so hiding it by default would make it
  * unreachable.
  */

@@ -335,7 +335,7 @@ export function resolveEndpoint(args: string[], env: NodeJS.ProcessEnv = process
 
 /**
  * Resolve the Overpass `[timeout:]`, in seconds. A whole-corridor query for all
- * five POI types needs far more than the library's 22 s on a busy mirror.
+ * six POI types needs far more than the library's 22 s on a busy mirror.
  */
 export function resolveTimeoutSeconds(args: string[]): number {
   const raw = optionValue(args, '--timeout', 'a number of seconds');

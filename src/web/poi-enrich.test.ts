@@ -156,7 +156,7 @@ describe('enrichImportedTrail', () => {
     expect(result.pois[0].distanceAlongTrail).toBeLessThan(22);
   });
 
-  it('queries one corridor for all five POI types and reports progress', async () => {
+  it('queries one corridor for all six POI types and reports progress', async () => {
     const { createFetcher, seen } = fixedFetchers([]);
     const stages: string[] = [];
 
@@ -170,7 +170,7 @@ describe('enrichImportedTrail', () => {
     expect(seen.areas).toHaveLength(1);
     expect(seen.areas[0]).toHaveProperty('corridor');
     expect(seen.types[0].slice().sort()).toEqual(
-      ['camping', 'emergency', 'resupply', 'transport', 'water'].sort()
+      ['camping', 'emergency', 'restaurant', 'resupply', 'transport', 'water'].sort()
     );
     expect(stages).toContain('fetch');
     expect(stages[stages.length - 1]).toBe('done');

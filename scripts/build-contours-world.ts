@@ -67,6 +67,8 @@ import {
 } from './tile-pipeline.js';
 import { DEFAULT_DEM_DIR, demTilePath, tileListCachePath } from './fetch-dem-copernicus.js';
 import {
+  bufferedDem1DegTiles,
+  CELL_BUFFER_DEG,
   cellsForShard,
   dem1DegTiles,
   demTileName,
@@ -75,11 +77,6 @@ import {
   shardForCell,
   worldCellFromId,
   worldShardNames,
-  WORLD_LAT_MAX,
-  WORLD_LAT_MIN,
-  WORLD_LON_MAX,
-  WORLD_LON_MIN,
-  type DemTile,
   type WorldCell,
 } from './lib/world-grid.js';
 
@@ -91,11 +88,6 @@ const DEFAULT_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles');
 
 /** Work dir / output name used when no shard is named (--bbox / --cell only). */
 const CUSTOM_SELECTION_NAME = 'custom';
-
-// Warp buffer around each cell so cubic-spline smoothing sees the same
-// neighbourhood pixels as the adjacent cell; contours are clipped back to the
-// exact cell extent so features tile seamlessly without duplication.
-const CELL_BUFFER_DEG = 0.01; // ~1.1km
 
 // Warp resolution (2x the 1 arc-second source density). Shared with the
 // Australia build and the per-trail pipeline so contours from every producer
@@ -315,27 +307,11 @@ export function localDemTilesForCell(demDir: string, cell: WorldCell): string[] 
 }
 
 /**
- * Every 1° DEM tile the cell's *buffered* warp window reads — its own four plus
- * the neighbours the 0.01° buffer laps into. Purging must respect the buffer:
- * deleting a neighbour tile early would silently warp nodata into the smoothing
- * neighbourhood at the cell edge.
+ * Every 1° DEM tile the cell's *buffered* warp window reads. Defined next to
+ * the grid so the fetcher downloads exactly what the build opens and
+ * `--purge-dem` refcounts exactly what the build still needs.
  */
-export function bufferedDemTilesForCell(cell: WorldCell): DemTile[] {
-  const tiles: DemTile[] = [];
-  const lonStart = Math.floor(cell.west - CELL_BUFFER_DEG);
-  const lonEnd = Math.ceil(cell.east + CELL_BUFFER_DEG);
-  const latStart = Math.floor(cell.south - CELL_BUFFER_DEG);
-  const latEnd = Math.ceil(cell.north + CELL_BUFFER_DEG);
-  for (let lon = lonStart; lon < lonEnd; lon++) {
-    for (let lat = latStart; lat < latEnd; lat++) {
-      // The lattice has no wrap-around tiles; clamp at the antimeridian/poles.
-      if (lon < WORLD_LON_MIN || lon >= WORLD_LON_MAX) continue;
-      if (lat < WORLD_LAT_MIN || lat >= WORLD_LAT_MAX) continue;
-      tiles.push({ lat, lon });
-    }
-  }
-  return tiles;
-}
+export const bufferedDemTilesForCell = bufferedDem1DegTiles;
 
 /**
  * How many of this run's still-pending cells need each 1° DEM tile. Computed up
@@ -792,6 +768,12 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     ensureDir(workDir);
+    // Step 0 of the shard path lives outside this branch, so without this a
+    // `--cell X --fetch-dem` silently skipped the fetch and then died in
+    // buildDemMosaic with "DEM directory not found".
+    if (args.fetchDem) {
+      fetchDemForCells([cell], args);
+    }
     if (!fs.existsSync(mosaicVrtPath(workDir))) {
       buildDemMosaic(args.demDir, mosaicVrtPath(workDir), args.verbose);
     }

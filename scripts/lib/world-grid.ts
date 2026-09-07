@@ -24,6 +24,20 @@ export const WORLD_LON_MAX = 180;
 export const WORLD_LAT_MIN = -90;
 export const WORLD_LAT_MAX = 90;
 
+/**
+ * Warp buffer around each cell, in degrees (~1.1 km).
+ *
+ * The contour build warps a cell with this much margin so cubic-spline
+ * smoothing sees the same neighbourhood pixels as the adjacent cell, then
+ * clips the contours back to the exact cell extent. It lives here, next to the
+ * grid, because BOTH the build and the DEM fetcher have to agree on it: the
+ * build reads the buffered tile set, so the fetcher must download the buffered
+ * tile set. When they disagreed, cells whose neighbour ring was missing warped
+ * nodata into the buffer and their contours stopped ~12 m short of the cell
+ * edge, leaving hairline gaps along every shard boundary.
+ */
+export const CELL_BUFFER_DEG = 0.01;
+
 /** A 2°×2° grid cell in signed degrees. */
 export interface WorldCell {
   id: string;
@@ -192,6 +206,35 @@ export function dem1DegTiles(cell: WorldCell): DemTile[] {
   const tiles: DemTile[] = [];
   for (let lon = cell.west; lon < cell.east; lon++) {
     for (let lat = cell.south; lat < cell.north; lat++) {
+      tiles.push({ lat, lon });
+    }
+  }
+  return tiles;
+}
+
+/**
+ * Every 1° DEM tile the cell's *buffered* warp window reads — its own four plus
+ * the neighbours the buffer laps into.
+ *
+ * This is the set the build actually opens, so it is also the set the fetcher
+ * must download and the set `--purge-dem` must refcount. Using the unbuffered
+ * `dem1DegTiles` for any of those three is the bug this function exists to
+ * prevent.
+ */
+export function bufferedDem1DegTiles(
+  cell: WorldCell,
+  bufferDeg: number = CELL_BUFFER_DEG
+): DemTile[] {
+  const tiles: DemTile[] = [];
+  const lonStart = Math.floor(cell.west - bufferDeg);
+  const lonEnd = Math.ceil(cell.east + bufferDeg);
+  const latStart = Math.floor(cell.south - bufferDeg);
+  const latEnd = Math.ceil(cell.north + bufferDeg);
+  for (let lon = lonStart; lon < lonEnd; lon++) {
+    for (let lat = latStart; lat < latEnd; lat++) {
+      // The lattice has no wrap-around tiles; clamp at the antimeridian/poles.
+      if (lon < WORLD_LON_MIN || lon >= WORLD_LON_MAX) continue;
+      if (lat < WORLD_LAT_MIN || lat >= WORLD_LAT_MAX) continue;
       tiles.push({ lat, lon });
     }
   }

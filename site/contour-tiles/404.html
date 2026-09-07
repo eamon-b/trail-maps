@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Not found — Australian Contour Tiles</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root {
+    --ink: #2b2620;
+    --ink-soft: #6b6257;
+    --paper: #faf8f5;
+    --line: #e6e0d8;
+    --contour: #a67442;
+    --accent: #3d6b4f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 480px; padding: 40px 20px; }
+  .code {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--contour);
+    margin: 0 0 8px;
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 12px; letter-spacing: -0.02em; }
+  p { color: var(--ink-soft); margin: 0 0 20px; }
+  a { color: var(--accent); }
+  nav { display: flex; flex-wrap: wrap; gap: 8px; }
+  nav a {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    text-decoration: none;
+  }
+  nav a:hover { border-color: var(--contour); }
+</style>
+</head>
+<body>
+<main>
+  <p class="code">404</p>
+  <h1>No such page</h1>
+  <p>That path isn't part of this site. The contour tiles and the documentation are on the front page.</p>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/#quick-start">Quick start</a>
+    <a href="/#download">Download</a>
+  </nav>
+</main>
+</body>
+</html>

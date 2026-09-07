@@ -1,0 +1,32 @@
+{
+  "id": "te_araroa",
+  "name": "Te Araroa",
+  "shortName": "Te Araroa",
+  "region": "New Zealand (Cape Reinga to Bluff)",
+  "lengthKm": 3073.2,
+  "gpxFile": "te-araroa-2026-27.gpx",
+  "dedupeWaypoints": true,
+  "waypointMaxDistance": 1000,
+  "trackClassification": {
+    "mainRoutePatterns": ["^Te Araroa$"],
+    "alternatePatterns": ["^Bypass: "],
+    "ignorePatterns": ["Transport Connectors$"],
+    "fallbackToLongest": false
+  },
+  "description": "New Zealand's 3,000 km trail from Cape Reinga to Bluff. Built from the Te Araroa Trust's official 2026-27 KMZ (v45): the trust's own chainage, elevation on every vertex, and the DOC hut/campsite records. lengthKm is the trust's official chainage, which excludes the ferry and water-taxi links.",
+  "direction": {
+    "default": "SOBO",
+    "reversed": "NOBO"
+  },
+  "climateLocations": [
+    { "name": "Kaitaia", "lat": -35.11, "lon": 173.26 },
+    { "name": "Auckland", "lat": -36.85, "lon": 174.76 },
+    { "name": "Taumarunui", "lat": -38.88, "lon": 175.26 },
+    { "name": "Wellington", "lat": -41.29, "lon": 174.78 },
+    { "name": "St Arnaud", "lat": -41.8, "lon": 172.85 },
+    { "name": "Methven", "lat": -43.63, "lon": 171.65 },
+    { "name": "Wanaka", "lat": -44.7, "lon": 169.14 },
+    { "name": "Invercargill", "lat": -46.41, "lon": 168.35 }
+  ],
+  "climateFile": "climate.json"
+}

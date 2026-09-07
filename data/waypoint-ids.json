@@ -4945,5 +4945,3451 @@
       "lat": -23.75484,
       "lon": 132.98086
     }
+  ],
+  "te_araroa": [
+    {
+      "id": "w_015898c1",
+      "name": "1800 km",
+      "type": "waypoint",
+      "lat": -41.231165,
+      "lon": 173.957978
+    },
+    {
+      "id": "w_01793455",
+      "name": "Wenderholm Regional Park",
+      "type": "campsite",
+      "lat": -36.53633,
+      "lon": 174.704998
+    },
+    {
+      "id": "w_017c8073",
+      "name": "990 km",
+      "type": "waypoint",
+      "lat": -38.620375,
+      "lon": 175.504083
+    },
+    {
+      "id": "w_017d1750",
+      "name": "Browning Hut",
+      "type": "hut",
+      "lat": -41.413724,
+      "lon": 173.276834
+    },
+    {
+      "id": "w_020e6a48",
+      "name": "300 km",
+      "type": "waypoint",
+      "lat": -35.433415,
+      "lon": 174.358107
+    },
+    {
+      "id": "w_0213a2c5",
+      "name": "3040 km",
+      "type": "waypoint",
+      "lat": -46.429443,
+      "lon": 168.340919
+    },
+    {
+      "id": "w_02a90331",
+      "name": "Kiwi Burn Hut",
+      "type": "hut",
+      "lat": -45.355171,
+      "lon": 168.09082
+    },
+    {
+      "id": "w_0304631a",
+      "name": "120 km",
+      "type": "waypoint",
+      "lat": -35.125034,
+      "lon": 173.305728
+    },
+    {
+      "id": "w_034e2b12",
+      "name": "690 km",
+      "type": "waypoint",
+      "lat": -37.225431,
+      "lon": 175.036576
+    },
+    {
+      "id": "w_03b7d2a6",
+      "name": "Waiopehu Hut",
+      "type": "hut",
+      "lat": -40.726329,
+      "lon": 175.357078
+    },
+    {
+      "id": "w_0512a607",
+      "name": "Downes Hut",
+      "type": "hut",
+      "lat": -39.726423,
+      "lon": 175.131593
+    },
+    {
+      "id": "w_05cc8c26",
+      "name": "1970 km",
+      "type": "waypoint",
+      "lat": -41.7308,
+      "lon": 172.991056
+    },
+    {
+      "id": "w_06372166",
+      "name": "570 km",
+      "type": "waypoint",
+      "lat": -36.633756,
+      "lon": 174.708207
+    },
+    {
+      "id": "w_064629e9",
+      "name": "530 km",
+      "type": "waypoint",
+      "lat": -36.486804,
+      "lon": 174.598833
+    },
+    {
+      "id": "w_065dceec",
+      "name": "Twilight Campsite",
+      "type": "campsite",
+      "lat": -34.506654,
+      "lon": 172.703343
+    },
+    {
+      "id": "w_069e5971",
+      "name": "2780 km",
+      "type": "waypoint",
+      "lat": -45.225,
+      "lon": 168.18035
+    },
+    {
+      "id": "w_07649504",
+      "name": "2180 km",
+      "type": "waypoint",
+      "lat": -42.740646,
+      "lon": 171.827359
+    },
+    {
+      "id": "w_076de78f",
+      "name": "740 km",
+      "type": "waypoint",
+      "lat": -37.51781,
+      "lon": 175.153731
+    },
+    {
+      "id": "w_08051996",
+      "name": "2050 km",
+      "type": "waypoint",
+      "lat": -42.150292,
+      "lon": 172.660538
+    },
+    {
+      "id": "w_08084208",
+      "name": "Rokeby Hut",
+      "type": "hut",
+      "lat": -42.433613,
+      "lon": 172.463449
+    },
+    {
+      "id": "w_086be0a4",
+      "name": "1880 km",
+      "type": "waypoint",
+      "lat": -41.377258,
+      "lon": 173.368638
+    },
+    {
+      "id": "w_08d03379",
+      "name": "2710 km",
+      "type": "waypoint",
+      "lat": -44.963349,
+      "lon": 168.806019
+    },
+    {
+      "id": "w_09abfaa2",
+      "name": "2280 km",
+      "type": "waypoint",
+      "lat": -43.27047,
+      "lon": 171.541826
+    },
+    {
+      "id": "w_09f02c1a",
+      "name": "1010 km",
+      "type": "waypoint",
+      "lat": -38.680877,
+      "lon": 175.443207
+    },
+    {
+      "id": "w_0a2a828c",
+      "name": "2650 km",
+      "type": "waypoint",
+      "lat": -44.65322,
+      "lon": 169.055296
+    },
+    {
+      "id": "w_0aa0bb07",
+      "name": "Pakiri Beach Holiday Park",
+      "type": "food",
+      "lat": -36.24553,
+      "lon": 174.72292
+    },
+    {
+      "id": "w_0aac13fe",
+      "name": "Boyle Campsite",
+      "type": "campsite",
+      "lat": -42.516639,
+      "lon": 172.386459
+    },
+    {
+      "id": "w_0b0710e3",
+      "name": "1920 km",
+      "type": "waypoint",
+      "lat": -41.518932,
+      "lon": 173.218002
+    },
+    {
+      "id": "w_0bf8cef9",
+      "name": "2420 km",
+      "type": "waypoint",
+      "lat": -43.883275,
+      "lon": 170.619539
+    },
+    {
+      "id": "w_0c6df037",
+      "name": "Cannibal Gorge Hut",
+      "type": "hut",
+      "lat": -42.326738,
+      "lon": 172.429877
+    },
+    {
+      "id": "w_0cbf8461",
+      "name": "Mid Wairoa Hut",
+      "type": "hut",
+      "lat": -41.570687,
+      "lon": 173.12154
+    },
+    {
+      "id": "w_0d106d93",
+      "name": "Blackbridge Road Campsite",
+      "type": "campsite",
+      "lat": -35.236231,
+      "lon": 173.658972
+    },
+    {
+      "id": "w_0dc251aa",
+      "name": "920 km",
+      "type": "waypoint",
+      "lat": -38.441874,
+      "lon": 175.301202
+    },
+    {
+      "id": "w_0f4d952a",
+      "name": "Taumarunui Holiday Park",
+      "type": "caravan-park",
+      "lat": -38.882235,
+      "lon": 175.306675
+    },
+    {
+      "id": "w_0fa11df0",
+      "name": "Martin's Hut",
+      "type": "hut",
+      "lat": -46.262878,
+      "lon": 167.860163
+    },
+    {
+      "id": "w_10698763",
+      "name": "1090 km",
+      "type": "waypoint",
+      "lat": -38.990158,
+      "lon": 175.407443
+    },
+    {
+      "id": "w_106f556e",
+      "name": "2320 km",
+      "type": "waypoint",
+      "lat": -43.428227,
+      "lon": 171.315667
+    },
+    {
+      "id": "w_109c83a7",
+      "name": "600 km",
+      "type": "waypoint",
+      "lat": -36.803952,
+      "lon": 174.793312
+    },
+    {
+      "id": "w_119a4569",
+      "name": "2510 km",
+      "type": "waypoint",
+      "lat": -44.263863,
+      "lon": 169.985634
+    },
+    {
+      "id": "w_12045369",
+      "name": "2470 km",
+      "type": "waypoint",
+      "lat": -44.115738,
+      "lon": 170.254098
+    },
+    {
+      "id": "w_122ad303",
+      "name": "2880 km",
+      "type": "waypoint",
+      "lat": -45.839031,
+      "lon": 167.857734
+    },
+    {
+      "id": "w_1315b2ca",
+      "name": "1210 km",
+      "type": "waypoint",
+      "lat": -39.175124,
+      "lon": 175.276131
+    },
+    {
+      "id": "w_136e24b9",
+      "name": "John Tait Hut",
+      "type": "hut",
+      "lat": -41.974753,
+      "lon": 172.768679
+    },
+    {
+      "id": "w_146b334e",
+      "name": "Telford Campsite",
+      "type": "campsite",
+      "lat": -45.803916,
+      "lon": 167.881164
+    },
+    {
+      "id": "w_154d553c",
+      "name": "1660 km",
+      "type": "waypoint",
+      "lat": -40.923768,
+      "lon": 174.977185
+    },
+    {
+      "id": "w_155fdc95",
+      "name": "2630 km",
+      "type": "waypoint",
+      "lat": -44.668767,
+      "lon": 169.163499
+    },
+    {
+      "id": "w_16099fd7",
+      "name": "2950 km",
+      "type": "waypoint",
+      "lat": -46.195292,
+      "lon": 167.839887
+    },
+    {
+      "id": "w_1644dc3b",
+      "name": "1870 km",
+      "type": "waypoint",
+      "lat": -41.365941,
+      "lon": 173.454977
+    },
+    {
+      "id": "w_165b607d",
+      "name": "2600 km",
+      "type": "waypoint",
+      "lat": -44.560567,
+      "lon": 169.369602
+    },
+    {
+      "id": "w_16c391cc",
+      "name": "610 km",
+      "type": "waypoint",
+      "lat": -36.871482,
+      "lon": 174.768468
+    },
+    {
+      "id": "w_1748b36e",
+      "name": "Ngapae Holiday Park",
+      "type": "caravan-park",
+      "lat": -35.037955,
+      "lon": 173.171675
+    },
+    {
+      "id": "w_17c8ad10",
+      "name": "2700 km",
+      "type": "waypoint",
+      "lat": -44.914156,
+      "lon": 168.828311
+    },
+    {
+      "id": "w_18049171",
+      "name": "Lakehead Hut",
+      "type": "hut",
+      "lat": -41.875648,
+      "lon": 172.821978
+    },
+    {
+      "id": "w_183ece30",
+      "name": "Pakituhi Hut",
+      "type": "hut",
+      "lat": -44.581661,
+      "lon": 169.356167
+    },
+    {
+      "id": "w_186c3735",
+      "name": "Camerons Hut",
+      "type": "hut",
+      "lat": -42.710919,
+      "lon": 171.952104
+    },
+    {
+      "id": "w_18fb4b3d",
+      "name": "Nichols Hut",
+      "type": "hut",
+      "lat": -40.810234,
+      "lon": 175.37592
+    },
+    {
+      "id": "w_196e18b9",
+      "name": "Ambury Regional Park",
+      "type": "campsite",
+      "lat": -36.946154,
+      "lon": 174.75745
+    },
+    {
+      "id": "w_1980dc12",
+      "name": "Mangawaiiti Campsite",
+      "type": "campsite",
+      "lat": -39.284105,
+      "lon": 174.905213
+    },
+    {
+      "id": "w_199fb76d",
+      "name": "Pahautea Hut Campsite",
+      "type": "hut",
+      "lat": -37.99375,
+      "lon": 175.092244
+    },
+    {
+      "id": "w_1bdc468d",
+      "name": "West Harper Hut",
+      "type": "hut",
+      "lat": -43.099772,
+      "lon": 171.607037
+    },
+    {
+      "id": "w_1c05d832",
+      "name": "Mingha Bivvy",
+      "type": "hut",
+      "lat": -42.922636,
+      "lon": 171.630113
+    },
+    {
+      "id": "w_1daa0697",
+      "name": "Hukatere Lodge Camp",
+      "type": "campsite",
+      "lat": -34.900835,
+      "lon": 173.092928
+    },
+    {
+      "id": "w_1e30c0f4",
+      "name": "1990 km",
+      "type": "waypoint",
+      "lat": -41.800928,
+      "lon": 172.853648
+    },
+    {
+      "id": "w_1ecc4c1c",
+      "name": "Aparima Hut",
+      "type": "hut",
+      "lat": -45.70739,
+      "lon": 167.999323
+    },
+    {
+      "id": "w_1f240a0a",
+      "name": "2310 km",
+      "type": "waypoint",
+      "lat": -43.398311,
+      "lon": 171.363105
+    },
+    {
+      "id": "w_1fca1941",
+      "name": "2330 km",
+      "type": "waypoint",
+      "lat": -43.489159,
+      "lon": 171.251807
+    },
+    {
+      "id": "w_1fca336b",
+      "name": "2480 km",
+      "type": "waypoint",
+      "lat": -44.176618,
+      "lon": 170.195963
+    },
+    {
+      "id": "w_1fdc6767",
+      "name": "1690 km",
+      "type": "waypoint",
+      "lat": -41.123688,
+      "lon": 174.852229
+    },
+    {
+      "id": "w_20a0e831",
+      "name": "Royal Hut",
+      "type": "hut",
+      "lat": -43.725884,
+      "lon": 170.734199
+    },
+    {
+      "id": "w_20b13f8a",
+      "name": "Starveall Hut",
+      "type": "hut",
+      "lat": -41.458609,
+      "lon": 173.240733
+    },
+    {
+      "id": "w_2165e2d7",
+      "name": "1620 km",
+      "type": "waypoint",
+      "lat": -40.874501,
+      "lon": 175.233199
+    },
+    {
+      "id": "w_2256f8ff",
+      "name": "Waitewaewae Hut",
+      "type": "hut",
+      "lat": -40.830943,
+      "lon": 175.306219
+    },
+    {
+      "id": "w_22c299df",
+      "name": "1340 km",
+      "type": "waypoint",
+      "lat": -39.637751,
+      "lon": 175.171591
+    },
+    {
+      "id": "w_22f76d4d",
+      "name": "1200 km",
+      "type": "waypoint",
+      "lat": -39.167889,
+      "lon": 175.344184
+    },
+    {
+      "id": "w_22f96dea",
+      "name": "Whakapapa Holiday Park",
+      "type": "caravan-park",
+      "lat": -39.202392,
+      "lon": 175.54006
+    },
+    {
+      "id": "w_2313983e",
+      "name": "Whakapapaiti Hut",
+      "type": "hut",
+      "lat": -39.23758,
+      "lon": 175.517871
+    },
+    {
+      "id": "w_234a1419",
+      "name": "930 km",
+      "type": "waypoint",
+      "lat": -38.46707,
+      "lon": 175.390714
+    },
+    {
+      "id": "w_23be287f",
+      "name": "1950 km",
+      "type": "waypoint",
+      "lat": -41.591759,
+      "lon": 173.019661
+    },
+    {
+      "id": "w_24dfe9f5",
+      "name": "2800 km",
+      "type": "waypoint",
+      "lat": -45.3582,
+      "lon": 168.109966
+    },
+    {
+      "id": "w_252a6e72",
+      "name": "1580 km",
+      "type": "waypoint",
+      "lat": -40.696645,
+      "lon": 175.356725
+    },
+    {
+      "id": "w_253b0eb5",
+      "name": "210 km",
+      "type": "waypoint",
+      "lat": -35.217436,
+      "lon": 173.867639
+    },
+    {
+      "id": "w_25702f1d",
+      "name": "Blue Lake Hut",
+      "type": "hut",
+      "lat": -42.057953,
+      "lon": 172.655727
+    },
+    {
+      "id": "w_259c1440",
+      "name": "Wanaka Top 10 Holiday Park",
+      "type": "accommodation",
+      "lat": -44.705129,
+      "lon": 169.109566
+    },
+    {
+      "id": "w_25aa8e9a",
+      "name": "Mangapurua Campsite",
+      "type": "campsite",
+      "lat": -39.281839,
+      "lon": 174.9667
+    },
+    {
+      "id": "w_25e2b06e",
+      "name": "320 km",
+      "type": "waypoint",
+      "lat": -35.506019,
+      "lon": 174.43598
+    },
+    {
+      "id": "w_27cf6cfe",
+      "name": "270 km",
+      "type": "waypoint",
+      "lat": -35.295196,
+      "lon": 174.22777
+    },
+    {
+      "id": "w_284a9948",
+      "name": "950 km",
+      "type": "waypoint",
+      "lat": -38.508563,
+      "lon": 175.507893
+    },
+    {
+      "id": "w_285476b5",
+      "name": "2530 km",
+      "type": "waypoint",
+      "lat": -44.257115,
+      "lon": 169.817474
+    },
+    {
+      "id": "w_297d7ffa",
+      "name": "Red Hills Hut",
+      "type": "hut",
+      "lat": -41.731159,
+      "lon": 172.991565
+    },
+    {
+      "id": "w_29a46b9f",
+      "name": "2030 km",
+      "type": "waypoint",
+      "lat": -42.008232,
+      "lon": 172.682164
+    },
+    {
+      "id": "w_29b971c5",
+      "name": "2220 km",
+      "type": "waypoint",
+      "lat": -42.94229,
+      "lon": 171.622443
+    },
+    {
+      "id": "w_2aa77332",
+      "name": "50 km",
+      "type": "waypoint",
+      "lat": -34.75309,
+      "lon": 172.959109
+    },
+    {
+      "id": "w_2bdea821",
+      "name": "1770 km",
+      "type": "waypoint",
+      "lat": -41.144934,
+      "lon": 174.150277
+    },
+    {
+      "id": "w_2bf1a610",
+      "name": "Kerr Bay Campsite",
+      "type": "campsite",
+      "lat": -41.805773,
+      "lon": 172.847958
+    },
+    {
+      "id": "w_2c2ca254",
+      "name": "Puketi Recreation Area Campsite",
+      "type": "campsite",
+      "lat": -35.211417,
+      "lon": 173.793234
+    },
+    {
+      "id": "w_2cb041a8",
+      "name": "830 km",
+      "type": "waypoint",
+      "lat": -37.978313,
+      "lon": 175.088948
+    },
+    {
+      "id": "w_2cee31de",
+      "name": "1380 km",
+      "type": "waypoint",
+      "lat": -39.804181,
+      "lon": 175.086944
+    },
+    {
+      "id": "w_2dbfea50",
+      "name": "Upper Mangatawhiri Campground",
+      "type": "campsite",
+      "lat": -37.090823,
+      "lon": 175.154783
+    },
+    {
+      "id": "w_2dcc4070",
+      "name": "1700 km",
+      "type": "waypoint",
+      "lat": -41.162351,
+      "lon": 174.810131
+    },
+    {
+      "id": "w_2e381cdc",
+      "name": "Ongarue Campsite",
+      "type": "campsite",
+      "lat": -38.720919,
+      "lon": 175.302387
+    },
+    {
+      "id": "w_2eac32b0",
+      "name": "Eco Village Mistletoe Bay",
+      "type": "caravan-park",
+      "lat": -41.223056,
+      "lon": 173.972313
+    },
+    {
+      "id": "w_2fa69100",
+      "name": "Red Beach Top 10 Holiday Park",
+      "type": "accommodation",
+      "lat": -36.602166,
+      "lon": 174.705907
+    },
+    {
+      "id": "w_31364f4f",
+      "name": "Bulls Motel and Holiday Park",
+      "type": "accommodation",
+      "lat": -40.185086,
+      "lon": 175.387038
+    },
+    {
+      "id": "w_31914436",
+      "name": "2810 km",
+      "type": "waypoint",
+      "lat": -45.425963,
+      "lon": 168.074619
+    },
+    {
+      "id": "w_31b837ad",
+      "name": "Crooked Spur Hut",
+      "type": "hut",
+      "lat": -43.623891,
+      "lon": 170.789844
+    },
+    {
+      "id": "w_3263406a",
+      "name": "840 km",
+      "type": "waypoint",
+      "lat": -38.035947,
+      "lon": 175.060058
+    },
+    {
+      "id": "w_32a3c386",
+      "name": "20 km",
+      "type": "waypoint",
+      "lat": -34.546682,
+      "lon": 172.754023
+    },
+    {
+      "id": "w_32c26da3",
+      "name": "1400 km",
+      "type": "waypoint",
+      "lat": -39.906763,
+      "lon": 175.057089
+    },
+    {
+      "id": "w_339ff232",
+      "name": "2160 km",
+      "type": "waypoint",
+      "lat": -42.695771,
+      "lon": 172.036572
+    },
+    {
+      "id": "w_3470c54a",
+      "name": "2620 km",
+      "type": "waypoint",
+      "lat": -44.651324,
+      "lon": 169.246936
+    },
+    {
+      "id": "w_34ee9898",
+      "name": "Paihia Top 10 Holiday Park",
+      "type": "accommodation",
+      "lat": -35.300327,
+      "lon": 174.10178
+    },
+    {
+      "id": "w_355980a3",
+      "name": "1040 km",
+      "type": "waypoint",
+      "lat": -38.743574,
+      "lon": 175.263493
+    },
+    {
+      "id": "w_35909bec",
+      "name": "640 km",
+      "type": "waypoint",
+      "lat": -36.99891,
+      "lon": 174.800334
+    },
+    {
+      "id": "w_359faf19",
+      "name": "2970 km",
+      "type": "waypoint",
+      "lat": -46.246053,
+      "lon": 167.932527
+    },
+    {
+      "id": "w_35b0f38d",
+      "name": "Pāhautea Hut",
+      "type": "hut",
+      "lat": -37.993378,
+      "lon": 175.09188
+    },
+    {
+      "id": "w_35b40f60",
+      "name": "1180 km",
+      "type": "waypoint",
+      "lat": -39.222198,
+      "lon": 175.485683
+    },
+    {
+      "id": "w_35d51038",
+      "name": "1320 km",
+      "type": "waypoint",
+      "lat": -39.530068,
+      "lon": 175.060943
+    },
+    {
+      "id": "w_35f0b885",
+      "name": "Porters Creek Hut",
+      "type": "hut",
+      "lat": -41.653573,
+      "lon": 172.997262
+    },
+    {
+      "id": "w_385fbe53",
+      "name": "910 km",
+      "type": "waypoint",
+      "lat": -38.391644,
+      "lon": 175.231989
+    },
+    {
+      "id": "w_3912fa61",
+      "name": "Lagoon Saddle A Frame Hut",
+      "type": "hut",
+      "lat": -43.055133,
+      "lon": 171.601687
+    },
+    {
+      "id": "w_39131c5c",
+      "name": "3070 km",
+      "type": "waypoint",
+      "lat": -46.619808,
+      "lon": 168.331773
+    },
+    {
+      "id": "w_3925b1a4",
+      "name": "2430 km",
+      "type": "waypoint",
+      "lat": -43.938341,
+      "lon": 170.553304
+    },
+    {
+      "id": "w_393d5490",
+      "name": "Camp Waipu Cove",
+      "type": "food",
+      "lat": -36.028469,
+      "lon": 174.504368
+    },
+    {
+      "id": "w_397011b2",
+      "name": "2750 km",
+      "type": "waypoint",
+      "lat": -44.993155,
+      "lon": 168.248903
+    },
+    {
+      "id": "w_3a15d31c",
+      "name": "Ada Pass Hut",
+      "type": "hut",
+      "lat": -42.304374,
+      "lon": 172.457329
+    },
+    {
+      "id": "w_3a762496",
+      "name": "Hacket Hut",
+      "type": "hut",
+      "lat": -41.415837,
+      "lon": 173.245972
+    },
+    {
+      "id": "w_3b3f4067",
+      "name": "1610 km",
+      "type": "waypoint",
+      "lat": -40.83098,
+      "lon": 175.308693
+    },
+    {
+      "id": "w_3b84b234",
+      "name": "Mangapurua Trig Campsite",
+      "type": "campsite",
+      "lat": -39.211243,
+      "lon": 175.080949
+    },
+    {
+      "id": "w_3c293a33",
+      "name": "970 km",
+      "type": "waypoint",
+      "lat": -38.564299,
+      "lon": 175.636539
+    },
+    {
+      "id": "w_3c2b96df",
+      "name": "1370 km",
+      "type": "waypoint",
+      "lat": -39.824493,
+      "lon": 175.143238
+    },
+    {
+      "id": "w_3d518740",
+      "name": "80 km",
+      "type": "waypoint",
+      "lat": -34.976536,
+      "lon": 173.139335
+    },
+    {
+      "id": "w_3da4f0d0",
+      "name": "2940 km",
+      "type": "waypoint",
+      "lat": -46.129179,
+      "lon": 167.84018
+    },
+    {
+      "id": "w_3e10b5b7",
+      "name": "2960 km",
+      "type": "waypoint",
+      "lat": -46.195168,
+      "lon": 167.920818
+    },
+    {
+      "id": "w_3e4551f2",
+      "name": "Greenstone Hut",
+      "type": "hut",
+      "lat": -44.980115,
+      "lon": 168.261607
+    },
+    {
+      "id": "w_3e8331f0",
+      "name": "2870 km",
+      "type": "waypoint",
+      "lat": -45.782677,
+      "lon": 167.897414
+    },
+    {
+      "id": "w_3e9f1769",
+      "name": "1470 km",
+      "type": "waypoint",
+      "lat": -40.180734,
+      "lon": 175.434495
+    },
+    {
+      "id": "w_3ed47ed4",
+      "name": "1590 km",
+      "type": "waypoint",
+      "lat": -40.735494,
+      "lon": 175.40599
+    },
+    {
+      "id": "w_3faccf7c",
+      "name": "Fern Burn Hut",
+      "type": "hut",
+      "lat": -44.73976,
+      "lon": 168.984674
+    },
+    {
+      "id": "w_4052c86f",
+      "name": "2830 km",
+      "type": "waypoint",
+      "lat": -45.546856,
+      "lon": 167.935485
+    },
+    {
+      "id": "w_40a628c8",
+      "name": "780 km",
+      "type": "waypoint",
+      "lat": -37.747731,
+      "lon": 175.260793
+    },
+    {
+      "id": "w_40a6c66e",
+      "name": "1760 km",
+      "type": "waypoint",
+      "lat": -41.110882,
+      "lon": 174.167791
+    },
+    {
+      "id": "w_40bb4666",
+      "name": "Manuka Hut",
+      "type": "hut",
+      "lat": -43.5356,
+      "lon": 171.254487
+    },
+    {
+      "id": "w_41ae4885",
+      "name": "2990 km",
+      "type": "waypoint",
+      "lat": -46.343075,
+      "lon": 167.845183
+    },
+    {
+      "id": "w_4218dc6b",
+      "name": "2640 km",
+      "type": "waypoint",
+      "lat": -44.699091,
+      "lon": 169.125135
+    },
+    {
+      "id": "w_425beace",
+      "name": "480 km",
+      "type": "waypoint",
+      "lat": -36.211801,
+      "lon": 174.691171
+    },
+    {
+      "id": "w_4340605a",
+      "name": "1750 km",
+      "type": "waypoint",
+      "lat": -41.119555,
+      "lon": 174.192965
+    },
+    {
+      "id": "w_43aad799",
+      "name": "Te Matawai Hut",
+      "type": "hut",
+      "lat": -40.737542,
+      "lon": 175.398661
+    },
+    {
+      "id": "w_43cd1989",
+      "name": "2170 km",
+      "type": "waypoint",
+      "lat": -42.716675,
+      "lon": 171.931644
+    },
+    {
+      "id": "w_47133d85",
+      "name": "1630 km",
+      "type": "waypoint",
+      "lat": -40.901505,
+      "lon": 175.167171
+    },
+    {
+      "id": "w_493948e8",
+      "name": "Bealey Hut",
+      "type": "hut",
+      "lat": -43.037768,
+      "lon": 171.641758
+    },
+    {
+      "id": "w_49a3e362",
+      "name": "890 km",
+      "type": "waypoint",
+      "lat": -38.298339,
+      "lon": 175.135082
+    },
+    {
+      "id": "w_49dc04c4",
+      "name": "Lake Middleton Campsite",
+      "type": "campsite",
+      "lat": -44.273947,
+      "lon": 169.849623
+    },
+    {
+      "id": "w_4afcb5d6",
+      "name": "2920 km",
+      "type": "waypoint",
+      "lat": -46.025202,
+      "lon": 167.903459
+    },
+    {
+      "id": "w_4b370e41",
+      "name": "Double Hut",
+      "type": "hut",
+      "lat": -43.495506,
+      "lon": 171.260504
+    },
+    {
+      "id": "w_4b4de82e",
+      "name": "Klondyke Corner Campsite",
+      "type": "campsite",
+      "lat": -43.002032,
+      "lon": 171.589249
+    },
+    {
+      "id": "w_4c8a60ad",
+      "name": "560 km",
+      "type": "waypoint",
+      "lat": -36.602201,
+      "lon": 174.686249
+    },
+    {
+      "id": "w_4d1f3f9b",
+      "name": "Kaniwhaniwha Campsite",
+      "type": "campsite",
+      "lat": -37.938422,
+      "lon": 175.074801
+    },
+    {
+      "id": "w_4d513899",
+      "name": "Slaty Hut",
+      "type": "hut",
+      "lat": -41.485452,
+      "lon": 173.278458
+    },
+    {
+      "id": "w_50d19d6b",
+      "name": "2380 km",
+      "type": "waypoint",
+      "lat": -43.628347,
+      "lon": 170.768244
+    },
+    {
+      "id": "w_50e10408",
+      "name": "2740 km",
+      "type": "waypoint",
+      "lat": -44.944281,
+      "lon": 168.310355
+    },
+    {
+      "id": "w_50e3c2e2",
+      "name": "3050 km",
+      "type": "waypoint",
+      "lat": -46.491792,
+      "lon": 168.381626
+    },
+    {
+      "id": "w_5190ffb7",
+      "name": "180 km",
+      "type": "waypoint",
+      "lat": -35.228273,
+      "lon": 173.67059
+    },
+    {
+      "id": "w_51bc1557",
+      "name": "Makene Road Campsite",
+      "type": "campsite",
+      "lat": -35.211542,
+      "lon": 173.513544
+    },
+    {
+      "id": "w_522f9734",
+      "name": "1420 km",
+      "type": "waypoint",
+      "lat": -40.02881,
+      "lon": 175.08871
+    },
+    {
+      "id": "w_52c23353",
+      "name": "Boyle Flat Hut",
+      "type": "hut",
+      "lat": -42.466369,
+      "lon": 172.459921
+    },
+    {
+      "id": "w_532b5b93",
+      "name": "Taipo Hut",
+      "type": "hut",
+      "lat": -45.050924,
+      "lon": 168.222257
+    },
+    {
+      "id": "w_53590e4f",
+      "name": "Greenstone Campsite",
+      "type": "campsite",
+      "lat": -44.97932,
+      "lon": 168.262733
+    },
+    {
+      "id": "w_53ffac42",
+      "name": "2500 km",
+      "type": "waypoint",
+      "lat": -44.287109,
+      "lon": 170.086893
+    },
+    {
+      "id": "w_54ca4a58",
+      "name": "860 km",
+      "type": "waypoint",
+      "lat": -38.170269,
+      "lon": 175.016216
+    },
+    {
+      "id": "w_54d0307b",
+      "name": "1810 km",
+      "type": "waypoint",
+      "lat": -41.269163,
+      "lon": 173.909985
+    },
+    {
+      "id": "w_55d132a4",
+      "name": "2200 km",
+      "type": "waypoint",
+      "lat": -42.786659,
+      "lon": 171.618956
+    },
+    {
+      "id": "w_560c48fd",
+      "name": "1000 km",
+      "type": "waypoint",
+      "lat": -38.67269,
+      "lon": 175.49514
+    },
+    {
+      "id": "w_5798d557",
+      "name": "430 km",
+      "type": "waypoint",
+      "lat": -35.992049,
+      "lon": 174.461201
+    },
+    {
+      "id": "w_57d99e80",
+      "name": "1740 km",
+      "type": "waypoint",
+      "lat": -41.096437,
+      "lon": 174.230748
+    },
+    {
+      "id": "w_587aed68",
+      "name": "250 km",
+      "type": "waypoint",
+      "lat": -35.304528,
+      "lon": 174.109356
+    },
+    {
+      "id": "w_594558f2",
+      "name": "Tarn Hut",
+      "type": "hut",
+      "lat": -41.55183,
+      "lon": 173.168029
+    },
+    {
+      "id": "w_59a13d3e",
+      "name": "Kinloch Campsite",
+      "type": "campsite",
+      "lat": -44.843717,
+      "lon": 168.349994
+    },
+    {
+      "id": "w_59a56765",
+      "name": "1940 km",
+      "type": "waypoint",
+      "lat": -41.606405,
+      "lon": 173.091716
+    },
+    {
+      "id": "w_5a29f64f",
+      "name": "Picton Holiday Park",
+      "type": "caravan-park",
+      "lat": -41.288598,
+      "lon": 174.014984
+    },
+    {
+      "id": "w_5a43a700",
+      "name": "Happy Dayz Accomodation",
+      "type": "accommodation",
+      "lat": -36.340531,
+      "lon": 174.740361
+    },
+    {
+      "id": "w_5a6790f7",
+      "name": "Christopher (Ada) Cullers Hut",
+      "type": "hut",
+      "lat": -42.283155,
+      "lon": 172.557766
+    },
+    {
+      "id": "w_5ab2ad85",
+      "name": "1350 km",
+      "type": "waypoint",
+      "lat": -39.705225,
+      "lon": 175.127793
+    },
+    {
+      "id": "w_5b6f7ac7",
+      "name": "1300 km",
+      "type": "waypoint",
+      "lat": -39.398662,
+      "lon": 175.024457
+    },
+    {
+      "id": "w_5ca8099b",
+      "name": "1440 km",
+      "type": "waypoint",
+      "lat": -40.152795,
+      "lon": 175.188433
+    },
+    {
+      "id": "w_5cb64a4d",
+      "name": "Hope Kiwi Lodge",
+      "type": "hut",
+      "lat": -42.642031,
+      "lon": 172.237401
+    },
+    {
+      "id": "w_5cc972ba",
+      "name": "Havelock Holiday Park",
+      "type": "accommodation",
+      "lat": -41.278872,
+      "lon": 173.768289
+    },
+    {
+      "id": "w_5d53414e",
+      "name": "450 km",
+      "type": "waypoint",
+      "lat": -36.055829,
+      "lon": 174.568235
+    },
+    {
+      "id": "w_5ef17ecb",
+      "name": "Tin Hut (Private)",
+      "type": "campsite",
+      "lat": -44.449798,
+      "lon": 169.589393
+    },
+    {
+      "id": "w_5f42a50e",
+      "name": "2680 km",
+      "type": "waypoint",
+      "lat": -44.800407,
+      "lon": 168.87065
+    },
+    {
+      "id": "w_6016b8c1",
+      "name": "580 km",
+      "type": "waypoint",
+      "lat": -36.674287,
+      "lon": 174.747014
+    },
+    {
+      "id": "w_615664c3",
+      "name": "340 km",
+      "type": "waypoint",
+      "lat": -35.607723,
+      "lon": 174.459071
+    },
+    {
+      "id": "w_61edbab4",
+      "name": "1270 km",
+      "type": "waypoint",
+      "lat": -39.201082,
+      "lon": 175.000278
+    },
+    {
+      "id": "w_636f4605",
+      "name": "Whakahoro Campsite",
+      "type": "campsite",
+      "lat": -39.109242,
+      "lon": 175.070879
+    },
+    {
+      "id": "w_63c4ff1e",
+      "name": "660 km",
+      "type": "waypoint",
+      "lat": -37.051216,
+      "lon": 174.917107
+    },
+    {
+      "id": "w_63c69a27",
+      "name": "Johnsons Campsite",
+      "type": "campsite",
+      "lat": -39.198118,
+      "lon": 175.03289
+    },
+    {
+      "id": "w_63cc3c3b",
+      "name": "1450 km",
+      "type": "waypoint",
+      "lat": -40.187364,
+      "lon": 175.261375
+    },
+    {
+      "id": "w_64402644",
+      "name": "1220 km",
+      "type": "waypoint",
+      "lat": -39.093588,
+      "lon": 175.249112
+    },
+    {
+      "id": "w_64d59ab0",
+      "name": "220 km",
+      "type": "waypoint",
+      "lat": -35.211824,
+      "lon": 173.940014
+    },
+    {
+      "id": "w_655adbf2",
+      "name": "2150 km",
+      "type": "waypoint",
+      "lat": -42.695026,
+      "lon": 172.133992
+    },
+    {
+      "id": "w_655c1779",
+      "name": "2450 km",
+      "type": "waypoint",
+      "lat": -44.055948,
+      "lon": 170.427777
+    },
+    {
+      "id": "w_6741aac5",
+      "name": "630 km",
+      "type": "waypoint",
+      "lat": -36.966816,
+      "lon": 174.773514
+    },
+    {
+      "id": "w_68159ed2",
+      "name": "2390 km",
+      "type": "waypoint",
+      "lat": -43.703851,
+      "lon": 170.759292
+    },
+    {
+      "id": "w_68b5dbd7",
+      "name": "1840 km",
+      "type": "waypoint",
+      "lat": -41.275259,
+      "lon": 173.666491
+    },
+    {
+      "id": "w_68ff69e9",
+      "name": "Macetown Campsite",
+      "type": "campsite",
+      "lat": -44.866892,
+      "lon": 168.820981
+    },
+    {
+      "id": "w_694731c6",
+      "name": "1130 km",
+      "type": "waypoint",
+      "lat": -39.062867,
+      "lon": 175.640581
+    },
+    {
+      "id": "w_69576d88",
+      "name": "2580 km",
+      "type": "waypoint",
+      "lat": -44.478467,
+      "lon": 169.501948
+    },
+    {
+      "id": "w_6ae29612",
+      "name": "Comyns Hut",
+      "type": "hut",
+      "lat": -43.428753,
+      "lon": 171.366987
+    },
+    {
+      "id": "w_6b904eae",
+      "name": "1080 km",
+      "type": "waypoint",
+      "lat": -38.971734,
+      "lon": 175.338559
+    },
+    {
+      "id": "w_6bafe467",
+      "name": "Upper Travers Hut",
+      "type": "hut",
+      "lat": -42.020288,
+      "lon": 172.749853
+    },
+    {
+      "id": "w_6bfa1117",
+      "name": "Tīeke Marae/kāinga Campsite",
+      "type": "campsite",
+      "lat": -39.337573,
+      "lon": 174.992696
+    },
+    {
+      "id": "w_6c3443fd",
+      "name": "2560 km",
+      "type": "waypoint",
+      "lat": -44.436495,
+      "lon": 169.645462
+    },
+    {
+      "id": "w_6c542cce",
+      "name": "350 km",
+      "type": "waypoint",
+      "lat": -35.649853,
+      "lon": 174.486333
+    },
+    {
+      "id": "w_6d41f0c6",
+      "name": "1530 km",
+      "type": "waypoint",
+      "lat": -40.473637,
+      "lon": 175.603708
+    },
+    {
+      "id": "w_6dcb7588",
+      "name": "2020 km",
+      "type": "waypoint",
+      "lat": -42.009244,
+      "lon": 172.759811
+    },
+    {
+      "id": "w_6de35b69",
+      "name": "1890 km",
+      "type": "waypoint",
+      "lat": -41.400519,
+      "lon": 173.287902
+    },
+    {
+      "id": "w_6f0ce720",
+      "name": "1330 km",
+      "type": "waypoint",
+      "lat": -39.586072,
+      "lon": 175.112222
+    },
+    {
+      "id": "w_6fa8c8b5",
+      "name": "Trustpower Campsite",
+      "type": "campsite",
+      "lat": -43.221748,
+      "lon": 171.457451
+    },
+    {
+      "id": "w_6ffc7a90",
+      "name": "750 km",
+      "type": "waypoint",
+      "lat": -37.602629,
+      "lon": 175.15948
+    },
+    {
+      "id": "w_7100a702",
+      "name": "1260 km",
+      "type": "waypoint",
+      "lat": -39.212648,
+      "lon": 175.088524
+    },
+    {
+      "id": "w_71ebcd5a",
+      "name": "3060 km",
+      "type": "waypoint",
+      "lat": -46.552466,
+      "lon": 168.300137
+    },
+    {
+      "id": "w_71fea7e1",
+      "name": "730 km",
+      "type": "waypoint",
+      "lat": -37.436147,
+      "lon": 175.131714
+    },
+    {
+      "id": "w_72024262",
+      "name": "2080 km",
+      "type": "waypoint",
+      "lat": -42.353017,
+      "lon": 172.521953
+    },
+    {
+      "id": "w_72346bc0",
+      "name": "2120 km",
+      "type": "waypoint",
+      "lat": -42.579676,
+      "lon": 172.364503
+    },
+    {
+      "id": "w_7274a0bd",
+      "name": "Lower Mangatawhiri Campsite",
+      "type": "campsite",
+      "lat": -37.1347,
+      "lon": 175.163502
+    },
+    {
+      "id": "w_73f820e4",
+      "name": "2190 km",
+      "type": "waypoint",
+      "lat": -42.761722,
+      "lon": 171.717641
+    },
+    {
+      "id": "w_741938fc",
+      "name": "940 km",
+      "type": "waypoint",
+      "lat": -38.467633,
+      "lon": 175.462921
+    },
+    {
+      "id": "w_7473df70",
+      "name": "Hope Halfway Hut",
+      "type": "hut",
+      "lat": -42.615627,
+      "lon": 172.29809
+    },
+    {
+      "id": "w_74e8090b",
+      "name": "1280 km",
+      "type": "waypoint",
+      "lat": -39.271945,
+      "lon": 174.972786
+    },
+    {
+      "id": "w_7567ce0a",
+      "name": "Hamilton Hut",
+      "type": "hut",
+      "lat": -43.129339,
+      "lon": 171.629787
+    },
+    {
+      "id": "w_7570bea1",
+      "name": "850 km",
+      "type": "waypoint",
+      "lat": -38.101332,
+      "lon": 175.040662
+    },
+    {
+      "id": "w_75e3d7a7",
+      "name": "650 km",
+      "type": "waypoint",
+      "lat": -36.997964,
+      "lon": 174.876419
+    },
+    {
+      "id": "w_75e75ebb",
+      "name": "Ngaporo Campsite",
+      "type": "campsite",
+      "lat": -39.425026,
+      "lon": 175.035612
+    },
+    {
+      "id": "w_76718e46",
+      "name": "Camp Bay Campsite",
+      "type": "campsite",
+      "lat": -41.127669,
+      "lon": 174.147346
+    },
+    {
+      "id": "w_7681355d",
+      "name": "1020 km",
+      "type": "waypoint",
+      "lat": -38.690712,
+      "lon": 175.392583
+    },
+    {
+      "id": "w_77473905",
+      "name": "2100 km",
+      "type": "waypoint",
+      "lat": -42.49052,
+      "lon": 172.470437
+    },
+    {
+      "id": "w_77c8bfd6",
+      "name": "Mavora Lakes Campsite",
+      "type": "campsite",
+      "lat": -45.26801,
+      "lon": 168.174998
+    },
+    {
+      "id": "w_798466c7",
+      "name": "2770 km",
+      "type": "waypoint",
+      "lat": -45.14433,
+      "lon": 168.181894
+    },
+    {
+      "id": "w_79862673",
+      "name": "Riverside Holiday Park",
+      "type": "accommodation",
+      "lat": -36.130821,
+      "lon": 174.585028
+    },
+    {
+      "id": "w_79940a4d",
+      "name": "10 km",
+      "type": "waypoint",
+      "lat": -34.489918,
+      "lon": 172.687835
+    },
+    {
+      "id": "w_79a45b35",
+      "name": "Ōrewa Beach Holiday Park",
+      "type": "caravan-park",
+      "lat": -36.596545,
+      "lon": 174.699284
+    },
+    {
+      "id": "w_7cf8abd2",
+      "name": "West Sabine Hut",
+      "type": "hut",
+      "lat": -42.007795,
+      "lon": 172.683954
+    },
+    {
+      "id": "w_7d72a87c",
+      "name": "1540 km",
+      "type": "waypoint",
+      "lat": -40.528422,
+      "lon": 175.567995
+    },
+    {
+      "id": "w_7dc05ba4",
+      "name": "Anne Hut",
+      "type": "hut",
+      "lat": -42.351117,
+      "lon": 172.528927
+    },
+    {
+      "id": "w_7dcf7555",
+      "name": "1930 km",
+      "type": "waypoint",
+      "lat": -41.565554,
+      "lon": 173.158053
+    },
+    {
+      "id": "w_7f64e4b1",
+      "name": "1960 km",
+      "type": "waypoint",
+      "lat": -41.658682,
+      "lon": 172.986324
+    },
+    {
+      "id": "w_7f654d0d",
+      "name": "1140 km",
+      "type": "waypoint",
+      "lat": -39.109282,
+      "lon": 175.655129
+    },
+    {
+      "id": "w_7f6eae45",
+      "name": "Top Timaru Hut",
+      "type": "hut",
+      "lat": -44.470482,
+      "lon": 169.501394
+    },
+    {
+      "id": "w_7fb37d89",
+      "name": "620 km",
+      "type": "waypoint",
+      "lat": -36.922677,
+      "lon": 174.776574
+    },
+    {
+      "id": "w_800ba6dc",
+      "name": "Lake Tekapo Motels & Holiday Park",
+      "type": "caravan-park",
+      "lat": -44.00081,
+      "lon": 170.46452
+    },
+    {
+      "id": "w_80978c31",
+      "name": "Roses Hut",
+      "type": "hut",
+      "lat": -44.804479,
+      "lon": 168.86266
+    },
+    {
+      "id": "w_80c940ed",
+      "name": "Locke Stream Hut",
+      "type": "hut",
+      "lat": -42.739808,
+      "lon": 171.830155
+    },
+    {
+      "id": "w_83697cd4",
+      "name": "Goat Pass Hut",
+      "type": "hut",
+      "lat": -42.901564,
+      "lon": 171.624823
+    },
+    {
+      "id": "w_83a544c7",
+      "name": "Cowshed Bay Campsite",
+      "type": "campsite",
+      "lat": -41.202075,
+      "lon": 174.031907
+    },
+    {
+      "id": "w_83f874ed",
+      "name": "1100 km",
+      "type": "waypoint",
+      "lat": -38.984106,
+      "lon": 175.472638
+    },
+    {
+      "id": "w_84386a8e",
+      "name": "880 km",
+      "type": "waypoint",
+      "lat": -38.248267,
+      "lon": 175.087678
+    },
+    {
+      "id": "w_847be6f6",
+      "name": "2720 km",
+      "type": "waypoint",
+      "lat": -45.005864,
+      "lon": 168.763601
+    },
+    {
+      "id": "w_8486b4a7",
+      "name": "2370 km",
+      "type": "waypoint",
+      "lat": -43.625695,
+      "lon": 170.870429
+    },
+    {
+      "id": "w_8511323b",
+      "name": "1650 km",
+      "type": "waypoint",
+      "lat": -40.876825,
+      "lon": 175.033297
+    },
+    {
+      "id": "w_85c8ad46",
+      "name": "1490 km",
+      "type": "waypoint",
+      "lat": -40.265817,
+      "lon": 175.611007
+    },
+    {
+      "id": "w_85fdd964",
+      "name": "Mangaturuturu Hut",
+      "type": "hut",
+      "lat": -39.297329,
+      "lon": 175.502028
+    },
+    {
+      "id": "w_860f57a7",
+      "name": "Nikau Bay",
+      "type": "campsite",
+      "lat": -35.643241,
+      "lon": 174.489648
+    },
+    {
+      "id": "w_86555200",
+      "name": "East Ahuriri Hut",
+      "type": "hut",
+      "lat": -44.347381,
+      "lon": 169.757898
+    },
+    {
+      "id": "w_87654e41",
+      "name": "150 km",
+      "type": "waypoint",
+      "lat": -35.219174,
+      "lon": 173.47188
+    },
+    {
+      "id": "w_879b4de2",
+      "name": "2110 km",
+      "type": "waypoint",
+      "lat": -42.518926,
+      "lon": 172.38033
+    },
+    {
+      "id": "w_880bcc83",
+      "name": "770 km",
+      "type": "waypoint",
+      "lat": -37.693934,
+      "lon": 175.196863
+    },
+    {
+      "id": "w_888d4b50",
+      "name": "160 km",
+      "type": "waypoint",
+      "lat": -35.225372,
+      "lon": 173.544935
+    },
+    {
+      "id": "w_8913cd8f",
+      "name": "2490 km",
+      "type": "waypoint",
+      "lat": -44.215782,
+      "lon": 170.140531
+    },
+    {
+      "id": "w_89aa0931",
+      "name": "510 km",
+      "type": "waypoint",
+      "lat": -36.358953,
+      "lon": 174.622323
+    },
+    {
+      "id": "w_8a260f09",
+      "name": "Moturimu Shelter",
+      "type": "hut",
+      "lat": -40.503822,
+      "lon": 175.583522
+    },
+    {
+      "id": "w_8b9b5b21",
+      "name": "Queenstown Holiday Park Creeksyde",
+      "type": "caravan-park",
+      "lat": -45.025767,
+      "lon": 168.660448
+    },
+    {
+      "id": "w_8bcdf310",
+      "name": "Middy Creek Hut",
+      "type": "hut",
+      "lat": -41.384112,
+      "lon": 173.392697
+    },
+    {
+      "id": "w_8d2886bb",
+      "name": "2090 km",
+      "type": "waypoint",
+      "lat": -42.410252,
+      "lon": 172.46207
+    },
+    {
+      "id": "w_8d642ab5",
+      "name": "60 km",
+      "type": "waypoint",
+      "lat": -34.826137,
+      "lon": 173.022563
+    },
+    {
+      "id": "w_8e308def",
+      "name": "Repeater Campground",
+      "type": "campsite",
+      "lat": -37.099397,
+      "lon": 175.142
+    },
+    {
+      "id": "w_900670dc",
+      "name": "1850 km",
+      "type": "waypoint",
+      "lat": -41.297256,
+      "lon": 173.573169
+    },
+    {
+      "id": "w_900e6b29",
+      "name": "680 km",
+      "type": "waypoint",
+      "lat": -37.185254,
+      "lon": 174.996623
+    },
+    {
+      "id": "w_9023da4f",
+      "name": "810 km",
+      "type": "waypoint",
+      "lat": -37.847986,
+      "lon": 175.095833
+    },
+    {
+      "id": "w_9190d1ee",
+      "name": "Black Rock Campsite",
+      "type": "campsite",
+      "lat": -41.200919,
+      "lon": 174.064901
+    },
+    {
+      "id": "w_91b31390",
+      "name": "Mangaehuehu Hut",
+      "type": "hut",
+      "lat": -39.343089,
+      "lon": 175.55
+    },
+    {
+      "id": "w_91edf744",
+      "name": "1390 km",
+      "type": "waypoint",
+      "lat": -39.860095,
+      "lon": 175.092131
+    },
+    {
+      "id": "w_920d8d64",
+      "name": "Christopher Hut",
+      "type": "hut",
+      "lat": -42.288496,
+      "lon": 172.565031
+    },
+    {
+      "id": "w_9272bdc0",
+      "name": "Puketi Forest Hut",
+      "type": "hut",
+      "lat": -35.211223,
+      "lon": 173.793902
+    },
+    {
+      "id": "w_932ce554",
+      "name": "Stodys Hut",
+      "type": "hut",
+      "lat": -44.544274,
+      "lon": 169.435642
+    },
+    {
+      "id": "w_93d588dd",
+      "name": "1500 km",
+      "type": "waypoint",
+      "lat": -40.340156,
+      "lon": 175.628058
+    },
+    {
+      "id": "w_9425d2f8",
+      "name": "Peel Forest Campground",
+      "type": "campsite",
+      "lat": -43.889986,
+      "lon": 171.266154
+    },
+    {
+      "id": "w_945c7b21",
+      "name": "1720 km",
+      "type": "waypoint",
+      "lat": -41.267926,
+      "lon": 174.775109
+    },
+    {
+      "id": "w_94b9b0b2",
+      "name": "1570 km",
+      "type": "waypoint",
+      "lat": -40.647109,
+      "lon": 175.376176
+    },
+    {
+      "id": "w_94ff0f13",
+      "name": "Old Man Hut",
+      "type": "hut",
+      "lat": -41.525224,
+      "lon": 173.270884
+    },
+    {
+      "id": "w_964c2a3a",
+      "name": "2400 km",
+      "type": "waypoint",
+      "lat": -43.728452,
+      "lon": 170.670069
+    },
+    {
+      "id": "w_971efc3a",
+      "name": "Boielles Campsite",
+      "type": "campsite",
+      "lat": -40.872654,
+      "lon": 175.230821
+    },
+    {
+      "id": "w_9779829a",
+      "name": "710 km",
+      "type": "waypoint",
+      "lat": -37.322554,
+      "lon": 175.063255
+    },
+    {
+      "id": "w_97ad652f",
+      "name": "2730 km",
+      "type": "waypoint",
+      "lat": -45.031296,
+      "lon": 168.685298
+    },
+    {
+      "id": "w_97c497b7",
+      "name": "1160 km",
+      "type": "waypoint",
+      "lat": -39.207085,
+      "lon": 175.641718
+    },
+    {
+      "id": "w_9834fcfe",
+      "name": "Arrowtown Hampshire Holiday Park",
+      "type": "accommodation",
+      "lat": -44.943139,
+      "lon": 168.83861
+    },
+    {
+      "id": "w_98bb3be4",
+      "name": "2860 km",
+      "type": "waypoint",
+      "lat": -45.738581,
+      "lon": 167.949878
+    },
+    {
+      "id": "w_98c78ac8",
+      "name": "2140 km",
+      "type": "waypoint",
+      "lat": -42.666836,
+      "lon": 172.228545
+    },
+    {
+      "id": "w_9939b005",
+      "name": "1460 km",
+      "type": "waypoint",
+      "lat": -40.185117,
+      "lon": 175.365438
+    },
+    {
+      "id": "w_9a798ee4",
+      "name": "1060 km",
+      "type": "waypoint",
+      "lat": -38.882973,
+      "lon": 175.265488
+    },
+    {
+      "id": "w_9ba3196c",
+      "name": "2250 km",
+      "type": "waypoint",
+      "lat": -43.128274,
+      "lon": 171.624058
+    },
+    {
+      "id": "w_9bafc026",
+      "name": "280 km",
+      "type": "waypoint",
+      "lat": -35.322538,
+      "lon": 174.282804
+    },
+    {
+      "id": "w_9bb73a64",
+      "name": "Wanganui Top 10 Holiday Park",
+      "type": "caravan-park",
+      "lat": -39.894576,
+      "lon": 175.089307
+    },
+    {
+      "id": "w_9be88682",
+      "name": "Magdalen Hut",
+      "type": "hut",
+      "lat": -42.497337,
+      "lon": 172.474807
+    },
+    {
+      "id": "w_9c77d14a",
+      "name": "Mangatepopo Campsite",
+      "type": "campsite",
+      "lat": -39.144763,
+      "lon": 175.596403
+    },
+    {
+      "id": "w_9cce513b",
+      "name": "2570 km",
+      "type": "waypoint",
+      "lat": -44.429653,
+      "lon": 169.560606
+    },
+    {
+      "id": "w_9cd0d587",
+      "name": "2410 km",
+      "type": "waypoint",
+      "lat": -43.80681,
+      "lon": 170.65601
+    },
+    {
+      "id": "w_9d04a180",
+      "name": "Dracophyllum Hut",
+      "type": "hut",
+      "lat": -40.769647,
+      "lon": 175.389413
+    },
+    {
+      "id": "w_9d8e6ad0",
+      "name": "Mangatepopo Hut",
+      "type": "hut",
+      "lat": -39.144585,
+      "lon": 175.596732
+    },
+    {
+      "id": "w_9ec4e487",
+      "name": "400 km",
+      "type": "waypoint",
+      "lat": -35.849422,
+      "lon": 174.533977
+    },
+    {
+      "id": "w_9ecb97d8",
+      "name": "1600 km",
+      "type": "waypoint",
+      "lat": -40.794322,
+      "lon": 175.37619
+    },
+    {
+      "id": "w_9f06b822",
+      "name": "2000 km",
+      "type": "waypoint",
+      "lat": -41.867953,
+      "lon": 172.82172
+    },
+    {
+      "id": "w_9f5beb12",
+      "name": "290 km",
+      "type": "waypoint",
+      "lat": -35.380897,
+      "lon": 174.316167
+    },
+    {
+      "id": "w_9fa4e7e8",
+      "name": "John Coull Hut",
+      "type": "hut",
+      "lat": -39.2334,
+      "lon": 174.913473
+    },
+    {
+      "id": "w_a14e70b2",
+      "name": "Pelorus Bridge Campground",
+      "type": "campsite",
+      "lat": -41.301094,
+      "lon": 173.570141
+    },
+    {
+      "id": "w_a19b7e6c",
+      "name": "The Bluff Campsite",
+      "type": "campsite",
+      "lat": -34.68527,
+      "lon": 172.898238
+    },
+    {
+      "id": "w_a25698af",
+      "name": "2900 km",
+      "type": "waypoint",
+      "lat": -45.916156,
+      "lon": 167.816307
+    },
+    {
+      "id": "w_a27b8a5d",
+      "name": "Rocks Hut",
+      "type": "hut",
+      "lat": -41.367193,
+      "lon": 173.354919
+    },
+    {
+      "id": "w_a34e5d3e",
+      "name": "2240 km",
+      "type": "waypoint",
+      "lat": -43.049624,
+      "lon": 171.600641
+    },
+    {
+      "id": "w_a36aeba3",
+      "name": "Upper Deception Hut",
+      "type": "hut",
+      "lat": -42.883716,
+      "lon": 171.616574
+    },
+    {
+      "id": "w_a4016448",
+      "name": "800 km",
+      "type": "waypoint",
+      "lat": -37.798368,
+      "lon": 175.151148
+    },
+    {
+      "id": "w_a4b856fc",
+      "name": "2840 km",
+      "type": "waypoint",
+      "lat": -45.621357,
+      "lon": 167.969653
+    },
+    {
+      "id": "w_a4c5f999",
+      "name": "1520 km",
+      "type": "waypoint",
+      "lat": -40.434663,
+      "lon": 175.651051
+    },
+    {
+      "id": "w_a74fe7ee",
+      "name": "540 km",
+      "type": "waypoint",
+      "lat": -36.514238,
+      "lon": 174.667314
+    },
+    {
+      "id": "w_a75a704b",
+      "name": "3000 km",
+      "type": "waypoint",
+      "lat": -46.365182,
+      "lon": 167.956448
+    },
+    {
+      "id": "w_a7f34a3a",
+      "name": "Pylon Campsite",
+      "type": "campsite",
+      "lat": -44.141218,
+      "lon": 170.229032
+    },
+    {
+      "id": "w_a802cabe",
+      "name": "0 km",
+      "type": "waypoint",
+      "lat": -34.426699,
+      "lon": 172.677591
+    },
+    {
+      "id": "w_a83e881f",
+      "name": "310 km",
+      "type": "waypoint",
+      "lat": -35.484777,
+      "lon": 174.373995
+    },
+    {
+      "id": "w_a8b9e21c",
+      "name": "Speargrass Hut",
+      "type": "hut",
+      "lat": -41.852235,
+      "lon": 172.751834
+    },
+    {
+      "id": "w_a95929fc",
+      "name": "2130 km",
+      "type": "waypoint",
+      "lat": -42.617635,
+      "lon": 172.290589
+    },
+    {
+      "id": "w_ab6d203d",
+      "name": "190 km",
+      "type": "waypoint",
+      "lat": -35.227246,
+      "lon": 173.744016
+    },
+    {
+      "id": "w_abc0a3e9",
+      "name": "Captains Creek Hut",
+      "type": "hut",
+      "lat": -41.37424,
+      "lon": 173.435257
+    },
+    {
+      "id": "w_ac43ef54",
+      "name": "3030 km",
+      "type": "waypoint",
+      "lat": -46.438212,
+      "lon": 168.231665
+    },
+    {
+      "id": "w_acd79633",
+      "name": "900 km",
+      "type": "waypoint",
+      "lat": -38.340857,
+      "lon": 175.176113
+    },
+    {
+      "id": "w_acf0e98f",
+      "name": "1550 km",
+      "type": "waypoint",
+      "lat": -40.572189,
+      "lon": 175.508073
+    },
+    {
+      "id": "w_ae2f4e98",
+      "name": "2850 km",
+      "type": "waypoint",
+      "lat": -45.694227,
+      "lon": 167.980529
+    },
+    {
+      "id": "w_ae84f4c9",
+      "name": "Bog Inn Hut",
+      "type": "hut",
+      "lat": -38.583166,
+      "lon": 175.628789
+    },
+    {
+      "id": "w_af6e8d9d",
+      "name": "440 km",
+      "type": "waypoint",
+      "lat": -36.055303,
+      "lon": 174.510001
+    },
+    {
+      "id": "w_afa8ff53",
+      "name": "El Rancho",
+      "type": "caravan-park",
+      "lat": -40.873962,
+      "lon": 175.024094
+    },
+    {
+      "id": "w_b071709e",
+      "name": "1170 km",
+      "type": "waypoint",
+      "lat": -39.202013,
+      "lon": 175.557396
+    },
+    {
+      "id": "w_b08860d2",
+      "name": "980 km",
+      "type": "waypoint",
+      "lat": -38.594672,
+      "lon": 175.574955
+    },
+    {
+      "id": "w_b0f6c708",
+      "name": "70 km",
+      "type": "waypoint",
+      "lat": -34.898424,
+      "lon": 173.085369
+    },
+    {
+      "id": "w_b1186ace",
+      "name": "470 km",
+      "type": "waypoint",
+      "lat": -36.142078,
+      "lon": 174.633728
+    },
+    {
+      "id": "w_b3223cf6",
+      "name": "1360 km",
+      "type": "waypoint",
+      "lat": -39.761396,
+      "lon": 175.164544
+    },
+    {
+      "id": "w_b3583cb1",
+      "name": "Tīeke Marae/kāinga",
+      "type": "hut",
+      "lat": -39.337386,
+      "lon": 174.99312
+    },
+    {
+      "id": "w_b44655eb",
+      "name": "Twelve Mile Delta Campsite",
+      "type": "campsite",
+      "lat": -45.067442,
+      "lon": 168.546517
+    },
+    {
+      "id": "w_b49506cf",
+      "name": "2550 km",
+      "type": "waypoint",
+      "lat": -44.386274,
+      "lon": 169.725614
+    },
+    {
+      "id": "w_b4af64b2",
+      "name": "Mangapapa Campsite",
+      "type": "campsite",
+      "lat": -39.129332,
+      "lon": 174.999248
+    },
+    {
+      "id": "w_b5ed09ee",
+      "name": "230 km",
+      "type": "waypoint",
+      "lat": -35.226357,
+      "lon": 173.994841
+    },
+    {
+      "id": "w_b872fc8c",
+      "name": "Millblock Campsite",
+      "type": "campsite",
+      "lat": -40.630918,
+      "lon": 175.411802
+    },
+    {
+      "id": "w_b88dee18",
+      "name": "390 km",
+      "type": "waypoint",
+      "lat": -35.816804,
+      "lon": 174.560474
+    },
+    {
+      "id": "w_b96e95eb",
+      "name": "2040 km",
+      "type": "waypoint",
+      "lat": -42.079947,
+      "lon": 172.658803
+    },
+    {
+      "id": "w_b97f5fab",
+      "name": "Ahipara Holiday Park",
+      "type": "accommodation",
+      "lat": -35.160413,
+      "lon": 173.161384
+    },
+    {
+      "id": "w_ba195f1b",
+      "name": "1980 km",
+      "type": "waypoint",
+      "lat": -41.762713,
+      "lon": 172.927683
+    },
+    {
+      "id": "w_bba3743c",
+      "name": "2350 km",
+      "type": "waypoint",
+      "lat": -43.584828,
+      "lon": 171.131522
+    },
+    {
+      "id": "w_bcf76e44",
+      "name": "2070 km",
+      "type": "waypoint",
+      "lat": -42.312144,
+      "lon": 172.610421
+    },
+    {
+      "id": "w_bd7f0d6f",
+      "name": "Piropiro Campsite",
+      "type": "campsite",
+      "lat": -38.633405,
+      "lon": 175.490519
+    },
+    {
+      "id": "w_bd960665",
+      "name": "700 km",
+      "type": "waypoint",
+      "lat": -37.260704,
+      "lon": 175.056455
+    },
+    {
+      "id": "w_bdbd5f05",
+      "name": "2790 km",
+      "type": "waypoint",
+      "lat": -45.308724,
+      "lon": 168.169222
+    },
+    {
+      "id": "w_be92398a",
+      "name": "2540 km",
+      "type": "waypoint",
+      "lat": -44.304531,
+      "lon": 169.75634
+    },
+    {
+      "id": "w_c0582033",
+      "name": "2270 km",
+      "type": "waypoint",
+      "lat": -43.219175,
+      "lon": 171.460215
+    },
+    {
+      "id": "w_c076b2c4",
+      "name": "2910 km",
+      "type": "waypoint",
+      "lat": -45.952554,
+      "lon": 167.889279
+    },
+    {
+      "id": "w_c08d5bcf",
+      "name": "3010 km",
+      "type": "waypoint",
+      "lat": -46.346325,
+      "lon": 168.042878
+    },
+    {
+      "id": "w_c102641f",
+      "name": "2590 km",
+      "type": "waypoint",
+      "lat": -44.528399,
+      "lon": 169.43728
+    },
+    {
+      "id": "w_c149f7a7",
+      "name": "Top Wairoa Hut",
+      "type": "hut",
+      "lat": -41.610999,
+      "lon": 173.074508
+    },
+    {
+      "id": "w_c179937d",
+      "name": "Hunters Hut",
+      "type": "hut",
+      "lat": -41.599556,
+      "lon": 173.002928
+    },
+    {
+      "id": "w_c3172b8e",
+      "name": "Harper Pass Bivvy",
+      "type": "hut",
+      "lat": -42.725024,
+      "lon": 171.896707
+    },
+    {
+      "id": "w_c31ce45e",
+      "name": "1670 km",
+      "type": "waypoint",
+      "lat": -40.999241,
+      "lon": 174.941912
+    },
+    {
+      "id": "w_c35b1ba9",
+      "name": "2660 km",
+      "type": "waypoint",
+      "lat": -44.705308,
+      "lon": 168.980541
+    },
+    {
+      "id": "w_c35c8787",
+      "name": "30 km",
+      "type": "waypoint",
+      "lat": -34.610421,
+      "lon": 172.829975
+    },
+    {
+      "id": "w_c3814ae9",
+      "name": "2360 km",
+      "type": "waypoint",
+      "lat": -43.595679,
+      "lon": 171.028419
+    },
+    {
+      "id": "w_c416e936",
+      "name": "420 km",
+      "type": "waypoint",
+      "lat": -35.92007,
+      "lon": 174.460562
+    },
+    {
+      "id": "w_c5cdfe47",
+      "name": "Huntly Camping & Caravan Park",
+      "type": "accommodation",
+      "lat": -37.550632,
+      "lon": 175.160702
+    },
+    {
+      "id": "w_c62a2a24",
+      "name": "40 km",
+      "type": "waypoint",
+      "lat": -34.68271,
+      "lon": 172.893498
+    },
+    {
+      "id": "w_c6bc0db6",
+      "name": "2930 km",
+      "type": "waypoint",
+      "lat": -46.083909,
+      "lon": 167.883478
+    },
+    {
+      "id": "w_c6d9645a",
+      "name": "670 km",
+      "type": "waypoint",
+      "lat": -37.109932,
+      "lon": 174.97742
+    },
+    {
+      "id": "w_c73076dd",
+      "name": "Pines Campsite",
+      "type": "campsite",
+      "lat": -44.184145,
+      "lon": 170.150535
+    },
+    {
+      "id": "w_c746bdda",
+      "name": "1910 km",
+      "type": "waypoint",
+      "lat": -41.502017,
+      "lon": 173.298823
+    },
+    {
+      "id": "w_c8ae373c",
+      "name": "1900 km",
+      "type": "waypoint",
+      "lat": -41.446123,
+      "lon": 173.245407
+    },
+    {
+      "id": "w_c942676d",
+      "name": "Hurunui Hut",
+      "type": "hut",
+      "lat": -42.70371,
+      "lon": 172.096389
+    },
+    {
+      "id": "w_c94c121f",
+      "name": "Ngaherenga Campsite",
+      "type": "campsite",
+      "lat": -38.511263,
+      "lon": 175.562355
+    },
+    {
+      "id": "w_c94f1144",
+      "name": "200 km",
+      "type": "waypoint",
+      "lat": -35.214837,
+      "lon": 173.800125
+    },
+    {
+      "id": "w_c982e1f0",
+      "name": "Waiau Hut",
+      "type": "hut",
+      "lat": -42.180196,
+      "lon": 172.661216
+    },
+    {
+      "id": "w_ca099470",
+      "name": "590 km",
+      "type": "waypoint",
+      "lat": -36.738187,
+      "lon": 174.756004
+    },
+    {
+      "id": "w_ca9bc5b0",
+      "name": "1310 km",
+      "type": "waypoint",
+      "lat": -39.45515,
+      "lon": 175.032343
+    },
+    {
+      "id": "w_caecceed",
+      "name": "A Frame Hut",
+      "type": "hut",
+      "lat": -43.382862,
+      "lon": 171.370368
+    },
+    {
+      "id": "w_cbc77ae2",
+      "name": "140 km",
+      "type": "waypoint",
+      "lat": -35.219258,
+      "lon": 173.391961
+    },
+    {
+      "id": "w_cc0bfb57",
+      "name": "Ian and Franks Hut",
+      "type": "hut",
+      "lat": -40.575447,
+      "lon": 175.497099
+    },
+    {
+      "id": "w_cca1d8d8",
+      "name": "1710 km",
+      "type": "waypoint",
+      "lat": -41.219269,
+      "lon": 174.789129
+    },
+    {
+      "id": "w_ccdb38ab",
+      "name": "Camp Stream Hut",
+      "type": "campsite",
+      "lat": -43.793864,
+      "lon": 170.649212
+    },
+    {
+      "id": "w_cd522514",
+      "name": "170 km",
+      "type": "waypoint",
+      "lat": -35.22596,
+      "lon": 173.604718
+    },
+    {
+      "id": "w_cdc7be26",
+      "name": "Mosley's Campsite",
+      "type": "campsite",
+      "lat": -39.176036,
+      "lon": 175.079285
+    },
+    {
+      "id": "w_ce03cb57",
+      "name": "2340 km",
+      "type": "waypoint",
+      "lat": -43.552636,
+      "lon": 171.219198
+    },
+    {
+      "id": "w_ce2377fd",
+      "name": "Remiger Road Campsite",
+      "type": "campsite",
+      "lat": -36.500378,
+      "lon": 174.618869
+    },
+    {
+      "id": "w_ce2a4f64",
+      "name": "2260 km",
+      "type": "waypoint",
+      "lat": -43.183638,
+      "lon": 171.545782
+    },
+    {
+      "id": "w_ce424ed1",
+      "name": "960 km",
+      "type": "waypoint",
+      "lat": -38.527345,
+      "lon": 175.585229
+    },
+    {
+      "id": "w_ceb74e05",
+      "name": "2230 km",
+      "type": "waypoint",
+      "lat": -43.02003,
+      "lon": 171.606995
+    },
+    {
+      "id": "w_cef4a256",
+      "name": "Mt Rintoul Hut",
+      "type": "hut",
+      "lat": -41.519224,
+      "lon": 173.220619
+    },
+    {
+      "id": "w_cf5cc55f",
+      "name": "1640 km",
+      "type": "waypoint",
+      "lat": -40.897105,
+      "lon": 175.10113
+    },
+    {
+      "id": "w_d0690311",
+      "name": "520 km",
+      "type": "waypoint",
+      "lat": -36.415568,
+      "lon": 174.600193
+    },
+    {
+      "id": "w_d0f188ae",
+      "name": "2980 km",
+      "type": "waypoint",
+      "lat": -46.284203,
+      "lon": 167.845081
+    },
+    {
+      "id": "w_d0f6af8c",
+      "name": "2760 km",
+      "type": "waypoint",
+      "lat": -45.070647,
+      "lon": 168.223651
+    },
+    {
+      "id": "w_d2bc3f63",
+      "name": "2610 km",
+      "type": "waypoint",
+      "lat": -44.603159,
+      "lon": 169.302536
+    },
+    {
+      "id": "w_d31fb20b",
+      "name": "Stone Hut",
+      "type": "hut",
+      "lat": -43.686562,
+      "lon": 170.771128
+    },
+    {
+      "id": "w_d385a94d",
+      "name": "1680 km",
+      "type": "waypoint",
+      "lat": -41.047734,
+      "lon": 174.87845
+    },
+    {
+      "id": "w_d419cbe0",
+      "name": "Caroline's Outback Camping Ground",
+      "type": "food",
+      "lat": -39.90737,
+      "lon": 175.056045
+    },
+    {
+      "id": "w_d440ef20",
+      "name": "Coldwater Hut",
+      "type": "hut",
+      "lat": -41.870353,
+      "lon": 172.81704
+    },
+    {
+      "id": "w_d4c719cd",
+      "name": "2290 km",
+      "type": "waypoint",
+      "lat": -43.340671,
+      "lon": 171.592793
+    },
+    {
+      "id": "w_d4f78b6d",
+      "name": "1250 km",
+      "type": "waypoint",
+      "lat": -39.141102,
+      "lon": 175.080952
+    },
+    {
+      "id": "w_d5b491f0",
+      "name": "Camp Elsdon",
+      "type": "accommodation",
+      "lat": -41.137954,
+      "lon": 174.82795
+    },
+    {
+      "id": "w_d5e9e4d7",
+      "name": "1430 km",
+      "type": "waypoint",
+      "lat": -40.074713,
+      "lon": 175.135035
+    },
+    {
+      "id": "w_d63db76b",
+      "name": "1560 km",
+      "type": "waypoint",
+      "lat": -40.623077,
+      "lon": 175.456798
+    },
+    {
+      "id": "w_d727a788",
+      "name": "Riverton Holiday Park",
+      "type": "accommodation",
+      "lat": -46.362211,
+      "lon": 168.007661
+    },
+    {
+      "id": "w_d79ed0fc",
+      "name": "Blyth Hut",
+      "type": "hut",
+      "lat": -39.331799,
+      "lon": 175.524915
+    },
+    {
+      "id": "w_d7feac34",
+      "name": "Waorahi Campsite",
+      "type": "campsite",
+      "lat": -36.067806,
+      "lon": 174.541
+    },
+    {
+      "id": "w_d811a871",
+      "name": "Rangipo Hut",
+      "type": "hut",
+      "lat": -39.300089,
+      "lon": 175.623749
+    },
+    {
+      "id": "w_d8f8ba90",
+      "name": "790 km",
+      "type": "waypoint",
+      "lat": -37.797201,
+      "lon": 175.23819
+    },
+    {
+      "id": "w_d90e09ec",
+      "name": "330 km",
+      "type": "waypoint",
+      "lat": -35.553,
+      "lon": 174.467945
+    },
+    {
+      "id": "w_d9cd9943",
+      "name": "550 km",
+      "type": "waypoint",
+      "lat": -36.544062,
+      "lon": 174.704733
+    },
+    {
+      "id": "w_d9f2a5b8",
+      "name": "1780 km",
+      "type": "waypoint",
+      "lat": -41.197016,
+      "lon": 174.106509
+    },
+    {
+      "id": "w_da03ce9c",
+      "name": "130 km",
+      "type": "waypoint",
+      "lat": -35.177368,
+      "lon": 173.351278
+    },
+    {
+      "id": "w_db2033c3",
+      "name": "Ohauora Campsite",
+      "type": "campsite",
+      "lat": -39.171194,
+      "lon": 174.958867
+    },
+    {
+      "id": "w_db354852",
+      "name": "Alexanders Holiday Park",
+      "type": "accommodation",
+      "lat": -41.298126,
+      "lon": 174.005381
+    },
+    {
+      "id": "w_dc233067",
+      "name": "Bettjemann Campsite",
+      "type": "campsite",
+      "lat": -39.202873,
+      "lon": 174.999178
+    },
+    {
+      "id": "w_dce5e402",
+      "name": "2520 km",
+      "type": "waypoint",
+      "lat": -44.29656,
+      "lon": 169.897339
+    },
+    {
+      "id": "w_dd2deed1",
+      "name": "Mangahuia Campsite",
+      "type": "campsite",
+      "lat": -39.180059,
+      "lon": 175.469792
+    },
+    {
+      "id": "w_ddb8b702",
+      "name": "2690 km",
+      "type": "waypoint",
+      "lat": -44.858092,
+      "lon": 168.818081
+    },
+    {
+      "id": "w_ddcee4a2",
+      "name": "760 km",
+      "type": "waypoint",
+      "lat": -37.656246,
+      "lon": 175.128534
+    },
+    {
+      "id": "w_dded5e96",
+      "name": "1730 km",
+      "type": "waypoint",
+      "lat": -41.294767,
+      "lon": 174.794175
+    },
+    {
+      "id": "w_de157e21",
+      "name": "1240 km",
+      "type": "waypoint",
+      "lat": -39.12141,
+      "lon": 175.112223
+    },
+    {
+      "id": "w_de69bc33",
+      "name": "Boundary Hut",
+      "type": "hut",
+      "lat": -45.140184,
+      "lon": 168.179254
+    },
+    {
+      "id": "w_de8b2c50",
+      "name": "870 km",
+      "type": "waypoint",
+      "lat": -38.207434,
+      "lon": 175.058088
+    },
+    {
+      "id": "w_deabc0a3",
+      "name": "1030 km",
+      "type": "waypoint",
+      "lat": -38.727441,
+      "lon": 175.33561
+    },
+    {
+      "id": "w_dec3b6f9",
+      "name": "380 km",
+      "type": "waypoint",
+      "lat": -35.749265,
+      "lon": 174.54042
+    },
+    {
+      "id": "w_df4286aa",
+      "name": "1150 km",
+      "type": "waypoint",
+      "lat": -39.170687,
+      "lon": 175.683816
+    },
+    {
+      "id": "w_df63c59c",
+      "name": "Careys Hut",
+      "type": "hut",
+      "lat": -45.188355,
+      "lon": 168.164639
+    },
+    {
+      "id": "w_e0173579",
+      "name": "260 km",
+      "type": "waypoint",
+      "lat": -35.318812,
+      "lon": 174.207317
+    },
+    {
+      "id": "w_e0f68498",
+      "name": "2890 km",
+      "type": "waypoint",
+      "lat": -45.856377,
+      "lon": 167.791428
+    },
+    {
+      "id": "w_e1005b8e",
+      "name": "Lower Princhester Hut",
+      "type": "hut",
+      "lat": -45.593313,
+      "lon": 167.951587
+    },
+    {
+      "id": "w_e11d11ba",
+      "name": "1120 km",
+      "type": "waypoint",
+      "lat": -39.049559,
+      "lon": 175.561433
+    },
+    {
+      "id": "w_e1815ca7",
+      "name": "Kiwi Hut",
+      "type": "hut",
+      "lat": -42.756888,
+      "lon": 171.743228
+    },
+    {
+      "id": "w_e1953b5c",
+      "name": "Davies Bay Campsite",
+      "type": "campsite",
+      "lat": -41.252318,
+      "lon": 173.940732
+    },
+    {
+      "id": "w_e1ed9327",
+      "name": "1110 km",
+      "type": "waypoint",
+      "lat": -38.995084,
+      "lon": 175.507052
+    },
+    {
+      "id": "w_e239862e",
+      "name": "2670 km",
+      "type": "waypoint",
+      "lat": -44.772083,
+      "lon": 168.944934
+    },
+    {
+      "id": "w_e24f3c61",
+      "name": "Waitomo Top 10 Holiday Park",
+      "type": "caravan-park",
+      "lat": -38.260233,
+      "lon": 175.110267
+    },
+    {
+      "id": "w_e2cf128e",
+      "name": "Bay Of Many Coves Campsite",
+      "type": "campsite",
+      "lat": -41.171681,
+      "lon": 174.141867
+    },
+    {
+      "id": "w_e331db1c",
+      "name": "Highland Creek Hut",
+      "type": "hut",
+      "lat": -44.774159,
+      "lon": 168.941757
+    },
+    {
+      "id": "w_e3d1059e",
+      "name": "460 km",
+      "type": "waypoint",
+      "lat": -36.106372,
+      "lon": 174.582215
+    },
+    {
+      "id": "w_e3ea32f8",
+      "name": "Waihohonu Campsite",
+      "type": "campsite",
+      "lat": -39.208682,
+      "lon": 175.679169
+    },
+    {
+      "id": "w_e3f9b19f",
+      "name": "240 km",
+      "type": "waypoint",
+      "lat": -35.259913,
+      "lon": 174.056473
+    },
+    {
+      "id": "w_e5233375",
+      "name": "Uretiti Beach Campsite",
+      "type": "campsite",
+      "lat": -35.933793,
+      "lon": 174.459981
+    },
+    {
+      "id": "w_e5703f55",
+      "name": "2460 km",
+      "type": "waypoint",
+      "lat": -44.07954,
+      "lon": 170.318523
+    },
+    {
+      "id": "w_e5c2c833",
+      "name": "3020 km",
+      "type": "waypoint",
+      "lat": -46.364158,
+      "lon": 168.161229
+    },
+    {
+      "id": "w_e6534874",
+      "name": "Lower Wairaki Hut",
+      "type": "hut",
+      "lat": -45.779288,
+      "lon": 167.940228
+    },
+    {
+      "id": "w_e6dc9c70",
+      "name": "2060 km",
+      "type": "waypoint",
+      "lat": -42.230783,
+      "lon": 172.638127
+    },
+    {
+      "id": "w_e871598e",
+      "name": "2440 km",
+      "type": "waypoint",
+      "lat": -44.005207,
+      "lon": 170.497783
+    },
+    {
+      "id": "w_e92bb548",
+      "name": "1480 km",
+      "type": "waypoint",
+      "lat": -40.215739,
+      "lon": 175.535678
+    },
+    {
+      "id": "w_ea279cf0",
+      "name": "2820 km",
+      "type": "waypoint",
+      "lat": -45.495378,
+      "lon": 168.017205
+    },
+    {
+      "id": "w_ea805e03",
+      "name": "1070 km",
+      "type": "waypoint",
+      "lat": -38.946966,
+      "lon": 175.244041
+    },
+    {
+      "id": "w_ed8d7acf",
+      "name": "2010 km",
+      "type": "waypoint",
+      "lat": -41.939772,
+      "lon": 172.799891
+    },
+    {
+      "id": "w_ee6928c1",
+      "name": "1050 km",
+      "type": "waypoint",
+      "lat": -38.811121,
+      "lon": 175.227047
+    },
+    {
+      "id": "w_efd3bdbc",
+      "name": "2300 km",
+      "type": "waypoint",
+      "lat": -43.331317,
+      "lon": 171.375966
+    },
+    {
+      "id": "w_f075ab88",
+      "name": "820 km",
+      "type": "waypoint",
+      "lat": -37.90514,
+      "lon": 175.085514
+    },
+    {
+      "id": "w_f102446b",
+      "name": "490 km",
+      "type": "waypoint",
+      "lat": -36.280447,
+      "lon": 174.729883
+    },
+    {
+      "id": "w_f10eff54",
+      "name": "1820 km",
+      "type": "waypoint",
+      "lat": -41.288106,
+      "lon": 173.812856
+    },
+    {
+      "id": "w_f30d66e1",
+      "name": "1190 km",
+      "type": "waypoint",
+      "lat": -39.181518,
+      "lon": 175.422079
+    },
+    {
+      "id": "w_f34ca87d",
+      "name": "1790 km",
+      "type": "waypoint",
+      "lat": -41.205811,
+      "lon": 174.029053
+    },
+    {
+      "id": "w_f3661f7d",
+      "name": "500 km",
+      "type": "waypoint",
+      "lat": -36.321197,
+      "lon": 174.66563
+    },
+    {
+      "id": "w_f36825fa",
+      "name": "1230 km",
+      "type": "waypoint",
+      "lat": -39.093846,
+      "lon": 175.174504
+    },
+    {
+      "id": "w_f43eb413",
+      "name": "Slip Flat Hut",
+      "type": "hut",
+      "lat": -44.95628,
+      "lon": 168.274357
+    },
+    {
+      "id": "w_f49110a4",
+      "name": "Schoolhouse Bay Campsite",
+      "type": "campsite",
+      "lat": -41.11135,
+      "lon": 174.224882
+    },
+    {
+      "id": "w_f4d3521e",
+      "name": "Parawai Lodge",
+      "type": "hut",
+      "lat": -40.873387,
+      "lon": 175.232056
+    },
+    {
+      "id": "w_f54ca8d5",
+      "name": "1510 km",
+      "type": "waypoint",
+      "lat": -40.384554,
+      "lon": 175.629913
+    },
+    {
+      "id": "w_f6dd2f86",
+      "name": "410 km",
+      "type": "waypoint",
+      "lat": -35.848661,
+      "lon": 174.493748
+    },
+    {
+      "id": "w_f858d5d7",
+      "name": "Waihohonu Hut",
+      "type": "hut",
+      "lat": -39.209462,
+      "lon": 175.679742
+    },
+    {
+      "id": "w_f9732c80",
+      "name": "Lagoon Saddle Hut",
+      "type": "hut",
+      "lat": -43.054856,
+      "lon": 171.601116
+    },
+    {
+      "id": "w_f9adc4b2",
+      "name": "1410 km",
+      "type": "waypoint",
+      "lat": -39.960605,
+      "lon": 175.0159
+    },
+    {
+      "id": "w_f9ec488b",
+      "name": "1290 km",
+      "type": "waypoint",
+      "lat": -39.321599,
+      "lon": 175.003781
+    },
+    {
+      "id": "w_f9faaf88",
+      "name": "360 km",
+      "type": "waypoint",
+      "lat": -35.668392,
+      "lon": 174.44699
+    },
+    {
+      "id": "w_fb5f0b5d",
+      "name": "Ruakaka Reserve Motor Camp",
+      "type": "caravan-park",
+      "lat": -35.905789,
+      "lon": 174.452677
+    },
+    {
+      "id": "w_fb98fbab",
+      "name": "Mangawhai Heads Holiday Park",
+      "type": "campsite",
+      "lat": -36.085344,
+      "lon": 174.589237
+    },
+    {
+      "id": "w_fba4fe40",
+      "name": "370 km",
+      "type": "waypoint",
+      "lat": -35.683947,
+      "lon": 174.497692
+    },
+    {
+      "id": "w_fc2fd9c6",
+      "name": "John Coull Campsite",
+      "type": "campsite",
+      "lat": -39.23317,
+      "lon": 174.914157
+    },
+    {
+      "id": "w_fcdf751d",
+      "name": "1830 km",
+      "type": "waypoint",
+      "lat": -41.274381,
+      "lon": 173.759658
+    },
+    {
+      "id": "w_fd4c2934",
+      "name": "100 km",
+      "type": "waypoint",
+      "lat": -35.149353,
+      "lon": 173.16061
+    },
+    {
+      "id": "w_fd581852",
+      "name": "720 km",
+      "type": "waypoint",
+      "lat": -37.390547,
+      "lon": 175.062794
+    },
+    {
+      "id": "w_fd83eed4",
+      "name": "Mangatangi Trig Campground",
+      "type": "campsite",
+      "lat": -37.121812,
+      "lon": 175.18624
+    },
+    {
+      "id": "w_fe18de79",
+      "name": "Sabine Hut",
+      "type": "hut",
+      "lat": -41.901372,
+      "lon": 172.680706
+    },
+    {
+      "id": "w_fe1f4947",
+      "name": "Hurunui No. 3 Hut",
+      "type": "hut",
+      "lat": -42.70084,
+      "lon": 171.987949
+    },
+    {
+      "id": "w_fe1fafef",
+      "name": "90 km",
+      "type": "waypoint",
+      "lat": -35.061371,
+      "lon": 173.173934
+    },
+    {
+      "id": "w_fe4a4c30",
+      "name": "1860 km",
+      "type": "waypoint",
+      "lat": -41.317635,
+      "lon": 173.48722
+    },
+    {
+      "id": "w_fe806009",
+      "name": "Turnbull's (Big Dam) Hut",
+      "type": "hut",
+      "lat": -46.291583,
+      "lon": 167.851878
+    },
+    {
+      "id": "w_fe87b350",
+      "name": "2210 km",
+      "type": "waypoint",
+      "lat": -42.858556,
+      "lon": 171.621986
+    },
+    {
+      "id": "w_fef318d9",
+      "name": "110 km",
+      "type": "waypoint",
+      "lat": -35.156621,
+      "lon": 173.226284
+    }
   ]
 }

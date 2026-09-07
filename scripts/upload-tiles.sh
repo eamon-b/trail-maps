@@ -340,8 +340,12 @@ upload_contours() {
         exit 1
       fi
       echo "Uploading via rclone (multipart)..."
+      # Same Cache-Control the wrangler path sets: without it the custom
+      # domain serves the archive uncached (cf-cache-status: DYNAMIC) and every
+      # range read is an R2 class B operation.
       rclone copyto --progress --s3-no-check-bucket \
         --s3-upload-cutoff 64M --s3-chunk-size 64M \
+        --header-upload "Cache-Control: public, max-age=2592000" \
         "$pmtiles_file" "${RCLONE_REMOTE}:$BUCKET/$CONTOUR_OBJECT_KEY"
     else
       cat <<EOF

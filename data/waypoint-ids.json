@@ -5004,6 +5004,13 @@
       "lon": 173.305728
     },
     {
+      "id": "w_032e49a6",
+      "name": "Waipu",
+      "type": "town",
+      "lat": -35.985007,
+      "lon": 174.447497
+    },
+    {
       "id": "w_034e2b12",
       "name": "690 km",
       "type": "waypoint",
@@ -5011,11 +5018,25 @@
       "lon": 175.036576
     },
     {
+      "id": "w_03b32497",
+      "name": "Frankton",
+      "type": "town",
+      "lat": -45.020792,
+      "lon": 168.731096
+    },
+    {
       "id": "w_03b7d2a6",
       "name": "Waiopehu Hut",
       "type": "hut",
       "lat": -40.726329,
       "lon": 175.357078
+    },
+    {
+      "id": "w_041fa932",
+      "name": "Hamilton",
+      "type": "town",
+      "lat": -37.787881,
+      "lon": 175.281788
     },
     {
       "id": "w_0512a607",
@@ -5030,6 +5051,13 @@
       "type": "waypoint",
       "lat": -41.7308,
       "lon": 172.991056
+    },
+    {
+      "id": "w_06039c38",
+      "name": "Wanaka",
+      "type": "town",
+      "lat": -44.694169,
+      "lon": 169.136464
     },
     {
       "id": "w_06372166",
@@ -5172,11 +5200,25 @@
       "lon": 173.658972
     },
     {
+      "id": "w_0d8b1685",
+      "name": "Boyle Village",
+      "type": "resupply",
+      "lat": -42.517037,
+      "lon": 172.387488
+    },
+    {
       "id": "w_0dc251aa",
       "name": "920 km",
       "type": "waypoint",
       "lat": -38.441874,
       "lon": 175.301202
+    },
+    {
+      "id": "w_0ed51431",
+      "name": "Kerikeri",
+      "type": "town",
+      "lat": -35.227261,
+      "lon": 173.949106
     },
     {
       "id": "w_0f4d952a",
@@ -5191,6 +5233,13 @@
       "type": "hut",
       "lat": -46.262878,
       "lon": 167.860163
+    },
+    {
+      "id": "w_0fa5b608",
+      "name": "Nelson",
+      "type": "town",
+      "lat": -41.271085,
+      "lon": 173.283676
     },
     {
       "id": "w_10698763",
@@ -5242,6 +5291,13 @@
       "lon": 175.276131
     },
     {
+      "id": "w_131abc71",
+      "name": "Otautau",
+      "type": "resupply",
+      "lat": -46.142735,
+      "lon": 167.997221
+    },
+    {
       "id": "w_136e24b9",
       "name": "John Tait Hut",
       "type": "hut",
@@ -5254,6 +5310,13 @@
       "type": "campsite",
       "lat": -45.803916,
       "lon": 167.881164
+    },
+    {
+      "id": "w_14b16a54",
+      "name": "Peel Forest",
+      "type": "resupply",
+      "lat": -43.911219,
+      "lon": 171.260376
     },
     {
       "id": "w_154d553c",
@@ -5303,6 +5366,13 @@
       "type": "caravan-park",
       "lat": -35.037955,
       "lon": 173.171675
+    },
+    {
+      "id": "w_17563fc1",
+      "name": "Albert Town",
+      "type": "resupply",
+      "lat": -44.68324,
+      "lon": 169.187264
     },
     {
       "id": "w_17c8ad10",
@@ -5361,6 +5431,13 @@
       "lon": 175.092244
     },
     {
+      "id": "w_1bcb48fd",
+      "name": "Papakura",
+      "type": "town",
+      "lat": -37.064265,
+      "lon": 174.944667
+    },
+    {
       "id": "w_1bdc468d",
       "name": "West Harper Hut",
       "type": "hut",
@@ -5373,6 +5450,13 @@
       "type": "hut",
       "lat": -42.922636,
       "lon": 171.630113
+    },
+    {
+      "id": "w_1c0b854d",
+      "name": "Lake Coleridge Village",
+      "type": "food",
+      "lat": -43.365964,
+      "lon": 171.532599
     },
     {
       "id": "w_1daa0697",
@@ -5394,6 +5478,13 @@
       "type": "hut",
       "lat": -45.70739,
       "lon": 167.999323
+    },
+    {
+      "id": "w_1f153248",
+      "name": "Feilding",
+      "type": "town",
+      "lat": -40.226276,
+      "lon": 175.564441
     },
     {
       "id": "w_1f240a0a",
@@ -5443,6 +5534,13 @@
       "type": "waypoint",
       "lat": -40.874501,
       "lon": 175.233199
+    },
+    {
+      "id": "w_2215c520",
+      "name": "Queenstown",
+      "type": "town",
+      "lat": -45.032192,
+      "lon": 168.661
     },
     {
       "id": "w_2256f8ff",
@@ -5520,6 +5618,13 @@
       "type": "hut",
       "lat": -42.057953,
       "lon": 172.655727
+    },
+    {
+      "id": "w_258ea5bf",
+      "name": "Auckland CBD",
+      "type": "town",
+      "lat": -36.852095,
+      "lon": 174.76318
     },
     {
       "id": "w_259c1440",
@@ -5627,6 +5732,13 @@
       "lon": 175.086944
     },
     {
+      "id": "w_2d14d405",
+      "name": "Mercer",
+      "type": "food",
+      "lat": -37.276572,
+      "lon": 175.048501
+    },
+    {
       "id": "w_2dbfea50",
       "name": "Upper Mangatawhiri Campground",
       "type": "campsite",
@@ -5681,6 +5793,13 @@
       "type": "hut",
       "lat": -43.623891,
       "lon": 170.789844
+    },
+    {
+      "id": "w_3253cd13",
+      "name": "Te Kuiti",
+      "type": "town",
+      "lat": -38.334193,
+      "lon": 175.165712
     },
     {
       "id": "w_3263406a",
@@ -5830,6 +5949,13 @@
       "lon": 173.245972
     },
     {
+      "id": "w_3ae4f948",
+      "name": "Puhoi",
+      "type": "resupply",
+      "lat": -36.512092,
+      "lon": 174.66112
+    },
+    {
       "id": "w_3b3f4067",
       "name": "1610 km",
       "type": "waypoint",
@@ -5856,6 +5982,13 @@
       "type": "waypoint",
       "lat": -39.824493,
       "lon": 175.143238
+    },
+    {
+      "id": "w_3c8babdb",
+      "name": "Ruakaka",
+      "type": "town",
+      "lat": -35.875436,
+      "lon": 174.455707
     },
     {
       "id": "w_3d518740",
@@ -5963,6 +6096,20 @@
       "lon": 174.691171
     },
     {
+      "id": "w_42681e46",
+      "name": "Matahiwi",
+      "type": "food",
+      "lat": -39.605687,
+      "lon": 175.160834
+    },
+    {
+      "id": "w_42823500",
+      "name": "Methven",
+      "type": "town",
+      "lat": -43.632433,
+      "lon": 171.647261
+    },
+    {
       "id": "w_4340605a",
       "name": "1750 km",
       "type": "waypoint",
@@ -5984,6 +6131,13 @@
       "lon": 171.931644
     },
     {
+      "id": "w_4640a7af",
+      "name": "Arrowtown",
+      "type": "resupply",
+      "lat": -44.940563,
+      "lon": 168.835076
+    },
+    {
       "id": "w_47133d85",
       "name": "1630 km",
       "type": "waypoint",
@@ -5991,11 +6145,39 @@
       "lon": 175.167171
     },
     {
+      "id": "w_47e53dcc",
+      "name": "Browns Bay",
+      "type": "town",
+      "lat": -36.715628,
+      "lon": 174.748198
+    },
+    {
+      "id": "w_48290f5d",
+      "name": "Bulls",
+      "type": "town",
+      "lat": -40.174539,
+      "lon": 175.384895
+    },
+    {
+      "id": "w_482b3ab8",
+      "name": "St Arnaud",
+      "type": "resupply",
+      "lat": -41.801358,
+      "lon": 172.847786
+    },
+    {
       "id": "w_493948e8",
       "name": "Bealey Hut",
       "type": "hut",
       "lat": -43.037768,
       "lon": 171.641758
+    },
+    {
+      "id": "w_4994648a",
+      "name": "Whakapapa Village",
+      "type": "food",
+      "lat": -39.201127,
+      "lon": 175.539895
     },
     {
       "id": "w_49a3e362",
@@ -6017,6 +6199,13 @@
       "type": "waypoint",
       "lat": -46.025202,
       "lon": 167.903459
+    },
+    {
+      "id": "w_4b18043f",
+      "name": "Palmerston North",
+      "type": "town",
+      "lat": -40.356317,
+      "lon": 175.611239
     },
     {
       "id": "w_4b370e41",
@@ -6075,6 +6264,13 @@
       "lon": 168.381626
     },
     {
+      "id": "w_50ffdd85",
+      "name": "Tuatapere",
+      "type": "resupply",
+      "lat": -46.131637,
+      "lon": 167.689851
+    },
+    {
       "id": "w_5190ffb7",
       "name": "180 km",
       "type": "waypoint",
@@ -6101,6 +6297,13 @@
       "type": "hut",
       "lat": -42.466369,
       "lon": 172.459921
+    },
+    {
+      "id": "w_52ca98b2",
+      "name": "Whangarei",
+      "type": "town",
+      "lat": -35.727527,
+      "lon": 174.31942
     },
     {
       "id": "w_532b5b93",
@@ -6136,6 +6339,13 @@
       "type": "waypoint",
       "lat": -41.269163,
       "lon": 173.909985
+    },
+    {
+      "id": "w_55188d9e",
+      "name": "Paekakariki",
+      "type": "resupply",
+      "lat": -40.988307,
+      "lon": 174.951443
     },
     {
       "id": "w_55d132a4",
@@ -6229,6 +6439,13 @@
       "lon": 175.024457
     },
     {
+      "id": "w_5c2fff37",
+      "name": "Glenorchy",
+      "type": "resupply",
+      "lat": -44.849749,
+      "lon": 168.385198
+    },
+    {
       "id": "w_5ca8099b",
       "name": "1440 km",
       "type": "waypoint",
@@ -6248,6 +6465,13 @@
       "type": "accommodation",
       "lat": -41.278872,
       "lon": 173.768289
+    },
+    {
+      "id": "w_5cca1f60",
+      "name": "Invercargill",
+      "type": "town",
+      "lat": -46.411847,
+      "lon": 168.347063
     },
     {
       "id": "w_5d53414e",
@@ -6348,6 +6572,20 @@
       "lon": 170.427777
     },
     {
+      "id": "w_65cb9f6f",
+      "name": "Taumarunui",
+      "type": "town",
+      "lat": -38.882951,
+      "lon": 175.262462
+    },
+    {
+      "id": "w_670ef246",
+      "name": "Lake Hawea",
+      "type": "resupply",
+      "lat": -44.612673,
+      "lon": 169.264055
+    },
+    {
       "id": "w_6741aac5",
       "name": "630 km",
       "type": "waypoint",
@@ -6432,6 +6670,20 @@
       "lon": 174.486333
     },
     {
+      "id": "w_6ce99216",
+      "name": "Bunnythorpe",
+      "type": "food",
+      "lat": -40.28259,
+      "lon": 175.631499
+    },
+    {
+      "id": "w_6d13d963",
+      "name": "Mangawhai",
+      "type": "town",
+      "lat": -36.125995,
+      "lon": 174.575476
+    },
+    {
       "id": "w_6d41f0c6",
       "name": "1530 km",
       "type": "waypoint",
@@ -6474,6 +6726,20 @@
       "lon": 175.15948
     },
     {
+      "id": "w_7072d742",
+      "name": "Arthur's Pass",
+      "type": "resupply",
+      "lat": -42.939301,
+      "lon": 171.561379
+    },
+    {
+      "id": "w_708b5832",
+      "name": "Picton",
+      "type": "town",
+      "lat": -41.290916,
+      "lon": 174.006908
+    },
+    {
       "id": "w_7100a702",
       "name": "1260 km",
       "type": "waypoint",
@@ -6514,6 +6780,20 @@
       "type": "campsite",
       "lat": -37.1347,
       "lon": 175.163502
+    },
+    {
+      "id": "w_7367b41b",
+      "name": "Mt Potts Lodge",
+      "type": "food",
+      "lat": -43.502584,
+      "lon": 170.924859
+    },
+    {
+      "id": "w_73bff61f",
+      "name": "Nightcaps",
+      "type": "resupply",
+      "lat": -45.970441,
+      "lon": 168.031142
     },
     {
       "id": "w_73f820e4",
@@ -6600,6 +6880,13 @@
       "lon": 168.174998
     },
     {
+      "id": "w_78ec6644",
+      "name": "Twizel",
+      "type": "town",
+      "lat": -44.257483,
+      "lon": 170.099414
+    },
+    {
       "id": "w_798466c7",
       "name": "2770 km",
       "type": "waypoint",
@@ -6626,6 +6913,20 @@
       "type": "caravan-park",
       "lat": -36.596545,
       "lon": 174.699284
+    },
+    {
+      "id": "w_7b686ccb",
+      "name": "Geraldine",
+      "type": "town",
+      "lat": -44.092104,
+      "lon": 171.24259
+    },
+    {
+      "id": "w_7bc15219",
+      "name": "Wellington",
+      "type": "town",
+      "lat": -41.288795,
+      "lon": 174.777211
     },
     {
       "id": "w_7cf8abd2",
@@ -6691,6 +6992,13 @@
       "lon": 170.46452
     },
     {
+      "id": "w_80202a2b",
+      "name": "Mangamuka Bridge Dairy",
+      "type": "food",
+      "lat": -35.236829,
+      "lon": 173.543988
+    },
+    {
       "id": "w_80978c31",
       "name": "Roses Hut",
       "type": "hut",
@@ -6705,11 +7013,25 @@
       "lon": 171.830155
     },
     {
+      "id": "w_812136d0",
+      "name": "Paihia",
+      "type": "town",
+      "lat": -35.281241,
+      "lon": 174.092088
+    },
+    {
       "id": "w_83697cd4",
       "name": "Goat Pass Hut",
       "type": "hut",
       "lat": -42.901564,
       "lon": 171.624823
+    },
+    {
+      "id": "w_8392232f",
+      "name": "Whakahoro",
+      "type": "food",
+      "lat": -39.106443,
+      "lon": 175.074228
     },
     {
       "id": "w_83a544c7",
@@ -6782,6 +7104,13 @@
       "lon": 169.757898
     },
     {
+      "id": "w_869553a7",
+      "name": "Ngunguru",
+      "type": "resupply",
+      "lat": -35.633363,
+      "lon": 174.500775
+    },
+    {
       "id": "w_87654e41",
       "name": "150 km",
       "type": "waypoint",
@@ -6794,6 +7123,13 @@
       "type": "waypoint",
       "lat": -42.518926,
       "lon": 172.38033
+    },
+    {
+      "id": "w_8806b480",
+      "name": "Whatawhata",
+      "type": "food",
+      "lat": -37.797633,
+      "lon": 175.153352
     },
     {
       "id": "w_880bcc83",
@@ -6887,6 +7223,13 @@
       "lon": 175.095833
     },
     {
+      "id": "w_91902eb8",
+      "name": "Huntly",
+      "type": "town",
+      "lat": -37.5584,
+      "lon": 175.158832
+    },
+    {
       "id": "w_9190d1ee",
       "name": "Black Rock Campsite",
       "type": "campsite",
@@ -6971,6 +7314,13 @@
       "lon": 170.670069
     },
     {
+      "id": "w_96f99016",
+      "name": "National Park (Waimarino)",
+      "type": "resupply",
+      "lat": -39.175606,
+      "lon": 175.394566
+    },
+    {
       "id": "w_971efc3a",
       "name": "Boielles Campsite",
       "type": "campsite",
@@ -7025,6 +7375,13 @@
       "type": "waypoint",
       "lat": -40.185117,
       "lon": 175.365438
+    },
+    {
+      "id": "w_9a445075",
+      "name": "Orewa",
+      "type": "town",
+      "lat": -36.58576,
+      "lon": 174.691496
     },
     {
       "id": "w_9a798ee4",
@@ -7181,6 +7538,13 @@
       "lon": 175.151148
     },
     {
+      "id": "w_a46e6801",
+      "name": "Colac Bay",
+      "type": "food",
+      "lat": -46.369551,
+      "lon": 167.914933
+    },
+    {
       "id": "w_a4b856fc",
       "name": "2840 km",
       "type": "waypoint",
@@ -7193,6 +7557,13 @@
       "type": "waypoint",
       "lat": -40.434663,
       "lon": 175.651051
+    },
+    {
+      "id": "w_a532d0ca",
+      "name": "Owhango",
+      "type": "food",
+      "lat": -38.995956,
+      "lon": 175.379537
     },
     {
       "id": "w_a74fe7ee",
@@ -7242,6 +7613,13 @@
       "type": "waypoint",
       "lat": -42.617635,
       "lon": 172.290589
+    },
+    {
+      "id": "w_ab1133e1",
+      "name": "Porirua",
+      "type": "town",
+      "lat": -41.135422,
+      "lon": 174.839782
     },
     {
       "id": "w_ab6d203d",
@@ -7342,6 +7720,13 @@
       "lon": 175.164544
     },
     {
+      "id": "w_b336c8a1",
+      "name": "Mossburn",
+      "type": "resupply",
+      "lat": -45.669331,
+      "lon": 168.234768
+    },
+    {
       "id": "w_b3583cb1",
       "name": "Tīeke Marae/kāinga",
       "type": "hut",
@@ -7370,11 +7755,32 @@
       "lon": 174.999248
     },
     {
+      "id": "w_b5580e78",
+      "name": "Mesopotamia Station",
+      "type": "food",
+      "lat": -43.663438,
+      "lon": 170.884449
+    },
+    {
       "id": "w_b5ed09ee",
       "name": "230 km",
       "type": "waypoint",
       "lat": -35.226357,
       "lon": 173.994841
+    },
+    {
+      "id": "w_b66996f8",
+      "name": "Whananaki",
+      "type": "resupply",
+      "lat": -35.507515,
+      "lon": 174.462946
+    },
+    {
+      "id": "w_b7476f45",
+      "name": "Lake Tekapo",
+      "type": "town",
+      "lat": -44.004519,
+      "lon": 170.477727
     },
     {
       "id": "w_b872fc8c",
@@ -7419,6 +7825,13 @@
       "lon": 171.131522
     },
     {
+      "id": "w_bc2a082d",
+      "name": "Mangawhai Heads",
+      "type": "resupply",
+      "lat": -36.094794,
+      "lon": 174.587198
+    },
+    {
       "id": "w_bcf76e44",
       "name": "2070 km",
       "type": "waypoint",
@@ -7452,6 +7865,13 @@
       "type": "waypoint",
       "lat": -44.304531,
       "lon": 169.75634
+    },
+    {
+      "id": "w_c00b388f",
+      "name": "Whanganui",
+      "type": "town",
+      "lat": -39.93249,
+      "lon": 175.051931
     },
     {
       "id": "w_c0582033",
@@ -7538,6 +7958,27 @@
       "lon": 174.460562
     },
     {
+      "id": "w_c42fd778",
+      "name": "Ngaruawahia",
+      "type": "town",
+      "lat": -37.666266,
+      "lon": 175.150053
+    },
+    {
+      "id": "w_c4cabd0f",
+      "name": "Riverton",
+      "type": "town",
+      "lat": -46.350998,
+      "lon": 168.020269
+    },
+    {
+      "id": "w_c4d9f1ea",
+      "name": "Kaitaia",
+      "type": "town",
+      "lat": -35.114126,
+      "lon": 173.263996
+    },
+    {
       "id": "w_c5cdfe47",
       "name": "Huntly Camping & Caravan Park",
       "type": "accommodation",
@@ -7557,6 +7998,13 @@
       "type": "waypoint",
       "lat": -46.083909,
       "lon": 167.883478
+    },
+    {
+      "id": "w_c6ca150c",
+      "name": "Pakiri Beach Holiday Park",
+      "type": "resupply",
+      "lat": -36.264396,
+      "lon": 174.727471
     },
     {
       "id": "w_c6d9645a",
@@ -7622,6 +8070,13 @@
       "lon": 174.756004
     },
     {
+      "id": "w_ca65e529",
+      "name": "Pipiriki",
+      "type": "food",
+      "lat": -39.478542,
+      "lon": 175.042254
+    },
+    {
       "id": "w_ca9bc5b0",
       "name": "1310 km",
       "type": "waypoint",
@@ -7634,6 +8089,13 @@
       "type": "hut",
       "lat": -43.382862,
       "lon": 171.370368
+    },
+    {
+      "id": "w_cb62c695",
+      "name": "Havelock",
+      "type": "town",
+      "lat": -41.278597,
+      "lon": 173.767683
     },
     {
       "id": "w_cbc77ae2",
@@ -7650,6 +8112,13 @@
       "lon": 175.497099
     },
     {
+      "id": "w_cc675ebf",
+      "name": "Devonport",
+      "type": "town",
+      "lat": -36.829731,
+      "lon": 174.797538
+    },
+    {
       "id": "w_cca1d8d8",
       "name": "1710 km",
       "type": "waypoint",
@@ -7662,6 +8131,20 @@
       "type": "campsite",
       "lat": -43.793864,
       "lon": 170.649212
+    },
+    {
+      "id": "w_cd0a3ceb",
+      "name": "Ahipara",
+      "type": "resupply",
+      "lat": -35.1713,
+      "lon": 173.153431
+    },
+    {
+      "id": "w_cd258a2d",
+      "name": "Waitomo",
+      "type": "resupply",
+      "lat": -38.261094,
+      "lon": 175.110322
     },
     {
       "id": "w_cd522514",
@@ -7727,6 +8210,13 @@
       "lon": 175.10113
     },
     {
+      "id": "w_d00be58a",
+      "name": "Levin",
+      "type": "town",
+      "lat": -40.621816,
+      "lon": 175.286585
+    },
+    {
       "id": "w_d0690311",
       "name": "520 km",
       "type": "waypoint",
@@ -7746,6 +8236,13 @@
       "type": "waypoint",
       "lat": -45.070647,
       "lon": 168.223651
+    },
+    {
+      "id": "w_d1fabf45",
+      "name": "Paraparaumu Beach",
+      "type": "town",
+      "lat": -40.891477,
+      "lon": 174.981287
     },
     {
       "id": "w_d2bc3f63",
@@ -7846,6 +8343,13 @@
       "lon": 175.623749
     },
     {
+      "id": "w_d85fd7c8",
+      "name": "Silverdale",
+      "type": "town",
+      "lat": -36.61768,
+      "lon": 174.676905
+    },
+    {
       "id": "w_d8f8ba90",
       "name": "790 km",
       "type": "waypoint",
@@ -7858,6 +8362,13 @@
       "type": "waypoint",
       "lat": -35.553,
       "lon": 174.467945
+    },
+    {
+      "id": "w_d9ad3350",
+      "name": "Warkworth",
+      "type": "town",
+      "lat": -36.397669,
+      "lon": 174.665849
     },
     {
       "id": "w_d9cd9943",
@@ -7879,6 +8390,13 @@
       "type": "waypoint",
       "lat": -35.177368,
       "lon": 173.351278
+    },
+    {
+      "id": "w_da5cbe7b",
+      "name": "Matapouri",
+      "type": "resupply",
+      "lat": -35.566397,
+      "lon": 174.50307
     },
     {
       "id": "w_db2033c3",
@@ -8126,6 +8644,13 @@
       "lon": 170.497783
     },
     {
+      "id": "w_e8babe1a",
+      "name": "Bluff",
+      "type": "town",
+      "lat": -46.59882,
+      "lon": 168.343368
+    },
+    {
       "id": "w_e92bb548",
       "name": "1480 km",
       "type": "waypoint",
@@ -8147,6 +8672,20 @@
       "lon": 175.244041
     },
     {
+      "id": "w_ebf4fb75",
+      "name": "Hanmer Springs",
+      "type": "town",
+      "lat": -42.521795,
+      "lon": 172.830299
+    },
+    {
+      "id": "w_ecc2d021",
+      "name": "Te Anau",
+      "type": "town",
+      "lat": -45.41449,
+      "lon": 167.717489
+    },
+    {
       "id": "w_ed8d7acf",
       "name": "2010 km",
       "type": "waypoint",
@@ -8159,6 +8698,20 @@
       "type": "waypoint",
       "lat": -38.811121,
       "lon": 175.227047
+    },
+    {
+      "id": "w_ee916333",
+      "name": "The Key (Princhester)",
+      "type": "food",
+      "lat": -45.545322,
+      "lon": 167.895161
+    },
+    {
+      "id": "w_ef31282d",
+      "name": "Opua",
+      "type": "resupply",
+      "lat": -35.312631,
+      "lon": 174.121422
     },
     {
       "id": "w_efd3bdbc",
@@ -8194,6 +8747,13 @@
       "type": "waypoint",
       "lat": -39.181518,
       "lon": 175.422079
+    },
+    {
+      "id": "w_f31e83a5",
+      "name": "Mangere Bridge",
+      "type": "town",
+      "lat": -36.943904,
+      "lon": 174.785241
     },
     {
       "id": "w_f34ca87d",
@@ -8308,6 +8868,13 @@
       "lon": 174.497692
     },
     {
+      "id": "w_fba5a898",
+      "name": "Waikanae",
+      "type": "town",
+      "lat": -40.875843,
+      "lon": 175.064304
+    },
+    {
       "id": "w_fc2fd9c6",
       "name": "John Coull Campsite",
       "type": "campsite",
@@ -8334,6 +8901,13 @@
       "type": "waypoint",
       "lat": -37.390547,
       "lon": 175.062794
+    },
+    {
+      "id": "w_fd6dcca2",
+      "name": "Otatara",
+      "type": "resupply",
+      "lat": -46.43803,
+      "lon": 168.28698
     },
     {
       "id": "w_fd83eed4",

@@ -157,7 +157,10 @@ if [ "$node_major" = "$NODE_MAJOR" ]; then
 else
   echo "  Installing Node $NODE_MAJOR from the NodeSource apt repo..."
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" -o /tmp/nodesource_setup.sh
-  $SUDO -E bash /tmp/nodesource_setup.sh
+  # ${SUDO:+...} so this stays `bash ...` when already root: a bare `$SUDO -E`
+  # expands to `-E bash ...` (command not found) and `set -e` would abort the
+  # whole bootstrap here — which is exactly what `ssh root@<box>` does.
+  ${SUDO:+$SUDO -E} bash /tmp/nodesource_setup.sh
   rm -f /tmp/nodesource_setup.sh
   $SUDO apt-get install -y nodejs
   echo "  ✓ Node $(node -v)"

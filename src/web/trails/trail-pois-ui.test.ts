@@ -197,6 +197,22 @@ describe('the POI filter state', () => {
     expect(visiblePois(pois, state).map(p => p.id)).toEqual([2, 3]);
   });
 
+  it('never shows a POI that duplicates a curated waypoint', () => {
+    // The waypoint is the one marker for that place; two pins a few metres
+    // apart is the thing this flag exists to prevent.
+    const state = defaultPoiFilterState();
+    const pois = [poi({ id: 1 }), poi({ id: 2, duplicateOf: 'w_abc' })];
+    expect(visiblePois(pois, state).map(p => p.id)).toEqual([1]);
+  });
+
+  it('leaves duplicates out of the checkbox counts, so counts match markers', () => {
+    const counts = countPoisByCategory([
+      poi({ category: 'camping' }),
+      poi({ category: 'camping', duplicateOf: 'w_abc' }),
+    ]);
+    expect(counts.camping).toBe(1);
+  });
+
   it('counts by category for the checkbox labels', () => {
     const counts = countPoisByCategory([
       poi({ category: 'water' }),

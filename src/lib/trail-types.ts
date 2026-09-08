@@ -204,6 +204,18 @@ export interface TrailPOI {
   distanceAlongTrail: number;
   /** Cross-track distance from the trail, km. */
   distanceFromTrail: number;
+  /**
+   * Set when this POI describes a place a curated waypoint already covers; holds
+   * that waypoint's stable id. Derived at build/import time by
+   * `@lib/poi-dedup`, never stored in `data/trails/<dir>/pois.json`.
+   *
+   * Flagged rather than removed so the OSM detail (`website`, `opening_hours`,
+   * `operator`) stays available to show on the waypoint it duplicates. The UI
+   * hides these: the curated waypoint is the one marker for that place.
+   */
+  duplicateOf?: string;
+  /** Metres between this POI and the waypoint it duplicates. Review aid. */
+  duplicateDistanceM?: number;
 }
 
 export interface ProcessedTrail {

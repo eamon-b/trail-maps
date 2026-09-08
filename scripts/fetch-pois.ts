@@ -27,13 +27,28 @@
  *   - --timeout <s>:    Overpass `[timeout:]` in seconds (default 22)
  *
  * Choosing an instance: public Overpass mirrors vary wildly in reach and load,
- * and a whole-corridor query with all five POI types is a heavy one. As of
+ * and a whole-corridor query with all six POI types is a heavy one. As of
  * 2026-09, `overpass-api.de` (the library default) is unreachable from the dev
  * box and `overpass.kumi.systems` answers every query shape with a 504 gateway
- * page. The combination that works is:
+ * page. `overpass.private.coffee` is the one that answers:
  *
  *   npm run fetch:pois -- cape_to_cape \
  *     --endpoint https://overpass.private.coffee/api/interpreter --timeout 120
+ *
+ * Pace whole-trail runs, not just queries. MIN_DELAY_MS spaces the queries
+ * within one trail; nothing spaces the trails themselves. Fetching all six
+ * back-to-back on 2026-09-08 got the first three through and then failed the
+ * next three in a row, with 504s and timeouts on corridors of every size —
+ * including the smallest, which had succeeded minutes earlier. After about ten
+ * minutes of quiet the same query returned in 67s. So read a sudden run of
+ * failures as a rate limit rather than a per-trail fault: stop, wait, then
+ * re-run one trail at a time with a gap between them.
+ *
+ * A partial fetch is silent in the output file. `failedChunks` is printed as a
+ * WARNING and then dropped on write, so a `pois.json` missing half its corridor
+ * is indistinguishable from a complete one. Check that line before committing.
+ * Heysen shipped 0–878 km of 1099, and AAWT 24 POIs for 650 km of alpine
+ * track, before MAX_VERTICES_PER_CHUNK came down; neither file said so.
  *
  * Networking note: on hosts whose IPv6 route to Overpass black-holes, Node's
  * happy-eyeballs fallback can be slower than the request timeout and every
@@ -80,7 +95,17 @@ const DATA_DIR = path.join(PROJECT_ROOT, 'data/trails');
 const SEARCH_RADIUS_KM = 2;
 /** Overpass etiquette: a slow trickle from one IP, never parallel queries. */
 const MIN_DELAY_MS = 2000;
-/** Corridor vertices per Overpass query; must stay under CORRIDOR_LIMITS.maxVertices. */
+/**
+ * Corridor vertices per Overpass query; must stay under CORRIDOR_LIMITS.maxVertices.
+ *
+ * Don't lower this hoping to dodge Overpass timeouts — that was tried on
+ * 2026-09-08 and made things worse. Heysen at 100 (5 chunks) failed 3 of them
+ * and returned a third of the POIs, where 300 (2 chunks) failed 1. Whether a
+ * chunk succeeds tracks how loaded the mirror is, not how big the chunk is:
+ * all six trails fetched cleanly at 300 earlier that same morning, before a
+ * six-trail run back-to-back got us rate-limited. If chunks are failing, stop
+ * and come back later rather than re-tuning this.
+ */
 const MAX_VERTICES_PER_CHUNK = 300;
 /**
  * The gpx-tools default, restated so the endpoint actually used can be recorded

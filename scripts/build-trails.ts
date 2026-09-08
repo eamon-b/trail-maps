@@ -23,6 +23,7 @@ import {
   DESCRIPTIONS_FILENAME,
   loadCuratedDescriptions,
 } from './lib/waypoint-descriptions.js';
+import { countDuplicatePois, markDuplicatePois } from '../src/lib/poi-dedup.js';
 import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
 
 /** Calculate haversine distance in km */
@@ -608,7 +609,11 @@ async function main() {
       // merged into `waypoints` and never enter the waypoint-id registry; the
       // file's hand-edited `rejected` keys are dropped here. A trail with no
       // pois.json gets no `pois` key at all.
-      const pois = readTrailPOIsForBuild(trailDir);
+      // POIs that describe a place a curated waypoint already covers are
+      // flagged here, not dropped: the flag is derived from waypoint positions,
+      // which a rebuild can move, so it belongs to the build rather than to
+      // pois.json. See plans/poi-waypoint-dedup.md.
+      const pois = markDuplicatePois(readTrailPOIsForBuild(trailDir) ?? undefined, processed.waypoints);
       if (pois) {
         processed.pois = pois;
       }
@@ -621,7 +626,9 @@ async function main() {
       console.log(`    Elevation: +${Math.round(processed.track.totalAscent)}m / -${Math.round(processed.track.totalDescent)}m`);
       console.log(`    Waypoints: ${processed.waypoints.length} on-trail, ${processed.offTrailWaypoints.length} off-trail`);
       if (pois) {
-        console.log(`    POIs: ${pois.length} (OpenStreetMap)`);
+        const duplicates = countDuplicatePois(pois);
+        const suffix = duplicates > 0 ? `, ${duplicates} hidden as duplicates of waypoints` : '';
+        console.log(`    POIs: ${pois.length} (OpenStreetMap)${suffix}`);
       }
 
       // Generate HTML pages for this trail

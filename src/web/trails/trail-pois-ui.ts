@@ -353,6 +353,12 @@ export function savePoiFilterState(state: PoiFilterState): void {
 }
 
 /** How many POIs there are per category, for the checkbox labels. */
+/**
+ * POIs per category, excluding those flagged as duplicating a waypoint.
+ *
+ * These numbers label the filter checkboxes, so they have to agree with what
+ * `visiblePois` will actually draw — "camping (13)" must mean 13 markers.
+ */
 export function countPoisByCategory(pois: readonly TrailPOI[]): Record<TrailPOICategory, number> {
   const counts: Record<TrailPOICategory, number> = {
     water: 0,
@@ -363,6 +369,7 @@ export function countPoisByCategory(pois: readonly TrailPOI[]): Record<TrailPOIC
     emergency: 0,
   };
   for (const poi of pois) {
+    if (poi.duplicateOf) continue;
     if (isPoiCategory(poi.category)) counts[poi.category] += 1;
   }
   return counts;
@@ -380,7 +387,13 @@ export function visiblePois(
   state: PoiFilterState
 ): TrailPOI[] {
   if (!pois || !state.enabled) return [];
-  return pois.filter(poi => (isPoiCategory(poi.category) ? state.categories[poi.category] : true));
+  return pois.filter(poi => {
+    // A POI the curated waypoint data already covers is never drawn: the
+    // waypoint is the one marker for that place, and showing both puts two
+    // pins a few metres apart. The POI stays in the data for its OSM detail.
+    if (poi.duplicateOf) return false;
+    return isPoiCategory(poi.category) ? state.categories[poi.category] : true;
+  });
 }
 
 /**

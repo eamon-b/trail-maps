@@ -10,6 +10,7 @@
 import { clearDirectionPreference, initTrailViewer, setTrailPois } from './trails/trail-viewer';
 import { clearPlanState } from './trails/plan-state';
 import { markDuplicatePois } from '@lib/poi-dedup';
+import { dropNoisePois } from '@lib/poi-noise';
 import { handoffFileName, serializeTrailHandoff } from '@lib/trail-handoff';
 import type { ProcessedTrail, TrailPOI } from '@lib/trail-types';
 import {
@@ -322,7 +323,8 @@ function initPoiPanel(trailId: string, trail: ProcessedTrail): void {
     // Flag the POIs this trail's own waypoints already cover before anything
     // persists them, so the hidden-duplicate state survives a reload and rides
     // along in the Tracknotes export. See plans/poi-waypoint-dedup.md.
-    const pois = found === null ? null : (markDuplicatePois(found, trail.waypoints) ?? []);
+    const pois =
+      found === null ? null : (markDuplicatePois(dropNoisePois(found), trail.waypoints) ?? []);
     const saved = await updateTrailPois(trailId, pois);
     panelPois = pois;
     if (pois === null) {

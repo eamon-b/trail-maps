@@ -1,0 +1,5 @@
+# npm owns the lockfile's formatting; prettier rewraps it wholesale.
+package-lock.json
+
+# Build output.
+dist/

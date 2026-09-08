@@ -119,6 +119,11 @@ Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: 
 - **Static site**: All pages are pre-generated, no runtime server required
 - **Client-side rendering**: Trail viewer loads JSON data and renders interactively
 - **Web maps**: Leaflet with OpenTopoMap tiles for topographic display
+- **Formatting**: `.prettierrc` records the house style - single quotes, 100 columns,
+  `es5` trailing commas, no parens on single-argument arrows. The tree predates it and is
+  not uniformly formatted, so format the code you touch rather than whole files: a blanket
+  `prettier --write` would bury the change in reformatting. `data/` is already consistent
+  with it, so generated trail JSON stays stable.
 
 ## Testing
 

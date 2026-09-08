@@ -18,13 +18,16 @@
  * POIs never become waypoints: they carry no `data/waypoint-ids.json` id and
  * are kept in their own `pois` array.
  *
- * Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>] [--timeout <s>]
+ * Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>]
+ *          [--timeout <s>] [--max-vertices <n>]
  *   - With no trail-id: processes every generated trail
  *   - With trail-id:    processes only that trail
  *   - --dry-run:        builds the corridor and prints query counts, but makes
  *                       no network requests and writes nothing
  *   - --endpoint <url>: Overpass instance (also `OVERPASS_ENDPOINT`)
  *   - --timeout <s>:    Overpass `[timeout:]` in seconds (default 22)
+ *   - --max-vertices <n>: corridor vertices per query (default 300); see the
+ *                       note on MAX_VERTICES_PER_CHUNK before reaching for it
  *
  * Choosing an instance: public Overpass mirrors vary wildly in reach and load,
  * and a whole-corridor query with all six POI types is a heavy one. As of
@@ -35,20 +38,29 @@
  *   npm run fetch:pois -- cape_to_cape \
  *     --endpoint https://overpass.private.coffee/api/interpreter --timeout 120
  *
- * Pace whole-trail runs, not just queries. MIN_DELAY_MS spaces the queries
- * within one trail; nothing spaces the trails themselves. Fetching all six
- * back-to-back on 2026-09-08 got the first three through and then failed the
- * next three in a row, with 504s and timeouts on corridors of every size —
- * including the smallest, which had succeeded minutes earlier. After about ten
- * minutes of quiet the same query returned in 67s. So read a sudden run of
- * failures as a rate limit rather than a per-trail fault: stop, wait, then
- * re-run one trail at a time with a gap between them.
+ * Two different failures look identical in the output, and they want opposite
+ * responses. Tell them apart by whether the same chunk fails twice.
+ *
+ * Rate limiting: a sudden run of failures across corridors of every size,
+ * including ones that succeeded minutes earlier. MIN_DELAY_MS spaces the
+ * queries within one trail; nothing spaces the trails themselves, and fetching
+ * all six back-to-back on 2026-09-08 got the first three through and then
+ * failed the next three. After ten minutes of quiet the same query returned in
+ * 67 s. Response: stop, wait, re-run one trail at a time.
+ *
+ * A chunk the mirror will not serve: the SAME chunk 504s on repeat runs while
+ * its siblings succeed in that very run. Heysen chunk 2 and AAWT chunk 1 each
+ * failed identically on 2026-09-08 and again on 2026-09-09 after a full day's
+ * rest. Waiting does not help. Response: re-run that trail with a smaller
+ * --max-vertices so the expensive chunk is split into cheaper queries. That
+ * took AAWT from 24 POIs covering only km 485–793 to 229 covering km 0–793.
  *
  * A partial fetch is silent in the output file. `failedChunks` is printed as a
  * WARNING and then dropped on write, so a `pois.json` missing half its corridor
- * is indistinguishable from a complete one. Check that line before committing.
- * Heysen shipped 0–878 km of 1099, and AAWT 24 POIs for 650 km of alpine
- * track, before MAX_VERTICES_PER_CHUNK came down; neither file said so.
+ * is indistinguishable from a complete one. Check that line before committing,
+ * and check WHICH km the POIs span: AAWT's 24-POI file looked like a thin
+ * sample of a remote trail and was actually the back half only, with km 0–485
+ * missing outright. Heysen still ships 0–878 km of 1099 for the same reason.
  *
  * Networking note: on hosts whose IPv6 route to Overpass black-holes, Node's
  * happy-eyeballs fallback can be slower than the request timeout and every
@@ -62,7 +74,12 @@ import * as net from 'net';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-import { POI_TYPES, buildCorridorChunks, type POIType } from 'gpx-tools/lib/osm-poi';
+import {
+  POI_TYPES,
+  buildCorridorChunks,
+  packCorridorChunks,
+  type POIType,
+} from 'gpx-tools/lib/osm-poi';
 import { createOverpassFetcher, type POIFetcher } from 'gpx-tools/lib/overpass-client';
 import { enrichRoute, type ChunkFailure } from 'gpx-tools/lib/poi-enrichment';
 
@@ -98,13 +115,17 @@ const MIN_DELAY_MS = 2000;
 /**
  * Corridor vertices per Overpass query; must stay under CORRIDOR_LIMITS.maxVertices.
  *
- * Don't lower this hoping to dodge Overpass timeouts — that was tried on
- * 2026-09-08 and made things worse. Heysen at 100 (5 chunks) failed 3 of them
- * and returned a third of the POIs, where 300 (2 chunks) failed 1. Whether a
- * chunk succeeds tracks how loaded the mirror is, not how big the chunk is:
- * all six trails fetched cleanly at 300 earlier that same morning, before a
- * six-trail run back-to-back got us rate-limited. If chunks are failing, stop
- * and come back later rather than re-tuning this.
+ * 300 is the default because it is the fewest queries that works for most
+ * trails, and every query is a fresh chance to be refused. Don't lower it as a
+ * blanket response to timeouts: a Heysen run at 100 on 2026-09-08 split into 5
+ * chunks, failed 3, and returned a third of the POIs where 300 failed 1 of 2.
+ *
+ * Lower it per-run, via --max-vertices, for the narrow case the header
+ * describes: one chunk that 504s on repeat runs while its siblings succeed.
+ * That is the mirror refusing a query too expensive to serve, and splitting it
+ * is the only thing that helps. Note the 2026-09-08 experiment cannot settle
+ * this either way — it ran while we were rate-limited, so every chunk size was
+ * being refused regardless of cost.
  */
 const MAX_VERTICES_PER_CHUNK = 300;
 /**
@@ -127,7 +148,8 @@ const ALL_POI_TYPES: POIType[] = [...POI_TYPES];
  */
 export async function processTrailData(
   trail: ProcessedTrail,
-  fetchPOIs: POIFetcher
+  fetchPOIs: POIFetcher,
+  maxVerticesPerChunk: number = MAX_VERTICES_PER_CHUNK
 ): Promise<TrailPOIResult> {
   const scale = buildRouteScale(trail);
   if (scale.polylines.length === 0) {
@@ -137,7 +159,7 @@ export async function processTrailData(
   const result = await enrichRoute(scale.polylines, {
     types: ALL_POI_TYPES,
     searchRadiusKm: SEARCH_RADIUS_KM,
-    maxVerticesPerChunk: MAX_VERTICES_PER_CHUNK,
+    maxVerticesPerChunk,
     fetchPOIs,
   });
 
@@ -213,7 +235,7 @@ function countByCategory(pois: TrailPOI[]): Record<string, number> {
 }
 
 /** Report the corridor a trail would query, without making any request. */
-function dryRunTrail(trailPath: string, trailDir: string): void {
+function dryRunTrail(trailPath: string, trailDir: string, maxVertices: number): void {
   const trailId = path.basename(trailPath, '.json');
   console.log(`\nProcessing: ${trailId} (dry run)`);
 
@@ -224,12 +246,15 @@ function dryRunTrail(trailPath: string, trailDir: string): void {
     return;
   }
 
-  const chunks = buildCorridorChunks(
-    scale.polylines,
-    SEARCH_RADIUS_KM * 1000,
-    MAX_VERTICES_PER_CHUNK
+  // enrichRoute packs the raw chunks into shared queries before sending them, so
+  // pack here too — otherwise the dry run reports one query per polyline and
+  // wildly overstates the real request count (heysen: 19 reported, 2 sent).
+  const chunks = packCorridorChunks(
+    buildCorridorChunks(scale.polylines, SEARCH_RADIUS_KM * 1000, maxVertices),
+    maxVertices
   );
-  const vertices = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  // Packed chunks are groups of chunks, so flatten before counting vertices.
+  const vertices = chunks.flat().reduce((sum, chunk) => sum + chunk.length, 0);
   const existing = readTrailPOIFile(trailDir);
 
   console.log(`  Route: ${scale.polylines.length} polyline(s), ${scale.kmScale.length} point(s)`);
@@ -252,13 +277,14 @@ async function processTrail(
   trailPath: string,
   trailDir: string,
   fetchPOIs: POIFetcher,
-  endpoint: string
+  endpoint: string,
+  maxVertices: number
 ): Promise<boolean> {
   const trailId = path.basename(trailPath, '.json');
   console.log(`\nProcessing: ${trailId}`);
 
   const trail = readTrail(trailPath);
-  const result = await processTrailData(trail, fetchPOIs);
+  const result = await processTrailData(trail, fetchPOIs, maxVertices);
 
   if (result.queryChunks === 0) {
     console.log('  No track points found. Skipping.');
@@ -303,7 +329,7 @@ async function processTrail(
 
 function printUsage(): void {
   console.log(
-    'Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>] [--timeout <s>]'
+    'Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>] [--timeout <s>] [--max-vertices <n>]'
   );
   console.log('');
   console.log('Fetches OSM points of interest along each trail corridor via the');
@@ -320,7 +346,8 @@ function printUsage(): void {
     `  --endpoint <url> Overpass instance (env OVERPASS_ENDPOINT, default ${DEFAULT_ENDPOINT})`
   );
   console.log(
-    `  --timeout <s>    Overpass [timeout:] in seconds (default ${DEFAULT_TIMEOUT_SECONDS})`
+    `  --timeout <s>    Overpass [timeout:] in seconds (default ${DEFAULT_TIMEOUT_SECONDS})`,
+    `  --max-vertices <n>  Corridor vertices per query (default ${MAX_VERTICES_PER_CHUNK})`
   );
   console.log('  --help, -h       Show this message');
   console.log('');
@@ -330,7 +357,7 @@ function printUsage(): void {
 }
 
 /** Flags that take a value, so `positionalArgs` never reads one as a trail id. */
-const VALUE_FLAGS = ['--endpoint', '--timeout'];
+const VALUE_FLAGS = ['--endpoint', '--timeout', '--max-vertices'];
 
 /** Read `--name <value>` or `--name=<value>`. Null when absent; throws when empty. */
 function optionValue(args: string[], name: string, requirement: string): string | null {
@@ -374,6 +401,23 @@ export function resolveTimeoutSeconds(args: string[]): number {
   return seconds;
 }
 
+/**
+ * Resolve the corridor vertex budget per query. Defaults to
+ * MAX_VERTICES_PER_CHUNK; lower it only to work a chunk that fails
+ * reproducibly on a mirror that is otherwise answering.
+ */
+export function resolveMaxVertices(args: string[]): number {
+  const raw = optionValue(args, '--max-vertices', 'a number of vertices');
+  if (raw === null) {
+    return MAX_VERTICES_PER_CHUNK;
+  }
+  const vertices = Number(raw);
+  if (!Number.isInteger(vertices) || vertices <= 0) {
+    throw new Error(`--max-vertices requires a positive whole number, got "${raw}"`);
+  }
+  return vertices;
+}
+
 /** Positional arguments, with the value-taking flags and their values removed. */
 export function positionalArgs(args: string[]): string[] {
   const out: string[] = [];
@@ -400,9 +444,11 @@ async function main(): Promise<void> {
   const dryRun = args.includes('--dry-run');
   let endpoint: string;
   let timeoutSeconds: number;
+  let maxVertices: number;
   try {
     endpoint = resolveEndpoint(args);
     timeoutSeconds = resolveTimeoutSeconds(args);
+    maxVertices = resolveMaxVertices(args);
   } catch (error) {
     console.error(`Error: ${error instanceof Error ? error.message : 'bad option'}`);
     printUsage();
@@ -472,7 +518,7 @@ async function main(): Promise<void> {
   if (dryRun) {
     for (const { trailFile, trailDir } of targets) {
       try {
-        dryRunTrail(trailFile, trailDir);
+        dryRunTrail(trailFile, trailDir, maxVertices);
       } catch (error) {
         console.error(`  Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -499,7 +545,7 @@ async function main(): Promise<void> {
 
   for (const { trailFile, trailDir } of targets) {
     try {
-      if (await processTrail(trailFile, trailDir, fetchPOIs, endpoint)) {
+      if (await processTrail(trailFile, trailDir, fetchPOIs, endpoint, maxVertices)) {
         updatedCount++;
       }
     } catch (error) {

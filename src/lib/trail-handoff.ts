@@ -397,6 +397,16 @@ function readPOIs(value: unknown): TrailPOI[] | undefined {
       tags: isRecord(entry.tags) ? (entry.tags as Record<string, string>) : {},
       distanceAlongTrail: finiteOr(distanceAlongTrail, 0),
       distanceFromTrail: finiteOr(distanceFromTrail, 0),
+      // Carried through so an exported trail keeps hiding the POIs its own
+      // waypoints already cover. Only the shape is checked: a duplicateOf
+      // naming a waypoint that is not in this file simply hides one POI.
+      ...(typeof entry.duplicateOf === 'string' && entry.duplicateOf.length > 0
+        ? { duplicateOf: entry.duplicateOf }
+        : {}),
+      ...(typeof entry.duplicateDistanceM === 'number' &&
+      Number.isFinite(entry.duplicateDistanceM)
+        ? { duplicateDistanceM: entry.duplicateDistanceM }
+        : {}),
     });
   }
 

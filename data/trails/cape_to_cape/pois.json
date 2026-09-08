@@ -1,7 +1,7 @@
 {
   "source": "OpenStreetMap",
   "attribution": "© OpenStreetMap contributors (ODbL)",
-  "fetchedAt": "2026-09-06T10:35:55.432Z",
+  "fetchedAt": "2026-09-07T22:04:58.164Z",
   "searchRadiusKm": 2,
   "endpoint": "https://overpass.private.coffee/api/interpreter",
   "rejected": [],
@@ -118,7 +118,7 @@
     {
       "id": 4430040793,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.9921348,
       "lon": 114.9942691,
       "name": "The Common",
@@ -136,7 +136,7 @@
     {
       "id": 461689533,
       "type": "way",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.9906417,
       "lon": 114.9911984,
       "name": "White Elephant Cafe",
@@ -189,7 +189,7 @@
     {
       "id": 2506661367,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.9784664,
       "lon": 114.9945481,
       "name": "Sea Garden",
@@ -349,7 +349,7 @@
     {
       "id": 4574521442,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6694974,
       "lon": 115.0306722,
       "name": "Cape Lavender",
@@ -365,7 +365,7 @@
     {
       "id": 4574521449,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6694042,
       "lon": 115.0295204,
       "name": "Barnyard1978",
@@ -380,7 +380,7 @@
     {
       "id": 7260552186,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6657132,
       "lon": 115.0311675,
       "name": "Cape Lavender",
@@ -446,7 +446,7 @@
     {
       "id": 8099103713,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6453751,
       "lon": 115.0312777,
       "name": null,
@@ -459,7 +459,7 @@
     {
       "id": 8099135347,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6450864,
       "lon": 115.0312623,
       "name": null,
@@ -472,7 +472,7 @@
     {
       "id": 870734594,
       "type": "way",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6456301,
       "lon": 115.0311708,
       "name": "Pizza Shack",
@@ -546,7 +546,7 @@
     {
       "id": 4568351766,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.6395339,
       "lon": 115.0263829,
       "name": "Lagoon Yallingup",
@@ -615,7 +615,7 @@
     {
       "id": 1160738687,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.5435335,
       "lon": 115.0325354,
       "name": "Bunkers Beach Cafe",
@@ -632,7 +632,7 @@
     {
       "id": 3737251586,
       "type": "node",
-      "category": "resupply",
+      "category": "restaurant",
       "lat": -33.5392001,
       "lon": 115.0196627,
       "name": "Cape Naturaliste Lighthouse Tea Rooms",

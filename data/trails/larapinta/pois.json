@@ -1,0 +1,2327 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-09-07T21:29:38.568Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://overpass.private.coffee/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 11597838833,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6796786,
+      "lon": 133.873491,
+      "name": "Madigan Street (1007)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Madigan Street (1007)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1007",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.0001597917661531592,
+      "distanceFromTrail": 1.5283770205340523
+    },
+    {
+      "id": 11597839302,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6849392,
+      "lon": 133.8733107,
+      "name": "Tielkens Street (1004)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Tielkens Street (1004)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1004",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.0001597917661531592,
+      "distanceFromTrail": 1.9638238578310112
+    },
+    {
+      "id": 225691575,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.6814744,
+      "lon": 133.8731085,
+      "name": "Wintersun Cabin and Caravan Park",
+      "tags": {
+        "addr:country": "AU",
+        "addr:street": "Stuart Highway",
+        "email": "wintersun@wintersun.com.au",
+        "fax": "+61 8 8952 4588",
+        "fee": "yes",
+        "name": "Wintersun Cabin and Caravan Park",
+        "phone": "+61 8 8952 4080",
+        "power_supply": "yes",
+        "source": "Bing",
+        "tents": "yes",
+        "tourism": "caravan_site",
+        "website": "https://www.wintersun.com.au/"
+      },
+      "distanceAlongTrail": 0.0001597917661531592,
+      "distanceFromTrail": 1.6901815181078066
+    },
+    {
+      "id": 225794490,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -23.6725683,
+      "lon": 133.8871457,
+      "name": null,
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "note": "entry to Telegraph Station"
+      },
+      "distanceAlongTrail": 0.0001597917661531592,
+      "distanceFromTrail": 0.2758261431549214
+    },
+    {
+      "id": 2345479267,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6708233,
+      "lon": 133.8849913,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Section 1",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-07-20",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 0.012979920603072459,
+      "distanceFromTrail": 0.012160907148836974
+    },
+    {
+      "id": 11597838720,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.678481,
+      "lon": 133.8731673,
+      "name": "Aldidja Street (1008)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Aldidja Street (1008)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1008",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.31345802181596955,
+      "distanceFromTrail": 1.4598656575624085
+    },
+    {
+      "id": 11597838744,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6807996,
+      "lon": 133.8686149,
+      "name": "Head Street (1013)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Head Street (1013)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1013",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.31345802181596955,
+      "distanceFromTrail": 1.9745274647437883
+    },
+    {
+      "id": 11597839230,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6815795,
+      "lon": 133.8705697,
+      "name": "Priest Street 2 (1006)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Priest Street 2 (1006)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1006",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.31345802181596955,
+      "distanceFromTrail": 1.8916721016800355
+    },
+    {
+      "id": 11597838976,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6759724,
+      "lon": 133.8664443,
+      "name": "Dixon Road (1010)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Dixon Road (1010)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1010",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.3233536240049032,
+      "distanceFromTrail": 1.8686697577079803
+    },
+    {
+      "id": 11597839047,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6773874,
+      "lon": 133.8678464,
+      "name": "Angguna Avenue (1009)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Angguna Avenue (1009)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1009",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.3233536240049032,
+      "distanceFromTrail": 1.8145216024188333
+    },
+    {
+      "id": 11597839071,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6729782,
+      "lon": 133.8726721,
+      "name": "Stuart Highway (1014)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stuart Highway (1014)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1014",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.3233536240049032,
+      "distanceFromTrail": 1.154454784597042
+    },
+    {
+      "id": 11597838959,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6690845,
+      "lon": 133.8683644,
+      "name": "Power Street (1015)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Power Street (1015)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1015",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.3348852146626022,
+      "distanceFromTrail": 1.5048275723369888
+    },
+    {
+      "id": 11597839212,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6687191,
+      "lon": 133.8691397,
+      "name": "Basso Road (1018)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Basso Road (1018)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1018",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.3348852146626022,
+      "distanceFromTrail": 1.4260620469819374
+    },
+    {
+      "id": 11597839285,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.6708215,
+      "lon": 133.8671157,
+      "name": "Power Street (1016)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Power Street (1016)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1016",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 0.3348852146626022,
+      "distanceFromTrail": 1.6449859772446676
+    },
+    {
+      "id": 4406330959,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6633186,
+      "lon": 133.8718472,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 2.9822129311465897,
+      "distanceFromTrail": 0.9959330326223609
+    },
+    {
+      "id": 11597838887,
+      "type": "node",
+      "category": "transport",
+      "lat": -23.668623,
+      "lon": 133.8649706,
+      "name": "Dalgety Road (1017)",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Dalgety Road (1017)",
+        "operator": "Darwin Bus",
+        "public_transport": "platform",
+        "ref": "1017",
+        "route_ref": "100;101"
+      },
+      "distanceAlongTrail": 3.0131222586654824,
+      "distanceFromTrail": 1.8321869743983137
+    },
+    {
+      "id": 225691507,
+      "type": "way",
+      "category": "resupply",
+      "lat": -23.667916,
+      "lon": 133.8651935,
+      "name": "Shell",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Shell",
+        "brand:wikidata": "Q110716465",
+        "name": "Shell",
+        "source": "Bing"
+      },
+      "distanceAlongTrail": 3.0131222586654824,
+      "distanceFromTrail": 1.753582179382044
+    },
+    {
+      "id": 309726669,
+      "type": "way",
+      "category": "resupply",
+      "lat": -23.6677342,
+      "lon": 133.8648702,
+      "name": "Reddy Express",
+      "tags": {
+        "brand": "Reddy Express",
+        "brand:wikidata": "Q5144653",
+        "building": "yes",
+        "name": "Reddy Express",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 3.0131222586654824,
+      "distanceFromTrail": 1.7547160640665993
+    },
+    {
+      "id": 597487219,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.6682693,
+      "lon": 133.7952715,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bin": "no",
+        "building": "hut"
+      },
+      "distanceAlongTrail": 13.892524522578471,
+      "distanceFromTrail": 0.006441612746313179
+    },
+    {
+      "id": 4329017503,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6682758,
+      "lon": 133.795172,
+      "name": "Wallaby Gap",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Wallaby Gap",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 13.902317670455535,
+      "distanceFromTrail": 0.006638853069649555
+    },
+    {
+      "id": 5690827412,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6757211,
+      "lon": 133.7656392,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "6",
+        "caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 17.646071600396866,
+      "distanceFromTrail": 0.025082486934466713
+    },
+    {
+      "id": 2365278762,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6791062,
+      "lon": 133.7175189,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter",
+        "tourism": "picnic_site"
+      },
+      "distanceAlongTrail": 24.560443446945477,
+      "distanceFromTrail": 0.05203897453591993
+    },
+    {
+      "id": 2365278672,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6786563,
+      "lon": 133.717706,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 1, 2",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-07-21",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 24.56403755032925,
+      "distanceFromTrail": 0.000022529652750158508
+    },
+    {
+      "id": 8849862817,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6785689,
+      "lon": 133.7176305,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 24.576904807576113,
+      "distanceFromTrail": 0.0021294106310559007
+    },
+    {
+      "id": 322866497,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6775309,
+      "lon": 133.718211,
+      "name": "Simpsons Gap",
+      "tags": {
+        "amenity": "shelter",
+        "information": "board",
+        "internet_access": "wlan",
+        "name": "Simpsons Gap",
+        "shelter_type": "weather_shelter",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 24.590650319655737,
+      "distanceFromTrail": 0.13018774355431484
+    },
+    {
+      "id": 8849863117,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6783293,
+      "lon": 133.7175704,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 24.593595813494154,
+      "distanceFromTrail": 0.020805806392532322
+    },
+    {
+      "id": 227896716,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.6788071,
+      "lon": 133.7162321,
+      "name": "Larapinta Group Camping",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Larapinta Group Camping",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 24.73838411754792,
+      "distanceFromTrail": 0.005831230393355503
+    },
+    {
+      "id": 2365278726,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6787666,
+      "lon": 133.7161965,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 24.739445385025938,
+      "distanceFromTrail": 0.0007338865157393948
+    },
+    {
+      "id": 5688792743,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6803064,
+      "lon": 133.7169682,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 24.925842253262342,
+      "distanceFromTrail": 0.06268347792333812
+    },
+    {
+      "id": 5688792744,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6802675,
+      "lon": 133.7172081,
+      "name": "Larapinta Walkers Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "camp_site": "basic",
+        "caravans": "no",
+        "name": "Larapinta Walkers Campsite",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 24.925842253262342,
+      "distanceFromTrail": 0.0838190600594225
+    },
+    {
+      "id": 537381544,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.680303,
+      "lon": 133.717035,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut",
+        "source": "Digital Globe Premium Imagery;aerial imagery;gps"
+      },
+      "distanceAlongTrail": 24.925842253262342,
+      "distanceFromTrail": 0.06865536115924217
+    },
+    {
+      "id": 3016004195,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.664739,
+      "lon": 133.612895,
+      "name": "Mulga Camp",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Mulga Camp",
+        "shower": "no",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 40.76823408140207,
+      "distanceFromTrail": 0.11922169182002378
+    },
+    {
+      "id": 3016010366,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6647613,
+      "lon": 133.6128233,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "indoor": "no",
+        "man_made": "water_tap",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 40.770474337732495,
+      "distanceFromTrail": 0.1233761971323863
+    },
+    {
+      "id": 2438355638,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6634442,
+      "lon": 133.5378082,
+      "name": "Jay Creek",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Jay Creek",
+        "shower": "no",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 50.32667322286584,
+      "distanceFromTrail": 0.12120121916321738
+    },
+    {
+      "id": 3012071454,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6640989,
+      "lon": 133.5376747,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "indoor": "no",
+        "man_made": "water_tap",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 50.32918054143767,
+      "distanceFromTrail": 0.11419966272278878
+    },
+    {
+      "id": 3012071455,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6640608,
+      "lon": 133.5377021,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 50.32918054143767,
+      "distanceFromTrail": 0.11134840884697238
+    },
+    {
+      "id": 2371374462,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6937093,
+      "lon": 133.4931395,
+      "name": "Millers Flat",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Millers Flat",
+        "shower": "no",
+        "source": "survey",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 58.76032149988926,
+      "distanceFromTrail": 0.014033309294073664
+    },
+    {
+      "id": 4329064077,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6969446,
+      "lon": 133.4852492,
+      "name": "Fig Spring",
+      "tags": {
+        "name": "Fig Spring",
+        "natural": "spring"
+      },
+      "distanceAlongTrail": 59.7172490391055,
+      "distanceFromTrail": 0.0034102267806448874
+    },
+    {
+      "id": 322857369,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -23.7219655,
+      "lon": 133.4694354,
+      "name": "Standley Chasm Kiosk",
+      "tags": {
+        "amenity": "restaurant",
+        "email": "info@standleychasm.com.au",
+        "fax": "+61 8 8956 7325",
+        "name": "Standley Chasm Kiosk",
+        "phone": "+61 8 8956 7440",
+        "website": "https://www.standleychasm.com.au/"
+      },
+      "distanceAlongTrail": 63.762719707562546,
+      "distanceFromTrail": 0.01787296732857646
+    },
+    {
+      "id": 2374931884,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7219433,
+      "lon": 133.470195,
+      "name": "Standley Chasm",
+      "tags": {
+        "email": "info@standleychasm.com.au",
+        "fax": "+61 8 8956 7325",
+        "name": "Standley Chasm",
+        "phone": "+61 8 8956 7440",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.standleychasm.com.au/"
+      },
+      "distanceAlongTrail": 63.793377197958144,
+      "distanceFromTrail": 0.0385712180091463
+    },
+    {
+      "id": 5690244850,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7080129,
+      "lon": 133.4092519,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "4",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 71.72490566483015,
+      "distanceFromTrail": 0.00010272440410781562
+    },
+    {
+      "id": 5690244852,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7102673,
+      "lon": 133.3929745,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "6",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 73.48459678676878,
+      "distanceFromTrail": 0.0047604369550260685
+    },
+    {
+      "id": 5690244851,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7106966,
+      "lon": 133.3920491,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "30",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 73.59254812267031,
+      "distanceFromTrail": 0.004828225672040919
+    },
+    {
+      "id": 5690314061,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.71613,
+      "lon": 133.3889952,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 75.24936142863913,
+      "distanceFromTrail": 0.004300148824439131
+    },
+    {
+      "id": 5690300971,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7182263,
+      "lon": 133.3575307,
+      "name": "Mint Bush Spring",
+      "tags": {
+        "name": "Mint Bush Spring",
+        "natural": "spring"
+      },
+      "distanceAlongTrail": 79.75346416092495,
+      "distanceFromTrail": 0.00217231473499572
+    },
+    {
+      "id": 597725624,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7180234,
+      "lon": 133.3484391,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut"
+      },
+      "distanceAlongTrail": 80.90868778871015,
+      "distanceFromTrail": 0.011526660292207766
+    },
+    {
+      "id": 5690300976,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7180723,
+      "lon": 133.3485019,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 80.91060377495926,
+      "distanceFromTrail": 0.0033554902796858314
+    },
+    {
+      "id": 5690300978,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7180105,
+      "lon": 133.3482565,
+      "name": "Section 4/5 Junction",
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "30",
+        "caravans": "no",
+        "name": "Section 4/5 Junction",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 80.91590451307081,
+      "distanceFromTrail": 0.0287178126461851
+    },
+    {
+      "id": 3011829219,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7242448,
+      "lon": 133.3432366,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 4, 5",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-07-24",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 81.0729659381315,
+      "distanceFromTrail": 0.7887010506117388
+    },
+    {
+      "id": 5690405858,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7005675,
+      "lon": 133.3225724,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "4",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.4960109443458,
+      "distanceFromTrail": 0.0018455185807063027
+    },
+    {
+      "id": 5690405860,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.698872,
+      "lon": 133.322074,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.82577115885101,
+      "distanceFromTrail": 0.00248276277576407
+    },
+    {
+      "id": 5690405862,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6979153,
+      "lon": 133.3205712,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 86.02933999485528,
+      "distanceFromTrail": 0.0016639501556661234
+    },
+    {
+      "id": 5690405863,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6975614,
+      "lon": 133.3120389,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "3",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 86.95901491735329,
+      "distanceFromTrail": 0.0017042974320651287
+    },
+    {
+      "id": 5690405878,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.691015,
+      "lon": 133.3004338,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 88.9147634547289,
+      "distanceFromTrail": 0.01771294559700148
+    },
+    {
+      "id": 5690405877,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6786519,
+      "lon": 133.2718039,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "20",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 92.708518049025,
+      "distanceFromTrail": 0.006764743246152048
+    },
+    {
+      "id": 2415405348,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7024153,
+      "lon": 133.2593244,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "indoor": "no",
+        "man_made": "water_tap",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 96.2119210317855,
+      "distanceFromTrail": 0.005798928038308736
+    },
+    {
+      "id": 9996441954,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7030943,
+      "lon": 133.2588977,
+      "name": "Hugh Gorge Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Hugh Gorge Campsite",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 96.31283398640828,
+      "distanceFromTrail": 0.010208739175837355
+    },
+    {
+      "id": 597749393,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7031814,
+      "lon": 133.2588106,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut"
+      },
+      "distanceAlongTrail": 96.32555203250587,
+      "distanceFromTrail": 0.009913720251858337
+    },
+    {
+      "id": 3013742010,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7293136,
+      "lon": 133.2196351,
+      "name": "Ghost Gum Flat",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Ghost Gum Flat",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 103.06948402780685,
+      "distanceFromTrail": 0.0036132174453118
+    },
+    {
+      "id": 5690446921,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7390378,
+      "lon": 133.1918307,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "4",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 106.9300332721171,
+      "distanceFromTrail": 0.013214542886839953
+    },
+    {
+      "id": 3013840979,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7588962,
+      "lon": 133.1680932,
+      "name": "Rocky Gully Camp Site",
+      "tags": {
+        "name": "Rocky Gully Camp Site",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 110.95126463438213,
+      "distanceFromTrail": 0.21946907549816175
+    },
+    {
+      "id": 3013840980,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7616343,
+      "lon": 133.1693035,
+      "name": "Rocky Gully Group Camp Site",
+      "tags": {
+        "name": "Rocky Gully Group Camp Site",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 110.95126463438213,
+      "distanceFromTrail": 0.5303757915377557
+    },
+    {
+      "id": 3013842192,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7590634,
+      "lon": 133.1682001,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "indoor": "no",
+        "man_made": "water_tap",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 110.95126463438213,
+      "distanceFromTrail": 0.23682008727140555
+    },
+    {
+      "id": 5690466031,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7565021,
+      "lon": 133.1453496,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "20",
+        "caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 113.96028131449914,
+      "distanceFromTrail": 0.0193122494232332
+    },
+    {
+      "id": 5690466032,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7540347,
+      "lon": 133.1172631,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "50",
+        "caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 117.49272011001376,
+      "distanceFromTrail": 0.007830175016055863
+    },
+    {
+      "id": 5690466033,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7537637,
+      "lon": 133.1052569,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "50",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 118.83391579905106,
+      "distanceFromTrail": 0.04743109051184273
+    },
+    {
+      "id": 5690466034,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7710699,
+      "lon": 133.097454,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "6",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 121.26927039176624,
+      "distanceFromTrail": 0.005604277214299135
+    },
+    {
+      "id": 8889080117,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7723511,
+      "lon": 133.073271,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "water_type": "untreated"
+      },
+      "distanceAlongTrail": 124.42057464642869,
+      "distanceFromTrail": 0.0071251611485352116
+    },
+    {
+      "id": 1090363892,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7723624,
+      "lon": 133.0731983,
+      "name": "Ellery Creek North - Larapinta Trailhead Shelter (6/7)",
+      "tags": {
+        "amenity": "shelter",
+        "area": "yes",
+        "building": "yes",
+        "name": "Ellery Creek North - Larapinta Trailhead Shelter (6/7)"
+      },
+      "distanceAlongTrail": 124.42447558343977,
+      "distanceFromTrail": 0.005067283884994617
+    },
+    {
+      "id": 2371376146,
+      "type": "node",
+      "category": "emergency",
+      "lat": -23.7887706,
+      "lon": 133.0757587,
+      "name": null,
+      "tags": {
+        "emergency": "phone",
+        "noexit": "yes",
+        "source": "voice"
+      },
+      "distanceAlongTrail": 124.74753375450624,
+      "distanceFromTrail": 0.9622152011800478
+    },
+    {
+      "id": 5690466035,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7796177,
+      "lon": 133.0735127,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "note": "Larapinta walkers only",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 125.32158389380547,
+      "distanceFromTrail": 0.02156171899868364
+    },
+    {
+      "id": 3014101351,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7798434,
+      "lon": 133.0726841,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 6, 7",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-07-26",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 125.3741774461497,
+      "distanceFromTrail": 0.039073347283424625
+    },
+    {
+      "id": 274506475,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7803724,
+      "lon": 133.0724685,
+      "name": "Ellery Creek Big Hole - West MacDonnell NP",
+      "tags": {
+        "access": "customers",
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Ellery Creek Big Hole - West MacDonnell NP",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 125.3741774461497,
+      "distanceFromTrail": 0.0755457596171543
+    },
+    {
+      "id": 461958805,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7792884,
+      "lon": 133.0729475,
+      "name": "Picnic Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "name": "Picnic Shelter"
+      },
+      "distanceAlongTrail": 125.46762527728494,
+      "distanceFromTrail": 0.01744304039623644
+    },
+    {
+      "id": 2371375994,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7789557,
+      "lon": 133.0730605,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "information": "board",
+        "shelter_type": "weather_shelter",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 125.49206570853683,
+      "distanceFromTrail": 0.0038795284697943594
+    },
+    {
+      "id": 5690482661,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7798632,
+      "lon": 133.0499534,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 128.4054766844659,
+      "distanceFromTrail": 0.00210202331256688
+    },
+    {
+      "id": 5690482662,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7777661,
+      "lon": 133.0239767,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 131.46823265261605,
+      "distanceFromTrail": 0.003212910867680956
+    },
+    {
+      "id": 5690482663,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7670485,
+      "lon": 133.0009451,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "10",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 134.66386557082075,
+      "distanceFromTrail": 0.005083825593137171
+    },
+    {
+      "id": 3017618077,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7544838,
+      "lon": 132.9803398,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "drinking_water": "untreated",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 137.86761527720222,
+      "distanceFromTrail": 0.01494002295814099
+    },
+    {
+      "id": 1091484154,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.754471,
+      "lon": 132.9802598,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 137.87866353756652,
+      "distanceFromTrail": 0.01675703511253682
+    },
+    {
+      "id": 3017618065,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7544009,
+      "lon": 132.9802827,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 137.8793925313621,
+      "distanceFromTrail": 0.00865402460652573
+    },
+    {
+      "id": 1091484152,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7593461,
+      "lon": 132.9793351,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 138.69148998015535,
+      "distanceFromTrail": 0.006504796804749707
+    },
+    {
+      "id": 5690510321,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.748456,
+      "lon": 132.9715898,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 140.53538858062026,
+      "distanceFromTrail": 0.005695017733895004
+    },
+    {
+      "id": 5690510323,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7251317,
+      "lon": 132.9332931,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "4",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 145.68881356848016,
+      "distanceFromTrail": 0.6231613525113447
+    },
+    {
+      "id": 5690510324,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7387174,
+      "lon": 132.9389773,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "10",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 147.65931033369978,
+      "distanceFromTrail": 0.009447895862366735
+    },
+    {
+      "id": 1811194557,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.75028,
+      "lon": 132.91556,
+      "name": "Serpentine Chalet Bush Camping",
+      "tags": {
+        "name": "Serpentine Chalet Bush Camping",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 149.98358612334928,
+      "distanceFromTrail": 1.875544820364194
+    },
+    {
+      "id": 322841803,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.748555,
+      "lon": 132.9147093,
+      "name": "Bush Camping",
+      "tags": {
+        "created_by": "JOSM",
+        "name": "Bush Camping",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 149.98358612334928,
+      "distanceFromTrail": 1.727787879601988
+    },
+    {
+      "id": 597759883,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.7273626,
+      "lon": 132.9103055,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut"
+      },
+      "distanceAlongTrail": 151.67692145916592,
+      "distanceFromTrail": 0.0045945895347654486
+    },
+    {
+      "id": 3017764304,
+      "type": "node",
+      "category": "water",
+      "lat": -23.7272878,
+      "lon": 132.9103408,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "drinking_water": "untreated"
+      },
+      "distanceAlongTrail": 151.6826543233079,
+      "distanceFromTrail": 0.00988562573638133
+    },
+    {
+      "id": 3017764242,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7271276,
+      "lon": 132.9101624,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 8, 9",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-07-29",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 151.70472789402405,
+      "distanceFromTrail": 0.004735633119949779
+    },
+    {
+      "id": 5690510329,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7269188,
+      "lon": 132.904707,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 152.50603830719703,
+      "distanceFromTrail": 0.006775043749561235
+    },
+    {
+      "id": 5690510330,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.7034868,
+      "lon": 132.8789812,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "4",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 158.00936732517044,
+      "distanceFromTrail": 0.004626360346285731
+    },
+    {
+      "id": 3023773391,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.687168,
+      "lon": 132.8252209,
+      "name": "Waterfall Gorge Camp Site",
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "10",
+        "caravans": "no",
+        "name": "Waterfall Gorge Camp Site",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 164.4003591262562,
+      "distanceFromTrail": 0.0061268070682143645
+    },
+    {
+      "id": 5690536682,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6787756,
+      "lon": 132.8222219,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "5",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 166.52997817534688,
+      "distanceFromTrail": 0.0064470181510783015
+    },
+    {
+      "id": 5690536683,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6737181,
+      "lon": 132.8124985,
+      "name": "Hermits Hideaway",
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "20",
+        "name": "Hermits Hideaway",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.76108057889812,
+      "distanceFromTrail": 0.015189576683915618
+    },
+    {
+      "id": 5690536684,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6712106,
+      "lon": 132.8068836,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 168.42819955074103,
+      "distanceFromTrail": 0.00432649589137346
+    },
+    {
+      "id": 5690536685,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6641388,
+      "lon": 132.7954142,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 169.93987393889648,
+      "distanceFromTrail": 0.004335515954307223
+    },
+    {
+      "id": 5690536686,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6678426,
+      "lon": 132.7881687,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 171.5377900332388,
+      "distanceFromTrail": 0.01351913157570864
+    },
+    {
+      "id": 5690536687,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6590805,
+      "lon": 132.7783709,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "12",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 173.20090348716818,
+      "distanceFromTrail": 0.016110927526418142
+    },
+    {
+      "id": 5690536688,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6528914,
+      "lon": 132.7708939,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "8",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 174.4267596955486,
+      "distanceFromTrail": 0.005174029229463328
+    },
+    {
+      "id": 1893815701,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6316895,
+      "lon": 132.7273747,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 9, 10",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "source": "survey:date=2014-07-30",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 180.77591275131027,
+      "distanceFromTrail": 0.0002669915624269119
+    },
+    {
+      "id": 3842678937,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -23.6322571,
+      "lon": 132.7267104,
+      "name": "Snack Kiosk",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Snack Kiosk"
+      },
+      "distanceAlongTrail": 180.88840374577373,
+      "distanceFromTrail": 0.05387758665524376
+    },
+    {
+      "id": 228830057,
+      "type": "way",
+      "category": "resupply",
+      "lat": -23.6322986,
+      "lon": 132.7267261,
+      "name": "Ormiston Gorge",
+      "tags": {
+        "building": "yes",
+        "information": "office",
+        "name": "Ormiston Gorge",
+        "opening_hours": "Mo-Su 10:00-16:00",
+        "shop": "kiosk",
+        "source": "Bing",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 180.8894553310789,
+      "distanceFromTrail": 0.058646919443561145
+    },
+    {
+      "id": 831073357,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6325248,
+      "lon": 132.7264196,
+      "name": "Ormiston Gorge",
+      "tags": {
+        "name": "Ormiston Gorge",
+        "source": "survey",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 181.01440054161245,
+      "distanceFromTrail": 0.05599051755230871
+    },
+    {
+      "id": 316581603,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6331482,
+      "lon": 132.7270227,
+      "name": "Ormiston Gorge Campground - Tjuta NP",
+      "tags": {
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Ormiston Gorge Campground - Tjuta NP",
+        "operator": "NT Parks",
+        "source": "survey",
+        "static_caravans": "yes",
+        "tourism": "camp_site",
+        "website": "https://nt.gov.au/parks/find-a-park/tjoritja-west-macdonnell-national-park/ormiston-gorge"
+      },
+      "distanceAlongTrail": 181.02389003765035,
+      "distanceFromTrail": 0.1323177370378083
+    },
+    {
+      "id": 2371371822,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6327612,
+      "lon": 132.7252906,
+      "name": "Coach Camping",
+      "tags": {
+        "access": "private",
+        "name": "Coach Camping",
+        "source": "voice",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 181.0841260063811,
+      "distanceFromTrail": 0.009501241984852037
+    },
+    {
+      "id": 5690536690,
+      "type": "node",
+      "category": "water",
+      "lat": -23.632465,
+      "lon": 132.7243896,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 181.18182815570322,
+      "distanceFromTrail": 0.011262640883519977
+    },
+    {
+      "id": 5690536689,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6325144,
+      "lon": 132.7243404,
+      "name": null,
+      "tags": {
+        "capacity": "20",
+        "caravans": "no",
+        "note": "Larapinta Walkers Campsite",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 181.18911277882404,
+      "distanceFromTrail": 0.009770144887134243
+    },
+    {
+      "id": 5690737707,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6328984,
+      "lon": 132.7152444,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "10",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 182.314024780865,
+      "distanceFromTrail": 0.004200368779142069
+    },
+    {
+      "id": 5690737708,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6510764,
+      "lon": 132.7034327,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 185.8181648130468,
+      "distanceFromTrail": 0.05372950648978529
+    },
+    {
+      "id": 3023856162,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6581917,
+      "lon": 132.6788395,
+      "name": "Finke River Campground",
+      "tags": {
+        "access": "permit",
+        "backcountry": "yes",
+        "charge": "4 AUD",
+        "fee": "yes",
+        "name": "Finke River Campground",
+        "payment:cards": "yes",
+        "shower": "no",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 189.83722307021404,
+      "distanceFromTrail": 0.05424693788322372
+    },
+    {
+      "id": 3023860221,
+      "type": "node",
+      "category": "water",
+      "lat": -23.6582413,
+      "lon": 132.6788995,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "drinking_water": "untreated",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 189.83722307021404,
+      "distanceFromTrail": 0.06237799408933767
+    },
+    {
+      "id": 3023860222,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6582281,
+      "lon": 132.6789353,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 10, 11",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-07-31",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 189.83722307021404,
+      "distanceFromTrail": 0.06467821554100521
+    },
+    {
+      "id": 2374920716,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.666887,
+      "lon": 132.6705818,
+      "name": "Finke River Two Mile",
+      "tags": {
+        "fixme": "needs survey to add facilities",
+        "name": "Finke River Two Mile",
+        "source": "survey:date=2014-07-30",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 190.70100781430025,
+      "distanceFromTrail": 0.8657104537364422
+    },
+    {
+      "id": 5690772952,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6411414,
+      "lon": 132.6485614,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "10",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 194.610655561735,
+      "distanceFromTrail": 0.0224511515544833
+    },
+    {
+      "id": 5690772966,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6297936,
+      "lon": 132.6460829,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "6",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 196.056512793553,
+      "distanceFromTrail": 0.006247288150886655
+    },
+    {
+      "id": 5690772967,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6163888,
+      "lon": 132.6426647,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 197.99919807807882,
+      "distanceFromTrail": 0.004823153941304744
+    },
+    {
+      "id": 5690772968,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6062779,
+      "lon": 132.6372017,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "10",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 200.17940577206534,
+      "distanceFromTrail": 0.013578005417477737
+    },
+    {
+      "id": 5690772969,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6050256,
+      "lon": 132.6037135,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "8",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 204.76668035123092,
+      "distanceFromTrail": 0.012845034497752648
+    },
+    {
+      "id": 3032139989,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6086526,
+      "lon": 132.6027532,
+      "name": "Rocky Bar Gap",
+      "tags": {
+        "name": "Rocky Bar Gap",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 205.18070852830127,
+      "distanceFromTrail": 0.01070786898425313
+    },
+    {
+      "id": 3032139991,
+      "type": "node",
+      "category": "water",
+      "lat": -23.608645,
+      "lon": 132.6023873,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "drinking_water": "untreated",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 205.21180322563964,
+      "distanceFromTrail": 0.0036516573466853913
+    },
+    {
+      "id": 5690786426,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.6006317,
+      "lon": 132.5693413,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "6",
+        "caravans": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 209.16672433364772,
+      "distanceFromTrail": 0.003146816424075948
+    },
+    {
+      "id": 9803011050,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.5787899,
+      "lon": 132.5214434,
+      "name": "Redbank Gorge Campground (Larapinta Trail Walkers Only)",
+      "tags": {
+        "access": "permit",
+        "name": "Redbank Gorge Campground (Larapinta Trail Walkers Only)",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 215.75075060291937,
+      "distanceFromTrail": 0.1721781161433667
+    },
+    {
+      "id": 9803011057,
+      "type": "node",
+      "category": "water",
+      "lat": -23.5789815,
+      "lon": 132.5214241,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 215.75075060291937,
+      "distanceFromTrail": 0.18566872318601452
+    },
+    {
+      "id": 1091484138,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.5789318,
+      "lon": 132.5213621,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut"
+      },
+      "distanceAlongTrail": 215.75075060291937,
+      "distanceFromTrail": 0.18765034559943217
+    },
+    {
+      "id": 5690795725,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.5768831,
+      "lon": 132.5587258,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "2",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 220.75794128155945,
+      "distanceFromTrail": 0.0033579299309877374
+    },
+    {
+      "id": 2364347796,
+      "type": "node",
+      "category": "water",
+      "lat": -23.5768856,
+      "lon": 132.5198561,
+      "name": "Larapinta Trail Water",
+      "tags": {
+        "amenity": "drinking_water",
+        "drinking_water": "untreated",
+        "man_made": "water_tap",
+        "name": "Larapinta Trail Water"
+      },
+      "distanceAlongTrail": 230.40854556644473,
+      "distanceFromTrail": 0.03249701030750491
+    },
+    {
+      "id": 2374923379,
+      "type": "node",
+      "category": "water",
+      "lat": -23.5766121,
+      "lon": 132.5197532,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 230.40854556644473,
+      "distanceFromTrail": 0.00040110100557668056
+    },
+    {
+      "id": 2374923385,
+      "type": "node",
+      "category": "water",
+      "lat": -23.5766617,
+      "lon": 132.5198004,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 230.40854556644473,
+      "distanceFromTrail": 0.007709164156359916
+    },
+    {
+      "id": 2374923408,
+      "type": "node",
+      "category": "water",
+      "lat": -23.5768813,
+      "lon": 132.5198647,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 230.40854556644473,
+      "distanceFromTrail": 0.03235276038518331
+    },
+    {
+      "id": 228830050,
+      "type": "way",
+      "category": "water",
+      "lat": -23.5767467,
+      "lon": 132.5198089,
+      "name": null,
+      "tags": {
+        "foot": "designated",
+        "highway": "path",
+        "man_made": "water_tap",
+        "source": "survey",
+        "surface": "unpaved"
+      },
+      "distanceAlongTrail": 230.40854556644473,
+      "distanceFromTrail": 0.016342662256044645
+    },
+    {
+      "id": 311977047,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.577386,
+      "lon": 132.5188775,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "information": "board",
+        "shelter_type": "weather_shelter",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 230.54022155309335,
+      "distanceFromTrail": 0.003561670586205668
+    },
+    {
+      "id": 2364347813,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.577578,
+      "lon": 132.5186712,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 230.55592933581107,
+      "distanceFromTrail": 0.014077269175925528
+    },
+    {
+      "id": 3032444011,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.5775465,
+      "lon": 132.5188218,
+      "name": "Larapinta Trail Information",
+      "tags": {
+        "amenity": "shelter",
+        "description": "Larapinta Trail Sections 11, 12",
+        "hiking": "yes",
+        "information": "map",
+        "map_size": "region",
+        "map_type": "topo",
+        "name": "Larapinta Trail Information",
+        "shelter_type": "weather_shelter",
+        "source": "survey:date=2014-08-02",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 230.55592933581107,
+      "distanceFromTrail": 0.006699386578212059
+    },
+    {
+      "id": 311976937,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.5895597,
+      "lon": 132.5119151,
+      "name": "Woodland Camping Area - Redbank Gorge",
+      "tags": {
+        "access": "customers",
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Woodland Camping Area - Redbank Gorge",
+        "shower": "no",
+        "source": "survey",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 230.55592933581107,
+      "distanceFromTrail": 1.5124801394304859
+    },
+    {
+      "id": 311976969,
+      "type": "node",
+      "category": "camping",
+      "lat": -23.5830474,
+      "lon": 132.5148507,
+      "name": "Ridgetop Camping Area - Redbank Gorge",
+      "tags": {
+        "access": "customers",
+        "caravans": "no",
+        "fee": "yes",
+        "name": "Ridgetop Camping Area - Redbank Gorge",
+        "shower": "no",
+        "source": "survey",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 230.55592933581107,
+      "distanceFromTrail": 0.7354162057262618
+    },
+    {
+      "id": 1091484135,
+      "type": "way",
+      "category": "camping",
+      "lat": -23.5787465,
+      "lon": 132.5184299,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "hut"
+      },
+      "distanceAlongTrail": 230.55592933581107,
+      "distanceFromTrail": 0.14312303996507145
+    }
+  ]
+}

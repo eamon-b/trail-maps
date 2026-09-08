@@ -24,6 +24,7 @@ import {
   loadCuratedDescriptions,
 } from './lib/waypoint-descriptions.js';
 import { countDuplicatePois, markDuplicatePois } from '../src/lib/poi-dedup.js';
+import { countNoiseByReason, dropNoisePois } from '../src/lib/poi-noise.js';
 import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
 
 /** Calculate haversine distance in km */
@@ -583,7 +584,12 @@ async function main() {
       // flagged here, not dropped: the flag is derived from waypoint positions,
       // which a rebuild can move, so it belongs to the build rather than to
       // pois.json. See plans/poi-waypoint-dedup.md.
-      const pois = markDuplicatePois(readTrailPOIsForBuild(trailDir) ?? undefined, processed.waypoints);
+      // Noise is dropped before duplicates are marked, so the duplicate count
+      // describes what actually ships. See @lib/poi-noise for why filtering
+      // lives here rather than in the fetch.
+      const fetched = readTrailPOIsForBuild(trailDir) ?? undefined;
+      const noise = countNoiseByReason(fetched);
+      const pois = markDuplicatePois(dropNoisePois(fetched), processed.waypoints);
       if (pois) {
         processed.pois = pois;
       }
@@ -599,6 +605,11 @@ async function main() {
         const duplicates = countDuplicatePois(pois);
         const suffix = duplicates > 0 ? `, ${duplicates} hidden as duplicates of waypoints` : '';
         console.log(`    POIs: ${pois.length} (OpenStreetMap)${suffix}`);
+        const dropped = Object.entries(noise).filter(([, n]) => n > 0);
+        if (dropped.length > 0) {
+          const detail = dropped.map(([reason, n]) => `${n} ${reason}`).join(', ');
+          console.log(`      filtered as noise: ${detail}`);
+        }
       }
 
       // Generate HTML pages for this trail

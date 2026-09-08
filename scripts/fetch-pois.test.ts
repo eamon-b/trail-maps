@@ -8,6 +8,7 @@ import {
   positionalArgs,
   processTrailData,
   resolveEndpoint,
+  resolveMaxVertices,
   resolveTimeoutSeconds,
   trailDirsById,
   type TrailDirIO,
@@ -281,10 +282,38 @@ describe('resolveTimeoutSeconds', () => {
   });
 });
 
+describe('resolveMaxVertices', () => {
+  it('defaults to MAX_VERTICES_PER_CHUNK', () => {
+    expect(resolveMaxVertices([])).toBe(300);
+  });
+
+  it('reads --max-vertices and --max-vertices=', () => {
+    expect(resolveMaxVertices(['--max-vertices', '100'])).toBe(100);
+    expect(resolveMaxVertices(['--max-vertices=100'])).toBe(100);
+  });
+
+  it('rejects a non-positive, fractional or non-numeric budget', () => {
+    expect(() => resolveMaxVertices(['--max-vertices', 'lots'])).toThrow(/positive whole number/);
+    expect(() => resolveMaxVertices(['--max-vertices', '0'])).toThrow(/positive whole number/);
+    expect(() => resolveMaxVertices(['--max-vertices', '12.5'])).toThrow(/positive whole number/);
+    expect(() => resolveMaxVertices(['--max-vertices'])).toThrow(
+      /--max-vertices requires a number of vertices/
+    );
+  });
+});
+
 describe('positionalArgs', () => {
   it('does not mistake a flag value for a trail id', () => {
     expect(
-      positionalArgs(['--endpoint', 'https://kumi.example/api', '--timeout', '120', 'heysen'])
+      positionalArgs([
+        '--endpoint',
+        'https://kumi.example/api',
+        '--timeout',
+        '120',
+        '--max-vertices',
+        '100',
+        'heysen',
+      ])
     ).toEqual(['heysen']);
   });
 

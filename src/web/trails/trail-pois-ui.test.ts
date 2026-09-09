@@ -1,11 +1,12 @@
 /**
  * OpenStreetMap POIs in the trail viewer.
  *
- * Two halves. The first exercises `trail-pois-ui` directly — the labels, the
- * tag summary, the escaping and the interleave ordering. The second boots the
- * real viewer against the real `my-trail.html` markup (the same rig as
- * `waypoint-filter.test.ts`) to pin the two properties that matter once POIs
- * share a table with waypoints:
+ * Two halves. The first exercises the web-only markup in `trail-pois-ui` — the
+ * popup, the datasheet row, the control and the escaping that guards them (the
+ * platform-neutral rules they build on are covered in
+ * `src/lib/poi-display.test.ts`). The second boots the real viewer against the
+ * real `my-trail.html` markup (the same rig as `waypoint-filter.test.ts`) to
+ * pin the two properties that matter once POIs share a table with waypoints:
  *
  *   1. a POI never moves a leg figure, and
  *   2. a POI row is inert — it carries none of the hooks the delegated
@@ -18,20 +19,11 @@ import path from 'node:path';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { TrailPOI } from '@lib/trail-types';
 import {
-  countPoisByCategory,
   defaultPoiFilterState,
-  formatOffTrail,
-  interleavePoisByDistance,
-  mirrorPoiDistances,
-  normalisePoiFilterState,
   poiControlHtml,
-  poiDisplayName,
   poiKey,
-  poiOsmUrl,
   poiPopupHtml,
   poiRowHtml,
-  summarisePoiTags,
-  visiblePois,
 } from './trail-pois-ui';
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -51,73 +43,10 @@ function poi(over: Partial<TrailPOI> = {}): TrailPOI {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Pure helpers
-// ---------------------------------------------------------------------------
-
-describe('POI naming and links', () => {
-  it('falls back to the category when OSM has no name', () => {
-    expect(poiDisplayName(poi({ name: null }))).toBe('Unnamed water');
-    expect(poiDisplayName(poi({ name: '   ', category: 'transport' }))).toBe('Unnamed transport');
-    expect(poiDisplayName(poi({ name: 'Wardan Café' }))).toBe('Wardan Café');
-  });
-
+describe('POI keys', () => {
   it('keys a POI by type *and* id, because OSM ids repeat across types', () => {
     expect(poiKey({ type: 'node', id: 12345 })).toBe('node/12345');
     expect(poiKey({ type: 'way', id: 12345 })).toBe('way/12345');
-  });
-
-  it('links to the right OSM element, defaulting an unknown type to node', () => {
-    expect(poiOsmUrl({ type: 'way', id: 7 })).toBe('https://www.openstreetmap.org/way/7');
-    expect(poiOsmUrl({ type: 'nonsense', id: 7 })).toBe('https://www.openstreetmap.org/node/7');
-  });
-
-  it('shows sub-kilometre off-trail distances in metres', () => {
-    expect(formatOffTrail(0.05)).toBe('50 m');
-    expect(formatOffTrail(1.24)).toBe('1.2 km');
-    expect(formatOffTrail(Number.NaN)).toBe('—');
-  });
-});
-
-describe('the tag summary', () => {
-  it('leads with the primary feature tag, so the classification can be judged', () => {
-    const lines = summarisePoiTags({ amenity: 'drinking_water', shop: 'supermarket' });
-    expect(lines[0]).toEqual({ label: 'OSM tag', value: 'amenity=drinking_water' });
-    // Only one primary tag, the first that matches.
-    expect(lines.filter(l => l.label === 'OSM tag')).toHaveLength(1);
-  });
-
-  it('picks up the useful detail tags and links websites and phones', () => {
-    const lines = summarisePoiTags({
-      shop: 'supermarket',
-      opening_hours: 'Mo-Fr 08:00-18:00',
-      website: 'example.com/shop',
-      phone: '+61 8 9755 1000',
-      fee: 'no',
-    });
-    const byLabel = Object.fromEntries(lines.map(l => [l.label, l]));
-    expect(byLabel['Opening hours'].value).toBe('Mo-Fr 08:00-18:00');
-    expect(byLabel['Website'].href).toBe('https://example.com/shop');
-    expect(byLabel['Phone'].href).toBe('tel:+61897551000');
-    expect(byLabel['Fee'].value).toBe('no');
-  });
-
-  it('de-duplicates phone/contact:phone rather than listing both', () => {
-    const lines = summarisePoiTags({ phone: '123 456', 'contact:phone': '999 999' });
-    expect(lines.filter(l => l.label === 'Phone')).toHaveLength(1);
-    expect(lines[0].value).toBe('123 456');
-  });
-
-  it('refuses to link a non-http scheme — OSM tag values are free text', () => {
-    const lines = summarisePoiTags({ website: 'javascript:alert(1)' });
-    const website = lines.find(l => l.label === 'Website');
-    expect(website?.value).toBe('javascript:alert(1)');
-    expect(website?.href).toBeUndefined();
-  });
-
-  it('skips empty values and missing tags', () => {
-    expect(summarisePoiTags({ description: '   ', fee: '' })).toEqual([]);
-    expect(summarisePoiTags(undefined)).toEqual([]);
   });
 });
 
@@ -157,79 +86,6 @@ describe('POI markup', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Filter state
-// ---------------------------------------------------------------------------
-
-describe('the POI filter state', () => {
-  it('defaults to everything shown', () => {
-    const state = defaultPoiFilterState();
-    expect(state.enabled).toBe(true);
-    expect(Object.values(state.categories).every(Boolean)).toBe(true);
-  });
-
-  it('survives junk in storage', () => {
-    expect(normalisePoiFilterState(null)).toEqual(defaultPoiFilterState());
-    expect(normalisePoiFilterState('nope')).toEqual(defaultPoiFilterState());
-    const partial = normalisePoiFilterState({
-      enabled: false,
-      categories: { water: false, bogus: 1 },
-    });
-    expect(partial.enabled).toBe(false);
-    expect(partial.categories.water).toBe(false);
-    expect(partial.categories.camping).toBe(true);
-  });
-
-  it('hides everything when the master switch is off', () => {
-    const state = defaultPoiFilterState();
-    state.enabled = false;
-    expect(visiblePois([poi()], state)).toEqual([]);
-  });
-
-  it('filters by category, but keeps an unknown category the checkboxes cannot reach', () => {
-    const state = defaultPoiFilterState();
-    state.categories.water = false;
-    const pois = [
-      poi({ id: 1, category: 'water' }),
-      poi({ id: 2, category: 'camping' }),
-      poi({ id: 3, category: 'ferry' as TrailPOI['category'] }),
-    ];
-    expect(visiblePois(pois, state).map(p => p.id)).toEqual([2, 3]);
-  });
-
-  it('never shows a POI that duplicates a curated waypoint', () => {
-    // The waypoint is the one marker for that place; two pins a few metres
-    // apart is the thing this flag exists to prevent.
-    const state = defaultPoiFilterState();
-    const pois = [poi({ id: 1 }), poi({ id: 2, duplicateOf: 'w_abc' })];
-    expect(visiblePois(pois, state).map(p => p.id)).toEqual([1]);
-  });
-
-  it('leaves duplicates out of the checkbox counts, so counts match markers', () => {
-    const counts = countPoisByCategory([
-      poi({ category: 'camping' }),
-      poi({ category: 'camping', duplicateOf: 'w_abc' }),
-    ]);
-    expect(counts.camping).toBe(1);
-  });
-
-  it('counts by category for the checkbox labels', () => {
-    const counts = countPoisByCategory([
-      poi({ category: 'water' }),
-      poi({ category: 'water' }),
-      poi({ category: 'emergency' }),
-    ]);
-    expect(counts).toEqual({
-      water: 2,
-      camping: 0,
-      resupply: 0,
-      restaurant: 0,
-      transport: 0,
-      emergency: 1,
-    });
-  });
-});
-
 describe('the POI control', () => {
   it('renders nothing at all for a trail with no POIs', () => {
     expect(poiControlHtml(undefined, defaultPoiFilterState())).toBe('');
@@ -243,68 +99,6 @@ describe('the POI control', () => {
     expect(html).toContain('© OpenStreetMap contributors');
     expect(html).toContain('1 of 2 shown');
     expect(html).toContain('Points of interest (OpenStreetMap)');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Ordering
-// ---------------------------------------------------------------------------
-
-describe('interleaving POIs with table rows', () => {
-  const rows = [{ distance: 0 }, { distance: 5 }, { distance: 12 }];
-
-  it('places each POI at its km', () => {
-    const merged = interleavePoisByDistance(
-      rows,
-      [poi({ id: 1, distanceAlongTrail: 3 }), poi({ id: 2, distanceAlongTrail: 20 })],
-      row => row.distance
-    );
-    expect(
-      merged.map(e => (e.kind === 'poi' ? `poi${e.poi.id}` : `row${e.item.distance}`))
-    ).toEqual(['row0', 'poi1', 'row5', 'row12', 'poi2']);
-  });
-
-  it('puts the curated row first on a tie', () => {
-    const merged = interleavePoisByDistance(
-      rows,
-      [poi({ id: 7, distanceAlongTrail: 5 })],
-      r => r.distance
-    );
-    expect(merged.map(e => e.kind)).toEqual(['item', 'item', 'poi', 'item']);
-  });
-
-  it('sorts unsorted POI input and leaves the rows in the order given', () => {
-    const merged = interleavePoisByDistance(
-      rows,
-      [poi({ id: 2, distanceAlongTrail: 8 }), poi({ id: 1, distanceAlongTrail: 2 })],
-      row => row.distance
-    );
-    const poiOrder = merged.filter(e => e.kind === 'poi').map(e => (e as { poi: TrailPOI }).poi.id);
-    expect(poiOrder).toEqual([1, 2]);
-  });
-
-  it('handles an empty table and an empty POI list', () => {
-    expect(interleavePoisByDistance([], [poi()], () => 0)).toHaveLength(1);
-    expect(interleavePoisByDistance(rows, [], r => r.distance)).toHaveLength(3);
-  });
-});
-
-describe('reversing a trail', () => {
-  it('mirrors POI km about the trail total and re-sorts', () => {
-    const mirrored = mirrorPoiDistances(
-      [poi({ id: 1, distanceAlongTrail: 3 }), poi({ id: 2, distanceAlongTrail: 120 })],
-      130
-    )!;
-    expect(mirrored.map(p => [p.id, p.distanceAlongTrail])).toEqual([
-      [2, 10],
-      [1, 127],
-    ]);
-    // Cross-track distance is direction-independent.
-    expect(mirrored[0].distanceFromTrail).toBe(0.05);
-  });
-
-  it('leaves an un-enriched trail un-enriched', () => {
-    expect(mirrorPoiDistances(undefined, 130)).toBeUndefined();
   });
 });
 

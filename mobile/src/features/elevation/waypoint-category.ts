@@ -67,3 +67,29 @@ export function categoryToken(type: string): WaypointColorToken {
 export function waypointColor(type: string, colors: ThemeColors): string {
   return colors[categoryToken(type)];
 }
+
+/**
+ * OSM POI categories share the waypoint palette rather than adding tokens of
+ * their own: what marks a POI as uncurated is its treatment (smaller, tinted
+ * fill, thin ring, "OSM" badge), not a colour nobody could learn. Resupply and
+ * food both read as "town business"; transport falls in with the neutral
+ * junction colour.
+ */
+const POI_CATEGORY_TO_TOKEN: Record<string, WaypointColorToken> = {
+  water: 'waypointWater',
+  camping: 'waypointCamp',
+  resupply: 'waypointTown',
+  restaurant: 'waypointTown',
+  transport: 'waypointJunction',
+  emergency: 'waypointHazard',
+};
+
+/** The theme color token for a POI category (neutral fallback for unknowns). */
+export function poiColorToken(category: string): WaypointColorToken {
+  return POI_CATEGORY_TO_TOKEN[category] ?? 'waypointJunction';
+}
+
+/** Resolve a POI category to its themed marker color. */
+export function poiColor(category: string, colors: ThemeColors): string {
+  return colors[poiColorToken(category)];
+}

@@ -280,6 +280,39 @@ describe('createReversedTrail', () => {
     expect(reversed.waypoints[2].id).toBe('wp-0');
     expect(reversed.waypoints[2].name).toBe('A');
   });
+
+  it('mirrors POI km about the trail total and re-sorts them', () => {
+    const trail = {
+      track: {
+        points: makePoints([0, 65, 130]),
+        totalDistance: 130,
+        totalAscent: 0,
+        totalDescent: 0,
+      },
+      pois: [
+        { id: 1, distanceAlongTrail: 3, distanceFromTrail: 0.05 },
+        { id: 2, distanceAlongTrail: 120, distanceFromTrail: 0.4 },
+      ],
+    };
+    const reversed = createReversedTrail(trail);
+
+    // A POI 3 km from the old start is 127 km from the new one, and the array
+    // stays sorted so every consumer's interleave still works.
+    expect(reversed.pois?.map(p => [p.id, p.distanceAlongTrail])).toEqual([
+      [2, 10],
+      [1, 127],
+    ]);
+    // Cross-track distance is direction-independent.
+    expect(reversed.pois?.map(p => p.distanceFromTrail)).toEqual([0.4, 0.05]);
+  });
+
+  it('leaves a trail that was never enriched without a pois key at all', () => {
+    // Absent means "never fetched", which is not the same as "found nothing".
+    const reversed = createReversedTrail({
+      track: { points: makePoints([0, 50]), totalDistance: 50, totalAscent: 0, totalDescent: 0 },
+    });
+    expect('pois' in reversed).toBe(false);
+  });
 });
 
 describe('reverseRouteBreaks', () => {

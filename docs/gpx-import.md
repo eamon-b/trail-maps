@@ -247,7 +247,7 @@ water, campsites, shops and other resupply, transport, and emergency services.
   again retries.
 - Results are **stored with the trail in this browser**, like everything else
   about an import, and are included when you export the trail for the mobile
-  app.
+  app, where they appear on the map, in the list and on the elevation profile.
 
 Points of interest are kept **separate from your waypoints**. They are shown on
 the map, never merged into the waypoint list, and never counted by the plan

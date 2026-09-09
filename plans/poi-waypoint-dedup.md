@@ -6,7 +6,9 @@ the OSM detail stays available and the decision stays reviewable.
 
 Status: implemented on `feat/osm-pois` (PR #63) — `src/lib/poi-dedup.ts`, wired
 into `scripts/build-trails.ts`, the web viewer, the imported-trail flow and the
-handoff validator. Written against the six trails fetched on 2026-09-08.
+handoff validator. Written against the six trails fetched on 2026-09-08. Mobile
+(PR #67) inherits the flag through the bundled assets and the handoff, hides
+flagged POIs on every surface, and shows the "waypoint detail" payoff below.
 
 ## The problem, measured
 
@@ -140,7 +142,8 @@ generated JSON.
 - **Waypoint detail**: where a flagged POI carries fields the waypoint lacks
   (`website`, `opening_hours`, `phone`, `operator`), surface them on the waypoint
   it duplicates, attributed to OSM. This is the payoff for annotating rather than
-  deleting, and it can land in a later pass.
+  deleting. Landed on mobile (PR #67) as a collapsed "From OpenStreetMap"
+  section on the waypoint screen; the web page does not show it yet.
 - **Category toggles**: flagged POIs stay out of the visible counts, so
   "camping (13)" means 13 markers.
 

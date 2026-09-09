@@ -589,43 +589,77 @@ async function processCells(
 }
 
 /**
- * Cells per tippecanoe batch.
+ * Input bytes per tippecanoe batch.
  *
- * tippecanoe serialises every input feature to a temp spill and then
- * merge-sorts it. While that spill fits the page cache the sort runs at RAM
- * speed; once it misses, every access is a seek, and on rotational storage the
- * merge collapses. Measured on the 2026-09 world build (80 cores, 251 GB RAM,
- * ~180 GB of page cache, PERC H730 spinning array):
+ * tippecanoe serialises every input feature to a temp spill, splits it into
+ * sorted bins, and then merges those bins in a SINGLE thread. The bin count
+ * scales with input size, and the merge reads all bins concurrently — so on
+ * rotational storage a large batch degenerates into thousands of interleaved
+ * seek streams. Measured on the 2026-09 world build (80 cores, 251 GB RAM,
+ * ~170 GB of page cache, PERC H730 spinning array):
  *
- *   europe         331 cells / 1324 tiers   merged in  4h31m
- *   oceania        447 cells / 1788 tiers   merged in ~2h
- *   asia-west      893 cells / 3572 tiers   23h, zero tiles written
- *   north-america  982 cells / 3928 tiers   16h, zero tiles written
- *   asia-east     1102 cells / 4408 tiers   17h, zero tiles written
+ *   europe         331 cells                       merged in  4h31m
+ *   oceania        447 cells                       merged in ~2h
+ *   asia-west      893 cells / 376 GB              23h, zero tiles written
+ *   north-america  982 cells                       16h, zero tiles written
+ *   asia-east     1102 cells                       17h, zero tiles written
  *
- * That is a cliff, not a gradient: read and write both sat at ~2 MB/s in a 1:1
- * ratio (a merge sort thrashing), and stopping the other two merges moved the
- * survivor only 4 -> 5 MB/s, so it is not queue contention. Re-run in batches
- * the same shard read at ~160 MB/s.
+ * Batching by CELL COUNT is the wrong unit and was tried first: asia-west's
+ * leading 400 cells (Ethiopia -> Caucasus -> Iran -> Karakoram) are the most
+ * contour-dense on Earth at 640 MB/cell against a 421 MB/cell shard average,
+ * so a "400 cell" batch was 256 GB of input. It opened 1160 spill bins and the
+ * single merge thread consumed roughly one bin per three minutes: ~2 MB/s and
+ * a 1:1 read:write ratio became ~38 MB/s and a 1:1 ratio. Better, still a
+ * thrash, still measured in days.
  *
- * 400 keeps a batch under oceania's proven 447 with room to spare in cache.
+ * So batches are capped by bytes. 90 GB keeps the spill (empirically ~0.39x
+ * input) near 35 GB and the bin count in the hundreds, which is the regime
+ * where europe and oceania merged without thrashing. A single cell larger than
+ * the cap still gets its own batch rather than being split, because a cell's
+ * tiers must be tiled together or it loses zoom levels.
+ *
  * Batches are joined with tile-join, exactly as joinShards() already unions the
  * shards themselves.
  */
-const MERGE_BATCH_CELLS = 400;
+const MERGE_BATCH_BYTES = 90 * 1024 * 1024 * 1024;
 
-/** Split `items` into consecutive chunks of at most `size`. */
-function chunk<T>(items: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
+/**
+ * Group cells into consecutive batches whose input bytes stay under `maxBytes`.
+ *
+ * Consecutive in sorted-cell-id order, so batches stay geographically compact
+ * and only tiles straddling a seam get re-encoded.
+ */
+function batchCellsByBytes(
+  cellIds: string[],
+  bytesByCell: Map<string, number>,
+  maxBytes: number,
+): string[][] {
+  const batches: string[][] = [];
+  let current: string[] = [];
+  let currentBytes = 0;
+
+  for (const id of cellIds) {
+    const cellBytes = bytesByCell.get(id) ?? 0;
+    // Close the batch before adding a cell that would push it over, unless the
+    // batch is empty — an oversized single cell has to go somewhere.
+    if (current.length > 0 && currentBytes + cellBytes > maxBytes) {
+      batches.push(current);
+      current = [];
+      currentBytes = 0;
+    }
+    current.push(id);
+    currentBytes += cellBytes;
+  }
+  if (current.length > 0) batches.push(current);
+
+  return batches;
 }
 
 /**
  * Merge every completed cell's tier FlatGeobufs in this shard's work dir into
  * one .mbtiles with tippecanoe.
  *
- * Shards above MERGE_BATCH_CELLS are tiled in cache-resident batches and then
+ * Shards above MERGE_BATCH_BYTES are tiled in cache-resident batches and then
  * tile-joined. Cells are clipped disjoint and batches are contiguous runs of
  * the sorted cell ids, so only tiles straddling a batch seam get re-encoded —
  * the same seam cost joinShards() already pays between shards.
@@ -640,6 +674,8 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
   // Grouped by cell, not flat: a batch must contain every tier of every cell it
   // covers, or that cell loses zoom levels.
   const layerArgsByCell = new Map<string, string[]>();
+  // Batches are capped by input bytes, so the scan totals each cell as it goes.
+  const bytesByCell = new Map<string, number>();
   let fileCount = 0;
   let skipped = 0;
 
@@ -663,6 +699,7 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
     const cellArgs = layerArgsByCell.get(m[1]) ?? [];
     cellArgs.push('-L', JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom }));
     layerArgsByCell.set(m[1], cellArgs);
+    bytesByCell.set(m[1], (bytesByCell.get(m[1]) ?? 0) + fileSizeBytes(filePath));
     fileCount++;
   }
 
@@ -671,11 +708,12 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
   }
 
   const cellIds = [...layerArgsByCell.keys()].sort();
-  const batches = chunk(cellIds, MERGE_BATCH_CELLS);
+  const totalBytes = [...bytesByCell.values()].reduce((a, b) => a + b, 0);
+  const batches = batchCellsByBytes(cellIds, bytesByCell, MERGE_BATCH_BYTES);
 
-  console.log(`  Merging ${fileCount} tier files from ${workDir}` +
+  console.log(`  Merging ${fileCount} tier files (${formatBytes(totalBytes)}) from ${workDir}` +
     (skipped ? ` (${skipped} skipped)` : '') +
-    (batches.length > 1 ? ` in ${batches.length} batches of ≤${MERGE_BATCH_CELLS} cells` : ''));
+    (batches.length > 1 ? ` in ${batches.length} batches of ≤${formatBytes(MERGE_BATCH_BYTES)}` : ''));
 
   // tippecanoe spills tens of GB of temporary sort files to /tmp by default;
   // on tmpfs that exhausts the quota mid-merge. Keep temps next to the data.
@@ -697,7 +735,8 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
       // A killed batch leaves a headerless file that tile-join would happily
       // consume; never inherit one from a previous attempt.
       if (fs.existsSync(batchPath)) fs.unlinkSync(batchPath);
-      console.log(`    batch ${i + 1}/${batches.length}: ${cells.length} cells ` +
+      const batchBytes = cells.reduce((a, id) => a + (bytesByCell.get(id) ?? 0), 0);
+      console.log(`    batch ${i + 1}/${batches.length}: ${cells.length} cells, ${formatBytes(batchBytes)} ` +
         `(${cells[0]}…${cells[cells.length - 1]})`);
       tippecanoeMerge(cells.flatMap(id => layerArgsByCell.get(id)!), batchPath, tmpDir, verbose);
       console.log(`      ✓ ${path.basename(batchPath)} (${formatBytes(fileSizeBytes(batchPath))})`);

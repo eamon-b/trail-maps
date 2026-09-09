@@ -1,13 +1,15 @@
 /**
  * Pure, React-free helpers for the waypoint detail screen: relative-date
  * formatting for the comment feed, the water-status chip registry, the
- * water-family test that decides whether the composer offers flow chips, and a
- * simple distance→ETA estimate. Kept here so they are unit-tested without the
- * screen.
+ * water-family test that decides whether the composer offers flow chips, a
+ * simple distance→ETA estimate, and the lookup behind the "From OpenStreetMap"
+ * section. Kept here so they are unit-tested without the screen.
  */
 
 import type { WaterStatus } from '@lib/comments-api-types';
+import type { TrailPOI } from '@lib/trail-types';
 import { categoryToken } from '../elevation/waypoint-category';
+import type { TrailJson } from '../../services/trail-assets';
 
 const MONTHS = [
   'Jan',
@@ -102,4 +104,31 @@ export function formatEta(minutes: number | null): string | null {
   const h = Math.floor(rounded / 60);
   const m = rounded % 60;
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+// ---------------------------------------------------------------------------
+// Duplicate POIs
+// ---------------------------------------------------------------------------
+
+/**
+ * The OSM points of interest flagged as describing this waypoint's place.
+ *
+ * `@lib/poi-dedup` annotates rather than deletes precisely so this lookup can
+ * exist: a flagged POI is drawn nowhere — not on the map, not in the list, not
+ * on the profile — but it frequently carries `website`, `opening_hours`,
+ * `operator` or `capacity` that the curated waypoint lacks. The detail screen is
+ * the one place a hidden POI ever surfaces, attributed to OSM and clearly
+ * separate from the curated content.
+ *
+ * Local data only: no SQLite read, no request, so it works the same for an
+ * imported guide as for a bundled one. Empty whenever the waypoint has no
+ * stable id (nothing could have been flagged against it) or the trail was never
+ * enriched.
+ */
+export function duplicatePoisFor(
+  trail: Pick<TrailJson, 'pois'>,
+  waypointId: string | undefined,
+): TrailPOI[] {
+  if (!waypointId || !trail.pois) return [];
+  return trail.pois.filter((poi) => poi.duplicateOf === waypointId);
 }

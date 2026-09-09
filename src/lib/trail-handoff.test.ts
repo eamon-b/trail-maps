@@ -459,6 +459,31 @@ describe('handoffImportReport', () => {
     expect(handoffImportReport(flat).hasElevation).toBe(false);
   });
 
+  it('counts nothing for a trail that was never enriched', () => {
+    expect(handoffImportReport(makeTrail()).poiCount).toBe(0);
+  });
+
+  it('counts the POIs the app will actually show, skipping flagged duplicates', () => {
+    const base = {
+      type: 'node',
+      category: 'camping' as const,
+      lat: -33.87,
+      lon: 151.21,
+      name: 'Hut',
+      tags: {},
+      distanceAlongTrail: 0.4,
+      distanceFromTrail: 0.02,
+    };
+    const trail = makeTrail({
+      pois: [
+        { ...base, id: 1 },
+        { ...base, id: 2, duplicateOf: 'w_hut' },
+        { ...base, id: 3 },
+      ],
+    });
+    expect(handoffImportReport(trail).poiCount).toBe(2);
+  });
+
   it('counts variants', () => {
     const variant = {
       name: 'Alt',

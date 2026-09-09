@@ -3,7 +3,11 @@
  *
  * Reads the generated trail JSON from public/data/generated/,
  * reduces track.points via Douglas-Peucker to ~5000 points,
- * truncates coordinate precision, and writes to mobile/assets/trails/.
+ * truncates coordinate precision, slims OSM points of interest to the fields
+ * the app reads (`slimPoi`), and writes to mobile/assets/trails/.
+ *
+ * The noise and duplicate-flagging passes have already run in build-trails.ts;
+ * this script only shrinks what they produced.
  *
  * Usage: tsx scripts/build-mobile-trails.ts
  */
@@ -11,8 +15,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { slimPoi } from '../src/lib/poi-display.js';
 import { simplifyToTarget, truncatePoints } from '../src/lib/track-simplify.js';
-import type { TrackPoint } from '../src/lib/trail-types.js';
+import type { TrackPoint, TrailPOI } from '../src/lib/trail-types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,10 +34,10 @@ const NAME_FIXES: Record<string, { name: string; shortName: string }> = {
   larapinta: { name: 'Larapinta Trail', shortName: 'Larapinta' },
 };
 
-interface TrailJson {
+export interface TrailJson {
   config: Record<string, unknown>;
-  /** Present only for trails with a data/trails/<dir>/pois.json; stripped below. */
-  pois?: unknown;
+  /** Present only for trails with a data/trails/<dir>/pois.json. Shipped slimmed. */
+  pois?: TrailPOI[];
   track: {
     points: TrackPoint[];
     displayPoints: TrackPoint[];
@@ -71,13 +76,7 @@ function truncateWaypoint(wp: Record<string, unknown>): Record<string, unknown> 
   return result;
 }
 
-function processTrail(trail: TrailJson): TrailJson {
-  // The app has no POI UI yet, so the `...trail` spread below would ship the
-  // whole `pois` array into the bundled asset for nothing. Drop it here rather
-  // than upstream: the web build still wants POIs in the generated JSON.
-  const trailWithoutPois: TrailJson = { ...trail };
-  delete trailWithoutPois.pois;
-
+export function processTrail(trail: TrailJson): TrailJson {
   // Simplify main track points
   const simplifiedPoints = simplifyToTarget(trail.track.points, TARGET_POINTS);
 
@@ -100,7 +99,7 @@ function processTrail(trail: TrailJson): TrailJson {
   });
 
   return {
-    ...trailWithoutPois,
+    ...trail,
     config: trail.config,
     track: {
       points: truncatePoints(simplifiedPoints),
@@ -112,6 +111,9 @@ function processTrail(trail: TrailJson): TrailJson {
     waypoints: trail.waypoints.map(truncateWaypoint),
     alternates,
     sideTrips,
+    // A trail that was never enriched keeps no `pois` key at all: absent means
+    // "never fetched", which the app reads differently from "found nothing".
+    ...(trail.pois ? { pois: trail.pois.map(slimPoi) } : {}),
   };
 }
 
@@ -160,9 +162,15 @@ function main() {
     totalOriginal += originalSize;
     totalOptimized += optimizedSize;
 
+    // POI payload is the one part of the asset that grew in 2026-09; print it
+    // so a fetch that doubles a trail's POI count is visible in the build log.
+    const poiCount = optimized.pois?.length ?? 0;
+    const poiKb = poiCount > 0 ? JSON.stringify(optimized.pois).length / 1024 : 0;
+
     console.log(
       `  ${entry.id}: ${(originalSize / 1024 / 1024).toFixed(2)}MB -> ${(optimizedSize / 1024 / 1024).toFixed(2)}MB` +
-        ` (${originalPointCount} -> ${optimized.track.points.length} pts)`,
+        ` (${originalPointCount} -> ${optimized.track.points.length} pts` +
+        `, POIs: ${poiCount} (${poiKb.toFixed(1)} KB))`,
     );
 
     // Build mobile index entry
@@ -184,4 +192,7 @@ function main() {
   console.log(`Wrote ${mobileIndex.length} trails + index.json to ${MOBILE_TRAILS_DIR}`);
 }
 
-main();
+const invokedPath = process.argv[1];
+if (typeof invokedPath === 'string' && path.resolve(invokedPath) === __filename) {
+  main();
+}

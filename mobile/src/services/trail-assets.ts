@@ -6,7 +6,7 @@
  * through other services.
  */
 
-import type { TrackData } from '@lib/trail-types';
+import type { TrackData, TrailPOI } from '@lib/trail-types';
 
 /**
  * The serialized shape of a bundled trail JSON.
@@ -46,6 +46,12 @@ export interface TrailJson {
   }[];
   /** Identical to the build pipeline's `TrackData` — shared, not re-declared. */
   track: TrackData;
+  /**
+   * OpenStreetMap points of interest, slimmed by the mobile build. Absent means
+   * the trail was never enriched, which the POI surfaces read differently from
+   * an empty array: no `pois` key, no POI control at all.
+   */
+  pois?: TrailPOI[];
   [key: string]: unknown;
 }
 

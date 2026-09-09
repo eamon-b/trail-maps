@@ -13,11 +13,18 @@
  * Variant reversal math lives in `variant-reverse.ts` and is reused here.
  */
 
+import { mirrorPoiDistances } from './poi-display';
 import {
   reverseAlternates,
   transformSideTrips,
   type ReversibleVariant,
 } from './variant-reverse';
+
+/** Minimal POI shape for reversal: only the along-trail km is direction-dependent. */
+export interface ReversiblePoi {
+  /** km along the trail from the current start */
+  distanceAlongTrail: number;
+}
 
 /** Minimal track point shape for reversal. */
 export interface ReversibleTrackPoint {
@@ -59,6 +66,8 @@ export interface ReversibleTrail<
   waypoints?: W[];
   alternates?: V[];
   sideTrips?: V[];
+  /** OSM points of interest. Absent on a trail that was never enriched. */
+  pois?: ReversiblePoi[];
 }
 
 /** Reverse track points, flipping cumulative distances. */
@@ -124,8 +133,10 @@ export function reverseWaypoints<W extends ReversibleWaypoint>(
  *
  * Total ascent/descent swap, track and waypoint km are mirrored about the
  * trail total, and attached variants are re-anchored to their mirrored
- * junctions. Any extra fields on the trail object (config, climate, …) are
- * passed through unchanged.
+ * junctions. POI km are mirrored too, so the web viewer and the mobile guide
+ * both get a reversed trail whose POIs read from the new start rather than the
+ * old one. Any extra fields on the trail object (config, climate, …) are passed
+ * through unchanged.
  */
 export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
   const totalDist = trail.track.totalDistance;
@@ -149,5 +160,8 @@ export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
     waypoints: reverseWaypoints(trail.waypoints ?? [], totalDist, trackLength),
     alternates: reverseAlternates(trail.alternates ?? [], totalDist),
     sideTrips: transformSideTrips(trail.sideTrips ?? [], totalDist),
+    // Only when the trail has POIs: an absent `pois` means "never enriched",
+    // which is not the same as "enriched and found nothing".
+    ...(trail.pois ? { pois: mirrorPoiDistances(trail.pois, totalDist) } : {}),
   } as T;
 }

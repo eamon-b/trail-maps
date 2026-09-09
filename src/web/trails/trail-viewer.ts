@@ -2298,12 +2298,9 @@ function exportGpx(trail: Trail): void {
 
 function getReversedTrail(): Trail {
   if (!trailState.reversedTrail) {
-    const original = trailState.originalTrail!;
-    trailState.reversedTrail = createReversedTrail(original);
-    // `createReversedTrail` passes fields it doesn't know about through
-    // untouched, so the POI positions would still be measured from the forward
-    // start — 3 km in on a 130 km walk instead of 3 km from the end.
-    trailState.reversedTrail.pois = mirrorPoiDistances(original.pois, original.track.totalDistance);
+    // POI km are mirrored inside `createReversedTrail`, alongside the track,
+    // waypoint and variant math.
+    trailState.reversedTrail = createReversedTrail(trailState.originalTrail!);
   }
   return trailState.reversedTrail;
 }

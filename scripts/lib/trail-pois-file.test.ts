@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   buildTrailPOIFile,
+  mergeTrailPOIs,
   parseTrailPOIFile,
   poisForBuild,
   readTrailPOIFile,
@@ -205,5 +206,49 @@ describe('stringifyTrailPOIFile', () => {
     expect(text.endsWith('\n')).toBe(true);
     expect(text.split('\n')[1]).toBe('  "source": "OpenStreetMap",');
     expect(text).toBe(stringifyTrailPOIFile(file({ pois: [poi(1, 10)] })));
+  });
+});
+
+describe('mergeTrailPOIs', () => {
+  it('keeps POIs the windowed fetch never looked for', () => {
+    // The whole point: a fetch of km 870+ must not delete km 0-870.
+    const existing = [poi(1, 10), poi(2, 400)];
+    const fetched = [poi(3, 900)];
+    const merged = mergeTrailPOIs(existing, fetched);
+    expect(merged.pois.map(p => p.id)).toEqual([1, 2, 3]);
+    expect(merged).toMatchObject({ added: 1, updated: 0, kept: 2 });
+  });
+
+  it('lets the newer observation win where the two overlap', () => {
+    const stale = { ...poi(1, 10), name: 'old name' };
+    const fresh = { ...poi(1, 12), name: 'new name' };
+    const merged = mergeTrailPOIs([stale], [fresh]);
+    expect(merged.pois).toEqual([fresh]);
+    expect(merged).toMatchObject({ added: 0, updated: 1, kept: 0 });
+  });
+
+  it('treats the same id under a different OSM type as a different POI', () => {
+    const merged = mergeTrailPOIs([poi(1, 10, 'node')], [poi(1, 10, 'way')]);
+    expect(merged.pois).toHaveLength(2);
+    expect(merged.added).toBe(1);
+  });
+
+  it('returns the union sorted by km, so the file diff stays readable', () => {
+    const merged = mergeTrailPOIs([poi(1, 900), poi(2, 10)], [poi(3, 400)]);
+    expect(merged.pois.map(p => p.distanceAlongTrail)).toEqual([10, 400, 900]);
+  });
+
+  it('handles either side being empty', () => {
+    expect(mergeTrailPOIs([], [poi(1, 10)]).pois.map(p => p.id)).toEqual([1]);
+    expect(mergeTrailPOIs([poi(1, 10)], []).pois.map(p => p.id)).toEqual([1]);
+    expect(mergeTrailPOIs([], []).pois).toEqual([]);
+  });
+
+  it('does not mutate its inputs', () => {
+    const existing = [poi(1, 10)];
+    const fetched = [poi(2, 900)];
+    const before = JSON.stringify([existing, fetched]);
+    mergeTrailPOIs(existing, fetched);
+    expect(JSON.stringify([existing, fetched])).toBe(before);
   });
 });

@@ -8,6 +8,8 @@ import {
   positionalArgs,
   processTrailData,
   resolveEndpoint,
+  clipScaleToKm,
+  resolveKmRange,
   resolveMaxVertices,
   resolveTimeoutSeconds,
   trailDirsById,
@@ -106,6 +108,48 @@ describe('processTrailData', () => {
     expect(camp.category).toBe('camping');
     // Halfway between points 4 (40 km) and 5 (50 km) on the trail's own scale.
     expect(camp.distanceAlongTrail).toBeCloseTo(45, 1);
+  });
+
+  it('keeps a windowed fetch on the real km scale', async () => {
+    // The bug this guards: clipping the polylines but placing POIs against the
+    // full scale made the library's segmentIndex point at unrelated early
+    // points, filing a far-along POI near km 0.
+    const farAlong = node(9, START_LAT + 8 * LAT_STEP, LON, {
+      tourism: 'camp_site',
+      name: 'Late Camp',
+    });
+
+    const whole = await processTrailData(makeTrail(), fixedFetcher([farAlong]));
+    const windowed = await processTrailData(
+      makeTrail(),
+      fixedFetcher([farAlong]),
+      undefined,
+      { fromKm: 70, toKm: Infinity }
+    );
+
+    expect(whole.pois).toHaveLength(1);
+    expect(windowed.pois).toHaveLength(1);
+    expect(windowed.pois[0].distanceAlongTrail).toBeCloseTo(
+      whole.pois[0].distanceAlongTrail,
+      6
+    );
+    expect(windowed.pois[0].distanceAlongTrail).toBeGreaterThan(70);
+  });
+
+  it('queries nothing when the window falls outside the trail', async () => {
+    let called = false;
+    const fetcher = fixedFetcher([]);
+    const result = await processTrailData(
+      makeTrail(),
+      async (...args: Parameters<typeof fetcher>) => {
+        called = true;
+        return fetcher(...args);
+      },
+      undefined,
+      { fromKm: 5000, toKm: 6000 }
+    );
+    expect(called).toBe(false);
+    expect(result).toMatchObject({ pois: [], queryChunks: 0 });
   });
 
   it('drops POIs further than the search radius from the trail', async () => {
@@ -299,6 +343,117 @@ describe('resolveMaxVertices', () => {
     expect(() => resolveMaxVertices(['--max-vertices'])).toThrow(
       /--max-vertices requires a number of vertices/
     );
+  });
+});
+
+describe('resolveKmRange', () => {
+  it('is null when neither bound is given, so a plain fetch is unaffected', () => {
+    expect(resolveKmRange([])).toBeNull();
+    expect(resolveKmRange(['--timeout', '120'])).toBeNull();
+  });
+
+  it('reads either bound alone', () => {
+    expect(resolveKmRange(['--from-km', '870'])).toEqual({ fromKm: 870, toKm: Infinity });
+    expect(resolveKmRange(['--to-km', '100'])).toEqual({ fromKm: 0, toKm: 100 });
+    expect(resolveKmRange(['--from-km=870', '--to-km=1200'])).toEqual({
+      fromKm: 870,
+      toKm: 1200,
+    });
+  });
+
+  it('rejects a backwards or nonsensical window', () => {
+    expect(() => resolveKmRange(['--from-km', '900', '--to-km', '800'])).toThrow(
+      /greater than --from-km/
+    );
+    expect(() => resolveKmRange(['--from-km=-5'])).toThrow(/non-negative/);
+    expect(() => resolveKmRange(['--from-km', 'north'])).toThrow(/non-negative/);
+    // A bare negative reads as a flag, and is refused before the range check.
+    expect(() => resolveKmRange(['--from-km', '-5'])).toThrow(/requires a number of km/);
+  });
+});
+
+describe('clipScaleToKm', () => {
+  const scale = {
+    polylines: [
+      [
+        { lat: 0, lon: 0 },
+        { lat: 1, lon: 0 },
+        { lat: 2, lon: 0 },
+        { lat: 3, lon: 0 },
+      ],
+    ],
+    kmScale: [0, 10, 20, 30],
+    breaks: new Set<number>(),
+  };
+
+  it('keeps only the points inside the window', () => {
+    expect(clipScaleToKm(scale, 10, 20).polylines).toEqual([
+      [
+        { lat: 1, lon: 0 },
+        { lat: 2, lon: 0 },
+      ],
+    ]);
+  });
+
+  it('carries the real trail km across, so POIs are not misplaced', () => {
+    // The clipped kmScale must stay index-aligned with the clipped polylines:
+    // trailKmFor indexes it by the library's segmentIndex, which counts points
+    // in the route it was handed. Returning [0, 10] here would file a km 20 POI
+    // at km 0.
+    expect(clipScaleToKm(scale, 10, 30).kmScale).toEqual([10, 20, 30]);
+  });
+
+  it('returns nothing when the window misses the trail', () => {
+    expect(clipScaleToKm(scale, 100, 200).polylines).toEqual([]);
+    expect(clipScaleToKm(scale, 100, 200).kmScale).toEqual([]);
+  });
+
+  it('splits rather than bridges when a polyline leaves and re-enters', () => {
+    // Bridging would query a corridor along a line the trail never takes.
+    const gapped = { ...scale, kmScale: [0, 10, 999, 30] };
+    const clipped = clipScaleToKm(gapped, 0, 40);
+    expect(clipped.polylines).toEqual([
+      [
+        { lat: 0, lon: 0 },
+        { lat: 1, lon: 0 },
+      ],
+      [{ lat: 3, lon: 0 }],
+    ]);
+    expect(clipped.kmScale).toEqual([0, 10, 30]);
+    // The break marks the last point of the first run, as buildRouteScale does.
+    expect([...clipped.breaks]).toEqual([1]);
+  });
+
+  it('drops points with no km on the scale', () => {
+    const unscaled = { ...scale, kmScale: [0, NaN, NaN, 30] };
+    const clipped = clipScaleToKm(unscaled, 0, 40);
+    expect(clipped.polylines).toEqual([[{ lat: 0, lon: 0 }], [{ lat: 3, lon: 0 }]]);
+    expect(clipped.kmScale).toEqual([0, 30]);
+  });
+
+  it('tracks the km offset across several polylines', () => {
+    const two = {
+      polylines: [
+        [
+          { lat: 0, lon: 0 },
+          { lat: 1, lon: 0 },
+        ],
+        [
+          { lat: 9, lon: 0 },
+          { lat: 8, lon: 0 },
+        ],
+      ],
+      kmScale: [0, 10, 500, 510],
+      breaks: new Set<number>(),
+    };
+    const clipped = clipScaleToKm(two, 490, 520);
+    expect(clipped.polylines).toEqual([
+      [
+        { lat: 9, lon: 0 },
+        { lat: 8, lon: 0 },
+      ],
+    ]);
+    expect(clipped.kmScale).toEqual([500, 510]);
   });
 });
 

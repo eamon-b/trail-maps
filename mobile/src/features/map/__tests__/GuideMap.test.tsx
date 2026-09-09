@@ -113,6 +113,10 @@ const points = [
   { lat: -34, lon: 139, ele: 10, dist: 1 },
 ];
 const waypoints = [{ id: 'w_1', name: 'Spring', lat: -35, lon: 138, type: 'water' }];
+const pois = [
+  { id: 12, type: 'node', category: 'water', name: null, lat: -35, lon: 138 },
+  { id: 7, type: 'way', category: 'camping', name: 'Bunyip Hut', lat: -34.5, lon: 138.5 },
+];
 
 /** Flush the style-resolution promise chain and re-render. */
 const flush = () => act(async () => { await new Promise((r) => setImmediate(r)); });
@@ -613,9 +617,11 @@ describe('GuideMap', () => {
           styleSource="online"
           displayPoints={points}
           waypoints={waypoints}
+          pois={pois}
           alternates={[{ name: 'Alt', type: 'alternate', points }]}
           sideTrips={[{ name: 'Spur', type: 'side-trip', points }]}
           onVariantTap={jest.fn()}
+          onPoiTap={jest.fn()}
           onBackgroundPress={onBackgroundPress}
           builderMode
           onMapPress={onMapPress}
@@ -624,7 +630,7 @@ describe('GuideMap', () => {
     });
     await flush();
 
-    for (const sourceId of ['guide-alternates', 'guide-side-trips', 'guide-waypoints']) {
+    for (const sourceId of ['guide-alternates', 'guide-side-trips', 'guide-pois', 'guide-waypoints']) {
       expect(sourceById(tree, sourceId).props.onPress).toBeUndefined();
     }
 
@@ -748,5 +754,140 @@ describe('GuideMap', () => {
     });
     expect(onWaypointTap).toHaveBeenCalledWith('w_1');
     expect(event.stopPropagation).toHaveBeenCalled();
+  });
+  it('declares the POI source before the waypoints so a marker still wins the tap', async () => {
+    // Native tap resolution picks the touched source whose layers sit highest,
+    // and the duplicate flag only removes the *known* POI/waypoint pairs — for
+    // the rest, style order is what keeps a curated marker tappable.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          pois={pois}
+        />,
+      );
+    });
+    await flush();
+
+    const ids = sources(tree).map((n) => n.props.id as string);
+    expect(ids).toContain('guide-pois');
+    expect(ids.indexOf('guide-pois')).toBeLessThan(ids.indexOf('guide-waypoints'));
+  });
+
+  it('draws POIs unclustered, from z11, with labels from z13', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} pois={pois} />,
+      );
+    });
+    await flush();
+
+    const source = sourceById(tree, 'guide-pois');
+    // Clustering would put a POI bubble next to a waypoint bubble at exactly
+    // the zooms where the two are hardest to tell apart.
+    expect(source.props.cluster).toBeUndefined();
+    expect(source.props.hitbox).toEqual({ top: 22, right: 22, bottom: 22, left: 22 });
+
+    expect(nodeById(tree, 'circle', 'guide-pois-circles').props.minzoom).toBe(11);
+    expect(nodeById(tree, 'symbol', 'guide-pois-icons').props.minzoom).toBe(11);
+    expect(nodeById(tree, 'symbol', 'guide-pois-labels').props.minzoom).toBe(13);
+  });
+
+  it('badges a POI smaller and thinner than a curated waypoint', async () => {
+    // The whole "this is an uncurated lead" signal is weight: same glyph, less
+    // of everything else.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          pois={pois}
+        />,
+      );
+    });
+    await flush();
+
+    const poi = nodeById(tree, 'circle', 'guide-pois-circles').props.style as Record<string, unknown>;
+    expect(poi.circleRadius).toBe(7);
+    expect(poi.circleStrokeWidth).toBe(1.5);
+    expect(poi.circleStrokeColor).toEqual(['get', 'color']);
+    expect(poi.circleColor).toBe(mapInk('light').badge);
+
+    const icon = nodeById(tree, 'symbol', 'guide-pois-icons').props.style as Record<string, unknown>;
+    expect(icon.iconImage).toEqual(['get', 'icon']);
+    const waypointIcon = nodeById(tree, 'symbol', 'guide-waypoints-icons').props
+      .style as Record<string, unknown>;
+    expect(icon.iconSize as number).toBeLessThan(waypointIcon.iconSize as number);
+
+    // Labels give way rather than compete: droppable, and placed last.
+    const label = nodeById(tree, 'symbol', 'guide-pois-labels').props.style as Record<string, unknown>;
+    expect(label.textOptional).toBe(true);
+    expect(label.symbolSortKey as number).toBeGreaterThan(0);
+  });
+
+  it('taps a POI and reports its route key without falling through to the map', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onPoiTap = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          pois={pois}
+          onPoiTap={onPoiTap}
+        />,
+      );
+    });
+    await flush();
+
+    const event = pressEvent({
+      features: [{ type: 'Feature', properties: { id: 'node-12' } }],
+    });
+    act(() => {
+      pressHandler(sourceById(tree, 'guide-pois'))(event);
+    });
+    expect(onPoiTap).toHaveBeenCalledWith('node-12');
+    expect(event.stopPropagation).toHaveBeenCalled();
+  });
+
+  it('renders no POI source when the trail has none or they are all filtered out', async () => {
+    // An absent `pois` means "never fetched" and an empty one means "the filter
+    // hid them all" — either way there is nothing to declare a source for.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} waypoints={waypoints} />,
+      );
+    });
+    await flush();
+    expect(sources(tree).map((n) => n.props.id)).not.toContain('guide-pois');
+
+    act(() => {
+      tree.update(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          pois={[]}
+        />,
+      );
+    });
+    await flush();
+    expect(sources(tree).map((n) => n.props.id)).not.toContain('guide-pois');
   });
 });

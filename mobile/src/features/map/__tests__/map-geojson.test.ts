@@ -1,4 +1,5 @@
 import {
+  buildPoiCollection,
   buildRouteBreakCollection,
   buildTrailLine,
   buildVariantCollection,
@@ -7,6 +8,7 @@ import {
   trailCameraBounds,
   variantFeatureId,
   waypointFeatureId,
+  type MapPoi,
   type MapVariant,
   type MapWaypoint,
 } from '../map-geojson';
@@ -291,5 +293,58 @@ describe('trailCameraBounds', () => {
 
   it('returns null when there is no geometry to fit', () => {
     expect(trailCameraBounds([])).toBeNull();
+  });
+});
+
+describe('buildPoiCollection', () => {
+  const colorForCategory = (category: string) => `color:${category}`;
+
+  const pois: MapPoi[] = [
+    { id: 12, type: 'node', category: 'water', name: null, lat: -35, lon: 138 },
+    { id: 7, type: 'way', category: 'camping', name: 'Bunyip Hut', lat: -34.5, lon: 138.5 },
+  ];
+
+  it('keys every feature by the route key the POI screen takes as a param', () => {
+    // `poiKey` proper is "node/12", and a slash in a route param is a path
+    // separator — the map has to carry the "-" form so a tap can push the
+    // route with exactly the value it read off the feature.
+    const fc = buildPoiCollection(pois, colorForCategory);
+    expect(fc.features.map((f) => f.id)).toEqual(['node-12', 'way-7']);
+    expect(fc.features.map((f) => f.properties!.id)).toEqual(['node-12', 'way-7']);
+  });
+
+  it('carries the colour, glyph and display name each layer draws', () => {
+    const fc = buildPoiCollection(pois, colorForCategory);
+    expect(fc.features[1].geometry.coordinates).toEqual([138.5, -34.5]);
+    expect(fc.features[1].properties).toEqual({
+      id: 'way-7',
+      name: 'Bunyip Hut',
+      category: 'camping',
+      color: 'color:camping',
+      icon: 'campsite',
+    });
+  });
+
+  it('labels an unnamed POI by its category', () => {
+    // Most OSM water points carry no name at all; an unlabelled marker is one
+    // nobody can talk about, so the shared display name fills in.
+    const fc = buildPoiCollection(pois, colorForCategory);
+    expect(fc.features[0].properties!.name).toBe('Unnamed water');
+  });
+
+  it('falls back to the generic glyph for a category this build does not know', () => {
+    const fc = buildPoiCollection(
+      [{ id: 1, type: 'node', category: 'wormhole', name: 'Elsewhere', lat: 0, lon: 0 }],
+      colorForCategory,
+    );
+    expect(fc.features[0].properties!.icon).toBe('poi');
+    expect(fc.features[0].properties!.name).toBe('Elsewhere');
+  });
+
+  it('returns an empty collection for no POIs', () => {
+    expect(buildPoiCollection([], colorForCategory)).toEqual({
+      type: 'FeatureCollection',
+      features: [],
+    });
   });
 });

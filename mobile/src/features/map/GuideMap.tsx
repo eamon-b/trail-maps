@@ -18,13 +18,20 @@
  * glyphs are bundled PNGs registered through <Images>, because the map has to
  * work offline and the bundled glyph pbfs carry no pictographs.
  *
- * Two overlays are tappable, and which one wins is decided natively by style
+ * OpenStreetMap points of interest ride on their own source above the tracks:
+ * the same glyphs on a smaller, thinner-ringed badge, so a lead reads as a lead
+ * and never as a curated waypoint. They are unclustered and only draw from
+ * POI_MIN_ZOOM (a 459-POI trail is noise at overview zooms), with labels from
+ * POI_LABEL_MIN_ZOOM.
+ *
+ * Three overlays are tappable, and which one wins is decided natively by style
  * order (the native map picks the touched source whose layers sit highest): the
- * waypoint source is declared last, so a marker tap always beats the variant
- * line underneath it. A tap that hits neither reaches <Map onPress>, which is
- * what dismisses the variant selection — and because MapLibre RN 11 bubbles a
- * source press up to the map, the source handlers stop propagation so a marker
- * tap does not also count as a background tap.
+ * waypoint source is declared last — after the POIs, which are after the
+ * variant lines — so a marker tap always beats a POI a few metres away, and
+ * both beat the line underneath. A tap that hits none of them reaches <Map
+ * onPress>, which is what dismisses the variant selection — and because
+ * MapLibre RN 11 bubbles a source press up to the map, the source handlers stop
+ * propagation so a marker tap does not also count as a background tap.
  *
  * Style resolution follows the old app's "resolve before mount" rule: the
  * concrete style *object* is fetched in JS and only then handed to a freshly
@@ -67,9 +74,10 @@ import { useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
 import { tileManager } from '../../services/tile-manager';
 import { getOnlineMapStyle } from '../../services/online-style-service';
-import { waypointColor } from '../elevation/waypoint-category';
+import { poiColor, waypointColor } from '../elevation/waypoint-category';
 import {
   accuracyCircleRadiusExpression,
+  buildPoiCollection,
   buildRouteBreakCollection,
   buildTrailLine,
   buildUserLocationGeoJSON,
@@ -77,6 +85,7 @@ import {
   buildWaypointCollection,
   trailCameraBounds,
   type LatLon,
+  type MapPoi,
   type MapVariant,
   type MapWaypoint,
   type WaterStatusLookup,
@@ -134,6 +143,16 @@ export const WAYPOINT_CLUSTER_MAX_ZOOM = 10;
 export const WAYPOINT_LABEL_MIN_ZOOM = 11;
 
 /**
+ * POIs draw only at/above this zoom. They are unclustered — a cluster bubble
+ * would compete with the waypoint clusters at exactly the zooms where the two
+ * are hardest to tell apart — so "not drawn" is the whole overview strategy for
+ * the 459 POIs a trail like Heysen carries.
+ */
+export const POI_MIN_ZOOM = 11;
+/** POI labels appear two zooms later than the markers, once there is room. */
+export const POI_LABEL_MIN_ZOOM = 13;
+
+/**
  * Marker badge geometry, in screen px. The badge grew from the old Ø13 dot to
  * Ø23 (radius + ring) so a glyph fits inside it and still reads at arm's length
  * in sunlight; the tap target is the source hitbox below, not this.
@@ -149,6 +168,24 @@ const FAVORITE_MARKER_RING_WIDTH = 3.5;
  * badge — bigger and the corners of the wider glyphs spill over the ring.
  */
 const MARKER_ICON_SIZE = 0.165;
+
+/**
+ * POI badge geometry. Smaller disc, thinner ring and a slightly smaller glyph
+ * than a curated waypoint's: on a screen holding both, the difference in weight
+ * is what says "this one is an uncurated lead". Kept above ~Ø14 so the glyph
+ * inside is still identifiable at arm's length.
+ */
+const POI_MARKER_RADIUS = 7;
+const POI_MARKER_RING_WIDTH = 1.5;
+const POI_MARKER_OPACITY = 0.9;
+const POI_ICON_SIZE = 0.13;
+/**
+ * Placement priority for the POI labels. MapLibre places lower sort keys first,
+ * and a symbol that is placed keeps its spot, so a positive key puts POI labels
+ * behind everything drawn at the default 0 — and `textOptional` then lets a POI
+ * keep its glyph while dropping the label that could not fit.
+ */
+const POI_LABEL_SORT_KEY = 10;
 
 const CLUSTER_FILTER = ['has', 'point_count'] as FilterSpecification;
 const INDIVIDUAL_FILTER = ['!', ['has', 'point_count']] as FilterSpecification;
@@ -192,6 +229,12 @@ export interface GuideMapProps {
   sideTrips?: MapVariant[];
   /** Waypoint markers. */
   waypoints?: MapWaypoint[];
+  /**
+   * OpenStreetMap points of interest to draw, already filtered (duplicates of
+   * curated waypoints and switched-off categories are gone by here — see the
+   * guide's `useVisiblePois`). Absent or empty renders no POI source at all.
+   */
+  pois?: MapPoi[];
   /** Current GPS position — draws the user-location puck when present. */
   currentPosition?: { lat: number; lon: number } | null;
   /** GPS accuracy in metres — sizes the puck's accuracy circle. */
@@ -206,6 +249,11 @@ export interface GuideMapProps {
   waterStatusById?: WaterStatusLookup;
   /** Tapped waypoint's stable id. */
   onWaypointTap?: (id: string) => void;
+  /**
+   * Tapped POI's route key (`"node-123"`, see `poiRouteKey`) — the form the POI
+   * detail route takes as a param. Omit to leave the POI markers inert.
+   */
+  onPoiTap?: (routeKey: string) => void;
   /**
    * Tapped variant's feature id ("alternate-2" / "side-trip-0", see
    * variantFeatureId). Omit to leave the variant lines inert.
@@ -273,6 +321,8 @@ const ROUTE_VERTEX_FILTER = ['==', ['geometry-type'], 'Point'] as FilterSpecific
 const VARIANT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
 /** Waypoint markers are bigger now, so their hitbox grew with them. */
 const WAYPOINT_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
+/** POI badges are smaller than waypoints, but a thumb is not — same target. */
+const POI_HITBOX = { top: 22, right: 22, bottom: 22, left: 22 };
 
 /**
  * Invisible fat line over each variant, purely as a tap target: a 3 px dotted
@@ -368,11 +418,13 @@ export const GuideMap = memo(
       alternates,
       sideTrips,
       waypoints,
+      pois,
       currentPosition,
       accuracy,
       favoriteIds,
       waterStatusById,
       onWaypointTap,
+      onPoiTap,
       onVariantTap,
       selectedVariantId,
       onBackgroundPress,
@@ -519,6 +571,11 @@ export const GuideMap = memo(
           waterStatusById,
         ),
       [waypoints, colors, favoriteIds, waterStatusById],
+    );
+
+    const poiCollection = useMemo(
+      () => buildPoiCollection(pois ?? [], (category) => poiColor(category, colors)),
+      [pois, colors],
     );
 
     // --- User-location puck ------------------------------------------------
@@ -693,6 +750,53 @@ export const GuideMap = memo(
       [],
     );
 
+    // The POI badge: the same white disc, drawn smaller and ringed thinner in
+    // the category colour, and slightly translucent. Three signals at once that
+    // this is an uncurated OSM lead rather than a checked waypoint — and no
+    // favorite/water-status branches, because a POI can be neither.
+    const poiCircleStyle = useMemo(
+      () => ({
+        circleRadius: POI_MARKER_RADIUS,
+        circleColor: ink.badge,
+        circleStrokeColor: ['get', 'color'] as unknown as string,
+        circleStrokeWidth: POI_MARKER_RING_WIDTH,
+        circleOpacity: POI_MARKER_OPACITY,
+      }),
+      [ink.badge],
+    );
+
+    const poiIconStyle = useMemo(
+      () => ({
+        iconImage: ['get', 'icon'] as unknown as string,
+        iconSize: POI_ICON_SIZE,
+        iconAllowOverlap: true,
+        iconIgnorePlacement: true,
+      }),
+      [],
+    );
+
+    // POI labels give way to waypoint labels (sort key) and to each other
+    // (`textOptional` drops the text, not the glyph, when it cannot be placed),
+    // so a dense town never turns into a wall of OSM names.
+    const poiLabelStyle = useMemo(
+      () => ({
+        textField: ['get', 'name'] as unknown as string,
+        textFont: labelFont,
+        textSize: 11,
+        textColor: ink.labelText,
+        textHaloColor: ink.labelHalo,
+        textHaloWidth: 2.5,
+        // In ems against the 11 px text; clears the smaller POI badge.
+        textOffset: [0, 1.4] as [number, number],
+        textAnchor: 'top' as const,
+        textMaxWidth: 13,
+        textOptional: true,
+        textAllowOverlap: false,
+        symbolSortKey: POI_LABEL_SORT_KEY,
+      }),
+      [labelFont, ink.labelText, ink.labelHalo],
+    );
+
     const clusterCircleStyle = useMemo(
       () => ({
         circleColor: colors.accent,
@@ -784,6 +888,17 @@ export const GuideMap = memo(
         if (id != null) onWaypointTap?.(id);
       },
       [onWaypointTap],
+    );
+
+    // A tapped POI. Reports the route key the feature carries, which is exactly
+    // what the detail route takes as a param.
+    const handlePoiPress = useCallback(
+      (event: NativeSyntheticEvent<PressEventWithFeatures>) => {
+        event.stopPropagation();
+        const id = event.nativeEvent.features?.[0]?.properties?.id as string | undefined;
+        if (id != null) onPoiTap?.(id);
+      },
+      [onPoiTap],
     );
 
     // A tapped variant line. The hit layer and the visible dashes both belong to
@@ -919,6 +1034,37 @@ export const GuideMap = memo(
               id="guide-route-vertices"
               filter={ROUTE_VERTEX_FILTER}
               style={routeVertexStyle}
+            />
+          </GeoJSONSource>
+        )}
+
+        {/* OpenStreetMap POIs — unclustered, from POI_MIN_ZOOM only, and
+            declared immediately *before* the waypoints so a curated marker on
+            top of a POI still wins the tap. */}
+        {poiCollection.features.length > 0 && (
+          <GeoJSONSource
+            id="guide-pois"
+            data={poiCollection}
+            onPress={builderMode ? undefined : handlePoiPress}
+            hitbox={POI_HITBOX}
+          >
+            <Layer
+              type="circle"
+              id="guide-pois-circles"
+              minzoom={POI_MIN_ZOOM}
+              style={poiCircleStyle}
+            />
+            <Layer
+              type="symbol"
+              id="guide-pois-icons"
+              minzoom={POI_MIN_ZOOM}
+              style={poiIconStyle}
+            />
+            <Layer
+              type="symbol"
+              id="guide-pois-labels"
+              minzoom={POI_LABEL_MIN_ZOOM}
+              style={poiLabelStyle}
             />
           </GeoJSONSource>
         )}

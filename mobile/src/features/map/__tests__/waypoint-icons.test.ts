@@ -8,6 +8,7 @@
 import {
   FALLBACK_WAYPOINT_ICON,
   WAYPOINT_ICON_NAMES,
+  poiIconName,
   waypointIconName,
 } from '../waypoint-icons';
 import { WAYPOINT_ICON_IMAGES } from '../waypoint-icon-images';
@@ -64,6 +65,15 @@ describe('waypointIconName', () => {
     expect(waypointIconName('beach')).toBe('beach');
   });
 
+  it('gives the OSM POI vocabulary a glyph too', () => {
+    // These types come from the classifier, not the bundled trails, but the POI
+    // categories reuse the same two glyphs — keep them reachable from both.
+    expect(waypointIconName('cafe')).toBe('restaurant');
+    expect(waypointIconName('pub')).toBe('restaurant');
+    expect(waypointIconName('bus-stop')).toBe('transport');
+    expect(waypointIconName('ferry')).toBe('transport');
+  });
+
   it('groups synonyms onto one glyph', () => {
     expect(waypointIconName('spring')).toBe(waypointIconName('water'));
     expect(waypointIconName('shelter')).toBe(waypointIconName('hut'));
@@ -75,6 +85,47 @@ describe('waypointIconName', () => {
   it('falls back to the generic point-of-interest glyph for unknown types', () => {
     expect(waypointIconName('something-new')).toBe(FALLBACK_WAYPOINT_ICON);
     expect(waypointIconName('')).toBe(FALLBACK_WAYPOINT_ICON);
+  });
+});
+
+describe('poiIconName', () => {
+  it('gives all six OpenStreetMap POI categories a registered glyph', () => {
+    const categories = [
+      'water',
+      'camping',
+      'resupply',
+      'restaurant',
+      'transport',
+      'emergency',
+    ] as const;
+    for (const category of categories) {
+      const icon = poiIconName(category);
+      expect(WAYPOINT_ICON_NAMES).toContain(icon);
+      expect(WAYPOINT_ICON_IMAGES[icon]).toBeDefined();
+    }
+  });
+
+  it('maps each category to the glyph a hiker expects', () => {
+    expect(poiIconName('water')).toBe('water');
+    expect(poiIconName('camping')).toBe('campsite');
+    expect(poiIconName('resupply')).toBe('resupply');
+    expect(poiIconName('restaurant')).toBe('restaurant');
+    expect(poiIconName('transport')).toBe('transport');
+    expect(poiIconName('emergency')).toBe('emergency');
+  });
+
+  it('shares its glyphs with the equivalent waypoint types', () => {
+    expect(poiIconName('water')).toBe(waypointIconName('water'));
+    expect(poiIconName('camping')).toBe(waypointIconName('campsite'));
+    expect(poiIconName('resupply')).toBe(waypointIconName('resupply'));
+    expect(poiIconName('restaurant')).toBe(waypointIconName('restaurant'));
+  });
+
+  it('falls back for a category this build does not know', () => {
+    // A newer trail JSON must still draw *something*: an `icon` naming an
+    // unregistered image renders as nothing at all.
+    expect(poiIconName('helipad')).toBe(FALLBACK_WAYPOINT_ICON);
+    expect(poiIconName('')).toBe(FALLBACK_WAYPOINT_ICON);
   });
 });
 

@@ -10,6 +10,12 @@
  * to work fully offline, and the bundled glyph pbfs cover Latin + punctuation
  * only — no pictographs — so a symbol layer `textField` cannot draw iconography.
  *
+ * Two mappings live here: `waypointIconName` for curated waypoint `type`
+ * strings, and `poiIconName` for the six OpenStreetMap POI categories the map's
+ * POI layer draws. They share one glyph set — a POI and a waypoint of the same
+ * kind should look the same; the POI markers are told apart by the smaller,
+ * category-tinted badge GuideMap draws underneath, not by the ink.
+ *
  * Pure + React-free so the grouping is unit-testable; the image registry lives
  * next door in `waypoint-icon-images.ts`.
  */
@@ -32,6 +38,9 @@ export const WAYPOINT_ICON_NAMES = [
   'hazard',
   'info',
   'beach',
+  'restaurant',
+  'transport',
+  'emergency',
   'poi',
 ] as const;
 
@@ -84,6 +93,11 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
   supermarket: 'resupply',
   'post-office': 'resupply',
 
+  // Meals out (shared with the `restaurant` POI category)
+  restaurant: 'restaurant',
+  cafe: 'restaurant',
+  pub: 'restaurant',
+
   // Trail ends
   trailhead: 'trailhead', // in data
   endpoint: 'endpoint', // in data
@@ -101,6 +115,11 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
   highway: 'road',
   parking: 'road',
   'car-park': 'road',
+
+  // Public transport (shared with the `transport` POI category)
+  'bus-stop': 'transport',
+  station: 'transport',
+  ferry: 'transport',
 
   // Wet crossings
   'inlet-crossing': 'ford', // in data
@@ -136,4 +155,24 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
 /** The glyph for a waypoint type (generic point-of-interest for unknowns). */
 export function waypointIconName(type: string): WaypointIconName {
   return TYPE_TO_ICON[type] ?? FALLBACK_WAYPOINT_ICON;
+}
+
+/**
+ * `TrailPOICategory` → glyph. Takes a plain `string` rather than the union so
+ * a trail JSON carrying a category this build does not know about still gets a
+ * marker instead of an invisible one (an `icon` naming an unregistered image
+ * draws nothing at all).
+ */
+const POI_CATEGORY_TO_ICON: Record<string, WaypointIconName> = {
+  water: 'water',
+  camping: 'campsite',
+  resupply: 'resupply',
+  restaurant: 'restaurant',
+  transport: 'transport',
+  emergency: 'emergency',
+};
+
+/** The glyph for an OpenStreetMap POI category. */
+export function poiIconName(category: string): WaypointIconName {
+  return POI_CATEGORY_TO_ICON[category] ?? FALLBACK_WAYPOINT_ICON;
 }

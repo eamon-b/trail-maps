@@ -15,6 +15,7 @@
 
 import { calculateElevationBetween, type ElevationPoint } from '@lib/track-geometry';
 import { estimateHikingTime } from '@lib/day-calculator';
+import { baseWaypointType } from '@lib/waypoint-taxonomy';
 
 /** Minimal waypoint shape needed to rank the next-of-type cards. */
 export interface DistanceWaypoint {
@@ -122,7 +123,10 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
 
   const result: NextWaypointsByType<W> = {};
   for (const wd of distances) {
-    const key = TYPE_MAPPING[wd.waypoint.type];
+    // A turn-off counts as the next place of its kind: the turn-off is where
+    // you leave the trail, so it is the point you are walking towards.
+    const key =
+      TYPE_MAPPING[wd.waypoint.type] ?? TYPE_MAPPING[baseWaypointType(wd.waypoint.type)];
     if (key && !result[key]) {
       result[key] = wd;
     }

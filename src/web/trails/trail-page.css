@@ -185,8 +185,11 @@
 .waypoint-type.type-gap {
   background: #ef9a9a;
 }
+/* A turn-off keeps its served type's colour and gains an outline: the place is
+   somewhere else, and you are reading the point where you leave the trail. */
 .waypoint-type.type-access {
-  background: #ffe0b2;
+  outline: 1px dashed rgba(31, 41, 55, 0.55);
+  outline-offset: -2px;
 }
 .waypoint-type.type-beach {
   background: #fff9c4;

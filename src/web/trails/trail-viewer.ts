@@ -11,6 +11,8 @@ import {
   isKnownWaypointType,
   isResupplyWaypoint,
   matchesWaypointFamily,
+  baseWaypointType,
+  isAccessWaypoint,
   waypointTypeLabel,
   WAYPOINT_TYPE_LABELS,
   WAYPOINT_TYPES,
@@ -227,7 +229,6 @@ function getTypeClass(type?: string): string {
     'side-trip': 'type-side-trip',
     'accommodation': 'type-accommodation',
     'caravan-park': 'type-caravan-park',
-    'access': 'type-access',
     'trailhead': 'type-trailhead',
     'food': 'type-food',
     'road-crossing': 'type-road-crossing',
@@ -238,7 +239,14 @@ function getTypeClass(type?: string): string {
     'resupply': 'type-resupply',
     'endpoint': 'type-endpoint'
   };
-  return typeMap[type || ''] || '';
+  // A turn-off takes the colour of the place it serves, plus `type-access`,
+  // which outlines the chip. So the colour says what kind of place and the
+  // outline says you are not there yet — and a new `<x>-access` upstream needs
+  // no entry here.
+  const key = type || '';
+  const base = typeMap[key] || typeMap[baseWaypointType(key)] || '';
+  if (!base) return '';
+  return isAccessWaypoint(key) ? `${base} type-access` : base;
 }
 
 /**
@@ -875,7 +883,11 @@ function drawSideTrips(sideTrips: RouteVariant[]): void {
 }
 
 function createWaypointIcon(type?: string): L.DivIcon {
-  const config = WAYPOINT_ICONS[type || 'waypoint'] || WAYPOINT_ICONS.waypoint;
+  // A turn-off shows its served type's icon: `hut-access` is the hut glyph.
+  const config =
+    WAYPOINT_ICONS[type || 'waypoint'] ||
+    WAYPOINT_ICONS[baseWaypointType(type)] ||
+    WAYPOINT_ICONS.waypoint;
   return L.divIcon({
     className: `waypoint-marker ${type || 'waypoint'}`,
     html: config.icon,

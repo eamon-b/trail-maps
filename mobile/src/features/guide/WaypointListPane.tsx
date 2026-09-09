@@ -50,6 +50,7 @@ import {
   matchesFamily,
   type WaypointFamily,
 } from './waypoint-filters';
+import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
 
 type Waypoint = TrailJson['waypoints'][number];
 
@@ -266,7 +267,7 @@ function WaypointRow({
     <View style={styles.row}>
       <View style={styles.rowMain}>
         <Text style={[styles.type, { color: colors.accent }]} numberOfLines={1}>
-          {waypoint.type}
+          {waypointTypeLabel(waypoint.type)}
         </Text>
         <View style={styles.nameRow}>
           <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>

@@ -5041,7 +5041,7 @@
     {
       "id": "w_0466d4ad",
       "name": "Colac Bay turnoff",
-      "type": "access",
+      "type": "food-access",
       "lat": -46.357031,
       "lon": 167.913612
     },
@@ -5440,7 +5440,7 @@
     {
       "id": "w_1b066dc6",
       "name": "Speargrass Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -41.868035,
       "lon": 172.821668
     },
@@ -5629,7 +5629,7 @@
     {
       "id": "w_24ec68da",
       "name": "Sabine Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -41.949978,
       "lon": 172.788929
     },
@@ -5685,7 +5685,7 @@
     {
       "id": "w_25f00ae4",
       "name": "Ada Pass Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -42.355666,
       "lon": 172.517259
     },
@@ -5713,7 +5713,7 @@
     {
       "id": "w_28a13fcc",
       "name": "Glenorchy turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -44.925655,
       "lon": 168.358297
     },
@@ -5741,7 +5741,7 @@
     {
       "id": "w_29c94ade",
       "name": "Twelve Mile Delta Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -45.038956,
       "lon": 168.657043
     },
@@ -5811,14 +5811,14 @@
     {
       "id": "w_2dea8d6a",
       "name": "John Coull Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.238336,
       "lon": 174.977671
     },
     {
       "id": "w_2dea8d6a695a",
       "name": "John Coull Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -39.238336,
       "lon": 174.977671
     },
@@ -5972,7 +5972,7 @@
     {
       "id": "w_38f860c5",
       "name": "Tuatapere turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -46.14844,
       "lon": 167.823177
     },
@@ -6063,14 +6063,14 @@
     {
       "id": "w_3c2b44ff",
       "name": "Upper Mangatawhiri Campground turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -37.113148,
       "lon": 174.979693
     },
     {
       "id": "w_3c2b44ff3ff0",
       "name": "Repeater Campground turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -37.113148,
       "lon": 174.979693
     },
@@ -6098,7 +6098,7 @@
     {
       "id": "w_3d8d79fb",
       "name": "Whananaki turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -35.513872,
       "lon": 174.451941
     },
@@ -6140,7 +6140,7 @@
     {
       "id": "w_3ebbfe22",
       "name": "Hanmer Springs turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -42.516836,
       "lon": 172.385612
     },
@@ -6161,14 +6161,14 @@
     {
       "id": "w_3fc0df96",
       "name": "Huntly Camping & Caravan Park turnoff",
-      "type": "access",
+      "type": "accommodation-access",
       "lat": -37.549727,
       "lon": 175.154327
     },
     {
       "id": "w_400179a7",
       "name": "Warkworth turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -36.36452,
       "lon": 174.63836
     },
@@ -6266,14 +6266,14 @@
     {
       "id": "w_44618c27",
       "name": "Mangatangi Trig Campground turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -37.217914,
       "lon": 175.069259
     },
     {
       "id": "w_44618c277be8",
       "name": "Lower Mangatawhiri Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -37.217914,
       "lon": 175.069259
     },
@@ -6343,7 +6343,7 @@
     {
       "id": "w_4a652889",
       "name": "Double Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -43.492326,
       "lon": 171.252414
     },
@@ -6434,14 +6434,14 @@
     {
       "id": "w_5142c654",
       "name": "Levin turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -40.657991,
       "lon": 175.347326
     },
     {
       "id": "w_516dda86",
       "name": "Mangapapa Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -39.11876,
       "lon": 175.060159
     },
@@ -6483,7 +6483,7 @@
     {
       "id": "w_52e577b69a78",
       "name": "Mt Potts Lodge turnoff",
-      "type": "access",
+      "type": "food-access",
       "lat": -43.57723,
       "lon": 170.953682
     },
@@ -6539,7 +6539,7 @@
     {
       "id": "w_5526a0ca",
       "name": "Bog Inn Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -38.58028,
       "lon": 175.623901
     },
@@ -6560,7 +6560,7 @@
     {
       "id": "w_567baaab",
       "name": "Huntly turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -37.556487,
       "lon": 175.151629
     },
@@ -6630,7 +6630,7 @@
     {
       "id": "w_5a91a873",
       "name": "Mangaturuturu Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.224457,
       "lon": 175.490516
     },
@@ -6651,7 +6651,7 @@
     {
       "id": "w_5b7679e6",
       "name": "Rangipo Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.21238,
       "lon": 175.623869
     },
@@ -6714,7 +6714,7 @@
     {
       "id": "w_5f8fb715",
       "name": "Taumarunui Holiday Park turnoff",
-      "type": "access",
+      "type": "caravan-park-access",
       "lat": -38.883843,
       "lon": 175.267422
     },
@@ -6805,14 +6805,14 @@
     {
       "id": "w_66317ade",
       "name": "Te Anau turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -45.545359,
       "lon": 167.935053
     },
     {
       "id": "w_66317adef352",
       "name": "Mossburn turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -45.545359,
       "lon": 167.935053
     },
@@ -7113,7 +7113,7 @@
     {
       "id": "w_7711fc24",
       "name": "Mangawaiiti Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -39.293851,
       "lon": 174.963236
     },
@@ -7330,7 +7330,7 @@
     {
       "id": "w_857fd2ad",
       "name": "Otatara turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -46.431793,
       "lon": 168.27908
     },
@@ -7421,7 +7421,7 @@
     {
       "id": "w_89aaeab3",
       "name": "Auckland CBD turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -36.851712,
       "lon": 174.769885
     },
@@ -7456,7 +7456,7 @@
     {
       "id": "w_8d551cec",
       "name": "Whangarei turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -35.838208,
       "lon": 174.490331
     },
@@ -7526,7 +7526,7 @@
     {
       "id": "w_91f9154e",
       "name": "Happy Dayz Accomodation turnoff",
-      "type": "access",
+      "type": "accommodation-access",
       "lat": -36.307725,
       "lon": 174.702071
     },
@@ -7540,7 +7540,7 @@
     {
       "id": "w_92726764",
       "name": "Cannibal Gorge Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -42.36038,
       "lon": 172.512058
     },
@@ -7617,14 +7617,14 @@
     {
       "id": "w_973a839a17f4",
       "name": "The Key (Princhester) turnoff",
-      "type": "access",
+      "type": "food-access",
       "lat": -45.545359,
       "lon": 167.935053
     },
     {
       "id": "w_974e39a8",
       "name": "Lake Tekapo Motels & Holiday Park turnoff",
-      "type": "access",
+      "type": "caravan-park-access",
       "lat": -44.004646,
       "lon": 170.475451
     },
@@ -7659,7 +7659,7 @@
     {
       "id": "w_9890ba5b",
       "name": "Arrowtown Hampshire Holiday Park turnoff",
-      "type": "access",
+      "type": "accommodation-access",
       "lat": -44.939505,
       "lon": 168.83069
     },
@@ -7778,7 +7778,7 @@
     {
       "id": "w_9ef51079",
       "name": "Methven turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -43.363884,
       "lon": 171.528357
     },
@@ -7820,7 +7820,7 @@
     {
       "id": "w_a19d9d5b",
       "name": "Nelson turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -41.412838,
       "lon": 173.251579
     },
@@ -7939,7 +7939,7 @@
     {
       "id": "w_a8bf02cb",
       "name": "Kinloch Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -44.924741,
       "lon": 168.358641
     },
@@ -7981,14 +7981,14 @@
     {
       "id": "w_aca27d36",
       "name": "Blyth Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.223628,
       "lon": 175.502182
     },
     {
       "id": "w_aca27d36d7c3",
       "name": "Whakapapaiti Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.223628,
       "lon": 175.502182
     },
@@ -8142,7 +8142,7 @@
     {
       "id": "w_b7fa82f67184",
       "name": "Mesopotamia Station turnoff",
-      "type": "access",
+      "type": "food-access",
       "lat": -43.57723,
       "lon": 170.953682
     },
@@ -8163,7 +8163,7 @@
     {
       "id": "w_b947f27f",
       "name": "Invercargill turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -46.418474,
       "lon": 168.337514
     },
@@ -8191,21 +8191,21 @@
     {
       "id": "w_bb05792f",
       "name": "Papakura turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -37.070047,
       "lon": 174.931196
     },
     {
       "id": "w_bb8c7e2d",
       "name": "Picton Holiday Park turnoff",
-      "type": "access",
+      "type": "caravan-park-access",
       "lat": -41.24913,
       "lon": 173.963762
     },
     {
       "id": "w_bb8c7e2daa19",
       "name": "Alexanders Holiday Park turnoff",
-      "type": "access",
+      "type": "accommodation-access",
       "lat": -41.24913,
       "lon": 173.963762
     },
@@ -8226,7 +8226,7 @@
     {
       "id": "w_bcb8e378",
       "name": "Bluff turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -46.610893,
       "lon": 168.346493
     },
@@ -8268,7 +8268,7 @@
     {
       "id": "w_bf2aa4c8",
       "name": "Peel Forest Campground turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -43.588043,
       "lon": 171.154726
     },
@@ -8289,7 +8289,7 @@
     {
       "id": "w_c05f6cf97fe3",
       "name": "Mangaehuehu Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.223628,
       "lon": 175.502182
     },
@@ -8324,14 +8324,14 @@
     {
       "id": "w_c153e851",
       "name": "Geraldine turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -43.57723,
       "lon": 170.953682
     },
     {
       "id": "w_c153e851cf9a",
       "name": "Peel Forest turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -43.57723,
       "lon": 170.953682
     },
@@ -8597,14 +8597,14 @@
     {
       "id": "w_ce062a4a",
       "name": "Mangatepopo Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -39.13223,
       "lon": 175.656895
     },
     {
       "id": "w_ce062a4ab0fb",
       "name": "Mangatepopo Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -39.13223,
       "lon": 175.656895
     },
@@ -8639,7 +8639,7 @@
     {
       "id": "w_cec14db9",
       "name": "Arthur's Pass turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -42.958961,
       "lon": 171.609252
     },
@@ -8660,14 +8660,14 @@
     {
       "id": "w_cff63286",
       "name": "Christopher Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -42.303853,
       "lon": 172.61328
     },
     {
       "id": "w_cff632862c77",
       "name": "Christopher (Ada) Cullers Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -42.303853,
       "lon": 172.61328
     },
@@ -8877,7 +8877,7 @@
     {
       "id": "w_db2e4b1a",
       "name": "Otautau turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -46.194824,
       "lon": 167.922526
     },
@@ -8919,7 +8919,7 @@
     {
       "id": "w_ddc45567",
       "name": "Ohauora Campsite turnoff",
-      "type": "access",
+      "type": "campsite-access",
       "lat": -39.199867,
       "lon": 175.000828
     },
@@ -8968,7 +8968,7 @@
     {
       "id": "w_debd6323",
       "name": "Twizel turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -44.260094,
       "lon": 170.104977
     },
@@ -9003,7 +9003,7 @@
     {
       "id": "w_e0ca687d",
       "name": "Nightcaps turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -45.969022,
       "lon": 167.901198
     },
@@ -9066,7 +9066,7 @@
     {
       "id": "w_e263b781",
       "name": "Ruakaka turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -35.879312,
       "lon": 174.469092
     },
@@ -9150,7 +9150,7 @@
     {
       "id": "w_e8a81aea",
       "name": "Queenstown Holiday Park Creeksyde turnoff",
-      "type": "access",
+      "type": "caravan-park-access",
       "lat": -45.032183,
       "lon": 168.659449
     },
@@ -9171,7 +9171,7 @@
     {
       "id": "w_e93c546d",
       "name": "Matapouri turnoff",
-      "type": "access",
+      "type": "resupply-access",
       "lat": -35.558184,
       "lon": 174.47242
     },
@@ -9213,7 +9213,7 @@
     {
       "id": "w_ee33cebd",
       "name": "Red Beach Top 10 Holiday Park turnoff",
-      "type": "access",
+      "type": "accommodation-access",
       "lat": -36.597986,
       "lon": 174.700829
     },
@@ -9255,7 +9255,7 @@
     {
       "id": "w_f08b7d21",
       "name": "Camp Waipu Cove turnoff",
-      "type": "access",
+      "type": "food-access",
       "lat": -36.028951,
       "lon": 174.493809
     },
@@ -9416,7 +9416,7 @@
     {
       "id": "w_fc5aa78f",
       "name": "Kiwi Burn Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -45.362841,
       "lon": 168.095501
     },
@@ -9437,14 +9437,14 @@
     {
       "id": "w_fd1c3099",
       "name": "Old Man Hut turnoff",
-      "type": "access",
+      "type": "hut-access",
       "lat": -41.520639,
       "lon": 173.266802
     },
     {
       "id": "w_fd2ca336",
       "name": "Kerikeri turnoff",
-      "type": "access",
+      "type": "town-access",
       "lat": -35.221238,
       "lon": 173.945947
     },
@@ -9507,7 +9507,7 @@
     {
       "id": "w_fe359ff0",
       "name": "Wanaka Top 10 Holiday Park turnoff",
-      "type": "access",
+      "type": "accommodation-access",
       "lat": -44.699186,
       "lon": 169.118018
     },

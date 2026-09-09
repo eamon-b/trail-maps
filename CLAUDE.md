@@ -101,7 +101,13 @@ Each trail has its own directory containing:
 - `climate.json` - Climate data for locations along the trail
 - `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
 
-Te Araroa's file also carries two waypoint types no other trail uses: `gap` (the "Trail ends"/"Trail resumes" pair at each route break) and `access` (a "<place> turnoff" on the route at the km you leave it for a town). `access` is **not** in `RESUPPLY_TYPES` — only 31 of the 70 turnoffs serve a town/food/resupply site, and the rest serve huts and campsites — so an off-trail town is still missing from the resupply plan. See the note in the PR that introduced this.
+Te Araroa's file also carries waypoint types no other trail uses. `gap` is the "Trail ends"/"Trail resumes" pair at each route break. The **turn-offs** are points on the route at the km you leave it for a place that is somewhere else, typed `<servedType>-access` — `town-access`, `hut-access`, and so on — so one field says both what kind of place it is and that you are not there yet.
+
+Two rules follow, both in `waypoint-taxonomy.ts`:
+- `RESUPPLY_TYPES` lists `town-access`/`food-access`/`resupply-access` **one by one** rather than stripping the suffix generically. A `water-access` must never satisfy `isWaterWaypoint` — that would tell the carry calculator there is water on the route when it is down a side road, and under-reporting a dry stretch is the dangerous way to be wrong.
+- `baseWaypointType()` is the fallback for every map keyed by type: `MAP[type] ?? MAP[baseWaypointType(type)] ?? FALLBACK` gives a turn-off its served type's icon, colour and chip without seven more entries per map. Use it rather than enumerating; `isAccessWaypoint()` is there for the cases where a turn-off must behave *differently* from the place (you cannot sleep at one — see `overnightWaypoints`).
+
+Changing a bundled waypoint's `type` re-keys it in `data/waypoint-ids.json`, which matches on type + 100 m proximity: the ids churn silently and any server-side comment keyed to them is orphaned. Migrate the registry entries in the same commit.
 
 **Te Araroa is not curated here.** Its route, waypoints and resupply points are built in [te-araroa-data](https://github.com/eamon-b/te-araroa-data), which commits its outputs; this repo takes them as a devDependency pinned by `package-lock.json`. `npm run sync:te-araroa` copies `te-araroa-sobo.gpx` out of `node_modules` into `data/trails/te_araroa/`, where it is gitignored — only `trail.json` is committed. `npm update te-araroa-data` takes a newer build. Do not hand-edit the GPX: it will be overwritten, and the fix belongs upstream.
 

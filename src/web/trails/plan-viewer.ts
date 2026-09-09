@@ -16,7 +16,7 @@ import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
-import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
+import { baseWaypointType, waypointTypeLabel } from '@lib/waypoint-taxonomy';
 import { loadPlanState, savePlanState } from './plan-state';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
@@ -100,7 +100,8 @@ const WAYPOINT_ICONS: Record<string, string> = {
 };
 
 function waypointIcon(type?: string): string {
-  return WAYPOINT_ICONS[type ?? ''] ?? '\u{1F4CD}';
+  // A turn-off shows its served type's icon (`town-access` → the town glyph).
+  return WAYPOINT_ICONS[type ?? ''] ?? WAYPOINT_ICONS[baseWaypointType(type)] ?? '\u{1F4CD}';
 }
 
 // ---------------------------------------------------------------------------

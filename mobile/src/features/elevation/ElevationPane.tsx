@@ -8,6 +8,11 @@
  * That km window doubles as this pane's focus window (see guide-focus): arriving
  * from the map zooms the profile to the section that was on screen, and leaving
  * hands the same range to whichever pane comes next.
+ *
+ * OSM points of interest ride along as extra markers on the same `waypoints`
+ * prop, tagged `kind: 'poi'` so the profile draws them hollow and the tap lands
+ * on their own detail screen. They are appended only once the window is narrow
+ * enough for the rings to be readable (see POI_PROFILE_MAX_WINDOW_KM).
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,11 +28,13 @@ import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { isSameFocus } from '../guide/guide-focus';
 import { orderedWaypoints } from '../guide/guide-trail';
+import { useVisiblePois } from '../guide/use-visible-pois';
 import { useRoutesStore } from '../routes/routes-store';
 import { routeHighlightRanges, type RouteTrackPoint } from '../routes/route-geometry';
 import { ElevationProfile, type ProfileReadout, type ProfileWaypoint } from './ElevationProfile';
-import { clampWindow, type KmWindow } from './geometry';
+import { clampWindow, type KmWindow, type ProfileMarkerKind } from './geometry';
 import type { ProfilePoint } from './lod';
+import { poiProfileMarkers, POI_PROFILE_MAX_WINDOW_KM } from './poi-profile';
 
 const ZOOM_EPSILON_KM = 0.01;
 
@@ -38,6 +45,7 @@ export function ElevationPane() {
   const units = useSettingsStore((s) => s.units);
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
+  const pois = useVisiblePois(trail);
   const router = useRouter();
 
   const totalKm = trail.track.totalDistance || 0;
@@ -53,6 +61,10 @@ export function ElevationPane() {
       })),
     [trail],
   );
+
+  // POI ticks: elevation sampled off the track once per (visible POIs, track),
+  // not per frame — the sampling is a binary search per POI.
+  const poiMarkers = useMemo(() => poiProfileMarkers(pois, points), [pois, points]);
 
   // Active custom route → shade its on-trail spans on the profile.
   const activePoints = useRoutesStore((s) => s.activePointsByTrail[trailId]);
@@ -82,8 +94,25 @@ export function ElevationPane() {
     setWindow({ startKm: 0, endKm: totalKm });
   }, [totalKm]);
 
+  // Hollow POI rings only where they can be told apart: on a whole-trail window
+  // a few hundred of them bury the trace.
+  const showPoiTicks =
+    poiMarkers.length > 0 && window.endKm - window.startKm <= POI_PROFILE_MAX_WINDOW_KM;
+
+  const profileWaypoints = useMemo(
+    () => (showPoiTicks ? [...waypoints, ...poiMarkers] : waypoints),
+    [waypoints, poiMarkers, showPoiTicks],
+  );
+
   const onWaypointTap = useCallback(
-    (id: string) => {
+    (id: string, kind: ProfileMarkerKind) => {
+      if (kind === 'poi') {
+        router.push({
+          pathname: '/guide/[trailId]/poi/[poiKey]',
+          params: { trailId, poiKey: id },
+        });
+        return;
+      }
       router.push({
         pathname: '/guide/[trailId]/waypoint/[waypointId]',
         params: { trailId, waypointId: id },
@@ -158,7 +187,7 @@ export function ElevationPane() {
         <ElevationProfile
           points={points}
           totalKm={totalKm}
-          waypoints={waypoints}
+          waypoints={profileWaypoints}
           favoriteIds={favoriteSet}
           unit={units}
           currentKm={currentKm}

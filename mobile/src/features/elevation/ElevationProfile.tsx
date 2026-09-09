@@ -7,7 +7,9 @@
  *    window is small enough to afford it,
  *  - pinch-to-zoom on the x-axis (anchored on the pinch focal point) plus
  *    one-finger horizontal pan, committed to the controlled `window` prop,
- *  - waypoint markers on the trace (tap → `onWaypointTap`),
+ *  - waypoint markers on the trace, plus hollow rings for OSM points of
+ *    interest (tap → `onWaypointTap`, which is handed the marker's `kind` so
+ *    the parent can route a POI to its own screen),
  *  - tap-to-scrub crosshair snapped to the nearest track point,
  *  - a `currentKm` GPS marker (plumbing only).
  *
@@ -54,8 +56,9 @@ import {
   zoomWindowAtFocal,
   MIN_WINDOW_KM,
   type KmWindow,
+  type ProfileMarkerKind,
 } from './geometry';
-import { waypointColor } from './waypoint-category';
+import { poiColor, waypointColor } from './waypoint-category';
 
 const PADDING = { top: spacing.md, right: spacing.md, bottom: spacing.xl, left: spacing.xxl };
 /** Touch radius (px) for waypoint hit-testing. */
@@ -63,6 +66,10 @@ const WAYPOINT_TOUCH_RADIUS = 22;
 /** Marker dot radius (px): standard vs. favorited (slightly larger). */
 const MARKER_RADIUS = 4;
 const FAVORITE_MARKER_RADIUS = 6;
+/** POI tick radius (px) — smaller than a waypoint dot, and drawn hollow. */
+const POI_MARKER_RADIUS = 3;
+/** Ring thickness (px) of a hollow POI tick. */
+const POI_MARKER_STROKE = 1.5;
 /** Max window state pushes per second while a gesture is active. */
 const WINDOW_THROTTLE_MS = 33;
 /** Pixels a finger must travel before a drag becomes a pan (vs. a tap). */
@@ -70,10 +77,13 @@ const PAN_MIN_DISTANCE = 6;
 /** Box width (px) reserved for a centered x-axis label. */
 const X_LABEL_WIDTH = 52;
 
-/** A waypoint the profile can mark on the trace. */
+/** A waypoint (or OSM point of interest) the profile can mark on the trace. */
 export interface ProfileWaypoint {
   id: string;
+  /** Waypoint type, or — for a POI — its category. */
   type: string;
+  /** Defaults to 'waypoint'; 'poi' draws a hollow ring in the category colour. */
+  kind?: ProfileMarkerKind;
   totalDistance?: number;
   elevation?: number;
 }
@@ -89,7 +99,7 @@ export interface ElevationProfileProps {
   points: ProfilePoint[];
   /** Trail length in km (window upper bound). */
   totalKm: number;
-  /** Waypoints to mark on the trace. */
+  /** Waypoints (and POI ticks) to mark on the trace. */
   waypoints?: ProfileWaypoint[];
   /** Starred waypoint ids — drawn larger, in the favorite color. */
   favoriteIds?: ReadonlySet<string>;
@@ -106,8 +116,8 @@ export interface ElevationProfileProps {
   highlightRanges?: { startKm: number; endKm: number }[];
   /** Current GPS position (km) — draws the position marker. */
   currentKm?: number | null;
-  /** Tap on a waypoint marker. */
-  onWaypointTap?: (id: string) => void;
+  /** Tap on a marker: its id, and which kind of thing it marks. */
+  onWaypointTap?: (id: string, kind: ProfileMarkerKind) => void;
   /** Crosshair scrub readout (null when cleared). */
   onScrub?: (readout: ProfileReadout | null) => void;
 }
@@ -230,10 +240,16 @@ export function ElevationProfile({
         eleMin: metrics.eleMin,
         eleRange: metrics.eleRange,
       },
-      (wp) =>
-        favoriteIds?.has(wp.id)
+      (wp) => {
+        // POIs are never favouritable, so the kind check comes first: a hollow
+        // ring in the category colour, deliberately smaller than a waypoint dot.
+        if (wp.kind === 'poi') {
+          return { color: poiColor(wp.type, colors), radius: POI_MARKER_RADIUS, fill: false };
+        }
+        return favoriteIds?.has(wp.id)
           ? { color: colors.waypointFavorite, radius: FAVORITE_MARKER_RADIUS }
-          : { color: waypointColor(wp.type, colors), radius: MARKER_RADIUS },
+          : { color: waypointColor(wp.type, colors), radius: MARKER_RADIUS };
+      },
     );
   }, [metrics, waypoints, favoriteIds, window.startKm, window.endKm, left, chartWidth, chartHeight, colors]);
 
@@ -359,7 +375,8 @@ export function ElevationProfile({
     if (!s.metrics) return;
     const hitId = hitTestMarkers(s.markers, tapX, tapY, WAYPOINT_TOUCH_RADIUS);
     if (hitId && s.onWaypointTap) {
-      s.onWaypointTap(hitId);
+      const hit = s.markers.find((m) => m.id === hitId);
+      s.onWaypointTap(hitId, hit?.kind ?? 'waypoint');
       return;
     }
     const layout = layoutRef.current;
@@ -467,9 +484,21 @@ export function ElevationProfile({
             />
           )}
 
-          {markers.map((m) => (
-            <Circle key={m.id} cx={m.x} cy={m.y} r={m.radius} color={m.color} />
-          ))}
+          {markers.map((m) =>
+            m.fill ? (
+              <Circle key={m.id} cx={m.x} cy={m.y} r={m.radius} color={m.color} />
+            ) : (
+              <Circle
+                key={m.id}
+                cx={m.x}
+                cy={m.y}
+                r={m.radius}
+                color={m.color}
+                style="stroke"
+                strokeWidth={POI_MARKER_STROKE}
+              />
+            ),
+          )}
 
           {currentPositionX != null && (
             <Group>

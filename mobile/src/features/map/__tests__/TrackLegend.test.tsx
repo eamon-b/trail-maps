@@ -52,9 +52,11 @@ function labels(tree: ReactTestRenderer): string[] {
 const rendered = (tree: ReactTestRenderer) => JSON.stringify(tree.toJSON());
 
 describe('TrackLegend', () => {
-  it('renders nothing when the trail has no alternates or side trips', () => {
+  it('renders nothing when there are no alternates, side trips or POIs', () => {
     expect(render({}).toJSON()).toBeNull();
-    expect(render({ hasAlternates: false, hasSideTrips: false }).toJSON()).toBeNull();
+    expect(
+      render({ hasAlternates: false, hasSideTrips: false, hasPois: false }).toJSON(),
+    ).toBeNull();
   });
 
   it('lists only the classes present on the trail', () => {
@@ -65,6 +67,28 @@ describe('TrackLegend', () => {
       'Alternate',
       'Side trip',
     ]);
+  });
+
+  it('names the OSM points of interest only while they are drawn', () => {
+    // The POI row earns its place the same way the variant rows do: it appears
+    // when there is something on the map the walker could otherwise mistake for
+    // a curated waypoint, and only then.
+    expect(labels(render({ hasPois: true }))).toEqual(['Trail', 'Points of interest']);
+    expect(labels(render({ hasAlternates: true, hasPois: true }))).toEqual([
+      'Trail',
+      'Alternate',
+      'Points of interest',
+    ]);
+    expect(labels(render({ hasAlternates: true }))).not.toContain('Points of interest');
+  });
+
+  it('marks POIs with a hollow ring rather than a line swatch', () => {
+    // Six category colours means no single hue identifies them; the shape does
+    // — a ring around a hole, against the waypoint badge's filled disc.
+    const json = rendered(render({ hasPois: true }));
+    expect(json).toContain('"borderWidth":1.5');
+    // ...and it is a ring, not another bar: the line swatches have no border.
+    expect(rendered(render({ hasAlternates: true }))).not.toContain('"borderWidth":1.5');
   });
 
   it('swatches use the map’s own track colours', () => {

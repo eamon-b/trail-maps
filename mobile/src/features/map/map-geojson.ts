@@ -8,10 +8,11 @@
  */
 
 import type { Feature, FeatureCollection, LineString, MultiLineString, Point } from 'geojson';
+import { poiDisplayName, poiRouteKey } from '@lib/poi-display';
 import { routeBreakCrossings, splitAtRouteBreaks } from '@lib/route-breaks';
-import type { RouteBreak } from '@lib/trail-types';
+import type { RouteBreak, TrailPOICategory } from '@lib/trail-types';
 import { calculateTrailBounds, type TrackPoint } from '../../services/trail-bounds';
-import { waypointIconName } from './waypoint-icons';
+import { poiIconName, waypointIconName } from './waypoint-icons';
 
 /** Minimal track-point shape used for polyline geometry. */
 export interface LatLon {
@@ -243,6 +244,72 @@ export function buildWaypointCollection(
         // filed against — a legacy waypoint with only a name+index fallback id
         // can never have any.
         waterStatus: (wp.id ? waterStatusById?.get(wp.id)?.status : undefined) ?? '',
+      },
+    };
+  });
+  return { type: 'FeatureCollection', features };
+}
+
+/**
+ * Minimal OpenStreetMap POI shape needed to place and colour a marker.
+ *
+ * Structural, like `MapWaypoint`: `TrailPOI` satisfies it, so the pane can hand
+ * the trail's own POIs straight in, and a test can build one from four fields.
+ * `category` is a plain `string` rather than `TrailPOICategory` so a trail JSON
+ * carrying a category this build does not know about still gets a marker (the
+ * icon and colour resolvers both fall back).
+ */
+export interface MapPoi {
+  /** OSM element id. Only unique together with `type`. */
+  id: number;
+  /** OSM element type: 'node' | 'way' | 'relation'. */
+  type: string;
+  category: string;
+  name: string | null;
+  lat: number;
+  lon: number;
+}
+
+/**
+ * POI markers as a FeatureCollection, one feature per POI.
+ *
+ * The shape mirrors `buildWaypointCollection` — a top-level `id`, plus `color`
+ * and `icon` properties so one data-driven circle layer and one symbol layer
+ * paint every category — with two differences that matter:
+ *
+ *  - the id is `poiRouteKey(poi)` (`"node-123"`), the slash-free form the POI
+ *    detail route takes as a param, so a tap can push the route with the value
+ *    it read off the feature and nothing has to re-derive it;
+ *  - `name` is `poiDisplayName(poi)`, because most OSM water points carry no
+ *    `name` at all and an unlabelled marker is a marker nobody can talk about.
+ *
+ * Duplicates of curated waypoints are already gone by here (`visiblePois`
+ * drops them), and there is no clustering: POIs simply do not draw below the
+ * layer's minzoom.
+ */
+export function buildPoiCollection(
+  pois: MapPoi[],
+  colorForCategory: (category: string) => string,
+): FeatureCollection<Point> {
+  const features: Feature<Point>[] = pois.map((poi) => {
+    const id = poiRouteKey(poi);
+    return {
+      type: 'Feature',
+      id,
+      geometry: {
+        type: 'Point',
+        coordinates: [poi.lon, poi.lat],
+      },
+      properties: {
+        id,
+        // The shared helper is typed against the narrow category union; this
+        // module deliberately takes a plain string (see MapPoi), and every
+        // helper it reaches only ever compares the value, so narrowing back for
+        // the call is safe and keeps the unknown-category fallback working.
+        name: poiDisplayName({ name: poi.name, category: poi.category as TrailPOICategory }),
+        category: poi.category,
+        color: colorForCategory(poi.category),
+        icon: poiIconName(poi.category),
       },
     };
   });

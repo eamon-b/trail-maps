@@ -12,6 +12,10 @@
  * shares the bottom of the screen with the legend and the FAB stack, so those
  * hide while it is open — the same trade the route-builder bar makes.
  *
+ * A trail that carries OpenStreetMap points of interest also gets a layers
+ * button, opening PoiLayersSheet over the map; the markers themselves come from
+ * `useVisiblePois`, the one filter every POI surface reads.
+ *
  * The pane also translates its viewport to and from the guide's shared focus
  * window (see guide-focus): leaving the map reports the km range on screen, and
  * arriving fits the camera to whatever range the previous pane was showing.
@@ -31,6 +35,7 @@ import { useGuide } from '../guide/GuideContext';
 import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { boundsForKmRange, isSameFocus, kmRangeInBounds } from '../guide/guide-focus';
+import { hasPois, useVisiblePois } from '../guide/use-visible-pois';
 import { useWaterStatus } from '../guide/use-water-status';
 import { useRoutesStore } from '../routes/routes-store';
 import { RouteBuilderBar } from '../routes/RouteBuilderBar';
@@ -43,6 +48,7 @@ import {
 } from '../routes/route-geometry';
 import { GuideMap, type GuideMapHandle, type ViewportBounds } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
+import { PoiLayersSheet } from './PoiLayersSheet';
 import {
   degradationMessage,
   isRedownloadFixable,
@@ -132,6 +138,14 @@ export function MapPane() {
   const alternates = trail.alternates as MapVariant[] | undefined;
   const sideTrips = trail.sideTrips as MapVariant[] | undefined;
   const waypoints = trail.waypoints as MapWaypoint[];
+  // OSM points of interest, already filtered by the global settings-store
+  // filter (duplicates of curated waypoints and switched-off categories gone).
+  // `TrailPOI` satisfies the map's structural `MapPoi`, so it goes straight in.
+  const pois = useVisiblePois(trail);
+  // Whether this trail has POIs *at all* — an absent `pois` means "never
+  // fetched", so the layers button stays away rather than offering an empty
+  // sheet that implies the search ran and found nothing.
+  const trailHasPois = hasPois(trail);
   const displayPoints = trail.track.displayPoints;
   const routeBreaks = trail.track.breaks;
   const routeTrack = displayPoints as RouteTrackPoint[];
@@ -167,6 +181,12 @@ export function MapPane() {
     [],
   );
   const clearVariant = useCallback(() => setSelectedVariantId(null), []);
+
+  // Switching trails resets this along with every other state here: GuideView
+  // mounts the pane with `key={trailId}`, so no effect has to clear it.
+  const [layersOpen, setLayersOpen] = useState(false);
+  const openLayers = useCallback(() => setLayersOpen(true), []);
+  const closeLayers = useCallback(() => setLayersOpen(false), []);
 
   // --- Route builder + active-route overlay --------------------------------
   const [building, setBuilding] = useState(false);
@@ -257,6 +277,16 @@ export function MapPane() {
     [router, trailId],
   );
 
+  const onPoiTap = useCallback(
+    (routeKey: string) => {
+      router.push({
+        pathname: '/guide/[trailId]/poi/[poiKey]',
+        params: { trailId, poiKey: routeKey },
+      });
+    },
+    [router, trailId],
+  );
+
   // --- Pane focus ----------------------------------------------------------
   // The last settled viewport, kept in a ref: the camera moves constantly and
   // none of this belongs in render. `onRegionDidChange` is MapLibre's idle
@@ -301,11 +331,13 @@ export function MapPane() {
           alternates={alternates}
           sideTrips={sideTrips}
           waypoints={waypoints}
+          pois={pois}
           currentPosition={position}
           accuracy={accuracy}
           favoriteIds={favoriteSet}
           waterStatusById={waterStatusById}
           onWaypointTap={onWaypointTap}
+          onPoiTap={onPoiTap}
           onVariantTap={onVariantTap}
           selectedVariantId={selectedVariantId}
           onBackgroundPress={clearVariant}
@@ -371,6 +403,7 @@ export function MapPane() {
         <TrackLegend
           hasAlternates={hasDrawableVariant(alternates)}
           hasSideTrips={hasDrawableVariant(sideTrips)}
+          hasPois={pois.length > 0}
         />
       )}
 
@@ -392,6 +425,23 @@ export function MapPane() {
       {/* FAB stack — hidden whenever something else owns the bottom-right. */}
       {!building && !selectedVariant && (
         <>
+          {/* Map layers: which OSM points of interest to draw. Only for trails
+              that actually carry some. */}
+          {trailHasPois && (
+            <Pressable
+              onPress={openLayers}
+              accessibilityRole="button"
+              accessibilityLabel="Map layers"
+              style={({ pressed }) => [
+                styles.layers,
+                { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.buttonIcon, { color: colors.accent }]}>◫</Text>
+            </Pressable>
+          )}
+
           {/* Draw route: enter the tap-to-add-point builder */}
           <Pressable
             onPress={startBuilding}
@@ -438,6 +488,10 @@ export function MapPane() {
             <Text style={[styles.recenterIcon, { color: colors.accent }]}>◎</Text>
           </Pressable>
         </>
+      )}
+
+      {trailHasPois && (
+        <PoiLayersSheet visible={layersOpen} onClose={closeLayers} pois={trail.pois ?? []} />
       )}
     </View>
   );
@@ -561,6 +615,17 @@ const styles = StyleSheet.create({
   centerOnMe: {
     position: 'absolute',
     bottom: spacing.xl + 44 + spacing.sm,
+    right: spacing.lg,
+    width: 44,
+    height: 44,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  layers: {
+    position: 'absolute',
+    bottom: spacing.xl + (44 + spacing.sm) * 3,
     right: spacing.lg,
     width: 44,
     height: 44,

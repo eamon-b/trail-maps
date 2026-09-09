@@ -165,21 +165,34 @@ export function hitTestMarkers(
   return bestId;
 }
 
-/** A waypoint the profile can mark on the trace. */
+/**
+ * What a marker stands for. Waypoints are the curated ones; POIs are the
+ * uncurated OpenStreetMap leads, drawn as hollow rings and routed to their own
+ * detail screen — so the kind travels with the marker rather than the tap
+ * handler having to guess from the id.
+ */
+export type ProfileMarkerKind = 'waypoint' | 'poi';
+
+/** A waypoint (or POI) the profile can mark on the trace. */
 export interface ProfileMarkerInput {
   id: string;
   type: string;
+  /** Defaults to 'waypoint'. */
+  kind?: ProfileMarkerKind;
   totalDistance?: number;
   elevation?: number;
 }
 
-/** A resolved marker in pixel space, with its paint (color + radius). */
+/** A resolved marker in pixel space, with its paint (color + radius + fill). */
 export interface ProfileMarker {
   id: string;
+  kind: ProfileMarkerKind;
   x: number;
   y: number;
   color: string;
   radius: number;
+  /** false → a stroke-only ring (POI ticks); true → a filled dot. */
+  fill: boolean;
 }
 
 /** The plot geometry a marker is placed into (all px, plus the km window). */
@@ -203,13 +216,14 @@ export interface MarkerPlot {
 /**
  * Place waypoint markers on the elevation trace. Pure so favorite emphasis and
  * windowing are unit-testable without Skia: markers outside the window (or with
- * no distance) are dropped, and `resolve` supplies each marker's color + radius
- * so the caller routes favorite/category colors through the theme.
+ * no distance) are dropped, and `resolve` supplies each marker's color, radius
+ * and fill so the caller routes favorite/category colors through the theme and
+ * decides which markers are hollow (omitted `fill` means a filled dot).
  */
 export function buildProfileMarkers(
   waypoints: ProfileMarkerInput[],
   plot: MarkerPlot,
-  resolve: (wp: ProfileMarkerInput) => { color: string; radius: number },
+  resolve: (wp: ProfileMarkerInput) => { color: string; radius: number; fill?: boolean },
 ): ProfileMarker[] {
   const span = Math.max(plot.endKm - plot.startKm, 1e-6);
   const out: ProfileMarker[] = [];
@@ -219,8 +233,8 @@ export function buildProfileMarkers(
     const x = plot.left + ((wp.totalDistance - plot.startKm) / span) * plot.chartWidth;
     const ele = wp.elevation ?? plot.eleMin;
     const y = plot.top + plot.chartHeight - ((ele - plot.eleMin) / plot.eleRange) * plot.chartHeight;
-    const { color, radius } = resolve(wp);
-    out.push({ id: wp.id, x, y, color, radius });
+    const { color, radius, fill } = resolve(wp);
+    out.push({ id: wp.id, kind: wp.kind ?? 'waypoint', x, y, color, radius, fill: fill ?? true });
   }
   return out;
 }

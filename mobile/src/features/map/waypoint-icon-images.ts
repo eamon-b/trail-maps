@@ -39,5 +39,8 @@ export const WAYPOINT_ICON_IMAGES: Record<WaypointIconName, ImageRequireSource> 
   hazard: require('../../../assets/map-icons/hazard.png'),
   info: require('../../../assets/map-icons/info.png'),
   beach: require('../../../assets/map-icons/beach.png'),
+  restaurant: require('../../../assets/map-icons/restaurant.png'),
+  transport: require('../../../assets/map-icons/transport.png'),
+  emergency: require('../../../assets/map-icons/emergency.png'),
   poi: require('../../../assets/map-icons/poi.png'),
 };

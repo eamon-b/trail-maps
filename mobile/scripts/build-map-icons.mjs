@@ -15,13 +15,27 @@
  * CircleLayer, which is what keeps the category colour theme-resolved instead
  * of baked into a bitmap.
  *
- * Requires ImageMagick with the librsvg delegate (`magick -list format | grep SVG`).
+ * Rasteriser: ImageMagick with the librsvg delegate
+ * (`magick -list format | grep SVG`) when `magick` is on PATH, otherwise
+ * @resvg/resvg-js — a pure-Rust renderer with prebuilt binaries and no system
+ * dependencies. It is deliberately NOT a devDependency (nothing else needs it,
+ * and glyphs change about once a year), so on a box without ImageMagick run it
+ * through npx, which leaves the package in the npx cache where `loadResvg`
+ * below finds it:
+ *
+ *   npx -y -p @resvg/resvg-js node scripts/build-map-icons.mjs
+ *
+ * Named arguments regenerate a subset — the two rasterisers are not
+ * byte-identical, so adding a glyph should not rewrite the other PNGs:
  *
  *   node scripts/build-map-icons.mjs      (or: npm run build:map-icons)
+ *   node scripts/build-map-icons.mjs restaurant transport emergency
  */
 
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -112,6 +126,27 @@ const GLYPHS = {
     <circle fill="${INK}" cx="60" cy="28" r="14"/>
     <path ${STROKE} stroke-width="9" d="M14 56 Q25 44 36 56 T58 56 T80 56 M14 74 Q25 62 36 74 T58 74 T80 74"/>`,
 
+  // Restaurant / cafe / pub: a fork and a knife.
+  restaurant: `
+    <rect fill="${INK}" x="20" y="14" width="6" height="26" rx="3"/>
+    <rect fill="${INK}" x="29" y="14" width="6" height="26" rx="3"/>
+    <rect fill="${INK}" x="38" y="14" width="6" height="26" rx="3"/>
+    <path fill="${INK}" d="M20 34 H44 V40 A12 12 0 0 1 20 40 Z"/>
+    <rect fill="${INK}" x="28" y="44" width="8" height="38" rx="4"/>
+    <path fill="${INK}" d="M56 54 V26 C56 18 62 14 68 14 C72 22 74 32 74 42 C74 49 69 54 56 54 Z"/>
+    <rect fill="${INK}" x="61" y="46" width="8" height="36" rx="4"/>`,
+
+  // Public transport: a bus front (windows cut out via even-odd) over two wheels.
+  transport: `
+    <path fill="${INK}" fill-rule="evenodd" d="M18 24 A10 10 0 0 1 28 14 H68 A10 10 0 0 1 78 24 V58 A6 6 0 0 1 72 64 H24 A6 6 0 0 1 18 58 Z M25 24 H45 V42 H25 Z M51 24 H71 V42 H51 Z"/>
+    <circle fill="${INK}" cx="31" cy="73" r="9"/>
+    <circle fill="${INK}" cx="65" cy="73" r="9"/>`,
+
+  // Emergency: a first-aid cross.
+  emergency: `
+    <rect fill="${INK}" x="37" y="12" width="22" height="72" rx="8"/>
+    <rect fill="${INK}" x="12" y="37" width="72" height="22" rx="8"/>`,
+
   // Generic point of interest — the fallback for unmapped types.
   poi: `
     <circle fill="${INK}" cx="48" cy="48" r="12"/>
@@ -122,23 +157,79 @@ function svgDocument(body) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">${body}</svg>`;
 }
 
-mkdirSync(OUT_DIR, { recursive: true });
-mkdirSync(TMP_DIR, { recursive: true });
+/** True when ImageMagick is callable (the original, preferred path). */
+function hasMagick() {
+  return spawnSync('magick', ['-version'], { stdio: 'ignore' }).status === 0;
+}
 
+/**
+ * `@resvg/resvg-js` from wherever it can be found: a local install first, then
+ * the npx cache, which is where `npx -y -p @resvg/resvg-js node …` leaves it
+ * (npx puts a package's *bin* on PATH, not its module on the resolution path,
+ * so a plain `import` from this script does not see it).
+ */
+function loadResvg() {
+  const require_ = createRequire(import.meta.url);
+  const npxRoot = join(homedir(), '.npm', '_npx');
+  const cacheDirs = existsSync(npxRoot)
+    ? readdirSync(npxRoot).map((entry) => join(npxRoot, entry, 'node_modules'))
+    : [];
+  for (const paths of [undefined, cacheDirs]) {
+    try {
+      return require_(require_.resolve('@resvg/resvg-js', paths && { paths })).Resvg;
+    } catch {
+      // Try the next resolution root.
+    }
+  }
+  throw new Error(
+    'Neither ImageMagick nor @resvg/resvg-js is available. Install ImageMagick with ' +
+      'the librsvg delegate, or re-run this script as:\n' +
+      '  npx -y -p @resvg/resvg-js node scripts/build-map-icons.mjs'
+  );
+}
+
+/** (name, svg) -> writes a 96x96 RGBA PNG on a transparent background. */
+function createRasteriser() {
+  if (hasMagick()) {
+    mkdirSync(TMP_DIR, { recursive: true });
+    return (name, svg, pngPath) => {
+      const svgPath = join(TMP_DIR, `${name}.svg`);
+      writeFileSync(svgPath, svg);
+      execFileSync('magick', [
+        '-background',
+        'none',
+        svgPath,
+        '-resize',
+        `${SIZE}x${SIZE}`,
+        `png32:${pngPath}`,
+      ]);
+    };
+  }
+  const Resvg = loadResvg();
+  return (_name, svg, pngPath) => {
+    const png = new Resvg(svg, { fitTo: { mode: 'width', value: SIZE } }).render().asPng();
+    writeFileSync(pngPath, png);
+  };
+}
+
+const only = new Set(process.argv.slice(2));
+for (const name of only) {
+  if (!(name in GLYPHS)) {
+    throw new Error(`unknown glyph "${name}" (have: ${Object.keys(GLYPHS).join(', ')})`);
+  }
+}
+
+mkdirSync(OUT_DIR, { recursive: true });
+const rasterise = createRasteriser();
+
+let written = 0;
 for (const [name, body] of Object.entries(GLYPHS)) {
-  const svgPath = join(TMP_DIR, `${name}.svg`);
+  if (only.size > 0 && !only.has(name)) continue;
   const pngPath = join(OUT_DIR, `${name}.png`);
-  writeFileSync(svgPath, svgDocument(body));
-  execFileSync('magick', [
-    '-background',
-    'none',
-    svgPath,
-    '-resize',
-    `${SIZE}x${SIZE}`,
-    `png32:${pngPath}`,
-  ]);
+  rasterise(name, svgDocument(body), pngPath);
+  written += 1;
   console.log(`wrote ${pngPath}`);
 }
 
 rmSync(TMP_DIR, { recursive: true, force: true });
-console.log(`${Object.keys(GLYPHS).length} icons written to assets/map-icons/`);
+console.log(`${written} icons written to assets/map-icons/`);

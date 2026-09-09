@@ -271,11 +271,12 @@ describe('waypoints sharing one coordinate', () => {
    * are the same type at the same point, so the mint basis is byte-identical
    * and widening the hash slice cannot separate them.
    */
+  const at = { lat: -43.57723, lon: 170.95368 };
   const turnoffs = [
-    { name: 'Geraldine turnoff', type: 'access', lat: -43.57723, lon: 170.95368 },
-    { name: 'Peel Forest turnoff', type: 'access', lat: -43.57723, lon: 170.95368 },
-    { name: 'Mesopotamia Station turnoff', type: 'access', lat: -43.57723, lon: 170.95368 },
-    { name: 'Mt Potts Lodge turnoff', type: 'access', lat: -43.57723, lon: 170.95368 },
+    { name: 'Geraldine turnoff', type: 'town-access', ...at },
+    { name: 'Peel Forest turnoff', type: 'town-access', ...at },
+    { name: 'Mesopotamia Station turnoff', type: 'food-access', ...at },
+    { name: 'Mt Potts Lodge turnoff', type: 'accommodation-access', ...at },
   ];
 
   it('gives each one a distinct id instead of throwing', () => {

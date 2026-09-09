@@ -129,6 +129,24 @@ function makeTrail() {
 }
 
 /** Boot the real my-trail markup with a preloaded trail. */
+/** A waypoint in the fixture's shape, for tests that append their own. */
+function wpLike(name: string, type: string, km: number) {
+  return {
+    name,
+    type,
+    lat: -34 + km / 1000,
+    lon: 138 + km / 1000,
+    elevation: 100,
+    distance: 5,
+    totalDistance: km,
+    ascent: 0,
+    descent: 0,
+    totalAscent: 1300,
+    totalDescent: 1000,
+    trackIndex: 0,
+  };
+}
+
 async function boot(trail: ReturnType<typeof makeTrail> = makeTrail()): Promise<void> {
   const html = fs.readFileSync(path.join(ROOT, 'src/web/my-trail.html'), 'utf8');
   document.documentElement.innerHTML = html
@@ -534,5 +552,51 @@ describe('row expansion survives a re-render', () => {
     const firstRow = $('waypoints-container').querySelector('tbody tr') as HTMLElement;
     firstRow.click();
     expect($('waypoints-container').querySelectorAll('.waypoint-detail-row')).toHaveLength(1);
+  });
+});
+
+describe('turn-off badges', () => {
+  it('take the served type\'s colour and an outline of their own', async () => {
+    // A turn-off is a point on the route where you leave it for a place that is
+    // somewhere else. The reader has to be able to tell it from the place: the
+    // colour says what kind of place, the outline says you are not there yet.
+    const trail = makeTrail();
+    trail.waypoints.push(
+      wpLike('Te Anau turnoff', 'town-access', 75),
+      wpLike('Blyth Hut turnoff', 'hut-access', 80),
+    );
+    await boot(trail);
+
+    const badge = (i: number): Element =>
+      document.getElementById(`waypoint-row-${i}`)!.querySelector('.waypoint-type')!;
+
+    expect(badge(7).textContent).toBe('Town (turn-off)');
+    expect(badge(7).getAttribute('title')).toBe('town-access');
+    // The colour is the town's, not a new one, and not the neutral fallback.
+    expect(badge(7).classList.contains('type-town')).toBe(true);
+    expect(badge(7).classList.contains('type-access')).toBe(true);
+
+    expect(badge(8).textContent).toBe('Hut (turn-off)');
+    expect(badge(8).classList.contains('type-hut')).toBe(true);
+    expect(badge(8).classList.contains('type-access')).toBe(true);
+
+    // And the place itself keeps a plain chip.
+    expect(badge(2).classList.contains('type-town')).toBe(true);
+    expect(badge(2).classList.contains('type-access')).toBe(false);
+  });
+
+  it('puts a turn-off to a shop in the resupply filter, and a hut turn-off not', async () => {
+    const trail = makeTrail();
+    trail.waypoints.push(
+      wpLike('Te Anau turnoff', 'town-access', 75),
+      wpLike('Blyth Hut turnoff', 'hut-access', 80),
+    );
+    await boot(trail);
+
+    clickFilter('resupply');
+
+    const names = rowText();
+    expect(names.some(t => t.includes('Te Anau turnoff'))).toBe(true);
+    expect(names.some(t => t.includes('Blyth Hut turnoff'))).toBe(false);
   });
 });

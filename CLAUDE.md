@@ -9,6 +9,7 @@ npm install            # Install dependencies
 npm run dev            # Start Vite dev server (port 5173)
 npm run build          # Full production build (climate + trails + TS compile + Vite)
 npm run build:trails   # Build trail pages from data/trails/
+npm run sync:te-araroa # Copy the Te Araroa route out of the te-araroa-data package
 npm run fetch:climate  # Fetch climate data for trail locations
 npm run fetch:elevation # Fetch elevation data
 npm run build:tiles    # Build map tiles
@@ -32,11 +33,12 @@ Shared processing modules (used by both web and mobile):
 - `xml-adapter-fxp.ts` - fast-xml-parser adapter (the React Native path — Hermes has no DOMParser)
 - `gpx-optimizer.ts` - Track simplification (Douglas-Peucker), elevation spike removal/smoothing, elevation stats
 - `track-simplify.ts` - Target-point-count simplification + coordinate truncation (the mobile point budget)
-- `track-classification.ts` - Classify main/alternate/side-trip tracks
+- `track-classification.ts` - Classify main/alternate/side-trip tracks. Several main tracks are normally chained by `combineTracksGeographically`, which orders them by proximity and bridges every join. A trail whose `trackClassification.stretches` is set instead uses `concatenateStretches`, which keeps the file's order and records any join wider than `minGapMeters` as a **route break** — somewhere the walking route genuinely stops and resumes (a ferry, an unbridged river). Opt-in per trail: turning it on for a file whose tracks are not in walking order would silently reorder the route
+- `route-breaks.ts` - Reading those breaks back out for anything that draws the route (`splitAtRouteBreaks`, `routeBreakCrossings`). Breaks leave `track.points` a single flat array — every other consumer wants one ladder of cumulative distance — so only line-drawing code needs this
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.). Five tiers: CalTopo folder → `KNOWN_TOWNS` → name prefix (`C:`/`WT:`…, delimiter required) → `KEYWORD_RULES` word matching → `waypoint`. The keyword tier is opt-in (`inferFromKeywords`) and is **on for user imports, off for the curated build** — guessing types for curated trails would churn `public/data/generated/*.json` for no gain
 - `waypoint-taxonomy.ts` - The waypoint type vocabulary (`WAYPOINT_TYPES`, `WAYPOINT_TYPE_LABELS`, `waypointTypeLabel`) and the water/resupply family predicates (`isWaterWaypoint`, `isResupplyWaypoint`, `matchesWaypointFamily`). These predicates are the single home of rules that used to be duplicated across `water-carry-calculator`, `day-calculator` and `resupply-calculator`; they also accept the type aliases real-world GPX uses (`spring`, `supermarket`, …), which our own classifier never emits
 - `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
-- `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
+- `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns. A route break adds neither distance nor climb, is simplified around rather than across, and is published as `track.breaks`
 - `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`). The user-facing spec of the pipeline is `docs/gpx-import.md` — keep it in step with behaviour changes here and in `trail-ingest.ts`. It is rendered into the site as `how-import-works.html` at build time (the `gpx-import-doc` plugin in `vite.config.ts`)
 - `elevation-backfill.ts` - Open-Elevation backfill for GPX without `<ele>` (`backfillElevation` batches of 100, ≤2000 samples interpolated by distance; `applyElevation` re-derives ascent/waypoint stats via `recomputeTrailElevation`); `trailHasElevation`/`trailElevationIsUsable` drive the "distance-only estimate" labels
 - `trail-handoff.ts` - `<slug>.tracknotes.json` web → mobile handoff format (`wrapTrailForHandoff`, strict `parseHandoffJson`)
@@ -98,6 +100,8 @@ Each trail has its own directory containing:
 - `trail.json` - Trail metadata and waypoints
 - `climate.json` - Climate data for locations along the trail
 - `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
+
+**Te Araroa is not curated here.** Its route, waypoints and resupply points are built in [te-araroa-data](https://github.com/eamon-b/te-araroa-data), which commits its outputs; this repo takes them as a devDependency pinned by `package-lock.json`. `npm run sync:te-araroa` copies `te-araroa-sobo.gpx` out of `node_modules` into `data/trails/te_araroa/`, where it is gitignored — only `trail.json` is committed. `npm update te-araroa-data` takes a newer build. Do not hand-edit the GPX: it will be overwritten, and the fix belongs upstream.
 
 ### Generated Data (`public/data/generated/`)
 

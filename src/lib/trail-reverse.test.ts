@@ -9,6 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  reverseRouteBreaks,
   reverseTrackPoints,
   reverseWaypoints,
   createReversedTrail,
@@ -278,5 +279,83 @@ describe('createReversedTrail', () => {
     expect(reversed.waypoints[1].name).toBe('B');
     expect(reversed.waypoints[2].id).toBe('wp-0');
     expect(reversed.waypoints[2].name).toBe('A');
+  });
+});
+
+describe('reverseRouteBreaks', () => {
+  const breaks = [
+    { index: 3, displayIndex: 2, km: 4.4, fromTrack: 'A', toTrack: 'B' },
+    { index: 7, displayIndex: 5, km: 9.9, fromTrack: 'B', toTrack: 'C' },
+  ];
+
+  it('mirrors indices about the end of the track', () => {
+    const reversed = reverseRouteBreaks(breaks, 15, 10, 8);
+
+    // The seam between old points 6 and 7 lands between new 2 and 3.
+    expect(reversed.map(b => b.index)).toEqual([3, 7]);
+    expect(reversed.map(b => b.displayIndex)).toEqual([3, 6]);
+  });
+
+  it('walks the breaks in the new order, with the stretch names swapped', () => {
+    const reversed = reverseRouteBreaks(breaks, 15, 10, 8);
+
+    expect(reversed.map(b => [b.fromTrack, b.toTrack])).toEqual([
+      ['C', 'B'],
+      ['B', 'A'],
+    ]);
+  });
+
+  it('mirrors km about the trail total', () => {
+    const reversed = reverseRouteBreaks(breaks, 15, 10, 8);
+
+    expect(reversed.map(b => b.km)).toEqual([15 - 9.9, 15 - 4.4]);
+  });
+
+  it('round-trips back to the original', () => {
+    const there = reverseRouteBreaks(breaks, 15, 10, 8);
+    const back = reverseRouteBreaks(there, 15, 10, 8);
+
+    expect(back).toEqual(breaks);
+  });
+
+  it('is a no-op on a trail with no breaks', () => {
+    expect(reverseRouteBreaks([], 15, 10, 8)).toEqual([]);
+  });
+});
+
+describe('createReversedTrail with route breaks', () => {
+  it('carries the breaks through, mirrored', () => {
+    const trail = {
+      track: {
+        points: [{ dist: 0 }, { dist: 1 }, { dist: 1 }, { dist: 2 }],
+        displayPoints: [{ dist: 0 }, { dist: 1 }, { dist: 1 }, { dist: 2 }],
+        totalDistance: 2,
+        totalAscent: 100,
+        totalDescent: 50,
+        breaks: [{ index: 2, displayIndex: 2, km: 1, fromTrack: 'A', toTrack: 'B' }],
+      },
+    };
+
+    const reversed = createReversedTrail(trail);
+
+    expect(reversed.track.breaks).toEqual([
+      { index: 2, displayIndex: 2, km: 1, fromTrack: 'B', toTrack: 'A' },
+    ]);
+    // The break still separates two points that share a km.
+    const points = reversed.track.points;
+    expect(points[2].dist).toBe(points[1].dist);
+  });
+
+  it('leaves a continuous trail with no breaks field', () => {
+    const trail: ReversibleTrail = {
+      track: {
+        points: [{ dist: 0 }, { dist: 1 }],
+        totalDistance: 1,
+        totalAscent: 0,
+        totalDescent: 0,
+      },
+    };
+
+    expect(createReversedTrail(trail).track.breaks).toBeUndefined();
   });
 });

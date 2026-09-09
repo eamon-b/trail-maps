@@ -4,6 +4,8 @@
 import type * as Leaflet from 'leaflet';
 import { findNearestByDistance } from '@lib/track-geometry';
 import { createReversedTrail } from '@lib/trail-reverse';
+import { routeBreakCrossings, splitAtRouteBreaks } from '@lib/route-breaks';
+import type { RouteBreak } from '@lib/trail-types';
 import { getDirectionLabel as directionLabelFor } from '@lib/plan-direction';
 import {
   isKnownWaypointType,
@@ -126,6 +128,7 @@ interface Trail {
     totalDistance: number;
     totalAscent: number;
     totalDescent: number;
+    breaks?: RouteBreak[];
   };
   waypoints?: Waypoint[];
   offTrailWaypoints?: OffTrailWaypoint[];
@@ -159,6 +162,7 @@ let viewerOptions: TrailViewerOptions = {};
 let map: L.Map | null = null;
 let hoverMarker: L.Marker | null = null;
 let mainRoutePolyline: L.Polyline | null = null;
+let routeBreakPolylines: L.Polyline[] = [];
 let trackPoints: TrackPoint[] = [];
 let displayPoints: TrackPoint[] = [];
 let maxDistance = 0;
@@ -788,18 +792,59 @@ function drawMainRoute(trail: Trail): void {
   displayPoints = trail.track.displayPoints || trail.track.points;
   if (!displayPoints || displayPoints.length === 0) return;
 
-  const latLngs = displayPoints.map(p => [p.lat, p.lon] as [number, number]);
-
-  mainRoutePolyline = L.polyline(latLngs, {
+  // A trail with route breaks is several lines, not one. Leaflet joins a flat
+  // coordinate list up, so handing it one would draw Cook Strait as trail —
+  // which is exactly what the single polyline here used to do.
+  mainRoutePolyline = L.polyline(mainRouteLatLngs(trail), {
     color: '#2196F3',
     weight: 3,
     opacity: 0.9
   }).addTo(map!);
 
+  drawRouteBreaks(trail);
+
   trackPoints = trail.track.points;
 
   mainRoutePolyline.on('mousemove', handleMapHover);
   mainRoutePolyline.on('mouseout', hideElevationHover);
+}
+
+/** The main route as one coordinate list per walkable stretch. */
+function mainRouteLatLngs(trail: Trail): [number, number][][] {
+  const which = trail.track.displayPoints ? 'displayPoints' : 'points';
+  return splitAtRouteBreaks(displayPoints, trail.track.breaks, which).map(stretch =>
+    stretch.map(p => [p.lat, p.lon] as [number, number])
+  );
+}
+
+/**
+ * Draw each break as the straight line it is: dashed and grey, so it reads as
+ * a link rather than as trail. The trail data puts a named "Trail ends" /
+ * "Trail resumes" waypoint at either end, so the line only reports its width.
+ */
+function drawRouteBreaks(trail: Trail): void {
+  routeBreakPolylines.forEach(line => {
+    if (map && map.hasLayer(line)) map.removeLayer(line);
+  });
+  routeBreakPolylines = [];
+
+  if (!map) return;
+  const which = trail.track.displayPoints ? 'displayPoints' : 'points';
+  for (const crossing of routeBreakCrossings(displayPoints, trail.track.breaks, which)) {
+    const line = L.polyline(
+      [
+        [crossing.from.lat, crossing.from.lon],
+        [crossing.to.lat, crossing.to.lon],
+      ],
+      { color: '#9e9e9e', weight: 2, opacity: 0.9, dashArray: '6 6' }
+    )
+      .addTo(map)
+      .bindPopup(
+        `<strong>Trail break</strong><br>${crossing.straightLineKm.toFixed(1)} km, not walked ` +
+          'and not counted in the trail distance.'
+      );
+    routeBreakPolylines.push(line);
+  }
 }
 
 function drawAlternates(alternates: RouteVariant[]): void {
@@ -2131,8 +2176,8 @@ function refreshDisplay(trail: Trail): void {
 
   // Update main route polyline
   if (map && mainRoutePolyline) {
-    const latLngs = displayPoints.map(p => [p.lat, p.lon] as [number, number]);
-    mainRoutePolyline.setLatLngs(latLngs);
+    mainRoutePolyline.setLatLngs(mainRouteLatLngs(trail));
+    drawRouteBreaks(trail);
   }
 }
 

@@ -42,8 +42,14 @@ export {
 export {
   classifyTracks,
   combineTracksGeographically,
+  concatenateStretches,
+  GAP_WARNING_THRESHOLD_METERS,
   TRACK_CLASSIFICATION_DEFAULTS,
 } from './track-classification';
+
+// Route Breaks
+export type { RouteBreakCrossing, SplittablePoint } from './route-breaks';
+export { routeBreakCrossings, splitAtRouteBreaks } from './route-breaks';
 
 // Waypoint Dedupe
 export type {

@@ -6,13 +6,17 @@ import type {
   TrackClassificationResult,
   CombineTracksResult,
   CombineTracksWarning,
+  RouteStretchConfig,
+  TrackBreak,
 } from './types';
 
 /**
  * Default patterns for track classification when not explicitly configured.
  * These cover common naming conventions used in trail GPX files.
  */
-export const TRACK_CLASSIFICATION_DEFAULTS: Required<Omit<TrackClassificationConfig, 'mainRoutePatterns' | 'ignorePatterns'>> = {
+export const TRACK_CLASSIFICATION_DEFAULTS: Required<
+  Omit<TrackClassificationConfig, 'mainRoutePatterns' | 'ignorePatterns' | 'stretches'>
+> = {
   alternatePatterns: ['\\bAlt\\b', 'Alternative', 'Detour', 'Reroute'],
   sideTripPatterns: ['^ST:', 'Spur', 'Side Trip', 'side trip'],
   fallbackToLongest: true,
@@ -22,7 +26,7 @@ export const TRACK_CLASSIFICATION_DEFAULTS: Required<Omit<TrackClassificationCon
  * Gap threshold in meters for warning about discontinuities between tracks.
  * 100m is a reasonable threshold - smaller gaps are likely just GPS inaccuracy.
  */
-const GAP_WARNING_THRESHOLD_METERS = 100;
+export const GAP_WARNING_THRESHOLD_METERS = 100;
 
 /**
  * Calculate total distance of a track's points in meters.
@@ -214,6 +218,7 @@ export function combineTracksGeographically(
       combinedPoints: [],
       orderedNames: [],
       warnings: [],
+      breaks: [],
     };
   }
 
@@ -222,6 +227,7 @@ export function combineTracksGeographically(
       combinedPoints: [...tracks[0].points],
       orderedNames: [tracks[0].name],
       warnings: [],
+      breaks: [],
     };
   }
 
@@ -302,5 +308,63 @@ export function combineTracksGeographically(
     combinedPoints,
     orderedNames,
     warnings,
+    breaks: [],
   };
+}
+
+/**
+ * Concatenate main tracks in the order the file lists them, recording the joins
+ * that are too wide to be a join at all.
+ *
+ * The alternative to this is {@link combineTracksGeographically}, which orders
+ * tracks by proximity and bridges every join. Where a route has real breaks in
+ * it - a ferry, a river with no crossing - both halves of that are wrong: the
+ * bridge is a straight line nobody walks, and proximity ordering is a guess
+ * about a question the file has already answered. A trail opts in to this
+ * instead by declaring `trackClassification.stretches` (see
+ * {@link RouteStretchConfig}), which asserts that its main tracks are
+ * consecutive and in walking order.
+ *
+ * Joins narrower than `minGapMeters` are still concatenated, and still warn
+ * above {@link GAP_WARNING_THRESHOLD_METERS} - a 150 m join is a flaw in the
+ * source file, not a ferry.
+ */
+export function concatenateStretches(
+  tracks: Array<{ name: string; points: GpxPoint[] }>,
+  config: RouteStretchConfig = {}
+): CombineTracksResult {
+  const minGapMeters = config.minGapMeters ?? GAP_WARNING_THRESHOLD_METERS;
+
+  const combinedPoints: GpxPoint[] = [];
+  const orderedNames: string[] = [];
+  const warnings: CombineTracksWarning[] = [];
+  const breaks: TrackBreak[] = [];
+
+  for (const track of tracks) {
+    if (track.points.length === 0) continue;
+
+    const previousName = orderedNames[orderedNames.length - 1];
+    const previousEnd = combinedPoints[combinedPoints.length - 1];
+
+    if (previousEnd) {
+      const start = track.points[0];
+      const gapMeters = haversineDistance(previousEnd.lat, previousEnd.lon, start.lat, start.lon);
+
+      if (gapMeters >= minGapMeters) {
+        breaks.push({
+          index: combinedPoints.length,
+          fromTrack: previousName,
+          toTrack: track.name,
+          gapMeters,
+        });
+      } else if (gapMeters > GAP_WARNING_THRESHOLD_METERS) {
+        warnings.push({ type: 'gap', fromTrack: previousName, toTrack: track.name, gapMeters });
+      }
+    }
+
+    orderedNames.push(track.name);
+    combinedPoints.push(...track.points);
+  }
+
+  return { combinedPoints, orderedNames, warnings, breaks };
 }

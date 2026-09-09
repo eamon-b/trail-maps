@@ -22,6 +22,7 @@
  */
 
 import { Directory, File, Paths } from 'expo-file-system';
+import { slimPoi } from '@lib/poi-display';
 
 import type { SqlDatabase } from '../db/sql-database';
 import {
@@ -82,8 +83,16 @@ export async function saveImportedTrail(
   const root = importedTrailsRoot();
   if (!root.exists) root.create({ intermediates: true, idempotent: true });
 
+  // A `.tracknotes.json` handoff arrives with every tag the OSM mapper wrote —
+  // twenty on a single element is ordinary — so slim POIs to the keys the UI
+  // reads before they take up permanent residence on the device. Bundled trails
+  // are slimmed by `build-mobile-trails.ts`; this is the same pass for the
+  // import path. An absent `pois` stays absent: it means "never fetched", and
+  // an empty array would read as "searched and found nothing".
+  const payload = trail.pois ? { ...trail, pois: trail.pois.map(slimPoi) } : trail;
+
   // `write` truncates, so re-importing the same file is idempotent.
-  importedTrailFile(trail.config.id).write(JSON.stringify(trail));
+  importedTrailFile(trail.config.id).write(JSON.stringify(payload));
 
   await upsertImportedTrail(db, {
     id: trail.config.id,

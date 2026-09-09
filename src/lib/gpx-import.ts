@@ -100,6 +100,17 @@ export interface ImportReport {
   sideTripCount: number;
   /** Gaps between chained tracks — the route may be discontinuous here. */
   gapWarnings: CombineTracksWarning[];
+  /**
+   * OpenStreetMap points of interest that came with the trail, excluding those
+   * flagged as duplicating a curated waypoint (the app never shows those as
+   * POIs, so counting them would overstate what arrived).
+   *
+   * Always 0 from {@link importGpx}: a GPX file carries no POIs, and the
+   * enrichment that finds them runs afterwards, on the web. Only the
+   * `.tracknotes.json` handoff branch (`handoffImportReport`) can report a
+   * non-zero count.
+   */
+  poiCount: number;
   /** Whether the source track was simplified to the point budget. */
   simplified: boolean;
   /** Human-readable warnings, ready to render. */
@@ -230,6 +241,8 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
     alternateCount: built.alternateCount,
     sideTripCount: built.sideTripCount,
     gapWarnings: built.gapWarnings,
+    // A GPX file has no POIs; only the handoff branch can report any.
+    poiCount: 0,
     simplified,
     warnings,
   };

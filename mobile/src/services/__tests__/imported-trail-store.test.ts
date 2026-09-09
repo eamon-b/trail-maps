@@ -215,6 +215,65 @@ describe('saveImportedTrail', () => {
     ).toBe('Renamed Loop');
   });
 
+  /**
+   * A `.tracknotes.json` handoff arrives with the OSM element's full tag set;
+   * only the keys the UI reads are worth permanent space on the device.
+   */
+  it('slims POI tags and precision before writing them to disk', async () => {
+    const db = await createMigratedTestDb();
+    const trail = makeTrail();
+    trail.pois = [
+      {
+        id: 12345,
+        type: 'node',
+        category: 'water',
+        lat: -23.7000004,
+        lon: 133.8000004,
+        name: 'Tap',
+        tags: {
+          amenity: 'drinking_water',
+          description: 'Rainwater tank',
+          'survey:date': '2024-03-01',
+          source: 'survey',
+          check_date: '2024-03-01',
+        },
+        distanceAlongTrail: 12.3456,
+        distanceFromTrail: 0.01234,
+        duplicateOf: 'uw_1',
+        duplicateDistanceM: 8,
+      },
+    ];
+
+    await saveImportedTrail(db as never, trail, META);
+
+    const written = JSON.parse(mockFiles['file:///mock/document/trails/u_abc123.json']);
+    expect(written.pois).toEqual([
+      {
+        id: 12345,
+        type: 'node',
+        category: 'water',
+        lat: -23.7,
+        lon: 133.8,
+        name: 'Tap',
+        tags: { amenity: 'drinking_water', description: 'Rainwater tank' },
+        distanceAlongTrail: 12.3,
+        distanceFromTrail: 0.01,
+        // The flag survives: the waypoint detail screen reads it.
+        duplicateOf: 'uw_1',
+      },
+    ]);
+  });
+
+  it('leaves a trail that was never enriched without a pois key', async () => {
+    // Absent means "never fetched"; an empty array would read as "searched and
+    // found nothing" and would light up a POI control with no POIs behind it.
+    const db = await createMigratedTestDb();
+    await saveImportedTrail(db as never, makeTrail(), META);
+
+    const written = JSON.parse(mockFiles['file:///mock/document/trails/u_abc123.json']);
+    expect('pois' in written).toBe(false);
+  });
+
   it('does not register a row when the file write fails', async () => {
     // File first, row second: a failed write must leave NOTHING listed, rather
     // than a guide that lists fine and then opens onto missing data.

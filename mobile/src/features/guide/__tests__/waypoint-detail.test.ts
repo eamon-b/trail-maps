@@ -1,11 +1,13 @@
 import {
   WATER_STATUS_OPTIONS,
+  duplicatePoisFor,
   estimateEtaMinutes,
   formatEta,
   isWaterFamily,
   relativeDate,
   waterStatusMeta,
 } from '../waypoint-detail';
+import type { TrailPOI } from '@lib/trail-types';
 
 describe('relativeDate', () => {
   const now = Date.parse('2026-07-29T12:00:00Z');
@@ -57,5 +59,47 @@ describe('eta', () => {
     expect(formatEta(30)).toBe('30 min');
     expect(formatEta(90)).toBe('1 h 30 min');
     expect(formatEta(120)).toBe('2 h');
+  });
+});
+
+describe('duplicatePoisFor', () => {
+  function poi(id: number, overrides: Partial<TrailPOI> = {}): TrailPOI {
+    return {
+      id,
+      type: 'node',
+      category: 'camping',
+      lat: -35,
+      lon: 138,
+      name: `POI ${id}`,
+      tags: {},
+      distanceAlongTrail: 12,
+      distanceFromTrail: 0.01,
+      ...overrides,
+    };
+  }
+
+  it('returns the POIs flagged against this waypoint, in order', () => {
+    const trail = {
+      pois: [
+        poi(1, { duplicateOf: 'w_other' }),
+        poi(2, { duplicateOf: 'w_hut' }),
+        poi(3),
+        poi(4, { duplicateOf: 'w_hut' }),
+      ],
+    };
+    expect(duplicatePoisFor(trail, 'w_hut').map((p) => p.id)).toEqual([2, 4]);
+  });
+
+  it('is empty when nothing was flagged against the waypoint', () => {
+    expect(duplicatePoisFor({ pois: [poi(1), poi(2, { duplicateOf: 'w_a' })] }, 'w_b')).toEqual([]);
+  });
+
+  it('is empty for a waypoint with no stable id', () => {
+    expect(duplicatePoisFor({ pois: [poi(1, { duplicateOf: 'w_hut' })] }, undefined)).toEqual([]);
+  });
+
+  it('is empty for a trail that was never enriched', () => {
+    // An absent `pois` means "never fetched", not "found nothing".
+    expect(duplicatePoisFor({}, 'w_hut')).toEqual([]);
   });
 });

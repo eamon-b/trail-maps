@@ -18,6 +18,11 @@
  * requirement) and the curated waypoint description, which overrides the
  * near-empty bundled one.
  *
+ * Below the stats sits the one place a *hidden* POI is ever visible: when
+ * `@lib/poi-dedup` flagged an OpenStreetMap record as describing this same
+ * place, its tags are offered in a collapsed "From OpenStreetMap" section. That
+ * is local trail data, so it works for an imported guide too.
+ *
  * None of that channel exists for a user-imported guide (`services/server-trails`):
  * its ids are local-only, so the whole comments block collapses to a one-line
  * note and no SQLite read or request is issued for it. The favorite heart, the
@@ -28,6 +33,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -35,11 +41,15 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import type { WaterStatus } from '@lib/comments-api-types';
+import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
+import type { TrailPOI } from '@lib/trail-types';
 import { useTheme } from '../../../../src/theme';
 import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
 import { useSettingsStore } from '../../../../src/state/settings-store';
@@ -51,6 +61,7 @@ import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
 import { waypointColor } from '../../../../src/features/elevation/waypoint-category';
 import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
 import {
+  duplicatePoisFor,
   estimateEtaMinutes,
   formatEta,
   relativeDate,
@@ -188,6 +199,7 @@ export default function WaypointDetailScreen() {
   const marker = waypointColor(waypoint.type, colors);
   const description = syncedDescription ?? waypoint.description;
   const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
+  const duplicatePois = duplicatePoisFor(trail, waypoint.id);
   const km = waypoint.totalDistance ?? 0;
   const deltaKm = currentKm != null ? km - currentKm : null;
   const signed = deltaKm != null ? formatSignedDistance(deltaKm, units) : null;
@@ -271,6 +283,11 @@ export default function WaypointDetailScreen() {
             />
           )}
         </View>
+
+        {/* The OSM records this waypoint's place duplicates — hidden everywhere
+            else in the app, surfaced here for the fields OSM has and the
+            curated waypoint doesn't. */}
+        {duplicatePois.length > 0 && <OsmDuplicates pois={duplicatePois} />}
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -379,6 +396,122 @@ export default function WaypointDetailScreen() {
 
       <PhotoViewer uri={viewerUri} onClose={() => setViewerUri(null)} />
     </KeyboardAvoidingView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "From OpenStreetMap" — the duplicate-POI payoff
+// ---------------------------------------------------------------------------
+
+/**
+ * Collapsed by default: this is supplementary, uncurated data about a place the
+ * trail already describes, so it must not compete with the curated description
+ * or push the comments off the first screen.
+ */
+function OsmDuplicates({ pois }: { pois: TrailPOI[] }) {
+  const { colors } = useTheme();
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <View style={styles.osmSection}>
+      <Pressable
+        onPress={() => setExpanded((open) => !open)}
+        accessibilityRole="button"
+        accessibilityLabel="From OpenStreetMap"
+        accessibilityState={{ expanded }}
+        hitSlop={spacing.xs}
+        style={({ pressed }) => [styles.osmHeader, pressed && styles.pressed]}
+      >
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          From OpenStreetMap
+        </Text>
+        <Text style={[styles.osmChevron, { color: colors.textSecondary }]}>
+          {expanded ? '\u25be' : '\u25b8'}
+        </Text>
+      </Pressable>
+
+      {expanded && (
+        <View style={styles.osmBody}>
+          {pois.map((poi) => (
+            <OsmRecord key={`${poi.type}-${poi.id}`} poi={poi} />
+          ))}
+          <Text style={[styles.osmCaption, { color: colors.textSecondary }]}>
+            {`${OSM_ATTRIBUTION} \u00b7 this OSM record describes the same place`}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
+ * One OSM element: its worthwhile tags, then a link out.
+ *
+ * A record whose tags are all uninteresting still gets the link — "there is an
+ * OSM element here, go look" is the minimum useful answer.
+ */
+function OsmRecord({ poi }: { poi: TrailPOI }) {
+  const { colors } = useTheme();
+  const lines = summarisePoiTags(poi.tags);
+
+  return (
+    <View
+      style={[styles.osmRecord, { backgroundColor: colors.surface, borderColor: colors.border }]}
+    >
+      {lines.map((line) => (
+        <OsmTagLine
+          key={`${line.label}-${line.value}`}
+          label={line.label}
+          value={line.value}
+          href={line.href}
+        />
+      ))}
+      <OsmLink url={poiOsmUrl(poi)} label="Open in OpenStreetMap" />
+    </View>
+  );
+}
+
+/**
+ * A label/value row. Only a line the shared guards handed back an `href` for is
+ * tappable: an OSM `website` tag is free text and could just as easily hold
+ * `javascript:`, so nothing else here ever reaches `Linking.openURL`.
+ */
+function OsmTagLine({ label, value, href }: { label: string; value: string; href?: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.osmLine}>
+      <Text style={[styles.osmLabel, { color: colors.textSecondary }]}>{label}</Text>
+      {href ? (
+        <OsmLink url={href} label={value} style={styles.osmValueCell} />
+      ) : (
+        <Text style={[styles.osmValue, styles.osmValueCell, { color: colors.textPrimary }]}>
+          {value}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function OsmLink({
+  url,
+  label,
+  style,
+}: {
+  url: string;
+  label: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={() => void Linking.openURL(url)}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      hitSlop={spacing.xs}
+      style={({ pressed }) => [style, pressed && styles.pressed]}
+    >
+      <Text style={[styles.osmValue, { color: colors.accent }]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -646,6 +779,28 @@ const styles = StyleSheet.create({
   },
   statLabel: { ...typography.caption },
   statValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
+
+  osmSection: { gap: spacing.sm },
+  osmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  osmChevron: { ...typography.bodySmall },
+  osmBody: { gap: spacing.sm },
+  osmRecord: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  osmLine: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  osmLabel: { ...typography.caption, flexBasis: '38%', flexShrink: 0 },
+  osmValue: { ...typography.bodySmall },
+  osmValueCell: { flex: 1 },
+  osmCaption: { ...typography.caption },
 
   divider: { height: StyleSheet.hairlineWidth },
   sectionTitle: { ...typography.titleLarge },

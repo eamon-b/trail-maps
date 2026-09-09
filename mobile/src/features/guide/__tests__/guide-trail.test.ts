@@ -51,6 +51,41 @@ describe('resolveGuideTrail', () => {
     expect(reversed.track.totalAscent).toBe(50);
     expect(reversed.track.totalDescent).toBe(100);
   });
+
+  /**
+   * POI kilometres mirror with everything else — `createReversedTrail` does it,
+   * so the guide inherits it and nothing here special-cases POIs. Cross-track
+   * distance is direction-independent and must NOT move.
+   */
+  it('mirrors POI kilometres when reversed, leaving cross-track distance alone', () => {
+    const trail = makeTrail();
+    trail.track.totalDistance = 130;
+    trail.config.lengthKm = 130;
+    trail.track.points[2].dist = 130;
+    trail.track.displayPoints[1].dist = 130;
+    trail.pois = [
+      {
+        id: 1,
+        type: 'node',
+        category: 'water',
+        lat: 0,
+        lon: 0,
+        name: 'Tap',
+        tags: {},
+        distanceAlongTrail: 3,
+        distanceFromTrail: 0.4,
+      },
+    ];
+
+    const reversed = resolveGuideTrail(trail, 'reversed');
+
+    expect(reversed.pois?.[0].distanceAlongTrail).toBe(127);
+    expect(reversed.pois?.[0].distanceFromTrail).toBe(0.4);
+  });
+
+  it('leaves a trail that was never enriched without a pois key', () => {
+    expect('pois' in resolveGuideTrail(makeTrail(), 'reversed')).toBe(false);
+  });
 });
 
 describe('orderedWaypoints', () => {

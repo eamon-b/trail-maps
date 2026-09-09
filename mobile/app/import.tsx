@@ -238,6 +238,20 @@ export default function ImportScreen() {
         {report.simplified && (
           <Stat label="Simplified from" value={`${report.sourcePointCount} points`} />
         )}
+        {report.poiCount > 0 && (
+          <Stat
+            label="Points of interest"
+            value={`${report.poiCount} (OpenStreetMap)`}
+          />
+        )}
+        {/* A GPX carries no POIs, and the on-phone search is a later PR — so
+            say where they do come from rather than staying silent about a
+            feature the guide will visibly lack. */}
+        {report.poiCount === 0 && !trail.pois && (
+          <Text style={[styles.hint, { color: colors.textSecondary }]}>
+            Points of interest can be added by exporting this trail from the web app.
+          </Text>
+        )}
       </View>
 
       {report.warnings.length > 0 && (
@@ -405,6 +419,7 @@ const styles = StyleSheet.create({
   stat: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   statLabel: { ...typography.bodySmall },
   statValue: { ...typography.dataSmall },
+  hint: { ...typography.caption },
   warningTitle: { ...typography.titleSmall },
   warning: { ...typography.bodySmall },
   button: {

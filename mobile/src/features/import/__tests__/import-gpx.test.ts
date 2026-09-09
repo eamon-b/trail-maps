@@ -104,6 +104,22 @@ const UNNAMED_GPX = `<?xml version="1.0" encoding="UTF-8"?>
   </trkseg></trk>
 </gpx>`;
 
+/** An OSM point of interest as it arrives inside a handoff file. */
+function makePoi(id: number, overrides: Record<string, unknown> = {}) {
+  return {
+    id,
+    type: 'node',
+    category: 'water' as const,
+    lat: -33.87,
+    lon: 151.21,
+    name: 'Tap',
+    tags: { amenity: 'drinking_water' },
+    distanceAlongTrail: 0.4,
+    distanceFromTrail: 0.02,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   for (const key of Object.keys(mockFiles)) delete mockFiles[key];
@@ -277,6 +293,30 @@ describe('importGpxFromUri — .tracknotes.json handoff', () => {
     expect(report.simplified).toBe(false);
     expect(report.warnings).toEqual([]);
     expect(report.gapWarnings).toEqual([]);
+    // Nothing enriched this trail on the web, so there is nothing to report.
+    expect(report.poiCount).toBe(0);
+  });
+
+  it('reports the POIs a web export carried, minus the flagged duplicates', async () => {
+    mockFiles['file:///cache/walk.gpx'] = SAMPLE_GPX;
+    const built = await importGpxFromUri('file:///cache/walk.gpx');
+    mockFiles['file:///cache/pois.tracknotes.json'] = serializeTrailHandoff({
+      ...built.trail,
+      pois: [
+        makePoi(1),
+        makePoi(2, { duplicateOf: built.trail.waypoints[0].id }),
+        makePoi(3),
+      ],
+    });
+
+    const { report, trail } = await importGpxFromUri('file:///cache/pois.tracknotes.json', {
+      fileName: 'pois.tracknotes.json',
+    });
+
+    expect(report.poiCount).toBe(2);
+    // The duplicate is still carried — hidden, not dropped: the waypoint detail
+    // screen shows its OSM tags.
+    expect(trail.pois).toHaveLength(3);
   });
 
   it('takes the handoff branch on content alone when the URI names nothing', async () => {
@@ -317,6 +357,17 @@ describe('importGpxFromUri — .tracknotes.json handoff', () => {
     await expect(
       importGpxFromUri('file:///cache/future.json', { fileName: 'future.json' }),
     ).rejects.toThrow(/newer version of Tracknotes/);
+  });
+});
+
+describe('poiCount on a GPX import', () => {
+  it('is zero — a GPX file carries no points of interest', async () => {
+    mockFiles['file:///cache/walk.gpx'] = SAMPLE_GPX;
+    const { report, trail } = await importGpxFromUri('file:///cache/walk.gpx');
+    expect(report.poiCount).toBe(0);
+    // And no `pois` key at all, which is what the review screen's "export from
+    // the web app" hint keys off.
+    expect(trail.pois).toBeUndefined();
   });
 });
 

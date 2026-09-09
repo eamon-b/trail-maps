@@ -250,6 +250,10 @@ export function handoffImportReport(trail: ProcessedTrail): ImportReport {
     alternateCount: trail.alternates.length,
     sideTripCount: trail.sideTrips.length,
     gapWarnings: [],
+    // What the app will actually show: a POI flagged as duplicating a curated
+    // waypoint is drawn nowhere, so counting it here would promise markers that
+    // never appear.
+    poiCount: trail.pois?.filter(poi => !poi.duplicateOf).length ?? 0,
     simplified: false,
     warnings: [],
   };

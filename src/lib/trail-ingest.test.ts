@@ -387,7 +387,11 @@ describe('buildTrail with route breaks', () => {
         { name: 'Main 1/2', points: stretch(-34.0, 100) },
         { name: 'Main 2/2', points: stretch(-34.05, 500) },
       ],
-      waypoints: [],
+      waypoints: [
+        { name: 'Near shore', lat: -34.02, lon: 138, type: 'waypoint' },
+        { name: 'Far shore', lat: -34.05, lon: 138, type: 'waypoint' },
+        { name: 'End', lat: -34.07, lon: 138, type: 'waypoint' },
+      ],
       name: null,
     };
   }
@@ -462,5 +466,72 @@ describe('buildTrail with route breaks', () => {
         }),
       })
     ).toThrow(/not supported together/);
+  });
+});
+
+describe('waypoint km across a route break', () => {
+  /** Same two stretches as above, with a waypoint either side of the break. */
+  function brokenRoute(): ParsedGpxResult {
+    const stretch = (startLat: number, baseEle: number) =>
+      [0, 1, 2].map(i => ({
+        lat: startLat - i * 0.01,
+        lon: 138,
+        ele: baseEle + i * 10,
+        time: null,
+      }));
+    return {
+      tracks: [
+        { name: 'Main 1/2', points: stretch(-34.0, 100) },
+        { name: 'Main 2/2', points: stretch(-34.05, 500) },
+      ],
+      waypoints: [
+        { name: 'Near shore', lat: -34.02, lon: 138, type: 'waypoint' },
+        { name: 'Far shore', lat: -34.05, lon: 138, type: 'waypoint' },
+        { name: 'End', lat: -34.07, lon: 138, type: 'waypoint' },
+      ],
+      name: null,
+    };
+  }
+
+  const withStretches = config({
+    trackClassification: {
+      mainRoutePatterns: ['^Main '],
+      fallbackToLongest: false,
+      stretches: { minGapMeters: 250 },
+    },
+  });
+
+  it('does not charge the crossing to the waypoint on the far side', () => {
+    const trail = buildTrail(brokenRoute(), { config: withStretches });
+    const km = Object.fromEntries(trail.waypoints.map(w => [w.name, w.totalDistance]));
+
+    expect(km['Near shore']).toBeCloseTo(2.22, 1);
+    // Same km on both sides of the break — the crossing is not walked.
+    expect(km['Far shore']).toBeCloseTo(km['Near shore'], 3);
+    expect(km['End']).toBeCloseTo(4.45, 1);
+  });
+
+  it('keeps waypoint km on the same scale as the track it is measured along', () => {
+    const trail = buildTrail(brokenRoute(), { config: withStretches });
+
+    // This is the invariant that broke: waypoints accumulated the straight-line
+    // crossings while track.points had stopped counting them, so Te Araroa's
+    // last waypoint landed 100 km past the end of its own trail.
+    for (const wp of trail.waypoints) {
+      expect(wp.totalDistance).toBeCloseTo(trail.track.points[wp.trackIndex].dist, 2);
+    }
+    // The last waypoint is at the trail's end, so it lands on the total, give
+    // or take the 2-decimal rounding — not 100 km beyond it.
+    const last = trail.waypoints[trail.waypoints.length - 1];
+    expect(last.totalDistance - trail.track.totalDistance).toBeLessThan(0.01);
+  });
+
+  it('does not charge the crossing as climb either', () => {
+    const trail = buildTrail(brokenRoute(), { config: withStretches });
+    const far = trail.waypoints.find(w => w.name === 'Far shore')!;
+
+    // 400 m up across the water, if it counted.
+    expect(far.totalAscent).toBe(20);
+    expect(far.ascent).toBe(0);
   });
 });

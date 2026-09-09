@@ -478,13 +478,20 @@ export function findWaypointVisits(
 export function calculateSegmentStats(
   points: { lat: number; lon: number; ele: number }[],
   fromIndex: number,
-  toIndex: number
+  toIndex: number,
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS
 ): { distance: number; ascent: number; descent: number } {
   let distance = 0;
   let ascent = 0;
   let descent = 0;
 
   for (let i = fromIndex; i < toIndex && i < points.length - 1; i++) {
+    // The leg into the first point of a new stretch is the ferry, not the
+    // trail. Charging for it here is what put Te Araroa's last waypoint 100 km
+    // past the end of its own track: `track.points` stopped counting the
+    // crossings and the waypoints did not.
+    if (breakStarts.has(i + 1)) continue;
+
     const p1 = points[i];
     const p2 = points[i + 1];
     distance += haversineDistanceKm(p1.lat, p1.lon, p2.lat, p2.lon);
@@ -497,13 +504,17 @@ export function calculateSegmentStats(
   return { distance, ascent, descent };
 }
 
+/** Shared empty set, so the common no-breaks call allocates nothing. */
+const NO_BREAK_STARTS: ReadonlySet<number> = new Set<number>();
+
 /**
  * Enrich waypoints with distance and elevation data by matching to track
  */
 export function enrichWaypoints(
   waypoints: TrailWaypoint[],
   trackPoints: { lat: number; lon: number; ele: number }[],
-  maxDistanceMeters: number = DEFAULT_WAYPOINT_MAX_DISTANCE_METERS
+  maxDistanceMeters: number = DEFAULT_WAYPOINT_MAX_DISTANCE_METERS,
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS
 ): EnrichedWaypoint[] {
   if (trackPoints.length === 0 || waypoints.length === 0) {
     return [];
@@ -522,7 +533,12 @@ export function enrichWaypoints(
   let runningDescent = 0;
 
   for (const visit of visits) {
-    const segmentStats = calculateSegmentStats(trackPoints, prevTrackIndex, visit.trackIndex);
+    const segmentStats = calculateSegmentStats(
+      trackPoints,
+      prevTrackIndex,
+      visit.trackIndex,
+      breakStarts
+    );
 
     runningDistance += segmentStats.distance;
     runningAscent += segmentStats.ascent;
@@ -1008,7 +1024,12 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
 
   // Enrich waypoints with distance and elevation data
   const waypointMaxDist = config.waypointMaxDistance ?? DEFAULT_WAYPOINT_MAX_DISTANCE_METERS;
-  const enrichedWaypoints = enrichWaypoints(waypoints, mainRoutePoints, waypointMaxDist);
+  const enrichedWaypoints = enrichWaypoints(
+    waypoints,
+    mainRoutePoints,
+    waypointMaxDist,
+    breakStarts
+  );
 
   // Output invariant: every enriched waypoint carries a distinct stable id.
   // enrichWaypoints emits one row per proximity episode, so a route that passes
@@ -1225,11 +1246,12 @@ export function recomputeTrailElevation(
     return updated ? { ...dp, ele: updated.ele } : dp;
   });
 
+  const breakStarts = new Set((trail.track.breaks ?? []).map(b => b.index));
   let prevTrackIndex = 0;
   let runningAscent = 0;
   let runningDescent = 0;
   const waypoints: EnrichedWaypoint[] = trail.waypoints.map(wp => {
-    const segment = calculateSegmentStats(points, prevTrackIndex, wp.trackIndex);
+    const segment = calculateSegmentStats(points, prevTrackIndex, wp.trackIndex, breakStarts);
     runningAscent += segment.ascent;
     runningDescent += segment.descent;
     prevTrackIndex = wp.trackIndex;

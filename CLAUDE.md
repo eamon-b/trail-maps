@@ -42,6 +42,7 @@ Shared processing modules (used by both web and mobile):
 - `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`). The user-facing spec of the pipeline is `docs/gpx-import.md` — keep it in step with behaviour changes here and in `trail-ingest.ts`. It is rendered into the site as `how-import-works.html` at build time (the `gpx-import-doc` plugin in `vite.config.ts`)
 - `elevation-backfill.ts` - Open-Elevation backfill for GPX without `<ele>` (`backfillElevation` batches of 100, ≤2000 samples interpolated by distance; `applyElevation` re-derives ascent/waypoint stats via `recomputeTrailElevation`); `trailHasElevation`/`trailElevationIsUsable` drive the "distance-only estimate" labels
 - `trail-handoff.ts` - `<slug>.tracknotes.json` web → mobile handoff format (`wrapTrailForHandoff`, strict `parseHandoffJson`)
+- `poi-display.ts` - The platform-neutral half of showing OSM POIs, shared by the web viewer and the app: category labels, `poiDisplayName`, `summarisePoiTags` (+ the `safeHttpUrl`/`safeTelUrl` guards every POI link must pass), `slimPoi` (what `build-mobile-trails.ts` and the mobile import store write), the `PoiFilterState` shape and its normaliser, `visiblePois`/`countPoisByCategory` (both skip `duplicateOf`), `interleavePoisByDistance`, `mirrorPoiDistances`, and the slash-free `poiRouteKey` (`type-id`) that names a POI in an Expo Router param. `src/web/trails/trail-pois-ui.ts` re-exports it and keeps only the HTML/`localStorage` half
 - `types.ts` - TypeScript interfaces
 - `plan-types.ts` - Plan data types shared with mobile
 - `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions. `calculateElevationBetween` (and `buildTimeIndex` in `day-calculator.ts`) take an optional `breakStarts` set — pass `routeBreakStarts(track.breaks, 'points' | 'displayPoints')` for whichever array you hand them, or a trail with route breaks climbs the gap between landings
@@ -241,9 +242,10 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 - **Map**: MapLibre React Native. Style objects are resolved before mount via `src/services/online-style-service.ts` (online) or `tileManager.getOfflineStyle()` (offline); the bundled base style is `mobile/assets/topo-style.json`, synced from `scripts/topo-style.json` with root `npm run sync:style`. Contours come from `EXPO_PUBLIC_CONTOUR_TILE_URL`.
 - **Map theme**: the map follows the app theme (`useTheme().isDark`), not a setting of its own. Dark uses OpenFreeMap's `dark` style online and the paint patch `scripts/topo-style-dark.json` (also synced by `npm run sync:style`) offline; the patch is `{ layerId: paintOverrides }` merged over the light template, so filters/zooms/layer order stay single-sourced — add a layer to `topo-style.json` and give it an entry in the dark file (a test fails otherwise). Overlay cartography (tracks, marker/label ink, the fallback style) is per-theme in `features/map/map-style.ts` — `trackColors(theme)` / `mapInk(theme)` — and the theme is part of `mapRemountKey`, because swapping a live map's style object can kill the native renderer.
 - **Storage**: trail content is read from bundled JSON assets via `src/services/trail-loader.ts` (`listTrails`/`getTrailJson`) — there is no `trails` SQLite table. SQLite (`expo-sqlite`) holds per-guide state, comments + outbox, favorites, and custom routes. Tile files live in `expo-file-system`.
-- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse, trail-types, route-breaks, gpx-import, xml-adapter-fxp. Every `src/lib` module is RN-safe: `gpx-parser`/`gpx-optimizer` no longer reach for `DOMParser` (mobile passes `fxpXmlAdapter`), and `gpx-import` avoids `crypto` entirely. jsdom stays out of `src/lib` — its adapter lives in `scripts/lib/xml-adapter-jsdom.ts`.
+- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse, trail-types, route-breaks, gpx-import, xml-adapter-fxp, poi-display. Every `src/lib` module is RN-safe: `gpx-parser`/`gpx-optimizer` no longer reach for `DOMParser` (mobile passes `fxpXmlAdapter`), and `gpx-import` avoids `crypto` entirely. jsdom stays out of `src/lib` — its adapter lives in `scripts/lib/xml-adapter-jsdom.ts`.
 - **Navigation**: a single Expo Router Stack — "My Guides" list → per-trail guide (nested stack). No bottom tabs. Inside a guide, a segmented control switches three always-mounted panes: Map | Elevation | List (`src/features/guide/GuideView.tsx`).
 - **State**: Zustand stores in `src/state/` (settings, downloads, favorites, identity) plus per-guide React contexts.
+- **OSM points of interest**: bundled trails carry `pois` (slimmed by `build-mobile-trails.ts`), imported ones whatever the `.tracknotes.json` handoff brought (a GPX imported on the phone has none — the on-phone Overpass search is a follow-up, see `plans/pois-mobile.md`). POIs are never waypoints: they are not in the plan calculators, the GPS distance strip, favorites or comments, and `duplicateOf` entries are never drawn or listed (their OSM detail shows on the waypoint they duplicate instead). One global `poiFilter` in the settings store (master switch + six categories) drives every surface through `features/guide/use-visible-pois.ts`; the map's layers sheet edits it. Map markers are smaller, thin-ringed badges hidden below zoom 11; the List pane interleaves POI rows (an "OSM" pill) by km; the elevation profile draws hollow ticks only when zoomed to ≤ 60 km; `guide/[trailId]/poi/[poiKey]` is the detail screen. Direction reversal mirrors POI km inside `@lib/trail-reverse`, so nothing on mobile special-cases it.
 
 ### Mobile Route Structure (`mobile/app/`)
 
@@ -256,16 +258,17 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 - `guide/[trailId]/downloads.tsx` — Offline maps: download/delete tile packs
 - `guide/[trailId]/plan.tsx` — Live plan calculator (day splits, resupply, water carries)
 - `guide/[trailId]/routes.tsx` — Saved custom routes (built on the map pane)
-- `guide/[trailId]/waypoint/[waypointId].tsx` — Waypoint detail + offline-first comments
+- `guide/[trailId]/waypoint/[waypointId].tsx` — Waypoint detail + offline-first comments (+ a collapsed "From OpenStreetMap" section when a POI duplicates the waypoint)
+- `guide/[trailId]/poi/[poiKey].tsx` — OSM point-of-interest detail (`poiKey` is `@lib/poi-display`'s `poiRouteKey`, `type-id`): tag lines, scheme-guarded links, OSM/Maps deep links, attribution. No favorites, comments or network
 
 ### Mobile Source Structure (`mobile/src/`)
 
 Feature-sliced: UI lives with its feature, not in a global components dir.
 
 - `features/` — one dir per feature, each with colocated `__tests__/`:
-  - `guide/` — GuideView shell, waypoint list pane, contexts (GuideContext, GuidePositionContext), direction toggle, distance strip
-  - `map/` — MapPane, GuideMap, map styles/geojson, waypoint icons, track legend, error boundary
-  - `elevation/` — Skia elevation profile (axis, geometry, LOD)
+  - `guide/` — GuideView shell, waypoint list pane (waypoint + POI rows), contexts (GuideContext, GuidePositionContext), direction toggle, distance strip, `use-visible-pois.ts`
+  - `map/` — MapPane, GuideMap, map styles/geojson, waypoint + POI icons (`assets/map-icons/*.png`, generated by `mobile/scripts/build-map-icons.mjs` — ImageMagick, or `npx -y -p @resvg/resvg-js node scripts/build-map-icons.mjs <names>` where it is missing), POI layers sheet, track legend, error boundary
+  - `elevation/` — Skia elevation profile (axis, geometry, LOD, POI ticks)
   - `plan/` — plan inputs card, day-split list, resupply/water-carry cards, `plan-adapters.ts` (bridges to `@lib` calculators), `plan-inputs-store.ts`
   - `routes/` — route builder bar, route geometry, routes store
   - `comments/` — composer, display name, photo upload

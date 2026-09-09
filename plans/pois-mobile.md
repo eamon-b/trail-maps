@@ -7,8 +7,9 @@ show them in Tracknotes: `scripts/build-mobile-trails.ts` strips `pois` from the
 bundled assets, and the app has no POI surface, so a handoff file that arrives
 with 400 POIs imports fine and then shows none of them.
 
-This plan closes that gap. Status: **planned**, to be built on
-`claude/osm-points-mobile-app-o76w0c` on top of `feat/osm-pois`.
+This plan closes that gap. Status: **implemented** on
+`claude/osm-points-mobile-app-o76w0c` (PR #67) on top of `feat/osm-pois`; the
+on-phone Overpass search in the last section is still a follow-up.
 
 ## Decisions already taken
 

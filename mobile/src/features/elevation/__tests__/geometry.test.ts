@@ -317,6 +317,22 @@ describe('buildProfileMarkers', () => {
     expect(markers[1]).toMatchObject({ id: 'std', color: 'STD', radius: 4 });
   });
 
+  it('defaults fill to true and passes an explicit fill through', () => {
+    const markers = buildProfileMarkers(
+      [
+        { id: 'wp', type: 'camp', totalDistance: 10, elevation: 0 },
+        { id: 'ring', type: 'water', kind: 'poi', totalDistance: 20, elevation: 0 },
+      ],
+      plot,
+      (wp) =>
+        wp.kind === 'poi'
+          ? { color: 'POI', radius: 3, fill: false }
+          : { color: 'STD', radius: 4 },
+    );
+    expect(markers[0]).toMatchObject({ id: 'wp', kind: 'waypoint', fill: true, radius: 4 });
+    expect(markers[1]).toMatchObject({ id: 'ring', kind: 'poi', fill: false, radius: 3, color: 'POI' });
+  });
+
   it('falls back to the floor when elevation is missing', () => {
     const markers = buildProfileMarkers(
       [{ id: 'a', type: 'water', totalDistance: 50 }],

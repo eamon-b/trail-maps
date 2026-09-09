@@ -188,6 +188,32 @@ export interface TrackData {
   totalDistance: number;
   totalAscent: number;
   totalDescent: number;
+  /**
+   * Places the walking route stops and resumes somewhere else. Absent for the
+   * trails whose route is continuous — only a trail declaring
+   * `trackClassification.stretches` can have any.
+   */
+  breaks?: RouteBreak[];
+}
+
+/**
+ * A place where the walking route ends and starts again somewhere else: a
+ * ferry, a river with no crossing, a lake. The route does not cross it, so it
+ * contributes no distance and no climb, and `points` either side of it are two
+ * separate lines rather than one.
+ */
+export interface RouteBreak {
+  /** Index into `TrackData.points` of the first point after the break. */
+  index: number;
+  /** Index into `TrackData.displayPoints` of that same point. */
+  displayIndex: number;
+  /** Route km, which is the same on both sides — the route does not advance. */
+  km: number;
+  /** Straight-line distance across the break, in km. Not part of `totalDistance`. */
+  straightLineKm: number;
+  /** Name of the stretch that ends here, and of the one that resumes. */
+  fromTrack: string;
+  toTrack: string;
 }
 
 /** A fully processed trail — the serialized form of a generated trail JSON. */

@@ -18,7 +18,11 @@ import {
   smoothElevation,
   calculateElevationStats,
 } from './gpx-optimizer';
-import { classifyTracks, combineTracksGeographically } from './track-classification';
+import {
+  classifyTracks,
+  combineTracksGeographically,
+  concatenateStretches,
+} from './track-classification';
 import { classifyWaypoint, inferWaypointTypeFromKeywords } from './waypoint-classifier';
 import { cumulativeKm, detectSelfRetraces, extractSpur, type SelfRetrace } from './track-spurs';
 import {
@@ -26,11 +30,12 @@ import {
   WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS,
   type DedupableWaypoint,
 } from './waypoint-dedupe';
-import type { CombineTracksWarning, GpxData, GpxPoint } from './types';
+import type { CombineTracksWarning, GpxData, GpxPoint, TrackBreak } from './types';
 import type {
   EnrichedWaypoint,
   OffTrailWaypoint,
   ProcessedTrail,
+  RouteBreak,
   RouteVariant,
   TrackPoint,
   TrailConfig,
@@ -172,6 +177,9 @@ interface MainRouteSelection {
   mainTrackCount: number;
   gapWarnings: CombineTracksWarning[];
   combinedNames: string[];
+  /** Joins between main tracks the route does not cross. Empty unless the
+   *  trail declares `trackClassification.stretches`. */
+  breaks: TrackBreak[];
 }
 
 /**
@@ -227,7 +235,7 @@ function selectMainRoute(
 
   // No main tracks found
   if (classification.mainTracks.length === 0) {
-    return { ...base, points: [], gapWarnings: [], combinedNames: [] };
+    return { ...base, points: [], gapWarnings: [], combinedNames: [], breaks: [] };
   }
 
   // Single main track - return directly
@@ -237,15 +245,26 @@ function selectMainRoute(
       points: classification.mainTracks[0].points,
       gapWarnings: [],
       combinedNames: [classification.mainTracks[0].name],
+      breaks: [],
     };
   }
 
-  // Multiple main tracks - combine geographically
-  const { combinedPoints, orderedNames, warnings } = combineTracksGeographically(
-    classification.mainTracks.map(t => ({ name: t.name, points: t.points }))
-  );
+  // Multiple main tracks. A trail that declares its tracks are consecutive
+  // stretches keeps the file's order and its breaks; everything else is chained
+  // by proximity, which bridges them.
+  const stretches = config.trackClassification?.stretches;
+  const mainTracks = classification.mainTracks.map(t => ({ name: t.name, points: t.points }));
+  const { combinedPoints, orderedNames, warnings, breaks } = stretches
+    ? concatenateStretches(mainTracks, stretches)
+    : combineTracksGeographically(mainTracks);
 
-  return { ...base, points: combinedPoints, gapWarnings: warnings, combinedNames: orderedNames };
+  return {
+    ...base,
+    points: combinedPoints,
+    gapWarnings: warnings,
+    combinedNames: orderedNames,
+    breaks,
+  };
 }
 
 /**
@@ -736,6 +755,13 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
 
   const { alternateTracks, sideTripTracks: classifiedSideTrips } = selection;
   let mainRoutePoints = selection.points;
+  let breaks = selection.breaks;
+  for (const routeBreak of breaks) {
+    log(
+      `  Route break: ${(routeBreak.gapMeters / 1000).toFixed(1)} km between ` +
+        `"${routeBreak.fromTrack}" and "${routeBreak.toTrack}" (not walked, not counted)`
+    );
+  }
 
   // Reverse the source track when it runs opposite to the trail's canonical
   // direction (km 0 should be the terminus named by `direction.default`).
@@ -747,6 +773,17 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     for (const track of [...alternateTracks, ...classifiedSideTrips]) {
       track.points.reverse();
     }
+    // A break sits *between* points i-1 and i. Reversing an n-point array sends
+    // index i to n-1-i, so that same seam lands between n-i-1 and n-i, and the
+    // first point after it is n-i. The two sides swap names with the direction.
+    breaks = [...breaks]
+      .reverse()
+      .map(b => ({
+        index: mainRoutePoints.length - b.index,
+        fromTrack: b.toTrack,
+        toTrack: b.fromTrack,
+        gapMeters: b.gapMeters,
+      }));
     log('  ✓ Reversed track direction (reverseTrack)');
   }
 
@@ -754,6 +791,16 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   // only - detectSelfRetraces below finds every retrace, but most are the
   // official route, so this is never automatic.
   const extractedSpurs: ParsedGpxTrack[] = [];
+  if (breaks.length > 0 && (config.extractSpurs ?? []).length > 0) {
+    // extractSpur cuts a range out of the main route, which moves every index
+    // after it. Nothing needs both, so the honest answer is to say so rather
+    // than to silently misplace the breaks.
+    throw new Error(
+      'trail.json declares both extractSpurs and trackClassification.stretches, ' +
+        'which are not supported together: extracting a spur renumbers the points ' +
+        'the route breaks are anchored to.'
+    );
+  }
   for (const spur of config.extractSpurs ?? []) {
     const km = cumulativeKm(mainRoutePoints);
     const toKm = spur.toKm ?? km[km.length - 1];
@@ -787,13 +834,17 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   // every generated ascent figure, so it is opt-in for user imports only.
   mainRoutePoints = cleanElevation(mainRoutePoints, options.elevation);
 
-  // Calculate cumulative distance and elevation
+  // Calculate cumulative distance and elevation. The leg into the first point
+  // of a new stretch is not walked, so it adds neither distance nor climb: km
+  // and elevation carry across a break unchanged, and the sea between
+  // Wellington and Ship Cove stops counting as 51 km of trail.
+  const breakStarts = new Set(breaks.map(b => b.index));
   let totalDistance = 0;
   let totalAscent = 0;
   let totalDescent = 0;
 
   const points: TrackPoint[] = mainRoutePoints.map((p, i, arr) => {
-    if (i > 0) {
+    if (i > 0 && !breakStarts.has(i)) {
       const prev = arr[i - 1];
       const dist = haversineDistanceKm(prev.lat, prev.lon, p.lat, p.lon);
       totalDistance += dist;
@@ -821,23 +872,51 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   // Simplify for map display (target ~3000 points for smooth rendering)
   const targetDisplayPoints = options.targetDisplayPoints ?? DEFAULT_TARGET_DISPLAY_POINTS;
   let displayPoints = points;
+  // Where each break falls in `displayPoints`. Filled in alongside the
+  // simplification below so the map can cut the line at the same places.
+  let displayBreakIndices: number[] = breaks.map(b => b.index);
 
   if (points.length > targetDisplayPoints) {
     const tolerance = calculateAdaptiveTolerance(points, targetDisplayPoints, totalDistance);
-    // douglasPeucker expects GpxPoint format with lat, lon, ele
-    const simplified = douglasPeucker(
-      points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: null })),
-      tolerance
-    );
     // Build a Map for O(1) lookup of original points by lat/lon
     // Douglas-Peucker returns references to original points, so exact equality works
     const pointMap = new Map(points.map(p => [`${p.lat},${p.lon}`, p]));
-    displayPoints = simplified.map(sp => {
-      const original = pointMap.get(`${sp.lat},${sp.lon}`);
-      return original || { lat: sp.lat, lon: sp.lon, ele: sp.ele, dist: 0 };
-    });
+    const restore = (sp: { lat: number; lon: number; ele: number }): TrackPoint =>
+      pointMap.get(`${sp.lat},${sp.lon}`) || { lat: sp.lat, lon: sp.lon, ele: sp.ele, dist: 0 };
+    // douglasPeucker expects GpxPoint format with lat, lon, ele
+    const toGpx = (p: TrackPoint) => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: null });
+
+    if (breaks.length === 0) {
+      displayPoints = douglasPeucker(points.map(toGpx), tolerance).map(restore);
+    } else {
+      // One pass per stretch. Simplifying across a break would let
+      // Douglas-Peucker drop the two points either side of it — the line's
+      // endpoints — and cut the corner over the water instead.
+      const bounds = [0, ...displayBreakIndices, points.length];
+      const simplifiedStretches: TrackPoint[][] = [];
+      for (let i = 0; i < bounds.length - 1; i++) {
+        const stretch = points.slice(bounds[i], bounds[i + 1]);
+        simplifiedStretches.push(douglasPeucker(stretch.map(toGpx), tolerance).map(restore));
+      }
+      displayPoints = simplifiedStretches.flat();
+      displayBreakIndices = [];
+      let offset = 0;
+      for (const stretch of simplifiedStretches.slice(0, -1)) {
+        offset += stretch.length;
+        displayBreakIndices.push(offset);
+      }
+    }
     log(`  ✓ Simplified ${points.length} → ${displayPoints.length} points for display`);
   }
+
+  const routeBreaks: RouteBreak[] = breaks.map((b, i) => ({
+    index: b.index,
+    displayIndex: displayBreakIndices[i],
+    km: Math.round(points[b.index].dist * 1000) / 1000,
+    straightLineKm: Math.round(b.gapMeters) / 1000,
+    fromTrack: b.fromTrack,
+    toTrack: b.toTrack,
+  }));
 
   // Get waypoints - GPX waypoints, plus whatever the caller layers on top
   // (CalTopo categories, CSV fallback).
@@ -1070,6 +1149,7 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
       totalDistance,
       totalAscent,
       totalDescent,
+      ...(routeBreaks.length > 0 ? { breaks: routeBreaks } : {}),
     },
     waypoints: outputWaypoints,
     offTrailWaypoints,

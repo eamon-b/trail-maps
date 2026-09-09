@@ -368,3 +368,99 @@ describe('buildTrail', () => {
     });
   });
 });
+
+describe('buildTrail with route breaks', () => {
+  /**
+   * Two stretches a few km apart on the same meridian, the far one 380 m
+   * higher. 0.01 degrees of latitude is ~1.11 km.
+   */
+  function brokenRoute(): ParsedGpxResult {
+    const stretch = (startLat: number, baseEle: number) =>
+      [0, 1, 2].map(i => ({
+        lat: startLat - i * 0.01,
+        lon: 138,
+        ele: baseEle + i * 10,
+        time: null,
+      }));
+    return {
+      tracks: [
+        { name: 'Main 1/2', points: stretch(-34.0, 100) },
+        { name: 'Main 2/2', points: stretch(-34.05, 500) },
+      ],
+      waypoints: [],
+      name: null,
+    };
+  }
+
+  const brokenConfig = (stretches: boolean) =>
+    config({
+      trackClassification: {
+        mainRoutePatterns: ['^Main '],
+        fallbackToLongest: false,
+        ...(stretches ? { stretches: { minGapMeters: 250 } } : {}),
+      },
+    });
+
+  it('leaves the crossing out of distance and climb', () => {
+    const trail = buildTrail(brokenRoute(), { config: brokenConfig(true) });
+
+    // Four 1.11 km legs walked; the 3.3 km between the stretches is not one.
+    expect(trail.track.totalDistance).toBeCloseTo(4.45, 1);
+    expect(Math.round(trail.track.totalAscent)).toBe(40);
+    expect(Math.round(trail.track.totalDescent)).toBe(0);
+  });
+
+  it('counts the crossing when the trail has not declared its stretches', () => {
+    const trail = buildTrail(brokenRoute(), { config: brokenConfig(false) });
+
+    expect(trail.track.totalDistance).toBeGreaterThan(6);
+    // The 400 → 500 m step across the gap is charged as climb.
+    expect(Math.round(trail.track.totalAscent)).toBe(420);
+    expect(trail.track.breaks).toBeUndefined();
+  });
+
+  it('records the break where the route resumes, at the km it left off', () => {
+    const trail = buildTrail(brokenRoute(), { config: brokenConfig(true) });
+
+    expect(trail.track.breaks).toHaveLength(1);
+    const [routeBreak] = trail.track.breaks!;
+    expect(routeBreak.index).toBe(3);
+    expect(routeBreak.fromTrack).toBe('Main 1/2');
+    expect(routeBreak.toTrack).toBe('Main 2/2');
+    expect(routeBreak.straightLineKm).toBeCloseTo(3.34, 1);
+
+    // The route does not advance across a break: both sides read the same km.
+    const points = trail.track.points;
+    expect(points[3].dist).toBe(points[2].dist);
+    expect(routeBreak.km).toBeCloseTo(points[3].dist, 3);
+  });
+
+  it('keeps every point — a break is not a deletion', () => {
+    const trail = buildTrail(brokenRoute(), { config: brokenConfig(true) });
+
+    expect(trail.track.points).toHaveLength(6);
+    expect(trail.track.points[3].ele).toBe(500);
+  });
+
+  it('reports the built length as what is walked', () => {
+    const cfg = brokenConfig(true);
+    const trail = buildTrail(brokenRoute(), { config: cfg });
+
+    expect(trail.config.lengthKm).toBe(Math.round(trail.track.totalDistance * 10) / 10);
+  });
+
+  it('refuses a config that also extracts spurs, rather than misplacing the break', () => {
+    expect(() =>
+      buildTrail(brokenRoute(), {
+        config: config({
+          trackClassification: {
+            mainRoutePatterns: ['^Main '],
+            fallbackToLongest: false,
+            stretches: { minGapMeters: 250 },
+          },
+          extractSpurs: [{ name: 'Spur', fromKm: 1 }],
+        }),
+      })
+    ).toThrow(/not supported together/);
+  });
+});

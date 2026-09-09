@@ -19,23 +19,23 @@
  * reverses it for NOBO walkers.
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { createRequire } from "module";
+import * as fs from 'fs';
+import * as path from 'path';
+import { createRequire } from 'module';
 
 const SCRIPTS_DIR = path.dirname(
-  process.platform === "win32"
-    ? new URL(import.meta.url).pathname.slice(1).replace(/\//g, "\\")
+  process.platform === 'win32'
+    ? new URL(import.meta.url).pathname.slice(1).replace(/\//g, '\\')
     : new URL(import.meta.url).pathname
 );
-const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, "..");
-const TRAIL_DIR = path.join(PROJECT_ROOT, "data/trails/te_araroa");
+const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '..');
+const TRAIL_DIR = path.join(PROJECT_ROOT, 'data/trails/te_araroa');
 
 /** The one file we take. Its name is stable across upstream seasons. */
-const ROUTE_FILE = "te-araroa-sobo.gpx";
+const ROUTE_FILE = 'te-araroa-sobo.gpx';
 
 /** Read alongside the route, for the log line only — never copied. */
-const META_FILE = "te-araroa.meta.json";
+const META_FILE = 'te-araroa.meta.json';
 
 interface TeAraroaMeta {
   season?: string;
@@ -53,23 +53,23 @@ interface TeAraroaMeta {
 function findPackageDir(): string {
   const require = createRequire(import.meta.url);
   try {
-    return path.dirname(require.resolve("te-araroa-data/package.json"));
+    return path.dirname(require.resolve('te-araroa-data/package.json'));
   } catch {
     throw new Error(
-      "te-araroa-data is not installed. Run `npm install` first."
+      'te-araroa-data is not installed. Run `npm install` first.'
     );
   }
 }
 
 function main(): void {
   const packageDir = findPackageDir();
-  const outDir = path.join(packageDir, "out");
+  const outDir = path.join(packageDir, 'out');
   const source = path.join(outDir, ROUTE_FILE);
 
   if (!fs.existsSync(source)) {
     throw new Error(
       `te-araroa-data is installed but has no out/${ROUTE_FILE}. ` +
-        "The package commits its build outputs; a checkout without them is broken."
+        'The package commits its build outputs; a checkout without them is broken.'
     );
   }
 
@@ -86,14 +86,14 @@ function main(): void {
   // rather than only in the trail page's numbers.
   const metaPath = path.join(outDir, META_FILE);
   if (fs.existsSync(metaPath)) {
-    const meta = JSON.parse(fs.readFileSync(metaPath, "utf-8")) as TeAraroaMeta;
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')) as TeAraroaMeta;
     console.log(
-      `  Te Araroa ${meta.season ?? "?"} (${meta.version ?? "?"}), built ${meta.generatedAt ?? "?"}`
+      `  Te Araroa ${meta.season ?? '?'} (${meta.version ?? '?'}), built ${meta.generatedAt ?? '?'}`
     );
     if (meta.walkedLengthKm !== undefined) {
       console.log(
         `  ${meta.walkedLengthKm.toFixed(1)} km walkable over ` +
-          `${meta.walkedStretches ?? "?"} stretches, ` +
+          `${meta.walkedStretches ?? '?'} stretches, ` +
           `${(meta.gapLengthKm ?? 0).toFixed(1)} km of ferries and river crossings between them`
       );
     }

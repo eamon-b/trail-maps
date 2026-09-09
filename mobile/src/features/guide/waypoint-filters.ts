@@ -5,9 +5,15 @@
  * React-free so both the grouping and the formatting are unit-testable; the
  * families are derived from the same `waypoint-category` token registry the map
  * and datasheet use, so a type only ever belongs to one family.
+ *
+ * The chips scope the OpenStreetMap rows the list interleaves too, which is a
+ * separate mapping (`poiCategoriesForFamily`): POI categories are their own
+ * vocabulary, and two of the families have no OSM equivalent at all.
  */
 
 import { formatDistance, type DistanceUnit } from '@lib/format-distance';
+import { POI_CATEGORIES } from '@lib/poi-display';
+import type { TrailPOICategory } from '@lib/trail-types';
 import { categoryToken, type WaypointColorToken } from '../elevation/waypoint-category';
 
 /**
@@ -51,6 +57,40 @@ export function matchesFamily(type: string, family: WaypointFamily, isFavorite =
   if (family === 'all') return true;
   if (family === 'favorites') return isFavorite;
   return familyForType(type) === family;
+}
+
+const FAMILY_TO_POI_CATEGORIES: Record<WaypointFamily, readonly TrailPOICategory[]> = {
+  all: POI_CATEGORIES,
+  favorites: [],
+  water: ['water'],
+  camp: ['camping'],
+  town: ['resupply', 'restaurant'],
+  shelter: [],
+};
+
+/**
+ * The OSM POI categories a chip shows.
+ *
+ * 'shelter' has no OSM counterpart the enrichment produces (a hut is either a
+ * curated waypoint or nothing), and 'favorites' is an id-based cut over curated
+ * waypoints — a POI can never be starred — so both show no POI rows at all.
+ * 'town' is the one family that spans two categories: a supermarket and a pub
+ * are the same errand to a walker.
+ */
+export function poiCategoriesForFamily(family: WaypointFamily): readonly TrailPOICategory[] {
+  return FAMILY_TO_POI_CATEGORIES[family];
+}
+
+/**
+ * Whether a POI is shown under the given family filter.
+ *
+ * 'all' takes an unknown category too, matching `visiblePois`: no chip could
+ * ever reach it, so filtering it out would make it unreachable rather than
+ * merely unfiltered.
+ */
+export function matchesPoiFamily(category: string, family: WaypointFamily): boolean {
+  if (family === 'all') return true;
+  return (poiCategoriesForFamily(family) as readonly string[]).includes(category);
 }
 
 export interface SignedDistance {

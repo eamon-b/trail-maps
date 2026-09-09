@@ -1,6 +1,9 @@
+import { POI_CATEGORIES } from '@lib/poi-display';
 import {
   familyForType,
   matchesFamily,
+  matchesPoiFamily,
+  poiCategoriesForFamily,
   formatSignedDistance,
   FILTER_FAMILIES,
 } from '../waypoint-filters';
@@ -74,5 +77,45 @@ describe('formatSignedDistance', () => {
 
   it('is unit-aware', () => {
     expect(formatSignedDistance(1.609344, 'mi').label).toBe('1.0 mi ahead');
+  });
+});
+
+describe('poiCategoriesForFamily', () => {
+  it('shows every category under "all"', () => {
+    expect([...poiCategoriesForFamily('all')]).toEqual([...POI_CATEGORIES]);
+  });
+
+  it('maps each POI-bearing family to its own categories', () => {
+    expect([...poiCategoriesForFamily('water')]).toEqual(['water']);
+    expect([...poiCategoriesForFamily('camp')]).toEqual(['camping']);
+    expect([...poiCategoriesForFamily('town')]).toEqual(['resupply', 'restaurant']);
+  });
+
+  it('shows no POIs for the families OSM has no counterpart for', () => {
+    // A hut is a curated waypoint or nothing, and a POI can never be starred.
+    expect([...poiCategoriesForFamily('shelter')]).toEqual([]);
+    expect([...poiCategoriesForFamily('favorites')]).toEqual([]);
+  });
+});
+
+describe('matchesPoiFamily', () => {
+  it('scopes POIs to the chip', () => {
+    expect(matchesPoiFamily('water', 'water')).toBe(true);
+    expect(matchesPoiFamily('camping', 'water')).toBe(false);
+    expect(matchesPoiFamily('restaurant', 'town')).toBe(true);
+    expect(matchesPoiFamily('resupply', 'town')).toBe(true);
+    expect(matchesPoiFamily('transport', 'town')).toBe(false);
+  });
+
+  it('never shows a POI under shelter or favorites', () => {
+    for (const category of POI_CATEGORIES) {
+      expect(matchesPoiFamily(category, 'shelter')).toBe(false);
+      expect(matchesPoiFamily(category, 'favorites')).toBe(false);
+    }
+  });
+
+  it('lets an unknown category through "all", as visiblePois does', () => {
+    expect(matchesPoiFamily('viewpoint', 'all')).toBe(true);
+    expect(matchesPoiFamily('viewpoint', 'water')).toBe(false);
   });
 });

@@ -51,7 +51,13 @@ function sha1Hex(input: string): string {
 /**
  * Mint a deterministic id for a waypoint. Uses an 8-hex-char sha1 slice by
  * default, extending to 12 chars if the short form already exists in the
- * registry (collision). Throws if even the 12-char form collides.
+ * registry (collision), and finally mixing the name in for waypoints whose
+ * position and type are identical. Throws if even that collides.
+ *
+ * The name is deliberately absent from the primary basis: renaming a waypoint
+ * must not move its id. It is mixed in only for the last tier, where the
+ * alternative is no id at all — and only for the second and later waypoints at
+ * a coordinate, so no existing id moves.
  */
 function mintId(
   trailId: string,
@@ -64,10 +70,19 @@ function mintId(
   if (existingIds.has(id)) {
     id = `w_${hex.slice(0, 12)}`;
     if (existingIds.has(id)) {
-      throw new Error(
-        `Waypoint id collision for "${wp.name}" (${basis}): both the 8- and ` +
-          `12-hex forms are already claimed. Widen the mint hash length.`,
-      );
+      // Two waypoints of the same type at the same coordinates. Several of
+      // Te Araroa's turnoffs share one road end — the Rangitata end serves
+      // Geraldine, Peel Forest, Mesopotamia Station and Mt Potts Lodge — so
+      // their bases are byte-identical and no amount of widening separates
+      // them. Only the name can.
+      id = `w_${sha1Hex(`${basis}|${wp.name}`).slice(0, 12)}`;
+      if (existingIds.has(id)) {
+        throw new Error(
+          `Waypoint id collision for "${wp.name}" (${basis}): the 8-hex, ` +
+            `12-hex and name-qualified forms are all already claimed. Widen ` +
+            `the mint hash length.`,
+        );
+      }
     }
   }
   if (!ID_PATTERN.test(id)) {

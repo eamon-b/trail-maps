@@ -29,6 +29,7 @@ import type {
   EnrichedWaypoint,
   OffTrailWaypoint,
   ProcessedTrail,
+  RouteBreak,
   RouteVariant,
   TrackPoint,
   TrailConfig,
@@ -174,10 +175,25 @@ export function parseHandoffJson(text: string): ProcessedTrail {
   // displayPoints is the map-rendering copy; regenerating it is out of scope
   // here, so a file without one simply draws the full-resolution track.
   const rawDisplay = track.displayPoints;
-  const displayPoints =
-    Array.isArray(rawDisplay) && rawDisplay.length > 0
-      ? rawDisplay.map((p, i) => readTrackPoint(p, `track.displayPoints[${i}]`))
-      : points;
+  const hasDisplayPoints = Array.isArray(rawDisplay) && rawDisplay.length > 0;
+  const displayPoints = hasDisplayPoints
+    ? rawDisplay.map((p, i) => readTrackPoint(p, `track.displayPoints[${i}]`))
+    : points;
+
+  // Route breaks: the places the walking route stops and resumes somewhere
+  // else. Dropping them here would have the phone join the stretches back into
+  // one line and draw the ferry as trail.
+  //
+  // `displayIndex` indexes `displayPoints`. When the file carries none we fall
+  // back to `points` above, so the two indices become the same one — carrying
+  // the stored `displayIndex` through unchanged would point into the wrong
+  // array.
+  const rawBreaks = track.breaks;
+  const breaks = Array.isArray(rawBreaks)
+    ? rawBreaks
+        .map((b, i) => readRouteBreak(b, `track.breaks[${i}]`))
+        .map(b => (hasDisplayPoints ? b : { ...b, displayIndex: b.index }))
+    : undefined;
 
   const name = readName(config.name) ?? readName(config.shortName) ?? GENERIC_NAME;
   const totalDistance = finiteOr(track.totalDistance, points[points.length - 1].dist);
@@ -202,6 +218,7 @@ export function parseHandoffJson(text: string): ProcessedTrail {
       totalDistance,
       totalAscent: finiteOr(track.totalAscent, 0),
       totalDescent: finiteOr(track.totalDescent, 0),
+      ...(breaks && breaks.length > 0 ? { breaks } : {}),
     },
     waypoints: trail.waypoints.map((w, i) => readWaypoint(w, i, trailId)),
     offTrailWaypoints: arrayOrEmpty<OffTrailWaypoint>(trail.offTrailWaypoints),
@@ -322,6 +339,27 @@ function readTrackPoint(value: unknown, where: string): TrackPoint {
   if (lat < -90 || lat > 90) fail(`This Tracknotes trail file has an out-of-range ${where}.lat (${lat}).`);
   if (lon < -180 || lon > 180) fail(`This Tracknotes trail file has an out-of-range ${where}.lon (${lon}).`);
   return { lat, lon, ele, dist };
+}
+
+/**
+ * Validate one route break.
+ *
+ * Same treatment as a track point, and for the same reason: these indices are
+ * fed straight to `splitAtRouteBreaks`, so a NaN would silently produce one
+ * continuous line again — the bug the breaks exist to prevent — rather than a
+ * rejected file. Out-of-range indices are left to `splitAtRouteBreaks`, which
+ * already ignores them.
+ */
+function readRouteBreak(value: unknown, where: string): RouteBreak {
+  if (!isRecord(value)) fail(`This Tracknotes trail file has a malformed ${where}.`);
+  return {
+    index: requireFinite(value.index, `${where}.index`),
+    displayIndex: requireFinite(value.displayIndex, `${where}.displayIndex`),
+    km: requireFinite(value.km, `${where}.km`),
+    straightLineKm: requireFinite(value.straightLineKm, `${where}.straightLineKm`),
+    fromTrack: typeof value.fromTrack === 'string' ? value.fromTrack : '',
+    toTrack: typeof value.toTrack === 'string' ? value.toTrack : '',
+  };
 }
 
 /**

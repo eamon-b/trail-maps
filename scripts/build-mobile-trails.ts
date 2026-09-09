@@ -12,7 +12,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { simplifyToTarget, truncatePoints } from '../src/lib/track-simplify.js';
-import type { TrackPoint } from '../src/lib/trail-types.js';
+import { splitAtRouteBreaks } from '../src/lib/route-breaks.js';
+import type { RouteBreak, TrackPoint } from '../src/lib/trail-types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,7 @@ interface TrailJson {
     totalDistance: number;
     totalAscent: number;
     totalDescent: number;
+    breaks?: RouteBreak[];
   };
   waypoints: Array<Record<string, unknown>>;
   alternates?: Array<{ points?: TrackPoint[]; [key: string]: unknown }>;
@@ -69,9 +71,50 @@ function truncateWaypoint(wp: Record<string, unknown>): Record<string, unknown> 
   return result;
 }
 
-function processTrail(trail: TrailJson): TrailJson {
+/**
+ * Simplify the main track to the phone's point budget, without letting
+ * Douglas-Peucker walk across a route break.
+ *
+ * Simplifying the whole array at once drops the points either side of a break —
+ * the endpoints of two separate lines — and joins them with one that crosses the
+ * water. Measured on Te Araroa, a single pass to 5,000 points loses a boundary
+ * point at three of its six breaks. So each stretch is simplified on its own and
+ * the breaks are re-anchored to the concatenated result, which is what
+ * `buildTrail` does for `displayPoints` (see trail-ingest.ts).
+ *
+ * The budget is shared out by point count, so a 1,100-point stretch and a
+ * 35,000-point one are thinned by roughly the same factor rather than to the
+ * same size.
+ */
+function simplifyMainTrack(
+  points: TrackPoint[],
+  breaks: RouteBreak[] | undefined,
+  targetPoints: number
+): { points: TrackPoint[]; breaks?: RouteBreak[] } {
+  if (!breaks || breaks.length === 0) {
+    return { points: simplifyToTarget(points, targetPoints) };
+  }
+
+  const stretches = splitAtRouteBreaks(points, breaks, 'points');
+  const simplified = stretches.map(stretch =>
+    // At least two points, or the stretch stops being a line at all.
+    simplifyToTarget(stretch, Math.max(2, Math.round((targetPoints * stretch.length) / points.length)))
+  );
+
+  const rebuilt = simplified.flat();
+  let offset = 0;
+  const rebuiltBreaks = simplified.slice(0, -1).map((stretch, i) => {
+    offset += stretch.length;
+    return { ...breaks[i], index: offset };
+  });
+
+  return { points: rebuilt, breaks: rebuiltBreaks };
+}
+
+export function processTrail(trail: TrailJson): TrailJson {
   // Simplify main track points
-  const simplifiedPoints = simplifyToTarget(trail.track.points, TARGET_POINTS);
+  const simplifiedMain = simplifyMainTrack(trail.track.points, trail.track.breaks, TARGET_POINTS);
+  const simplifiedPoints = simplifiedMain.points;
 
   // Process alternates
   const alternates = (trail.alternates ?? []).map((alt) => {
@@ -96,10 +139,14 @@ function processTrail(trail: TrailJson): TrailJson {
     config: trail.config,
     track: {
       points: truncatePoints(simplifiedPoints),
+      // displayPoints are only rounded, never re-simplified, so every break's
+      // displayIndex survives this step untouched. `index` does not — it is
+      // re-anchored by simplifyMainTrack above.
       displayPoints: truncatePoints(trail.track.displayPoints),
       totalDistance: Math.round(trail.track.totalDistance * 10) / 10,
       totalAscent: Math.round(trail.track.totalAscent),
       totalDescent: Math.round(trail.track.totalDescent),
+      ...(simplifiedMain.breaks ? { breaks: simplifiedMain.breaks } : {}),
     },
     waypoints: trail.waypoints.map(truncateWaypoint),
     alternates,
@@ -107,7 +154,7 @@ function processTrail(trail: TrailJson): TrailJson {
   };
 }
 
-function main() {
+export function main() {
   // Read the index
   const indexPath = path.join(GENERATED_DIR, 'index.json');
   const index: IndexEntry[] = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
@@ -176,4 +223,8 @@ function main() {
   console.log(`Wrote ${mobileIndex.length} trails + index.json to ${MOBILE_TRAILS_DIR}`);
 }
 
-main();
+// Guarded so the module can be imported by a test without writing to
+// mobile/assets/trails as a side effect of the import.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+  main();
+}

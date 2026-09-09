@@ -132,6 +132,7 @@ export function MapPane() {
   const sideTrips = trail.sideTrips as MapVariant[] | undefined;
   const waypoints = trail.waypoints as MapWaypoint[];
   const displayPoints = trail.track.displayPoints;
+  const routeBreaks = trail.track.breaks;
   const routeTrack = displayPoints as RouteTrackPoint[];
 
   // --- Tappable alternates / side trips ------------------------------------
@@ -284,6 +285,7 @@ export function MapPane() {
           tilePackId={packTrailId ?? undefined}
           styleSource={source}
           displayPoints={displayPoints}
+          breaks={routeBreaks}
           alternates={alternates}
           sideTrips={sideTrips}
           waypoints={waypoints}

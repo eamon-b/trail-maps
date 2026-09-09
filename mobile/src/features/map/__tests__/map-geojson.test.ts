@@ -1,4 +1,5 @@
 import {
+  buildRouteBreakCollection,
   buildTrailLine,
   buildVariantCollection,
   buildWaypointCollection,
@@ -10,23 +11,100 @@ import {
   type MapWaypoint,
 } from '../map-geojson';
 
+/** A route break at `displayIndex`, with the other fields filled in. */
+function routeBreak(displayIndex: number, straightLineKm = 52.7) {
+  return {
+    index: displayIndex,
+    displayIndex,
+    km: 100,
+    straightLineKm,
+    fromTrack: 'Stretch 1',
+    toTrack: 'Stretch 2',
+  };
+}
+
 describe('buildTrailLine', () => {
-  it('builds a LineString in [lon, lat] order', () => {
+  it('builds a MultiLineString in [lon, lat] order', () => {
     const line = buildTrailLine([
       { lat: -35, lon: 138 },
       { lat: -34, lon: 139 },
     ]);
     expect(line).not.toBeNull();
-    expect(line!.geometry.type).toBe('LineString');
+    expect(line!.geometry.type).toBe('MultiLineString');
+    // A continuous route is one stretch, which draws exactly as the single
+    // LineString this replaced did.
     expect(line!.geometry.coordinates).toEqual([
-      [138, -35],
-      [139, -34],
+      [
+        [138, -35],
+        [139, -34],
+      ],
     ]);
   });
 
   it('returns null when there is no line to draw', () => {
     expect(buildTrailLine([])).toBeNull();
     expect(buildTrailLine([{ lat: 0, lon: 0 }])).toBeNull();
+  });
+
+  it('splits into one stretch per route break', () => {
+    const points = [
+      { lat: -41, lon: 174 },
+      { lat: -41.1, lon: 174.1 },
+      { lat: -41.5, lon: 174.5 },
+      { lat: -41.6, lon: 174.6 },
+    ];
+
+    const line = buildTrailLine(points, [routeBreak(2)]);
+
+    expect(line!.geometry.coordinates).toEqual([
+      [
+        [174, -41],
+        [174.1, -41.1],
+      ],
+      [
+        [174.5, -41.5],
+        [174.6, -41.6],
+      ],
+    ]);
+  });
+
+  it('drops a stretch too short to be a line', () => {
+    const points = [
+      { lat: -41, lon: 174 },
+      { lat: -41.5, lon: 174.5 },
+      { lat: -41.6, lon: 174.6 },
+    ];
+
+    // The break leaves one point on its own before it.
+    const line = buildTrailLine(points, [routeBreak(1)]);
+
+    expect(line!.geometry.coordinates).toHaveLength(1);
+    expect(line!.geometry.coordinates[0]).toHaveLength(2);
+  });
+});
+
+describe('buildRouteBreakCollection', () => {
+  const points = [
+    { lat: -41, lon: 174 },
+    { lat: -41.1, lon: 174.1 },
+    { lat: -41.5, lon: 174.5 },
+    { lat: -41.6, lon: 174.6 },
+  ];
+
+  it('spans the last point walked and the first one after the break', () => {
+    const collection = buildRouteBreakCollection(points, [routeBreak(2)]);
+
+    expect(collection.features).toHaveLength(1);
+    expect(collection.features[0].geometry.coordinates).toEqual([
+      [174.1, -41.1],
+      [174.5, -41.5],
+    ]);
+    expect(collection.features[0].properties).toEqual({ straightLineKm: 52.7 });
+  });
+
+  it('is empty for a trail whose route is continuous', () => {
+    expect(buildRouteBreakCollection(points).features).toEqual([]);
+    expect(buildRouteBreakCollection(points, []).features).toEqual([]);
   });
 });
 

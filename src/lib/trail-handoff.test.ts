@@ -416,3 +416,51 @@ describe('handoffImportReport', () => {
     expect(report.sideTripCount).toBe(1);
   });
 });
+
+describe('route breaks over the handoff', () => {
+  const breaks = [
+    {
+      index: 2,
+      displayIndex: 2,
+      km: 0.15,
+      straightLineKm: 52.7,
+      fromTrack: 'Stretch 1',
+      toTrack: 'Stretch 2',
+    },
+  ];
+
+  function brokenTrail() {
+    const trail = makeTrail();
+    return { ...trail, track: { ...trail.track, breaks } };
+  }
+
+  it('survives the round trip intact', () => {
+    expect(roundTrip(brokenTrail()).track.breaks).toEqual(breaks);
+  });
+
+  it('leaves a continuous trail without a breaks field', () => {
+    expect(roundTrip(makeTrail()).track.breaks).toBeUndefined();
+  });
+
+  it('re-points displayIndex when the file carries no displayPoints', () => {
+    // parseHandoffJson falls back to `points` for the display copy, so a stored
+    // displayIndex would then be indexing an array that is not there.
+    const trail = brokenTrail();
+    const wrapped = JSON.parse(serializeTrailHandoff(trail));
+    delete wrapped.trail.track.displayPoints;
+    wrapped.trail.track.breaks[0].displayIndex = 999;
+
+    const parsed = parseHandoffJson(JSON.stringify(wrapped));
+
+    expect(parsed.track.displayPoints).toEqual(parsed.track.points);
+    expect(parsed.track.breaks?.[0].displayIndex).toBe(2);
+  });
+
+  it('rejects a break with a non-finite index rather than drawing one line', () => {
+    const trail = brokenTrail();
+    const wrapped = JSON.parse(serializeTrailHandoff(trail));
+    wrapped.trail.track.breaks[0].index = 'ferry';
+
+    expect(() => parseHandoffJson(JSON.stringify(wrapped))).toThrow();
+  });
+});

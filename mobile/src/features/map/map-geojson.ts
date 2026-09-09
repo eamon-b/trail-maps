@@ -7,7 +7,9 @@
  * colour through the theme tokens at the call site.
  */
 
-import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
+import type { Feature, FeatureCollection, LineString, MultiLineString, Point } from 'geojson';
+import { routeBreakCrossings, splitAtRouteBreaks } from '@lib/route-breaks';
+import type { RouteBreak } from '@lib/trail-types';
 import { calculateTrailBounds, type TrackPoint } from '../../services/trail-bounds';
 import { waypointIconName } from './waypoint-icons';
 
@@ -81,19 +83,60 @@ export interface MapWaypoint {
 }
 
 /**
- * Main-track polyline as a single LineString feature, or null when there is
- * not enough geometry to draw a line.
+ * Main-track polyline, or null when there is not enough geometry to draw one.
+ *
+ * A MultiLineString rather than a LineString because a route can stop and
+ * resume somewhere else — Te Araroa does it six times, at two ferries, Cook
+ * Strait and three unbridged rivers. One coordinate list would have MapLibre
+ * join the stretches up and draw 52 km of open water as trail. A trail with no
+ * breaks yields a single-element multi-line, which renders identically to the
+ * LineString this replaced, so both layers are unchanged.
+ *
+ * `breaks` are indexed against `displayPoints`, which is what the map draws.
  */
-export function buildTrailLine(points: LatLon[]): Feature<LineString> | null {
+export function buildTrailLine(
+  points: LatLon[],
+  breaks?: RouteBreak[],
+): Feature<MultiLineString> | null {
   if (points.length < 2) return null;
+  const stretches = splitAtRouteBreaks(points, breaks, 'displayPoints')
+    .filter((stretch) => stretch.length >= 2)
+    .map((stretch) => stretch.map((p) => [p.lon, p.lat]));
+  if (stretches.length === 0) return null;
   return {
     type: 'Feature',
-    geometry: {
-      type: 'LineString',
-      coordinates: points.map((p) => [p.lon, p.lat]),
-    },
+    geometry: { type: 'MultiLineString', coordinates: stretches },
     properties: {},
   };
+}
+
+/**
+ * The crossings between stretches, as straight two-point lines to be drawn
+ * dashed — a ferry or a river is a link, not trail. Empty for every trail whose
+ * route is continuous.
+ *
+ * `straightLineKm` rides along as a property so a tap can report the width
+ * without the caller re-deriving it.
+ */
+export function buildRouteBreakCollection(
+  points: LatLon[],
+  breaks?: RouteBreak[],
+): FeatureCollection<LineString> {
+  const features = routeBreakCrossings(points, breaks, 'displayPoints').map(
+    (crossing, index): Feature<LineString> => ({
+      type: 'Feature',
+      id: `route-break-${index}`,
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [crossing.from.lon, crossing.from.lat],
+          [crossing.to.lon, crossing.to.lat],
+        ],
+      },
+      properties: { straightLineKm: crossing.straightLineKm },
+    }),
+  );
+  return { type: 'FeatureCollection', features };
 }
 
 /**

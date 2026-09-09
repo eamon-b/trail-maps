@@ -221,3 +221,34 @@ describe('firstIndexInFocus', () => {
     expect(firstIndexInFocus([], { startKm: 0, endKm: 10 })).toBe(-1);
   });
 });
+
+/**
+ * The list pane interleaves OSM rows with the waypoints, so both row helpers
+ * take an optional `kmOf`. Rows here mirror `list-rows`' union: a distance
+ * under its own name, no `totalDistance` in sight.
+ */
+describe('mixed waypoint/POI rows', () => {
+  const rows = [
+    { kind: 'waypoint' as const, km: 10 },
+    { kind: 'poi' as const, km: 14 },
+    { kind: 'waypoint' as const, km: 20 },
+    { kind: 'poi' as const, km: 26 },
+  ];
+  const kmOf = (row: (typeof rows)[number]) => row.km;
+
+  it('spans rows of either kind', () => {
+    expect(focusFromItems(rows, TOTAL_KM, undefined, kmOf)).toEqual({ startKm: 10, endKm: 26 });
+  });
+
+  it('scrolls to a POI row when it is the first one in the focus', () => {
+    expect(firstIndexInFocus(rows, { startKm: 12, endKm: 18 }, kmOf)).toBe(1);
+    expect(firstIndexInFocus(rows, { startKm: 21, endKm: 30 }, kmOf)).toBe(3);
+  });
+
+  it('still reads totalDistance when no kmOf is given', () => {
+    expect(focusFromItems([{ totalDistance: 4 }, { totalDistance: 6 }], TOTAL_KM)).toEqual({
+      startKm: 4,
+      endKm: 6,
+    });
+  });
+});

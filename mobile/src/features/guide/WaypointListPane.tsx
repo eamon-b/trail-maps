@@ -11,9 +11,15 @@
  * when the comment cache holds recent reports — see `water-aggregate` for the
  * ranking and `use-water-status` for the read.
  *
+ * The trail's OpenStreetMap points of interest are interleaved between the
+ * waypoints at their own kilometre (see `list-rows`), badged "OSM" and scoped by
+ * the same chips through `poiCategoriesForFamily`. They stay a separate kind of
+ * row throughout — no favourite, no water status, no comments — and the list
+ * carries the OSM credit line as a footer whenever one is on screen.
+ *
  * The rows on screen are also this pane's contribution to the guide's shared
  * focus window (see guide-focus): leaving the list reports the km range they
- * span, and arriving scrolls to the first waypoint in the incoming range.
+ * span, and arriving scrolls to the first row in the incoming range.
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -27,6 +33,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatDistance, formatElevation } from '@lib/format-distance';
+import { OSM_ATTRIBUTION, poiRouteKey } from '@lib/poi-display';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
@@ -36,6 +43,14 @@ import { useGuide } from './GuideContext';
 import { useGuidePaneFocus } from './GuideFocusContext';
 import { firstIndexInFocus, focusFromItems } from './guide-focus';
 import { orderedWaypoints } from './guide-trail';
+import {
+  interleaveListRows,
+  rowKm,
+  toWaypointRows,
+  type ListRow,
+} from './list-rows';
+import { PoiRow } from './PoiRow';
+import { useVisiblePois } from './use-visible-pois';
 import { useGuidePositionContext } from './GuidePositionContext';
 import { useWaterStatus } from './use-water-status';
 import { isWaterFamily, waterStatusMeta } from './waypoint-detail';
@@ -48,15 +63,12 @@ import {
   FILTER_FAMILIES,
   formatSignedDistance,
   matchesFamily,
+  matchesPoiFamily,
   type WaypointFamily,
 } from './waypoint-filters';
 import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
 
 type Waypoint = TrailJson['waypoints'][number];
-
-function waypointKey(w: Waypoint, index: number): string {
-  return w.id ?? `${w.name}-${index}`;
-}
 
 export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const { colors } = useTheme();
@@ -69,17 +81,23 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   // comments are filed against; legacy waypoints without one carry no reports).
   const waterByWaypoint = useWaterStatus(trailId);
   const [family, setFamily] = useState<WaypointFamily>('all');
-  const listRef = useRef<FlatList<Waypoint>>(null);
+  const listRef = useRef<FlatList<ListRow>>(null);
+  // Already filtered by the global POI switches; the chips narrow it further.
+  const visiblePois = useVisiblePois(trail);
 
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
 
-  const data = useMemo(
-    () =>
-      orderedWaypoints(trail).filter((w, i) =>
-        matchesFamily(w.type, family, favoriteSet.has(waypointKey(w, i))),
-      ),
-    [trail, family, favoriteSet],
-  );
+  const data = useMemo(() => {
+    const waypointRows = toWaypointRows(orderedWaypoints(trail)).filter((row) =>
+      matchesFamily(row.waypoint.type, family, favoriteSet.has(row.key)),
+    );
+    // A POI row is never a favourite, so the 'favorites' chip drops them all —
+    // `poiCategoriesForFamily` already says so, via `matchesPoiFamily`.
+    const pois = visiblePois.filter((poi) => matchesPoiFamily(poi.category, family));
+    return interleaveListRows(waypointRows, pois);
+  }, [trail, family, favoriteSet, visiblePois]);
+
+  const hasPoiRows = useMemo(() => data.some((row) => row.kind === 'poi'), [data]);
 
   const openWaypoint = useCallback(
     (id: string) => {
@@ -91,10 +109,20 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
     [router, trailId],
   );
 
+  const openPoi = useCallback(
+    (poiKey: string) => {
+      router.push({
+        pathname: '/guide/[trailId]/poi/[poiKey]',
+        params: { trailId, poiKey },
+      });
+    },
+    [router, trailId],
+  );
+
   // First row at/after the hiker — the scroll-to-me target within the filter.
   const currentIndex = useMemo(() => {
     if (currentKm == null) return -1;
-    const idx = data.findIndex((w) => (w.totalDistance ?? 0) >= currentKm);
+    const idx = data.findIndex((row) => row.km >= currentKm);
     return idx === -1 ? data.length - 1 : idx;
   }, [data, currentKm]);
 
@@ -107,7 +135,7 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   // The rows currently on screen, tracked through FlatList's viewability
   // callback. `onViewableItemsChanged` must keep one identity for the list's
   // lifetime (FlatList throws otherwise).
-  const visibleItemsRef = useRef<Waypoint[]>([]);
+  const visibleItemsRef = useRef<ListRow[]>([]);
   // Optional-chained: the pane only ever reads distances off the rows, so a
   // trail handed in without track geometry still lists fine (focusFromItems
   // falls back to the last row's distance when it has no total to clamp to).
@@ -119,17 +147,17 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const [onViewableItemsChanged] = useState(() => {
     return ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       visibleItemsRef.current = viewableItems
-        .map((token) => token.item as Waypoint)
-        .filter((item): item is Waypoint => item != null);
+        .map((token) => token.item as ListRow)
+        .filter((item): item is ListRow => item != null);
     };
   });
 
   // `useGuidePaneFocus` re-reads these handlers on every render, so `apply` can
   // close over `data` directly rather than mirroring it into a ref.
   useGuidePaneFocus('list', {
-    capture: () => focusFromItems(visibleItemsRef.current, totalKm),
+    capture: () => focusFromItems(visibleItemsRef.current, totalKm, undefined, rowKm),
     apply: (focus) => {
-      const index = firstIndexInFocus(data, focus);
+      const index = firstIndexInFocus(data, focus, rowKm);
       if (index < 0) return;
       // Not animated: this lands while the pane is being revealed, and an
       // animated scroll from the old offset would be a distracting fly-past.
@@ -171,27 +199,37 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
       <FlatList
         ref={listRef}
         data={data}
-        keyExtractor={waypointKey}
+        keyExtractor={(row) => row.key}
         onViewableItemsChanged={onViewableItemsChanged}
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
-        renderItem={({ item, index }) => {
-          const id = waypointKey(item, index);
+        renderItem={({ item: row }) => {
+          if (row.kind === 'poi') {
+            return (
+              <PoiRow
+                poi={row.poi}
+                units={units}
+                currentKm={currentKm}
+                onPress={() => openPoi(poiRouteKey(row.poi))}
+              />
+            );
+          }
+          const waypoint = row.waypoint;
           return (
             <Pressable
-              onPress={() => openWaypoint(id)}
+              onPress={() => openWaypoint(row.key)}
               accessibilityRole="button"
-              accessibilityLabel={`Open ${item.name}`}
+              accessibilityLabel={`Open ${waypoint.name}`}
               style={({ pressed }) => pressed && styles.pressed}
             >
               <WaypointRow
-                waypoint={item}
+                waypoint={waypoint}
                 units={units}
                 currentKm={currentKm}
-                favorite={favoriteSet.has(id)}
+                favorite={favoriteSet.has(row.key)}
                 water={
-                  item.id && isWaterFamily(item.type)
-                    ? waterByWaypoint.get(item.id) ?? null
+                  waypoint.id && isWaterFamily(waypoint.type)
+                    ? waterByWaypoint.get(waypoint.id) ?? null
                     : null
                 }
               />
@@ -207,6 +245,15 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
               ? 'No favorites yet. Tap the heart on a waypoint to save it here.'
               : 'No waypoints match this filter.'}
           </Text>
+        }
+        // The credit line rides with the rows: it only owes OSM a mention when
+        // OSM data is actually on screen.
+        ListFooterComponent={
+          hasPoiRows ? (
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+              {`Rows marked OSM are OpenStreetMap points of interest · ${OSM_ATTRIBUTION}`}
+            </Text>
+          ) : null
         }
         // scrollToIndex can fire before variable-height rows are measured; nudge
         // to an offset estimate, then retry once layout settles.
@@ -359,6 +406,10 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     paddingVertical: spacing.xl,
     textAlign: 'center',
+  },
+  footerText: {
+    ...typography.caption,
+    paddingTop: spacing.lg,
   },
   separator: {
     height: StyleSheet.hairlineWidth,

@@ -40,6 +40,11 @@ jest.mock('../use-water-status', () => ({
   useWaterStatus: jest.fn(() => new Map()),
 }));
 
+// This trail has no points of interest; the OSM rows have their own test file.
+jest.mock('../use-visible-pois', () => ({
+  useVisiblePois: () => [],
+}));
+
 // Populated per test, then handed to the mocked hook.
 const waterStatus = new Map<string, WaterAggregate>();
 

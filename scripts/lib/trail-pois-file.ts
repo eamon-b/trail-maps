@@ -201,6 +201,39 @@ export function buildTrailPOIFile(options: {
   };
 }
 
+/**
+ * Union two sets of POIs, keyed by `<type>/<id>`.
+ *
+ * For folding a windowed fetch (`--from-km`/`--to-km`) into an existing file:
+ * without this, writing the result of a fetch that only queried km 878-1099
+ * would delete every POI found for km 0-878. `fetched` wins a collision — it is
+ * the newer observation of that stretch — while everything outside the window
+ * survives untouched.
+ */
+export function mergeTrailPOIs(
+  existing: readonly TrailPOI[],
+  fetched: readonly TrailPOI[]
+): { pois: TrailPOI[]; added: number; updated: number; kept: number } {
+  const byKey = new Map(existing.map(poi => [poiKey(poi), poi]));
+  let added = 0;
+  let updated = 0;
+  for (const poi of fetched) {
+    const key = poiKey(poi);
+    if (byKey.has(key)) {
+      updated++;
+    } else {
+      added++;
+    }
+    byKey.set(key, poi);
+  }
+  return {
+    pois: sortTrailPOIs([...byKey.values()]),
+    added,
+    updated,
+    kept: existing.length - updated,
+  };
+}
+
 /** Stable 2-space JSON with a trailing newline, so re-fetch diffs stay readable. */
 export function stringifyTrailPOIFile(file: TrailPOIFile): string {
   return `${JSON.stringify(file, null, 2)}\n`;

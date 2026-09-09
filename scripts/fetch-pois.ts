@@ -84,15 +84,23 @@ import { createOverpassFetcher, type POIFetcher } from 'gpx-tools/lib/overpass-c
 import { enrichRoute, type ChunkFailure } from 'gpx-tools/lib/poi-enrichment';
 
 import { buildRouteScale, toTrailPOIs } from '../src/lib/trail-pois.js';
+import type { LatLon, RouteScale } from '../src/lib/trail-pois.js';
 import type { ProcessedTrail, TrailPOI } from '../src/lib/trail-types.js';
 import {
   buildTrailPOIFile,
+  mergeTrailPOIs,
   readTrailPOIFile,
   trailPOIPath,
   writeTrailPOIFile,
 } from './lib/trail-pois-file.js';
 
 export type { TrailPOI };
+
+/** A window of the trail's km scale, for fetching one section of a long trail. */
+export interface KmRange {
+  fromKm: number;
+  toKm: number;
+}
 
 export interface TrailPOIResult {
   pois: TrailPOI[];
@@ -141,6 +149,61 @@ const USER_AGENT = 'trail-maps-fetch-pois/1.0 (+https://github.com/eamon-b/trail
 const ALL_POI_TYPES: POIType[] = [...POI_TYPES];
 
 /**
+ * Restrict the corridor to a window of the trail's km scale.
+ *
+ * Returns a whole `RouteScale`, not just polylines, and that is load-bearing:
+ * `trailKmFor` places a POI by using the library's `segmentIndex` as an index
+ * into `kmScale`, and the library computes that index against whatever
+ * polylines it was handed. Clip the polylines but keep the full scale and every
+ * POI lands at the km of some unrelated early point — a km 900 campsite is
+ * filed at km 12. The clipped scale carries the real trail km for exactly the
+ * points that were queried, so the indices line up and the km stay true.
+ *
+ * A polyline can enter and leave the window more than once (alternates rejoin
+ * the main line), so each contiguous run inside it becomes its own polyline
+ * rather than being bridged across the gap — bridging would query a corridor
+ * along a line the trail never takes.
+ */
+export function clipScaleToKm(scale: RouteScale, fromKm: number, toKm: number): RouteScale {
+  const polylines: LatLon[][] = [];
+  const kmScale: number[] = [];
+  const breaks = new Set<number>();
+
+  const flush = (run: LatLon[], runKm: number[]): void => {
+    if (run.length === 0) {
+      return;
+    }
+    // Mirrors buildRouteScale: the break marks the last point of the previous
+    // polyline, where the library reports t = 0 for anything past the end.
+    if (kmScale.length > 0) {
+      breaks.add(kmScale.length - 1);
+    }
+    polylines.push(run);
+    kmScale.push(...runKm);
+  };
+
+  let offset = 0;
+  for (const polyline of scale.polylines) {
+    let run: LatLon[] = [];
+    let runKm: number[] = [];
+    for (let i = 0; i < polyline.length; i++) {
+      const km = scale.kmScale[offset + i];
+      if (Number.isFinite(km) && km >= fromKm && km <= toKm) {
+        run.push(polyline[i]);
+        runKm.push(km);
+      } else {
+        flush(run, runKm);
+        run = [];
+        runKm = [];
+      }
+    }
+    flush(run, runKm);
+    offset += polyline.length;
+  }
+  return { polylines, kmScale, breaks };
+}
+
+/**
  * Fetch and annotate the POIs for one already-parsed trail.
  *
  * Pure apart from the injected fetcher: it neither reads nor writes files,
@@ -149,14 +212,21 @@ const ALL_POI_TYPES: POIType[] = [...POI_TYPES];
 export async function processTrailData(
   trail: ProcessedTrail,
   fetchPOIs: POIFetcher,
-  maxVerticesPerChunk: number = MAX_VERTICES_PER_CHUNK
+  maxVerticesPerChunk: number = MAX_VERTICES_PER_CHUNK,
+  kmRange: KmRange | null = null
 ): Promise<TrailPOIResult> {
   const scale = buildRouteScale(trail);
   if (scale.polylines.length === 0) {
     return { pois: [], failedChunks: [], queryChunks: 0, queryTimeMs: 0 };
   }
 
-  const result = await enrichRoute(scale.polylines, {
+  // Query and placement must use the same scale — see clipScaleToKm.
+  const queried = kmRange ? clipScaleToKm(scale, kmRange.fromKm, kmRange.toKm) : scale;
+  if (queried.polylines.length === 0) {
+    return { pois: [], failedChunks: [], queryChunks: 0, queryTimeMs: 0 };
+  }
+
+  const result = await enrichRoute(queried.polylines, {
     types: ALL_POI_TYPES,
     searchRadiusKm: SEARCH_RADIUS_KM,
     maxVerticesPerChunk,
@@ -164,7 +234,7 @@ export async function processTrailData(
   });
 
   return {
-    pois: toTrailPOIs(result.pois, scale),
+    pois: toTrailPOIs(result.pois, queried),
     failedChunks: result.failedChunks,
     queryChunks: result.stats.queryChunks,
     queryTimeMs: result.stats.queryTimeMs,
@@ -235,7 +305,12 @@ function countByCategory(pois: TrailPOI[]): Record<string, number> {
 }
 
 /** Report the corridor a trail would query, without making any request. */
-function dryRunTrail(trailPath: string, trailDir: string, maxVertices: number): void {
+function dryRunTrail(
+  trailPath: string,
+  trailDir: string,
+  maxVertices: number,
+  kmRange: KmRange | null
+): void {
   const trailId = path.basename(trailPath, '.json');
   console.log(`\nProcessing: ${trailId} (dry run)`);
 
@@ -249,8 +324,9 @@ function dryRunTrail(trailPath: string, trailDir: string, maxVertices: number): 
   // enrichRoute packs the raw chunks into shared queries before sending them, so
   // pack here too — otherwise the dry run reports one query per polyline and
   // wildly overstates the real request count (heysen: 19 reported, 2 sent).
+  const queried = kmRange ? clipScaleToKm(scale, kmRange.fromKm, kmRange.toKm) : scale;
   const chunks = packCorridorChunks(
-    buildCorridorChunks(scale.polylines, SEARCH_RADIUS_KM * 1000, maxVertices),
+    buildCorridorChunks(queried.polylines, SEARCH_RADIUS_KM * 1000, maxVertices),
     maxVertices
   );
   // Packed chunks are groups of chunks, so flatten before counting vertices.
@@ -258,6 +334,10 @@ function dryRunTrail(trailPath: string, trailDir: string, maxVertices: number): 
   const existing = readTrailPOIFile(trailDir);
 
   console.log(`  Route: ${scale.polylines.length} polyline(s), ${scale.kmScale.length} point(s)`);
+  if (kmRange) {
+    const to = Number.isFinite(kmRange.toKm) ? `${kmRange.toKm}` : 'end';
+    console.log(`  Window: km ${kmRange.fromKm}-${to} -> ${queried.polylines.length} polyline(s)`);
+  }
   console.log(
     `  Corridor: ${chunks.length} Overpass quer${chunks.length === 1 ? 'y' : 'ies'}, ` +
       `${vertices} simplified vertices, radius ${SEARCH_RADIUS_KM} km`
@@ -278,13 +358,14 @@ async function processTrail(
   trailDir: string,
   fetchPOIs: POIFetcher,
   endpoint: string,
-  maxVertices: number
+  maxVertices: number,
+  kmRange: KmRange | null
 ): Promise<boolean> {
   const trailId = path.basename(trailPath, '.json');
   console.log(`\nProcessing: ${trailId}`);
 
   const trail = readTrail(trailPath);
-  const result = await processTrailData(trail, fetchPOIs, maxVertices);
+  const result = await processTrailData(trail, fetchPOIs, maxVertices, kmRange);
 
   if (result.queryChunks === 0) {
     console.log('  No track points found. Skipping.');
@@ -311,13 +392,27 @@ async function processTrail(
   // Read before writing: `rejected` is hand-edited review work and must survive
   // every refresh.
   const existing = readTrailPOIFile(trailDir);
+
+  // A windowed fetch queried only part of the corridor, so its result is a
+  // partial file by construction. Writing it as-is would delete every POI
+  // outside the window; merge instead, and keep the existing metadata, which
+  // still describes the bulk of the file. A whole-trail fetch replaces.
+  const merging = kmRange !== null && existing !== null;
+  const merged = merging ? mergeTrailPOIs(existing.pois, result.pois) : null;
+
   const file = buildTrailPOIFile({
     existing,
-    pois: result.pois,
-    fetchedAt: new Date().toISOString(),
-    searchRadiusKm: SEARCH_RADIUS_KM,
-    endpoint,
+    pois: merged ? merged.pois : result.pois,
+    fetchedAt: merging ? existing.fetchedAt : new Date().toISOString(),
+    searchRadiusKm: merging ? existing.searchRadiusKm : SEARCH_RADIUS_KM,
+    endpoint: merging ? existing.endpoint : endpoint,
   });
+  if (merged) {
+    console.log(
+      `  Merged into the existing file: ${merged.added} new, ${merged.updated} refreshed, ` +
+        `${merged.kept} untouched outside the window -> ${file.pois.length} total`
+    );
+  }
   const written = writeTrailPOIFile(trailDir, file);
   console.log(
     `  Updated ${written}` +
@@ -357,7 +452,7 @@ function printUsage(): void {
 }
 
 /** Flags that take a value, so `positionalArgs` never reads one as a trail id. */
-const VALUE_FLAGS = ['--endpoint', '--timeout', '--max-vertices'];
+const VALUE_FLAGS = ['--endpoint', '--timeout', '--max-vertices', '--from-km', '--to-km'];
 
 /** Read `--name <value>` or `--name=<value>`. Null when absent; throws when empty. */
 function optionValue(args: string[], name: string, requirement: string): string | null {
@@ -418,6 +513,31 @@ export function resolveMaxVertices(args: string[]): number {
   return vertices;
 }
 
+/**
+ * Resolve the km window to fetch, or null for the whole trail.
+ *
+ * For finishing a trail whose remaining chunk the mirror keeps refusing: fetch
+ * the section that is missing rather than re-querying the whole corridor and
+ * hoping. Merge the result into the existing file — a windowed fetch on its own
+ * is a partial file by construction.
+ */
+export function resolveKmRange(args: string[]): KmRange | null {
+  const from = optionValue(args, '--from-km', 'a number of km');
+  const to = optionValue(args, '--to-km', 'a number of km');
+  if (from === null && to === null) {
+    return null;
+  }
+  const fromKm = from === null ? 0 : Number(from);
+  const toKm = to === null ? Infinity : Number(to);
+  if (!Number.isFinite(fromKm) || fromKm < 0) {
+    throw new Error(`--from-km requires a non-negative number, got "${from}"`);
+  }
+  if (to !== null && (!Number.isFinite(toKm) || toKm <= fromKm)) {
+    throw new Error(`--to-km must be a number greater than --from-km, got "${to}"`);
+  }
+  return { fromKm, toKm };
+}
+
 /** Positional arguments, with the value-taking flags and their values removed. */
 export function positionalArgs(args: string[]): string[] {
   const out: string[] = [];
@@ -445,10 +565,12 @@ async function main(): Promise<void> {
   let endpoint: string;
   let timeoutSeconds: number;
   let maxVertices: number;
+  let kmRange: KmRange | null;
   try {
     endpoint = resolveEndpoint(args);
     timeoutSeconds = resolveTimeoutSeconds(args);
     maxVertices = resolveMaxVertices(args);
+    kmRange = resolveKmRange(args);
   } catch (error) {
     console.error(`Error: ${error instanceof Error ? error.message : 'bad option'}`);
     printUsage();
@@ -518,7 +640,7 @@ async function main(): Promise<void> {
   if (dryRun) {
     for (const { trailFile, trailDir } of targets) {
       try {
-        dryRunTrail(trailFile, trailDir, maxVertices);
+        dryRunTrail(trailFile, trailDir, maxVertices, kmRange);
       } catch (error) {
         console.error(`  Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -545,7 +667,7 @@ async function main(): Promise<void> {
 
   for (const { trailFile, trailDir } of targets) {
     try {
-      if (await processTrail(trailFile, trailDir, fetchPOIs, endpoint, maxVertices)) {
+      if (await processTrail(trailFile, trailDir, fetchPOIs, endpoint, maxVertices, kmRange)) {
         updatedCount++;
       }
     } catch (error) {

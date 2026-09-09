@@ -89,6 +89,8 @@ export default function GuideLayout() {
         <Stack.Screen name="plan" options={{ title: 'Plan' }} />
         {/* Title is overridden with the waypoint name from within the screen. */}
         <Stack.Screen name="waypoint/[waypointId]" options={{ title: 'Waypoint' }} />
+        {/* Title is overridden with the POI name from within the screen. */}
+        <Stack.Screen name="poi/[poiKey]" options={{ title: 'Point of interest' }} />
       </Stack>
       </GuidePositionProvider>
     </GuideProvider>

@@ -35,6 +35,7 @@
  *   npx tsx scripts/build-contours-world.ts --shard oceania --parallel 16 --purge-dem
  *   npx tsx scripts/build-contours-world.ts --shard oceania --fetch-dem
  *   npx tsx scripts/build-contours-world.ts --shard oceania --merge-only
+ *   npx tsx scripts/build-contours-world.ts --shard oceania --cells-only  (stage tiers, no merge)
  *   npx tsx scripts/build-contours-world.ts --cell S26E132 --shard oceania  (child mode, no merge)
  *   npx tsx scripts/build-contours-world.ts --bbox 132 -26 134 -24 --shard oceania
  *   npx tsx scripts/build-contours-world.ts --join     (tile-join shards → world.pmtiles)
@@ -124,6 +125,7 @@ interface CliArgs {
   parallel: number;
   force: boolean;
   mergeOnly: boolean;
+  cellsOnly: boolean;
   skipSmooth: boolean;
   verbose: boolean;
   fetchDem: boolean;
@@ -148,6 +150,7 @@ export function parseArgs(argv: string[]): CliArgs {
     parallel: 1,
     force: false,
     mergeOnly: false,
+    cellsOnly: false,
     skipSmooth: false,
     verbose: false,
     fetchDem: false,
@@ -199,6 +202,9 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--merge-only':
         args.mergeOnly = true;
         break;
+      case '--cells-only':
+        args.cellsOnly = true;
+        break;
       case '--skip-smooth':
         args.skipSmooth = true;
         break;
@@ -239,6 +245,13 @@ export function parseArgs(argv: string[]): CliArgs {
 
   if (!args.join && !args.shard && !args.bbox && !args.cell) {
     throw new Error('One of --shard, --bbox or --cell is required (or --join)');
+  }
+
+  // The two halves of a shard build. Asking for both at once is always a typo,
+  // and silently honouring one of them would stage tiers the caller thinks were
+  // already merged (or vice versa).
+  if (args.cellsOnly && args.mergeOnly) {
+    throw new Error('--cells-only and --merge-only are opposites; pass at most one');
   }
 
   return args;
@@ -576,8 +589,46 @@ async function processCells(
 }
 
 /**
+ * Cells per tippecanoe batch.
+ *
+ * tippecanoe serialises every input feature to a temp spill and then
+ * merge-sorts it. While that spill fits the page cache the sort runs at RAM
+ * speed; once it misses, every access is a seek, and on rotational storage the
+ * merge collapses. Measured on the 2026-09 world build (80 cores, 251 GB RAM,
+ * ~180 GB of page cache, PERC H730 spinning array):
+ *
+ *   europe         331 cells / 1324 tiers   merged in  4h31m
+ *   oceania        447 cells / 1788 tiers   merged in ~2h
+ *   asia-west      893 cells / 3572 tiers   23h, zero tiles written
+ *   north-america  982 cells / 3928 tiers   16h, zero tiles written
+ *   asia-east     1102 cells / 4408 tiers   17h, zero tiles written
+ *
+ * That is a cliff, not a gradient: read and write both sat at ~2 MB/s in a 1:1
+ * ratio (a merge sort thrashing), and stopping the other two merges moved the
+ * survivor only 4 -> 5 MB/s, so it is not queue contention. Re-run in batches
+ * the same shard read at ~160 MB/s.
+ *
+ * 400 keeps a batch under oceania's proven 447 with room to spare in cache.
+ * Batches are joined with tile-join, exactly as joinShards() already unions the
+ * shards themselves.
+ */
+const MERGE_BATCH_CELLS = 400;
+
+/** Split `items` into consecutive chunks of at most `size`. */
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/**
  * Merge every completed cell's tier FlatGeobufs in this shard's work dir into
  * one .mbtiles with tippecanoe.
+ *
+ * Shards above MERGE_BATCH_CELLS are tiled in cache-resident batches and then
+ * tile-joined. Cells are clipped disjoint and batches are contiguous runs of
+ * the sorted cell ids, so only tiles straddling a batch seam get re-encoded —
+ * the same seam cost joinShards() already pays between shards.
  *
  * Invoked via execFileSync with an argv array, NOT through run()/execSync:
  * hundreds of cells x 4 tiers of -L arguments as a single shell string would
@@ -586,7 +637,9 @@ async function processCells(
  * limit is the full ARG_MAX (~2MB).
  */
 function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): void {
-  const layerArgs: string[] = [];
+  // Grouped by cell, not flat: a batch must contain every tier of every cell it
+  // covers, or that cell loses zoom levels.
+  const layerArgsByCell = new Map<string, string[]>();
   let fileCount = 0;
   let skipped = 0;
 
@@ -607,7 +660,9 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
       continue;
     }
     const filePath = path.join(workDir, file);
-    layerArgs.push('-L', JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom }));
+    const cellArgs = layerArgsByCell.get(m[1]) ?? [];
+    cellArgs.push('-L', JSON.stringify({ file: filePath, layer: CLASSIFIED_LAYER, minzoom: tier.minZoom }));
+    layerArgsByCell.set(m[1], cellArgs);
     fileCount++;
   }
 
@@ -615,14 +670,67 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
     throw new Error(`No cell tier files found in ${workDir} — nothing to merge`);
   }
 
+  const cellIds = [...layerArgsByCell.keys()].sort();
+  const batches = chunk(cellIds, MERGE_BATCH_CELLS);
+
   console.log(`  Merging ${fileCount} tier files from ${workDir}` +
-    (skipped ? ` (${skipped} skipped)` : ''));
+    (skipped ? ` (${skipped} skipped)` : '') +
+    (batches.length > 1 ? ` in ${batches.length} batches of ≤${MERGE_BATCH_CELLS} cells` : ''));
 
   // tippecanoe spills tens of GB of temporary sort files to /tmp by default;
   // on tmpfs that exhausts the quota mid-merge. Keep temps next to the data.
   const tmpDir = path.join(workDir, 'tmp');
   ensureDir(tmpDir);
 
+  // One batch is the whole shard: tile straight to the output, so shards under
+  // the threshold stay byte-for-byte what they were before batching existed.
+  if (batches.length === 1) {
+    tippecanoeMerge(cellIds.flatMap(id => layerArgsByCell.get(id)!), outputPath, tmpDir, verbose);
+    console.log(`  ✓ Shard mbtiles: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
+    return;
+  }
+
+  const batchPaths: string[] = [];
+  try {
+    batches.forEach((cells, i) => {
+      const batchPath = path.join(workDir, `batch-${String(i).padStart(2, '0')}.mbtiles`);
+      // A killed batch leaves a headerless file that tile-join would happily
+      // consume; never inherit one from a previous attempt.
+      if (fs.existsSync(batchPath)) fs.unlinkSync(batchPath);
+      console.log(`    batch ${i + 1}/${batches.length}: ${cells.length} cells ` +
+        `(${cells[0]}…${cells[cells.length - 1]})`);
+      tippecanoeMerge(cells.flatMap(id => layerArgsByCell.get(id)!), batchPath, tmpDir, verbose);
+      console.log(`      ✓ ${path.basename(batchPath)} (${formatBytes(fileSizeBytes(batchPath))})`);
+      batchPaths.push(batchPath);
+    });
+
+    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    console.log(`    joining ${batchPaths.length} batches → ${path.basename(outputPath)}`);
+    // --no-tile-size-limit for the same reason joinShards() needs it: a
+    // re-encoded seam tile over 500 KB is silently dropped without it.
+    execFileSync('tile-join', [
+      '-o', outputPath,
+      '--no-tile-size-limit',
+      '--force',
+      ...(verbose ? [] : ['-q']),
+      ...batchPaths,
+    ], {
+      cwd: PROJECT_ROOT,
+      stdio: ['ignore', 'inherit', 'inherit'],
+    });
+  } finally {
+    // Batches are pure intermediates and cost hundreds of GB; drop them even if
+    // the join failed, since a retry re-tiles from the tiers regardless.
+    for (const batchPath of batchPaths) {
+      if (fs.existsSync(batchPath)) fs.unlinkSync(batchPath);
+    }
+  }
+
+  console.log(`  ✓ Shard mbtiles: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
+}
+
+/** One tippecanoe invocation over a set of -L layer arguments. */
+function tippecanoeMerge(layerArgs: string[], outputPath: string, tmpDir: string, verbose: boolean): void {
   execFileSync('tippecanoe', [
     '-t', tmpDir,
     '-o', outputPath,
@@ -656,8 +764,6 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
     cwd: PROJECT_ROOT,
     stdio: ['ignore', 'inherit', 'inherit'],
   });
-
-  console.log(`  ✓ Shard mbtiles: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
 }
 
 /**
@@ -722,7 +828,7 @@ function usage(): void {
   console.error(
     '\nUsage: npx tsx scripts/build-contours-world.ts ' +
     '(--shard NAME | --bbox W S E N | --cell ID | --join)\n' +
-    '  [--parallel N] [--force] [--merge-only] [--skip-smooth] [--verbose]\n' +
+    '  [--parallel N] [--force] [--merge-only] [--cells-only] [--skip-smooth] [--verbose]\n' +
     '  [--fetch-dem] [--purge-dem] [--dem-dir DIR] [--work-dir DIR] [--output-dir DIR] [--clean-work]'
   );
   console.error(`\nShards: ${worldShardNames().join(', ')}`);
@@ -883,6 +989,22 @@ async function main(): Promise<void> {
         console.error('\nRe-run to retry failed cells (completed cells are skipped).');
         process.exit(1);
       }
+    }
+
+    // Pipelined driver: the cell phase saturates every core, the merge/validate
+    // tail runs on one. Splitting them lets a shard's tail overlap the next
+    // shard's cells instead of leaving the box mostly idle for hours. The tail
+    // is then `--merge-only` against this same work dir.
+    if (args.cellsOnly) {
+      const staged = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+      console.log('\n' + '═'.repeat(40));
+      console.log('Cell Phase Complete (--cells-only, not merged)');
+      console.log('═'.repeat(40));
+      console.log(`  Work dir: ${workDir}`);
+      console.log(`  Time:     ${staged} minutes`);
+      console.log('\n  Merge it with:');
+      console.log(`    npx tsx scripts/build-contours-world.ts --shard ${selectionName(args)} --merge-only`);
+      return;
     }
 
     console.log('\nStep 3: Merging shard into MBTiles with tippecanoe...');

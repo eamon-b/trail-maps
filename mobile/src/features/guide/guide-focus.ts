@@ -17,6 +17,10 @@
  *  - `focusFromItems`   — visible rows  → km range
  *  - `firstIndexInFocus`— km range      → row to scroll to
  *
+ * Both row conversions take an optional `kmOf` so a mixed list (waypoints
+ * interleaved with OpenStreetMap rows) works without every row having to be a
+ * waypoint; the default reads `totalDistance`.
+ *
  * The elevation profile needs no conversion: its `KmWindow` *is* a focus window,
  * which is why `FocusWindow` is that same shape and clamping reuses the
  * profile's `clampWindow`.
@@ -44,6 +48,19 @@ export interface FocusTrackPoint {
 export interface FocusItem {
   /** Cumulative distance along the trail, km. */
   totalDistance?: number;
+}
+
+/**
+ * How to read a row's position when it is not a plain waypoint.
+ *
+ * The list pane interleaves OpenStreetMap rows with the waypoints, so its rows
+ * are a union that keeps its distance under its own name; the default keeps
+ * every existing caller passing waypoints untouched.
+ */
+export type FocusKmOf<T> = (item: T) => number | undefined;
+
+function waypointKm(item: unknown): number | undefined {
+  return (item as FocusItem | null)?.totalDistance;
 }
 
 /** Map viewport corners in MapLibre's [lon, lat] order. */
@@ -241,15 +258,16 @@ export function boundsForKmRange(
  * (and an empty set) contribute nothing; null means "nothing to report", which
  * leaves the previous focus standing.
  */
-export function focusFromItems(
-  items: FocusItem[],
+export function focusFromItems<T = FocusItem>(
+  items: readonly T[],
   totalKm: number,
   minSpanKm = MIN_FOCUS_SPAN_KM,
+  kmOf: FocusKmOf<T> = waypointKm,
 ): FocusWindow | null {
   let startKm = Infinity;
   let endKm = -Infinity;
   for (const item of items) {
-    const km = item.totalDistance;
+    const km = kmOf(item);
     if (km == null || !Number.isFinite(km)) continue;
     if (km < startKm) startKm = km;
     if (km > endKm) endKm = km;
@@ -265,8 +283,12 @@ export function focusFromItems(
  *
  * `items` must be ordered by distance (the list pane's `orderedWaypoints` are).
  */
-export function firstIndexInFocus(items: FocusItem[], focus: FocusWindow): number {
+export function firstIndexInFocus<T = FocusItem>(
+  items: readonly T[],
+  focus: FocusWindow,
+  kmOf: FocusKmOf<T> = waypointKm,
+): number {
   if (items.length === 0) return -1;
-  const index = items.findIndex((item) => (item.totalDistance ?? 0) >= focus.startKm);
+  const index = items.findIndex((item) => (kmOf(item) ?? 0) >= focus.startKm);
   return index === -1 ? items.length - 1 : index;
 }

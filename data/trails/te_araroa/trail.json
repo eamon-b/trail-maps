@@ -1,0 +1,33 @@
+{
+  "id": "te_araroa",
+  "name": "Te Araroa",
+  "shortName": "Te Araroa",
+  "region": "New Zealand (Cape Reinga to Bluff)",
+  "lengthKm": 3056.8,
+  "gpxFile": "te-araroa-sobo.gpx",
+  "dedupeWaypoints": true,
+  "waypointMaxDistance": 1000,
+  "trackClassification": {
+    "mainRoutePatterns": ["^Te Araroa \\((SOBO|NOBO)\\) \\d+/\\d+"],
+    "alternatePatterns": ["^Bypass: "],
+    "ignorePatterns": ["Transport Connectors$"],
+    "fallbackToLongest": false,
+    "stretches": { "minGapMeters": 250 }
+  },
+  "description": "New Zealand's 3,000 km trail from Cape Reinga to Bluff. Built from the Te Araroa Trust's official KMZ by the te-araroa-data package, which supplies the trust's own chainage, elevation on every vertex, the DOC hut/campsite records and hand-researched resupply points. The walking route stops and resumes in six places — two ferries, Cook Strait, the Rakaia, the Rangitata and Lake Wakatipu — so lengthKm counts only what you walk; the crossings are not included.",
+  "direction": {
+    "default": "SOBO",
+    "reversed": "NOBO"
+  },
+  "climateLocations": [
+    { "name": "Kaitaia", "lat": -35.11, "lon": 173.26 },
+    { "name": "Auckland", "lat": -36.85, "lon": 174.76 },
+    { "name": "Taumarunui", "lat": -38.88, "lon": 175.26 },
+    { "name": "Wellington", "lat": -41.29, "lon": 174.78 },
+    { "name": "St Arnaud", "lat": -41.8, "lon": 172.85 },
+    { "name": "Methven", "lat": -43.63, "lon": 171.65 },
+    { "name": "Wanaka", "lat": -44.7, "lon": 169.14 },
+    { "name": "Invercargill", "lat": -46.41, "lon": 168.35 }
+  ],
+  "climateFile": "climate.json"
+}

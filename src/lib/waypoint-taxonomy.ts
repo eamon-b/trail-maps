@@ -17,7 +17,8 @@
  */
 
 /**
- * Every type our own classifier can produce, in a sensible display order.
+ * Every type our own classifier can produce, plus the ones the curated trail
+ * data carries, in a sensible display order.
  *
  * Note this is *not* an exhaustive list of types you will encounter — an
  * imported GPX can name anything. Treat an unlisted type as valid-but-unknown
@@ -36,6 +37,7 @@ export const WAYPOINT_TYPES = [
   'trailhead',
   'road-crossing',
   'inlet-crossing',
+  'gap',
   'side-trip',
   'mountain',
   'beach',
@@ -61,6 +63,7 @@ export const WAYPOINT_TYPE_LABELS: Record<WaypointType, string> = {
   trailhead: 'Trailhead',
   'road-crossing': 'Road crossing',
   'inlet-crossing': 'Inlet crossing',
+  gap: 'Trail break',
   'side-trip': 'Side trip',
   mountain: 'Mountain',
   beach: 'Beach',

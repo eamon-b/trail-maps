@@ -227,6 +227,7 @@ function getTypeClass(type?: string): string {
     'food': 'type-food',
     'road-crossing': 'type-road-crossing',
     'inlet-crossing': 'type-inlet-crossing',
+    'gap': 'type-gap',
     'beach': 'type-beach',
     'poi': 'type-poi',
     'resupply': 'type-resupply',

@@ -182,6 +182,9 @@
 .waypoint-type.type-inlet-crossing {
   background: #80deea;
 }
+.waypoint-type.type-gap {
+  background: #ef9a9a;
+}
 .waypoint-type.type-beach {
   background: #fff9c4;
 }

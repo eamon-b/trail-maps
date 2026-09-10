@@ -36,6 +36,8 @@
  *   npx tsx scripts/build-contours-world.ts --shard oceania --fetch-dem
  *   npx tsx scripts/build-contours-world.ts --shard oceania --merge-only
  *   npx tsx scripts/build-contours-world.ts --shard oceania --cells-only  (stage tiers, no merge)
+ *   npx tsx scripts/build-contours-world.ts --shard oceania --merge-only --batches-only  (tile batches, no join)
+ *   npx tsx scripts/build-contours-world.ts --shard oceania --join-batches  (tile-join kept batches)
  *   npx tsx scripts/build-contours-world.ts --cell S26E132 --shard oceania  (child mode, no merge)
  *   npx tsx scripts/build-contours-world.ts --bbox 132 -26 134 -24 --shard oceania
  *   npx tsx scripts/build-contours-world.ts --join     (tile-join shards → world.pmtiles)
@@ -99,6 +101,7 @@ const CLASSIFIED_LAYER = 'contour';
 
 /** Tier filename pattern, e.g. `S26E132_z12.fgb`. */
 const TIER_FILE_PATTERN = /^([NS]\d{2}[EW]\d{3})_(z\d+)\.fgb$/;
+const BATCH_FILE_PATTERN = /^batch-\d{2}\.mbtiles$/;
 
 const FETCH_SCRIPT = path.join(PROJECT_ROOT, 'scripts/fetch-dem-copernicus.ts');
 
@@ -126,6 +129,10 @@ interface CliArgs {
   force: boolean;
   mergeOnly: boolean;
   cellsOnly: boolean;
+  /** Stop after the batch mbtiles are written; keep them for --join-batches (or another machine). */
+  batchesOnly: boolean;
+  /** Skip cells and tiling: tile-join the batch mbtiles already in the work dir. */
+  joinBatches: boolean;
   skipSmooth: boolean;
   verbose: boolean;
   fetchDem: boolean;
@@ -151,6 +158,8 @@ export function parseArgs(argv: string[]): CliArgs {
     force: false,
     mergeOnly: false,
     cellsOnly: false,
+    batchesOnly: false,
+    joinBatches: false,
     skipSmooth: false,
     verbose: false,
     fetchDem: false,
@@ -205,6 +214,12 @@ export function parseArgs(argv: string[]): CliArgs {
       case '--cells-only':
         args.cellsOnly = true;
         break;
+      case '--batches-only':
+        args.batchesOnly = true;
+        break;
+      case '--join-batches':
+        args.joinBatches = true;
+        break;
       case '--skip-smooth':
         args.skipSmooth = true;
         break;
@@ -253,6 +268,17 @@ export function parseArgs(argv: string[]): CliArgs {
   if (args.cellsOnly && args.mergeOnly) {
     throw new Error('--cells-only and --merge-only are opposites; pass at most one');
   }
+  // The merge itself splits the same way: batches, then the join of those
+  // batches. Each half is a separate invocation so a join that crawls (or has
+  // to run on faster storage) never costs the hours of tiling behind it.
+  if (args.batchesOnly && args.joinBatches) {
+    throw new Error('--batches-only and --join-batches are opposites; pass at most one');
+  }
+  if (args.cellsOnly && (args.batchesOnly || args.joinBatches)) {
+    throw new Error('--cells-only never merges, so --batches-only/--join-batches make no sense with it');
+  }
+  // Joining needs no cells, and the tiers are usually gone (--clean-work) by then.
+  if (args.joinBatches) args.mergeOnly = true;
 
   return args;
 }
@@ -304,6 +330,11 @@ function cellTierPath(workDir: string, cellId: string, tier: ContourTier): strin
 
 function cellDoneMarker(workDir: string, cellId: string): string {
   return path.join(workDir, `${cellId}.done`);
+}
+
+/** Written after a batch's tippecanoe exits 0; a killed run leaves a headerless mbtiles and no marker. */
+function batchDoneMarker(batchPath: string): string {
+  return `${batchPath}.done`;
 }
 
 function mosaicVrtPath(workDir: string): string {
@@ -670,7 +701,16 @@ function batchCellsByBytes(
  * with E2BIG at the end of a multi-hour build. As separate argv entries the
  * limit is the full ARG_MAX (~2MB).
  */
-function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): void {
+type MergeMode = 'full' | 'batches-only' | 'join-batches';
+
+function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean, mode: MergeMode = 'full'): void {
+  // The tiers are normally gone by join time (--clean-work), so this must not
+  // scan them.
+  if (mode === 'join-batches') {
+    joinKeptBatches(workDir, outputPath, verbose);
+    return;
+  }
+
   // Grouped by cell, not flat: a batch must contain every tier of every cell it
   // covers, or that cell loses zoom levels.
   const layerArgsByCell = new Map<string, string[]>();
@@ -722,7 +762,7 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
 
   // One batch is the whole shard: tile straight to the output, so shards under
   // the threshold stay byte-for-byte what they were before batching existed.
-  if (batches.length === 1) {
+  if (batches.length === 1 && mode === 'full') {
     tippecanoeMerge(cellIds.flatMap(id => layerArgsByCell.get(id)!), outputPath, tmpDir, verbose);
     console.log(`  ✓ Shard mbtiles: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
     return;
@@ -732,40 +772,105 @@ function mergeToMbtiles(workDir: string, outputPath: string, verbose: boolean): 
   try {
     batches.forEach((cells, i) => {
       const batchPath = path.join(workDir, `batch-${String(i).padStart(2, '0')}.mbtiles`);
+      const batchBytes = cells.reduce((a, id) => a + (bytesByCell.get(id) ?? 0), 0);
+      const label = `${cells.length} cells, ${formatBytes(batchBytes)} (${cells[0]}…${cells[cells.length - 1]})`;
+      console.log(`    batch ${i + 1}/${batches.length}: ${label}`);
+      // A batch is hours of single-threaded tippecanoe. Its marker records what
+      // went in, so a re-run after a crash (or a --batches-only run followed by
+      // a full one) reuses it rather than tiling the same cells again.
+      const marker = batchDoneMarker(batchPath);
+      if (fs.existsSync(batchPath) && fs.existsSync(marker) && fs.readFileSync(marker, 'utf8') === label) {
+        console.log(`      ↺ ${path.basename(batchPath)} already built (${formatBytes(fileSizeBytes(batchPath))})`);
+        batchPaths.push(batchPath);
+        return;
+      }
       // A killed batch leaves a headerless file that tile-join would happily
       // consume; never inherit one from a previous attempt.
       if (fs.existsSync(batchPath)) fs.unlinkSync(batchPath);
-      const batchBytes = cells.reduce((a, id) => a + (bytesByCell.get(id) ?? 0), 0);
-      console.log(`    batch ${i + 1}/${batches.length}: ${cells.length} cells, ${formatBytes(batchBytes)} ` +
-        `(${cells[0]}…${cells[cells.length - 1]})`);
+      if (fs.existsSync(marker)) fs.unlinkSync(marker);
       tippecanoeMerge(cells.flatMap(id => layerArgsByCell.get(id)!), batchPath, tmpDir, verbose);
+      fs.writeFileSync(marker, label);
       console.log(`      ✓ ${path.basename(batchPath)} (${formatBytes(fileSizeBytes(batchPath))})`);
       batchPaths.push(batchPath);
     });
 
-    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-    console.log(`    joining ${batchPaths.length} batches → ${path.basename(outputPath)}`);
-    // --no-tile-size-limit for the same reason joinShards() needs it: a
-    // re-encoded seam tile over 500 KB is silently dropped without it.
-    execFileSync('tile-join', [
-      '-o', outputPath,
-      '--no-tile-size-limit',
-      '--force',
-      ...(verbose ? [] : ['-q']),
-      ...batchPaths,
-    ], {
-      cwd: PROJECT_ROOT,
-      stdio: ['ignore', 'inherit', 'inherit'],
-    });
+    if (mode === 'batches-only') {
+      console.log(`  ✓ ${batchPaths.length} batch mbtiles kept in ${workDir} (join them with --join-batches)`);
+      return;
+    }
+    joinBatchFiles(batchPaths, outputPath, verbose);
   } finally {
     // Batches are pure intermediates and cost hundreds of GB; drop them even if
-    // the join failed, since a retry re-tiles from the tiers regardless.
-    for (const batchPath of batchPaths) {
-      if (fs.existsSync(batchPath)) fs.unlinkSync(batchPath);
-    }
+    // the join failed, since a retry re-tiles from the tiers regardless. With
+    // --batches-only they *are* the product.
+    if (mode !== 'batches-only') removeBatchFiles(batchPaths);
   }
 
   console.log(`  ✓ Shard mbtiles: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
+}
+
+function joinBatchFiles(batchPaths: string[], outputPath: string, verbose: boolean): void {
+  if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+  console.log(`    joining ${batchPaths.length} batches → ${path.basename(outputPath)}`);
+  // --no-tile-size-limit for the same reason joinShards() needs it: a
+  // re-encoded seam tile over 500 KB is silently dropped without it.
+  execFileSync('tile-join', [
+    '-o', outputPath,
+    '--no-tile-size-limit',
+    '--force',
+    ...(verbose ? [] : ['-q']),
+    ...batchPaths,
+  ], {
+    cwd: PROJECT_ROOT,
+    stdio: ['ignore', 'inherit', 'inherit'],
+  });
+}
+
+function removeBatchFiles(batchPaths: string[]): void {
+  for (const batchPath of batchPaths) {
+    if (fs.existsSync(batchPath)) fs.unlinkSync(batchPath);
+    const marker = batchDoneMarker(batchPath);
+    if (fs.existsSync(marker)) fs.unlinkSync(marker);
+  }
+}
+
+/**
+ * --join-batches: tile-join the batches a --batches-only run left in the work
+ * dir. The join is the random-I/O half of a merge (every tile is a b-tree probe
+ * into the batch), so it is the half worth retrying or moving to faster storage
+ * on its own; the batches are only removed once it has succeeded.
+ */
+function joinKeptBatches(workDir: string, outputPath: string, verbose: boolean): void {
+  const batchPaths = fs.existsSync(workDir)
+    ? fs.readdirSync(workDir).filter(f => BATCH_FILE_PATTERN.test(f)).sort().map(f => path.join(workDir, f))
+    : [];
+  if (batchPaths.length === 0) {
+    throw new Error(`--join-batches: no batch-NN.mbtiles in ${workDir} (run --merge-only --batches-only first)`);
+  }
+  const unfinished = batchPaths.filter(p => !fs.existsSync(batchDoneMarker(p)));
+  if (unfinished.length > 0) {
+    throw new Error(
+      `--join-batches: ${unfinished.map(p => path.basename(p)).join(', ')} ` +
+      'have no .done marker (tippecanoe was killed mid-write?); re-run --merge-only --batches-only'
+    );
+  }
+  const totalBytes = batchPaths.reduce((a, p) => a + fileSizeBytes(p), 0);
+  console.log(`  Joining ${batchPaths.length} kept batches (${formatBytes(totalBytes)}) from ${workDir}`);
+  joinBatchFiles(batchPaths, outputPath, verbose);
+  removeBatchFiles(batchPaths);
+  console.log(`  ✓ Shard mbtiles: ${outputPath} (${formatBytes(fileSizeBytes(outputPath))})`);
+}
+
+/** --clean-work after --batches-only: the tiers are spent, the batches are the product. */
+function cleanTierFiles(workDir: string): void {
+  let removed = 0;
+  for (const file of fs.readdirSync(workDir)) {
+    if (TIER_FILE_PATTERN.test(file) || /^[NS]\d{2}[EW]\d{3}\.done$/.test(file) || file === 'dem_mosaic.vrt') {
+      fs.unlinkSync(path.join(workDir, file));
+      removed++;
+    }
+  }
+  console.log(`  Removed ${removed} tier files from ${workDir} (batches kept)`);
 }
 
 /** One tippecanoe invocation over a set of -L layer arguments. */
@@ -867,7 +972,8 @@ function usage(): void {
   console.error(
     '\nUsage: npx tsx scripts/build-contours-world.ts ' +
     '(--shard NAME | --bbox W S E N | --cell ID | --join)\n' +
-    '  [--parallel N] [--force] [--merge-only] [--cells-only] [--skip-smooth] [--verbose]\n' +
+    '  [--parallel N] [--force] [--merge-only] [--cells-only] [--batches-only] [--join-batches]\n' +
+    '  [--skip-smooth] [--verbose]\n' +
     '  [--fetch-dem] [--purge-dem] [--dem-dir DIR] [--work-dir DIR] [--output-dir DIR] [--clean-work]'
   );
   console.error(`\nShards: ${worldShardNames().join(', ')}`);
@@ -1046,8 +1152,24 @@ async function main(): Promise<void> {
       return;
     }
 
-    console.log('\nStep 3: Merging shard into MBTiles with tippecanoe...');
-    mergeToMbtiles(workDir, outputPath, args.verbose);
+    const mergeMode: MergeMode = args.joinBatches ? 'join-batches' : args.batchesOnly ? 'batches-only' : 'full';
+    console.log(mergeMode === 'join-batches'
+      ? '\nStep 3: Joining kept batches into the shard MBTiles...'
+      : '\nStep 3: Merging shard into MBTiles with tippecanoe...');
+    mergeToMbtiles(workDir, outputPath, args.verbose, mergeMode);
+
+    if (mergeMode === 'batches-only') {
+      if (args.cleanWork) cleanTierFiles(workDir);
+      const staged = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+      console.log('\n' + '═'.repeat(40));
+      console.log('Batch Phase Complete (--batches-only, not joined)');
+      console.log('═'.repeat(40));
+      console.log(`  Work dir: ${workDir}`);
+      console.log(`  Time:     ${staged} minutes`);
+      console.log('\n  Join them with:');
+      console.log(`    npx tsx scripts/build-contours-world.ts --shard ${selectionName(args)} --join-batches`);
+      return;
+    }
     validateMbtilesArtifact(outputPath, CONTOUR_ZOOM_EXPECTATION);
 
     // Tier files are the expensive artifact (hours of GDAL work) and enable

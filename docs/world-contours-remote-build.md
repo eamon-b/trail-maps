@@ -289,6 +289,48 @@ destroyed.
 
 ---
 
+## 6a. Hybrid: tile the batches on a cheap box, join on NVMe
+
+Use this when the build box has **rotational** storage (`lsblk -d -o NAME,ROTA`
+shows `1`). The cell work and the tippecanoe tiling are CPU-bound and run fine
+there; the two tile-join steps are not. tippecanoe writes its dedup mbtiles
+schema (`map` z/x/y → hashed `tile_id`, `images` keyed by that hash), so
+tile-join's ordered scan is a random b-tree probe per tile — 1–3 MB/s on a
+spinning array, i.e. days per shard, and page-cache warming does not survive a
+shared host's eviction. On NVMe the same join takes minutes.
+
+On the build box, tile each shard into batches and stop before the join:
+
+```bash
+npx tsx scripts/build-contours-world.ts --shard asia-east --merge-only --batches-only --clean-work
+# leaves data/tiles/contours-world/asia-east/batch-NN.mbtiles + batch-NN.mbtiles.done
+# (--clean-work removes only the tiers here; a re-run reuses finished batches)
+```
+
+Stream finished batches (and any shard already joined) to R2 as they appear:
+
+```bash
+rclone copyto --s3-no-check-bucket --s3-chunk-size 128M \
+  data/tiles/contours-world/asia-east/batch-00.mbtiles \
+  r2:aus-map-data/contours/world-build/batches/asia-east/batch-00.mbtiles
+# ...and the .done marker next to it; shards go under contours/world-build/shards/
+```
+
+Then on a box with ≥ 3 TB of NVMe (core count barely matters — tile-join and
+`pmtiles convert` are single-threaded), after `bootstrap.sh` and `rclone config`:
+
+```bash
+./scripts/remote/join-on-nvme.sh --pull-only   # start early; overlaps the build box
+./scripts/remote/join-on-nvme.sh               # pull the rest, --join-batches per shard,
+                                               # --join, validate, upload-world.sh
+```
+
+`--join-batches` removes a shard's batches only after its join succeeded, so a
+killed join re-runs from the same inputs. Delete the `contours/world-build/`
+prefix from R2 once `world.pmtiles` is verified there.
+
+---
+
 ## 7. Deploy the Worker and verify
 
 The Worker serves `/{source}/{z}/{x}/{y}.pbf` and gains a `world` source
@@ -359,6 +401,8 @@ Everything is resumable; nothing needs to start over.
 | Build died during the cell phase (OOM, disk, reboot) | Re-run the exact same `./scripts/remote/run-shard.sh <shard>`. Cells with a `.done` marker in `data/tiles/contours-world/{shard}/` are skipped; only pending cells rebuild. |
 | Build died during the tippecanoe merge | `./scripts/remote/run-shard.sh <shard> --merge-only` — redoes only the merge from the staged `*_z*.fgb` tiers (no GDAL work). |
 | A cell looks wrong / settings changed | Delete that cell's `.done` marker and `{cellId}_z*.fgb`, then re-run the shard. Or `--force` to rebuild everything. |
+| Batched merge died during tippecanoe | Re-run the same `--merge-only` (or `--batches-only`) command: batches with a `.done` marker whose recorded cell list matches are reused; the one that died re-tiles. |
+| Batched merge died during tile-join | `--join-batches` re-joins the kept batches; on a spinning disk consider section 6a instead. |
 | Join died | Re-run `--join`. Delete any partial `world.mbtiles` / `world.pmtiles` first — a killed run leaves a headerless file. |
 | Upload died | Re-run `upload-world.sh`; rclone restarts the multipart upload. Verify byte counts afterwards (`--verify-only`). |
 | DEM download died | Re-run; the fetcher skips tiles already on disk. |

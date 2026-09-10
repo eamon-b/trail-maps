@@ -13,9 +13,12 @@
  * currentKm`) always means ahead of the hiker.
  */
 
-import { calculateElevationBetween, type ElevationPoint } from '@lib/track-geometry';
+import {
+  calculateElevationBetween,
+  NO_BREAK_STARTS,
+  type ElevationPoint,
+} from '@lib/track-geometry';
 import { estimateHikingTime } from '@lib/day-calculator';
-import { baseWaypointType } from '@lib/waypoint-taxonomy';
 
 /** Minimal waypoint shape needed to rank the next-of-type cards. */
 export interface DistanceWaypoint {
@@ -66,19 +69,29 @@ export interface NextWaypointsByType<W extends DistanceWaypoint = DistanceWaypoi
 /**
  * Trail distances and elevation changes from `currentKm` to every waypoint
  * ahead, ordered as supplied (callers pass distance-sorted waypoints).
+ *
+ * `breakStarts` are the route breaks in `trackPoints`
+ * (`routeBreakStarts(breaks, 'points')`): the climb across a ferry is not
+ * walked, so it does not count towards the ETA.
  */
 export function calculateDistancesToWaypoints<W extends DistanceWaypoint>(
   currentKm: number,
   waypoints: readonly W[],
   trackPoints: readonly ElevationPoint[],
   baseKmh = 4,
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
 ): WaypointDistance<W>[] {
   const upcoming = waypoints.filter((wp) => (wp.totalDistance ?? 0) > currentKm);
 
   return upcoming.map((wp) => {
     const wpKm = wp.totalDistance ?? 0;
     const distanceKm = wpKm - currentKm;
-    const { gain, loss } = calculateElevationBetween(currentKm, wpKm, trackPoints as ElevationPoint[]);
+    const { gain, loss } = calculateElevationBetween(
+      currentKm,
+      wpKm,
+      trackPoints as ElevationPoint[],
+      breakStarts,
+    );
 
     return {
       waypoint: wp,
@@ -90,7 +103,17 @@ export function calculateDistancesToWaypoints<W extends DistanceWaypoint>(
   });
 }
 
-/** Waypoint `type` → the next-of-type bucket it feeds. */
+/**
+ * Waypoint `type` → the next-of-type bucket it feeds.
+ *
+ * Turn-offs are listed one by one, not derived by stripping `-access`, and only
+ * the ones `RESUPPLY_TYPES` counts: the turn-off to a town is where your food
+ * has to reach, so it is the next town. A hut or campsite turn-off is not the
+ * next shelter or camp — the bed is down a side track, and the plan screen
+ * will not end a day there either (`overnightWaypoints`). And a future
+ * `water-access` must not read as the next water: the water is off the route,
+ * and over-promising water is the dangerous direction to be wrong in.
+ */
 const TYPE_MAPPING: Record<string, keyof NextWaypointsByType> = {
   campsite: 'campsite',
   camp: 'campsite',
@@ -102,6 +125,9 @@ const TYPE_MAPPING: Record<string, keyof NextWaypointsByType> = {
   town: 'town',
   food: 'town',
   resupply: 'town',
+  'town-access': 'town',
+  'food-access': 'town',
+  'resupply-access': 'town',
   shelter: 'shelter',
   hut: 'shelter',
 };
@@ -116,17 +142,15 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
   trackPoints: readonly ElevationPoint[],
   precomputedDistances?: WaypointDistance<W>[],
   baseKmh = 4,
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
 ): NextWaypointsByType<W> {
   const distances =
     precomputedDistances ??
-    calculateDistancesToWaypoints(currentKm, waypoints, trackPoints, baseKmh);
+    calculateDistancesToWaypoints(currentKm, waypoints, trackPoints, baseKmh, breakStarts);
 
   const result: NextWaypointsByType<W> = {};
   for (const wd of distances) {
-    // A turn-off counts as the next place of its kind: the turn-off is where
-    // you leave the trail, so it is the point you are walking towards.
-    const key =
-      TYPE_MAPPING[wd.waypoint.type] ?? TYPE_MAPPING[baseWaypointType(wd.waypoint.type)];
+    const key = TYPE_MAPPING[wd.waypoint.type];
     if (key && !result[key]) {
       result[key] = wd;
     }

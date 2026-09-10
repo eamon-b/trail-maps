@@ -20,6 +20,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { routeBreakStarts } from '@lib/route-breaks';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, touchTarget, typography } from '../../tokens';
 import { resolveOfflinePack } from '../../services/offline-pack-resolver';
@@ -134,6 +135,12 @@ export function MapPane() {
   const displayPoints = trail.track.displayPoints;
   const routeBreaks = trail.track.breaks;
   const routeTrack = displayPoints as RouteTrackPoint[];
+  // Custom routes are drawn and measured over `displayPoints`, so their breaks
+  // are the display-indexed ones.
+  const routeBreakStartSet = useMemo(
+    () => routeBreakStarts(routeBreaks, 'displayPoints'),
+    [routeBreaks],
+  );
 
   // --- Tappable alternates / side trips ------------------------------------
   // Ids are resolved back to the source objects here rather than read off the
@@ -170,17 +177,22 @@ export function MapPane() {
 
   const routeOverlay = useMemo(() => {
     if (building) {
-      return buildRouteOverlayGeoJSON(builderPoints, routeTrack, { includeVertices: true });
+      return buildRouteOverlayGeoJSON(builderPoints, routeTrack, {
+        includeVertices: true,
+        breakStarts: routeBreakStartSet,
+      });
     }
     if (activePoints && activePoints.length > 0) {
-      return buildRouteOverlayGeoJSON(activePoints, routeTrack);
+      return buildRouteOverlayGeoJSON(activePoints, routeTrack, {
+        breakStarts: routeBreakStartSet,
+      });
     }
     return undefined;
-  }, [building, builderPoints, activePoints, routeTrack]);
+  }, [building, builderPoints, activePoints, routeTrack, routeBreakStartSet]);
 
   const builderStats = useMemo(
-    () => computeRouteStats(builderPoints, routeTrack),
-    [builderPoints, routeTrack],
+    () => computeRouteStats(builderPoints, routeTrack, routeBreakStartSet),
+    [builderPoints, routeTrack, routeBreakStartSet],
   );
 
   // Banner is suppressed while a re-download is already running (it is being
@@ -212,7 +224,7 @@ export function MapPane() {
 
   const onSaveRoute = useCallback(
     (name: string) => {
-      const stats = computeRouteStats(builderPoints, routeTrack);
+      const stats = computeRouteStats(builderPoints, routeTrack, routeBreakStartSet);
       void (async () => {
         const route = await saveRoute({
           trailId,
@@ -232,7 +244,7 @@ export function MapPane() {
         setBuilderPoints([]);
       })();
     },
-    [builderPoints, routeTrack, saveRoute, activateRoute, trailId],
+    [builderPoints, routeTrack, routeBreakStartSet, saveRoute, activateRoute, trailId],
   );
 
   const onWaypointTap = useCallback(

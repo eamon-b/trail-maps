@@ -49,7 +49,12 @@ export {
 
 // Route Breaks
 export type { RouteBreakCrossing, SplittablePoint } from './route-breaks';
-export { routeBreakCrossings, splitAtRouteBreaks } from './route-breaks';
+export {
+  routeBreakCrossings,
+  routeBreakStarts,
+  sliceAcrossRouteBreaks,
+  splitAtRouteBreaks,
+} from './route-breaks';
 
 // Waypoint Dedupe
 export type {

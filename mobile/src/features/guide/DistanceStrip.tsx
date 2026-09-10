@@ -15,6 +15,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatDistance } from '@lib/format-distance';
+import { routeBreakStarts } from '@lib/route-breaks';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
@@ -43,7 +44,13 @@ export function DistanceStrip() {
     if (currentKm == null) return [];
     const waypoints = orderedWaypoints(trail);
     const trackPoints = trail.track.points;
-    const distances = calculateDistancesToWaypoints(currentKm, waypoints, trackPoints, baseKmh);
+    const distances = calculateDistancesToWaypoints(
+      currentKm,
+      waypoints,
+      trackPoints,
+      baseKmh,
+      routeBreakStarts(trail.track.breaks, 'points'),
+    );
     const byType = getNextWaypointsByType(currentKm, waypoints, trackPoints, distances);
 
     const items: { key: string; label: string; value: string }[] = [];

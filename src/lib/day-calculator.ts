@@ -12,8 +12,10 @@
  */
 
 import type { SectionConfig, ComputedDay, PlanTrackPoint, PlanWaypoint } from './plan-types';
-import { calculateElevationBetween, findNearestByDistance } from './track-geometry';
+import { calculateElevationBetween, findNearestByDistance, NO_BREAK_STARTS } from './track-geometry';
 import type { ElevationPoint } from './track-geometry';
+import { routeBreakStarts } from './route-breaks';
+import type { RouteBreak } from './trail-types';
 import { isWaterWaypoint } from './waypoint-taxonomy';
 
 /** Trail shape accepted by computeDays (subset of the full Trail interfaces). */
@@ -22,6 +24,8 @@ export interface PlanTrail {
   track: {
     points: PlanTrackPoint[];
     totalDistance: number;
+    /** Route breaks; the step into each is not walked, so it is not climbed. */
+    breaks?: readonly Pick<RouteBreak, 'index' | 'displayIndex'>[];
   };
   waypoints?: PlanWaypoint[];
 }
@@ -97,9 +101,14 @@ export interface TimeIndex {
  *
  * Cumulative ascent/descent are accumulated per point-to-point step exactly as
  * `calculateElevationBetween` walks the track (unrounded internally; each *query*
- * rounds its own gain/loss so results match the point-walk to the metre).
+ * rounds its own gain/loss so results match the point-walk to the metre) —
+ * including skipping the step into each of `breakStarts`, so pass the same set
+ * both are given.
  */
-export function buildTimeIndex(points: ElevationPoint[]): TimeIndex {
+export function buildTimeIndex(
+  points: ElevationPoint[],
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+): TimeIndex {
   const n = points.length;
   const ascent = new Array<number>(n);
   const descent = new Array<number>(n);
@@ -107,7 +116,7 @@ export function buildTimeIndex(points: ElevationPoint[]): TimeIndex {
     ascent[0] = 0;
     descent[0] = 0;
     for (let i = 1; i < n; i++) {
-      const diff = points[i].ele - points[i - 1].ele;
+      const diff = breakStarts.has(i) ? 0 : points[i].ele - points[i - 1].ele;
       ascent[i] = ascent[i - 1] + (diff > 0 ? diff : 0);
       descent[i] = descent[i - 1] + (diff < 0 ? -diff : 0);
     }
@@ -252,6 +261,7 @@ export function computeDays(
   baseKmh = 4,
 ): ComputedDay[] {
   const trackPoints = trail.track.points;
+  const breakStarts = routeBreakStarts(trail.track.breaks, 'points');
   const waypoints = trail.waypoints ?? [];
 
   const rangeStartKm = section ? section.startKm : 0;
@@ -287,7 +297,7 @@ export function computeDays(
     const dayNumber = i + 1;
 
     const distanceKm = Math.round((end.km - start.km) * 10) / 10;
-    const { gain, loss } = calculateElevationBetween(start.km, end.km, trackPoints);
+    const { gain, loss } = calculateElevationBetween(start.km, end.km, trackPoints, breakStarts);
     const hours = estimateHikingTime(distanceKm, gain, loss, baseKmh);
     const water = countWaterSources(start.km, end.km, waypoints);
 

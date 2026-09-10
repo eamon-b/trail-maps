@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm install            # Install dependencies
 npm run dev            # Start Vite dev server (port 5173)
-npm run build          # Full production build (climate + trails + TS compile + Vite)
+npm run build          # Full production build (Te Araroa sync + climate + trails + TS compile + Vite)
 npm run build:trails   # Build trail pages from data/trails/
 npm run sync:te-araroa # Copy the Te Araroa route out of the te-araroa-data package
 npm run fetch:climate  # Fetch climate data for trail locations
@@ -109,7 +109,7 @@ Two rules follow, both in `waypoint-taxonomy.ts`:
 
 Changing a bundled waypoint's `type` re-keys it in `data/waypoint-ids.json`, which matches on type + 100 m proximity: the ids churn silently and any server-side comment keyed to them is orphaned. Migrate the registry entries in the same commit.
 
-**Te Araroa is not curated here.** Its route, waypoints and resupply points are built in [te-araroa-data](https://github.com/eamon-b/te-araroa-data), which commits its outputs; this repo takes them as a devDependency pinned by `package-lock.json`. `npm run sync:te-araroa` copies `te-araroa-sobo.gpx` out of `node_modules` into `data/trails/te_araroa/`, where it is gitignored — only `trail.json` is committed. `npm update te-araroa-data` takes a newer build. Do not hand-edit the GPX: it will be overwritten, and the fix belongs upstream.
+**Te Araroa is not curated here.** Its route, waypoints and resupply points are built in [te-araroa-data](https://github.com/eamon-b/te-araroa-data), which commits its outputs; this repo takes them as a devDependency pinned by `package-lock.json`. `npm run sync:te-araroa` copies `te-araroa-sobo.gpx` out of `node_modules` into `data/trails/te_araroa/`, where it is gitignored — only `trail.json` and `climate.json` are committed. `npm run build` runs the sync first, so a fresh clone (or Vercel) builds without a manual step. `npm update te-araroa-data` takes a newer build. Do not hand-edit the GPX: it will be overwritten, and the fix belongs upstream.
 
 ### Generated Data (`public/data/generated/`)
 

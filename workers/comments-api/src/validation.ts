@@ -12,7 +12,10 @@ import type { ReportReason, WaterStatus } from '../../../src/lib/comments-api-ty
  * IMPORTANT: this MUST stay in sync with the trail ids bundled in the mobile
  * app (the folder names under `data/trails/` that ship in the build). A comment
  * against a trail the app doesn't know about can never be displayed, so we
- * reject it at write time rather than store dead data.
+ * reject it at write time rather than store dead data. The other direction
+ * matters more: a bundled trail missing from here has every comment the app
+ * posts for it rejected. `scripts/server-trail-allowlist.test.ts` holds the two
+ * lists equal.
  */
 export const ALLOWED_TRAILS: readonly string[] = [
   'aawt',
@@ -21,6 +24,7 @@ export const ALLOWED_TRAILS: readonly string[] = [
   'heysen',
   'hume-and-hovell',
   'larapinta',
+  'te_araroa',
 ];
 
 const WAYPOINT_ID_RE = /^[a-z0-9_-]{4,64}$/;

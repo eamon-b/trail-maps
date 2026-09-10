@@ -369,3 +369,44 @@ describe('computeDays', () => {
     expect(computeDays(trail, stops)).toEqual(computeDays(trail, stops, null, null, 4));
   });
 });
+
+describe('route breaks', () => {
+  /**
+   * 10 km of flat trail with a ferry at km 5. The far landing is 300 m higher
+   * than the near one; the route does not climb it, so neither may a plan.
+   */
+  function trailWithFerry(): PlanTrail {
+    const points = [];
+    for (let i = 0; i <= 50; i++) {
+      points.push({ lat: -41 + i * 0.001, lon: 174 + i * 0.001, ele: 500, dist: i / 10 });
+    }
+    for (let i = 50; i <= 100; i++) {
+      points.push({ lat: -42 + i * 0.001, lon: 173 + i * 0.001, ele: 800, dist: i / 10 });
+    }
+    return {
+      config: { name: 'Ferry Trail' },
+      track: {
+        points,
+        totalDistance: 10,
+        // points[51] is the first point after the crossing (dist 5, ele 800).
+        breaks: [{ index: 51, displayIndex: 51 }],
+      },
+    };
+  }
+
+  it('computeDays does not count the climb across a break', () => {
+    const [day] = computeDays(trailWithFerry(), []);
+    expect(day.ascentM).toBe(0);
+    expect(day.descentM).toBe(0);
+    expect(day.estimatedHours).toBe(2.5);
+  });
+
+  it('the time index agrees with computeDays when given the same breaks', () => {
+    const trail = trailWithFerry();
+    const index = buildTimeIndex(trail.track.points, new Set([51]));
+    expect(hoursBetweenIndexed(index, 0, 10)).toBeCloseTo(estimateHikingHoursRaw(10, 0, 0), 10);
+    // Without them it would charge the 300 m: an hour at 600 m/h.
+    const unaware = buildTimeIndex(trail.track.points);
+    expect(hoursBetweenIndexed(unaware, 0, 10)).toBeCloseTo(estimateHikingHoursRaw(10, 300, 0), 10);
+  });
+});

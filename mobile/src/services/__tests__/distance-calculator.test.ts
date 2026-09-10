@@ -90,3 +90,59 @@ describe('formatEtaMinutes', () => {
     expect(formatEtaMinutes(120)).toBe('~2 h');
   });
 });
+
+describe('getNextWaypointsByType — turn-offs', () => {
+  const at = (km: number, name: string, type: string): DistanceWaypoint => ({
+    id: name,
+    name,
+    type,
+    totalDistance: km,
+  });
+
+  it('counts a turn-off to somewhere you can buy food as the next town', () => {
+    for (const type of ['town-access', 'food-access', 'resupply-access']) {
+      const next = getNextWaypointsByType(0, [at(2, 'Te Anau turnoff', type)], TRACK);
+      expect(next.town?.waypoint.name).toBe('Te Anau turnoff');
+    }
+  });
+
+  it('does not offer a hut or campsite turn-off as the next shelter or camp', () => {
+    const next = getNextWaypointsByType(
+      0,
+      [
+        at(1, 'Blyth Hut turnoff', 'hut-access'),
+        at(2, 'Camp turnoff', 'campsite-access'),
+        at(3, 'Blyth Hut', 'hut'),
+        at(4, 'Camp', 'campsite'),
+      ],
+      TRACK,
+    );
+    expect(next.shelter?.waypoint.name).toBe('Blyth Hut');
+    expect(next.campsite?.waypoint.name).toBe('Camp');
+  });
+
+  it('never reads a water turn-off as water on the route', () => {
+    const next = getNextWaypointsByType(0, [at(2, 'Spring turnoff', 'water-access')], TRACK);
+    expect(next.water).toBeUndefined();
+  });
+});
+
+describe('calculateDistancesToWaypoints across a route break', () => {
+  // Flat 9 km with a ferry at km 4 (points[5] is the far landing, 600 m
+  // higher). km does not advance across it and the climb is not walked.
+  const FERRY_TRACK: ElevationPoint[] = [
+    ...Array.from({ length: 5 }, (_, i) => ({ dist: i, ele: 100 })),
+    ...Array.from({ length: 6 }, (_, i) => ({ dist: 4 + i, ele: 700 })),
+  ];
+  const END: DistanceWaypoint = { id: 'z', name: 'Far end', type: 'trailhead', totalDistance: 9 };
+
+  it('leaves the climb across the break out of the ETA', () => {
+    const [withBreak] = calculateDistancesToWaypoints(0, [END], FERRY_TRACK, 4, new Set([5]));
+    expect(withBreak.elevationGain).toBe(0);
+    // 9 km / 4 km/h = 2.25 h → 2.3 h after estimateHikingTime's rounding.
+    expect(withBreak.etaMinutes).toBeCloseTo(138, 0);
+
+    const [unaware] = calculateDistancesToWaypoints(0, [END], FERRY_TRACK, 4);
+    expect(unaware.elevationGain).toBe(600);
+  });
+});

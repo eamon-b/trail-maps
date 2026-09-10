@@ -20,11 +20,21 @@
  * metres. The track array is whatever the caller draws + snaps against (the
  * guide passes `displayPoints`), so the emitted span polylines line up exactly
  * with the rendered trail line.
+ *
+ * Route breaks (a ferry, an unbridged river) arrive as `breakStarts`: indices
+ * into that same track array of the first point after each break, from
+ * `routeBreakStarts`. A span across one climbs nothing over the water and is
+ * drawn as two trail lines with a dashed straight crossing between them.
  */
 
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
 import { haversineDistance } from '@lib/distance';
-import { calculateElevationBetween, findNearestByDistance } from '@lib/track-geometry';
+import {
+  calculateElevationBetween,
+  findNearestByDistance,
+  NO_BREAK_STARTS,
+} from '@lib/track-geometry';
+import { sliceAcrossRouteBreaks } from '@lib/route-breaks';
 import { snapToTrail, type SnapPoint } from '../../services/position-on-trail';
 
 /** A track point the route is drawn over. */
@@ -105,6 +115,7 @@ function legHaversineKm(
 export function computeRouteLegs(
   points: RoutePointInput[],
   track: RouteTrackPoint[],
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
 ): RouteLeg[] {
   const legs: RouteLeg[] = [];
   for (let i = 1; i < points.length; i++) {
@@ -116,7 +127,7 @@ export function computeRouteLegs(
       const kmB = to.km as number;
       const lo = Math.min(kmA, kmB);
       const hi = Math.max(kmA, kmB);
-      const { gain, loss } = calculateElevationBetween(lo, hi, track);
+      const { gain, loss } = calculateElevationBetween(lo, hi, track, breakStarts);
       // calculateElevationBetween accumulates low→high; a leg walked high→low
       // swaps climb and descent.
       const ascending = kmB >= kmA;
@@ -155,8 +166,9 @@ export interface RouteStats {
 export function computeRouteStats(
   points: RoutePointInput[],
   track: RouteTrackPoint[],
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
 ): RouteStats {
-  const legs = computeRouteLegs(points, track);
+  const legs = computeRouteLegs(points, track, breakStarts);
   let totalKm = 0;
   let ascentM = 0;
   let descentM = 0;
@@ -184,12 +196,16 @@ export function routeHighlightRanges(
 export interface RouteOverlayOptions {
   /** Also emit a Point feature per vertex (used for the live builder). */
   includeVertices?: boolean;
+  /** Route breaks in `track`, from `routeBreakStarts(breaks, 'displayPoints')`. */
+  breakStarts?: ReadonlySet<number>;
 }
 
 /**
  * Map-overlay GeoJSON for a route:
  *   - snap→snap legs emit the actual track slice as a LineString
- *     (`straight: false`) so the overlay hugs the trail;
+ *     (`straight: false`) so the overlay hugs the trail — one per stretch when
+ *     the span crosses a route break, joined by a `straight: true` crossing,
+ *     so a ferry is never drawn as trail;
  *   - straight legs emit a 2-point LineString (`straight: true`) the map draws
  *     dashed, so an off-trail leg is never read as trail-accurate;
  *   - with `includeVertices`, each route point is emitted as a Point feature
@@ -204,17 +220,34 @@ export function buildRouteOverlayGeoJSON(
   options: RouteOverlayOptions = {},
 ): FeatureCollection {
   const features: Feature[] = [];
+  const breakStarts = options.breakStarts ?? NO_BREAK_STARTS;
 
-  for (const leg of computeRouteLegs(points, track)) {
+  for (const leg of computeRouteLegs(points, track, breakStarts)) {
     const from = points[leg.fromIndex];
     const to = points[leg.toIndex];
 
     if (!leg.straight) {
       const loIdx = findNearestByDistance(track, leg.startKm as number);
       const hiIdx = findNearestByDistance(track, leg.endKm as number);
-      const slice = track.slice(Math.min(loIdx, hiIdx), Math.max(loIdx, hiIdx) + 1);
-      if (slice.length >= 2) {
-        features.push(lineFeature(slice.map((p) => [p.lon, p.lat]), false));
+      const pieces = sliceAcrossRouteBreaks(track, loIdx, hiIdx, breakStarts);
+      if (pieces.length > 1 || (pieces.length === 1 && pieces[0].length >= 2)) {
+        pieces.forEach((piece, k) => {
+          if (k > 0) {
+            const before = pieces[k - 1][pieces[k - 1].length - 1];
+            features.push(
+              lineFeature(
+                [
+                  [before.lon, before.lat],
+                  [piece[0].lon, piece[0].lat],
+                ],
+                true,
+              ),
+            );
+          }
+          if (piece.length >= 2) {
+            features.push(lineFeature(piece.map((p) => [p.lon, p.lat]), false));
+          }
+        });
         continue;
       }
       // Degenerate span (both endpoints resolve to the same track point) —

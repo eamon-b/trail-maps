@@ -54,6 +54,60 @@ export function splitAtRouteBreaks<P extends SplittablePoint>(
   return stretches.filter((stretch) => stretch.length > 0);
 }
 
+/**
+ * The indices of the first point after each break, as the set the elevation
+ * helpers take (`calculateElevationBetween`, `buildTimeIndex`) to skip the
+ * unwalked step into each one.
+ *
+ * `which` must name the array the caller hands those helpers — `points` for the
+ * full-resolution track, `displayPoints` for the map copy — for the same reason
+ * it is named in {@link splitAtRouteBreaks}.
+ */
+export function routeBreakStarts(
+  breaks: readonly Pick<RouteBreak, 'index' | 'displayIndex'>[] | undefined,
+  which: 'points' | 'displayPoints'
+): ReadonlySet<number> {
+  const starts = new Set<number>();
+  for (const routeBreak of breaks ?? []) {
+    const index = which === 'points' ? routeBreak.index : routeBreak.displayIndex;
+    if (Number.isInteger(index) && index > 0) starts.add(index);
+  }
+  return starts;
+}
+
+/**
+ * The part of `points` between two indices (inclusive, either order), cut into
+ * one piece per stretch wherever a break falls inside it.
+ *
+ * For drawing a *portion* of the route — a planned day, a custom route's leg —
+ * where {@link splitAtRouteBreaks} draws the whole of it. A piece can be a
+ * single point, when the range starts or ends right at a break; callers that
+ * need a line filter those out, but the piece is kept so the crossing between
+ * two pieces is always from the last point of one to the first of the next.
+ */
+export function sliceAcrossRouteBreaks<P>(
+  points: readonly P[],
+  from: number,
+  to: number,
+  breakStarts: ReadonlySet<number>
+): P[][] {
+  if (points.length === 0) return [];
+  const lo = Math.max(0, Math.min(from, to));
+  const hi = Math.min(points.length - 1, Math.max(from, to));
+  if (lo > hi) return [];
+
+  const pieces: P[][] = [];
+  let start = lo;
+  for (let i = lo + 1; i <= hi; i++) {
+    if (breakStarts.has(i)) {
+      pieces.push(points.slice(start, i));
+      start = i;
+    }
+  }
+  pieces.push(points.slice(start, hi + 1));
+  return pieces;
+}
+
 /** The two ends of a break: the last point walked, and the first one after it. */
 export interface RouteBreakCrossing {
   from: SplittablePoint;

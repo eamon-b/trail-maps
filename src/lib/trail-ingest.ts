@@ -1225,9 +1225,12 @@ export function recomputeTrailElevation(
     dist: source[i]?.dist ?? 0,
   }));
 
+  // The step into each route break is not walked, as in `buildTrail`.
+  const breakStarts = new Set((trail.track.breaks ?? []).map(b => b.index));
   let totalAscent = 0;
   let totalDescent = 0;
   for (let i = 1; i < points.length; i++) {
+    if (breakStarts.has(i)) continue;
     const diff = points[i].ele - points[i - 1].ele;
     if (diff > 0) totalAscent += diff;
     else totalDescent += Math.abs(diff);
@@ -1246,7 +1249,6 @@ export function recomputeTrailElevation(
     return updated ? { ...dp, ele: updated.ele } : dp;
   });
 
-  const breakStarts = new Set((trail.track.breaks ?? []).map(b => b.index));
   let prevTrackIndex = 0;
   let runningAscent = 0;
   let runningDescent = 0;

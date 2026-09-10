@@ -53,13 +53,23 @@ export function findNearestByDistance(points: DistancePoint[], targetKm: number)
   return lo;
 }
 
+/** Shared empty set, so the common no-breaks call allocates nothing. */
+export const NO_BREAK_STARTS: ReadonlySet<number> = new Set<number>();
+
 /**
  * Calculate elevation gain and loss between two km positions on the trail.
+ *
+ * `breakStarts` holds the indices into `trackPoints` of the first point after
+ * each route break (see `routeBreakStarts` in `route-breaks.ts`). The step into
+ * one is a ferry or an unbridged river, not trail, so its elevation change is
+ * not climbed — the same rule `buildTrail` applies to `totalAscent`. Omit it
+ * for a continuous route.
  */
 export function calculateElevationBetween(
   startKm: number,
   endKm: number,
   trackPoints: ElevationPoint[],
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
 ): { gain: number; loss: number } {
   const startIdx = findNearestByDistance(trackPoints, startKm);
   const endIdx = findNearestByDistance(trackPoints, endKm);
@@ -69,6 +79,7 @@ export function calculateElevationBetween(
   const lo = Math.min(startIdx, endIdx);
   const hi = Math.max(startIdx, endIdx);
   for (let i = lo + 1; i <= hi && i < trackPoints.length; i++) {
+    if (breakStarts.has(i)) continue;
     const diff = trackPoints[i].ele - trackPoints[i - 1].ele;
     if (diff > 0) gain += diff;
     else loss += Math.abs(diff);

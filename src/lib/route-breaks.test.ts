@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { routeBreakCrossings, splitAtRouteBreaks } from './route-breaks';
+import {
+  routeBreakCrossings,
+  routeBreakStarts,
+  sliceAcrossRouteBreaks,
+  splitAtRouteBreaks,
+} from './route-breaks';
 import type { RouteBreak } from './trail-types';
 
 function points(count: number) {
@@ -112,5 +117,64 @@ describe('routeBreakCrossings', () => {
     expect(
       routeBreakCrossings(points(5), [routeBreak({ index: 5 })], 'points')
     ).toEqual([]);
+  });
+});
+
+describe('routeBreakStarts', () => {
+  it('collects the index for the array named', () => {
+    const breaks = [
+      routeBreak({ index: 4, displayIndex: 2 }),
+      routeBreak({ index: 9, displayIndex: 5 }),
+    ];
+    expect([...routeBreakStarts(breaks, 'points')]).toEqual([4, 9]);
+    expect([...routeBreakStarts(breaks, 'displayPoints')]).toEqual([2, 5]);
+  });
+
+  it('is empty for a trail with no breaks, and drops indices that cut nothing', () => {
+    expect(routeBreakStarts(undefined, 'points').size).toBe(0);
+    expect(
+      routeBreakStarts(
+        [routeBreak({ index: 0 }), routeBreak({ index: Number.NaN })],
+        'points'
+      ).size
+    ).toBe(0);
+  });
+});
+
+describe('sliceAcrossRouteBreaks', () => {
+  const pts = points(10);
+
+  it('returns one piece when the range crosses no break', () => {
+    expect(sliceAcrossRouteBreaks(pts, 2, 5, new Set([8]))).toEqual([pts.slice(2, 6)]);
+  });
+
+  it('cuts the range at each break inside it', () => {
+    expect(sliceAcrossRouteBreaks(pts, 1, 8, new Set([4, 6]))).toEqual([
+      pts.slice(1, 4),
+      pts.slice(4, 6),
+      pts.slice(6, 9),
+    ]);
+  });
+
+  it('takes the range in either order', () => {
+    expect(sliceAcrossRouteBreaks(pts, 8, 1, new Set([4]))).toEqual(
+      sliceAcrossRouteBreaks(pts, 1, 8, new Set([4]))
+    );
+  });
+
+  it('keeps a single-point piece when the range starts right before a break', () => {
+    expect(sliceAcrossRouteBreaks(pts, 3, 6, new Set([4]))).toEqual([
+      [pts[3]],
+      pts.slice(4, 7),
+    ]);
+  });
+
+  it('ignores a break at the start of the range: nothing before it is included', () => {
+    expect(sliceAcrossRouteBreaks(pts, 4, 6, new Set([4]))).toEqual([pts.slice(4, 7)]);
+  });
+
+  it('clamps to the array and is empty for no points', () => {
+    expect(sliceAcrossRouteBreaks(pts, -3, 20, new Set())).toEqual([pts]);
+    expect(sliceAcrossRouteBreaks([], 0, 3, new Set())).toEqual([]);
   });
 });

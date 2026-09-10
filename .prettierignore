@@ -1,0 +1,14 @@
+# Prettier also skips everything in .gitignore (generated JSON, dist, tiles).
+
+# Trail data is written by scripts in their own layout — CalTopo exports, the
+# phone's trail assets, the waypoint-id registry. Formatting it by hand is churn
+# the next build undoes.
+data/
+mobile/assets/trails/
+
+# Copied verbatim between scripts/ and mobile/assets by `npm run sync:style`;
+# formatting one copy would make them differ.
+scripts/topo-style*.json
+mobile/assets/topo-style*.json
+
+package-lock.json

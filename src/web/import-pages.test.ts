@@ -184,6 +184,12 @@ describe('the full import journey', () => {
     return summaries[0].id;
   }
 
+  // Deliberately the long one: it imports the full 4,935-point Cape to Cape GPX,
+  // boots both viewers, exports, reloads and deletes, and waits out the plan's
+  // 1 s debounce. That is ~2-3 s on an idle machine, which is close enough to
+  // Vitest's 5 s default to fail whenever anything else is using the CPU (the
+  // mobile Jest suite in parallel, say). The headroom is for load, not for a
+  // slow test — if it ever approaches 20 s, something has actually regressed.
   it('carries a trail from upload through both viewers, export, reload and delete', async () => {
     const gpx = fixture('data/trails/cape_to_cape/Cape_to_Cape_Track.gpx');
     const id = await importAndSave('Cape_to_Cape_Track.gpx', gpx, 'My Cape Walk');
@@ -293,7 +299,7 @@ describe('the full import journey', () => {
     // user thinks is a fresh trail.
     expect(window.localStorage.getItem(`trail-plan-${id}`)).toBeNull();
     expect(JSON.parse(window.localStorage.getItem('trailDirectionPrefs') ?? '{}')[id]).toBeUndefined();
-  });
+  }, 20_000);
 
   it('shows the friendly empty state for an id that is not in storage', async () => {
     loadPage('my-trail.html', '?id=u_doesnotexist');

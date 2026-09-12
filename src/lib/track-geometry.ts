@@ -16,10 +16,37 @@ export interface DistancePoint {
   dist: number;
 }
 
-/** Minimal point shape for elevation calculations. */
+/**
+ * Minimal point shape for elevation calculations.
+ *
+ * The two cumulative fields are the fix for a simplified track: summing
+ * point-to-point steps over a thinned line loses most of its small climbs
+ * (measured at 14-35% of the total on the phone's 5,000-point copy). When they
+ * are present they were computed on the *full-resolution* track before it was
+ * thinned, so the climb over any span is the difference of its two ends — O(1),
+ * and the same number the full-resolution walk gives. They are optional: the
+ * web and imported trails carry full-resolution points and walk them directly.
+ *
+ * Either both are present or neither is.
+ */
 export interface ElevationPoint extends DistancePoint {
   /** Elevation in metres */
   ele: number;
+  /** Cumulative ascent from the start of the route to this point, in metres. */
+  cumAscent?: number;
+  /** Cumulative descent from the start of the route to this point, in metres. */
+  cumDescent?: number;
+}
+
+/** Whether a point carries the pre-computed cumulative climb pair. */
+export function hasCumulativeElevation(
+  point: ElevationPoint | undefined,
+): point is ElevationPoint & { cumAscent: number; cumDescent: number } {
+  return (
+    point !== undefined &&
+    typeof point.cumAscent === 'number' &&
+    typeof point.cumDescent === 'number'
+  );
 }
 
 /**
@@ -64,6 +91,10 @@ export const NO_BREAK_STARTS: ReadonlySet<number> = new Set<number>();
  * one is a ferry or an unbridged river, not trail, so its elevation change is
  * not climbed — the same rule `buildTrail` applies to `totalAscent`. Omit it
  * for a continuous route.
+ *
+ * When the endpoints carry {@link ElevationPoint.cumAscent}/`cumDescent` — the
+ * phone's thinned tracks do — the answer is their difference instead of a walk
+ * of the (lossy) steps in between, and `breakStarts` is not consulted.
  */
 export function calculateElevationBetween(
   startKm: number,
@@ -78,6 +109,19 @@ export function calculateElevationBetween(
   let loss = 0;
   const lo = Math.min(startIdx, endIdx);
   const hi = Math.max(startIdx, endIdx);
+
+  // Pre-computed cumulative climb: the difference of the two ends. The break
+  // steps were already left out when the sums were built, so `breakStarts` has
+  // nothing left to skip here.
+  const loPoint = trackPoints[lo];
+  const hiPoint = trackPoints[hi];
+  if (hasCumulativeElevation(loPoint) && hasCumulativeElevation(hiPoint)) {
+    return {
+      gain: Math.round(Math.max(0, hiPoint.cumAscent - loPoint.cumAscent)),
+      loss: Math.round(Math.max(0, hiPoint.cumDescent - loPoint.cumDescent)),
+    };
+  }
+
   for (let i = lo + 1; i <= hi && i < trackPoints.length; i++) {
     if (breakStarts.has(i)) continue;
     const diff = trackPoints[i].ele - trackPoints[i - 1].ele;
@@ -86,4 +130,32 @@ export function calculateElevationBetween(
   }
 
   return { gain: Math.round(gain), loss: Math.round(loss) };
+}
+
+/**
+ * Attach cumulative ascent/descent to every point of a full-resolution track,
+ * so a thinned copy of it can still report the climb it really has.
+ *
+ * The running sums skip the step into each of `breakStarts` for exactly the
+ * reason `calculateElevationBetween` does — a ferry is not climbed — which is
+ * also what makes breaks need no handling at query time once the fields exist.
+ *
+ * Returns new objects; the input is not mutated. Run this *before* thinning:
+ * Douglas-Peucker returns references to the points it keeps, so the values ride
+ * along.
+ */
+export function annotateCumulativeElevation<T extends ElevationPoint>(
+  points: readonly T[],
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+): Array<T & { cumAscent: number; cumDescent: number }> {
+  let cumAscent = 0;
+  let cumDescent = 0;
+  return points.map((point, i) => {
+    if (i > 0 && !breakStarts.has(i)) {
+      const diff = point.ele - points[i - 1].ele;
+      if (diff > 0) cumAscent += diff;
+      else cumDescent -= diff;
+    }
+    return { ...point, cumAscent, cumDescent };
+  });
 }

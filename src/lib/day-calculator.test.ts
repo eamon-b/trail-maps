@@ -9,9 +9,10 @@ import {
   computeDays,
 } from './day-calculator';
 import type { PlanTrail } from './day-calculator';
-import { calculateElevationBetween } from './track-geometry';
+import { annotateCumulativeElevation, calculateElevationBetween } from './track-geometry';
 import type { ElevationPoint } from './track-geometry';
 import type { StopData, PlanWaypoint } from './plan-types';
+import { simplifyToTarget } from './track-simplify';
 
 // --- estimateHikingTime ---
 
@@ -408,5 +409,70 @@ describe('route breaks', () => {
     // Without them it would charge the 300 m: an hour at 600 m/h.
     const unaware = buildTimeIndex(trail.track.points);
     expect(hoursBetweenIndexed(unaware, 0, 10)).toBeCloseTo(estimateHikingHoursRaw(10, 300, 0), 10);
+  });
+});
+
+// --- buildTimeIndex over a track carrying pre-computed cumulative climb ---
+
+describe('time index on a thinned track', () => {
+  /** A wandering 3,000-point track with plenty of small ups and downs. */
+  const fullResolution = Array.from({ length: 3000 }, (_, i) => ({
+    lat: -35 - i * 0.0002,
+    lon: 149 + Math.sin(i / 7) * 0.003,
+    ele: 500 + Math.sin(i / 5) * 12 + Math.sin(i / 29) * 60,
+    dist: i * 0.02,
+  }));
+  const lastKm = fullResolution[fullResolution.length - 1].dist;
+  const thinned = simplifyToTarget(annotateCumulativeElevation(fullResolution), 300);
+
+  it('uses the carried sums, so the whole-track climb is the full-resolution one', () => {
+    const index = buildTimeIndex(thinned);
+    const full = calculateElevationBetween(0, lastKm, fullResolution);
+    expect(Math.round(index.ascent[index.ascent.length - 1])).toBe(full.gain);
+    expect(Math.round(index.descent[index.descent.length - 1])).toBe(full.loss);
+  });
+
+  it('still matches calculateElevationBetween to the metre over every span', () => {
+    const index = buildTimeIndex(thinned);
+    let seed = 24680;
+    const rand = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    for (let t = 0; t < 200; t++) {
+      const a = rand() * lastKm;
+      const b = rand() * lastKm;
+      const from = Math.min(a, b);
+      const to = Math.max(a, b);
+      const { gain, loss } = calculateElevationBetween(from, to, thinned);
+      const expected = estimateHikingHoursRaw(to - from, gain, loss, 4);
+      expect(hoursBetweenIndexed(index, from, to, 4)).toBeCloseTo(expected, 10);
+    }
+  });
+
+  it('ignores breakStarts when the sums are carried — the step is already out', () => {
+    const ferry = annotateCumulativeElevation(
+      [
+        { ele: 100, dist: 0 },
+        { ele: 150, dist: 1 },
+        { ele: 450, dist: 1 },
+        { ele: 400, dist: 2 },
+      ],
+      new Set([2]),
+    );
+    const index = buildTimeIndex(ferry);
+    expect(index.ascent).toEqual([0, 50, 50, 50]);
+    expect(index.descent).toEqual([0, 0, 0, 50]);
+  });
+
+  it('falls back to the point walk when a point is missing the pair', () => {
+    const points: ElevationPoint[] = [
+      { ele: 100, dist: 0, cumAscent: 0, cumDescent: 0 },
+      { ele: 150, dist: 1 },
+      { ele: 120, dist: 2, cumAscent: 9999, cumDescent: 9999 },
+    ];
+    const index = buildTimeIndex(points);
+    expect(index.ascent).toEqual([0, 50, 50]);
+    expect(index.descent).toEqual([0, 0, 30]);
   });
 });

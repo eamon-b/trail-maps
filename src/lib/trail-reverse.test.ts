@@ -16,6 +16,7 @@ import {
   type ReversibleTrail,
   type ReversibleWaypoint,
 } from './trail-reverse';
+import { annotateCumulativeElevation, calculateElevationBetween } from './track-geometry';
 
 interface TestPoint {
   lat: number;
@@ -390,5 +391,73 @@ describe('createReversedTrail with route breaks', () => {
     };
 
     expect(createReversedTrail(trail).track.breaks).toBeUndefined();
+  });
+});
+
+describe('reverseTrackPoints with pre-computed cumulative climb', () => {
+  // 100 m up, 40 m down, 60 m up: A = 160, D = 40.
+  const points = annotateCumulativeElevation([
+    { lat: -33, lon: 115, ele: 100, dist: 0 },
+    { lat: -33.01, lon: 115, ele: 200, dist: 10 },
+    { lat: -33.02, lon: 115, ele: 160, dist: 30 },
+    { lat: -33.03, lon: 115, ele: 220, dist: 50 },
+  ]);
+
+  it('swaps the pair: the climb one way is the descent the other', () => {
+    const reversed = reverseTrackPoints(points, 50);
+
+    expect(points.map(p => p.cumAscent)).toEqual([0, 100, 100, 160]);
+    expect(points.map(p => p.cumDescent)).toEqual([0, 0, 40, 40]);
+    // Walked back: -60 to the third point, +40 to the second, -100 to the first.
+    expect(reversed.map(p => p.cumAscent)).toEqual([0, 0, 40, 40]);
+    expect(reversed.map(p => p.cumDescent)).toEqual([0, 60, 60, 160]);
+  });
+
+  it('starts at zero and ends on the forward totals', () => {
+    const reversed = reverseTrackPoints(points, 50);
+    expect(reversed[0].cumAscent).toBe(0);
+    expect(reversed[0].cumDescent).toBe(0);
+    expect(reversed[reversed.length - 1].cumAscent).toBe(40);
+    expect(reversed[reversed.length - 1].cumDescent).toBe(160);
+  });
+
+  it('reads the same climb back out of the reversed track', () => {
+    const reversed = reverseTrackPoints(points, 50);
+    // Forward km 10-50: +60 up, -40 down. Reversed that span is km 0-40.
+    expect(calculateElevationBetween(10, 50, points)).toEqual({ gain: 60, loss: 40 });
+    expect(calculateElevationBetween(0, 40, reversed)).toEqual({ gain: 40, loss: 60 });
+  });
+
+  it('round-trips back to the original', () => {
+    const there = reverseTrackPoints(points, 50);
+    const back = reverseTrackPoints(there, 50);
+    expect(back).toEqual(points);
+  });
+
+  it('leaves a break unclimbed in both directions', () => {
+    // A ferry between index 1 and 2 with 300 m between the landings.
+    const ferry = annotateCumulativeElevation(
+      [
+        { lat: -33, lon: 115, ele: 100, dist: 0 },
+        { lat: -33.01, lon: 115, ele: 150, dist: 10 },
+        { lat: -34, lon: 115, ele: 450, dist: 10 },
+        { lat: -34.01, lon: 115, ele: 400, dist: 20 },
+      ],
+      new Set([2]),
+    );
+    const reversed = reverseTrackPoints(ferry, 20);
+
+    expect(calculateElevationBetween(0, 20, ferry)).toEqual({ gain: 50, loss: 50 });
+    expect(calculateElevationBetween(0, 20, reversed)).toEqual({ gain: 50, loss: 50 });
+    // And the new break index (4 - 2 = 2) still spans two equal sums.
+    expect(reversed[2].cumAscent).toBe(reversed[1].cumAscent);
+    expect(reversed[2].cumDescent).toBe(reversed[1].cumDescent);
+  });
+
+  it('leaves points without the pair alone', () => {
+    const plain = makePoints([0, 10, 30, 50]);
+    const reversed = reverseTrackPoints(plain, 50);
+    expect(reversed[0]).not.toHaveProperty('cumAscent');
+    expect(reversed[0]).not.toHaveProperty('cumDescent');
   });
 });

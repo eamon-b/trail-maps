@@ -12,7 +12,12 @@
  */
 
 import type { SectionConfig, ComputedDay, PlanTrackPoint, PlanWaypoint } from './plan-types';
-import { calculateElevationBetween, findNearestByDistance, NO_BREAK_STARTS } from './track-geometry';
+import {
+  calculateElevationBetween,
+  findNearestByDistance,
+  hasCumulativeElevation,
+  NO_BREAK_STARTS,
+} from './track-geometry';
 import type { ElevationPoint } from './track-geometry';
 import { routeBreakStarts } from './route-breaks';
 import type { RouteBreak } from './trail-types';
@@ -104,6 +109,11 @@ export interface TimeIndex {
  * rounds its own gain/loss so results match the point-walk to the metre) —
  * including skipping the step into each of `breakStarts`, so pass the same set
  * both are given.
+ *
+ * When every point carries `cumAscent`/`cumDescent` — the phone's thinned tracks
+ * do, computed on the full-resolution track before it was thinned — those are
+ * the prefix sums, and `breakStarts` is not consulted. That is the same source
+ * `calculateElevationBetween` reads, so the two still agree to the metre.
  */
 export function buildTimeIndex(
   points: ElevationPoint[],
@@ -112,6 +122,17 @@ export function buildTimeIndex(
   const n = points.length;
   const ascent = new Array<number>(n);
   const descent = new Array<number>(n);
+  if (n > 0 && points.every(hasCumulativeElevation)) {
+    // Rebased on the first point so the array is still a prefix sum from index
+    // 0; only differences are ever read, so the base cancels either way.
+    const baseAscent = points[0].cumAscent as number;
+    const baseDescent = points[0].cumDescent as number;
+    for (let i = 0; i < n; i++) {
+      ascent[i] = (points[i].cumAscent as number) - baseAscent;
+      descent[i] = (points[i].cumDescent as number) - baseDescent;
+    }
+    return { points, ascent, descent };
+  }
   if (n > 0) {
     ascent[0] = 0;
     descent[0] = 0;

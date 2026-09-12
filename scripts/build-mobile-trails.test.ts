@@ -14,6 +14,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { processTrail, type TrailJson } from './build-mobile-trails.js';
+import { calculateElevationBetween } from '../src/lib/track-geometry.js';
+import { routeBreakStarts } from '../src/lib/route-breaks.js';
 import type { RouteBreak, TrackPoint, TrailPOI } from '../src/lib/trail-types.js';
 
 /**
@@ -220,5 +222,172 @@ describe('processTrail POIs', () => {
     const without = processTrail(trailJson());
     const { pois: _pois, ...rest } = withPois;
     expect(rest).toEqual(without);
+  });
+});
+
+/**
+ * The other half of the phone's point budget: thinning the track throws away
+ * most of its small climbs, so the climb has to be measured before the thinning
+ * and carried on the points that survive it (issue #69).
+ */
+describe('processTrail cumulative climb', () => {
+  /**
+   * Within half a percent. Not exact, because a query km lands between two kept
+   * points and snaps to the nearer one — a metre or two of climb either side of
+   * the boundary — which is the whole of what thinning still costs.
+   */
+  function expectNearly(actual: number, expected: number) {
+    expect(Math.abs(actual - expected)).toBeLessThanOrEqual(
+      Math.max(3, expected * 0.005)
+    );
+  }
+
+  /** Gain summed the old way: point-to-point over the thinned track. */
+  function walkGain(points: TrackPoint[]): number {
+    let gain = 0;
+    for (let i = 1; i < points.length; i++) {
+      const diff = points[i].ele - points[i - 1].ele;
+      if (diff > 0) gain += diff;
+    }
+    return Math.round(gain);
+  }
+
+  /**
+   * A wandering 12,000-point trail — two and a half times the phone's budget —
+   * whose elevation carries the metre-scale jitter a real GPS track has on top
+   * of its hills. That jitter is most of the climb and none of the shape, so
+   * Douglas-Peucker drops it: exactly the loss issue #69 measured.
+   */
+  function bumpyTrail() {
+    let seed = 13579;
+    const jitter = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return (seed / 0x7fffffff - 0.5) * 8;
+    };
+    const points: TrackPoint[] = Array.from({ length: 12000 }, (_, i) => ({
+      lat: -33 - i * 0.0001,
+      lon: 115 + Math.sin(i / 7) * 0.002,
+      ele: 300 + Math.sin(i / 400) * 120 + jitter(),
+      dist: i * 0.01,
+    }));
+    return {
+      config: { id: 'test', name: 'Test', shortName: 'Test', lengthKm: 120 },
+      track: {
+        points,
+        // Every 3rd point, so displayPoints is a genuine subsequence, as
+        // Douglas-Peucker leaves it.
+        displayPoints: points.filter((_, i) => i % 3 === 0 || i === points.length - 1),
+        totalDistance: points[points.length - 1].dist,
+        totalAscent: 0,
+        totalDescent: 0,
+      },
+      waypoints: [],
+    };
+  }
+
+  it('reports the full-resolution climb off the thinned points', () => {
+    const source = bumpyTrail();
+    const endKm = source.track.totalDistance;
+    const full = calculateElevationBetween(0, endKm, source.track.points);
+
+    const out = processTrail(source);
+
+    expect(out.track.points.length).toBeLessThan(source.track.points.length);
+    // The bug: walking the thinned points loses most of the small climbs.
+    expect(walkGain(out.track.points)).toBeLessThan(full.gain * 0.9);
+    // The fix: the carried sums still have all of it.
+    const climb = calculateElevationBetween(0, endKm, out.track.points);
+    expectNearly(climb.gain, full.gain);
+    expectNearly(climb.loss, full.loss);
+  });
+
+  it('gives displayPoints the same numbers — custom routes are measured on them', () => {
+    const source = bumpyTrail();
+    const endKm = source.track.totalDistance;
+    const full = calculateElevationBetween(0, endKm, source.track.points);
+
+    const out = processTrail(source);
+
+    expect(walkGain(out.track.displayPoints)).toBeLessThan(full.gain * 0.95);
+    const climb = calculateElevationBetween(0, endKm, out.track.displayPoints);
+    expectNearly(climb.gain, full.gain);
+    expectNearly(climb.loss, full.loss);
+  });
+
+  it('agrees with the full-resolution walk over an interior span too', () => {
+    const source = bumpyTrail();
+    const full = calculateElevationBetween(30, 70, source.track.points);
+
+    const out = processTrail(source);
+
+    const climb = calculateElevationBetween(30, 70, out.track.points);
+    expectNearly(climb.gain, full.gain);
+    expectNearly(climb.loss, full.loss);
+  });
+
+  it('rounds the pair to whole metres', () => {
+    const out = processTrail(bumpyTrail());
+    for (const point of [out.track.points[10], out.track.displayPoints[10]]) {
+      expect(point.cumAscent).toBe(Math.round(point.cumAscent as number));
+      expect(point.cumDescent).toBe(Math.round(point.cumDescent as number));
+    }
+  });
+
+  it('does not climb the step across a route break', () => {
+    const source = brokenTrail();
+    // Lift the second stretch 500 m: the jump across the water is not walked,
+    // so it must not appear in the sums.
+    source.track.points = source.track.points.map((p, i) =>
+      i >= source.track.breaks[0].index ? { ...p, ele: p.ele + 500 } : p
+    );
+    source.track.displayPoints = [
+      source.track.points[0],
+      source.track.points[1],
+      source.track.points[source.track.breaks[0].index],
+      source.track.points[source.track.points.length - 1],
+    ];
+    const full = calculateElevationBetween(
+      0,
+      source.track.totalDistance,
+      source.track.points,
+      routeBreakStarts(source.track.breaks, 'points')
+    );
+
+    const out = processTrail(source);
+
+    const climb = calculateElevationBetween(0, source.track.totalDistance, out.track.points);
+    expectNearly(climb.gain, full.gain);
+    // Not the 500 m jump: counting it would add a third again.
+    expect(climb.gain).toBeLessThan(full.gain + 100);
+    expect(out.track.points[out.track.breaks![0].index].cumAscent).toBe(
+      out.track.points[out.track.breaks![0].index - 1].cumAscent
+    );
+  });
+
+  it('falls back to the nearest point by km when displayPoints is not a subsequence', () => {
+    const source = bumpyTrail();
+    const endKm = source.track.totalDistance;
+    const full = calculateElevationBetween(0, endKm, source.track.points);
+    // Coordinates nudged off the full-resolution ones, so the coordinate walk
+    // cannot match a single point.
+    source.track.displayPoints = source.track.points
+      .filter((_, i) => i % 3 === 0 || i === source.track.points.length - 1)
+      .map(p => ({ ...p, lat: p.lat + 1e-9 }));
+
+    const out = processTrail(source);
+
+    const climb = calculateElevationBetween(0, endKm, out.track.displayPoints);
+    expectNearly(climb.gain, full.gain);
+    expectNearly(climb.loss, full.loss);
+  });
+
+  it('leaves a trail alone when it has no elevation to speak of', () => {
+    const source = bumpyTrail();
+    source.track.points = source.track.points.map(p => ({ ...p, ele: 0 }));
+    source.track.displayPoints = source.track.points.filter((_, i) => i % 3 === 0);
+
+    const out = processTrail(source);
+
+    expect(out.track.points.every(p => p.cumAscent === 0 && p.cumDescent === 0)).toBe(true);
   });
 });

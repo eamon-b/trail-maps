@@ -130,15 +130,26 @@ export function simplifyToTarget<T extends LatLonPoint>(points: T[], targetCount
 
 /**
  * Truncate coordinate precision.
- * lat/lon: 6 decimal places (~0.1m), ele: 1 decimal, dist: 1 decimal
+ * lat/lon: 6 decimal places (~0.1m), ele: 1 decimal, dist: 1 decimal.
+ *
+ * `cumAscent`/`cumDescent` are carried through when present (a thinned track's
+ * pre-computed climb — see `annotateCumulativeElevation`) and rounded to whole
+ * metres: every reader takes a *difference* of two of them, so the worst a
+ * rounded pair costs is a metre, and the asset keeps five digits per point
+ * instead of fifteen.
  */
 export function truncatePoint(p: TrackPoint): TrackPoint {
-  return {
+  const out: TrackPoint = {
     lat: Math.round(p.lat * 1e6) / 1e6,
     lon: Math.round(p.lon * 1e6) / 1e6,
     ele: Math.round(p.ele * 10) / 10,
     dist: Math.round(p.dist * 10) / 10,
   };
+  if (typeof p.cumAscent === 'number' && typeof p.cumDescent === 'number') {
+    out.cumAscent = Math.round(p.cumAscent);
+    out.cumDescent = Math.round(p.cumDescent);
+  }
+  return out;
 }
 
 export function truncatePoints(points: TrackPoint[]): TrackPoint[] {

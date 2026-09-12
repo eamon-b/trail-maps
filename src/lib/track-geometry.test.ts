@@ -200,13 +200,27 @@ describe('calculateElevationBetween with pre-computed cumulative climb', () => {
 });
 
 describe('cumulative climb survives simplification', () => {
-  /** 4,000 points of small, real ups and downs on a wandering line. */
-  const points = Array.from({ length: 4000 }, (_, i) => ({
-    lat: -35 - i * 0.0002,
-    lon: 149 + Math.sin(i / 7) * 0.003,
-    ele: 500 + Math.sin(i / 5) * 12 + Math.sin(i / 31) * 60,
-    dist: i * 0.02,
-  }));
+  /**
+   * 4,000 points of small, real ups and downs on a wandering line. The wander
+   * is a seeded random walk rather than a sine: a constant-amplitude wiggle is
+   * Douglas-Peucker's worst case (every split peels a few points off one end,
+   * quadratic per pass) and made this test take over a second on CI.
+   */
+  let seed = 97531;
+  const rand = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  let lon = 149;
+  const points = Array.from({ length: 4000 }, (_, i) => {
+    lon += (rand() - 0.5) * 0.0006;
+    return {
+      lat: -35 - i * 0.0002,
+      lon,
+      ele: 500 + Math.sin(i / 5) * 12 + Math.sin(i / 31) * 60,
+      dist: i * 0.02,
+    };
+  });
 
   it('a thinned track annotated first reports the full-resolution climb', () => {
     const full = calculateElevationBetween(0, 79.98, points);

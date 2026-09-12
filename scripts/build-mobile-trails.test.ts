@@ -12,28 +12,49 @@
  * truncation) is covered by `src/lib/track-simplify.test.ts`.
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { processTrail, type TrailJson } from './build-mobile-trails.js';
 import { calculateElevationBetween } from '../src/lib/track-geometry.js';
 import { routeBreakStarts } from '../src/lib/route-breaks.js';
 import type { RouteBreak, TrackPoint, TrailPOI } from '../src/lib/trail-types.js';
 
+/** Seeded LCG in [0, 1), so every run sees the same track. */
+function seeded(seed: number): () => number {
+  return () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+}
+
 /**
  * A stretch of `count` points running south from `startLat`, 11 m apart, made
  * to wander so Douglas-Peucker cannot collapse it to its two endpoints the way
  * it would a straight line.
+ *
+ * The wander is a random walk, not a sine. A constant-amplitude wiggle on a
+ * straight line is Douglas-Peucker's worst case: every peak is equally far
+ * from the chord, the first one wins, and each split peels a handful of points
+ * off one end — quadratic per pass, times the twenty passes of the tolerance
+ * search. That took 5–8 s per `processTrail` on a CI runner (a 5 s timeout)
+ * against 0.4 s locally. A random walk's farthest point lands mid-segment, so
+ * the recursion stays balanced and one call is ~30× cheaper.
  */
 function stretch(
   startLat: number,
   count: number,
   startDist: number
 ): TrackPoint[] {
-  return Array.from({ length: count }, (_, i) => ({
-    lat: startLat - i * 0.0001,
-    lon: 174 + Math.sin(i / 3) * 0.002,
-    ele: 100 + (i % 7),
-    dist: startDist + i * 0.011,
-  }));
+  const rand = seeded(count + Math.round(startLat * 1000));
+  let lon = 174;
+  return Array.from({ length: count }, (_, i) => {
+    lon += (rand() - 0.5) * 0.0004;
+    return {
+      lat: startLat - i * 0.0001,
+      lon,
+      ele: 100 + (i % 7),
+      dist: startDist + i * 0.011,
+    };
+  });
 }
 
 /** Two 8,000-point stretches with a 50 km jump between them. */
@@ -138,8 +159,11 @@ describe('processTrail route breaks', () => {
   it('simplifies to roughly the point budget despite the extra pass', () => {
     const out = processTrail(brokenTrail());
 
-    expect(out.track.points.length).toBeLessThanOrEqual(5200);
-    expect(out.track.points.length).toBeGreaterThan(1000);
+    // simplifyToTarget stops once within 10% of its target, and each of the two
+    // stretches is given half the budget, so the sum can land anywhere in that
+    // band either side of 5,000.
+    expect(out.track.points.length).toBeLessThanOrEqual(5500);
+    expect(out.track.points.length).toBeGreaterThan(4500);
   });
 
   it('leaves displayIndex alone — displayPoints are not re-simplified', () => {
@@ -256,20 +280,21 @@ describe('processTrail cumulative climb', () => {
    * A wandering 12,000-point trail — two and a half times the phone's budget —
    * whose elevation carries the metre-scale jitter a real GPS track has on top
    * of its hills. That jitter is most of the climb and none of the shape, so
-   * Douglas-Peucker drops it: exactly the loss issue #69 measured.
+   * Douglas-Peucker drops it: exactly the loss issue #69 measured. The line
+   * itself is a random walk, for the reason given on `stretch`.
    */
   function bumpyTrail() {
-    let seed = 13579;
-    const jitter = () => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return (seed / 0x7fffffff - 0.5) * 8;
-    };
-    const points: TrackPoint[] = Array.from({ length: 12000 }, (_, i) => ({
-      lat: -33 - i * 0.0001,
-      lon: 115 + Math.sin(i / 7) * 0.002,
-      ele: 300 + Math.sin(i / 400) * 120 + jitter(),
-      dist: i * 0.01,
-    }));
+    const rand = seeded(13579);
+    let lon = 115;
+    const points: TrackPoint[] = Array.from({ length: 12000 }, (_, i) => {
+      lon += (rand() - 0.5) * 0.0004;
+      return {
+        lat: -33 - i * 0.0001,
+        lon,
+        ele: 300 + Math.sin(i / 400) * 120 + (rand() - 0.5) * 8,
+        dist: i * 0.01,
+      };
+    });
     return {
       config: { id: 'test', name: 'Test', shortName: 'Test', lengthKm: 120 },
       track: {
@@ -285,49 +310,48 @@ describe('processTrail cumulative climb', () => {
     };
   }
 
+  // The unmodified trail is thinned once and read by every test that does not
+  // change it: `processTrail` is the expensive part of this file.
+  let bumpy: ReturnType<typeof bumpyTrail>;
+  let thinnedBumpy: ReturnType<typeof processTrail>;
+  beforeAll(() => {
+    bumpy = bumpyTrail();
+    thinnedBumpy = processTrail(bumpy);
+  });
+
   it('reports the full-resolution climb off the thinned points', () => {
-    const source = bumpyTrail();
-    const endKm = source.track.totalDistance;
-    const full = calculateElevationBetween(0, endKm, source.track.points);
+    const endKm = bumpy.track.totalDistance;
+    const full = calculateElevationBetween(0, endKm, bumpy.track.points);
 
-    const out = processTrail(source);
-
-    expect(out.track.points.length).toBeLessThan(source.track.points.length);
+    expect(thinnedBumpy.track.points.length).toBeLessThan(bumpy.track.points.length);
     // The bug: walking the thinned points loses most of the small climbs.
-    expect(walkGain(out.track.points)).toBeLessThan(full.gain * 0.9);
+    expect(walkGain(thinnedBumpy.track.points)).toBeLessThan(full.gain * 0.9);
     // The fix: the carried sums still have all of it.
-    const climb = calculateElevationBetween(0, endKm, out.track.points);
+    const climb = calculateElevationBetween(0, endKm, thinnedBumpy.track.points);
     expectNearly(climb.gain, full.gain);
     expectNearly(climb.loss, full.loss);
   });
 
   it('gives displayPoints the same numbers — custom routes are measured on them', () => {
-    const source = bumpyTrail();
-    const endKm = source.track.totalDistance;
-    const full = calculateElevationBetween(0, endKm, source.track.points);
+    const endKm = bumpy.track.totalDistance;
+    const full = calculateElevationBetween(0, endKm, bumpy.track.points);
 
-    const out = processTrail(source);
-
-    expect(walkGain(out.track.displayPoints)).toBeLessThan(full.gain * 0.95);
-    const climb = calculateElevationBetween(0, endKm, out.track.displayPoints);
+    expect(walkGain(thinnedBumpy.track.displayPoints)).toBeLessThan(full.gain * 0.95);
+    const climb = calculateElevationBetween(0, endKm, thinnedBumpy.track.displayPoints);
     expectNearly(climb.gain, full.gain);
     expectNearly(climb.loss, full.loss);
   });
 
   it('agrees with the full-resolution walk over an interior span too', () => {
-    const source = bumpyTrail();
-    const full = calculateElevationBetween(30, 70, source.track.points);
+    const full = calculateElevationBetween(30, 70, bumpy.track.points);
 
-    const out = processTrail(source);
-
-    const climb = calculateElevationBetween(30, 70, out.track.points);
+    const climb = calculateElevationBetween(30, 70, thinnedBumpy.track.points);
     expectNearly(climb.gain, full.gain);
     expectNearly(climb.loss, full.loss);
   });
 
   it('rounds the pair to whole metres', () => {
-    const out = processTrail(bumpyTrail());
-    for (const point of [out.track.points[10], out.track.displayPoints[10]]) {
+    for (const point of [thinnedBumpy.track.points[10], thinnedBumpy.track.displayPoints[10]]) {
       expect(point.cumAscent).toBe(Math.round(point.cumAscent as number));
       expect(point.cumDescent).toBe(Math.round(point.cumDescent as number));
     }

@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm install            # Install dependencies
 npm run dev            # Start Vite dev server (port 5173)
-npm run build          # Full production build (climate + trails + TS compile + Vite)
+npm run build          # Full production build (Te Araroa sync + climate + trails + TS compile + Vite)
 npm run build:trails   # Build trail pages from data/trails/
+npm run sync:te-araroa # Copy the Te Araroa route out of the te-araroa-data package
 npm run fetch:climate  # Fetch climate data for trail locations
 npm run fetch:elevation # Fetch elevation data
 npm run build:tiles    # Build map tiles
@@ -32,17 +33,18 @@ Shared processing modules (used by both web and mobile):
 - `xml-adapter-fxp.ts` - fast-xml-parser adapter (the React Native path — Hermes has no DOMParser)
 - `gpx-optimizer.ts` - Track simplification (Douglas-Peucker), elevation spike removal/smoothing, elevation stats
 - `track-simplify.ts` - Target-point-count simplification + coordinate truncation (the mobile point budget)
-- `track-classification.ts` - Classify main/alternate/side-trip tracks
+- `track-classification.ts` - Classify main/alternate/side-trip tracks. Several main tracks are normally chained by `combineTracksGeographically`, which orders them by proximity and bridges every join. A trail whose `trackClassification.stretches` is set instead uses `concatenateStretches`, which keeps the file's order and records any join wider than `minGapMeters` as a **route break** — somewhere the walking route genuinely stops and resumes (a ferry, an unbridged river). Opt-in per trail: turning it on for a file whose tracks are not in walking order would silently reorder the route
+- `route-breaks.ts` - Reading those breaks back out for anything that draws the route (`splitAtRouteBreaks`, `routeBreakCrossings`). Breaks leave `track.points` a single flat array — every other consumer wants one ladder of cumulative distance — so only line-drawing code needs this. Used by both maps: the web viewer's `drawMainRoute` and mobile's `buildTrailLine` (a MultiLineString, one stretch per line). Anything that draws or climbs *part* of the route uses the other two: `sliceAcrossRouteBreaks` (the plan page's day lines, mobile custom-route spans) and `routeBreakStarts`, the index set the elevation helpers take so a ferry's landing-to-landing height difference is never climbed
 - `waypoint-classifier.ts` - Classify waypoint types (town, hut, water, etc.). Five tiers: CalTopo folder → `KNOWN_TOWNS` → name prefix (`C:`/`WT:`…, delimiter required) → `KEYWORD_RULES` word matching → `waypoint`. The keyword tier is opt-in (`inferFromKeywords`) and is **on for user imports, off for the curated build** — guessing types for curated trails would churn `public/data/generated/*.json` for no gain
 - `waypoint-taxonomy.ts` - The waypoint type vocabulary (`WAYPOINT_TYPES`, `WAYPOINT_TYPE_LABELS`, `waypointTypeLabel`) and the water/resupply family predicates (`isWaterWaypoint`, `isResupplyWaypoint`, `matchesWaypointFamily`). These predicates are the single home of rules that used to be duplicated across `water-carry-calculator`, `day-calculator` and `resupply-calculator`; they also accept the type aliases real-world GPX uses (`spring`, `supermarket`, …), which our own classifier never emits
 - `trail-types.ts` - Shared `ProcessedTrail` / `TrackData` / `EnrichedWaypoint` / `RouteVariant` / `TrailConfig` — the shape of `public/data/generated/{id}.json`
-- `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns
+- `trail-ingest.ts` - `buildTrail(gpx, options)`: the whole GPX → `ProcessedTrail` pipeline (route selection, cumulative distance, display simplification, waypoint enrichment, variant junctions, off-trail split), with hooks for the build script's file-system/registry concerns. A route break adds neither distance nor climb, is simplified around rather than across, and is published as `track.breaks`. **Waypoint km must stay on the track's own scale**: `enrichWaypoints`/`calculateSegmentStats` take the break indices and skip the same legs, or waypoints drift past the end of the trail they are measured along
 - `gpx-import.ts` - `importGpx(xmlText, options)`: runtime import for user-supplied GPX (elevation cleaning on, `u_`/`uw_` synthetic ids, `ImportReport`). The user-facing spec of the pipeline is `docs/gpx-import.md` — keep it in step with behaviour changes here and in `trail-ingest.ts`. It is rendered into the site as `how-import-works.html` at build time (the `gpx-import-doc` plugin in `vite.config.ts`)
 - `elevation-backfill.ts` - Open-Elevation backfill for GPX without `<ele>` (`backfillElevation` batches of 100, ≤2000 samples interpolated by distance; `applyElevation` re-derives ascent/waypoint stats via `recomputeTrailElevation`); `trailHasElevation`/`trailElevationIsUsable` drive the "distance-only estimate" labels
 - `trail-handoff.ts` - `<slug>.tracknotes.json` web → mobile handoff format (`wrapTrailForHandoff`, strict `parseHandoffJson`)
 - `types.ts` - TypeScript interfaces
 - `plan-types.ts` - Plan data types shared with mobile
-- `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions
+- `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions. `calculateElevationBetween` (and `buildTimeIndex` in `day-calculator.ts`) take an optional `breakStarts` set — pass `routeBreakStarts(track.breaks, 'points' | 'displayPoints')` for whichever array you hand them, or a trail with route breaks climbs the gap between landings
 - `day-calculator.ts` - Hiking time estimation and day splitting
 - `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight); which waypoints count comes from `isResupplyWaypoint` in `waypoint-taxonomy.ts`
 - `water-carry-calculator.ts` - Water carry distance calculations; which waypoints count comes from `isWaterWaypoint` in `waypoint-taxonomy.ts`
@@ -56,7 +58,7 @@ Shared processing modules (used by both web and mobile):
 ### Build Scripts (`scripts/`)
 
 - `build-trails.ts` - Generates static trail pages + `public/data/generated/*.json` from GPX/JSON data; the geometry work lives in `@lib/trail-ingest` (`buildTrail`) — this script only supplies the file-system pieces (config, CalTopo GeoJSON, CSV fallback, climate, curated descriptions, waypoint-id registry) and writes the output
-- `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision)
+- `build-mobile-trails.ts` - Builds mobile-optimized trail JSON (reduced points, truncated precision). A trail with route breaks is simplified one stretch at a time, so Douglas-Peucker cannot drop a break's boundary points and cut the corner across the water; `index` is re-anchored to the result, `displayIndex` passes through (displayPoints are only rounded here). `processTrail` is exported and `main()` guarded so this is testable
 - `build-contours-australia.ts` - Builds contour PMTiles for the contour tile worker
 - `build-contours-world.ts` - Builds world contour shards from Copernicus GLO-30 DEM, `--join` merges shards to world.pmtiles (spec: `plans/world-contour-tiles.md`)
 - `fetch-dem-copernicus.ts` - Downloads Copernicus GLO-30 DEM tiles (global, anonymous, per bbox/cells/shard)
@@ -99,6 +101,16 @@ Each trail has its own directory containing:
 - `climate.json` - Climate data for locations along the trail
 - `descriptions.json` - Optional curated waypoint descriptions, keyed by the stable ids in `data/waypoint-ids.json`. `build-trails.ts` applies them to the bundled trail JSON (overriding any GPX/GeoJSON text); `upload-descriptions.ts` pushes the same file to the comments API, where mobile syncs it as an override (`synced ?? bundled`). See `scripts/lib/waypoint-descriptions.ts`.
 
+Te Araroa's file also carries waypoint types no other trail uses. `gap` is the "Trail ends"/"Trail resumes" pair at each route break. The **turn-offs** are points on the route at the km you leave it for a place that is somewhere else, typed `<servedType>-access` — `town-access`, `hut-access`, and so on — so one field says both what kind of place it is and that you are not there yet.
+
+Two rules follow, both in `waypoint-taxonomy.ts`:
+- `RESUPPLY_TYPES` lists `town-access`/`food-access`/`resupply-access` **one by one** rather than stripping the suffix generically. A `water-access` must never satisfy `isWaterWaypoint` — that would tell the carry calculator there is water on the route when it is down a side road, and under-reporting a dry stretch is the dangerous way to be wrong.
+- `baseWaypointType()` is the fallback for every map keyed by type: `MAP[type] ?? MAP[baseWaypointType(type)] ?? FALLBACK` gives a turn-off its served type's icon, colour and chip without seven more entries per map. Use it rather than enumerating; `isAccessWaypoint()` is there for the cases where a turn-off must behave *differently* from the place (you cannot sleep at one — see `overnightWaypoints`).
+
+Changing a bundled waypoint's `type` re-keys it in `data/waypoint-ids.json`, which matches on type + 100 m proximity: the ids churn silently and any server-side comment keyed to them is orphaned. Migrate the registry entries in the same commit.
+
+**Te Araroa is not curated here.** Its route, waypoints and resupply points are built in [te-araroa-data](https://github.com/eamon-b/te-araroa-data), which commits its outputs; this repo takes them as a devDependency pinned by `package-lock.json`. `npm run sync:te-araroa` copies `te-araroa-sobo.gpx` out of `node_modules` into `data/trails/te_araroa/`, where it is gitignored — only `trail.json` and `climate.json` are committed. `npm run build` runs the sync first, so a fresh clone (or Vercel) builds without a manual step. `npm update te-araroa-data` takes a newer build. Do not hand-edit the GPX: it will be overwritten, and the fix belongs upstream.
+
 ### Generated Data (`public/data/generated/`)
 
 Built at build time:
@@ -119,11 +131,13 @@ Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: 
 - **Static site**: All pages are pre-generated, no runtime server required
 - **Client-side rendering**: Trail viewer loads JSON data and renders interactively
 - **Web maps**: Leaflet with OpenTopoMap tiles for topographic display
-- **Formatting**: `.prettierrc` records the house style - single quotes, 100 columns,
-  `es5` trailing commas, no parens on single-argument arrows. The tree predates it and is
-  not uniformly formatted, so format the code you touch rather than whole files: a blanket
-  `prettier --write` would bury the change in reformatting. `data/` is already consistent
-  with it, so generated trail JSON stays stable.
+- **Formatting**: `.prettierrc.json` records the house style — single quotes, `es5` trailing
+  commas, no parens on single-argument arrows, 120 columns at the root, with `mobile/**` (100
+  columns, `all` commas, `(x) => …`) and `workers/**` (100 columns, `(x) => …`) overrides. The
+  tree predates the config and is not uniformly formatted — `prettier --check` still flags ~250
+  files — so format the code you touch rather than whole files. `.prettierignore` keeps prettier
+  off the JSON scripts write in their own layout (trail data, the phone's trail assets, the
+  waypoint-id registry) and the map styles `sync:style` copies verbatim.
 
 ## Testing
 
@@ -233,7 +247,7 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 - **Map**: MapLibre React Native. Style objects are resolved before mount via `src/services/online-style-service.ts` (online) or `tileManager.getOfflineStyle()` (offline); the bundled base style is `mobile/assets/topo-style.json`, synced from `scripts/topo-style.json` with root `npm run sync:style`. Contours come from `EXPO_PUBLIC_CONTOUR_TILE_URL`.
 - **Map theme**: the map follows the app theme (`useTheme().isDark`), not a setting of its own. Dark uses OpenFreeMap's `dark` style online and the paint patch `scripts/topo-style-dark.json` (also synced by `npm run sync:style`) offline; the patch is `{ layerId: paintOverrides }` merged over the light template, so filters/zooms/layer order stay single-sourced — add a layer to `topo-style.json` and give it an entry in the dark file (a test fails otherwise). Overlay cartography (tracks, marker/label ink, the fallback style) is per-theme in `features/map/map-style.ts` — `trackColors(theme)` / `mapInk(theme)` — and the theme is part of `mapRemountKey`, because swapping a live map's style object can kill the native renderer.
 - **Storage**: trail content is read from bundled JSON assets via `src/services/trail-loader.ts` (`listTrails`/`getTrailJson`) — there is no `trails` SQLite table. SQLite (`expo-sqlite`) holds per-guide state, comments + outbox, favorites, and custom routes. Tile files live in `expo-file-system`.
-- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse, trail-types, gpx-import, xml-adapter-fxp. Every `src/lib` module is RN-safe: `gpx-parser`/`gpx-optimizer` no longer reach for `DOMParser` (mobile passes `fxpXmlAdapter`), and `gpx-import` avoids `crypto` entirely. jsdom stays out of `src/lib` — its adapter lives in `scripts/lib/xml-adapter-jsdom.ts`.
+- **Shared code**: `src/lib/` (repo root) modules imported via `@lib`. Currently used: format-distance, comments-api-types, track-geometry, plan-types, day-calculator, resupply-calculator, water-carry-calculator, distance, types, trail-reverse, trail-types, route-breaks, gpx-import, xml-adapter-fxp. Every `src/lib` module is RN-safe: `gpx-parser`/`gpx-optimizer` no longer reach for `DOMParser` (mobile passes `fxpXmlAdapter`), and `gpx-import` avoids `crypto` entirely. jsdom stays out of `src/lib` — its adapter lives in `scripts/lib/xml-adapter-jsdom.ts`.
 - **Navigation**: a single Expo Router Stack — "My Guides" list → per-trail guide (nested stack). No bottom tabs. Inside a guide, a segmented control switches three always-mounted panes: Map | Elevation | List (`src/features/guide/GuideView.tsx`).
 - **State**: Zustand stores in `src/state/` (settings, downloads, favorites, identity) plus per-guide React contexts.
 

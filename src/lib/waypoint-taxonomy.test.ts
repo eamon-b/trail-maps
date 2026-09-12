@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  baseWaypointType,
+  isAccessWaypoint,
   WAYPOINT_TYPES,
   WAYPOINT_TYPE_LABELS,
   waypointTypeLabel,
@@ -32,17 +34,25 @@ describe('waypoint-taxonomy', () => {
       // display label anywhere in the app.
       const typesInGeneratedOutput = [
         'accommodation',
+        'accommodation-access',
         'beach',
         'campsite',
+        'campsite-access',
         'caravan-park',
+        'caravan-park-access',
         'endpoint',
         'food',
+        'food-access',
+        'gap',
         'hut',
+        'hut-access',
         'inlet-crossing',
         'poi',
         'resupply',
+        'resupply-access',
         'road-crossing',
         'town',
+        'town-access',
         'trailhead',
         'water',
         'water-tank',
@@ -153,6 +163,34 @@ describe('waypoint-taxonomy', () => {
       expect(isResupplyWaypoint('campsite')).toBe(false);
     });
 
+    it('counts a turn-off to somewhere you can buy food', () => {
+      // The turn-off is where your feet leave the trail and the km your food
+      // has to reach. Leaving these out had Te Araroa reading a 271.7 km carry
+      // from Queenstown to Riverton with seven towns inside it.
+      expect(isResupplyWaypoint('town-access')).toBe(true);
+      expect(isResupplyWaypoint('food-access')).toBe(true);
+      expect(isResupplyWaypoint('resupply-access')).toBe(true);
+    });
+
+    it('excludes turn-offs to shelter, exactly as it excludes the shelter', () => {
+      expect(isResupplyWaypoint('hut-access')).toBe(false);
+      expect(isResupplyWaypoint('campsite-access')).toBe(false);
+      expect(isResupplyWaypoint('accommodation-access')).toBe(false);
+      expect(isResupplyWaypoint('caravan-park-access')).toBe(false);
+    });
+  });
+
+  describe('turn-offs and the water family', () => {
+    it('does not treat a turn-off as water', () => {
+      // Deliberate, and the reason RESUPPLY_TYPES lists its turn-offs one by
+      // one instead of stripping the suffix generically: a `water-access` would
+      // tell the carry calculator there is water on the route when it is down a
+      // side road, and under-reporting a dry stretch is the dangerous way to be
+      // wrong.
+      expect(isWaterWaypoint('water-access')).toBe(false);
+      expect(isWaterWaypoint('water-tank-access')).toBe(false);
+    });
+
     it('rejects empty input', () => {
       expect(isResupplyWaypoint('')).toBe(false);
       expect(isResupplyWaypoint(undefined)).toBe(false);
@@ -200,5 +238,51 @@ describe('waypoint-taxonomy', () => {
         expect(matchesWaypointFamily('road-crossing', family), family).toBe(false);
       }
     });
+  });
+});
+
+describe('baseWaypointType', () => {
+  it('gives the type of the place a turn-off serves', () => {
+    expect(baseWaypointType('town-access')).toBe('town');
+    expect(baseWaypointType('caravan-park-access')).toBe('caravan-park');
+  });
+
+  it('leaves a type that is not a turn-off alone', () => {
+    expect(baseWaypointType('town')).toBe('town');
+    expect(baseWaypointType('water-tank')).toBe('water-tank');
+  });
+
+  it('normalises the way the family predicates do', () => {
+    expect(baseWaypointType('  TOWN-ACCESS ')).toBe('town');
+  });
+
+  it('is safe on nothing', () => {
+    expect(baseWaypointType(undefined)).toBe('');
+    expect(baseWaypointType(null)).toBe('');
+    expect(baseWaypointType('')).toBe('');
+  });
+
+  it('is the fallback that keeps type-keyed maps from needing seven more keys', () => {
+    // The shape every icon/colour/chip map uses:
+    //   MAP[type] ?? MAP[baseWaypointType(type)] ?? FALLBACK
+    const icons: Record<string, string> = { town: '🏘', hut: '🛖' };
+    const iconFor = (t: string) => icons[t] ?? icons[baseWaypointType(t)] ?? '📍';
+
+    expect(iconFor('town-access')).toBe('🏘');
+    expect(iconFor('hut-access')).toBe('🛖');
+    expect(iconFor('beach')).toBe('📍');
+  });
+});
+
+describe('isAccessWaypoint', () => {
+  it('tells a turn-off from the place it serves', () => {
+    expect(isAccessWaypoint('town-access')).toBe(true);
+    expect(isAccessWaypoint('town')).toBe(false);
+  });
+
+  it('is safe on nothing', () => {
+    expect(isAccessWaypoint(undefined)).toBe(false);
+    expect(isAccessWaypoint(null)).toBe(false);
+    expect(isAccessWaypoint('')).toBe(false);
   });
 });

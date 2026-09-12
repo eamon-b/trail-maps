@@ -57,4 +57,5 @@ export const TRAIL_DATA: Record<string, TrailJson> = {
   cape_to_cape: require('../../assets/trails/cape_to_cape.json'),
   heysen: require('../../assets/trails/heysen.json'),
   larapinta: require('../../assets/trails/larapinta.json'),
+  te_araroa: require('../../assets/trails/te_araroa.json'),
 };

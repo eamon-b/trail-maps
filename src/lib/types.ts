@@ -225,6 +225,32 @@ export interface TrackClassificationConfig {
   sideTripPatterns?: string[];      // Regex patterns for side trips/spurs
   ignorePatterns?: string[];        // Regex patterns to ignore completely
   fallbackToLongest?: boolean;      // Use longest track if no patterns match (default: true)
+  /** The main tracks are consecutive walkable stretches - see {@link RouteStretchConfig}. */
+  stretches?: RouteStretchConfig;
+}
+
+/**
+ * Declares that a trail's main `<trk>`s are consecutive stretches of one route,
+ * already in walking order, separated by places the walking route genuinely
+ * stops and resumes somewhere else: a ferry, a river with no crossing, a lake.
+ *
+ * Without it several main tracks are chained by
+ * `combineTracksGeographically`, which orders them by proximity and bridges
+ * whatever is left over. That is right for a file split by map sheet or by day,
+ * where the pieces do join up. It is wrong for a route with real breaks in it:
+ * the bridge becomes a straight line the map draws and the distance counts, so
+ * Te Araroa measured 3,159.5 km - its 3,056.8 km of trail plus 102.7 km of
+ * Cook Strait, two ferries and three unbridged rivers.
+ *
+ * Opt-in per trail, because turning it on for a file whose tracks are *not*
+ * in order would silently reorder the route.
+ */
+export interface RouteStretchConfig {
+  /**
+   * A join at least this far apart (metres) is a break in the route rather than
+   * something to bridge. Defaults to {@link GAP_WARNING_THRESHOLD_METERS}.
+   */
+  minGapMeters?: number;
 }
 
 export interface ClassifiedTrack {
@@ -253,6 +279,20 @@ export interface CombineTracksResult {
   combinedPoints: GpxPoint[];
   orderedNames: string[];
   warnings: CombineTracksWarning[];
+  /**
+   * Joins left unbridged because they are breaks in the route. Always empty
+   * unless the trail declares {@link RouteStretchConfig}.
+   */
+  breaks: TrackBreak[];
+}
+
+/** A join between two main tracks that the route does not cross. */
+export interface TrackBreak {
+  /** Index into `combinedPoints` of the first point after the break. */
+  index: number;
+  fromTrack: string;
+  toTrack: string;
+  gapMeters: number;
 }
 
 // Tile Pipeline Types

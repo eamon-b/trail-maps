@@ -75,3 +75,25 @@ describe('calculateElevationBetween', () => {
     expect(loss).toBe(0);
   });
 });
+
+describe('calculateElevationBetween across a route break', () => {
+  // A ferry between index 1 and 2: km does not advance across it, and the
+  // 300 m between the two landings is not climbed.
+  const trackPoints = [
+    { ele: 100, dist: 0 },
+    { ele: 150, dist: 1 }, // +50
+    { ele: 450, dist: 1 }, // the ferry: +300, not walked
+    { ele: 400, dist: 2 }, // -50
+  ];
+
+  it('skips the step into the first point after a break', () => {
+    expect(calculateElevationBetween(0, 2, trackPoints, new Set([2]))).toEqual({
+      gain: 50,
+      loss: 50,
+    });
+  });
+
+  it('still counts it when told nothing about breaks', () => {
+    expect(calculateElevationBetween(0, 2, trackPoints)).toEqual({ gain: 350, loss: 50 });
+  });
+});

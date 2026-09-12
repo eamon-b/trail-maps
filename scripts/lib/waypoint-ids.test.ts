@@ -263,3 +263,54 @@ describe('stringifyRegistry', () => {
     expect(stringifyRegistry(a)).toEqual(stringifyRegistry(b));
   });
 });
+
+describe('waypoints sharing one coordinate', () => {
+  /**
+   * Several of Te Araroa's turnoffs are the same road end: the Rangitata end
+   * serves Geraldine, Peel Forest, Mesopotamia Station and Mt Potts Lodge. They
+   * are the same type at the same point, so the mint basis is byte-identical
+   * and widening the hash slice cannot separate them.
+   */
+  const at = { lat: -43.57723, lon: 170.95368 };
+  const turnoffs = [
+    { name: 'Geraldine turnoff', type: 'town-access', ...at },
+    { name: 'Peel Forest turnoff', type: 'town-access', ...at },
+    { name: 'Mesopotamia Station turnoff', type: 'food-access', ...at },
+    { name: 'Mt Potts Lodge turnoff', type: 'accommodation-access', ...at },
+  ];
+
+  it('gives each one a distinct id instead of throwing', () => {
+    const registry: WaypointRegistry = {};
+    const ids = assignWaypointIds('te_araroa', turnoffs, registry);
+
+    expect(ids).toHaveLength(4);
+    expect(new Set(ids).size).toBe(4);
+    for (const id of ids) expect(id).toMatch(ID_PATTERN);
+  });
+
+  it('leaves the first waypoint at a coordinate minting exactly as before', () => {
+    const alone = assignWaypointIds('te_araroa', [turnoffs[0]], {});
+    const crowded = assignWaypointIds('te_araroa', turnoffs, {});
+
+    expect(crowded[0]).toBe(alone[0]);
+  });
+
+  it('is deterministic across builds', () => {
+    const first = assignWaypointIds('te_araroa', turnoffs, {});
+    const second = assignWaypointIds('te_araroa', turnoffs, {});
+
+    expect(second).toEqual(first);
+  });
+
+  it('re-associates each name with its own id on the next build', () => {
+    const registry: WaypointRegistry = {};
+    const minted = assignWaypointIds('te_araroa', turnoffs, registry);
+
+    // Same registry, same waypoints in a different order: the exact-name match
+    // has to win over "nearest", because all four are 0 m apart.
+    const shuffled = [turnoffs[2], turnoffs[0], turnoffs[3], turnoffs[1]];
+    const again = assignWaypointIds('te_araroa', shuffled, registry);
+
+    expect(again).toEqual([minted[2], minted[0], minted[3], minted[1]]);
+  });
+});

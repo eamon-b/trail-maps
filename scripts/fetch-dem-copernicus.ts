@@ -35,7 +35,7 @@ import {
   COPERNICUS_TILE_LIST_URL,
   cellsForShard,
   copernicusTileUrl,
-  dem1DegTiles,
+  bufferedDem1DegTiles,
   demTileName,
   enumerateWorldCells,
   parseTileListNames,
@@ -163,11 +163,18 @@ export function resolveCells(args: FetchArgs): WorldCell[] {
 /**
  * The distinct 1° DEM tiles the cells need. Adjacent cells share edge tiles, so
  * dedupe before deciding what to download.
+ *
+ * This is the **buffered** tile set — each cell's own four plus the neighbours
+ * its warp buffer laps into — because that is what the contour build opens.
+ * Downloading only the unbuffered `dem1DegTiles` left the buffer as nodata for
+ * any cell without its ring on disk, and those cells' contours stopped ~12 m
+ * short of the cell edge (hairline gaps along every shard boundary). Interior
+ * cells hid the bug: their ring is their neighbours' own tiles.
  */
 export function neededTiles(cells: WorldCell[]): DemTile[] {
   const byName = new Map<string, DemTile>();
   for (const cell of cells) {
-    for (const tile of dem1DegTiles(cell)) {
+    for (const tile of bufferedDem1DegTiles(cell)) {
       byName.set(demTileName(tile), tile);
     }
   }

@@ -17,7 +17,8 @@
  */
 
 /**
- * Every type our own classifier can produce, in a sensible display order.
+ * Every type our own classifier can produce, plus the ones the curated trail
+ * data carries, in a sensible display order.
  *
  * Note this is *not* an exhaustive list of types you will encounter — an
  * imported GPX can name anything. Treat an unlisted type as valid-but-unknown
@@ -33,9 +34,17 @@ export const WAYPOINT_TYPES = [
   'food',
   'accommodation',
   'caravan-park',
+  'town-access',
+  'resupply-access',
+  'food-access',
+  'hut-access',
+  'campsite-access',
+  'accommodation-access',
+  'caravan-park-access',
   'trailhead',
   'road-crossing',
   'inlet-crossing',
+  'gap',
   'side-trip',
   'mountain',
   'beach',
@@ -58,9 +67,17 @@ export const WAYPOINT_TYPE_LABELS: Record<WaypointType, string> = {
   food: 'Food',
   accommodation: 'Accommodation',
   'caravan-park': 'Caravan park',
+  'town-access': 'Town (turn-off)',
+  'resupply-access': 'Resupply (turn-off)',
+  'food-access': 'Food (turn-off)',
+  'hut-access': 'Hut (turn-off)',
+  'campsite-access': 'Campsite (turn-off)',
+  'accommodation-access': 'Accommodation (turn-off)',
+  'caravan-park-access': 'Caravan park (turn-off)',
   trailhead: 'Trailhead',
   'road-crossing': 'Road crossing',
   'inlet-crossing': 'Inlet crossing',
+  gap: 'Trail break',
   'side-trip': 'Side trip',
   mountain: 'Mountain',
   beach: 'Beach',
@@ -68,6 +85,37 @@ export const WAYPOINT_TYPE_LABELS: Record<WaypointType, string> = {
   poi: 'Point of interest',
   waypoint: 'Unclassified',
 };
+
+/**
+ * The suffix marking a *turn-off*: a point on the route where you leave it for
+ * a place that is somewhere else. `town-access` is the roadside; `town` is the
+ * town. Keeping both facts in the type is what lets a reader tell a shop you
+ * walk past from one 15 km down a side road.
+ *
+ * Curated data carries these; our own classifier never emits one.
+ */
+export const ACCESS_TYPE_SUFFIX = '-access';
+
+/**
+ * The type of the place a turn-off serves — `town-access` → `town` — or the
+ * type unchanged when it is not a turn-off.
+ *
+ * This is the fallback for every map keyed by type: `MAP[type] ?? MAP[base]`
+ * gives a turn-off its served type's icon, colour and chip without seven more
+ * entries per map, and covers any `<x>-access` added later for free.
+ */
+export function baseWaypointType(type: string | undefined | null): string {
+  if (typeof type !== 'string') return '';
+  const key = type.trim().toLowerCase();
+  return key.endsWith(ACCESS_TYPE_SUFFIX)
+    ? key.slice(0, -ACCESS_TYPE_SUFFIX.length)
+    : key;
+}
+
+/** True when this type is a turn-off rather than the place itself. */
+export function isAccessWaypoint(type: string | undefined | null): boolean {
+  return typeof type === 'string' && type.trim().toLowerCase().endsWith(ACCESS_TYPE_SUFFIX);
+}
 
 const KNOWN_TYPES: ReadonlySet<string> = new Set<string>(WAYPOINT_TYPES);
 
@@ -124,7 +172,25 @@ export const WATER_TYPE_ALIASES: ReadonlySet<string> = new Set([
  * `accommodation` and `caravan-park` are deliberately excluded — they are
  * shelter, and do not reliably mean food can be obtained.
  */
-export const RESUPPLY_TYPES: ReadonlySet<string> = new Set(['town', 'food', 'resupply']);
+export const RESUPPLY_TYPES: ReadonlySet<string> = new Set([
+  'town',
+  'food',
+  'resupply',
+  // A turn-off to a shop is a place you can resupply — it is where your feet
+  // leave the trail and the km your food has to reach. Leaving these out is
+  // what had Te Araroa reading a 271.7 km carry from Queenstown to Riverton
+  // with seven towns inside it, all of them reached from a turn-off.
+  //
+  // Listed one by one rather than derived by stripping the suffix, because the
+  // *water* family must not get the same treatment: a `water-access` would tell
+  // `water-carry-calculator` there is water on the route when it is down a side
+  // road, and under-reporting a dry stretch is the dangerous direction to err.
+  // Turn-offs to huts, campsites, accommodation and caravan parks are
+  // deliberately absent for the same reason `hut` and `campsite` are.
+  'town-access',
+  'food-access',
+  'resupply-access',
+]);
 
 /**
  * Type strings from *other* people's GPX files that mean "you can get food

@@ -14,6 +14,8 @@
  * next door in `waypoint-icon-images.ts`.
  */
 
+import { baseWaypointType } from '@lib/waypoint-taxonomy';
+
 /** The shipped glyph set. Each name maps 1:1 to `assets/map-icons/<name>.png`. */
 export const WAYPOINT_ICON_NAMES = [
   'water',
@@ -135,5 +137,6 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
 
 /** The glyph for a waypoint type (generic point-of-interest for unknowns). */
 export function waypointIconName(type: string): WaypointIconName {
-  return TYPE_TO_ICON[type] ?? FALLBACK_WAYPOINT_ICON;
+  // A turn-off shows the icon of the place it serves: `hut-access` is the hut.
+  return TYPE_TO_ICON[type] ?? TYPE_TO_ICON[baseWaypointType(type)] ?? FALLBACK_WAYPOINT_ICON;
 }

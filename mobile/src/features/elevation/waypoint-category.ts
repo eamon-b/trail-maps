@@ -9,6 +9,7 @@
  */
 
 import type { ThemeColors } from '../../tokens';
+import { baseWaypointType } from '@lib/waypoint-taxonomy';
 
 /** Theme token keys that carry a waypoint category color. */
 export type WaypointColorToken =
@@ -56,7 +57,10 @@ const TYPE_TO_TOKEN: Record<string, WaypointColorToken> = {
 
 /** The theme color token for a waypoint type (neutral fallback for unknowns). */
 export function categoryToken(type: string): WaypointColorToken {
-  return TYPE_TO_TOKEN[type] ?? 'waypointJunction';
+  // A turn-off is coloured as the place it serves. This is a *colour* rule, not
+  // a semantic one — see `overnightWaypoints`, which has to exclude turn-offs
+  // explicitly because you cannot sleep at a roadside.
+  return TYPE_TO_TOKEN[type] ?? TYPE_TO_TOKEN[baseWaypointType(type)] ?? 'waypointJunction';
 }
 
 /** Resolve a waypoint type to its themed marker color. */

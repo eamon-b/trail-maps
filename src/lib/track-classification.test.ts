@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   classifyTracks,
   combineTracksGeographically,
+  concatenateStretches,
+  GAP_WARNING_THRESHOLD_METERS,
   TRACK_CLASSIFICATION_DEFAULTS,
 } from './track-classification';
 import type { GpxPoint, TrackClassificationConfig } from './types';
@@ -413,5 +415,109 @@ describe('additional edge cases', () => {
     expect(result.mainTracks).toHaveLength(0);
     expect(result.alternateTracks).toHaveLength(0);
     expect(result.sideTripTracks).toHaveLength(0);
+  });
+});
+
+describe('concatenateStretches', () => {
+  /** Two 10-point tracks, the second starting `gapDegrees` of latitude on. */
+  function twoStretches(gapDegrees: number) {
+    const first = mockPoints(10, -34.0, 138.0);
+    const last = first[first.length - 1];
+    return [
+      { name: 'Stretch 1', points: first },
+      { name: 'Stretch 2', points: mockPoints(10, last.lat + gapDegrees, last.lon) },
+    ];
+  }
+
+  it('keeps the file order rather than re-deriving one from proximity', () => {
+    const tracks = [
+      { name: 'C', points: mockPoints(5, -36.0, 140.0) },
+      { name: 'A', points: mockPoints(5, -34.0, 138.0) },
+      { name: 'B', points: mockPoints(5, -35.0, 139.0) },
+    ];
+
+    const result = concatenateStretches(tracks, { minGapMeters: 250 });
+
+    expect(result.orderedNames).toEqual(['C', 'A', 'B']);
+  });
+
+  it('records a wide join as a break instead of bridging it', () => {
+    // ~1.1 km apart, the width of the Whangarei Heads ferry.
+    const result = concatenateStretches(twoStretches(0.01), { minGapMeters: 250 });
+
+    expect(result.breaks).toHaveLength(1);
+    expect(result.breaks[0]).toMatchObject({
+      index: 10,
+      fromTrack: 'Stretch 1',
+      toTrack: 'Stretch 2',
+    });
+    expect(result.breaks[0].gapMeters).toBeGreaterThan(250);
+    expect(result.warnings).toHaveLength(0);
+    // The points either side are both kept — a break is not a deletion.
+    expect(result.combinedPoints).toHaveLength(20);
+  });
+
+  it('joins tracks that meet, and reports no break', () => {
+    const first = mockPoints(10);
+    const tracks = [
+      { name: 'Stretch 1', points: first },
+      { name: 'Stretch 2', points: mockPoints(10, first[first.length - 1].lat, first[first.length - 1].lon) },
+    ];
+
+    const result = concatenateStretches(tracks, { minGapMeters: 250 });
+
+    expect(result.breaks).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('still warns about a join too small to be a break', () => {
+    // ~150 m: wider than the warning threshold, narrower than a ferry. That is
+    // a flaw in the source file, so it is bridged and reported, not treated as
+    // somewhere the route stops.
+    const result = concatenateStretches(twoStretches(0.00135), { minGapMeters: 250 });
+
+    expect(result.breaks).toEqual([]);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0].gapMeters).toBeGreaterThan(GAP_WARNING_THRESHOLD_METERS);
+  });
+
+  it('defaults minGapMeters to the warning threshold', () => {
+    const result = concatenateStretches(twoStretches(0.01));
+
+    expect(result.breaks).toHaveLength(1);
+  });
+
+  it('indexes breaks into the combined array, not into either track', () => {
+    const a = mockPoints(4, -34.0, 138.0);
+    const b = mockPoints(4, -35.0, 139.0);
+    const c = mockPoints(4, -36.0, 140.0);
+
+    const result = concatenateStretches(
+      [
+        { name: 'A', points: a },
+        { name: 'B', points: b },
+        { name: 'C', points: c },
+      ],
+      { minGapMeters: 250 }
+    );
+
+    expect(result.breaks.map(x => x.index)).toEqual([4, 8]);
+    expect(result.combinedPoints[4]).toEqual(b[0]);
+    expect(result.combinedPoints[8]).toEqual(c[0]);
+  });
+
+  it('skips empty tracks without leaving a phantom break', () => {
+    const result = concatenateStretches(
+      [
+        { name: 'A', points: mockPoints(5, -34.0, 138.0) },
+        { name: 'Empty', points: [] },
+        { name: 'B', points: mockPoints(5, -34.04, 138.04) },
+      ],
+      { minGapMeters: 250 }
+    );
+
+    expect(result.orderedNames).toEqual(['A', 'B']);
+    expect(result.breaks).toHaveLength(1);
+    expect(result.breaks[0]).toMatchObject({ fromTrack: 'A', toTrack: 'B', index: 5 });
   });
 });

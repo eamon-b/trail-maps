@@ -125,6 +125,33 @@ sqlite3, git, rclone, Node 22 from NodeSource, tippecanoe built from the latest
 clones the repo and runs `npm ci`. It prints every version at the end — paste
 that block into the build notes for the record. Re-running it is safe.
 
+### If the box is Ubuntu 20.04 (vast.ai and other GPU-container hosts)
+
+`bootstrap.sh` targets Ubuntu 24.04 / Debian 12. Focal is EOL and cannot supply
+GDAL >= 3.6 from apt: `focal/universe` has 3.0.4, and
+`ppa:ubuntugis/ubuntugis-unstable` no longer publishes `gdal-bin` for focal —
+its `InRelease` still resolves, so `add-apt-repository` *looks* like it worked.
+Check with `apt-cache madison gdal-bin`; if 3.0.4 is the only candidate, install
+the geo stack from conda-forge instead and put it first on `PATH`:
+
+```bash
+curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C /root bin/micromamba
+export MAMBA_ROOT_PREFIX=/root/micromamba
+/root/bin/micromamba create -y -p /root/micromamba/envs/geo -c conda-forge gdal tippecanoe sqlite
+printf 'export MAMBA_ROOT_PREFIX=/root/micromamba\nexport PATH=/root/micromamba/envs/geo/bin:$PATH\n' \
+  > /etc/profile.d/geo.sh && chmod +x /etc/profile.d/geo.sh
+export PATH=/root/micromamba/envs/geo/bin:$PATH
+```
+
+Then run `bootstrap.sh` as usual and `apt-get remove -y gdal-bin` afterwards, so
+exactly one GDAL is installed and no detached build can resolve the wrong one.
+`/etc/profile.d/` is only sourced by login shells, so every `setsid nohup` build
+must pass `env PATH=/root/micromamba/envs/geo/bin:...` explicitly.
+
+**Check the disk before anything else.** A container host's disk is a hard
+quota that `df` reports accurately — a 32 GB instance ENOSPCs at exactly 32 GiB,
+and the world build needs ~3 TB.
+
 If the repo is private, either use the HTTPS URL with a read-only deploy token
 you create for this box, or generate an SSH key on the box
 (`ssh-keygen -t ed25519`) and register the public key as a GitHub **deploy

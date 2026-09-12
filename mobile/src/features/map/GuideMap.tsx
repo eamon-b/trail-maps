@@ -70,6 +70,7 @@ import { getOnlineMapStyle } from '../../services/online-style-service';
 import { waypointColor } from '../elevation/waypoint-category';
 import {
   accuracyCircleRadiusExpression,
+  buildRouteBreakCollection,
   buildTrailLine,
   buildUserLocationGeoJSON,
   buildVariantCollection,
@@ -80,6 +81,7 @@ import {
   type MapWaypoint,
   type WaterStatusLookup,
 } from './map-geojson';
+import type { RouteBreak } from '@lib/trail-types';
 import { WAYPOINT_ICON_IMAGES } from './waypoint-icon-images';
 import {
   fallbackMapStyle,
@@ -178,6 +180,12 @@ export interface GuideMapProps {
   styleSource: MapStyleSource;
   /** Main-track display points for the trail polyline. */
   displayPoints: LatLon[];
+  /**
+   * Places the route stops and resumes somewhere else (a ferry, an unbridged
+   * river). Absent for every trail whose route is continuous. Indexed against
+   * `displayPoints`.
+   */
+  breaks?: RouteBreak[];
   /** Alternate routes (dashed overlay). */
   alternates?: MapVariant[];
   /** Side trips (dashed overlay). */
@@ -356,6 +364,7 @@ export const GuideMap = memo(
       tilePackId,
       styleSource,
       displayPoints,
+      breaks,
       alternates,
       sideTrips,
       waypoints,
@@ -481,7 +490,14 @@ export const GuideMap = memo(
     const labelFont = useMemo(() => labelFontForSource(resolvedSource), [resolvedSource]);
 
     // --- GeoJSON sources ---------------------------------------------------
-    const trailLine = useMemo(() => buildTrailLine(displayPoints), [displayPoints]);
+    const trailLine = useMemo(
+      () => buildTrailLine(displayPoints, breaks),
+      [displayPoints, breaks],
+    );
+    const routeBreakCollection = useMemo(
+      () => buildRouteBreakCollection(displayPoints, breaks),
+      [displayPoints, breaks],
+    );
     const alternatesCollection = useMemo(
       () => buildVariantCollection(alternates ?? [], 'alternate'),
       [alternates],
@@ -594,6 +610,18 @@ export const GuideMap = memo(
         lineDasharray: [1.5, 1.5],
       }),
       [colors.warning],
+    );
+
+    const routeBreakStyle = useMemo(
+      () => ({
+        lineColor: colors.textSecondary,
+        lineWidth: 2,
+        lineOpacity: 0.9,
+        lineCap: 'round' as const,
+        lineJoin: 'round' as const,
+        lineDasharray: [2, 2],
+      }),
+      [colors.textSecondary],
     );
 
     const routeVertexStyle = useMemo(
@@ -857,6 +885,15 @@ export const GuideMap = memo(
           <GeoJSONSource id="guide-trail-line" data={trailLine}>
             <Layer type="line" id="guide-trail-line-casing" style={trackStyles.mainCasing} />
             <Layer type="line" id="guide-trail-line-layer" style={trackStyles.main} />
+          </GeoJSONSource>
+        )}
+
+        {/* Ferries, river crossings and lake links between stretches. Dashed
+            and unlabelled: the trail's own "Trail ends"/"Trail resumes"
+            waypoints sit at either end and carry the names. */}
+        {routeBreakCollection.features.length > 0 && (
+          <GeoJSONSource id="guide-trail-breaks" data={routeBreakCollection}>
+            <Layer type="line" id="guide-trail-breaks-layer" style={routeBreakStyle} />
           </GeoJSONSource>
         )}
 

@@ -137,3 +137,49 @@ describe('routeHighlightRanges', () => {
     expect(routeHighlightRanges([snap(0), sketch(1, 1)], TRACK)).toEqual([]);
   });
 });
+
+describe('route breaks', () => {
+  // A ferry between index 2 and 3: km stays at 2 across it and the 280 m
+  // between the landings is not climbed.
+  const FERRY_TRACK: RouteTrackPoint[] = [
+    { lat: 0, lon: 0.0, ele: 100, dist: 0 },
+    { lat: 0, lon: 0.01, ele: 150, dist: 1 }, // +50
+    { lat: 0, lon: 0.02, ele: 120, dist: 2 }, // -30
+    { lat: 0, lon: 0.5, ele: 400, dist: 2 }, // the ferry: +280, not walked
+    { lat: 0, lon: 0.51, ele: 380, dist: 3 }, // -20
+    { lat: 0, lon: 0.52, ele: 420, dist: 4 }, // +40
+  ];
+  const FERRY = new Set([3]);
+  const ends: RoutePointInput[] = [
+    { kind: 'snap', lat: 0, lon: 0, km: 0 },
+    { kind: 'snap', lat: 0, lon: 0.52, km: 4 },
+  ];
+
+  it('does not charge a span for the climb across a break', () => {
+    expect(computeRouteStats(ends, FERRY_TRACK, FERRY)).toEqual({
+      totalKm: 4,
+      ascentM: 90, // +50 +40
+      descentM: 50, // -30 -20
+    });
+  });
+
+  it('draws a span across a break as two trail lines and a dashed crossing', () => {
+    const lines = buildRouteOverlayGeoJSON(ends, FERRY_TRACK, { breakStarts: FERRY }).features.map(
+      (f) => ({
+        straight: f.properties?.straight,
+        coordinates: (f.geometry as { coordinates: number[][] }).coordinates,
+      }),
+    );
+    expect(lines).toEqual([
+      { straight: false, coordinates: [[0, 0], [0.01, 0], [0.02, 0]] },
+      { straight: true, coordinates: [[0.02, 0], [0.5, 0]] },
+      { straight: false, coordinates: [[0.5, 0], [0.51, 0], [0.52, 0]] },
+    ]);
+  });
+
+  it('still draws one line when told nothing about breaks', () => {
+    const features = buildRouteOverlayGeoJSON(ends, FERRY_TRACK).features;
+    expect(features).toHaveLength(1);
+    expect(features[0].properties?.straight).toBe(false);
+  });
+});

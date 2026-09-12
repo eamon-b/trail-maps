@@ -38,6 +38,8 @@ import {
 import type { SectionConfig, ComputedDay, ResupplyGap, WaterGap } from '@lib/plan-types';
 import type { TrailJson } from '../../services/trail-assets';
 import { categoryToken } from '../elevation/waypoint-category';
+import { isAccessWaypoint } from '@lib/waypoint-taxonomy';
+import { routeBreakStarts } from '@lib/route-breaks';
 
 /** Pace preset. Maps to a flat-ground walking speed (km/h). */
 export type Pace = 'slow' | 'average' | 'fast';
@@ -136,6 +138,9 @@ export interface WaypointOption {
 export function overnightWaypoints(trail: TrailJson): WaypointOption[] {
   return trail.waypoints
     .filter((wp) => {
+      // A turn-off is a roadside, not a bed. `hut-access` colours as a hut but
+      // must not be offered as a day-end — the hut is somewhere off the route.
+      if (isAccessWaypoint(wp.type)) return false;
       const token = categoryToken(wp.type);
       return token === 'waypointCamp' || token === 'waypointShelter';
     })
@@ -305,7 +310,12 @@ export function computePlan(trail: TrailJson, inputs: PlanInputs): PlanResult {
   // TrailJson is structurally a PlanTrail — pass it straight through. Build the
   // Naismith time index once (O(n)); the splitter reuses it for O(log n) queries.
   const planTrail = trail as unknown as PlanTrail;
-  const index = buildTimeIndex(planTrail.track.points);
+  // The same break set computeDays derives, so the splitter's hours and the
+  // reported day agree across a ferry.
+  const index = buildTimeIndex(
+    planTrail.track.points,
+    routeBreakStarts(planTrail.track.breaks, 'points'),
+  );
   const { stops, snappedKms } = generateDayStops(trail, section, targetH, baseKmh, index);
 
   const computed = computeDays(planTrail, stops, null, section, baseKmh);

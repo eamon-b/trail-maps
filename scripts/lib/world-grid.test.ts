@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   WORLD_CELL_SIZE_DEG,
+  bufferedDem1DegTiles,
   WORLD_SHARDS,
   cellsForShard,
   copernicusKey,
@@ -350,25 +351,62 @@ describe('fetch-dem-copernicus pure helpers', () => {
     expect(() => resolveCells(parseFetchArgs(['--cells', 'E132_S24']))).toThrow(/Invalid cell id/);
   });
 
-  it('resolves the deduped 1° tiles for a two-cell selection', () => {
+  it('resolves the deduped 1° tiles for a two-cell selection, including the warp buffer ring', () => {
     const cells = resolveCells(parseFetchArgs(['--bbox', '132', '-26', '134', '-22']));
     expect(cells.map(c => c.id)).toEqual(['S24E132', 'S26E132']);
-    // Two stacked cells share no tile rows, so 8 distinct tiles.
-    expect(neededTiles(cells).map(demTileName)).toEqual([
+    const names = neededTiles(cells).map(demTileName);
+    // The build warps each cell with CELL_BUFFER_DEG of margin and opens the
+    // tiles that margin laps into, so the fetch must cover the surrounding ring
+    // as well as the cells' own tiles — anything less warps nodata into the
+    // buffer and the contours stop short of the cell edge.
+    for (const own of [
       'S23E132', 'S23E133', 'S24E132', 'S24E133',
       'S25E132', 'S25E133', 'S26E132', 'S26E133',
-    ]);
+    ]) {
+      expect(names).toContain(own);
+    }
+    // One tile beyond on every side: west E131, east E134, north S22, south S27.
+    for (const ring of ['S22E132', 'S27E132', 'S24E131', 'S24E134']) {
+      expect(names).toContain(ring);
+    }
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it('dedupes tiles shared by adjacent cells', () => {
     const cells = resolveCells(parseFetchArgs(['--cells', 'S26E132,S26E134']));
     const names = neededTiles(cells).map(demTileName);
-    expect(names).toHaveLength(8);
-    expect(new Set(names).size).toBe(8);
+    expect(new Set(names).size).toBe(names.length);
+    // The shared edge column E134 is claimed by both cells but fetched once.
+    expect(names.filter(n => n === 'S26E134')).toHaveLength(1);
+  });
+
+  it('fetches exactly the tile set the build reads for a cell', () => {
+    // The regression this guards: neededTiles used the unbuffered
+    // dem1DegTiles, so a cell built without its ring on disk warped nodata
+    // into the buffer and its contours stopped ~12 m short of the cell edge —
+    // hairline gaps along every shard boundary.
+    const cell = worldCell(132, -24);
+    const fetched = new Set(neededTiles([cell]).map(demTileName));
+    for (const tile of bufferedDem1DegTiles(cell)) {
+      expect(fetched.has(demTileName(tile))).toBe(true);
+    }
+  });
+
+  it('clamps the buffer ring at the antimeridian and the poles', () => {
+    const names = (c: ReturnType<typeof worldCell>) =>
+      bufferedDem1DegTiles(c).map(demTileName);
+    // Westmost column: no wrap-around tile at lon -181.
+    expect(names(worldCell(-180, 0)).every(n => !n.includes('W181'))).toBe(true);
+    // Northmost row: nothing above lat 89.
+    for (const n of names(worldCell(0, 88))) {
+      expect(Number(n.slice(1, 3))).toBeLessThanOrEqual(89);
+    }
   });
 
   it('splits tiles into download / ocean / present', () => {
-    const tiles = neededTiles([worldCell(132, -26)]);
+    // The cell's own four tiles, not neededTiles(): this test is about the
+    // split, and neededTiles deliberately also returns the warp buffer ring.
+    const tiles = dem1DegTiles(worldCell(132, -26));
     const demDir = '/tmp/does-not-exist-dem';
     const present = new Set([demTilePath(demDir, { lat: -26, lon: 132 })]);
     const plan = planTiles({

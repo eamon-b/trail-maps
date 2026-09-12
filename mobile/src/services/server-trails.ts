@@ -11,8 +11,9 @@
  * engine, and importing the loader there would drag ~3 MB of bundled trail JSON,
  * `expo-file-system` and the SQLite layer into the sync module graph for the
  * sake of a set membership test. `assets/trails/index.json` is 4 KB and has the
- * same six ids, so this module is the cheap authority and `trail-loader`
- * re-exports it (see its `isServerKnown`).
+ * same ids as the allowlist (`scripts/server-trail-allowlist.test.ts` holds them
+ * equal), so this module is the cheap authority and `trail-loader` re-exports
+ * it (see its `isServerKnown`).
  */
 
 const SERVER_TRAIL_IDS: ReadonlySet<string> = new Set(

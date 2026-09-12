@@ -25,6 +25,40 @@ export interface ReversibleTrackPoint {
   dist: number;
 }
 
+/** The fields of a route break that a change of direction moves. */
+export interface ReversibleRouteBreak {
+  index: number;
+  displayIndex: number;
+  km: number;
+  fromTrack: string;
+  toTrack: string;
+}
+
+/**
+ * Mirror route breaks about the end of the trail.
+ *
+ * A break sits *between* points i-1 and i. Reversing an n-point array sends
+ * index i to n-1-i, so the same seam ends up between n-i-1 and n-i and the
+ * first point after it is n-i. Walked the other way the stretch that ended at
+ * the break is the one that resumes, so the two names swap; the km is the same
+ * distance from the other end.
+ */
+export function reverseRouteBreaks<B extends ReversibleRouteBreak>(
+  breaks: B[],
+  totalDistance: number,
+  trackLength: number,
+  displayLength: number,
+): B[] {
+  return [...breaks].reverse().map(b => ({
+    ...b,
+    index: trackLength - b.index,
+    displayIndex: displayLength - b.displayIndex,
+    km: totalDistance - b.km,
+    fromTrack: b.toTrack,
+    toTrack: b.fromTrack,
+  }));
+}
+
 /** The km/statistics fields the reversal math needs on a main-route waypoint. */
 export interface ReversibleWaypoint {
   /** Distance from previous waypoint in km */
@@ -55,6 +89,7 @@ export interface ReversibleTrail<
     totalDistance: number;
     totalAscent: number;
     totalDescent: number;
+    breaks?: ReversibleRouteBreak[];
   };
   waypoints?: W[];
   alternates?: V[];
@@ -145,6 +180,16 @@ export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
       totalDistance: totalDist,
       totalAscent: trail.track.totalDescent,
       totalDescent: trail.track.totalAscent,
+      ...(trail.track.breaks
+        ? {
+            breaks: reverseRouteBreaks(
+              trail.track.breaks,
+              totalDist,
+              trackLength,
+              (reversedDisplay ?? reversedPoints).length,
+            ),
+          }
+        : {}),
     },
     waypoints: reverseWaypoints(trail.waypoints ?? [], totalDist, trackLength),
     alternates: reverseAlternates(trail.alternates ?? [], totalDist),

@@ -11,12 +11,19 @@ declare const L: typeof Leaflet;
 import type { PlanTrackPoint, PlanWaypoint, StopData, ComputedDay, PlanState } from '@lib/plan-types';
 import { computeDays } from '@lib/day-calculator';
 import { findNearestByDistance } from '@lib/track-geometry';
+import {
+  routeBreakCrossings,
+  routeBreakStarts,
+  sliceAcrossRouteBreaks,
+  splitAtRouteBreaks,
+} from '@lib/route-breaks';
+import type { RouteBreak } from '@lib/trail-types';
 import { analyzeResupply } from '@lib/resupply-calculator';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
-import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
+import { baseWaypointType, waypointTypeLabel } from '@lib/waypoint-taxonomy';
 import { loadPlanState, savePlanState } from './plan-state';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
@@ -45,6 +52,7 @@ interface Trail {
     totalDistance: number;
     totalAscent: number;
     totalDescent: number;
+    breaks?: RouteBreak[];
   };
   waypoints?: PlanWaypoint[];
 }
@@ -100,7 +108,8 @@ const WAYPOINT_ICONS: Record<string, string> = {
 };
 
 function waypointIcon(type?: string): string {
-  return WAYPOINT_ICONS[type ?? ''] ?? '\u{1F4CD}';
+  // A turn-off shows its served type's icon (`town-access` → the town glyph).
+  return WAYPOINT_ICONS[type ?? ''] ?? WAYPOINT_ICONS[baseWaypointType(type)] ?? '\u{1F4CD}';
 }
 
 // ---------------------------------------------------------------------------
@@ -238,13 +247,34 @@ function initMap(): void {
 
   stopMarkers = L.layerGroup().addTo(map);
 
-  // Base trail polyline (always visible, muted)
-  const displayPoints = activeTrail().track.displayPoints ?? activeTrail().track.points;
-  const latLngs = displayPoints.map(p => [p.lat, p.lon] as [number, number]);
+  // Base trail polyline (always visible, muted). One line per walkable stretch,
+  // so a route break is not drawn as trail; each crossing gets the trail page's
+  // dashed grey line instead. The geometry is the same in both directions, so
+  // this is drawn once.
+  const { track } = activeTrail();
+  const displayPoints = track.displayPoints ?? track.points;
+  const which = track.displayPoints ? 'displayPoints' : 'points';
+  const latLngs = splitAtRouteBreaks(displayPoints, track.breaks, which).map(stretch =>
+    stretch.map(p => [p.lat, p.lon] as [number, number])
+  );
   basePolyline = L.polyline(latLngs, { color: '#aaa', weight: 3, opacity: 0.55 }).addTo(map);
+  for (const crossing of routeBreakCrossings(displayPoints, track.breaks, which)) {
+    L.polyline(
+      [
+        [crossing.from.lat, crossing.from.lon],
+        [crossing.to.lat, crossing.to.lon],
+      ],
+      { color: '#9e9e9e', weight: 2, opacity: 0.9, dashArray: '6 6' }
+    )
+      .addTo(map)
+      .bindPopup(
+        `<strong>Trail break</strong><br>${crossing.straightLineKm.toFixed(1)} km, not walked ` +
+          'and not counted in the trail distance.'
+      );
+  }
 
   // Fit map
-  if (latLngs.length > 0) {
+  if (displayPoints.length > 0) {
     map.fitBounds(basePolyline.getBounds(), { padding: [20, 20] });
   }
 
@@ -288,15 +318,15 @@ function redrawMapLayers(): void {
   const days = currentDays;
   const colors = getDayColors(days.length);
 
-  const points = activeTrail().track.points;
+  const { points, breaks } = activeTrail().track;
+  const breakStarts = routeBreakStarts(breaks, 'points');
   days.forEach((day, i) => {
     const startIdx = findNearestByDistance(points, day.startKm);
     const endIdx = findNearestByDistance(points, day.endKm);
-    const slice = points.slice(
-      Math.min(startIdx, endIdx),
-      Math.max(startIdx, endIdx) + 1
-    );
-    const latLngs = slice.map(p => [p.lat, p.lon] as [number, number]);
+    // A day that spans a route break (the Cook Strait ferry, say) is two lines.
+    const latLngs = sliceAcrossRouteBreaks(points, startIdx, endIdx, breakStarts)
+      .filter(piece => piece.length >= 2)
+      .map(piece => piece.map(p => [p.lat, p.lon] as [number, number]));
     const isSelected = selectedDayIndex === i;
     const polyline = L.polyline(latLngs, {
       color: isSelected ? '#3b82f6' : colors[i],

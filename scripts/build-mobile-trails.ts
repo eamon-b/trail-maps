@@ -17,7 +17,11 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { slimPoi } from '../src/lib/poi-display.js';
 import { simplifyToTarget, truncatePoints } from '../src/lib/track-simplify.js';
-import { splitAtRouteBreaks } from '../src/lib/route-breaks.js';
+import { routeBreakStarts, splitAtRouteBreaks } from '../src/lib/route-breaks.js';
+import {
+  annotateCumulativeElevation,
+  findNearestByDistance,
+} from '../src/lib/track-geometry.js';
 import type { RouteBreak, TrackPoint, TrailPOI } from '../src/lib/trail-types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -118,10 +122,64 @@ function simplifyMainTrack(
   return { points: rebuilt, breaks: rebuiltBreaks };
 }
 
+/**
+ * Copy the cumulative climb from a full-resolution track onto a subset of it.
+ *
+ * `displayPoints` is what Douglas-Peucker kept of `points`, so it is a
+ * subsequence of it and a single forward walk matching on coordinates lines the
+ * two up — including where a trail doubles back over its own coordinates, which
+ * a lat/lon lookup map would collapse. If the walk ever fails to find the next
+ * point ahead (a display copy that is not a subsequence — not something
+ * `buildTrail` produces, but nothing here depends on that), it gives up and
+ * falls back to the nearest full-resolution point by km for the rest.
+ */
+function copyCumulativeOntoSubset(
+  source: (TrackPoint & { cumAscent: number; cumDescent: number })[],
+  subset: TrackPoint[]
+): TrackPoint[] {
+  let cursor = 0;
+  let walking = true;
+
+  return subset.map(point => {
+    let matched = -1;
+    if (walking) {
+      let i = cursor;
+      while (i < source.length && (source[i].lat !== point.lat || source[i].lon !== point.lon)) i++;
+      if (i < source.length) {
+        matched = i;
+        cursor = i + 1;
+      } else {
+        walking = false;
+      }
+    }
+    if (matched < 0) matched = findNearestByDistance(source, point.dist);
+    return {
+      ...point,
+      cumAscent: source[matched].cumAscent,
+      cumDescent: source[matched].cumDescent,
+    };
+  });
+}
+
 export function processTrail(trail: TrailJson): TrailJson {
+  // Cumulative climb, measured on the full-resolution track *before* anything is
+  // thinned away. Douglas-Peucker keeps the shape of the line, not its ups and
+  // downs, so summing the steps of a 5,000-point copy at runtime reported only
+  // 65-86% of the real ascent (issue #69). Carried on the points it keeps, the
+  // climb over any span is the difference of its two ends instead — which is the
+  // full-resolution number, and matches the waypoint rows and the web.
+  const annotatedPoints = annotateCumulativeElevation(
+    trail.track.points,
+    routeBreakStarts(trail.track.breaks, 'points'),
+  );
+
   // Simplify main track points
-  const simplifiedMain = simplifyMainTrack(trail.track.points, trail.track.breaks, TARGET_POINTS);
+  const simplifiedMain = simplifyMainTrack(annotatedPoints, trail.track.breaks, TARGET_POINTS);
   const simplifiedPoints = simplifiedMain.points;
+
+  // Custom-route stats are measured over displayPoints, which is thinned too, so
+  // it needs the same numbers — read off the full-resolution points it came from.
+  const displayPoints = copyCumulativeOntoSubset(annotatedPoints, trail.track.displayPoints);
 
   // Process alternates
   const alternates = (trail.alternates ?? []).map((alt) => {
@@ -146,10 +204,10 @@ export function processTrail(trail: TrailJson): TrailJson {
     config: trail.config,
     track: {
       points: truncatePoints(simplifiedPoints),
-      // displayPoints are only rounded, never re-simplified, so every break's
-      // displayIndex survives this step untouched. `index` does not — it is
-      // re-anchored by simplifyMainTrack above.
-      displayPoints: truncatePoints(trail.track.displayPoints),
+      // displayPoints are only rounded (and given the cumulative pair above),
+      // never re-simplified, so every break's displayIndex survives this step
+      // untouched. `index` does not — it is re-anchored by simplifyMainTrack.
+      displayPoints: truncatePoints(displayPoints),
       totalDistance: Math.round(trail.track.totalDistance * 10) / 10,
       totalAscent: Math.round(trail.track.totalAscent),
       totalDescent: Math.round(trail.track.totalDescent),

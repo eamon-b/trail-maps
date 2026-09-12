@@ -179,6 +179,21 @@ export interface TrackPoint {
   ele: number;
   /** Cumulative distance from the start of the route, in km. */
   dist: number;
+  /**
+   * Cumulative ascent from the start of the route to this point, in metres,
+   * measured on the *full-resolution* track (the step into a route break is not
+   * climbed, as for `TrackData.totalAscent`).
+   *
+   * Only the phone's thinned copies carry this pair, written by
+   * `scripts/build-mobile-trails.ts`: summing point-to-point steps over a
+   * 5,000-point track loses most of its small climbs, so the climb over a span
+   * is read as the difference of its two ends instead. Absent — and not needed
+   * — wherever the points are full resolution, which is the generated web JSON
+   * and every imported trail.
+   */
+  cumAscent?: number;
+  /** Cumulative descent to this point, in metres. Present iff `cumAscent` is. */
+  cumDescent?: number;
 }
 
 /** The built main route: full resolution plus a simplified display copy. */

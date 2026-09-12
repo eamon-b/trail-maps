@@ -30,6 +30,10 @@ export interface ReversiblePoi {
 export interface ReversibleTrackPoint {
   /** Cumulative distance along the trail in km */
   dist: number;
+  /** Cumulative ascent from the start of the route in m (thinned tracks only). */
+  cumAscent?: number;
+  /** Cumulative descent from the start of the route in m (thinned tracks only). */
+  cumDescent?: number;
 }
 
 /** The fields of a route break that a change of direction moves. */
@@ -105,15 +109,45 @@ export interface ReversibleTrail<
   pois?: ReversiblePoi[];
 }
 
-/** Reverse track points, flipping cumulative distances. */
+/**
+ * Reverse track points, flipping cumulative distances — and, when the points
+ * carry them, the cumulative climb pair.
+ *
+ * A climb walked one way is a descent walked the other, so the ascent from the
+ * new start down to a point is the descent the forward walk still had left at
+ * that point: `cumAscent' = D - cumDescent`, `cumDescent' = A - cumAscent`,
+ * where A and D are the last point's own totals. Taken from the array rather
+ * than from `track.totalAscent` so the pair stays self-consistent: the reversed
+ * first point lands on 0 and the last on the forward totals, whatever rounding
+ * the asset applied. The step into a route break contributed nothing forward,
+ * so it contributes nothing reversed either, and the breaks need no extra care.
+ */
 export function reverseTrackPoints<P extends ReversibleTrackPoint>(
   points: P[],
   totalDistance: number,
 ): P[] {
-  return [...points].reverse().map(p => ({
-    ...p,
-    dist: totalDistance - p.dist,
-  }));
+  const last = points[points.length - 1];
+  const totalAscent = last?.cumAscent;
+  const totalDescent = last?.cumDescent;
+  const hasCumulative =
+    typeof totalAscent === 'number' && typeof totalDescent === 'number';
+
+  return [...points].reverse().map(p => {
+    const dist = totalDistance - p.dist;
+    if (
+      hasCumulative &&
+      typeof p.cumAscent === 'number' &&
+      typeof p.cumDescent === 'number'
+    ) {
+      return {
+        ...p,
+        dist,
+        cumAscent: totalDescent - p.cumDescent,
+        cumDescent: totalAscent - p.cumAscent,
+      };
+    }
+    return { ...p, dist };
+  });
 }
 
 /**

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { findNearestByDistance, calculateElevationBetween } from './track-geometry';
+import {
+  findNearestByDistance,
+  calculateElevationBetween,
+  annotateCumulativeElevation,
+  hasCumulativeElevation,
+} from './track-geometry';
+import { simplifyToTarget } from './track-simplify';
 
 describe('findNearestByDistance', () => {
   const points = [0, 10, 20, 30, 40, 50].map(dist => ({ dist }));
@@ -95,5 +101,121 @@ describe('calculateElevationBetween across a route break', () => {
 
   it('still counts it when told nothing about breaks', () => {
     expect(calculateElevationBetween(0, 2, trackPoints)).toEqual({ gain: 350, loss: 50 });
+  });
+});
+
+describe('annotateCumulativeElevation', () => {
+  const points = [
+    { lat: -35, lon: 149, ele: 100, dist: 0 },
+    { lat: -35.01, lon: 149, ele: 150, dist: 1 },
+    { lat: -35.02, lon: 149, ele: 120, dist: 2 },
+    { lat: -35.03, lon: 149, ele: 200, dist: 3 },
+  ];
+
+  it('runs the sums over every step', () => {
+    const annotated = annotateCumulativeElevation(points);
+    expect(annotated.map(p => p.cumAscent)).toEqual([0, 50, 50, 130]);
+    expect(annotated.map(p => p.cumDescent)).toEqual([0, 0, 30, 30]);
+  });
+
+  it('leaves the input untouched', () => {
+    annotateCumulativeElevation(points);
+    expect(hasCumulativeElevation(points[1])).toBe(false);
+  });
+
+  it('does not climb the step into a route break', () => {
+    // A ferry between index 1 and 2: the 300 m between the landings is not walked.
+    const ferry = [
+      { ele: 100, dist: 0 },
+      { ele: 150, dist: 1 },
+      { ele: 450, dist: 1 },
+      { ele: 400, dist: 2 },
+    ];
+    const annotated = annotateCumulativeElevation(ferry, new Set([2]));
+    expect(annotated.map(p => p.cumAscent)).toEqual([0, 50, 50, 50]);
+    expect(annotated.map(p => p.cumDescent)).toEqual([0, 0, 0, 50]);
+  });
+
+  it('keeps every other field', () => {
+    const annotated = annotateCumulativeElevation(points);
+    expect(annotated[2]).toMatchObject({ lat: -35.02, lon: 149, ele: 120, dist: 2 });
+  });
+
+  it('handles an empty track', () => {
+    expect(annotateCumulativeElevation([])).toEqual([]);
+  });
+});
+
+describe('calculateElevationBetween with pre-computed cumulative climb', () => {
+  it('takes the difference of the two ends, not a walk of the steps', () => {
+    // `ele` is deliberately flat: only the cumulative pair can produce a climb,
+    // so this fails if the walk is used.
+    const points = [
+      { ele: 0, dist: 0, cumAscent: 0, cumDescent: 0 },
+      { ele: 0, dist: 5, cumAscent: 400, cumDescent: 100 },
+      { ele: 0, dist: 10, cumAscent: 900, cumDescent: 250 },
+    ];
+    expect(calculateElevationBetween(0, 10, points)).toEqual({ gain: 900, loss: 250 });
+    expect(calculateElevationBetween(5, 10, points)).toEqual({ gain: 500, loss: 150 });
+  });
+
+  it('reads the same span walked either way round', () => {
+    const points = [
+      { ele: 0, dist: 0, cumAscent: 0, cumDescent: 0 },
+      { ele: 0, dist: 5, cumAscent: 400, cumDescent: 100 },
+    ];
+    expect(calculateElevationBetween(5, 0, points)).toEqual({ gain: 400, loss: 100 });
+  });
+
+  it('needs no break set: the break step is already out of the sums', () => {
+    const ferry = annotateCumulativeElevation(
+      [
+        { ele: 100, dist: 0 },
+        { ele: 150, dist: 1 },
+        { ele: 450, dist: 1 },
+        { ele: 400, dist: 2 },
+      ],
+      new Set([2]),
+    );
+    // No breakStarts argument, and the 300 m ferry still is not climbed.
+    expect(calculateElevationBetween(0, 2, ferry)).toEqual({ gain: 50, loss: 50 });
+  });
+
+  it('falls back to the point walk when the fields are absent', () => {
+    const points = [
+      { ele: 100, dist: 0 },
+      { ele: 150, dist: 1 },
+      { ele: 120, dist: 2 },
+    ];
+    expect(calculateElevationBetween(0, 2, points)).toEqual({ gain: 50, loss: 30 });
+  });
+
+  it('falls back when only one end carries them', () => {
+    const points = [
+      { ele: 100, dist: 0 },
+      { ele: 150, dist: 1, cumAscent: 9999, cumDescent: 9999 },
+    ];
+    expect(calculateElevationBetween(0, 1, points)).toEqual({ gain: 50, loss: 0 });
+  });
+});
+
+describe('cumulative climb survives simplification', () => {
+  /** 4,000 points of small, real ups and downs on a wandering line. */
+  const points = Array.from({ length: 4000 }, (_, i) => ({
+    lat: -35 - i * 0.0002,
+    lon: 149 + Math.sin(i / 7) * 0.003,
+    ele: 500 + Math.sin(i / 5) * 12 + Math.sin(i / 31) * 60,
+    dist: i * 0.02,
+  }));
+
+  it('a thinned track annotated first reports the full-resolution climb', () => {
+    const full = calculateElevationBetween(0, 79.98, points);
+    const thinnedRaw = simplifyToTarget(points, 400);
+    const thinnedAnnotated = simplifyToTarget(annotateCumulativeElevation(points), 400);
+
+    // The bug: summing the steps of the thinned track loses most of the climb.
+    expect(calculateElevationBetween(0, 79.98, thinnedRaw).gain).toBeLessThan(full.gain * 0.9);
+    // The fix: reading the two ends of the carried sums gives the real number.
+    expect(calculateElevationBetween(0, 79.98, thinnedAnnotated)).toEqual(full);
   });
 });

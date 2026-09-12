@@ -212,6 +212,41 @@ describe('assignWaypointIds', () => {
     expect(registry[TRAIL]).toHaveLength(2);
   });
 
+  it('(f) distinguishes two same-type waypoints at one coordinate by name', () => {
+    // The mint basis is trail + type + position, so widening the hash slice
+    // cannot separate these — several towns really are hitched from one pass
+    // (the CDT's Wolf Creek Pass serves three). Both must survive with ids of
+    // their own rather than one of them failing the build.
+    const registry: WaypointRegistry = {};
+    const at = (name: string): WaypointForId => ({
+      name,
+      type: 'town',
+      lat: 37.48337,
+      lon: -106.80088,
+    });
+    const ids = assignWaypointIds(
+      TRAIL,
+      [at('Pagosa Springs'), at('South Fork'), at('Del Norte')],
+      registry,
+    );
+
+    expect(new Set(ids).size).toBe(3);
+    for (const id of ids) expect(id).toMatch(ID_PATTERN);
+    expect(registry[TRAIL]).toHaveLength(3);
+
+    // The first waypoint at a position keeps the position-only id, so adding a
+    // second one later never moves an id already in the committed registry.
+    const alone: WaypointRegistry = {};
+    const [positionOnly] = assignWaypointIds(TRAIL, [at('Pagosa Springs')], alone);
+    expect(ids[0]).toBe(positionOnly);
+
+    // Deterministic: the same input mints the same ids again.
+    const again: WaypointRegistry = {};
+    expect(
+      assignWaypointIds(TRAIL, [at('Pagosa Springs'), at('South Fork'), at('Del Norte')], again),
+    ).toEqual(ids);
+  });
+
   it('scopes ids per trail in the registry', () => {
     const registry: WaypointRegistry = {};
     assignWaypointIds('trail-a', [{ name: 'X', type: 'hut', lat: -33, lon: 150 }], registry);

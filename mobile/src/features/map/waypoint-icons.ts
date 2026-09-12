@@ -34,6 +34,9 @@ export const WAYPOINT_ICON_NAMES = [
   'trailhead',
   'endpoint',
   'junction',
+  'milestone',
+  'gap',
+  'note',
   'road',
   'ford',
   'summit',
@@ -108,7 +111,10 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
   finish: 'endpoint',
 
   // Navigation features
-  junction: 'junction',
+  junction: 'junction', // in data (CDT alternate branch/rejoin points)
+  milestone: 'milestone', // in data (the CDT's every-10-mile markers)
+  milepost: 'milestone',
+  marker: 'milestone',
   fork: 'junction',
   gate: 'junction',
   stile: 'junction',
@@ -147,6 +153,15 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
 
   // Coast
   beach: 'beach', // in data
+
+  // Curated third-party vocabulary the bundled data can carry (the CDT build's
+  // Ley map-set and 2018-walk files). Listed so they get their own ink rather
+  // than the generic dot; `camp-2018` deliberately shares the campsite glyph,
+  // because that is what it is.
+  gap: 'gap',
+  'ley-note': 'note',
+  'ley-waypoint': 'info',
+  'camp-2018': 'campsite',
 
   // Generic
   poi: 'poi', // in data

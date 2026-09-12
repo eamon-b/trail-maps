@@ -893,6 +893,16 @@ const WAYPOINT_ICONS: Record<string, { icon: string }> = {
   poi: { icon: '\u{2B50}' },
   resupply: { icon: '\u{1F4E6}' },
   endpoint: { icon: '\u{1F6A9}' },
+  // Branch/rejoin points where an alternate leaves or meets the main line.
+  junction: { icon: '\u{1F500}' },
+  // A distance marker placed along the route (the CDT's every-10-mile posts).
+  milestone: { icon: '\u{1FAA7}' },
+  // Vocabulary from curated third-party data (the CDT build): kept here rather
+  // than left to fall through to the generic pin, so each reads distinctly.
+  gap: { icon: '\u{1F6A7}' },
+  'ley-note': { icon: '\u{1F5D2}\u{FE0F}' },
+  'ley-waypoint': { icon: '\u{1F53A}' },
+  'camp-2018': { icon: '\u{1F525}' },
   waypoint: { icon: '\u{1F4CD}' }
 };
 

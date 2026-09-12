@@ -4,48 +4,55 @@
     "name": "Australian Alps Walking Track",
     "shortName": "AAWT",
     "lengthKm": 688.3,
-    "dataVersion": "2026-09-09"
+    "dataVersion": "2026-09-12"
   },
   {
     "id": "hume-and-hovell",
     "name": "Hume and Hovell Track",
     "shortName": "H&H",
     "lengthKm": 426,
-    "dataVersion": "2026-09-09"
+    "dataVersion": "2026-09-12"
   },
   {
     "id": "bibbulmun",
     "name": "Bibbulmun Track",
     "shortName": "Bibb",
     "lengthKm": 981.6,
-    "dataVersion": "2026-09-09"
+    "dataVersion": "2026-09-12"
   },
   {
     "id": "cape_to_cape",
     "name": "Cape to Cape Track",
     "shortName": "Cape to Cape",
     "lengthKm": 126.9,
-    "dataVersion": "2026-09-09"
+    "dataVersion": "2026-09-12"
+  },
+  {
+    "id": "cdt",
+    "name": "Continental Divide Trail",
+    "shortName": "CDT",
+    "lengthKm": 4827.5,
+    "dataVersion": "2026-09-11"
   },
   {
     "id": "heysen",
     "name": "Heysen Trail",
     "shortName": "Heysen",
     "lengthKm": 1098.9,
-    "dataVersion": "2026-09-09"
+    "dataVersion": "2026-09-12"
   },
   {
     "id": "larapinta",
     "name": "Larapinta Trail",
     "shortName": "Larapinta",
     "lengthKm": 215.8,
-    "dataVersion": "2026-09-09"
+    "dataVersion": "2026-09-12"
   },
   {
     "id": "te_araroa",
     "name": "Te Araroa",
     "shortName": "Te Araroa",
     "lengthKm": 3056.8,
-    "dataVersion": "2026-09-10"
+    "dataVersion": "2026-09-12"
   }
 ]

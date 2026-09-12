@@ -1,0 +1,745 @@
+{
+  "generatedAt": "2026-09-11T01:06:03.302Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Lordsburg, NM",
+      "lat": 32.35,
+      "lon": -108.71,
+      "elevation": 1295,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 1.6,
+          "avgTempMax": 12.9,
+          "avgPrecipitation": 18,
+          "avgRainyDays": 3.3
+        },
+        {
+          "month": 2,
+          "avgTempMin": 3.2,
+          "avgTempMax": 15.4,
+          "avgPrecipitation": 18.2,
+          "avgRainyDays": 3.6
+        },
+        {
+          "month": 3,
+          "avgTempMin": 6.6,
+          "avgTempMax": 19.9,
+          "avgPrecipitation": 10.6,
+          "avgRainyDays": 2.4
+        },
+        {
+          "month": 4,
+          "avgTempMin": 10.5,
+          "avgTempMax": 24.5,
+          "avgPrecipitation": 3.8,
+          "avgRainyDays": 1
+        },
+        {
+          "month": 5,
+          "avgTempMin": 15.6,
+          "avgTempMax": 29.5,
+          "avgPrecipitation": 2.7,
+          "avgRainyDays": 0.7
+        },
+        {
+          "month": 6,
+          "avgTempMin": 20.9,
+          "avgTempMax": 34.4,
+          "avgPrecipitation": 6.8,
+          "avgRainyDays": 1.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 22.3,
+          "avgTempMax": 33.8,
+          "avgPrecipitation": 27.5,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 8,
+          "avgTempMin": 21.4,
+          "avgTempMax": 32.7,
+          "avgPrecipitation": 22.9,
+          "avgRainyDays": 4.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 18.6,
+          "avgTempMax": 30,
+          "avgPrecipitation": 21.4,
+          "avgRainyDays": 3.4
+        },
+        {
+          "month": 10,
+          "avgTempMin": 12.5,
+          "avgTempMax": 24.5,
+          "avgPrecipitation": 13.2,
+          "avgRainyDays": 2.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 6.3,
+          "avgTempMax": 17.9,
+          "avgPrecipitation": 15.6,
+          "avgRainyDays": 2.1
+        },
+        {
+          "month": 12,
+          "avgTempMin": 1.9,
+          "avgTempMax": 12.5,
+          "avgPrecipitation": 21.2,
+          "avgRainyDays": 4.2
+        }
+      ]
+    },
+    {
+      "name": "Silver City, NM",
+      "lat": 32.77,
+      "lon": -108.28,
+      "elevation": 1804,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -1.9,
+          "avgTempMax": 9.6,
+          "avgPrecipitation": 27.2,
+          "avgRainyDays": 4
+        },
+        {
+          "month": 2,
+          "avgTempMin": -0.5,
+          "avgTempMax": 11.5,
+          "avgPrecipitation": 28.9,
+          "avgRainyDays": 4.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 2.2,
+          "avgTempMax": 15.6,
+          "avgPrecipitation": 18.3,
+          "avgRainyDays": 3.4
+        },
+        {
+          "month": 4,
+          "avgTempMin": 6.1,
+          "avgTempMax": 20,
+          "avgPrecipitation": 10.3,
+          "avgRainyDays": 1.8
+        },
+        {
+          "month": 5,
+          "avgTempMin": 11.2,
+          "avgTempMax": 25.1,
+          "avgPrecipitation": 7.3,
+          "avgRainyDays": 2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 16.4,
+          "avgTempMax": 30.1,
+          "avgPrecipitation": 17.7,
+          "avgRainyDays": 3.1
+        },
+        {
+          "month": 7,
+          "avgTempMin": 17.6,
+          "avgTempMax": 29.6,
+          "avgPrecipitation": 62.3,
+          "avgRainyDays": 11.3
+        },
+        {
+          "month": 8,
+          "avgTempMin": 16.5,
+          "avgTempMax": 28.3,
+          "avgPrecipitation": 52.5,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 9,
+          "avgTempMin": 13.9,
+          "avgTempMax": 25.6,
+          "avgPrecipitation": 39.9,
+          "avgRainyDays": 6.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 8.3,
+          "avgTempMax": 20.5,
+          "avgPrecipitation": 27.9,
+          "avgRainyDays": 4.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 2.9,
+          "avgTempMax": 14.8,
+          "avgPrecipitation": 24.2,
+          "avgRainyDays": 3.3
+        },
+        {
+          "month": 12,
+          "avgTempMin": -1.4,
+          "avgTempMax": 9.6,
+          "avgPrecipitation": 31.2,
+          "avgRainyDays": 4.9
+        }
+      ]
+    },
+    {
+      "name": "Chama, NM",
+      "lat": 36.9,
+      "lon": -106.58,
+      "elevation": 2397,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -11.6,
+          "avgTempMax": 0.4,
+          "avgPrecipitation": 59.2,
+          "avgRainyDays": 7.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": -9.7,
+          "avgTempMax": 1.6,
+          "avgPrecipitation": 60.8,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 3,
+          "avgTempMin": -6,
+          "avgTempMax": 5.6,
+          "avgPrecipitation": 63.4,
+          "avgRainyDays": 9.4
+        },
+        {
+          "month": 4,
+          "avgTempMin": -2.3,
+          "avgTempMax": 10,
+          "avgPrecipitation": 54.7,
+          "avgRainyDays": 8.9
+        },
+        {
+          "month": 5,
+          "avgTempMin": 2.6,
+          "avgTempMax": 16.6,
+          "avgPrecipitation": 43.3,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 6,
+          "avgTempMin": 8.7,
+          "avgTempMax": 23.7,
+          "avgPrecipitation": 33.9,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 7,
+          "avgTempMin": 11.4,
+          "avgTempMax": 25.9,
+          "avgPrecipitation": 78.7,
+          "avgRainyDays": 13.8
+        },
+        {
+          "month": 8,
+          "avgTempMin": 10.6,
+          "avgTempMax": 24.3,
+          "avgPrecipitation": 81.9,
+          "avgRainyDays": 13.9
+        },
+        {
+          "month": 9,
+          "avgTempMin": 7.2,
+          "avgTempMax": 20.5,
+          "avgPrecipitation": 58.5,
+          "avgRainyDays": 9.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 1.1,
+          "avgTempMax": 13.5,
+          "avgPrecipitation": 55.1,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": -6.2,
+          "avgTempMax": 6.4,
+          "avgPrecipitation": 47.7,
+          "avgRainyDays": 6.8
+        },
+        {
+          "month": 12,
+          "avgTempMin": -11.9,
+          "avgTempMax": 0.8,
+          "avgPrecipitation": 60.5,
+          "avgRainyDays": 7.7
+        }
+      ]
+    },
+    {
+      "name": "Silverton, CO",
+      "lat": 37.81,
+      "lon": -107.66,
+      "elevation": 2834,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -10.1,
+          "avgTempMax": -1.2,
+          "avgPrecipitation": 69.4,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 2,
+          "avgTempMin": -9.6,
+          "avgTempMax": -0.7,
+          "avgPrecipitation": 70.8,
+          "avgRainyDays": 11.3
+        },
+        {
+          "month": 3,
+          "avgTempMin": -6.5,
+          "avgTempMax": 2.7,
+          "avgPrecipitation": 78.3,
+          "avgRainyDays": 12.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": -3.6,
+          "avgTempMax": 5.8,
+          "avgPrecipitation": 80,
+          "avgRainyDays": 12.4
+        },
+        {
+          "month": 5,
+          "avgTempMin": 0.7,
+          "avgTempMax": 10.7,
+          "avgPrecipitation": 61.4,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.4,
+          "avgTempMax": 17.5,
+          "avgPrecipitation": 42,
+          "avgRainyDays": 7.3
+        },
+        {
+          "month": 7,
+          "avgTempMin": 9.3,
+          "avgTempMax": 21.4,
+          "avgPrecipitation": 134.5,
+          "avgRainyDays": 18.1
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8.6,
+          "avgTempMax": 20.2,
+          "avgPrecipitation": 146.9,
+          "avgRainyDays": 19.6
+        },
+        {
+          "month": 9,
+          "avgTempMin": 5.3,
+          "avgTempMax": 16.7,
+          "avgPrecipitation": 83.9,
+          "avgRainyDays": 13.3
+        },
+        {
+          "month": 10,
+          "avgTempMin": -1.1,
+          "avgTempMax": 9.9,
+          "avgPrecipitation": 70.3,
+          "avgRainyDays": 9.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": -7.3,
+          "avgTempMax": 4,
+          "avgPrecipitation": 56.6,
+          "avgRainyDays": 7.6
+        },
+        {
+          "month": 12,
+          "avgTempMin": -11,
+          "avgTempMax": -1.1,
+          "avgPrecipitation": 67.3,
+          "avgRainyDays": 9.6
+        }
+      ]
+    },
+    {
+      "name": "Grand Lake, CO",
+      "lat": 40.25,
+      "lon": -105.82,
+      "elevation": 2555,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -12.5,
+          "avgTempMax": -3.7,
+          "avgPrecipitation": 38,
+          "avgRainyDays": 9.2
+        },
+        {
+          "month": 2,
+          "avgTempMin": -11.2,
+          "avgTempMax": -2.3,
+          "avgPrecipitation": 40.3,
+          "avgRainyDays": 10.1
+        },
+        {
+          "month": 3,
+          "avgTempMin": -7.5,
+          "avgTempMax": 2.1,
+          "avgPrecipitation": 45.3,
+          "avgRainyDays": 10.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": -4.2,
+          "avgTempMax": 5.5,
+          "avgPrecipitation": 67.4,
+          "avgRainyDays": 12.8
+        },
+        {
+          "month": 5,
+          "avgTempMin": 0.1,
+          "avgTempMax": 11.1,
+          "avgPrecipitation": 61.1,
+          "avgRainyDays": 13.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.5,
+          "avgTempMax": 19.7,
+          "avgPrecipitation": 48.3,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 7,
+          "avgTempMin": 9.9,
+          "avgTempMax": 23.6,
+          "avgPrecipitation": 62.4,
+          "avgRainyDays": 13.8
+        },
+        {
+          "month": 8,
+          "avgTempMin": 9.4,
+          "avgTempMax": 22.3,
+          "avgPrecipitation": 56.5,
+          "avgRainyDays": 13.9
+        },
+        {
+          "month": 9,
+          "avgTempMin": 5.3,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 41.4,
+          "avgRainyDays": 8.9
+        },
+        {
+          "month": 10,
+          "avgTempMin": -1.3,
+          "avgTempMax": 10.3,
+          "avgPrecipitation": 43.7,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": -8.5,
+          "avgTempMax": 2.6,
+          "avgPrecipitation": 34.8,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 12,
+          "avgTempMin": -13.4,
+          "avgTempMax": -3.5,
+          "avgPrecipitation": 37.2,
+          "avgRainyDays": 8.4
+        }
+      ]
+    },
+    {
+      "name": "Rawlins, WY",
+      "lat": 41.79,
+      "lon": -107.24,
+      "elevation": 2074,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -11.6,
+          "avgTempMax": -4.1,
+          "avgPrecipitation": 21.1,
+          "avgRainyDays": 5.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": -11.5,
+          "avgTempMax": -3,
+          "avgPrecipitation": 22.1,
+          "avgRainyDays": 5.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": -7.3,
+          "avgTempMax": 2.6,
+          "avgPrecipitation": 31.2,
+          "avgRainyDays": 6.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": -3.1,
+          "avgTempMax": 8.5,
+          "avgPrecipitation": 48.2,
+          "avgRainyDays": 10.4
+        },
+        {
+          "month": 5,
+          "avgTempMin": 2.9,
+          "avgTempMax": 15.8,
+          "avgPrecipitation": 51.4,
+          "avgRainyDays": 10.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9.1,
+          "avgTempMax": 23.7,
+          "avgPrecipitation": 25,
+          "avgRainyDays": 5.1
+        },
+        {
+          "month": 7,
+          "avgTempMin": 14,
+          "avgTempMax": 28.4,
+          "avgPrecipitation": 18.9,
+          "avgRainyDays": 4
+        },
+        {
+          "month": 8,
+          "avgTempMin": 12.9,
+          "avgTempMax": 26.6,
+          "avgPrecipitation": 19.3,
+          "avgRainyDays": 4.4
+        },
+        {
+          "month": 9,
+          "avgTempMin": 7.8,
+          "avgTempMax": 20.8,
+          "avgPrecipitation": 28,
+          "avgRainyDays": 5.7
+        },
+        {
+          "month": 10,
+          "avgTempMin": 0.8,
+          "avgTempMax": 11.8,
+          "avgPrecipitation": 34,
+          "avgRainyDays": 6.4
+        },
+        {
+          "month": 11,
+          "avgTempMin": -5.4,
+          "avgTempMax": 3.5,
+          "avgPrecipitation": 22.3,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 12,
+          "avgTempMin": -11,
+          "avgTempMax": -3.4,
+          "avgPrecipitation": 26.1,
+          "avgRainyDays": 6.4
+        }
+      ]
+    },
+    {
+      "name": "Pinedale, WY",
+      "lat": 42.87,
+      "lon": -109.86,
+      "elevation": 2195,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -14.2,
+          "avgTempMax": -4.2,
+          "avgPrecipitation": 31,
+          "avgRainyDays": 7.2
+        },
+        {
+          "month": 2,
+          "avgTempMin": -13.5,
+          "avgTempMax": -3.2,
+          "avgPrecipitation": 28.7,
+          "avgRainyDays": 7.2
+        },
+        {
+          "month": 3,
+          "avgTempMin": -9.8,
+          "avgTempMax": 1.1,
+          "avgPrecipitation": 32.6,
+          "avgRainyDays": 7.7
+        },
+        {
+          "month": 4,
+          "avgTempMin": -6.1,
+          "avgTempMax": 5.4,
+          "avgPrecipitation": 42.5,
+          "avgRainyDays": 10.1
+        },
+        {
+          "month": 5,
+          "avgTempMin": -0.8,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 55.9,
+          "avgRainyDays": 11.9
+        },
+        {
+          "month": 6,
+          "avgTempMin": 4.4,
+          "avgTempMax": 19.4,
+          "avgPrecipitation": 35.3,
+          "avgRainyDays": 7.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 9.2,
+          "avgTempMax": 25.3,
+          "avgPrecipitation": 15,
+          "avgRainyDays": 4.2
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8.9,
+          "avgTempMax": 23.9,
+          "avgPrecipitation": 22.8,
+          "avgRainyDays": 5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 4.5,
+          "avgTempMax": 18.4,
+          "avgPrecipitation": 34.1,
+          "avgRainyDays": 5.9
+        },
+        {
+          "month": 10,
+          "avgTempMin": -1.8,
+          "avgTempMax": 9.7,
+          "avgPrecipitation": 33.4,
+          "avgRainyDays": 6.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": -9,
+          "avgTempMax": 1.4,
+          "avgPrecipitation": 28.1,
+          "avgRainyDays": 6.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": -14.9,
+          "avgTempMax": -4.4,
+          "avgPrecipitation": 34.5,
+          "avgRainyDays": 8.2
+        }
+      ]
+    },
+    {
+      "name": "East Glacier Park, MT",
+      "lat": 48.45,
+      "lon": -113.22,
+      "elevation": 1472,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -9.4,
+          "avgTempMax": -2.8,
+          "avgPrecipitation": 48.6,
+          "avgRainyDays": 10.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": -10.1,
+          "avgTempMax": -2.6,
+          "avgPrecipitation": 48.8,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 3,
+          "avgTempMin": -6.5,
+          "avgTempMax": 1.6,
+          "avgPrecipitation": 51.9,
+          "avgRainyDays": 11
+        },
+        {
+          "month": 4,
+          "avgTempMin": -3,
+          "avgTempMax": 5.9,
+          "avgPrecipitation": 64.3,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": 1.6,
+          "avgTempMax": 11.9,
+          "avgPrecipitation": 82.8,
+          "avgRainyDays": 11.8
+        },
+        {
+          "month": 6,
+          "avgTempMin": 6.4,
+          "avgTempMax": 17.1,
+          "avgPrecipitation": 98,
+          "avgRainyDays": 12.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 10.6,
+          "avgTempMax": 23,
+          "avgPrecipitation": 30,
+          "avgRainyDays": 6.5
+        },
+        {
+          "month": 8,
+          "avgTempMin": 10.2,
+          "avgTempMax": 22.5,
+          "avgPrecipitation": 37,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 9,
+          "avgTempMin": 6.1,
+          "avgTempMax": 16.8,
+          "avgPrecipitation": 44.5,
+          "avgRainyDays": 7
+        },
+        {
+          "month": 10,
+          "avgTempMin": -0.1,
+          "avgTempMax": 8.2,
+          "avgPrecipitation": 54.7,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": -5.7,
+          "avgTempMax": 0.9,
+          "avgPrecipitation": 57.4,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 12,
+          "avgTempMin": -10,
+          "avgTempMax": -3.6,
+          "avgPrecipitation": 50.4,
+          "avgRainyDays": 10.8
+        }
+      ]
+    }
+  ]
+}

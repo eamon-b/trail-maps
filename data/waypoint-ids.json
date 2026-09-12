@@ -2406,6 +2406,3564 @@
       "lon": 115.00106
     }
   ],
+  "cdt": [
+    {
+      "id": "w_0007b91b",
+      "name": "Highway 81 water cache",
+      "type": "water",
+      "lat": 31.73388,
+      "lon": -108.41075
+    },
+    {
+      "id": "w_0066b79d",
+      "name": "Official mile 2810",
+      "type": "milestone",
+      "lat": 47.553995,
+      "lon": -112.962556
+    },
+    {
+      "id": "w_01848ceb",
+      "name": "Official mile 2290",
+      "type": "milestone",
+      "lat": 44.808046,
+      "lon": -113.353173
+    },
+    {
+      "id": "w_021c7405",
+      "name": "Official mile 520",
+      "type": "milestone",
+      "lat": 34.990768,
+      "lon": -107.808506
+    },
+    {
+      "id": "w_0254e0ae",
+      "name": "Official mile 340",
+      "type": "milestone",
+      "lat": 33.665246,
+      "lon": -108.451571
+    },
+    {
+      "id": "w_029d8f34",
+      "name": "Official mile 2700",
+      "type": "milestone",
+      "lat": 46.724848,
+      "lon": -112.441607
+    },
+    {
+      "id": "w_03bec885",
+      "name": "Official mile 1780",
+      "type": "milestone",
+      "lat": 42.572827,
+      "lon": -109.071564
+    },
+    {
+      "id": "w_03d4d127",
+      "name": "Lima (access: Monida Pass (I-15))",
+      "type": "resupply",
+      "lat": 44.544174,
+      "lon": -112.294681
+    },
+    {
+      "id": "w_04887316",
+      "name": "Official mile 2560",
+      "type": "milestone",
+      "lat": 45.820294,
+      "lon": -112.503924
+    },
+    {
+      "id": "w_0561fe98",
+      "name": "Official mile 370",
+      "type": "milestone",
+      "lat": 33.896444,
+      "lon": -108.447914
+    },
+    {
+      "id": "w_0584b520",
+      "name": "Twin Lakes",
+      "type": "resupply",
+      "lat": 39.082021,
+      "lon": -106.382264
+    },
+    {
+      "id": "w_05dc4ccf",
+      "name": "Official mile 680",
+      "type": "milestone",
+      "lat": 36.242371,
+      "lon": -106.683614
+    },
+    {
+      "id": "w_05f0e7dd",
+      "name": "Official mile 390",
+      "type": "milestone",
+      "lat": 34.076076,
+      "lon": -108.375769
+    },
+    {
+      "id": "w_074ca5e3",
+      "name": "Mount Taylor summit rejoins",
+      "type": "junction",
+      "lat": 35.2178,
+      "lon": -107.656533
+    },
+    {
+      "id": "w_07c0c3b5",
+      "name": "Sheridan Canyon water cache",
+      "type": "water",
+      "lat": 31.6124,
+      "lon": -108.31332
+    },
+    {
+      "id": "w_0855672a",
+      "name": "Leadore",
+      "type": "resupply",
+      "lat": 44.680339,
+      "lon": -113.357966
+    },
+    {
+      "id": "w_090393c4",
+      "name": "Official mile 640",
+      "type": "milestone",
+      "lat": 36.010442,
+      "lon": -106.9823
+    },
+    {
+      "id": "w_09804275",
+      "name": "Official mile 450",
+      "type": "milestone",
+      "lat": 34.64282,
+      "lon": -108.000112
+    },
+    {
+      "id": "w_09b4493e",
+      "name": "Official mile 2160",
+      "type": "milestone",
+      "lat": 44.537786,
+      "lon": -111.971825
+    },
+    {
+      "id": "w_09dc7630",
+      "name": "Pie Town",
+      "type": "resupply",
+      "lat": 34.29803,
+      "lon": -108.133636
+    },
+    {
+      "id": "w_0c3388a6",
+      "name": "Big Sandy Lodge (access: CDT at Big Sandy trailhead)",
+      "type": "resupply",
+      "lat": 42.69574,
+      "lon": -109.266675
+    },
+    {
+      "id": "w_0c3388a6523a",
+      "name": "Boulder (access: CDT at Big Sandy trailhead)",
+      "type": "resupply",
+      "lat": 42.69574,
+      "lon": -109.266675
+    },
+    {
+      "id": "w_0c696565",
+      "name": "Official mile 2220",
+      "type": "milestone",
+      "lat": 44.482533,
+      "lon": -112.782672
+    },
+    {
+      "id": "w_0d1c98b1",
+      "name": "Gila Hot Springs Campground",
+      "type": "campsite",
+      "lat": 33.196351,
+      "lon": -108.204974
+    },
+    {
+      "id": "w_0da4386b",
+      "name": "Official mile 2580",
+      "type": "milestone",
+      "lat": 45.938875,
+      "lon": -112.437078
+    },
+    {
+      "id": "w_0e1f087f",
+      "name": "Babb",
+      "type": "resupply",
+      "lat": 48.860019,
+      "lon": -113.436792
+    },
+    {
+      "id": "w_0e5c9aa9",
+      "name": "Wyoming old route 2 branches",
+      "type": "junction",
+      "lat": 41.804017,
+      "lon": -107.233883
+    },
+    {
+      "id": "w_0e8bb7ee",
+      "name": "Official mile 130",
+      "type": "milestone",
+      "lat": 32.644834,
+      "lon": -108.493745
+    },
+    {
+      "id": "w_0ed57d27",
+      "name": "Jeffrey City",
+      "type": "food",
+      "lat": 42.493891,
+      "lon": -107.825074
+    },
+    {
+      "id": "w_0f07fcfd",
+      "name": "Hachita",
+      "type": "resupply",
+      "lat": 31.918449,
+      "lon": -108.325071
+    },
+    {
+      "id": "w_0f2a1944",
+      "name": "Official mile 250",
+      "type": "milestone",
+      "lat": 33.317729,
+      "lon": -107.83029
+    },
+    {
+      "id": "w_113eed1d",
+      "name": "Official mile 2150",
+      "type": "milestone",
+      "lat": 44.521066,
+      "lon": -111.863188
+    },
+    {
+      "id": "w_1140367c",
+      "name": "Jackson (access: CDT primary route nearest Jackson (Big Hole divide))",
+      "type": "resupply",
+      "lat": 45.237288,
+      "lon": -113.516446
+    },
+    {
+      "id": "w_1153a289",
+      "name": "Antelope Wells leaves the CDT",
+      "type": "junction",
+      "lat": 31.640363,
+      "lon": -108.33999
+    },
+    {
+      "id": "w_115c2284",
+      "name": "Official mile 2500",
+      "type": "milestone",
+      "lat": 46.028924,
+      "lon": -113.099718
+    },
+    {
+      "id": "w_1167e7b7",
+      "name": "Official mile 2280",
+      "type": "milestone",
+      "lat": 44.808421,
+      "lon": -113.225664
+    },
+    {
+      "id": "w_127ef035",
+      "name": "Buena Vista",
+      "type": "town",
+      "lat": 38.836884,
+      "lon": -106.131169
+    },
+    {
+      "id": "w_12866768",
+      "name": "Official mile 650",
+      "type": "milestone",
+      "lat": 36.008795,
+      "lon": -106.897443
+    },
+    {
+      "id": "w_12e58e1d",
+      "name": "Grant Village",
+      "type": "resupply",
+      "lat": 44.38896,
+      "lon": -110.555814
+    },
+    {
+      "id": "w_12f8e231",
+      "name": "Creede",
+      "type": "town",
+      "lat": 37.851763,
+      "lon": -106.927229
+    },
+    {
+      "id": "w_13449c48",
+      "name": "Columbus Route (CDTS) leaves the CDT",
+      "type": "junction",
+      "lat": 32.922587,
+      "lon": -108.135441
+    },
+    {
+      "id": "w_1422e43a",
+      "name": "Official mile 1600",
+      "type": "milestone",
+      "lat": 41.416039,
+      "lon": -107.434232
+    },
+    {
+      "id": "w_143adf12",
+      "name": "Colorado old route 5 rejoins",
+      "type": "junction",
+      "lat": 39.072633,
+      "lon": -106.362235
+    },
+    {
+      "id": "w_15189e47",
+      "name": "Twin Lakes (access: CDT / Colorado Trail near CO 82, Twin Lakes)",
+      "type": "resupply",
+      "lat": 39.094605,
+      "lon": -106.345821
+    },
+    {
+      "id": "w_158978e2",
+      "name": "Official mile 1290",
+      "type": "milestone",
+      "lat": 39.654929,
+      "lon": -105.79281
+    },
+    {
+      "id": "w_161d19f7",
+      "name": "Official mile 1210",
+      "type": "milestone",
+      "lat": 39.420745,
+      "lon": -106.269536
+    },
+    {
+      "id": "w_16d71423",
+      "name": "Official mile 2950",
+      "type": "milestone",
+      "lat": 48.493426,
+      "lon": -113.368772
+    },
+    {
+      "id": "w_1731104e",
+      "name": "Official mile 1240",
+      "type": "milestone",
+      "lat": 39.540402,
+      "lon": -106.051521
+    },
+    {
+      "id": "w_180b6fce",
+      "name": "Official mile 2460",
+      "type": "milestone",
+      "lat": 45.967132,
+      "lon": -113.448716
+    },
+    {
+      "id": "w_1860ab71",
+      "name": "The Toaster House, Pie Town",
+      "type": "accommodation",
+      "lat": 34.299168,
+      "lon": -108.138778
+    },
+    {
+      "id": "w_189a4cc3",
+      "name": "Official mile 2010",
+      "type": "milestone",
+      "lat": 44.349284,
+      "lon": -110.650096
+    },
+    {
+      "id": "w_19288dc2",
+      "name": "Official mile 2880",
+      "type": "milestone",
+      "lat": 48.03231,
+      "lon": -113.017039
+    },
+    {
+      "id": "w_1a2709aa",
+      "name": "Knapsack Col branches",
+      "type": "junction",
+      "lat": 43.16918,
+      "lon": -109.741905
+    },
+    {
+      "id": "w_1a52d035",
+      "name": "Riverside",
+      "type": "resupply",
+      "lat": 41.216546,
+      "lon": -106.782632
+    },
+    {
+      "id": "w_1a53179b",
+      "name": "Silver City",
+      "type": "town",
+      "lat": 32.778,
+      "lon": -108.273
+    },
+    {
+      "id": "w_1b747a31",
+      "name": "Official mile 2190",
+      "type": "milestone",
+      "lat": 44.454002,
+      "lon": -112.380477
+    },
+    {
+      "id": "w_1c50c412",
+      "name": "Official mile 150",
+      "type": "milestone",
+      "lat": 32.776769,
+      "lon": -108.450592
+    },
+    {
+      "id": "w_1c6a9ac6",
+      "name": "Official mile 470",
+      "type": "milestone",
+      "lat": 34.761472,
+      "lon": -108.199195
+    },
+    {
+      "id": "w_1cc30b57",
+      "name": "Official mile 2200",
+      "type": "milestone",
+      "lat": 44.499109,
+      "lon": -112.485528
+    },
+    {
+      "id": "w_1cf0fe43",
+      "name": "St Mary (access: CDT near St Mary Lake (Red Eagle))",
+      "type": "town",
+      "lat": 48.682873,
+      "lon": -113.478144
+    },
+    {
+      "id": "w_1d22a8b7",
+      "name": "Animas",
+      "type": "resupply",
+      "lat": 31.951206,
+      "lon": -108.796995
+    },
+    {
+      "id": "w_1dcfc055",
+      "name": "Sweetwater River route branches",
+      "type": "junction",
+      "lat": 42.398298,
+      "lon": -108.620138
+    },
+    {
+      "id": "w_1e3cd4c6",
+      "name": "Official mile 2740",
+      "type": "milestone",
+      "lat": 47.029895,
+      "lon": -112.316585
+    },
+    {
+      "id": "w_1eb432a7",
+      "name": "Animas Road water cache",
+      "type": "water",
+      "lat": 32.26283,
+      "lon": -108.74166
+    },
+    {
+      "id": "w_1f186039",
+      "name": "Waterton Park (Alberta) (access: Waterton Lake border monument (Goat Haunt))",
+      "type": "resupply",
+      "lat": 48.998682,
+      "lon": -113.906057
+    },
+    {
+      "id": "w_202b00bb",
+      "name": "Official mile 1310",
+      "type": "milestone",
+      "lat": 39.794354,
+      "lon": -105.863394
+    },
+    {
+      "id": "w_20bb5dd9",
+      "name": "Official mile 620",
+      "type": "milestone",
+      "lat": 35.79255,
+      "lon": -107.027207
+    },
+    {
+      "id": "w_210e201e",
+      "name": "Wyoming old route 4 rejoins",
+      "type": "junction",
+      "lat": 41.304094,
+      "lon": -107.198843
+    },
+    {
+      "id": "w_2211dfa2",
+      "name": "Doc Campbell's Post",
+      "type": "resupply",
+      "lat": 33.198725,
+      "lon": -108.208086
+    },
+    {
+      "id": "w_22e9b0b6",
+      "name": "Official mile 1040",
+      "type": "milestone",
+      "lat": 38.238806,
+      "lon": -106.56525
+    },
+    {
+      "id": "w_23e8f1c6",
+      "name": "Great Divide Trail (Waterton) leaves the CDT",
+      "type": "junction",
+      "lat": 48.998682,
+      "lon": -113.906057
+    },
+    {
+      "id": "w_23fa4aaf",
+      "name": "Wyoming old route 3 rejoins",
+      "type": "junction",
+      "lat": 42.485278,
+      "lon": -108.732737
+    },
+    {
+      "id": "w_25359bd5",
+      "name": "Official mile 2400",
+      "type": "milestone",
+      "lat": 45.622001,
+      "lon": -113.904668
+    },
+    {
+      "id": "w_25c0134e",
+      "name": "Poncha Springs (access: Monarch Pass (US 50))",
+      "type": "resupply",
+      "lat": 38.496295,
+      "lon": -106.325116
+    },
+    {
+      "id": "w_267738a2",
+      "name": "Official mile 1550",
+      "type": "milestone",
+      "lat": 41.095387,
+      "lon": -106.953347
+    },
+    {
+      "id": "w_274dd885",
+      "name": "Official mile 770",
+      "type": "milestone",
+      "lat": 36.851719,
+      "lon": -106.283818
+    },
+    {
+      "id": "w_2768514e",
+      "name": "Rawlins",
+      "type": "town",
+      "lat": 41.794595,
+      "lon": -107.217303
+    },
+    {
+      "id": "w_284d4af0",
+      "name": "Wisdom (access: Chief Joseph Pass (MT 43))",
+      "type": "resupply",
+      "lat": 45.685884,
+      "lon": -113.933344
+    },
+    {
+      "id": "w_286a2109",
+      "name": "Helena (access: MacDonald Pass (US 12))",
+      "type": "town",
+      "lat": 46.561487,
+      "lon": -112.308748
+    },
+    {
+      "id": "w_29bdf0ff",
+      "name": "Official mile 240",
+      "type": "milestone",
+      "lat": 33.226703,
+      "lon": -107.846921
+    },
+    {
+      "id": "w_2aa9143c",
+      "name": "Colorado old route 2 rejoins",
+      "type": "junction",
+      "lat": 38.95501,
+      "lon": -106.462551
+    },
+    {
+      "id": "w_2ae41065",
+      "name": "Official mile 2800",
+      "type": "milestone",
+      "lat": 47.459489,
+      "lon": -112.922346
+    },
+    {
+      "id": "w_2b0e7966",
+      "name": "Official mile 490",
+      "type": "milestone",
+      "lat": 34.981165,
+      "lon": -108.12456
+    },
+    {
+      "id": "w_2b509ba6",
+      "name": "Bridger Pass bypass (Rawlins shortcut) rejoins",
+      "type": "junction",
+      "lat": 41.328714,
+      "lon": -107.250943
+    },
+    {
+      "id": "w_2c15812f",
+      "name": "Breckenridge",
+      "type": "town",
+      "lat": 39.488772,
+      "lon": -106.046892
+    },
+    {
+      "id": "w_2c3ae07c",
+      "name": "Official mile 2850",
+      "type": "milestone",
+      "lat": 47.794863,
+      "lon": -113.045775
+    },
+    {
+      "id": "w_2c83687f",
+      "name": "Official mile 830",
+      "type": "milestone",
+      "lat": 37.269152,
+      "lon": -106.675258
+    },
+    {
+      "id": "w_2c985a7f",
+      "name": "Official mile 550",
+      "type": "milestone",
+      "lat": 35.21483,
+      "lon": -107.657281
+    },
+    {
+      "id": "w_2dc1b3a9",
+      "name": "Official mile 170",
+      "type": "milestone",
+      "lat": 32.845058,
+      "lon": -108.319792
+    },
+    {
+      "id": "w_2e27bf91",
+      "name": "Ghost Ranch",
+      "type": "resupply",
+      "lat": 36.335257,
+      "lon": -106.469609
+    },
+    {
+      "id": "w_2ec4d72e",
+      "name": "Official mile 1980",
+      "type": "milestone",
+      "lat": 44.139295,
+      "lon": -110.313458
+    },
+    {
+      "id": "w_2f1d1ad7",
+      "name": "Cirque of the Towers branches",
+      "type": "junction",
+      "lat": 42.79521,
+      "lon": -109.303147
+    },
+    {
+      "id": "w_2f462d6a",
+      "name": "Official mile 1380",
+      "type": "milestone",
+      "lat": 40.288173,
+      "lon": -105.750434
+    },
+    {
+      "id": "w_2f4a79c0",
+      "name": "Official mile 2140",
+      "type": "milestone",
+      "lat": 44.537196,
+      "lon": -111.743189
+    },
+    {
+      "id": "w_2f5d3e67",
+      "name": "Official mile 1490",
+      "type": "milestone",
+      "lat": 40.55546,
+      "lon": -106.697518
+    },
+    {
+      "id": "w_3144559f",
+      "name": "East Glacier Park",
+      "type": "resupply",
+      "lat": 48.44181,
+      "lon": -113.218196
+    },
+    {
+      "id": "w_31dfc332",
+      "name": "Ghost Ranch branches",
+      "type": "junction",
+      "lat": 36.407274,
+      "lon": -106.400723
+    },
+    {
+      "id": "w_3225d991",
+      "name": "Sublette / Two Ocean / Sheridan branches",
+      "type": "junction",
+      "lat": 43.793697,
+      "lon": -110.010136
+    },
+    {
+      "id": "w_3229f681",
+      "name": "Official mile 2030",
+      "type": "milestone",
+      "lat": 44.45435,
+      "lon": -110.830462
+    },
+    {
+      "id": "w_33508b24",
+      "name": "Official mile 1030",
+      "type": "milestone",
+      "lat": 38.150336,
+      "lon": -106.6216
+    },
+    {
+      "id": "w_33877153",
+      "name": "Wyoming old route 5 branches",
+      "type": "junction",
+      "lat": 41.013037,
+      "lon": -106.919276
+    },
+    {
+      "id": "w_341ed3ae",
+      "name": "Official mile 850",
+      "type": "milestone",
+      "lat": 37.415478,
+      "lon": -106.647232
+    },
+    {
+      "id": "w_34c24302",
+      "name": "Grays and Torreys / Argentine Spine rejoins",
+      "type": "junction",
+      "lat": 39.498563,
+      "lon": -106.156087
+    },
+    {
+      "id": "w_34f16e3e",
+      "name": "Official mile 110",
+      "type": "milestone",
+      "lat": 32.50821,
+      "lon": -108.484502
+    },
+    {
+      "id": "w_35d2b586",
+      "name": "Official mile 1960",
+      "type": "milestone",
+      "lat": 43.966219,
+      "lon": -110.204107
+    },
+    {
+      "id": "w_3634f1c7",
+      "name": "Animas (access: CDT in the Animas Valley)",
+      "type": "resupply",
+      "lat": 32.131205,
+      "lon": -108.6079
+    },
+    {
+      "id": "w_36467d35",
+      "name": "Official mile 1770",
+      "type": "milestone",
+      "lat": 42.524909,
+      "lon": -108.960797
+    },
+    {
+      "id": "w_3652baa2",
+      "name": "Official mile 2590",
+      "type": "milestone",
+      "lat": 46.005947,
+      "lon": -112.430954
+    },
+    {
+      "id": "w_36930640",
+      "name": "Official mile 1870",
+      "type": "milestone",
+      "lat": 43.302211,
+      "lon": -109.844127
+    },
+    {
+      "id": "w_36a58fd1",
+      "name": "Official mile 1630",
+      "type": "milestone",
+      "lat": 41.706777,
+      "lon": -107.298456
+    },
+    {
+      "id": "w_37c19fc6",
+      "name": "Official mile 1020",
+      "type": "milestone",
+      "lat": 38.108985,
+      "lon": -106.755694
+    },
+    {
+      "id": "w_37e64f5b",
+      "name": "Wisdom",
+      "type": "resupply",
+      "lat": 45.61745,
+      "lon": -113.450474
+    },
+    {
+      "id": "w_39387bca",
+      "name": "Official mile 660",
+      "type": "milestone",
+      "lat": 36.087037,
+      "lon": -106.822332
+    },
+    {
+      "id": "w_397bf908",
+      "name": "Official mile 180",
+      "type": "milestone",
+      "lat": 32.882522,
+      "lon": -108.248222
+    },
+    {
+      "id": "w_3a66cc01",
+      "name": "Abiquiu",
+      "type": "resupply",
+      "lat": 36.209748,
+      "lon": -106.320183
+    },
+    {
+      "id": "w_3a679bcb",
+      "name": "Official mile 2510",
+      "type": "milestone",
+      "lat": 45.990607,
+      "lon": -113.039553
+    },
+    {
+      "id": "w_3b869439",
+      "name": "Granby",
+      "type": "town",
+      "lat": 40.062774,
+      "lon": -105.92941
+    },
+    {
+      "id": "w_3c8a7822",
+      "name": "Atlantic City (access: CDT at Atlantic City)",
+      "type": "resupply",
+      "lat": 42.485601,
+      "lon": -108.729092
+    },
+    {
+      "id": "w_3ce89c2c",
+      "name": "Official mile 2490",
+      "type": "milestone",
+      "lat": 45.981581,
+      "lon": -113.174029
+    },
+    {
+      "id": "w_3ef638a8",
+      "name": "Official mile 960",
+      "type": "milestone",
+      "lat": 37.846989,
+      "lon": -107.462666
+    },
+    {
+      "id": "w_40f2b4f4",
+      "name": "Official mile 2340",
+      "type": "milestone",
+      "lat": 45.205081,
+      "lon": -113.528942
+    },
+    {
+      "id": "w_4279e8a4",
+      "name": "Official mile 1360",
+      "type": "milestone",
+      "lat": 40.128745,
+      "lon": -105.76424
+    },
+    {
+      "id": "w_42d403a1",
+      "name": "Official mile 1940",
+      "type": "milestone",
+      "lat": 43.832811,
+      "lon": -110.039881
+    },
+    {
+      "id": "w_42efb397",
+      "name": "Official mile 690",
+      "type": "milestone",
+      "lat": 36.333857,
+      "lon": -106.620862
+    },
+    {
+      "id": "w_43014310",
+      "name": "Darby (access: Chief Joseph Pass (MT 43))",
+      "type": "town",
+      "lat": 45.685884,
+      "lon": -113.933344
+    },
+    {
+      "id": "w_4391a2e0",
+      "name": "Official mile 920",
+      "type": "milestone",
+      "lat": 37.679226,
+      "lon": -107.298941
+    },
+    {
+      "id": "w_43fc1e46",
+      "name": "Official mile 100",
+      "type": "milestone",
+      "lat": 32.417424,
+      "lon": -108.52624
+    },
+    {
+      "id": "w_4518ad56",
+      "name": "Official mile 2020",
+      "type": "milestone",
+      "lat": 44.346721,
+      "lon": -110.795754
+    },
+    {
+      "id": "w_45390503",
+      "name": "Official mile 1800",
+      "type": "milestone",
+      "lat": 42.685966,
+      "lon": -109.260865
+    },
+    {
+      "id": "w_46c6ccc1",
+      "name": "Official mile 2970",
+      "type": "milestone",
+      "lat": 48.606656,
+      "lon": -113.526036
+    },
+    {
+      "id": "w_47343cb4",
+      "name": "Official mile 2390",
+      "type": "milestone",
+      "lat": 45.557796,
+      "lon": -113.817941
+    },
+    {
+      "id": "w_4809b11e",
+      "name": "Official mile 600",
+      "type": "milestone",
+      "lat": 35.624225,
+      "lon": -107.200961
+    },
+    {
+      "id": "w_48bbdf46",
+      "name": "Official mile 300",
+      "type": "milestone",
+      "lat": 33.699491,
+      "lon": -107.981165
+    },
+    {
+      "id": "w_493acf03",
+      "name": "Leadville",
+      "type": "town",
+      "lat": 39.260034,
+      "lon": -106.293102
+    },
+    {
+      "id": "w_4a5a43b3",
+      "name": "Lake City (access: Spring Creek Pass (CO 149))",
+      "type": "town",
+      "lat": 37.940151,
+      "lon": -107.15883
+    },
+    {
+      "id": "w_4a5a43b3e41c",
+      "name": "Creede (access: Spring Creek Pass (CO 149))",
+      "type": "town",
+      "lat": 37.940151,
+      "lon": -107.15883
+    },
+    {
+      "id": "w_4ae1b66e",
+      "name": "Official mile 80",
+      "type": "milestone",
+      "lat": 32.283143,
+      "lon": -108.75366
+    },
+    {
+      "id": "w_4c9ad160",
+      "name": "Official mile 2110",
+      "type": "milestone",
+      "lat": 44.678189,
+      "lon": -111.480337
+    },
+    {
+      "id": "w_4cdc3faa",
+      "name": "Official mile 2890",
+      "type": "milestone",
+      "lat": 48.132706,
+      "lon": -113.065609
+    },
+    {
+      "id": "w_4d0b0eb8",
+      "name": "Official mile 1070",
+      "type": "milestone",
+      "lat": 38.360736,
+      "lon": -106.24104
+    },
+    {
+      "id": "w_4dd46f3f",
+      "name": "Official mile 1720",
+      "type": "milestone",
+      "lat": 42.380576,
+      "lon": -108.250973
+    },
+    {
+      "id": "w_4e263fd6",
+      "name": "Official mile 1410",
+      "type": "milestone",
+      "lat": 40.354652,
+      "lon": -105.964217
+    },
+    {
+      "id": "w_4f2a3abb",
+      "name": "Official mile 880",
+      "type": "milestone",
+      "lat": 37.565235,
+      "lon": -106.890179
+    },
+    {
+      "id": "w_4f49743f",
+      "name": "Official mile 1260",
+      "type": "milestone",
+      "lat": 39.470535,
+      "lon": -105.906656
+    },
+    {
+      "id": "w_502f1512",
+      "name": "Official mile 1390",
+      "type": "milestone",
+      "lat": 40.329275,
+      "lon": -105.734264
+    },
+    {
+      "id": "w_50852d28",
+      "name": "Knapsack Col rejoins",
+      "type": "junction",
+      "lat": 43.070892,
+      "lon": -109.645883
+    },
+    {
+      "id": "w_5121824d",
+      "name": "Official mile 1810",
+      "type": "milestone",
+      "lat": 42.795969,
+      "lon": -109.311629
+    },
+    {
+      "id": "w_5122156c",
+      "name": "Official mile 2350",
+      "type": "milestone",
+      "lat": 45.272072,
+      "lon": -113.583418
+    },
+    {
+      "id": "w_512e635d",
+      "name": "Official mile 230",
+      "type": "milestone",
+      "lat": 33.16941,
+      "lon": -107.91736
+    },
+    {
+      "id": "w_516e4896",
+      "name": "Darby",
+      "type": "town",
+      "lat": 46.028494,
+      "lon": -114.178733
+    },
+    {
+      "id": "w_5181dbf7",
+      "name": "Augusta",
+      "type": "resupply",
+      "lat": 47.493242,
+      "lon": -112.39106
+    },
+    {
+      "id": "w_520feb26",
+      "name": "Buena Vista (access: Cottonwood Pass (CR 306))",
+      "type": "town",
+      "lat": 38.827739,
+      "lon": -106.409313
+    },
+    {
+      "id": "w_52620bb3",
+      "name": "Official mile 1120",
+      "type": "milestone",
+      "lat": 38.753754,
+      "lon": -106.407945
+    },
+    {
+      "id": "w_52ac4571",
+      "name": "CDNST old route (Silverton) branches",
+      "type": "junction",
+      "lat": 37.845112,
+      "lon": -107.438334
+    },
+    {
+      "id": "w_52c5b67b",
+      "name": "Browning",
+      "type": "town",
+      "lat": 48.556301,
+      "lon": -113.016736
+    },
+    {
+      "id": "w_52e73769",
+      "name": "Official mile 90",
+      "type": "milestone",
+      "lat": 32.397003,
+      "lon": -108.679235
+    },
+    {
+      "id": "w_539d796b",
+      "name": "Official mile 1580",
+      "type": "milestone",
+      "lat": 41.317123,
+      "lon": -107.253373
+    },
+    {
+      "id": "w_53fb4469",
+      "name": "Official mile 990",
+      "type": "milestone",
+      "lat": 37.955466,
+      "lon": -107.071532
+    },
+    {
+      "id": "w_54156b83",
+      "name": "Official mile 2250",
+      "type": "milestone",
+      "lat": 44.543636,
+      "lon": -113.007299
+    },
+    {
+      "id": "w_54c9938a",
+      "name": "Official mile 950",
+      "type": "milestone",
+      "lat": 37.785418,
+      "lon": -107.55031
+    },
+    {
+      "id": "w_54e7120f",
+      "name": "Waterton Park (Alberta)",
+      "type": "resupply",
+      "lat": 49.051328,
+      "lon": -113.908306
+    },
+    {
+      "id": "w_55032317",
+      "name": "Official mile 2940",
+      "type": "milestone",
+      "lat": 48.453634,
+      "lon": -113.252467
+    },
+    {
+      "id": "w_55067e9c",
+      "name": "Official mile 1280",
+      "type": "milestone",
+      "lat": 39.598289,
+      "lon": -105.828446
+    },
+    {
+      "id": "w_5585d97e",
+      "name": "Official mile 3020",
+      "type": "milestone",
+      "lat": 48.833815,
+      "lon": -113.827605
+    },
+    {
+      "id": "w_5664f9b0",
+      "name": "Grand Lake",
+      "type": "town",
+      "lat": 40.252979,
+      "lon": -105.829256
+    },
+    {
+      "id": "w_57427a05",
+      "name": "Official mile 1690",
+      "type": "milestone",
+      "lat": 42.313096,
+      "lon": -107.844461
+    },
+    {
+      "id": "w_57aa86aa",
+      "name": "Official mile 210",
+      "type": "milestone",
+      "lat": 33.074831,
+      "lon": -108.074881
+    },
+    {
+      "id": "w_588e9dad",
+      "name": "Official mile 1570",
+      "type": "milestone",
+      "lat": 41.266486,
+      "lon": -107.130781
+    },
+    {
+      "id": "w_5915bd71",
+      "name": "Official mile 2830",
+      "type": "milestone",
+      "lat": 47.725935,
+      "lon": -113.162594
+    },
+    {
+      "id": "w_59ea6982",
+      "name": "Official mile 1760",
+      "type": "milestone",
+      "lat": 42.475048,
+      "lon": -108.864366
+    },
+    {
+      "id": "w_5aaaaf44",
+      "name": "Leadore (access: Bannock Pass (ID 29 / MT 324))",
+      "type": "resupply",
+      "lat": 44.814332,
+      "lon": -113.27255
+    },
+    {
+      "id": "w_5b472bf3",
+      "name": "Official mile 800",
+      "type": "milestone",
+      "lat": 37.026704,
+      "lon": -106.475196
+    },
+    {
+      "id": "w_5bc3d76b",
+      "name": "Cuba",
+      "type": "town",
+      "lat": 36.017322,
+      "lon": -106.960486
+    },
+    {
+      "id": "w_5c1e785d",
+      "name": "Official mile 2900",
+      "type": "milestone",
+      "lat": 48.21196,
+      "lon": -113.174494
+    },
+    {
+      "id": "w_5c376b09",
+      "name": "Official mile 1840",
+      "type": "milestone",
+      "lat": 43.05497,
+      "lon": -109.631784
+    },
+    {
+      "id": "w_5dea98c7",
+      "name": "Official mile 1090",
+      "type": "milestone",
+      "lat": 38.540449,
+      "lon": -106.354536
+    },
+    {
+      "id": "w_5e496db6",
+      "name": "Official mile 120",
+      "type": "milestone",
+      "lat": 32.580046,
+      "lon": -108.431893
+    },
+    {
+      "id": "w_5ed7f738",
+      "name": "Sula (access: Lost Trail Pass (US 93 / MT 43))",
+      "type": "resupply",
+      "lat": 45.695156,
+      "lon": -113.935349
+    },
+    {
+      "id": "w_5f21e258",
+      "name": "Lima",
+      "type": "resupply",
+      "lat": 44.635202,
+      "lon": -112.592029
+    },
+    {
+      "id": "w_60cbdfc8",
+      "name": "Official mile 50",
+      "type": "milestone",
+      "lat": 32.005825,
+      "lon": -108.469065
+    },
+    {
+      "id": "w_62046729",
+      "name": "Official mile 2720",
+      "type": "milestone",
+      "lat": 46.884108,
+      "lon": -112.500808
+    },
+    {
+      "id": "w_62a1bb64",
+      "name": "Wind River High Route (Dixon variation) rejoins",
+      "type": "junction",
+      "lat": 42.689474,
+      "lon": -109.263731
+    },
+    {
+      "id": "w_6328a559",
+      "name": "Official mile 3030",
+      "type": "milestone",
+      "lat": 48.916684,
+      "lon": -113.905448
+    },
+    {
+      "id": "w_63460f7d",
+      "name": "Official mile 820",
+      "type": "milestone",
+      "lat": 37.194459,
+      "lon": -106.591678
+    },
+    {
+      "id": "w_639600b0",
+      "name": "Official mile 330",
+      "type": "milestone",
+      "lat": 33.608595,
+      "lon": -108.330599
+    },
+    {
+      "id": "w_63c4008f",
+      "name": "Official mile 500",
+      "type": "milestone",
+      "lat": 34.970178,
+      "lon": -108.004054
+    },
+    {
+      "id": "w_64a3a3c2",
+      "name": "Official mile 2600",
+      "type": "milestone",
+      "lat": 46.056731,
+      "lon": -112.365708
+    },
+    {
+      "id": "w_64c6db37",
+      "name": "Two Medicine",
+      "type": "resupply",
+      "lat": 48.484867,
+      "lon": -113.369873
+    },
+    {
+      "id": "w_64e20c8b",
+      "name": "Browning (access: CDT through East Glacier Park)",
+      "type": "town",
+      "lat": 48.444416,
+      "lon": -113.225364
+    },
+    {
+      "id": "w_653afee4",
+      "name": "Official mile 200",
+      "type": "milestone",
+      "lat": 32.980225,
+      "lon": -108.137943
+    },
+    {
+      "id": "w_65bb22fb",
+      "name": "Official mile 2480",
+      "type": "milestone",
+      "lat": 46.047484,
+      "lon": -113.27888
+    },
+    {
+      "id": "w_65d5479b",
+      "name": "Official mile 2780",
+      "type": "milestone",
+      "lat": 47.292053,
+      "lon": -112.682609
+    },
+    {
+      "id": "w_66c6ffed",
+      "name": "Official mile 380",
+      "type": "milestone",
+      "lat": 33.99817,
+      "lon": -108.414132
+    },
+    {
+      "id": "w_6706301c",
+      "name": "Frisco (access: CDT / Colorado Trail at Copper Mountain (CO 91))",
+      "type": "town",
+      "lat": 39.495828,
+      "lon": -106.145937
+    },
+    {
+      "id": "w_67690f4e",
+      "name": "South Pass City",
+      "type": "food",
+      "lat": 42.46946,
+      "lon": -108.80209
+    },
+    {
+      "id": "w_677a2024",
+      "name": "Official mile 1230",
+      "type": "milestone",
+      "lat": 39.486866,
+      "lon": -106.113628
+    },
+    {
+      "id": "w_67cbd2ca",
+      "name": "Deming",
+      "type": "town",
+      "lat": 32.270573,
+      "lon": -107.747232
+    },
+    {
+      "id": "w_68c99cf8",
+      "name": "Official mile 980",
+      "type": "milestone",
+      "lat": 37.930497,
+      "lon": -107.21809
+    },
+    {
+      "id": "w_68f0059b",
+      "name": "Official mile 1700",
+      "type": "milestone",
+      "lat": 42.383551,
+      "lon": -107.949302
+    },
+    {
+      "id": "w_6921fc51",
+      "name": "St Mary",
+      "type": "town",
+      "lat": 48.742223,
+      "lon": -113.429731
+    },
+    {
+      "id": "w_695148c9",
+      "name": "Ghost Ranch rejoins",
+      "type": "junction",
+      "lat": 36.353511,
+      "lon": -106.549515
+    },
+    {
+      "id": "w_699c7caa",
+      "name": "Top of the World Store (access: CDT at Pie Town (US 60))",
+      "type": "resupply",
+      "lat": 34.301704,
+      "lon": -108.13854
+    },
+    {
+      "id": "w_6a293345",
+      "name": "CDNST old route (Silverton) rejoins",
+      "type": "junction",
+      "lat": 37.801055,
+      "lon": -107.538157
+    },
+    {
+      "id": "w_6af7e9ed",
+      "name": "Sublette / Two Ocean / Sheridan rejoins",
+      "type": "junction",
+      "lat": 43.622285,
+      "lon": -110.034729
+    },
+    {
+      "id": "w_6b956530",
+      "name": "Official mile 1000",
+      "type": "milestone",
+      "lat": 37.962856,
+      "lon": -106.94629
+    },
+    {
+      "id": "w_6e80c459",
+      "name": "Lake of the Woods rejoins",
+      "type": "junction",
+      "lat": 43.496762,
+      "lon": -109.953337
+    },
+    {
+      "id": "w_6ea464cf",
+      "name": "Official mile 2040",
+      "type": "milestone",
+      "lat": 44.423302,
+      "lon": -110.923959
+    },
+    {
+      "id": "w_6f7e2511",
+      "name": "Official mile 2990",
+      "type": "milestone",
+      "lat": 48.681143,
+      "lon": -113.656183
+    },
+    {
+      "id": "w_6fd5a01c",
+      "name": "Official mile 1610",
+      "type": "milestone",
+      "lat": 41.526727,
+      "lon": -107.46516
+    },
+    {
+      "id": "w_716b0313",
+      "name": "Official mile 2550",
+      "type": "milestone",
+      "lat": 45.824402,
+      "lon": -112.572624
+    },
+    {
+      "id": "w_71b90351",
+      "name": "Official mile 2960",
+      "type": "milestone",
+      "lat": 48.538551,
+      "lon": -113.454437
+    },
+    {
+      "id": "w_71fb0cf6",
+      "name": "Official mile 2050",
+      "type": "milestone",
+      "lat": 44.415045,
+      "lon": -111.098817
+    },
+    {
+      "id": "w_72169c71",
+      "name": "Official mile 1890",
+      "type": "milestone",
+      "lat": 43.486993,
+      "lon": -109.908232
+    },
+    {
+      "id": "w_72477291",
+      "name": "Official mile 2750",
+      "type": "milestone",
+      "lat": 47.10156,
+      "lon": -112.397688
+    },
+    {
+      "id": "w_7290588f",
+      "name": "Official mile 140",
+      "type": "milestone",
+      "lat": 32.73014,
+      "lon": -108.54589
+    },
+    {
+      "id": "w_72c66eaf",
+      "name": "Pagosa Springs",
+      "type": "town",
+      "lat": 37.259596,
+      "lon": -107.063284
+    },
+    {
+      "id": "w_73172f19",
+      "name": "Official mile 2270",
+      "type": "milestone",
+      "lat": 44.74764,
+      "lon": -113.133323
+    },
+    {
+      "id": "w_733f1065",
+      "name": "Official mile 1710",
+      "type": "milestone",
+      "lat": 42.405475,
+      "lon": -108.096349
+    },
+    {
+      "id": "w_733f7c48",
+      "name": "Winter Park (access: Berthoud Pass (US 40))",
+      "type": "town",
+      "lat": 39.797964,
+      "lon": -105.776804
+    },
+    {
+      "id": "w_733f7c482bb6",
+      "name": "Fraser (access: Berthoud Pass (US 40))",
+      "type": "town",
+      "lat": 39.797964,
+      "lon": -105.776804
+    },
+    {
+      "id": "w_746a6999",
+      "name": "Official mile 730",
+      "type": "milestone",
+      "lat": 36.562037,
+      "lon": -106.320417
+    },
+    {
+      "id": "w_74a5b9d9",
+      "name": "Official mile 890",
+      "type": "milestone",
+      "lat": 37.561955,
+      "lon": -107.023943
+    },
+    {
+      "id": "w_75379740",
+      "name": "Official mile 530",
+      "type": "milestone",
+      "lat": 35.115482,
+      "lon": -107.786439
+    },
+    {
+      "id": "w_7570caf0",
+      "name": "Official mile 1880",
+      "type": "milestone",
+      "lat": 43.397453,
+      "lon": -109.865153
+    },
+    {
+      "id": "w_75fd29da",
+      "name": "Tonahutu Creek (RMNP loop) rejoins",
+      "type": "junction",
+      "lat": 40.256331,
+      "lon": -105.815907
+    },
+    {
+      "id": "w_76154d37",
+      "name": "Colorado old route 3 rejoins",
+      "type": "junction",
+      "lat": 38.570608,
+      "lon": -106.324214
+    },
+    {
+      "id": "w_76457022",
+      "name": "Official mile 1820",
+      "type": "milestone",
+      "lat": 42.879814,
+      "lon": -109.426289
+    },
+    {
+      "id": "w_766a507c",
+      "name": "Official mile 870",
+      "type": "milestone",
+      "lat": 37.497517,
+      "lon": -106.833875
+    },
+    {
+      "id": "w_76c34e97",
+      "name": "Colorado old route 4 rejoins",
+      "type": "junction",
+      "lat": 38.492968,
+      "lon": -106.326962
+    },
+    {
+      "id": "w_77083bfc",
+      "name": "Official mile 2630",
+      "type": "milestone",
+      "lat": 46.220593,
+      "lon": -112.584119
+    },
+    {
+      "id": "w_77ab506f",
+      "name": "Mount Taylor summit branches",
+      "type": "junction",
+      "lat": 35.320517,
+      "lon": -107.574245
+    },
+    {
+      "id": "w_77bf9808",
+      "name": "Official mile 1050",
+      "type": "milestone",
+      "lat": 38.316326,
+      "lon": -106.48725
+    },
+    {
+      "id": "w_77dcb78e",
+      "name": "Official mile 1420",
+      "type": "milestone",
+      "lat": 40.349067,
+      "lon": -106.079866
+    },
+    {
+      "id": "w_790d9566",
+      "name": "Official mile 360",
+      "type": "milestone",
+      "lat": 33.814723,
+      "lon": -108.45724
+    },
+    {
+      "id": "w_79228188",
+      "name": "Official mile 1900",
+      "type": "milestone",
+      "lat": 43.559618,
+      "lon": -110.011116
+    },
+    {
+      "id": "w_7aa83d03",
+      "name": "Old Faithful Village",
+      "type": "resupply",
+      "lat": 44.456794,
+      "lon": -110.827906
+    },
+    {
+      "id": "w_7aa99407",
+      "name": "Official mile 940",
+      "type": "milestone",
+      "lat": 37.686996,
+      "lon": -107.515728
+    },
+    {
+      "id": "w_7b208972",
+      "name": "Official mile 1590",
+      "type": "milestone",
+      "lat": 41.397168,
+      "lon": -107.32797
+    },
+    {
+      "id": "w_7ba92d6c",
+      "name": "Cirque of the Towers rejoins",
+      "type": "junction",
+      "lat": 42.694863,
+      "lon": -109.264843
+    },
+    {
+      "id": "w_7c2ae425",
+      "name": "Official mile 190",
+      "type": "milestone",
+      "lat": 32.91066,
+      "lon": -108.161912
+    },
+    {
+      "id": "w_7c8bdad8",
+      "name": "Big Sandy Lodge",
+      "type": "resupply",
+      "lat": 42.682471,
+      "lon": -109.280273
+    },
+    {
+      "id": "w_7cdd4e20",
+      "name": "Official mile 1440",
+      "type": "milestone",
+      "lat": 40.355132,
+      "lon": -106.302688
+    },
+    {
+      "id": "w_7e281dfe",
+      "name": "Grant Village (access: CDT near Shoshone Lake / South Entrance Road)",
+      "type": "resupply",
+      "lat": 44.321897,
+      "lon": -110.550094
+    },
+    {
+      "id": "w_7e31c4ad",
+      "name": "Official mile 2100",
+      "type": "milestone",
+      "lat": 44.728212,
+      "lon": -111.413004
+    },
+    {
+      "id": "w_7f23026e",
+      "name": "Copper Mountain",
+      "type": "resupply",
+      "lat": 39.506157,
+      "lon": -106.141094
+    },
+    {
+      "id": "w_7f5220c3",
+      "name": "Butte (access: I-15 at Elk Park Pass)",
+      "type": "town",
+      "lat": 46.003207,
+      "lon": -112.440629
+    },
+    {
+      "id": "w_80ab4f82",
+      "name": "Chama (access: Cumbres Pass (CO 17))",
+      "type": "town",
+      "lat": 37.019206,
+      "lon": -106.45286
+    },
+    {
+      "id": "w_80de9e34",
+      "name": "Wyoming old route 4 branches",
+      "type": "junction",
+      "lat": 41.302207,
+      "lon": -107.233279
+    },
+    {
+      "id": "w_812fd019",
+      "name": "Official mile 2920",
+      "type": "milestone",
+      "lat": 48.311988,
+      "lon": -113.310805
+    },
+    {
+      "id": "w_826e6a61",
+      "name": "Benchmark Wilderness Ranch",
+      "type": "resupply",
+      "lat": 47.479,
+      "lon": -112.876
+    },
+    {
+      "id": "w_845c3369",
+      "name": "Chama",
+      "type": "town",
+      "lat": 36.881842,
+      "lon": -106.585452
+    },
+    {
+      "id": "w_8468fa2d",
+      "name": "Poncha Springs",
+      "type": "resupply",
+      "lat": 38.515897,
+      "lon": -106.075857
+    },
+    {
+      "id": "w_84b1cedc",
+      "name": "Official mile 1510",
+      "type": "milestone",
+      "lat": 40.760321,
+      "lon": -106.731742
+    },
+    {
+      "id": "w_84ccc1d7",
+      "name": "Official mile 1930",
+      "type": "milestone",
+      "lat": 43.752048,
+      "lon": -110.050041
+    },
+    {
+      "id": "w_85f6a76d",
+      "name": "Official mile 160",
+      "type": "milestone",
+      "lat": 32.770457,
+      "lon": -108.29723
+    },
+    {
+      "id": "w_864b892f",
+      "name": "Colorado old route 4 branches",
+      "type": "junction",
+      "lat": 38.499542,
+      "lon": -106.336878
+    },
+    {
+      "id": "w_87b2b3a5",
+      "name": "Official mile 2420",
+      "type": "milestone",
+      "lat": 45.751262,
+      "lon": -113.836716
+    },
+    {
+      "id": "w_87bdd810",
+      "name": "Official mile 1100",
+      "type": "milestone",
+      "lat": 38.604442,
+      "lon": -106.350216
+    },
+    {
+      "id": "w_87d76440",
+      "name": "Official mile 1080",
+      "type": "milestone",
+      "lat": 38.458832,
+      "lon": -106.286572
+    },
+    {
+      "id": "w_87f5b68e",
+      "name": "Official mile 1450",
+      "type": "milestone",
+      "lat": 40.347303,
+      "lon": -106.397062
+    },
+    {
+      "id": "w_87f652c3",
+      "name": "Official mile 1400",
+      "type": "milestone",
+      "lat": 40.32082,
+      "lon": -105.842667
+    },
+    {
+      "id": "w_87f8e706",
+      "name": "Official mile 2440",
+      "type": "milestone",
+      "lat": 45.849421,
+      "lon": -113.61267
+    },
+    {
+      "id": "w_88f6b041",
+      "name": "Official mile 1640",
+      "type": "milestone",
+      "lat": 41.818346,
+      "lon": -107.227223
+    },
+    {
+      "id": "w_89aa11e8",
+      "name": "West Yellowstone (access: Targhee Pass (US 20))",
+      "type": "town",
+      "lat": 44.653219,
+      "lon": -111.24811
+    },
+    {
+      "id": "w_8a6c5b9b",
+      "name": "Official mile 670",
+      "type": "milestone",
+      "lat": 36.185746,
+      "lon": -106.790459
+    },
+    {
+      "id": "w_8afc1aa6",
+      "name": "Official mile 2710",
+      "type": "milestone",
+      "lat": 46.800194,
+      "lon": -112.518475
+    },
+    {
+      "id": "w_8b77ff1c",
+      "name": "Official mile 2650",
+      "type": "milestone",
+      "lat": 46.328262,
+      "lon": -112.449194
+    },
+    {
+      "id": "w_8bee0d08",
+      "name": "Official mile 1150",
+      "type": "milestone",
+      "lat": 38.990605,
+      "lon": -106.431143
+    },
+    {
+      "id": "w_8d589611",
+      "name": "Official mile 1160",
+      "type": "milestone",
+      "lat": 39.076285,
+      "lon": -106.35666
+    },
+    {
+      "id": "w_8e1bdcc3",
+      "name": "Official mile 1990",
+      "type": "milestone",
+      "lat": 44.214402,
+      "lon": -110.451051
+    },
+    {
+      "id": "w_8e3d07f9",
+      "name": "Official mile 2060",
+      "type": "milestone",
+      "lat": 44.503587,
+      "lon": -111.142493
+    },
+    {
+      "id": "w_8e97a547",
+      "name": "Colorado old route 2 branches",
+      "type": "junction",
+      "lat": 38.998323,
+      "lon": -106.403472
+    },
+    {
+      "id": "w_8ef52a3d",
+      "name": "Official mile 440",
+      "type": "milestone",
+      "lat": 34.495829,
+      "lon": -108.019486
+    },
+    {
+      "id": "w_8f47aeb9",
+      "name": "West Yellowstone",
+      "type": "town",
+      "lat": 44.660851,
+      "lon": -111.101514
+    },
+    {
+      "id": "w_9050ba3b",
+      "name": "Lake City",
+      "type": "town",
+      "lat": 38.027102,
+      "lon": -107.316457
+    },
+    {
+      "id": "w_90e2bbd4",
+      "name": "Del Norte",
+      "type": "town",
+      "lat": 37.677776,
+      "lon": -106.34507
+    },
+    {
+      "id": "w_911c9290",
+      "name": "Grants (access: CDT through Grants)",
+      "type": "town",
+      "lat": 35.150833,
+      "lon": -107.848975
+    },
+    {
+      "id": "w_914cff81",
+      "name": "Official mile 1330",
+      "type": "milestone",
+      "lat": 39.837963,
+      "lon": -105.66706
+    },
+    {
+      "id": "w_914dc167",
+      "name": "Official mile 350",
+      "type": "milestone",
+      "lat": 33.750442,
+      "lon": -108.456317
+    },
+    {
+      "id": "w_92ec2d82",
+      "name": "Silverthorne",
+      "type": "town",
+      "lat": 39.63042,
+      "lon": -106.055431
+    },
+    {
+      "id": "w_92f00f2f",
+      "name": "Grants",
+      "type": "town",
+      "lat": 35.181412,
+      "lon": -107.896696
+    },
+    {
+      "id": "w_92f9e558",
+      "name": "Official mile 30",
+      "type": "milestone",
+      "lat": 31.787474,
+      "lon": -108.426747
+    },
+    {
+      "id": "w_935333bc",
+      "name": "Official mile 1480",
+      "type": "milestone",
+      "lat": 40.456929,
+      "lon": -106.663358
+    },
+    {
+      "id": "w_93cf0c62",
+      "name": "Fraser",
+      "type": "town",
+      "lat": 39.945643,
+      "lon": -105.811125
+    },
+    {
+      "id": "w_943ac3da",
+      "name": "Official mile 1660",
+      "type": "milestone",
+      "lat": 42.028768,
+      "lon": -107.445026
+    },
+    {
+      "id": "w_94539117",
+      "name": "Official mile 1320",
+      "type": "milestone",
+      "lat": 39.799353,
+      "lon": -105.754511
+    },
+    {
+      "id": "w_95f8d46f",
+      "name": "Official mile 1560",
+      "type": "milestone",
+      "lat": 41.18697,
+      "lon": -107.029752
+    },
+    {
+      "id": "w_964f41d4",
+      "name": "Anaconda Cutoff rejoins",
+      "type": "junction",
+      "lat": 46.048556,
+      "lon": -113.280466
+    },
+    {
+      "id": "w_96687e5c",
+      "name": "Official mile 1060",
+      "type": "milestone",
+      "lat": 38.302946,
+      "lon": -106.35565
+    },
+    {
+      "id": "w_968b9b78",
+      "name": "Official mile 2680",
+      "type": "milestone",
+      "lat": 46.586097,
+      "lon": -112.301317
+    },
+    {
+      "id": "w_9694cfce",
+      "name": "Official mile 2000",
+      "type": "milestone",
+      "lat": 44.298609,
+      "lon": -110.517637
+    },
+    {
+      "id": "w_979d8a8e",
+      "name": "Dubois (access: Togwotee Pass (US 26 / US 287))",
+      "type": "town",
+      "lat": 43.752888,
+      "lon": -110.067135
+    },
+    {
+      "id": "w_981e4fb0",
+      "name": "Official mile 2620",
+      "type": "milestone",
+      "lat": 46.174605,
+      "lon": -112.509066
+    },
+    {
+      "id": "w_982c173a",
+      "name": "Official mile 260",
+      "type": "milestone",
+      "lat": 33.389798,
+      "lon": -107.851811
+    },
+    {
+      "id": "w_98aec01f",
+      "name": "Official mile 1520",
+      "type": "milestone",
+      "lat": 40.852088,
+      "lon": -106.787176
+    },
+    {
+      "id": "w_98e15fbb",
+      "name": "Official mile 2360",
+      "type": "milestone",
+      "lat": 45.312855,
+      "lon": -113.7008
+    },
+    {
+      "id": "w_99b02ca4",
+      "name": "Mack's Inn (Island Park) (access: Red Rock Pass)",
+      "type": "resupply",
+      "lat": 44.599249,
+      "lon": -111.522403
+    },
+    {
+      "id": "w_9a059459",
+      "name": "Del Norte (access: Wolf Creek Pass (US 160))",
+      "type": "town",
+      "lat": 37.483373,
+      "lon": -106.800875
+    },
+    {
+      "id": "w_9a51cb11",
+      "name": "Jeffrey City (access: CDT in the Great Divide Basin nearest US 287)",
+      "type": "food",
+      "lat": 42.383351,
+      "lon": -107.943339
+    },
+    {
+      "id": "w_9a67c545",
+      "name": "Official mile 2660",
+      "type": "milestone",
+      "lat": 46.385396,
+      "lon": -112.360405
+    },
+    {
+      "id": "w_9acba5ff",
+      "name": "Official mile 3010",
+      "type": "milestone",
+      "lat": 48.783849,
+      "lon": -113.755999
+    },
+    {
+      "id": "w_9b4f4e35",
+      "name": "Official mile 2840",
+      "type": "milestone",
+      "lat": 47.751301,
+      "lon": -113.010646
+    },
+    {
+      "id": "w_9b5416ed",
+      "name": "Official mile 1680",
+      "type": "milestone",
+      "lat": 42.225967,
+      "lon": -107.699022
+    },
+    {
+      "id": "w_9beced21",
+      "name": "Highway 113 water cache",
+      "type": "water",
+      "lat": 32.08053,
+      "lon": -108.55637
+    },
+    {
+      "id": "w_9c1ee5ed",
+      "name": "Deming (access: CDT at NM 9)",
+      "type": "town",
+      "lat": 31.88816,
+      "lon": -108.42268
+    },
+    {
+      "id": "w_9cbf18c1",
+      "name": "Official mile 20",
+      "type": "milestone",
+      "lat": 31.668059,
+      "lon": -108.364429
+    },
+    {
+      "id": "w_9d25307d",
+      "name": "Official mile 1190",
+      "type": "milestone",
+      "lat": 39.293987,
+      "lon": -106.433842
+    },
+    {
+      "id": "w_9d6dc742",
+      "name": "Official mile 1740",
+      "type": "milestone",
+      "lat": 42.38972,
+      "lon": -108.603579
+    },
+    {
+      "id": "w_9ec583a0",
+      "name": "Official mile 1250",
+      "type": "milestone",
+      "lat": 39.546998,
+      "lon": -105.954822
+    },
+    {
+      "id": "w_9f6ce1d2",
+      "name": "Min X Road water cache",
+      "type": "water",
+      "lat": 42.01278,
+      "lon": -107.42973
+    },
+    {
+      "id": "w_a0092699",
+      "name": "Official mile 2770",
+      "type": "milestone",
+      "lat": 47.219433,
+      "lon": -112.614266
+    },
+    {
+      "id": "w_a038c6e1",
+      "name": "Official mile 1200",
+      "type": "milestone",
+      "lat": 39.35562,
+      "lon": -106.33102
+    },
+    {
+      "id": "w_a0769f07",
+      "name": "Official mile 1140",
+      "type": "milestone",
+      "lat": 38.902979,
+      "lon": -106.456955
+    },
+    {
+      "id": "w_a136f38e",
+      "name": "Official mile 1300",
+      "type": "milestone",
+      "lat": 39.721038,
+      "lon": -105.880595
+    },
+    {
+      "id": "w_a191d73a",
+      "name": "Pagosa Springs (access: Wolf Creek Pass (US 160))",
+      "type": "town",
+      "lat": 37.483373,
+      "lon": -106.800875
+    },
+    {
+      "id": "w_a191d73aa151",
+      "name": "South Fork (access: Wolf Creek Pass (US 160))",
+      "type": "town",
+      "lat": 37.483373,
+      "lon": -106.800875
+    },
+    {
+      "id": "w_a1b0f23d",
+      "name": "Official mile 2080",
+      "type": "milestone",
+      "lat": 44.655123,
+      "lon": -111.25619
+    },
+    {
+      "id": "w_a1c7fcfb",
+      "name": "Official mile 310",
+      "type": "milestone",
+      "lat": 33.677558,
+      "lon": -108.129
+    },
+    {
+      "id": "w_a294b780",
+      "name": "Reserve (access: CDT at NM 12 near Collins Park)",
+      "type": "town",
+      "lat": 33.608333,
+      "lon": -108.385842
+    },
+    {
+      "id": "w_a2cd50c9",
+      "name": "Official mile 930",
+      "type": "milestone",
+      "lat": 37.643369,
+      "lon": -107.426918
+    },
+    {
+      "id": "w_a31a2945",
+      "name": "Atlantic City",
+      "type": "resupply",
+      "lat": 42.496536,
+      "lon": -108.730333
+    },
+    {
+      "id": "w_a3210350",
+      "name": "Boulder",
+      "type": "resupply",
+      "lat": 42.746652,
+      "lon": -109.720581
+    },
+    {
+      "id": "w_a3f71623",
+      "name": "Helena",
+      "type": "town",
+      "lat": 46.590592,
+      "lon": -112.017254
+    },
+    {
+      "id": "w_a4706a67",
+      "name": "Southern terminus - Crazy Cook",
+      "type": "endpoint",
+      "lat": 31.497064,
+      "lon": -108.208509
+    },
+    {
+      "id": "w_a50c88d7",
+      "name": "Official mile 900",
+      "type": "milestone",
+      "lat": 37.603162,
+      "lon": -107.139629
+    },
+    {
+      "id": "w_a561a04b",
+      "name": "Official mile 2130",
+      "type": "milestone",
+      "lat": 44.552072,
+      "lon": -111.626495
+    },
+    {
+      "id": "w_a562b7b4",
+      "name": "Hachita (access: CDT at NM 9)",
+      "type": "resupply",
+      "lat": 31.88816,
+      "lon": -108.42268
+    },
+    {
+      "id": "w_a562b7b46150",
+      "name": "Columbus (access: CDT at NM 9)",
+      "type": "resupply",
+      "lat": 31.88816,
+      "lon": -108.42268
+    },
+    {
+      "id": "w_a6512d00",
+      "name": "Official mile 2820",
+      "type": "milestone",
+      "lat": 47.635999,
+      "lon": -113.078143
+    },
+    {
+      "id": "w_a666f7c1",
+      "name": "Official mile 1950",
+      "type": "milestone",
+      "lat": 43.900873,
+      "lon": -110.103453
+    },
+    {
+      "id": "w_a7149e6f",
+      "name": "Jackson",
+      "type": "resupply",
+      "lat": 45.368076,
+      "lon": -113.409625
+    },
+    {
+      "id": "w_a7a4ee50",
+      "name": "Official mile 840",
+      "type": "milestone",
+      "lat": 37.335667,
+      "lon": -106.702725
+    },
+    {
+      "id": "w_a7aaf531",
+      "name": "Lander (access: WY 28 at South Pass)",
+      "type": "town",
+      "lat": 42.477776,
+      "lon": -108.774192
+    },
+    {
+      "id": "w_a813965a",
+      "name": "Official mile 1460",
+      "type": "milestone",
+      "lat": 40.431892,
+      "lon": -106.452095
+    },
+    {
+      "id": "w_a834cb2e",
+      "name": "Official mile 2260",
+      "type": "milestone",
+      "lat": 44.638202,
+      "lon": -113.052771
+    },
+    {
+      "id": "w_a841cb1d",
+      "name": "Official mile 420",
+      "type": "milestone",
+      "lat": 34.31037,
+      "lon": -108.197561
+    },
+    {
+      "id": "w_a882494b",
+      "name": "Gila River branches",
+      "type": "junction",
+      "lat": 33.742094,
+      "lon": -108.477331
+    },
+    {
+      "id": "w_a987ae1d",
+      "name": "Official mile 2070",
+      "type": "milestone",
+      "lat": 44.574601,
+      "lon": -111.195917
+    },
+    {
+      "id": "w_a9abb550",
+      "name": "Official mile 2790",
+      "type": "milestone",
+      "lat": 47.371265,
+      "lon": -112.811401
+    },
+    {
+      "id": "w_aa6b4c34",
+      "name": "Official mile 2470",
+      "type": "milestone",
+      "lat": 46.012799,
+      "lon": -113.371992
+    },
+    {
+      "id": "w_aabd4818",
+      "name": "Encampment",
+      "type": "resupply",
+      "lat": 41.207011,
+      "lon": -106.79175
+    },
+    {
+      "id": "w_ab3d460b",
+      "name": "Official mile 860",
+      "type": "milestone",
+      "lat": 37.459501,
+      "lon": -106.751336
+    },
+    {
+      "id": "w_ab40a482",
+      "name": "Pinedale (access: CDT at Pole Creek / Elkhart Park trailhead)",
+      "type": "town",
+      "lat": 43.046061,
+      "lon": -109.62702
+    },
+    {
+      "id": "w_abe85aad",
+      "name": "Official mile 430",
+      "type": "milestone",
+      "lat": 34.376713,
+      "lon": -108.097892
+    },
+    {
+      "id": "w_ac06037f",
+      "name": "Official mile 1540",
+      "type": "milestone",
+      "lat": 41.024099,
+      "lon": -106.937669
+    },
+    {
+      "id": "w_acf44c6f",
+      "name": "Lincoln (access: Rogers Pass (MT 200))",
+      "type": "town",
+      "lat": 47.076439,
+      "lon": -112.37114
+    },
+    {
+      "id": "w_adeda7ca",
+      "name": "Official mile 1850",
+      "type": "milestone",
+      "lat": 43.122126,
+      "lon": -109.713445
+    },
+    {
+      "id": "w_ae8c59db",
+      "name": "Steamboat Springs",
+      "type": "town",
+      "lat": 40.463066,
+      "lon": -106.821603
+    },
+    {
+      "id": "w_aebb7c21",
+      "name": "Salida (access: Monarch Pass (US 50))",
+      "type": "town",
+      "lat": 38.496295,
+      "lon": -106.325116
+    },
+    {
+      "id": "w_affa9abf",
+      "name": "Colorado old route 5 branches",
+      "type": "junction",
+      "lat": 39.077171,
+      "lon": -106.343475
+    },
+    {
+      "id": "w_b0d1d333",
+      "name": "Official mile 580",
+      "type": "milestone",
+      "lat": 35.479591,
+      "lon": -107.413888
+    },
+    {
+      "id": "w_b142c6a9",
+      "name": "Lincoln",
+      "type": "town",
+      "lat": 46.955454,
+      "lon": -112.680589
+    },
+    {
+      "id": "w_b175ad79",
+      "name": "Official mile 400",
+      "type": "milestone",
+      "lat": 34.188859,
+      "lon": -108.387744
+    },
+    {
+      "id": "w_b20413b5",
+      "name": "Official mile 2330",
+      "type": "milestone",
+      "lat": 45.143908,
+      "lon": -113.568973
+    },
+    {
+      "id": "w_b2390573",
+      "name": "Brownie's Hostel, East Glacier",
+      "type": "accommodation",
+      "lat": 48.448563,
+      "lon": -113.225151
+    },
+    {
+      "id": "w_b26a668e",
+      "name": "Official mile 510",
+      "type": "milestone",
+      "lat": 34.925041,
+      "lon": -107.872526
+    },
+    {
+      "id": "w_b2ea0121",
+      "name": "Famous Alternate (Lander to Old Faithful) branches",
+      "type": "junction",
+      "lat": 44.457161,
+      "lon": -110.828487
+    },
+    {
+      "id": "w_b34c9879",
+      "name": "Wyoming old route 3 branches",
+      "type": "junction",
+      "lat": 42.478471,
+      "lon": -108.770339
+    },
+    {
+      "id": "w_b375dd11",
+      "name": "Benchmark Wilderness Ranch (access: CDT at Benchmark trailhead (South Fork Sun River))",
+      "type": "resupply",
+      "lat": 47.49516,
+      "lon": -112.90054
+    },
+    {
+      "id": "w_b375dd112326",
+      "name": "Augusta (access: CDT at Benchmark trailhead (South Fork Sun River))",
+      "type": "resupply",
+      "lat": 47.49516,
+      "lon": -112.90054
+    },
+    {
+      "id": "w_b3874f6d",
+      "name": "Northern terminus - Waterton Lake",
+      "type": "endpoint",
+      "lat": 48.998682,
+      "lon": -113.906057
+    },
+    {
+      "id": "w_b3991cd8",
+      "name": "Bridger Pass Road water cache",
+      "type": "water",
+      "lat": 41.61469,
+      "lon": -107.27868
+    },
+    {
+      "id": "w_b42dc6e1",
+      "name": "Official mile 1750",
+      "type": "milestone",
+      "lat": 42.481013,
+      "lon": -108.714778
+    },
+    {
+      "id": "w_b45a76c6",
+      "name": "Official mile 220",
+      "type": "milestone",
+      "lat": 33.12375,
+      "lon": -107.977259
+    },
+    {
+      "id": "w_b45c04d9",
+      "name": "Official mile 790",
+      "type": "milestone",
+      "lat": 36.964653,
+      "lon": -106.438361
+    },
+    {
+      "id": "w_b49d3311",
+      "name": "Official mile 480",
+      "type": "milestone",
+      "lat": 34.886855,
+      "lon": -108.223622
+    },
+    {
+      "id": "w_b4d6de1b",
+      "name": "Official mile 290",
+      "type": "milestone",
+      "lat": 33.673744,
+      "lon": -107.829795
+    },
+    {
+      "id": "w_b57f273b",
+      "name": "Official mile 910",
+      "type": "milestone",
+      "lat": 37.599722,
+      "lon": -107.219937
+    },
+    {
+      "id": "w_b6819d5b",
+      "name": "Official mile 1530",
+      "type": "milestone",
+      "lat": 40.953065,
+      "lon": -106.863676
+    },
+    {
+      "id": "w_b6fc8666",
+      "name": "Official mile 1500",
+      "type": "milestone",
+      "lat": 40.673859,
+      "lon": -106.685153
+    },
+    {
+      "id": "w_b6ff11f0",
+      "name": "Official mile 570",
+      "type": "milestone",
+      "lat": 35.386245,
+      "lon": -107.524705
+    },
+    {
+      "id": "w_b7685e69",
+      "name": "Cebolla rejoins",
+      "type": "junction",
+      "lat": 34.301704,
+      "lon": -108.13854
+    },
+    {
+      "id": "w_b7b01940",
+      "name": "Official mile 2730",
+      "type": "milestone",
+      "lat": 46.951912,
+      "lon": -112.400696
+    },
+    {
+      "id": "w_b859be22",
+      "name": "Official mile 740",
+      "type": "milestone",
+      "lat": 36.613892,
+      "lon": -106.24842
+    },
+    {
+      "id": "w_b87f589d",
+      "name": "Official mile 10",
+      "type": "milestone",
+      "lat": 31.572119,
+      "lon": -108.328885
+    },
+    {
+      "id": "w_b88726a2",
+      "name": "Official mile 1920",
+      "type": "milestone",
+      "lat": 43.709899,
+      "lon": -110.158824
+    },
+    {
+      "id": "w_b8a48a94",
+      "name": "Top of the World Store",
+      "type": "resupply",
+      "lat": 34.2945,
+      "lon": -108.187
+    },
+    {
+      "id": "w_b8c596b1",
+      "name": "Copper Mountain (access: CDT / Colorado Trail at Copper Mountain)",
+      "type": "resupply",
+      "lat": 39.499349,
+      "lon": -106.152787
+    },
+    {
+      "id": "w_b985349c",
+      "name": "Official mile 2760",
+      "type": "milestone",
+      "lat": 47.172452,
+      "lon": -112.49321
+    },
+    {
+      "id": "w_ba3af28b",
+      "name": "Official mile 2320",
+      "type": "milestone",
+      "lat": 45.070349,
+      "lon": -113.487518
+    },
+    {
+      "id": "w_baa3b125",
+      "name": "Salida",
+      "type": "town",
+      "lat": 38.536143,
+      "lon": -105.994385
+    },
+    {
+      "id": "w_bb5f04c5",
+      "name": "Silver City alternate rejoins",
+      "type": "junction",
+      "lat": 32.618732,
+      "lon": -108.445911
+    },
+    {
+      "id": "w_bb88fa41",
+      "name": "Official mile 750",
+      "type": "milestone",
+      "lat": 36.679251,
+      "lon": -106.199824
+    },
+    {
+      "id": "w_bbc21f60",
+      "name": "Official mile 1170",
+      "type": "milestone",
+      "lat": 39.102963,
+      "lon": -106.394159
+    },
+    {
+      "id": "w_bc893b3c",
+      "name": "Official mile 2450",
+      "type": "milestone",
+      "lat": 45.920605,
+      "lon": -113.50726
+    },
+    {
+      "id": "w_bf8a05cd",
+      "name": "Official mile 2670",
+      "type": "milestone",
+      "lat": 46.475762,
+      "lon": -112.305727
+    },
+    {
+      "id": "w_bf8a169c",
+      "name": "Steamboat Springs (access: Buffalo Pass)",
+      "type": "town",
+      "lat": 40.544271,
+      "lon": -106.684945
+    },
+    {
+      "id": "w_bfb496d7",
+      "name": "Monarch Pass (Monarch Crest Store)",
+      "type": "resupply",
+      "lat": 38.496705,
+      "lon": -106.325417
+    },
+    {
+      "id": "w_bfd9628a",
+      "name": "Official mile 40",
+      "type": "milestone",
+      "lat": 31.909698,
+      "lon": -108.413058
+    },
+    {
+      "id": "w_bfdad6b4",
+      "name": "Grays and Torreys / Argentine Spine branches",
+      "type": "junction",
+      "lat": 39.773672,
+      "lon": -105.889301
+    },
+    {
+      "id": "w_c195f163",
+      "name": "Official mile 1620",
+      "type": "milestone",
+      "lat": 41.604703,
+      "lon": -107.316687
+    },
+    {
+      "id": "w_c2cb90ca",
+      "name": "Official mile 1430",
+      "type": "milestone",
+      "lat": 40.324401,
+      "lon": -106.18184
+    },
+    {
+      "id": "w_c34f99bd",
+      "name": "Official mile 1010",
+      "type": "milestone",
+      "lat": 38.017956,
+      "lon": -106.83305
+    },
+    {
+      "id": "w_c4661d85",
+      "name": "Official mile 2410",
+      "type": "milestone",
+      "lat": 45.716206,
+      "lon": -113.908755
+    },
+    {
+      "id": "w_c4b0f264",
+      "name": "Silverthorne (access: CDT / Colorado Trail near CO 9, Tenmile Range)",
+      "type": "town",
+      "lat": 39.539701,
+      "lon": -106.05922
+    },
+    {
+      "id": "w_c5045d43",
+      "name": "Official mile 710",
+      "type": "milestone",
+      "lat": 36.401452,
+      "lon": -106.412661
+    },
+    {
+      "id": "w_c51a3f6c",
+      "name": "Famous Alternate (Lander to Old Faithful) rejoins",
+      "type": "junction",
+      "lat": 42.462223,
+      "lon": -108.851118
+    },
+    {
+      "id": "w_c54399dd",
+      "name": "Sweetwater River route rejoins",
+      "type": "junction",
+      "lat": 42.389022,
+      "lon": -108.421621
+    },
+    {
+      "id": "w_c5977ca8",
+      "name": "Official mile 1340",
+      "type": "milestone",
+      "lat": 39.944723,
+      "lon": -105.695186
+    },
+    {
+      "id": "w_c5c658ac",
+      "name": "Official mile 1970",
+      "type": "milestone",
+      "lat": 44.066348,
+      "lon": -110.195596
+    },
+    {
+      "id": "w_c6d5b942",
+      "name": "Official mile 780",
+      "type": "milestone",
+      "lat": 36.921087,
+      "lon": -106.360231
+    },
+    {
+      "id": "w_c7d90005",
+      "name": "Official mile 630",
+      "type": "milestone",
+      "lat": 35.899046,
+      "lon": -107.037771
+    },
+    {
+      "id": "w_c91d924d",
+      "name": "Official mile 2570",
+      "type": "milestone",
+      "lat": 45.870484,
+      "lon": -112.421239
+    },
+    {
+      "id": "w_c92ccd47",
+      "name": "Official mile 1860",
+      "type": "milestone",
+      "lat": 43.205711,
+      "lon": -109.751019
+    },
+    {
+      "id": "w_c9a93357",
+      "name": "Official mile 70",
+      "type": "milestone",
+      "lat": 32.2027,
+      "lon": -108.65883
+    },
+    {
+      "id": "w_caafa04b",
+      "name": "Lake of the Woods branches",
+      "type": "junction",
+      "lat": 43.567097,
+      "lon": -110.023219
+    },
+    {
+      "id": "w_cb11c9dc",
+      "name": "Wind River High Route (Dixon variation) branches",
+      "type": "junction",
+      "lat": 43.314611,
+      "lon": -109.853832
+    },
+    {
+      "id": "w_cb12b62a",
+      "name": "Official mile 1910",
+      "type": "milestone",
+      "lat": 43.627528,
+      "lon": -110.07697
+    },
+    {
+      "id": "w_cb5d8d3b",
+      "name": "Breckenridge (access: Gold Hill trailhead (CO 9))",
+      "type": "town",
+      "lat": 39.489026,
+      "lon": -106.11276
+    },
+    {
+      "id": "w_cb7526ac",
+      "name": "Official mile 2540",
+      "type": "milestone",
+      "lat": 45.875232,
+      "lon": -112.695489
+    },
+    {
+      "id": "w_cba56912",
+      "name": "Official mile 1270",
+      "type": "milestone",
+      "lat": 39.531398,
+      "lon": -105.826565
+    },
+    {
+      "id": "w_cbabb691",
+      "name": "Official mile 1650",
+      "type": "milestone",
+      "lat": 41.926467,
+      "lon": -107.321834
+    },
+    {
+      "id": "w_cc56d344",
+      "name": "Colorado old route 1 rejoins",
+      "type": "junction",
+      "lat": 38.692295,
+      "lon": -106.414173
+    },
+    {
+      "id": "w_cc7644c6",
+      "name": "Elliston (access: MacDonald Pass (US 12))",
+      "type": "resupply",
+      "lat": 46.561487,
+      "lon": -112.308748
+    },
+    {
+      "id": "w_cd78ec0d",
+      "name": "Official mile 1470",
+      "type": "milestone",
+      "lat": 40.380622,
+      "lon": -106.579755
+    },
+    {
+      "id": "w_cf2fb6b4",
+      "name": "Official mile 2310",
+      "type": "milestone",
+      "lat": 44.969151,
+      "lon": -113.450245
+    },
+    {
+      "id": "w_cf54a59c",
+      "name": "Anaconda Cutoff branches",
+      "type": "junction",
+      "lat": 46.208313,
+      "lon": -112.57593
+    },
+    {
+      "id": "w_cf638c9e",
+      "name": "Ghost Ranch (access: CDT primary route nearest Ghost Ranch (Chama River rim))",
+      "type": "resupply",
+      "lat": 36.386622,
+      "lon": -106.445709
+    },
+    {
+      "id": "w_cf638c9ea049",
+      "name": "Abiquiu (access: CDT primary route nearest Ghost Ranch (Chama River rim))",
+      "type": "resupply",
+      "lat": 36.386622,
+      "lon": -106.445709
+    },
+    {
+      "id": "w_cfa99d1b",
+      "name": "Official mile 270",
+      "type": "milestone",
+      "lat": 33.482656,
+      "lon": -107.84269
+    },
+    {
+      "id": "w_cfd7fa38",
+      "name": "Official mile 2530",
+      "type": "milestone",
+      "lat": 45.92561,
+      "lon": -112.799549
+    },
+    {
+      "id": "w_cfe15949",
+      "name": "Colorado old route 1 branches",
+      "type": "junction",
+      "lat": 38.876107,
+      "lon": -106.427134
+    },
+    {
+      "id": "w_d0a4e5e4",
+      "name": "Dubois",
+      "type": "town",
+      "lat": 43.536327,
+      "lon": -109.640539
+    },
+    {
+      "id": "w_d123bba8",
+      "name": "Gila Hot Springs Campground (access: CDT primary route nearest Gila Hot Springs)",
+      "type": "campsite",
+      "lat": 33.071095,
+      "lon": -108.087069
+    },
+    {
+      "id": "w_d1f52485",
+      "name": "Butte",
+      "type": "town",
+      "lat": 45.997712,
+      "lon": -112.537256
+    },
+    {
+      "id": "w_d340e2a9",
+      "name": "Official mile 700",
+      "type": "milestone",
+      "lat": 36.375263,
+      "lon": -106.535297
+    },
+    {
+      "id": "w_d3ac4147",
+      "name": "Granby (access: CDT at Grand Lake)",
+      "type": "town",
+      "lat": 40.250078,
+      "lon": -105.826023
+    },
+    {
+      "id": "w_d42228d1",
+      "name": "Official mile 2300",
+      "type": "milestone",
+      "lat": 44.886693,
+      "lon": -113.46206
+    },
+    {
+      "id": "w_d47dd706",
+      "name": "Silver City alternate branches",
+      "type": "junction",
+      "lat": 32.780796,
+      "lon": -108.282683
+    },
+    {
+      "id": "w_d4de5233",
+      "name": "Official mile 60",
+      "type": "milestone",
+      "lat": 32.102597,
+      "lon": -108.56401
+    },
+    {
+      "id": "w_d569bbfa",
+      "name": "Official mile 1370",
+      "type": "milestone",
+      "lat": 40.212438,
+      "lon": -105.830425
+    },
+    {
+      "id": "w_d5d2380f",
+      "name": "Official mile 1670",
+      "type": "milestone",
+      "lat": 42.118244,
+      "lon": -107.578792
+    },
+    {
+      "id": "w_d694b023",
+      "name": "Anaconda (access: CDT primary route nearest Anaconda (Anaconda-Pintler))",
+      "type": "town",
+      "lat": 46.040674,
+      "lon": -113.046581
+    },
+    {
+      "id": "w_d70a97aa",
+      "name": "Official mile 2930",
+      "type": "milestone",
+      "lat": 48.374047,
+      "lon": -113.312466
+    },
+    {
+      "id": "w_d769307d",
+      "name": "Official mile 460",
+      "type": "milestone",
+      "lat": 34.728945,
+      "lon": -108.039197
+    },
+    {
+      "id": "w_d79c3f7b",
+      "name": "Chief Mountain Route leaves the CDT",
+      "type": "junction",
+      "lat": 48.800083,
+      "lon": -113.656936
+    },
+    {
+      "id": "w_d8aec3c9",
+      "name": "Wyoming old route 1 branches",
+      "type": "junction",
+      "lat": 42.583946,
+      "lon": -109.0871
+    },
+    {
+      "id": "w_d927b213",
+      "name": "Anaconda",
+      "type": "town",
+      "lat": 46.127018,
+      "lon": -112.935243
+    },
+    {
+      "id": "w_da1f582f",
+      "name": "Official mile 760",
+      "type": "milestone",
+      "lat": 36.760115,
+      "lon": -106.274416
+    },
+    {
+      "id": "w_da5f1c34",
+      "name": "Official mile 2120",
+      "type": "milestone",
+      "lat": 44.591326,
+      "lon": -111.552636
+    },
+    {
+      "id": "w_dc70809a",
+      "name": "Official mile 2860",
+      "type": "milestone",
+      "lat": 47.892595,
+      "lon": -113.056641
+    },
+    {
+      "id": "w_dcf19209",
+      "name": "Official mile 1110",
+      "type": "milestone",
+      "lat": 38.679096,
+      "lon": -106.424443
+    },
+    {
+      "id": "w_dd639a76",
+      "name": "Official mile 320",
+      "type": "milestone",
+      "lat": 33.685683,
+      "lon": -108.242129
+    },
+    {
+      "id": "w_ddcfdcd2",
+      "name": "Official mile 3000",
+      "type": "milestone",
+      "lat": 48.769312,
+      "lon": -113.683042
+    },
+    {
+      "id": "w_ddd70633",
+      "name": "Gila River rejoins",
+      "type": "junction",
+      "lat": 32.862618,
+      "lon": -108.289907
+    },
+    {
+      "id": "w_df12aead",
+      "name": "Official mile 1350",
+      "type": "milestone",
+      "lat": 40.039157,
+      "lon": -105.738725
+    },
+    {
+      "id": "w_e06b0586",
+      "name": "Official mile 970",
+      "type": "milestone",
+      "lat": 37.871857,
+      "lon": -107.334901
+    },
+    {
+      "id": "w_e0bdd8b9",
+      "name": "Official mile 1180",
+      "type": "milestone",
+      "lat": 39.200975,
+      "lon": -106.429951
+    },
+    {
+      "id": "w_e146dade",
+      "name": "Official mile 410",
+      "type": "milestone",
+      "lat": 34.316605,
+      "lon": -108.36293
+    },
+    {
+      "id": "w_e1ee0f2d",
+      "name": "Official mile 610",
+      "type": "milestone",
+      "lat": 35.707147,
+      "lon": -107.105035
+    },
+    {
+      "id": "w_e2179da5",
+      "name": "Frisco",
+      "type": "town",
+      "lat": 39.589848,
+      "lon": -106.096798
+    },
+    {
+      "id": "w_e34658ec",
+      "name": "Doc Campbell's Post (access: CDT primary route nearest Gila Hot Springs)",
+      "type": "resupply",
+      "lat": 33.071095,
+      "lon": -108.087069
+    },
+    {
+      "id": "w_e38900b7",
+      "name": "Tonahutu Creek (RMNP loop) branches",
+      "type": "junction",
+      "lat": 40.311082,
+      "lon": -105.811918
+    },
+    {
+      "id": "w_e3c86f20",
+      "name": "Official mile 1830",
+      "type": "milestone",
+      "lat": 42.958292,
+      "lon": -109.538443
+    },
+    {
+      "id": "w_e5af0d07",
+      "name": "Official mile 2170",
+      "type": "milestone",
+      "lat": 44.526256,
+      "lon": -112.119009
+    },
+    {
+      "id": "w_e76b0756",
+      "name": "Salmon",
+      "type": "town",
+      "lat": 45.174867,
+      "lon": -113.88604
+    },
+    {
+      "id": "w_e7d8d267",
+      "name": "Salmon (access: Bannock Pass (ID 29 / MT 324))",
+      "type": "town",
+      "lat": 44.814332,
+      "lon": -113.27255
+    },
+    {
+      "id": "w_e802abc2",
+      "name": "Official mile 2910",
+      "type": "milestone",
+      "lat": 48.270838,
+      "lon": -113.173517
+    },
+    {
+      "id": "w_e82deba8",
+      "name": "Wyoming old route 2 rejoins",
+      "type": "junction",
+      "lat": 41.779519,
+      "lon": -107.249822
+    },
+    {
+      "id": "w_e88378b7",
+      "name": "Elliston",
+      "type": "resupply",
+      "lat": 46.560708,
+      "lon": -112.430297
+    },
+    {
+      "id": "w_e886e258",
+      "name": "Lordsburg reroute (CDTC) rejoins",
+      "type": "junction",
+      "lat": 32.326414,
+      "lon": -108.725062
+    },
+    {
+      "id": "w_e8e07774",
+      "name": "Official mile 560",
+      "type": "milestone",
+      "lat": 35.280256,
+      "lon": -107.591582
+    },
+    {
+      "id": "w_e912dc27",
+      "name": "Official mile 280",
+      "type": "milestone",
+      "lat": 33.57792,
+      "lon": -107.811593
+    },
+    {
+      "id": "w_e98da505",
+      "name": "Official mile 2240",
+      "type": "milestone",
+      "lat": 44.4645,
+      "lon": -112.955671
+    },
+    {
+      "id": "w_ebbd7d4e",
+      "name": "Encampment (access: Battle Pass (WY 70))",
+      "type": "resupply",
+      "lat": 41.153749,
+      "lon": -106.981306
+    },
+    {
+      "id": "w_ebbd7d4e82d1",
+      "name": "Riverside (access: Battle Pass (WY 70))",
+      "type": "resupply",
+      "lat": 41.153749,
+      "lon": -106.981306
+    },
+    {
+      "id": "w_ec6e105f",
+      "name": "Bridger Pass bypass (Rawlins shortcut) branches",
+      "type": "junction",
+      "lat": 41.614682,
+      "lon": -107.278709
+    },
+    {
+      "id": "w_ecd93444",
+      "name": "Mack's Inn (Island Park)",
+      "type": "resupply",
+      "lat": 44.499584,
+      "lon": -111.336878
+    },
+    {
+      "id": "w_ed2db137",
+      "name": "Official mile 1730",
+      "type": "milestone",
+      "lat": 42.38819,
+      "lon": -108.423838
+    },
+    {
+      "id": "w_ed4f7af2",
+      "name": "Official mile 1130",
+      "type": "milestone",
+      "lat": 38.847785,
+      "lon": -106.393768
+    },
+    {
+      "id": "w_ed555c74",
+      "name": "Official mile 2520",
+      "type": "milestone",
+      "lat": 45.928968,
+      "lon": -112.928499
+    },
+    {
+      "id": "w_edfc1b4e",
+      "name": "Cebolla branches",
+      "type": "junction",
+      "lat": 35.150398,
+      "lon": -107.849155
+    },
+    {
+      "id": "w_ee1fa20f",
+      "name": "Official mile 1790",
+      "type": "milestone",
+      "lat": 42.604775,
+      "lon": -109.174035
+    },
+    {
+      "id": "w_ee8e373b",
+      "name": "Highway 9 water cache",
+      "type": "water",
+      "lat": 31.96518,
+      "lon": -108.43988
+    },
+    {
+      "id": "w_eede609e",
+      "name": "Leadville (access: Tennessee Pass (US 24))",
+      "type": "town",
+      "lat": 39.362171,
+      "lon": -106.31307
+    },
+    {
+      "id": "w_ef1a2413",
+      "name": "Official mile 2870",
+      "type": "milestone",
+      "lat": 47.941611,
+      "lon": -112.974207
+    },
+    {
+      "id": "w_f0c1c0e8",
+      "name": "Reserve",
+      "type": "town",
+      "lat": 33.713135,
+      "lon": -108.757529
+    },
+    {
+      "id": "w_f133c1df",
+      "name": "Lordsburg",
+      "type": "town",
+      "lat": 32.34439,
+      "lon": -108.710526
+    },
+    {
+      "id": "w_f1419e0a",
+      "name": "Flagg Ranch (access: CDT on the Snake River, south Yellowstone)",
+      "type": "food",
+      "lat": 44.21746,
+      "lon": -110.462872
+    },
+    {
+      "id": "w_f152be9e",
+      "name": "Official mile 2690",
+      "type": "milestone",
+      "lat": 46.691742,
+      "lon": -112.328987
+    },
+    {
+      "id": "w_f195e47e",
+      "name": "Babb (access: Chief Mountain border crossing (US 17 / MT 17))",
+      "type": "resupply",
+      "lat": 48.844229,
+      "lon": -113.82698
+    },
+    {
+      "id": "w_f1b4c6fc",
+      "name": "Official mile 2980",
+      "type": "milestone",
+      "lat": 48.682772,
+      "lon": -113.504698
+    },
+    {
+      "id": "w_f21eecaf",
+      "name": "Official mile 590",
+      "type": "milestone",
+      "lat": 35.554927,
+      "lon": -107.307147
+    },
+    {
+      "id": "w_f2d2fc48",
+      "name": "Winter Park",
+      "type": "town",
+      "lat": 39.925549,
+      "lon": -105.786695
+    },
+    {
+      "id": "w_f4049ce1",
+      "name": "Official mile 720",
+      "type": "milestone",
+      "lat": 36.45905,
+      "lon": -106.324091
+    },
+    {
+      "id": "w_f4d17948",
+      "name": "Lordsburg reroute (CDTC) branches",
+      "type": "junction",
+      "lat": 32.329121,
+      "lon": -108.723026
+    },
+    {
+      "id": "w_f56930ee",
+      "name": "Flagg Ranch",
+      "type": "food",
+      "lat": 44.1062,
+      "lon": -110.667751
+    },
+    {
+      "id": "w_f5b298be",
+      "name": "Official mile 2640",
+      "type": "milestone",
+      "lat": 46.313745,
+      "lon": -112.559879
+    },
+    {
+      "id": "w_f5c272ca",
+      "name": "Colorado old route 3 branches",
+      "type": "junction",
+      "lat": 38.584244,
+      "lon": -106.337626
+    },
+    {
+      "id": "w_f762526f",
+      "name": "Many Glacier (Swiftcurrent)",
+      "type": "resupply",
+      "lat": 48.797877,
+      "lon": -113.676932
+    },
+    {
+      "id": "w_f7e32b1e",
+      "name": "Wyoming old route 5 rejoins",
+      "type": "junction",
+      "lat": 41.01581,
+      "lon": -106.906438
+    },
+    {
+      "id": "w_f818af20",
+      "name": "Official mile 2370",
+      "type": "milestone",
+      "lat": 45.3835,
+      "lon": -113.72086
+    },
+    {
+      "id": "w_f83addde",
+      "name": "Lander",
+      "type": "town",
+      "lat": 42.837834,
+      "lon": -108.74648
+    },
+    {
+      "id": "w_f86cae6d",
+      "name": "South Fork",
+      "type": "town",
+      "lat": 37.670016,
+      "lon": -106.638633
+    },
+    {
+      "id": "w_f8a503b6",
+      "name": "Official mile 2230",
+      "type": "milestone",
+      "lat": 44.449058,
+      "lon": -112.874368
+    },
+    {
+      "id": "w_f8aca77a",
+      "name": "Sula",
+      "type": "resupply",
+      "lat": 45.836306,
+      "lon": -113.982525
+    },
+    {
+      "id": "w_f8fd3e69",
+      "name": "Official mile 2180",
+      "type": "milestone",
+      "lat": 44.532399,
+      "lon": -112.271061
+    },
+    {
+      "id": "w_f93083b5",
+      "name": "Official mile 810",
+      "type": "milestone",
+      "lat": 37.110081,
+      "lon": -106.518802
+    },
+    {
+      "id": "w_f95f63f6",
+      "name": "Official mile 1220",
+      "type": "milestone",
+      "lat": 39.474336,
+      "lon": -106.218907
+    },
+    {
+      "id": "w_f974074b",
+      "name": "Columbus",
+      "type": "resupply",
+      "lat": 31.831226,
+      "lon": -107.634634
+    },
+    {
+      "id": "w_faa54b22",
+      "name": "Official mile 540",
+      "type": "milestone",
+      "lat": 35.189477,
+      "lon": -107.769368
+    },
+    {
+      "id": "w_fb0c85fc",
+      "name": "Pinedale",
+      "type": "town",
+      "lat": 42.867263,
+      "lon": -109.856279
+    },
+    {
+      "id": "w_fccd6992",
+      "name": "Official mile 2430",
+      "type": "milestone",
+      "lat": 45.821424,
+      "lon": -113.725069
+    },
+    {
+      "id": "w_fe46e05d",
+      "name": "Official mile 2210",
+      "type": "milestone",
+      "lat": 44.496656,
+      "lon": -112.637824
+    },
+    {
+      "id": "w_fe7b24f9",
+      "name": "Official mile 2090",
+      "type": "milestone",
+      "lat": 44.731348,
+      "lon": -111.329596
+    },
+    {
+      "id": "w_ff8135ce",
+      "name": "Wyoming old route 1 rejoins",
+      "type": "junction",
+      "lat": 42.476274,
+      "lon": -108.86737
+    },
+    {
+      "id": "w_ffc4d6cf",
+      "name": "Official mile 2610",
+      "type": "milestone",
+      "lat": 46.122197,
+      "lon": -112.449122
+    },
+    {
+      "id": "w_ffebf2b8",
+      "name": "Official mile 2380",
+      "type": "milestone",
+      "lat": 45.453501,
+      "lon": -113.809895
+    }
+  ],
   "heysen": [
     {
       "id": "w_00c67cb1",

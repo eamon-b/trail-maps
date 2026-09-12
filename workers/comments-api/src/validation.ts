@@ -21,6 +21,7 @@ export const ALLOWED_TRAILS: readonly string[] = [
   'aawt',
   'bibbulmun',
   'cape_to_cape',
+  'cdt',
   'heysen',
   'hume-and-hovell',
   'larapinta',

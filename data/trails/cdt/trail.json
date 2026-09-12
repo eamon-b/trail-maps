@@ -1,0 +1,76 @@
+{
+  "id": "cdt",
+  "name": "Continental Divide Trail",
+  "shortName": "CDT",
+  "region": "United States (Waterton Lake to Crazy Cook)",
+  "lengthKm": 4874.7,
+  "gpxFile": "cdt.gpx",
+  "dedupeWaypoints": true,
+  "waypointMaxDistance": 1000,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^CDT \\(SOBO\\) \\d+/\\d+"
+    ],
+    "alternatePatterns": [
+      "^Alternate: ",
+      "^Ley alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "ignorePatterns": [
+      "^Connector: ",
+      "^Walked 2018: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "The Continental Divide Trail, from the Waterton Lake border monument to the Crazy Cook monument on the Mexican border. 3029 miles measured along the full-resolution centreline; 3038 miles in the CDTC's own published mileage, which is what the \"Official mile N\" waypoints are numbered in. Built from the CDTC's FeatureServer centreline with Copernicus GLO-30 elevation on every vertex. The track in this file is decimated to 3000 miles to fit the point budget, so distances computed from it run about 0.97% short of both.",
+  "direction": {
+    "default": "SOBO",
+    "reversed": "NOBO"
+  },
+  "elevationSource": "backfilled",
+  "climateLocations": [
+    {
+      "name": "Lordsburg, NM",
+      "lat": 32.35,
+      "lon": -108.71
+    },
+    {
+      "name": "Silver City, NM",
+      "lat": 32.77,
+      "lon": -108.28
+    },
+    {
+      "name": "Chama, NM",
+      "lat": 36.9,
+      "lon": -106.58
+    },
+    {
+      "name": "Silverton, CO",
+      "lat": 37.81,
+      "lon": -107.66
+    },
+    {
+      "name": "Grand Lake, CO",
+      "lat": 40.25,
+      "lon": -105.82
+    },
+    {
+      "name": "Rawlins, WY",
+      "lat": 41.79,
+      "lon": -107.24
+    },
+    {
+      "name": "Pinedale, WY",
+      "lat": 42.87,
+      "lon": -109.86
+    },
+    {
+      "name": "East Glacier Park, MT",
+      "lat": 48.45,
+      "lon": -113.22
+    }
+  ],
+  "climateFile": "climate.json"
+}

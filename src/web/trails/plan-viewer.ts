@@ -104,6 +104,13 @@ const WAYPOINT_ICONS: Record<string, string> = {
   poi: '\u{2B50}',
   resupply: '\u{1F4E6}',
   endpoint: '\u{1F6A9}',
+  // Keep in step with the same table in trail-viewer.ts.
+  junction: '\u{1F500}',
+  milestone: '\u{1FAA7}',
+  gap: '\u{1F6A7}',
+  'ley-note': '\u{1F5D2}\u{FE0F}',
+  'ley-waypoint': '\u{1F53A}',
+  'camp-2018': '\u{1F525}',
   waypoint: '\u{1F4CD}',
 };
 

@@ -14,8 +14,8 @@ import {
 import { WAYPOINT_ICON_IMAGES } from '../waypoint-icon-images';
 
 /**
- * Every `type` string the six bundled trails currently use (aawt, bibbulmun,
- * cape_to_cape, heysen, hume-and-hovell, larapinta). Hardcoded rather than read
+ * Every `type` string the bundled trails currently use (aawt, bibbulmun,
+ * cape_to_cape, heysen, hume-and-hovell, larapinta, cdt). Hardcoded rather than read
  * off TRAIL_DATA so the test does not pull ~50 MB of trail JSON into Jest.
  */
 const BUNDLED_TYPES = [
@@ -35,6 +35,8 @@ const BUNDLED_TYPES = [
   'resupply',
   'endpoint',
   'waypoint',
+  'junction',
+  'milestone',
 ];
 
 describe('waypointIconName', () => {
@@ -44,6 +46,23 @@ describe('waypointIconName', () => {
       expect(WAYPOINT_ICON_NAMES).toContain(icon);
       expect(WAYPOINT_ICON_IMAGES[icon]).toBeDefined();
     }
+  });
+
+  it('gives the CDT vocabulary its own ink rather than the generic dot', () => {
+    // A distance post, an alternate's branch/rejoin point and a plain
+    // unclassified waypoint must be tellable apart on the map.
+    expect(waypointIconName('milestone')).toBe('milestone');
+    expect(waypointIconName('junction')).toBe('junction');
+    expect(waypointIconName('gap')).toBe('gap');
+    expect(waypointIconName('ley-note')).toBe('note');
+    for (const type of ['milestone', 'junction', 'gap', 'ley-note', 'ley-waypoint', 'camp-2018']) {
+      const icon = waypointIconName(type);
+      expect(icon).not.toBe(FALLBACK_WAYPOINT_ICON);
+      // A glyph name with no registered image renders as nothing at all.
+      expect(WAYPOINT_ICON_IMAGES[icon]).toBeDefined();
+    }
+    // ...and none of them borrow the generic waypoint's glyph.
+    expect(waypointIconName('milestone')).not.toBe(waypointIconName('waypoint'));
   });
 
   it('distinguishes the categories a hiker acts on differently', () => {

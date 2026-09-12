@@ -36,6 +36,27 @@ const SIDE_TRIP: MapVariant = {
   waypoints: [{}, {}, {}],
 };
 
+/** CDT: an alternate that branches off another alternate, not off the route. */
+const CHILD_ALTERNATE: MapVariant = {
+  name: 'Gila Lower Box',
+  type: 'alternate',
+  distance: 4,
+  startDistance: 1247,
+  endDistance: 1251,
+  parent: { name: 'Gila High Route' },
+};
+
+/** A drawn-short alternate taken in by a raised junction tolerance. */
+const LOOSE_ALTERNATE: MapVariant = {
+  name: 'Loose Alternate',
+  type: 'alternate',
+  distance: 4,
+  startDistance: 100,
+  endDistance: 104,
+  startOffsetMeters: 1200,
+  endOffsetMeters: 80,
+};
+
 /** Bibbulmun: an alternate that leaves the trail and does not return. */
 const ONE_WAY_ALTERNATE: MapVariant = {
   name: 'Alt: hitch into Denmark',
@@ -141,6 +162,25 @@ describe('variantJunctionLine', () => {
 
   it('is null when the pipeline recorded no junction', () => {
     expect(variantJunctionLine(variantInfo({}, 'alternate', 'a-0'), 'km')).toBeNull();
+  });
+
+  it('names the alternate a variant branches off', () => {
+    const info = variantInfo(CHILD_ALTERNATE, 'alternate', 'alternate-1');
+    expect(variantJunctionLine(info, 'km')).toBe(
+      'Branches off Gila High Route at 1247.0 km · Rejoins at 1251.0 km',
+    );
+  });
+
+  it('owns up to a junction that does not reach the trail', () => {
+    const info = variantInfo(LOOSE_ALTERNATE, 'alternate', 'alternate-2');
+    expect(variantJunctionLine(info, 'km')).toBe(
+      'Branches at 100.0 km (≈1.2 km from the trail) · Rejoins at 104.0 km',
+    );
+  });
+
+  it('converts the residual to the reader’s units', () => {
+    const info = variantInfo(LOOSE_ALTERNATE, 'alternate', 'alternate-2');
+    expect(variantJunctionLine(info, 'mi')).toContain('(≈0.7 mi from the trail)');
   });
 });
 

@@ -11,6 +11,11 @@
  * km. The reversal functions below only transform attached variants; an
  * unattached variant's relative km have no junction to mirror, so it is
  * returned untouched rather than corrupted.
+ *
+ * A variant attached to a parent alternate rather than to the main route
+ * (`parent` set by the ingest pass) needs nothing special here: its junction km
+ * are absolute trail km like any other, so they mirror the same way, and the
+ * parent reference names an alternate whose own position flips with it.
  */
 
 /** The km/statistics fields the reversal math needs on a variant waypoint. */
@@ -34,6 +39,10 @@ export interface ReversibleVariant {
   endDistance?: number;
   /** Total length of the variant in km */
   distance?: number;
+  /** How far the branch end sits from what it attached to (m), when recorded */
+  startOffsetMeters?: number;
+  /** The same residual for the rejoin end */
+  endOffsetMeters?: number;
   points?: unknown[];
   waypoints?: VariantWaypointKmFields[];
 }
@@ -94,8 +103,16 @@ export function reverseAlternates<V extends ReversibleVariant>(
       });
     }
 
+    // The two ends trade places along with the points, so a residual recorded
+    // against one end has to travel with it.
+    const offsets =
+      alt.startOffsetMeters !== undefined || alt.endOffsetMeters !== undefined
+        ? { startOffsetMeters: alt.endOffsetMeters, endOffsetMeters: alt.startOffsetMeters }
+        : {};
+
     return {
       ...alt,
+      ...offsets,
       startDistance: newStart,
       endDistance: totalDistance - oldStart,
       points: alt.points ? [...alt.points].reverse() : [],

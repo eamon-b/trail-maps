@@ -15,7 +15,10 @@ import type {
  * These cover common naming conventions used in trail GPX files.
  */
 export const TRACK_CLASSIFICATION_DEFAULTS: Required<
-  Omit<TrackClassificationConfig, 'mainRoutePatterns' | 'ignorePatterns' | 'stretches'>
+  Omit<
+    TrackClassificationConfig,
+    'mainRoutePatterns' | 'ignorePatterns' | 'stretches' | 'maxJunctionDistanceMeters'
+  >
 > = {
   alternatePatterns: ['\\bAlt\\b', 'Alternative', 'Detour', 'Reroute'],
   sideTripPatterns: ['^ST:', 'Spur', 'Side Trip', 'side trip'],

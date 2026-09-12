@@ -227,6 +227,18 @@ export interface TrackClassificationConfig {
   fallbackToLongest?: boolean;      // Use longest track if no patterns match (default: true)
   /** The main tracks are consecutive walkable stretches - see {@link RouteStretchConfig}. */
   stretches?: RouteStretchConfig;
+  /**
+   * How far (metres) a variant's end may sit from the route it branches off and
+   * still count as a junction. Defaults to 500 - what every trail built before
+   * this option existed used.
+   *
+   * Raise it for a source whose alternates are drawn as loose ends: CalTopo
+   * files often stop short of the route rather than touching it. Without a
+   * junction a variant has no place on the trail's km scale at all - its
+   * waypoints fall back to variant-relative km, it is dropped from the waypoint
+   * table, and direction reversal has to leave it alone.
+   */
+  maxJunctionDistanceMeters?: number;
 }
 
 /**

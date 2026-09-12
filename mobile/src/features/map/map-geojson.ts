@@ -62,6 +62,11 @@ export interface MapVariant {
   startDistance?: number;
   /** Km along the main track where it rejoins (absent for out-and-back spurs). */
   endDistance?: number;
+  /** How far the branch/rejoin ends really sit from what they attached to (m). */
+  startOffsetMeters?: number;
+  endOffsetMeters?: number;
+  /** The alternate this variant branches off, when it is not the main route. */
+  parent?: { name?: string };
   /** Waypoints that sit on the variant rather than the main track. */
   waypoints?: unknown[];
 }

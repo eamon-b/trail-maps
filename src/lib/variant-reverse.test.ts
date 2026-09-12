@@ -68,6 +68,38 @@ describe('reverseAlternates', () => {
     expect(reversed[0].waypoints![1].distance).toBe(6);
   });
 
+  it('flips a parent-attached alternate like any other, keeping the parent', () => {
+    // An alternate off an alternate carries absolute trail km (the parent's
+    // junction plus the walk along it), so there is nothing special to do —
+    // the regression this guards is someone deciding there is.
+    const child: ReversibleVariant & { parent?: { name: string; index: number } } = {
+      distance: 3,
+      startDistance: 17.8,
+      endDistance: 20,
+      parent: { name: 'Parent Alternate', index: 0 },
+      points: [{}, {}],
+      waypoints: [makeWaypoint({ distance: 1.2, totalDistance: 19 })],
+    };
+    const reversed = reverseAlternates([child], 100);
+
+    expect(reversed[0].startDistance).toBe(80);
+    expect(reversed[0].endDistance).toBe(82.2);
+    expect(reversed[0].parent).toEqual({ name: 'Parent Alternate', index: 0 });
+    expect(reversed[0].waypoints![0].totalDistance).toBe(81.8); // 80 + (3 - 1.2)
+  });
+
+  it('moves a junction residual to the end it now belongs to', () => {
+    const loose: ReversibleVariant = {
+      distance: 5,
+      startDistance: 10,
+      endDistance: 30,
+      startOffsetMeters: 900,
+    };
+    const reversed = reverseAlternates([loose], 100);
+    expect(reversed[0].startOffsetMeters).toBeUndefined();
+    expect(reversed[0].endOffsetMeters).toBe(900);
+  });
+
   it('leaves unattached alternates untouched (variant-relative km, no junction to mirror)', () => {
     const unattached: ReversibleVariant = {
       distance: 5,
@@ -99,6 +131,20 @@ describe('transformSideTrips', () => {
     expect(wp.distance).toBe(3);
     expect(wp.ascent).toBe(50);
     expect(wp.variantTrackIndex).toBe(7);
+  });
+
+  it('mirrors a parent-attached side trip the same way', () => {
+    const spur: ReversibleVariant & { parent?: { name: string } } = {
+      distance: 2,
+      startDistance: 17.8,
+      parent: { name: 'Parent Alternate' },
+      waypoints: [makeWaypoint({ distance: 1, totalDistance: 18.8 })],
+    };
+    const transformed = transformSideTrips([spur], 100);
+
+    expect(transformed[0].startDistance).toBe(82.2);
+    expect(transformed[0].parent).toEqual({ name: 'Parent Alternate' });
+    expect(transformed[0].waypoints![0].totalDistance).toBe(83.2);
   });
 
   it('leaves unattached side trips untouched (regression: AAWT spurs >500m off-track)', () => {

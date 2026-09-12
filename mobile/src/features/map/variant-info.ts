@@ -14,7 +14,11 @@
  *  - side trips carry no `endDistance` (they are out-and-back spurs), and some
  *    alternates are missing it too (e.g. Bibbulmun's "hitch into Denmark",
  *    which leaves the trail and does not come back), so a rejoin point is
- *    always optional.
+ *    always optional;
+ *  - `parent` names the alternate a variant branches off when it never meets
+ *    the main route, and `start`/`endOffsetMeters` is how far a junction really
+ *    sits from what it attached to — both only appear on trails whose source
+ *    draws its alternates as loose ends.
  */
 
 import { formatDistance, formatElevation, type DistanceUnit } from '@lib/format-distance';
@@ -34,8 +38,26 @@ export interface VariantInfo {
   startKm?: number;
   /** Km along the main track where it rejoins (absent for out-and-back spurs). */
   endKm?: number;
+  /** Gap between each junction and what it attached to, in metres. */
+  startOffsetM?: number;
+  endOffsetM?: number;
+  /** The alternate this one branches off, when it does not meet the main route. */
+  parentName?: string;
   /** Waypoints carried on the variant itself (0 when it has none). */
   waypointCount: number;
+}
+
+/**
+ * Under this a junction reads as "here" and the gap is not worth a caveat. The
+ * data only records a residual for an end a trail deliberately took in from
+ * further out, so anything shown at all clears this comfortably.
+ */
+const OFFSET_NOTE_THRESHOLD_METERS = 100;
+
+/** " (≈1.2 km from the trail)" — empty unless the junction is a real gap. */
+function offsetNote(offsetM: number | undefined, unit: DistanceUnit): string {
+  if (offsetM == null || offsetM <= OFFSET_NOTE_THRESHOLD_METERS) return '';
+  return ` (≈${formatDistance(offsetM / 1000, unit)} from the trail)`;
 }
 
 /** Human label for the class of variant. */
@@ -62,6 +84,9 @@ export function variantInfo(variant: MapVariant, kind: VariantKind, id: string):
     descentM: num(variant.elevation?.descent),
     startKm: num(variant.startDistance),
     endKm: num(variant.endDistance),
+    startOffsetM: num(variant.startOffsetMeters),
+    endOffsetM: num(variant.endOffsetMeters),
+    parentName: variant.parent?.name?.trim() || undefined,
     waypointCount: variant.waypoints?.length ?? 0,
   };
 }
@@ -83,16 +108,22 @@ export function variantElevationLine(info: VariantInfo, unit: DistanceUnit): str
 
 /**
  * Where the variant meets the trail:
- *   "Branches at 54.8 km · Rejoins at 58.8 km"   (alternate with a rejoin)
- *   "Branches at 215.8 km · out-and-back"        (spur, or start == end)
- *   "Branches at 909.5 km"                       (leaves the trail for good)
+ *   "Branches at 54.8 km · Rejoins at 58.8 km"        (alternate with a rejoin)
+ *   "Branches at 215.8 km · out-and-back"             (spur, or start == end)
+ *   "Branches at 909.5 km"                            (leaves the trail for good)
+ *   "Branches off Gila High Route at 1247.0 km"       (hangs off an alternate)
+ *   "Branches at 54.8 km (≈1.2 km from the trail)"    (a loose end)
  * Null when the data has no junction distance at all.
  */
 export function variantJunctionLine(info: VariantInfo, unit: DistanceUnit): string | null {
   if (info.startKm == null) return null;
-  const branches = `Branches at ${formatDistance(info.startKm, unit)}`;
+  const branchLabel = info.parentName ? `Branches off ${info.parentName}` : 'Branches';
+  const branches =
+    `${branchLabel} at ${formatDistance(info.startKm, unit)}` + offsetNote(info.startOffsetM, unit);
   if (info.endKm != null && info.endKm !== info.startKm) {
-    return `${branches} · Rejoins at ${formatDistance(info.endKm, unit)}`;
+    const rejoins =
+      `Rejoins at ${formatDistance(info.endKm, unit)}` + offsetNote(info.endOffsetM, unit);
+    return `${branches} · ${rejoins}`;
   }
   // A spur returns the way it came; an alternate with no rejoin recorded is not
   // out-and-back, it simply leaves the trail, so only side trips say so.

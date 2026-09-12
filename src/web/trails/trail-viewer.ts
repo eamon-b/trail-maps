@@ -116,6 +116,11 @@ interface RouteVariant {
   distance?: number;
   startDistance?: number;
   endDistance?: number;
+  /** How far each junction really sits from what it attached to, in metres. */
+  startOffsetMeters?: number;
+  endOffsetMeters?: number;
+  /** The alternate this one branches off, when it never meets the main route. */
+  parent?: { name: string; index: number };
   elevation?: { ascent?: number; descent?: number };
   points?: VariantPoint[];
   waypoints?: VariantWaypoint[];
@@ -1351,14 +1356,37 @@ function collapseWaypointDetail(waypointIndex: number): void {
 
 // === Variant Expansion Functions ===
 
+/**
+ * Under 100 m a junction reads as "here". Past that the variant's end does not
+ * actually touch what it attached to, and the junction km is a nearest-point
+ * reading rather than a place you can walk off the trail, so it is said out
+ * loud: " (≈1.2 km from the trail)".
+ */
+const JUNCTION_OFFSET_NOTE_THRESHOLD_METERS = 100;
+
+function junctionOffsetNote(offsetMeters: number | undefined): string {
+  if (offsetMeters == null || offsetMeters <= JUNCTION_OFFSET_NOTE_THRESHOLD_METERS) return '';
+  return ` (\u2248${(offsetMeters / 1000).toFixed(1)} km from the trail)`;
+}
+
+/**
+ * Row identity for a variant. The position carries the identity and the name is
+ * only there to keep the key readable: alternates are routinely unnamed or
+ * share a name with a neighbour ("Alternate", "Alt"), and a name-only key made
+ * every one of those expand the first row's detail.
+ *
+ * The index is into `[...alternates, ...sideTrips]`, which is the order the
+ * table is built from — see `allVariants` in renderWaypointsTable.
+ */
+function makeVariantKey(variant: RouteVariant, index: number): string {
+  const slug = variant.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  return `${variant.type}-${index}-${slug}`;
+}
+
 function findVariantByKey(key: string, trail: Trail): RouteVariant | null {
-  for (const v of trail.alternates || []) {
-    const vKey = `${v.type}-${v.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    if (vKey === key) return v;
-  }
-  for (const v of trail.sideTrips || []) {
-    const vKey = `${v.type}-${v.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    if (vKey === key) return v;
+  const all = [...(trail.alternates || []), ...(trail.sideTrips || [])];
+  for (let i = 0; i < all.length; i++) {
+    if (makeVariantKey(all[i], i) === key) return all[i];
   }
   return null;
 }
@@ -1404,15 +1432,19 @@ function expandVariantDetail(variantKey: string, variant: RouteVariant): void {
   const typeClass = variant.type === 'side-trip' ? 'type-side-trip' : '';
   const wps = variant.waypoints || [];
 
-  // Stats line
-  const branchLabel = variant.type === 'alternate' ? 'Branches' : 'Starts';
+  // Stats line. A variant that hangs off another alternate says so: its km are
+  // ordinary trail km, but "branches at 1247 km" alone would send a reader
+  // looking for a junction on the main route that is not there.
+  const branchLabel = variant.parent
+    ? `Branches off ${escapeHtml(variant.parent.name)} at:`
+    : `${variant.type === 'alternate' ? 'Branches' : 'Starts'} at:`;
   let statsHtml = `<span class="variant-stat"><strong>Distance:</strong> ${variant.distance} km</span>`;
   statsHtml += `<span class="variant-stat"><strong>Elevation:</strong> +${variant.elevation?.ascent || 0}m / -${variant.elevation?.descent || 0}m</span>`;
   if (variant.startDistance != null) {
-    statsHtml += `<span class="variant-stat"><strong>${branchLabel} at:</strong> ${variant.startDistance.toFixed(1)} km</span>`;
+    statsHtml += `<span class="variant-stat"><strong>${branchLabel}</strong> ${variant.startDistance.toFixed(1)} km${junctionOffsetNote(variant.startOffsetMeters)}</span>`;
   }
   if (variant.type === 'alternate' && variant.endDistance != null) {
-    statsHtml += `<span class="variant-stat"><strong>Rejoins:</strong> ${variant.endDistance.toFixed(1)} km</span>`;
+    statsHtml += `<span class="variant-stat"><strong>Rejoins:</strong> ${variant.endDistance.toFixed(1)} km${junctionOffsetNote(variant.endOffsetMeters)}</span>`;
   }
 
   // Waypoints table
@@ -1886,6 +1918,8 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
     distance: number;
     data: Waypoint | RouteVariant;
     waypointIndex?: number;
+    /** Index into `allVariants` — the variant's row identity. */
+    variantIndex?: number;
     leg?: WaypointLeg;
   }
 
@@ -1911,22 +1945,24 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
   // rather than leaving rows in the table that answer neither question and break
   // up the leg reading.
   if (!isFiltered) {
-    for (const variant of allVariants) {
+    allVariants.forEach((variant, variantIndex) => {
       if (variant.startDistance != null) {
         tableRows.push({
           rowType: 'variant-start',
           distance: variant.startDistance,
-          data: variant
+          data: variant,
+          variantIndex
         });
       }
       if (variant.type === 'alternate' && variant.endDistance != null) {
         tableRows.push({
           rowType: 'variant-end',
           distance: variant.endDistance,
-          data: variant
+          data: variant,
+          variantIndex
         });
       }
-    }
+    });
   }
 
   tableRows.sort((a, b) => a.distance - b.distance);
@@ -1971,11 +2007,7 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
     `;
   }
 
-  function makeVariantKey(variant: RouteVariant): string {
-    return `${variant.type}-${variant.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-  }
-
-  function renderVariantRow(variant: RouteVariant, isStart: boolean): string {
+  function renderVariantRow(variant: RouteVariant, variantIndex: number, isStart: boolean): string {
     const typeClass = variant.type === 'alternate' ? 'type-alternate' : 'type-side-trip';
     const typeLabel = variant.type === 'alternate' ? 'Alternate' : 'Side Trip';
     const actionLabel = isStart
@@ -1983,7 +2015,7 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
       : 'rejoins';
     const distance = isStart ? variant.startDistance : variant.endDistance;
 
-    const variantKey = makeVariantKey(variant);
+    const variantKey = makeVariantKey(variant, variantIndex);
     const hasWaypoints = (variant.waypoints?.length ?? 0) > 0;
     const isExpandable = isStart;
     const expandableAttrs = isExpandable
@@ -2094,9 +2126,9 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
           if (row.rowType === 'waypoint') {
             return renderWaypointRow(row.data as Waypoint, row.waypointIndex!, row.leg!);
           } else if (row.rowType === 'variant-start') {
-            return renderVariantRow(row.data as RouteVariant, true);
+            return renderVariantRow(row.data as RouteVariant, row.variantIndex!, true);
           } else {
-            return renderVariantRow(row.data as RouteVariant, false);
+            return renderVariantRow(row.data as RouteVariant, row.variantIndex!, false);
           }
         }).join('')}
         ${offTrailSection}

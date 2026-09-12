@@ -163,6 +163,24 @@ export interface RouteVariant {
   /** km where an alternate rejoins the main route. */
   endDistance?: number;
   endTrackIndex?: number;
+  /**
+   * How far the branch end really sits from what it attached to, in metres.
+   * Only recorded past the standard 500 m tolerance - i.e. only for a trail
+   * that raised `trackClassification.maxJunctionDistanceMeters` to take in a
+   * loose end - so the junction km can be read together with the gap it papers
+   * over rather than pretending the alternate touches the route.
+   */
+  startOffsetMeters?: number;
+  /** The same residual for the rejoin end. */
+  endOffsetMeters?: number;
+  /**
+   * The alternate this variant hangs off, when its junction is on that
+   * alternate rather than on the main route. `index` is into the trail's
+   * `alternates` array. `startDistance`/`endDistance` stay ordinary absolute
+   * trail km (the parent's junction km plus the walk along the parent), so
+   * every consumer reads a parent-attached variant like any other.
+   */
+  parent?: { name: string; index: number };
   waypoints?: VariantWaypoint[];
 }
 

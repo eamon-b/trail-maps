@@ -45,6 +45,8 @@ export const WAYPOINT_TYPES = [
   'road-crossing',
   'inlet-crossing',
   'gap',
+  'junction',
+  'milestone',
   'side-trip',
   'mountain',
   'beach',
@@ -78,6 +80,8 @@ export const WAYPOINT_TYPE_LABELS: Record<WaypointType, string> = {
   'road-crossing': 'Road crossing',
   'inlet-crossing': 'Inlet crossing',
   gap: 'Trail break',
+  junction: 'Trail junction',
+  milestone: 'Mile marker',
   'side-trip': 'Side trip',
   mountain: 'Mountain',
   beach: 'Beach',
@@ -117,6 +121,22 @@ export function isAccessWaypoint(type: string | undefined | null): boolean {
   return typeof type === 'string' && type.trim().toLowerCase().endsWith(ACCESS_TYPE_SUFFIX);
 }
 
+/**
+ * Labels for type strings that are *not* ours to emit but that a curated source
+ * file uses, where the auto-prettified slug would read badly or ambiguously.
+ *
+ * These deliberately stay out of `WAYPOINT_TYPES`: they are another project's
+ * vocabulary, so they should not appear in the "change this waypoint's
+ * category" picker, but they should still read as English wherever a type is
+ * shown. (`camp-2018` would otherwise prettify to "Camp 2018", `ley-note` to
+ * "Ley note" — neither means anything without the map-set context.)
+ */
+const FOREIGN_TYPE_LABELS: Readonly<Record<string, string>> = {
+  'ley-note': 'Ley map note',
+  'ley-waypoint': 'Ley map waypoint',
+  'camp-2018': 'Camp (2018 walk)',
+};
+
 const KNOWN_TYPES: ReadonlySet<string> = new Set<string>(WAYPOINT_TYPES);
 
 /** True when `type` is one of the types our classifier produces. */
@@ -126,12 +146,15 @@ export function isKnownWaypointType(type: string | undefined | null): type is Wa
 
 /**
  * Display label for any type string: the curated label for a canonical type,
- * otherwise the raw slug prettified (`fire-trail` → `Fire trail`) so an
- * imported GPX's own vocabulary still reads properly.
+ * the curated label for a type another project's data uses, otherwise the raw
+ * slug prettified (`fire-trail` → `Fire trail`) so an imported GPX's own
+ * vocabulary still reads properly.
  */
 export function waypointTypeLabel(type: string | undefined | null): string {
   if (!type) return WAYPOINT_TYPE_LABELS.waypoint;
   if (isKnownWaypointType(type)) return WAYPOINT_TYPE_LABELS[type];
+  const foreign = FOREIGN_TYPE_LABELS[type];
+  if (foreign) return foreign;
   const words = type.replace(/[_-]+/g, ' ').trim();
   if (!words) return WAYPOINT_TYPE_LABELS.waypoint;
   return words.charAt(0).toUpperCase() + words.slice(1);

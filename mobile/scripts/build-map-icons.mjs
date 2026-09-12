@@ -147,6 +147,17 @@ const GLYPHS = {
     <rect fill="${INK}" x="37" y="12" width="22" height="72" rx="8"/>
     <rect fill="${INK}" x="12" y="37" width="72" height="22" rx="8"/>`,
 
+  // Milestone: a rounded distance stone with a banded face (the CDT's
+  // every-10-mile markers), unlike the trailhead signpost or the endpoint flag.
+  milestone: `<path fill="${INK}" fill-rule="evenodd" d="M28 84 V42 A20 20 0 0 1 68 42 V84 Z M35 50 H61 V60 H35 Z"/>`,
+
+  // Trail gap: a walking line broken in the middle (no trail here).
+  gap: `<path ${STROKE} stroke-width="11" d="M10 48 H32 M64 48 H86"/>`,
+
+  // A note on a printed map sheet: a page with ruled lines.
+  note: `
+    <path fill="${INK}" fill-rule="evenodd" d="M18 12 H78 V84 H18 Z M28 28 H68 V36 H28 Z M28 44 H68 V52 H28 Z M28 60 H54 V68 H28 Z"/>`,
+
   // Generic point of interest — the fallback for unmapped types.
   poi: `
     <circle fill="${INK}" cx="48" cy="48" r="12"/>

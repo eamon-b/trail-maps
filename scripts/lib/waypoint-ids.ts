@@ -49,15 +49,34 @@ function sha1Hex(input: string): string {
 }
 
 /**
+ * The 8-hex form of `hex`, or its 12-hex form if the short one is taken, or
+ * null when both are claimed.
+ */
+function firstFreeId(hex: string, existingIds: Set<string>): string | null {
+  const short = `w_${hex.slice(0, 8)}`;
+  if (!existingIds.has(short)) return short;
+  const long = `w_${hex.slice(0, 12)}`;
+  if (!existingIds.has(long)) return long;
+  return null;
+}
+
+/**
  * Mint a deterministic id for a waypoint. Uses an 8-hex-char sha1 slice by
  * default, extending to 12 chars if the short form already exists in the
- * registry (collision), and finally mixing the name in for waypoints whose
- * position and type are identical. Throws if even that collides.
+ * registry (collision).
  *
- * The name is deliberately absent from the primary basis: renaming a waypoint
- * must not move its id. It is mixed in only for the last tier, where the
- * alternative is no id at all — and only for the second and later waypoints at
- * a coordinate, so no existing id moves.
+ * The basis is trail + type + position, deliberately *not* the name: a waypoint
+ * that gets renamed must keep its id. That leaves one case the hash length
+ * cannot resolve — two distinct waypoints of the same type at the same
+ * coordinate, where widening the slice just yields the same string again. The
+ * CDT has eight of them: several towns hitched from a single pass or trailhead
+ * ("Pagosa Springs / South Fork / Del Norte (access: Wolf Creek Pass (US 160))"
+ * all sit on the pass), and Te Araroa's Rangitata road end serves Geraldine,
+ * Peel Forest, Mesopotamia Station and Mt Potts Lodge the same way. They are
+ * real, distinct rows, so the fallback folds the
+ * name into the hash for the *later* arrival only — the first waypoint at a
+ * position keeps the position-only id it has always had, so no existing id in
+ * the committed registry moves.
  */
 function mintId(
   trailId: string,
@@ -65,25 +84,17 @@ function mintId(
   existingIds: Set<string>,
 ): string {
   const basis = `${trailId}|${wp.type}|${wp.lat.toFixed(5)}|${wp.lon.toFixed(5)}`;
-  const hex = sha1Hex(basis);
-  let id = `w_${hex.slice(0, 8)}`;
-  if (existingIds.has(id)) {
-    id = `w_${hex.slice(0, 12)}`;
-    if (existingIds.has(id)) {
-      // Two waypoints of the same type at the same coordinates. Several of
-      // Te Araroa's turnoffs share one road end — the Rangitata end serves
-      // Geraldine, Peel Forest, Mesopotamia Station and Mt Potts Lodge — so
-      // their bases are byte-identical and no amount of widening separates
-      // them. Only the name can.
-      id = `w_${sha1Hex(`${basis}|${wp.name}`).slice(0, 12)}`;
-      if (existingIds.has(id)) {
-        throw new Error(
-          `Waypoint id collision for "${wp.name}" (${basis}): the 8-hex, ` +
-            `12-hex and name-qualified forms are all already claimed. Widen ` +
-            `the mint hash length.`,
-        );
-      }
-    }
+  let id = firstFreeId(sha1Hex(basis), existingIds);
+  if (!id) {
+    // Same basis as an id already minted: distinguish by name (see above).
+    id = firstFreeId(sha1Hex(`${basis}|${wp.name}`), existingIds);
+  }
+  if (!id) {
+    throw new Error(
+      `Waypoint id collision for "${wp.name}" (${basis}): neither the position ` +
+        `nor the position+name hash has a free 8- or 12-hex form. Widen the ` +
+        `mint hash length.`,
+    );
   }
   if (!ID_PATTERN.test(id)) {
     throw new Error(`Minted waypoint id "${id}" does not match ${ID_PATTERN}`);

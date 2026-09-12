@@ -47,6 +47,8 @@ describe('waypoint-taxonomy', () => {
         'hut',
         'hut-access',
         'inlet-crossing',
+        'junction',
+        'milestone',
         'poi',
         'resupply',
         'resupply-access',
@@ -61,6 +63,26 @@ describe('waypoint-taxonomy', () => {
       for (const type of typesInGeneratedOutput) {
         expect(isKnownWaypointType(type), `${type} is not in WAYPOINT_TYPES`).toBe(true);
       }
+    });
+  });
+
+  describe('milestone', () => {
+    it('is a canonical type with its own label', () => {
+      expect(isKnownWaypointType('milestone')).toBe(true);
+      expect(waypointTypeLabel('milestone')).toBe('Mile marker');
+    });
+
+    it('does not disturb the generic "waypoint" bucket', () => {
+      // `waypoint` is the classifier's "could not classify" label and is used
+      // by trails that have no mile markers at all — a distance post is its own
+      // type precisely so that bucket can keep reading "Unclassified".
+      expect(waypointTypeLabel('waypoint')).toBe('Unclassified');
+      expect(waypointTypeLabel(undefined)).toBe('Unclassified');
+    });
+
+    it('is not in the water or resupply families', () => {
+      expect(isWaterWaypoint('milestone')).toBe(false);
+      expect(isResupplyWaypoint('milestone')).toBe(false);
     });
   });
 

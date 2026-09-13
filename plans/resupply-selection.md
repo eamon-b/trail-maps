@@ -1,6 +1,6 @@
 # Resupply selection
 
-Status: planned 2026-09-13. Decisions taken with Eamon on the same day are marked **[decided]**;
+Status: planned 2026-09-13; phases 1a, 1b, 1c, 2 and 3 implemented 2026-09-13 on `feature/load-cdt-data` (generator branches unpushed; mobile Phase 4 still open). Decisions taken with Eamon on the same day are marked **[decided]**;
 questions still open are collected at the end.
 
 ## Why

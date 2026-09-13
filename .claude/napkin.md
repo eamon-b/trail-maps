@@ -29,6 +29,8 @@
    Do instead: relaunch with `emulator -avd Pixel_7` as a background Bash task, `adb wait-for-device`, re-`adb reverse` every port (Metro, 8787), re-push and re-download before continuing. Prefer leave-and-re-enter-guide over force-stop to re-run style resolution. Cold-Metro ANR note: warm the bundle with `curl "http://localhost:<port>/.expo/.virtual-metro-entry.bundle?platform=android&dev=true"` before launching; Fast Refresh can't re-seat zustand stores — relaunch to verify them.
 
 ## Domain Behavior Guardrails
+0. **[2026-09-13] `npm run build:trails` silently fails validation when `node_modules/te-araroa-data` is missing (`te_araroa: GPX file not found`) — the exit code is 0 for the chained mobile build, so a "baseline" snapshot can be stale; and the sibling generator checkouts under `/mnt/data/projects/GPX/` can be behind their GitHub `main`**
+   Do instead: `npm install --no-save "te-araroa-data@github:eamon-b/te-araroa-data#<sha from package-lock>"` (lockfile untouched), `npm run sync:te-araroa`, and grep the build log for `Validation errors` before trusting any output; `git fetch origin` in GPX/CDT and GPX/nz before reading their state, and compare `git show HEAD:data/trails/cdt/cdt.gpx` against the generator's committed `out/` before regenerating — a newer generator commit brings a data refresh (new ids) that is not your feature.
 1. **[2026-07-29] Waypoint IDs are registry-pinned — never regenerate them ad hoc**
    Do instead: `data/waypoint-ids.json` is append-only and committed with every trail-data change; IDs flow from `scripts/build-trails.ts` → generated JSON → `build-mobile-trails` automatically. A rebuild must produce zero registry diff; ambiguity throws on purpose.
 2. **[2026-07-29] Tracknotes has no `trails` SQLite table**

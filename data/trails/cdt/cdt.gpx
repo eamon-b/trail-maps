@@ -2,6 +2,7 @@
 <gpx version="1.1" creator="cdt-data (trail-maps copy)"
   xmlns="http://www.topografix.com/GPX/1/1"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:tn="https://tracknotes.app/xmlschemas/gpx-waypoint/1"
   xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
     <name>Continental Divide Trail (SOBO)</name>
@@ -25,13 +26,25 @@
     <ele>1286.7</ele>
     <name>Waterton Park (Alberta) (access: Waterton Lake border monument (Goat Haunt))</name>
     <desc>mi 0.0 (SOBO mi 0.0) | off. mi 0.0 | MT | MT (not on an extracted map page) | Leave the CDT here for Waterton Park (Alberta): 8.7 mi by shuttle. Northern terminus town, in Canada. Rocky Mountain Foodmart is the only grocery and it is a small tourist-season convenience store; hotels, restaurants and a Parks Canada campground.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>14</tn:offTrailKm>
+      <tn:accessMode>shuttle</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>Waterton Lake border monument (Goat Haunt)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="49.051328" lon="-113.908306">
     <ele>1280.2</ele>
     <name>Waterton Park (Alberta)</name>
     <desc>mi 0.0 (SOBO mi 0.0) | off. mi 0.0 | MT | MT (not on an extracted map page) | Northern terminus town, in Canada. Rocky Mountain Foodmart is the only grocery and it is a small tourist-season convenience store; hotels, restaurants and a Parks Canada campground. Reached from the Waterton Lake border monument (mile 0 SOBO) by the Waterton Shoreline Cruise or by walking the Waterton Lakeshore Trail, roughly 8.7 miles. Entering Canada on foot at Goat Haunt requires prior authorisation; SOBO hikers who start here and NOBO hikers who finish here both need it, and hikers without it use the Chief Mountain route instead. Canada Post, not USPS, so the US general-delivery convention does not apply. Post office: 209 Fountain Avenue, Waterton Park, AB T0K 2M0. 8.7 mi off trail by shuttle. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>14</tn:offTrailKm>
+      <tn:accessMode>shuttle</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>Waterton Lake border monument (Goat Haunt)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.916684" lon="-113.905448">
     <ele>1378.6</ele>
@@ -43,13 +56,25 @@
     <ele>2086.4</ele>
     <name>Babb (access: Chief Mountain border crossing (US 17 / MT 17))</name>
     <desc>mi 17.1 (SOBO mi 17.1) | off. mi 17.1 | MT | MT (not on an extracted map page) | Leave the CDT here for Babb: 14 mi by hitching. Thronson&apos;s General Store, motel and cafe on US 89, the only services on the Chief Mountain route. A small store: snacks, fuel, cold drinks, not a shop you can plan a five-day carry around.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>22.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Chief Mountain border crossing (US 17 / MT 17)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.860019" lon="-113.436792">
     <ele>1341.1</ele>
     <name>Babb</name>
     <desc>mi 17.1 (SOBO mi 17.1) | off. mi 17.1 | MT | MT (not on an extracted map page) | Thronson&apos;s General Store, motel and cafe on US 89, the only services on the Chief Mountain route. A small store: snacks, fuel, cold drinks, not a shop you can plan a five-day carry around. Post office is a hundred metres north. Used mainly by hikers finishing or starting at the Chief Mountain border crossing rather than at Waterton. Accepts resupply boxes. Post office: 4016 US Highway 89, Babb, MT 59411 (general delivery). 14 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>22.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Chief Mountain border crossing (US 17 / MT 17)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.833815" lon="-113.827605">
     <ele>1925.4</ele>
@@ -74,6 +99,11 @@
     <name>Many Glacier (Swiftcurrent)</name>
     <desc>mi 35.4 (SOBO mi 35.4) | off. mi 35.4 | MT | MT (not on an extracted map page) | Camp store at the Swiftcurrent Motor Inn, with a restaurant next door that opens early and closes late. About 17% of 2026 thru-hikers used it. Basic but adequate for a two- or three-day carry if you are not fussy. The trail passes Many Glacier Hotel a mile east; walk the road round the lake. Seasonal - closed outside roughly June to mid-September, which matters for late SOBO starts and early NOBO finishes. 1 mi off trail on foot. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>1.6</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="48.769312" lon="-113.683042">
     <ele>1558</ele>
@@ -97,13 +127,25 @@
     <ele>1408.5</ele>
     <name>St Mary (access: CDT near St Mary Lake (Red Eagle))</name>
     <desc>mi 60.4 (SOBO mi 60.4) | off. mi 60.4 | MT | MT (not on an extracted map page) | Leave the CDT here for St Mary: 6 mi by hitching. St. Mary Supermarket is a genuine grocery, unusual for a Glacier gateway, alongside St. Mary Village&apos;s motels and restaurants. Around 7% of 2026 hikers resupplied here; most carry through to East Glacier. Seasonal.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT near St Mary Lake (Red Eagle)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.742223" lon="-113.429731">
     <ele>1371.6</ele>
     <name>St Mary</name>
     <desc>mi 60.4 (SOBO mi 60.4) | off. mi 60.4 | MT | MT (not on an extracted map page) | St. Mary Supermarket is a genuine grocery, unusual for a Glacier gateway, alongside St. Mary Village&apos;s motels and restaurants. Around 7% of 2026 hikers resupplied here; most carry through to East Glacier. Seasonal. The trail&apos;s nearest approach is on the Red Eagle side of St Mary Lake; the practical exit is the Going-to-the-Sun Road. 6 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT near St Mary Lake (Red Eagle)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.606656" lon="-113.526036">
     <ele>1639.5</ele>
@@ -128,6 +170,11 @@
     <name>Two Medicine</name>
     <desc>mi 88.8 (SOBO mi 88.8) | off. mi 88.8 | MT | MT (not on an extracted map page) | Two Medicine General Store, in the historic chalet building on the lake, right on the trail. Snacks, drinks, a little camp food; no restaurant. Around 4.5% of 2026 hikers counted it as a resupply. The front-country campground was closed for construction in 2026 with a temporary backcountry site in its place, per the NPS - check before relying on camping here. 0.1 mi off trail along the trail. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>0.2</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="48.453634" lon="-113.252467">
     <ele>1566.7</ele>
@@ -141,6 +188,11 @@
     <desc>mi 99.5 (SOBO mi 99.5) | off. mi 99.5 | MT | MT (not on an extracted map page) | The Montana terminus town: 95% of 2026 thru-hikers resupplied here, more than anywhere else on the trail. But there is no supermarket - Glacier Park Trading Company and the Cenex travel centre are convenience stores, so this is a limited resupply despite its popularity, and hikers who want a real grocery hitch to Browning. Post office takes general delivery and is the standard box drop for the northern terminus. Restaurants, Amtrak&apos;s Empire Builder, and two hostels. Accepts resupply boxes. Post office: 15 Blackfoot Avenue, East Glacier Park, MT 59434 (general delivery). 0.5 mi off trail along the trail. Checked 2026-09.</desc>
     <link href="http://www.seeglacier.com/glacier-park-trading-company/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>0.8</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="48.448563" lon="-113.225151">
     <ele>1474.2</ele>
@@ -148,18 +200,35 @@
     <desc>mi 99.5 (SOBO mi 99.5) | off. mi 99.5 | MT | MT (not on an extracted map page) | Hiker hostel above the bakery on MT 49, the standard East Glacier stop. Bunks and private rooms. Confirm box-holding by phone before sending - a hostel is not a post office and cannot redirect a package. Accepts resupply boxes. 0.4 mi off trail on foot. Checked 2026-09.</desc>
     <link href="https://brownieshostel.com/" />
     <type>accommodation</type>
+    <extensions>
+      <tn:offTrailKm>0.6</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="48.444416" lon="-113.225364">
     <ele>1461.7</ele>
     <name>Browning (access: CDT through East Glacier Park)</name>
     <desc>mi 99.5 (SOBO mi 99.5) | off. mi 99.5 | MT | MT (not on an extracted map page) | Leave the CDT here for Browning: 13 mi by hitching. Teeple&apos;s IGA and Glacier Family Foods are the first full supermarkets south of the border, 13 miles east of East Glacier on US 2 on the Blackfeet Nation.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>20.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT through East Glacier Park</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.556301" lon="-113.016736">
     <ele>1341.1</ele>
     <name>Browning</name>
     <desc>mi 99.5 (SOBO mi 99.5) | off. mi 99.5 | MT | MT (not on an extracted map page) | Teeple&apos;s IGA and Glacier Family Foods are the first full supermarkets south of the border, 13 miles east of East Glacier on US 2 on the Blackfeet Nation. Not a traditional CDT stop - most hikers make do with East Glacier&apos;s convenience stores - but it is the only proper grocery for a very long way in either direction. Accepts resupply boxes. Post office: 316 North Piegan Street, Browning, MT 59417 (general delivery). 13 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>20.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT through East Glacier Park</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="48.374047" lon="-113.312466">
     <ele>1704.4</ele>
@@ -243,7 +312,13 @@
     <ele>1624.6</ele>
     <name>Benchmark Wilderness Ranch (access: CDT at Benchmark trailhead (South Fork Sun River))</name>
     <desc>mi 234.5 (SOBO mi 234.5) | off. mi 234.5 | MT | MT (not on an extracted map page) | Leave the CDT here for Benchmark Wilderness Ranch: 2.5 mi on foot. Box drop only - there is no shop. The ranch holds hiker packages for a fee and it is the standard way to break the long Lincoln-to-East Glacier carry through the Bob Marshall.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>4</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Benchmark trailhead (South Fork Sun River)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="47.479" lon="-112.876">
     <ele>1615.4</ele>
@@ -251,18 +326,36 @@
     <desc>mi 234.5 (SOBO mi 234.5) | off. mi 234.5 | MT | MT (not on an extracted map page) | Box drop only - there is no shop. The ranch holds hiker packages for a fee and it is the standard way to break the long Lincoln-to-East Glacier carry through the Bob Marshall. Current guidance: maximum 12 x 12 x 12 inches, $30 by cash or cheque in a separate envelope, sent two to three weeks ahead, addressed care of the ranch at 422 County Line Road, Fairfield, MT 59436. TrailQuest still lists the fee as $25, so confirm before sending. Coordinates are the Benchmark road-end area and are approximate: the ranch has no OpenStreetMap entry. Accepts resupply boxes. 2.5 mi off trail on foot. Checked 2026-09.</desc>
     <link href="https://benchmarkwildernessranch.com/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>4</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Benchmark trailhead (South Fork Sun River)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="47.49516" lon="-112.90054">
     <ele>1624.6</ele>
     <name>Augusta (access: CDT at Benchmark trailhead (South Fork Sun River))</name>
     <desc>mi 234.5 (SOBO mi 234.5) | off. mi 234.5 | MT | MT (not on an extracted map page) | Leave the CDT here for Augusta: 30 mi by hitching. Allen&apos;s Manix Store is a general store - enough for a few days, not a supermarket. Motel, bar and cafe. Thirty miles of gravel out from the Benchmark trailhead with very little traffic, so the hitch is the hard part;…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>48.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Benchmark trailhead (South Fork Sun River)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="47.493242" lon="-112.39106">
     <ele>1240.5</ele>
     <name>Augusta</name>
     <desc>mi 234.5 (SOBO mi 234.5) | off. mi 234.5 | MT | MT (not on an extracted map page) | Allen&apos;s Manix Store is a general store - enough for a few days, not a supermarket. Motel, bar and cafe. Thirty miles of gravel out from the Benchmark trailhead with very little traffic, so the hitch is the hard part; hikers who cannot get a ride use the Benchmark box drop instead. Accepts resupply boxes. Post office: 102 Walrath Street, Augusta, MT 59410 (general delivery). 30 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>48.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Benchmark trailhead (South Fork Sun River)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="47.459489" lon="-112.922346">
     <ele>1693.3</ele>
@@ -304,13 +397,25 @@
     <ele>1729.2</ele>
     <name>Lincoln (access: Rogers Pass (MT 200))</name>
     <desc>mi 291.0 (SOBO mi 291.0) | off. mi 291.0 | MT | MT map 378 | Leave the CDT here for Lincoln: 15 mi by hitching. CDTC Gateway Community. D &amp; D Foodtown is a small supermarket, and there is a co-op, a hardware-and-general store, several motels and bars.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Rogers Pass (MT 200)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.955454" lon="-112.680589">
     <ele>1389.9</ele>
     <name>Lincoln</name>
     <desc>mi 291.0 (SOBO mi 291.0) | off. mi 291.0 | MT | MT map 378 | CDTC Gateway Community. D &amp; D Foodtown is a small supermarket, and there is a co-op, a hardware-and-general store, several motels and bars. The last town before the long Bob Marshall carry to East Glacier, which is why almost everyone stops. Reached from Rogers Pass on MT 200, about 15 miles west; the Stemple Pass road, 14 miles further south along the trail, is the alternative and is quieter. Accepts resupply boxes. Post office: 237 Main Street, Lincoln, MT 59639 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Rogers Pass (MT 200)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="47.029895" lon="-112.316585">
     <ele>2088.3</ele>
@@ -358,25 +463,49 @@
     <ele>1927.3</ele>
     <name>Helena (access: MacDonald Pass (US 12))</name>
     <desc>mi 360.1 (SOBO mi 360.1) | off. mi 360.2 | MT | MT map 368 | Leave the CDT here for Helena: 15 mi by hitching. CDTC Gateway Community and the largest town on the Montana section: Safeway, Albertsons, Walmart, Super 1, outdoor shops, an airport and buses. Fifteen miles east of MacDonald Pass on US 12.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>MacDonald Pass (US 12)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.590592" lon="-112.017254">
     <ele>1181.1</ele>
     <name>Helena</name>
     <desc>mi 360.1 (SOBO mi 360.1) | off. mi 360.2 | MT | MT map 368 | CDTC Gateway Community and the largest town on the Montana section: Safeway, Albertsons, Walmart, Super 1, outdoor shops, an airport and buses. Fifteen miles east of MacDonald Pass on US 12. The Last Chance station at 500 North Last Chance Gulch is the downtown post office and closer to the hostels than the main office on North Harris. Accepts resupply boxes. Post office: 2300 North Harris Street, Helena, MT 59601 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>MacDonald Pass (US 12)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.561487" lon="-112.308748">
     <ele>1927.3</ele>
     <name>Elliston (access: MacDonald Pass (US 12))</name>
     <desc>mi 360.1 (SOBO mi 360.1) | off. mi 360.2 | MT | MT map 368 | Leave the CDT here for Elliston: 6 mi by hitching. Six miles west of MacDonald Pass on US 12: the Elliston Country Store, a bar and the post office, and that is close to all of it.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>MacDonald Pass (US 12)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.560708" lon="-112.430297">
     <ele>1554.5</ele>
     <name>Elliston</name>
     <desc>mi 360.1 (SOBO mi 360.1) | off. mi 360.2 | MT | MT map 368 | Six miles west of MacDonald Pass on US 12: the Elliston Country Store, a bar and the post office, and that is close to all of it. Listed in the older TrailQuest address list as a box drop and still used by hikers who do not want the Helena detour. Coordinate is the country store; the post office is next door. Accepts resupply boxes. Post office: 101 West Front Street, Elliston, MT 59728 (general delivery). 6 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>MacDonald Pass (US 12)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.475762" lon="-112.305727">
     <ele>2146.8</ele>
@@ -442,13 +571,25 @@
     <ele>2362</ele>
     <name>Butte (access: I-15 at Elk Park Pass)</name>
     <desc>mi 448.4 (SOBO mi 448.4) | off. mi 448.8 | MT | MT map 359 | Leave the CDT here for Butte: 6 mi by hitching. CDTC Gateway Community. Two Safeways, Walmart, a natural grocery uptown, gear shops and buses. The trail crosses I-15 at Elk Park Pass north of town and I-90 at Homestake Pass east of it, so there are two easy ways in;…</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>I-15 at Elk Park Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.997712" lon="-112.537256">
     <ele>1688.6</ele>
     <name>Butte</name>
     <desc>mi 448.4 (SOBO mi 448.4) | off. mi 448.8 | MT | MT map 359 | CDTC Gateway Community. Two Safeways, Walmart, a natural grocery uptown, gear shops and buses. The trail crosses I-15 at Elk Park Pass north of town and I-90 at Homestake Pass east of it, so there are two easy ways in; the Elk Park crossing is about 6 miles out. Hikers who take the Anaconda Cut-off skip Butte entirely - the two are alternatives, not both. Accepts resupply boxes. Post office: 60 West Galena Street, Butte, MT 59701 (general delivery). 6 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>I-15 at Elk Park Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.938875" lon="-112.437078">
     <ele>2165.3</ele>
@@ -502,13 +643,25 @@
     <ele>2391.2</ele>
     <name>Anaconda (access: CDT primary route nearest Anaconda (Anaconda-Pintler))</name>
     <desc>mi 531.3 (SOBO mi 531.3) | off. mi 532.0 | MT | MT map 350 | Leave the CDT here for Anaconda: 14 mi by hitching. CDTC Gateway Community, and described by hikers as the best town between Colorado and Glacier. Albertsons, motels, a hostel, restaurants.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>22.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Anaconda (Anaconda-Pintler)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.127018" lon="-112.935243">
     <ele>1626.1</ele>
     <name>Anaconda</name>
     <desc>mi 531.3 (SOBO mi 531.3) | off. mi 532.0 | MT | MT map 350 | CDTC Gateway Community, and described by hikers as the best town between Colorado and Glacier. Albertsons, motels, a hostel, restaurants. The Anaconda Cut-off alternate walks straight through the town centre and skips roughly 90 miles of the primary route including Butte, which is why most hikers see Anaconda rather than Butte; from the primary route it is about 14 miles by road. accessFrom here is the primary route&apos;s nearest approach, so a plan built on the Cut-off will show a longer detour than you actually walk. Accepts resupply boxes. Post office: 218 Main Street, Anaconda, MT 59711 (general delivery). 14 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>22.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Anaconda (Anaconda-Pintler)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.028924" lon="-113.099718">
     <ele>2421.7</ele>
@@ -580,37 +733,73 @@
     <ele>2233.7</ele>
     <name>Sula (access: Lost Trail Pass (US 93 / MT 43))</name>
     <desc>mi 630.2 (SOBO mi 630.2) | off. mi 631.4 | MT | MT map 338 | Leave the CDT here for Sula: 8 mi by hitching. Sula Country Store and Resort on US 93, 8 miles north of Lost Trail Pass. Small store, cabins, fuel. Fewer options than Salmon or Darby but far the easiest hitch of the three.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>12.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Lost Trail Pass (US 93 / MT 43)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.836306" lon="-113.982525">
     <ele>1341.1</ele>
     <name>Sula</name>
     <desc>mi 630.2 (SOBO mi 630.2) | off. mi 631.4 | MT | MT map 338 | Sula Country Store and Resort on US 93, 8 miles north of Lost Trail Pass. Small store, cabins, fuel. Fewer options than Salmon or Darby but far the easiest hitch of the three. Post office is a couple of miles further up the East Fork road, not at the store. Accepts resupply boxes. Post office: 502 East Fork Road, Sula, MT 59871 (general delivery). 8 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>12.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Lost Trail Pass (US 93 / MT 43)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.685884" lon="-113.933344">
     <ele>2219.9</ele>
     <name>Wisdom (access: Chief Joseph Pass (MT 43))</name>
     <desc>mi 631.0 (SOBO mi 631.0) | off. mi 632.1 | MT | MT map 338 | Leave the CDT here for Wisdom: 22 mi by hitching. Wisdom Market in the Big Hole valley, 22 miles east of Chief Joseph Pass on MT 43. Small - tagged as a supermarket in OpenStreetMap but it is a village store. Post office is next door.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Chief Joseph Pass (MT 43)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.61745" lon="-113.450474">
     <ele>1847.1</ele>
     <name>Wisdom</name>
     <desc>mi 631.0 (SOBO mi 631.0) | off. mi 632.1 | MT | MT map 338 | Wisdom Market in the Big Hole valley, 22 miles east of Chief Joseph Pass on MT 43. Small - tagged as a supermarket in OpenStreetMap but it is a village store. Post office is next door. A quiet road with light traffic; the hitch can take a while. Accepts resupply boxes. Post office: 200 Main Street, Wisdom, MT 59761 (general delivery). 22 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Chief Joseph Pass (MT 43)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.685884" lon="-113.933344">
     <ele>2219.9</ele>
     <name>Darby (access: Chief Joseph Pass (MT 43))</name>
     <desc>mi 631.0 (SOBO mi 631.0) | off. mi 632.1 | MT | MT map 338 | Leave the CDT here for Darby: 30 mi by hitching. Peoples Market plus two mercantiles and a Family Dollar, in the Bitterroot valley about 30 miles north-west of Chief Joseph Pass on US 93.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>48.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Chief Joseph Pass (MT 43)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="46.028494" lon="-114.178733">
     <ele>1185.1</ele>
     <name>Darby</name>
     <desc>mi 631.0 (SOBO mi 631.0) | off. mi 632.1 | MT | MT map 338 | Peoples Market plus two mercantiles and a Family Dollar, in the Bitterroot valley about 30 miles north-west of Chief Joseph Pass on US 93. A real grocery, and the standard stop for hikers who do not want to rely on Leadore or Lima. Some 2026 hikers argue for carrying on to Hamilton, 20 miles further north, for cheaper prices and more choice. Accepts resupply boxes. 30 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>48.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Chief Joseph Pass (MT 43)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.622001" lon="-113.904668">
     <ele>2416.9</ele>
@@ -652,13 +841,25 @@
     <ele>2244.4</ele>
     <name>Jackson (access: CDT primary route nearest Jackson (Big Hole divide))</name>
     <desc>mi 692.5 (SOBO mi 692.5) | off. mi 694.0 | MT | MT map 331 | Leave the CDT here for Jackson: 20 mi by hitching. Jackson Mercantile and the Jackson Hot Springs Lodge, a very small Big Hole settlement. A minor stop, used mostly by hikers coming off the trail west of town rather than continuing to Wisdom.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Jackson (Big Hole divide)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.368076" lon="-113.409625">
     <ele>1975.1</ele>
     <name>Jackson</name>
     <desc>mi 692.5 (SOBO mi 692.5) | off. mi 694.0 | MT | MT map 331 | Jackson Mercantile and the Jackson Hot Springs Lodge, a very small Big Hole settlement. A minor stop, used mostly by hikers coming off the trail west of town rather than continuing to Wisdom. The road distance here is uncertain: the CDTC primary line does not cross Big Hole Pass, and its nearest approach is a rough forest road, so treat accessRoadMiles as an estimate. Accepts resupply boxes. Post office: 1 Jardine Street, Jackson, MT 59736 (general delivery). 20 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Jackson (Big Hole divide)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.205081" lon="-113.528942">
     <ele>2359</ele>
@@ -700,25 +901,49 @@
     <ele>2339.7</ele>
     <name>Leadore (access: Bannock Pass (ID 29 / MT 324))</name>
     <desc>mi 753.1 (SOBO mi 753.1) | off. mi 754.8 | MT | MT map 322 | Leave the CDT here for Leadore: 13 mi by hitching. CDTC Gateway Community (as Lemhi County). Effectively a mail drop: a gas station, two restaurants that are often shut, and the post office.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>20.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Bannock Pass (ID 29 / MT 324)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.680339" lon="-113.357966">
     <ele>1834.9</ele>
     <name>Leadore</name>
     <desc>mi 753.1 (SOBO mi 753.1) | off. mi 754.8 | MT | MT map 322 | CDTC Gateway Community (as Lemhi County). Effectively a mail drop: a gas station, two restaurants that are often shut, and the post office. Hikers consistently report basic-to-nothing on the shelves and recommend sending a box. Thirteen miles west of Bannock Pass on ID 29, and the hitch is notoriously slow - the road carries almost no traffic. Coordinate is the post office; there is no grocery in OpenStreetMap here. Accepts resupply boxes. Post office: 115 South Railroad Street, Leadore, ID 83464 (general delivery). 13 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>20.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Bannock Pass (ID 29 / MT 324)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.814332" lon="-113.27255">
     <ele>2339.7</ele>
     <name>Salmon (access: Bannock Pass (ID 29 / MT 324))</name>
     <desc>mi 753.1 (SOBO mi 753.1) | off. mi 754.8 | MT | MT map 322 | Leave the CDT here for Salmon: 45 mi by hitching. The full-supermarket alternative to Leadore: Saveway Market, a health-food shop, a discount store, motels. About 45 miles from Bannock Pass and a long hitch, but several 2026 hikers recommend it over Leadore for price…</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>72.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Bannock Pass (ID 29 / MT 324)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="45.174867" lon="-113.88604">
     <ele>1202.1</ele>
     <name>Salmon</name>
     <desc>mi 753.1 (SOBO mi 753.1) | off. mi 754.8 | MT | MT map 322 | The full-supermarket alternative to Leadore: Saveway Market, a health-food shop, a discount store, motels. About 45 miles from Bannock Pass and a long hitch, but several 2026 hikers recommend it over Leadore for price and choice. Also reachable from Lemhi Pass down the Agency Creek road. Accepts resupply boxes. Post office: 600 Shoup Street, Salmon, ID 83467 (general delivery). 45 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>72.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Bannock Pass (ID 29 / MT 324)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.808421" lon="-113.225664">
     <ele>2411.4</ele>
@@ -784,13 +1009,25 @@
     <ele>2065.6</ele>
     <name>Lima (access: Monida Pass (I-15))</name>
     <desc>mi 854.4 (SOBO mi 854.4) | off. mi 856.5 | MT | MT map 308 | Leave the CDT here for Lima: 15 mi by hitching. CDTC Gateway Community, and a box town: one unnamed store attached to the gas station, Jan&apos;s Cafe, and the post office. Most hikers send a package.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monida Pass (I-15)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.635202" lon="-112.592029">
     <ele>1905</ele>
     <name>Lima</name>
     <desc>mi 854.4 (SOBO mi 854.4) | off. mi 856.5 | MT | MT map 308 | CDTC Gateway Community, and a box town: one unnamed store attached to the gas station, Jan&apos;s Cafe, and the post office. Most hikers send a package. The Mountain View Motel runs a shuttle, holds packages, and sells showers and hammock space cheaply. Fifteen miles up I-15 from Monida Pass; the trail also passes about 9 miles east of town over the Lima Peaks, which is the shorter but rougher way out. Coordinate is the post office. Accepts resupply boxes. Post office: 700 Peat Street, Lima, MT 59739 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monida Pass (I-15)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.532399" lon="-112.271061">
     <ele>2052</ele>
@@ -838,13 +1075,25 @@
     <ele>2181.4</ele>
     <name>Mack&apos;s Inn (Island Park) (access: Red Rock Pass)</name>
     <desc>mi 918.8 (SOBO mi 918.8) | off. mi 921.1 | MT | MT map 300 | Leave the CDT here for Mack&apos;s Inn (Island Park): 15 mi by hitching. The Stage Stop convenience store and the Macks Inn post office, on US 20 in Island Park. Very basic; the nearest thing to a supermarket is Sam Patch Co / Robins Roost about 2 miles north.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Red Rock Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.499584" lon="-111.336878">
     <ele>1935.5</ele>
     <name>Mack&apos;s Inn (Island Park)</name>
     <desc>mi 918.8 (SOBO mi 918.8) | off. mi 921.1 | MT | MT map 300 | The Stage Stop convenience store and the Macks Inn post office, on US 20 in Island Park. Very basic; the nearest thing to a supermarket is Sam Patch Co / Robins Roost about 2 miles north. On-trail if you take the Mack&apos;s Inn alternate out of Yellowstone, otherwise a 15-mile hitch from Red Rock Pass. The USGS dataset has two post offices in Island Park - Macks Inn at 4110 South Big Springs Loop Road is the one hikers use. Accepts resupply boxes. Post office: 4110 South Big Springs Loop Road, Island Park, ID 83433 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Red Rock Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.678189" lon="-111.480337">
     <ele>2288.2</ele>
@@ -874,13 +1123,25 @@
     <ele>2354.8</ele>
     <name>West Yellowstone (access: Targhee Pass (US 20))</name>
     <desc>mi 956.3 (SOBO mi 956.3) | off. mi 958.7 | MT | MT map 296 | Leave the CDT here for West Yellowstone: 9 mi by hitching. Two supermarkets - Food Roundup and Market Place - plus every kind of tourist service, 9 miles east of Targhee Pass on US 20. The main full resupply between Old Faithful and Lima, and much better stocked than either.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>14.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Targhee Pass (US 20)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.660851" lon="-111.101514">
     <ele>2032.1</ele>
     <name>West Yellowstone</name>
     <desc>mi 956.3 (SOBO mi 956.3) | off. mi 958.7 | MT | MT map 296 | Two supermarkets - Food Roundup and Market Place - plus every kind of tourist service, 9 miles east of Targhee Pass on US 20. The main full resupply between Old Faithful and Lima, and much better stocked than either. Expensive in season. Accepts resupply boxes. Post office: 209 Grizzly Avenue, West Yellowstone, MT 59758 (general delivery). 9 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>14.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Targhee Pass (US 20)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.574601" lon="-111.195917">
     <ele>2140.4</ele>
@@ -912,6 +1173,11 @@
     <desc>mi 1004.6 (SOBO mi 1004.6) | off. mi 1007.0 | WY | WY map 289 | Two Yellowstone general stores and a post office, right on the trail. Resupply is basic and expensive - snack food and camp meals rather than groceries - so most hikers send a box. Mark the package clearly CDT HIKER or it can end up at Mammoth. Backcountry permits for the Yellowstone crossing are a separate problem and need arranging well ahead. Accepts resupply boxes. Post office: General Delivery, Old Faithful Village, WY 82190 (general delivery). 0.3 mi off trail along the trail. Checked 2026-09.</desc>
     <link href="https://www.yellowstonevacations.com/yellowstone-general-stores/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>0.5</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="44.457161" lon="-110.828487">
     <ele>2246.2</ele>
@@ -941,13 +1207,25 @@
     <ele>2442.2</ele>
     <name>Grant Village (access: CDT near Shoshone Lake / South Entrance Road)</name>
     <desc>mi 1032.4 (SOBO mi 1032.4) | off. mi 1035.0 | WY | WY map 285 | Leave the CDT here for Grant Village: 5 mi by hitching. General store, campground and post office on the West Thumb of Yellowstone Lake. Limited and expensive; most hikers skip it and use Old Faithful, though it is the natural place to collect a backcountry permit for the…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>8</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT near Shoshone Lake / South Entrance Road</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.38896" lon="-110.555814">
     <ele>2377.4</ele>
     <name>Grant Village</name>
     <desc>mi 1032.4 (SOBO mi 1032.4) | off. mi 1035.0 | WY | WY map 285 | General store, campground and post office on the West Thumb of Yellowstone Lake. Limited and expensive; most hikers skip it and use Old Faithful, though it is the natural place to collect a backcountry permit for the southern half of the park. Roughly 5 miles from the trail&apos;s nearest approach along the Shoshone Lake side. Accepts resupply boxes. Post office: General Delivery, Grant Village, Yellowstone National Park, WY 82190 (general delivery). 5 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>8</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT near Shoshone Lake / South Entrance Road</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.298609" lon="-110.517637">
     <ele>2308</ele>
@@ -959,13 +1237,25 @@
     <ele>2227.1</ele>
     <name>Flagg Ranch (access: CDT on the Snake River, south Yellowstone)</name>
     <desc>mi 1044.6 (SOBO mi 1044.6) | off. mi 1047.3 | WY | WY map 283 | Leave the CDT here for Flagg Ranch: 12 mi by hitching. Convenience store, restaurant, campground and cabins on the John D. Rockefeller Jr Parkway between Yellowstone and Grand Teton. Snacks and a meal, not a resupply.</desc>
-    <type>food</type>
+    <type>food-access</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT on the Snake River, south Yellowstone</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.1062" lon="-110.667751">
     <ele>2103.1</ele>
     <name>Flagg Ranch</name>
     <desc>mi 1044.6 (SOBO mi 1044.6) | off. mi 1047.3 | WY | WY map 283 | Convenience store, restaurant, campground and cabins on the John D. Rockefeller Jr Parkway between Yellowstone and Grand Teton. Snacks and a meal, not a resupply. It sits on the Grassy Lake Road alternate rather than the CDTC primary line, which stays well to the east down the Snake River, so the accessFrom point here is the primary route&apos;s closest approach and the road distance is approximate. Seasonal. 12 mi off trail by hitching. Checked 2026-09.</desc>
     <type>food</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT on the Snake River, south Yellowstone</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="44.214402" lon="-110.451051">
     <ele>2235.6</ele>
@@ -1019,13 +1309,25 @@
     <ele>2933.1</ele>
     <name>Dubois (access: Togwotee Pass (US 26 / US 287))</name>
     <desc>mi 1106.1 (SOBO mi 1106.1) | off. mi 1109.0 | WY | WY map 275 | Leave the CDT here for Dubois: 30 mi by hitching. Lynn&apos;s Superfoods is a proper supermarket, plus Welty&apos;s General Store, a Family Dollar, motels and restaurants - hikers describe it as having everything.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>48.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Togwotee Pass (US 26 / US 287)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="43.536327" lon="-109.640539">
     <ele>2108.3</ele>
     <name>Dubois</name>
     <desc>mi 1106.1 (SOBO mi 1106.1) | off. mi 1109.0 | WY | WY map 275 | Lynn&apos;s Superfoods is a proper supermarket, plus Welty&apos;s General Store, a Family Dollar, motels and restaurants - hikers describe it as having everything. Reached from Togwotee Pass on US 26/287, about 30 miles east, or from Union Pass on the older CDT line to the south. Which of those you use depends on which route you take through the Wind Rivers, and the two are a long way apart. Accepts resupply boxes. Post office: 804 Ramshorn Street, Dubois, WY 82513 (general delivery). 30 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>48.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Togwotee Pass (US 26 / US 287)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="43.709899" lon="-110.158824">
     <ele>2711.2</ele>
@@ -1121,13 +1423,25 @@
     <ele>3274.9</ele>
     <name>Pinedale (access: CDT at Pole Creek / Elkhart Park trailhead)</name>
     <desc>mi 1195.5 (SOBO mi 1195.5) | off. mi 1198.7 | WY | WY map 262 | Leave the CDT here for Pinedale: 15 mi by hitching. CDTC Gateway Community and the Wind River resupply. Ridley&apos;s Family Market is a full supermarket; there is also a health-food shop, a produce shop, an outdoor store, a Dollar General, motels and a laundromat.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Pole Creek / Elkhart Park trailhead</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.867263" lon="-109.856279">
     <ele>2186.9</ele>
     <name>Pinedale</name>
     <desc>mi 1195.5 (SOBO mi 1195.5) | off. mi 1198.7 | WY | WY map 262 | CDTC Gateway Community and the Wind River resupply. Ridley&apos;s Family Market is a full supermarket; there is also a health-food shop, a produce shop, an outdoor store, a Dollar General, motels and a laundromat. Reached by hitching down the Elkhart Park or Pole Creek trailhead road, roughly 15 miles; hikers coming out at Green River Lakes have a longer road walk. Guides put Pinedale anywhere between mile 1798 and 1833 NOBO depending on which Wind River route you take. Accepts resupply boxes. Post office: 413 Pine Street, Pinedale, WY 82941 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Pole Creek / Elkhart Park trailhead</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.958292" lon="-109.538443">
     <ele>3206.7</ele>
@@ -1157,7 +1471,13 @@
     <ele>2790.2</ele>
     <name>Big Sandy Lodge (access: CDT at Big Sandy trailhead)</name>
     <desc>mi 1233.4 (SOBO mi 1233.4) | off. mi 1236.8 | WY | WY map 256 | Leave the CDT here for Big Sandy Lodge: 1.2 mi on foot. A backcountry lodge at the Big Sandy trailhead, on the southern edge of the Wind Rivers, that advertises CDT resupply pickups along with hot showers, beds and home-cooked meals.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>1.9</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Big Sandy trailhead</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.682471" lon="-109.280273">
     <ele>2773.7</ele>
@@ -1165,18 +1485,36 @@
     <desc>mi 1233.4 (SOBO mi 1233.4) | off. mi 1236.8 | WY | WY map 256 | A backcountry lodge at the Big Sandy trailhead, on the southern edge of the Wind Rivers, that advertises CDT resupply pickups along with hot showers, beds and home-cooked meals. No shop - it is a box drop with food and a bed attached, and you must arrange it in advance. Reservations essential; there is no drop-in service. Accepts resupply boxes. 1.2 mi off trail on foot. Checked 2026-09.</desc>
     <link href="https://www.big-sandy-lodge.com/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>1.9</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Big Sandy trailhead</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.69574" lon="-109.266675">
     <ele>2790.2</ele>
     <name>Boulder (access: CDT at Big Sandy trailhead)</name>
     <desc>mi 1233.4 (SOBO mi 1233.4) | off. mi 1236.8 | WY | WY map 256 | Leave the CDT here for Boulder: 35 mi by hitching. The Boulder Store and post office on US 191, a crossroads settlement between Big Sandy and Pinedale. Minor: a convenience store, useful only if you are hitching this stretch of highway anyway and cannot get to Pinedale.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>56.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Big Sandy trailhead</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.746652" lon="-109.720581">
     <ele>2158</ele>
     <name>Boulder</name>
     <desc>mi 1233.4 (SOBO mi 1233.4) | off. mi 1236.8 | WY | WY map 256 | The Boulder Store and post office on US 191, a crossroads settlement between Big Sandy and Pinedale. Minor: a convenience store, useful only if you are hitching this stretch of highway anyway and cannot get to Pinedale. Accepts resupply boxes. Post office: 7 State Highway 353, Boulder, WY 82923 (general delivery). 35 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>56.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Big Sandy trailhead</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.694863" lon="-109.264843">
     <ele>2784.9</ele>
@@ -1243,18 +1581,35 @@
     <name>South Pass City</name>
     <desc>mi 1278.4 (SOBO mi 1278.4) | off. mi 1282.1 | WY | WY map 250 | A restored gold-rush town, now a state historic site, that the trail runs straight through. Named by CDTC as a Gateway Community jointly with Lander. There is no shop and no post office - a visitor centre, sometimes a cafe in season, and water. Coordinate is the CDTC Gateway Communities layer&apos;s point for the site; OpenStreetMap has no shop or post office here. 0.2 mi off trail along the trail. Checked 2026-09.</desc>
     <type>food</type>
+    <extensions>
+      <tn:offTrailKm>0.3</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="42.477776" lon="-108.774192">
     <ele>2454.8</ele>
     <name>Lander (access: WY 28 at South Pass)</name>
     <desc>mi 1280.7 (SOBO mi 1280.7) | off. mi 1284.4 | WY | WY map 250 | Leave the CDT here for Lander: 35 mi by hitching. CDTC Gateway Community (with South Pass City) and a full resupply: Safeway, Mr. D&apos;s Food Center, gear shops, NOLS, motels.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>56.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>WY 28 at South Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.837834" lon="-108.74648">
     <ele>1632.8</ele>
     <name>Lander</name>
     <desc>mi 1280.7 (SOBO mi 1280.7) | off. mi 1284.4 | WY | WY map 250 | CDTC Gateway Community (with South Pass City) and a full resupply: Safeway, Mr. D&apos;s Food Center, gear shops, NOLS, motels. Bear spray is easy to buy here, which matters for everyone heading north into the Wind Rivers and Yellowstone. Thirty-five miles from the WY 28 crossing at South Pass and a well-travelled hitch. The USGS post-office dataset does not cover Lander; the street address here is the one the hiker guides publish. Accepts resupply boxes. Post office: 230 Grandview Drive, Lander, WY 82520 (general delivery). 35 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>56.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>WY 28 at South Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.478471" lon="-108.770339">
     <ele>2466.5</ele>
@@ -1272,13 +1627,25 @@
     <ele>2428.1</ele>
     <name>Atlantic City (access: CDT at Atlantic City)</name>
     <desc>mi 1283.4 (SOBO mi 1283.4) | off. mi 1287.1 | WY | WY map 249 | Leave the CDT here for Atlantic City: 0.8 mi on foot. The Atlantic City Mercantile - a bar and general store in a gold-rush building - and Wild Bill&apos;s Hikers &amp; Bikers B&amp;B, which caters specifically to CDT and Great Divide Route travellers.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>1.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Atlantic City</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.496536" lon="-108.730333">
     <ele>2340.9</ele>
     <name>Atlantic City</name>
     <desc>mi 1283.4 (SOBO mi 1283.4) | off. mi 1287.1 | WY | WY map 249 | The Atlantic City Mercantile - a bar and general store in a gold-rush building - and Wild Bill&apos;s Hikers &amp; Bikers B&amp;B, which caters specifically to CDT and Great Divide Route travellers. The trail passes within half a mile. Resupply is thin; hikers who need real groceries carry on to Lander. Guides put it at roughly mile 1714-1724 NOBO. Bear spray is recommended from here north. Accepts resupply boxes. 0.8 mi off trail on foot. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>1.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Atlantic City</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.481013" lon="-108.714778">
     <ele>2385.2</ele>
@@ -1332,13 +1699,25 @@
     <ele>2431.3</ele>
     <name>Jeffrey City (access: CDT in the Great Divide Basin nearest US 287)</name>
     <desc>mi 1334.4 (SOBO mi 1334.4) | off. mi 1338.3 | WY | WY map 241 | Leave the CDT here for Jeffrey City: 12 mi by hitching. A near-abandoned uranium town on US 287 whose Split Rock Bar and Cafe is the only thing open, and the only building of any kind for a long way along the Great Divide Basin road walk. A meal and water, not a resupply.</desc>
-    <type>food</type>
+    <type>food-access</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT in the Great Divide Basin nearest US 287</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.493891" lon="-107.825074">
     <ele>1920.2</ele>
     <name>Jeffrey City</name>
     <desc>mi 1334.4 (SOBO mi 1334.4) | off. mi 1338.3 | WY | WY map 241 | A near-abandoned uranium town on US 287 whose Split Rock Bar and Cafe is the only thing open, and the only building of any kind for a long way along the Great Divide Basin road walk. A meal and water, not a resupply. Hikers on the trail proper are about 10 miles south of it; hikers on the highway alternate walk past the door. 12 mi off trail by hitching. Checked 2026-09.</desc>
     <type>food</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT in the Great Divide Basin nearest US 287</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="42.313096" lon="-107.844461">
     <ele>2099.3</ele>
@@ -1369,6 +1748,11 @@
     <name>Min X Road water cache</name>
     <desc>mi 1375.4 (SOBO mi 1375.4) | off. mi 1379.3 | WY | WY map 233 | CDTC-listed cache box in the Great Divide Basin, the northern of the two Basin boxes. As with Bridger Pass Road, the CDTC layer gives no service link, so its stocking is unverified. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="41.926467" lon="-107.321834">
     <ele>2188</ele>
@@ -1393,6 +1777,11 @@
     <name>Rawlins</name>
     <desc>mi 1396.7 (SOBO mi 1396.7) | off. mi 1400.6 | WY | WY map 230 | CDTC Gateway Community, and the trail walks through it. City Market and Walmart, plus motels and an Amtrak stop. The full resupply either side of the Great Divide Basin, and the last real town before the Colorado line for southbounders. Accepts resupply boxes. Post office: 106 5th Street, Rawlins, WY 82301 (general delivery). 1.5 mi off trail along the trail. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>2.4</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="41.779519" lon="-107.249822">
     <ele>2075.1</ele>
@@ -1417,6 +1806,11 @@
     <name>Bridger Pass Road water cache</name>
     <desc>mi 1411.7 (SOBO mi 1411.7) | off. mi 1415.6 | WY | WY map 227 | CDTC-listed cache box in the Great Divide Basin south of Rawlins. Unlike the five Bootheel boxes this one carries no service link in the CDTC layer, so who stocks it and how often is unverified - treat it as a place you may find water, not a place you will. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="41.604703" lon="-107.316687">
     <ele>2182.9</ele>
@@ -1482,25 +1876,49 @@
     <ele>3033</ele>
     <name>Encampment (access: Battle Pass (WY 70))</name>
     <desc>mi 1478.1 (SOBO mi 1478.1) | off. mi 1482.2 | WY | WY map 217 | Leave the CDT here for Encampment: 18 mi by hitching. CDTC Gateway Community (with Riverside), 18 miles east of Battle Pass on WY 70. Limited grocery - CDTC and Halfway Anywhere both flag it as a town where hikers should send a box - plus a liquor store, a lodge and a…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>29</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Battle Pass (WY 70)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="41.207011" lon="-106.79175">
     <ele>2232.1</ele>
     <name>Encampment</name>
     <desc>mi 1478.1 (SOBO mi 1478.1) | off. mi 1482.2 | WY | WY map 217 | CDTC Gateway Community (with Riverside), 18 miles east of Battle Pass on WY 70. Limited grocery - CDTC and Halfway Anywhere both flag it as a town where hikers should send a box - plus a liquor store, a lodge and a museum. OpenStreetMap has no grocery tagged in Encampment at all, so the coordinate here is the post office. Riverside, two miles east, has the Trading Post convenience store. Accepts resupply boxes. Post office: 622 McCaffrey Avenue, Encampment, WY 82325 (general delivery). 18 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>29</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Battle Pass (WY 70)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="41.153749" lon="-106.981306">
     <ele>3033</ele>
     <name>Riverside (access: Battle Pass (WY 70))</name>
     <desc>mi 1478.1 (SOBO mi 1478.1) | off. mi 1482.2 | WY | WY map 217 | Leave the CDT here for Riverside: 20 mi by hitching. Two miles north-east of Encampment on WY 230: the Trading Post convenience store, the Mangy Moose bar, a garage with cabins, and an RV park that takes tenting hikers.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>Battle Pass (WY 70)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="41.216546" lon="-106.782632">
     <ele>2179.3</ele>
     <name>Riverside</name>
     <desc>mi 1478.1 (SOBO mi 1478.1) | off. mi 1482.2 | WY | WY map 217 | Two miles north-east of Encampment on WY 230: the Trading Post convenience store, the Mangy Moose bar, a garage with cabins, and an RV park that takes tenting hikers. Between them Encampment and Riverside make one adequate stop; neither is one on its own. Named with Encampment as a CDTC Gateway Community. 20 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>Battle Pass (WY 70)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="41.095387" lon="-106.953347">
     <ele>3199.8</ele>
@@ -1560,13 +1978,25 @@
     <ele>3139.8</ele>
     <name>Steamboat Springs (access: Buffalo Pass)</name>
     <desc>mi 1544.7 (SOBO mi 1544.7) | off. mi 1549.1 | CO | CO map 206 | Leave the CDT here for Steamboat Springs: 15 mi by hitching. CDTC Gateway Community and one of the most-used stops on the trail. City Market, Safeway, Natural Grocers, Walmart, gear shops, buses, hot springs.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Buffalo Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="40.463066" lon="-106.821603">
     <ele>2051.9</ele>
     <name>Steamboat Springs</name>
     <desc>mi 1544.7 (SOBO mi 1544.7) | off. mi 1549.1 | CO | CO map 206 | CDTC Gateway Community and one of the most-used stops on the trail. City Market, Safeway, Natural Grocers, Walmart, gear shops, buses, hot springs. Fifteen miles west of Buffalo Pass on a rough forest road that plenty of hikers walk rather than wait on; the paved US 40 crossing at Rabbit Ears Pass, further south, is the easier hitch and about the same distance. Accepts resupply boxes. Post office: 200 Lincoln Avenue, Steamboat Springs, CO 80487 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Buffalo Pass</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="40.456929" lon="-106.663358">
     <ele>3058.6</ele>
@@ -1651,18 +2081,35 @@
     <name>Grand Lake</name>
     <desc>mi 1659.5 (SOBO mi 1659.5) | off. mi 1664.5 | CO | CO map 191 | CDTC Gateway Community, on the trail at the western edge of Rocky Mountain National Park. Mountain Food Market is a small but real grocery on Grand Avenue; motels, restaurants, a hostel. This is also where you sort out RMNP backcountry permits, which are quota-limited and worth arranging well ahead. Accepts resupply boxes. Post office: 520 Center Drive, Grand Lake, CO 80447 (general delivery). 0.4 mi off trail along the trail. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>0.6</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="40.250078" lon="-105.826023">
     <ele>2555.2</ele>
     <name>Granby (access: CDT at Grand Lake)</name>
     <desc>mi 1659.5 (SOBO mi 1659.5) | off. mi 1664.5 | CO | CO map 191 | Leave the CDT here for Granby: 15 mi by hitching. City Market on Thompson Road, fifteen miles down US 34 from Grand Lake. Larger and cheaper than Grand Lake&apos;s grocery, and the alternative for hikers who want a full shop and do not mind the extra hitch.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Grand Lake</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="40.062774" lon="-105.92941">
     <ele>2418.6</ele>
     <name>Granby</name>
     <desc>mi 1659.5 (SOBO mi 1659.5) | off. mi 1664.5 | CO | CO map 191 | City Market on Thompson Road, fifteen miles down US 34 from Grand Lake. Larger and cheaper than Grand Lake&apos;s grocery, and the alternative for hikers who want a full shop and do not mind the extra hitch. Not a traditional CDT stop. Accepts resupply boxes. Post office: 54 Zero Street, Granby, CO 80446 (general delivery). 15 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>24.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at Grand Lake</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="40.212438" lon="-105.830425">
     <ele>2556.8</ele>
@@ -1704,25 +2151,49 @@
     <ele>3448.1</ele>
     <name>Winter Park (access: Berthoud Pass (US 40))</name>
     <desc>mi 1714.4 (SOBO mi 1714.4) | off. mi 1719.8 | CO | CO map 183 | Leave the CDT here for Winter Park: 7 mi by hitching. CDTC Gateway Community (as Winter Park-Fraser). Fireside Market in Winter Park handles a resupply; the bigger Safeway is in Fraser two miles north, and the two towns work as one stop.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>11.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Berthoud Pass (US 40)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.925549" lon="-105.786695">
     <ele>2776.7</ele>
     <name>Winter Park</name>
     <desc>mi 1714.4 (SOBO mi 1714.4) | off. mi 1719.8 | CO | CO map 183 | CDTC Gateway Community (as Winter Park-Fraser). Fireside Market in Winter Park handles a resupply; the bigger Safeway is in Fraser two miles north, and the two towns work as one stop. Reached from Berthoud Pass on US 40, about 7 miles north - a busy road and an easy hitch. A free shuttle links Winter Park and Fraser. Accepts resupply boxes. Post office: 78490 US Highway 40, Winter Park, CO 80482 (general delivery). 7 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>11.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Berthoud Pass (US 40)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.797964" lon="-105.776804">
     <ele>3448.1</ele>
     <name>Fraser (access: Berthoud Pass (US 40))</name>
     <desc>mi 1714.4 (SOBO mi 1714.4) | off. mi 1719.8 | CO | CO map 183 | Leave the CDT here for Fraser: 10 mi by hitching. The full-supermarket half of the Winter Park-Fraser Gateway Community: Safeway on CR 804, two miles north of Winter Park and linked by a free shuttle. Cheaper than anything in the ski village.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>16.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Berthoud Pass (US 40)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.945643" lon="-105.811125">
     <ele>2613.4</ele>
     <name>Fraser</name>
     <desc>mi 1714.4 (SOBO mi 1714.4) | off. mi 1719.8 | CO | CO map 183 | The full-supermarket half of the Winter Park-Fraser Gateway Community: Safeway on CR 804, two miles north of Winter Park and linked by a free shuttle. Cheaper than anything in the ski village. Accepts resupply boxes. Post office: 520 Zerex Street, Fraser, CO 80442 (general delivery). 10 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>16.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Berthoud Pass (US 40)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.794354" lon="-105.863394">
     <ele>3622.2</ele>
@@ -1782,25 +2253,49 @@
     <ele>2987.6</ele>
     <name>Silverthorne (access: CDT / Colorado Trail near CO 9, Tenmile Range)</name>
     <desc>mi 1793.1 (SOBO mi 1793.1) | off. mi 1798.9 | CO | CO map 175 | Leave the CDT here for Silverthorne: 8 mi by hitching. Full resupply in the Summit County cluster. The City Market that serves Silverthorne is across the Blue River in Dillon, about a mile south-east of the Silverthorne post office at 518 Brian Avenue; there is also a…</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>12.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail near CO 9, Tenmile Range</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.63042" lon="-106.055431">
     <ele>2660.9</ele>
     <name>Silverthorne</name>
     <desc>mi 1793.1 (SOBO mi 1793.1) | off. mi 1798.9 | CO | CO map 175 | Full resupply in the Summit County cluster. The City Market that serves Silverthorne is across the Blue River in Dillon, about a mile south-east of the Silverthorne post office at 518 Brian Avenue; there is also a Target and outlet shopping. Reached from the CDT/Colorado Trail near the Gore Range, about 8 miles east on CO 9, and a Summit Stage bus links Silverthorne, Frisco, Breckenridge and Copper Mountain free of charge - so hitting one of these four is really hitting all of them. Accepts resupply boxes. Post office: 518 Brian Avenue, Silverthorne, CO 80497 (general delivery). 8 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>12.9</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail near CO 9, Tenmile Range</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.489026" lon="-106.11276">
     <ele>3703.2</ele>
     <name>Breckenridge (access: Gold Hill trailhead (CO 9))</name>
     <desc>mi 1801.9 (SOBO mi 1801.9) | off. mi 1807.8 | CO | CO map 174 | Leave the CDT here for Breckenridge: 4 mi by hitching. City Market at the north end of town, plus everything a ski resort has. Named by CDTC among the towns hikers use.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>6.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Gold Hill trailhead (CO 9)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.488772" lon="-106.046892">
     <ele>2926.1</ele>
     <name>Breckenridge</name>
     <desc>mi 1801.9 (SOBO mi 1801.9) | off. mi 1807.8 | CO | CO map 174 | City Market at the north end of town, plus everything a ski resort has. Named by CDTC among the towns hikers use. Reached from the Gold Hill trailhead on CO 9, about 4 miles, or on the free Summit Stage from Copper Mountain. Expensive lodging in season. Accepts resupply boxes. Post office: 305 South Ridge Street, Breckenridge, CO 80424 (general delivery). 4 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>6.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Gold Hill trailhead (CO 9)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.486866" lon="-106.113628">
     <ele>3694.8</ele>
@@ -1812,25 +2307,49 @@
     <ele>3041</ele>
     <name>Frisco (access: CDT / Colorado Trail at Copper Mountain (CO 91))</name>
     <desc>mi 1806.4 (SOBO mi 1806.4) | off. mi 1812.3 | CO | CO map 174 | Leave the CDT here for Frisco: 8 mi by shuttle. Safeway, Whole Foods, Natural Grocers and a Walmart along Summit Boulevard - the best-stocked of the four Summit County towns and the closest to the trail.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>12.9</tn:offTrailKm>
+      <tn:accessMode>shuttle</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail at Copper Mountain (CO 91)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.589848" lon="-106.096798">
     <ele>2772.8</ele>
     <name>Frisco</name>
     <desc>mi 1806.4 (SOBO mi 1806.4) | off. mi 1812.3 | CO | CO map 174 | Safeway, Whole Foods, Natural Grocers and a Walmart along Summit Boulevard - the best-stocked of the four Summit County towns and the closest to the trail. On the free Summit Stage bus network with Silverthorne, Breckenridge and Copper Mountain. Accepts resupply boxes. Post office: 35 West Main Street, Frisco, CO 80443 (general delivery). 8 mi off trail by shuttle. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>12.9</tn:offTrailKm>
+      <tn:accessMode>shuttle</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail at Copper Mountain (CO 91)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.499349" lon="-106.152787">
     <ele>2974.2</ele>
     <name>Copper Mountain (access: CDT / Colorado Trail at Copper Mountain)</name>
     <desc>mi 1807.0 (SOBO mi 1807.0) | off. mi 1812.8 | CO | CO map 174 | Leave the CDT here for Copper Mountain: 0.8 mi on foot. The trail passes through the resort village at Copper Mountain. There is no grocery - a gas station convenience store and resort restaurants - but it is the free Summit Stage bus stop for Frisco, Silverthorne and…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>1.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail at Copper Mountain</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.506157" lon="-106.141094">
     <ele>2960.2</ele>
     <name>Copper Mountain</name>
     <desc>mi 1807.0 (SOBO mi 1807.0) | off. mi 1812.8 | CO | CO map 174 | The trail passes through the resort village at Copper Mountain. There is no grocery - a gas station convenience store and resort restaurants - but it is the free Summit Stage bus stop for Frisco, Silverthorne and Breckenridge, which is what makes it useful. Very quiet outside the ski season. 0.8 mi off trail on foot. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>1.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail at Copper Mountain</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.498563" lon="-106.156087">
     <ele>2997</ele>
@@ -1854,13 +2373,25 @@
     <ele>3196.2</ele>
     <name>Leadville (access: Tennessee Pass (US 24))</name>
     <desc>mi 1830.7 (SOBO mi 1830.7) | off. mi 1836.7 | CO | CO map 171 | Leave the CDT here for Leadville: 9 mi by hitching. CDTC Gateway Community (with Twin Lakes). Safeway on North Poplar, plus Tenderfoot Market and a general store downtown, hostels, motels and outfitters. Nine miles south of Tennessee Pass on US 24, an easy hitch.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>14.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Tennessee Pass (US 24)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.260034" lon="-106.293102">
     <ele>3094.3</ele>
     <name>Leadville</name>
     <desc>mi 1830.7 (SOBO mi 1830.7) | off. mi 1836.7 | CO | CO map 171 | CDTC Gateway Community (with Twin Lakes). Safeway on North Poplar, plus Tenderfoot Market and a general store downtown, hostels, motels and outfitters. Nine miles south of Tennessee Pass on US 24, an easy hitch. At 10,150 ft the highest incorporated town in the United States, which is worth knowing if you are arriving unacclimatised. Accepts resupply boxes. Post office: 130 West 5th Street, Leadville, CO 80461 (general delivery). 9 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>14.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Tennessee Pass (US 24)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.35562" lon="-106.33102">
     <ele>3211.2</ele>
@@ -1890,7 +2421,13 @@
     <ele>2822.9</ele>
     <name>Twin Lakes (access: CDT / Colorado Trail near CO 82, Twin Lakes)</name>
     <desc>mi 1865.3 (SOBO mi 1865.3) | off. mi 1871.4 | CO | CO map 166 | Leave the CDT here for Twin Lakes: 1.5 mi on foot. CDTC Gateway Community (with Leadville). The Twin Lakes General Store stocks deliberately hiker-oriented food and holds CDT and Colorado Trail packages - address them care of the store at 6451 East State Highway 82,…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>2.4</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail near CO 82, Twin Lakes</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.082021" lon="-106.382264">
     <ele>2804.2</ele>
@@ -1898,6 +2435,12 @@
     <desc>mi 1865.3 (SOBO mi 1865.3) | off. mi 1871.4 | CO | CO map 166 | CDTC Gateway Community (with Leadville). The Twin Lakes General Store stocks deliberately hiker-oriented food and holds CDT and Colorado Trail packages - address them care of the store at 6451 East State Highway 82, Twin Lakes, CO 81251. Limited beyond that: a couple of lodges and a cafe. About a mile off the trail where it crosses CO 82. Where the Collegiate East and West routes divide. Accepts resupply boxes. 1.5 mi off trail on foot. Checked 2026-09.</desc>
     <link href="https://www.twinlakesgs.com/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>2.4</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT / Colorado Trail near CO 82, Twin Lakes</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="39.077171" lon="-106.343475">
     <ele>2811</ele>
@@ -1957,13 +2500,25 @@
     <ele>3693.6</ele>
     <name>Buena Vista (access: Cottonwood Pass (CR 306))</name>
     <desc>mi 1903.8 (SOBO mi 1903.8) | off. mi 1910.1 | CO | CO map 161 | Leave the CDT here for Buena Vista: 20 mi by hitching. City Market on US 24 plus a health-food shop and a second supermarket at the north end, hostels and a brewery. Reached from the Collegiate West route down the Cottonwood Pass road, about 20 miles, or from the Collegiate…</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Cottonwood Pass (CR 306)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.836884" lon="-106.131169">
     <ele>2427.7</ele>
     <name>Buena Vista</name>
     <desc>mi 1903.8 (SOBO mi 1903.8) | off. mi 1910.1 | CO | CO map 161 | City Market on US 24 plus a health-food shop and a second supermarket at the north end, hostels and a brewery. Reached from the Collegiate West route down the Cottonwood Pass road, about 20 miles, or from the Collegiate East route much more directly. Only on the Collegiate East line is it a short hop; from the CDTC primary over Cottonwood Pass it is a long descent. Accepts resupply boxes. Post office: 110 Brookdale Avenue, Buena Vista, CO 81211 (general delivery). 20 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Cottonwood Pass (CR 306)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.753754" lon="-106.407945">
     <ele>3679.6</ele>
@@ -2023,31 +2578,60 @@
     <ele>3449.2</ele>
     <name>Salida (access: Monarch Pass (US 50))</name>
     <desc>mi 1947.3 (SOBO mi 1947.3) | off. mi 1953.7 | CO | CO map 156 | Leave the CDT here for Salida: 22 mi by hitching. CDTC Gateway Community and the best rest day in southern Colorado: Safeway, Walmart, Natural Grocers, a hiker-friendly downtown, hot springs, hostels.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monarch Pass (US 50)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.536143" lon="-105.994385">
     <ele>2158.9</ele>
     <name>Salida</name>
     <desc>mi 1947.3 (SOBO mi 1947.3) | off. mi 1953.7 | CO | CO map 156 | CDTC Gateway Community and the best rest day in southern Colorado: Safeway, Walmart, Natural Grocers, a hiker-friendly downtown, hot springs, hostels. Twenty-two miles east of Monarch Pass on US 50, a busy highway and a reliable hitch. Poncha Springs, on the way in, has a small grocery of its own if you do not want the full run. Accepts resupply boxes. Post office: 310 D Street, Salida, CO 81201 (general delivery). 22 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monarch Pass (US 50)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.496295" lon="-106.325116">
     <ele>3449.2</ele>
     <name>Poncha Springs (access: Monarch Pass (US 50))</name>
     <desc>mi 1947.3 (SOBO mi 1947.3) | off. mi 1953.7 | CO | CO map 156 | Leave the CDT here for Poncha Springs: 17 mi by hitching. LaGree&apos;s Food Store and Poncha Market at the US 50 / US 285 junction, five miles short of Salida on the way in from Monarch Pass.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>27.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monarch Pass (US 50)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.515897" lon="-106.075857">
     <ele>2276.6</ele>
     <name>Poncha Springs</name>
     <desc>mi 1947.3 (SOBO mi 1947.3) | off. mi 1953.7 | CO | CO map 156 | LaGree&apos;s Food Store and Poncha Market at the US 50 / US 285 junction, five miles short of Salida on the way in from Monarch Pass. Enough for a few days if the hitch stalls here, which it often does; otherwise carry on to Salida. Accepts resupply boxes. Post office: 6500 US Highway 285, Poncha Springs, CO 81242 (general delivery). 17 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>27.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monarch Pass (US 50)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.496705" lon="-106.325417">
     <ele>3447.9</ele>
     <name>Monarch Pass (Monarch Crest Store)</name>
     <desc>mi 1947.3 (SOBO mi 1947.3) | off. mi 1953.7 | CO | CO map 156 | Monarch Crest Food &amp; Gifts, at the top of the pass where the trail crosses US 50 - a gift shop and cafe with some groceries and a restaurant. Enough to top up a couple of days, and the obvious place to start hitching to Salida. Seasonal hours; it is not open all year. 0.1 mi off trail along the trail. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>0.2</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="38.458832" lon="-106.286572">
     <ele>3640.8</ele>
@@ -2113,25 +2697,49 @@
     <ele>3322.3</ele>
     <name>Lake City (access: Spring Creek Pass (CO 149))</name>
     <desc>mi 2047.6 (SOBO mi 2047.6) | off. mi 2054.2 | CO | CO map 141 | Leave the CDT here for Lake City: 17 mi by hitching. CDTC Gateway Community and the standard San Juan resupply, preferred by most hikers over the harder Silverton detour.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>27.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Spring Creek Pass (CO 149)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="38.027102" lon="-107.316457">
     <ele>2642.9</ele>
     <name>Lake City</name>
     <desc>mi 2047.6 (SOBO mi 2047.6) | off. mi 2054.2 | CO | CO map 141 | CDTC Gateway Community and the standard San Juan resupply, preferred by most hikers over the harder Silverton detour. Get Some Groceries and the Country Store Grocery are small but adequate; there is a hostel, motels and a hiker-friendly reputation. Seventeen miles north of Spring Creek Pass on CO 149, a quiet road where the hitch can be slow. Accepts resupply boxes. Post office: 803 Gunnison Avenue, Lake City, CO 81235 (general delivery). 17 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>27.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Spring Creek Pass (CO 149)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.940151" lon="-107.15883">
     <ele>3322.3</ele>
     <name>Creede (access: Spring Creek Pass (CO 149))</name>
     <desc>mi 2047.6 (SOBO mi 2047.6) | off. mi 2054.2 | CO | CO map 141 | Leave the CDT here for Creede: 22 mi by hitching. Kentucky Belle Market on Main Street - the OSM name is spelled Kentucky Bell - with winter and summer hours, plus motels and a hostel.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Spring Creek Pass (CO 149)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.851763" lon="-106.927229">
     <ele>2698.1</ele>
     <name>Creede</name>
     <desc>mi 2047.6 (SOBO mi 2047.6) | off. mi 2054.2 | CO | CO map 141 | Kentucky Belle Market on Main Street - the OSM name is spelled Kentucky Bell - with winter and summer hours, plus motels and a hostel. Reached either by hitching about 22 miles south from Spring Creek Pass on CO 149, or directly if you take the Creede Cutoff, a lower and less snowbound alternate that some hikers use instead of the high San Juan line. Accepts resupply boxes. Post office: 10 South Main Street, Creede, CO 81130 (general delivery). 22 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Spring Creek Pass (CO 149)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.930497" lon="-107.21809">
     <ele>3641</ele>
@@ -2221,37 +2829,73 @@
     <ele>3320.1</ele>
     <name>Pagosa Springs (access: Wolf Creek Pass (US 160))</name>
     <desc>mi 2164.0 (SOBO mi 2164.0) | off. mi 2171.2 | CO | CO map 126 | Leave the CDT here for Pagosa Springs: 23 mi by hitching. CDTC Gateway Community. Walmart, Natural Grocers, City Market, hot springs, breweries - the best of the two towns either side of Wolf Creek Pass, and the one most hikers choose.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>37</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Wolf Creek Pass (US 160)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.259596" lon="-107.063284">
     <ele>2172</ele>
     <name>Pagosa Springs</name>
     <desc>mi 2164.0 (SOBO mi 2164.0) | off. mi 2171.2 | CO | CO map 126 | CDTC Gateway Community. Walmart, Natural Grocers, City Market, hot springs, breweries - the best of the two towns either side of Wolf Creek Pass, and the one most hikers choose. Twenty-three miles west of the pass on US 160; South Fork is 18 miles east and smaller. Accepts resupply boxes. Post office: 250 Hot Springs Boulevard, Pagosa Springs, CO 81147 (general delivery). 23 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>37</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Wolf Creek Pass (US 160)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.483373" lon="-106.800875">
     <ele>3320.1</ele>
     <name>South Fork (access: Wolf Creek Pass (US 160))</name>
     <desc>mi 2164.0 (SOBO mi 2164.0) | off. mi 2171.2 | CO | CO map 126 | Leave the CDT here for South Fork: 18 mi by hitching. CDTC Gateway Community. Rainbow Grocery is a small full-service supermarket, with a Dollar General and motels alongside.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>29</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Wolf Creek Pass (US 160)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.670016" lon="-106.638633">
     <ele>2502.1</ele>
     <name>South Fork</name>
     <desc>mi 2164.0 (SOBO mi 2164.0) | off. mi 2171.2 | CO | CO map 126 | CDTC Gateway Community. Rainbow Grocery is a small full-service supermarket, with a Dollar General and motels alongside. Eighteen miles east of Wolf Creek Pass on US 160 - closer than Pagosa Springs and a shorter hitch, but a much smaller town. Accepts resupply boxes. Post office: 130 West Frontage Road, South Fork, CO 81154 (general delivery). 18 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>29</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Wolf Creek Pass (US 160)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.483373" lon="-106.800875">
     <ele>3320.1</ele>
     <name>Del Norte (access: Wolf Creek Pass (US 160))</name>
     <desc>mi 2164.0 (SOBO mi 2164.0) | off. mi 2171.2 | CO | CO map 126 | Leave the CDT here for Del Norte: 32 mi by hitching. Lowe&apos;s Market on Grand Avenue, in the San Luis Valley 32 miles east of Wolf Creek Pass. Not a standard CDT stop - South Fork and Pagosa Springs are both closer - but it has a proper grocery and it is the town hikers use…</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>51.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Wolf Creek Pass (US 160)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.677776" lon="-106.34507">
     <ele>2403</ele>
     <name>Del Norte</name>
     <desc>mi 2164.0 (SOBO mi 2164.0) | off. mi 2171.2 | CO | CO map 126 | Lowe&apos;s Market on Grand Avenue, in the San Luis Valley 32 miles east of Wolf Creek Pass. Not a standard CDT stop - South Fork and Pagosa Springs are both closer - but it has a proper grocery and it is the town hikers use if they are heading to or from the valley for any other reason. Accepts resupply boxes. 32 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>51.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Wolf Creek Pass (US 160)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="37.459501" lon="-106.751336">
     <ele>3345.9</ele>
@@ -2299,13 +2943,25 @@
     <ele>3066.1</ele>
     <name>Chama (access: Cumbres Pass (CO 17))</name>
     <desc>mi 2232.7 (SOBO mi 2232.7) | off. mi 2240.3 | CO | CO map 118 | Leave the CDT here for Chama: 12 mi by hitching. CDTC Gateway Community and the first or last New Mexico town. Lowe&apos;s Market at the south end of the village is a full grocery; there is also a Family Dollar, motels and restaurants, and the Cumbres &amp; Toltec railway.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Cumbres Pass (CO 17)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="36.881842" lon="-106.585452">
     <ele>2399.1</ele>
     <name>Chama</name>
     <desc>mi 2232.7 (SOBO mi 2232.7) | off. mi 2240.3 | CO | CO map 118 | CDTC Gateway Community and the first or last New Mexico town. Lowe&apos;s Market at the south end of the village is a full grocery; there is also a Family Dollar, motels and restaurants, and the Cumbres &amp; Toltec railway. Reached from Cumbres Pass on CO 17, about 12 miles south - guides give 12 to 14. The post office is at the north end of the village, a mile from the supermarket. Accepts resupply boxes. Post office: 199 5th Street West, Chama, NM 87520 (general delivery). 12 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Cumbres Pass (CO 17)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="36.964653" lon="-106.438361">
     <ele>3368.7</ele>
@@ -2371,19 +3027,37 @@
     <ele>2231.3</ele>
     <name>Ghost Ranch (access: CDT primary route nearest Ghost Ranch (Chama River rim))</name>
     <desc>mi 2322.4 (SOBO mi 2322.4) | off. mi 2330.2 | NM | NM map 106 | Leave the CDT here for Ghost Ranch: 6 mi on foot. A Presbyterian conference and retreat centre in the Chama River badlands, on the Ghost Ranch alternate rather than the CDTC primary line.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Ghost Ranch (Chama River rim)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="36.335257" lon="-106.469609">
     <ele>1981.2</ele>
     <name>Ghost Ranch</name>
     <desc>mi 2322.4 (SOBO mi 2322.4) | off. mi 2330.2 | NM | NM map 106 | A Presbyterian conference and retreat centre in the Chama River badlands, on the Ghost Ranch alternate rather than the CDTC primary line. Box drop plus meals in the dining hall, camping, cabins, showers and laundry - and no shop at all, so if you come here you must have sent a package. Address it to 280 Private Drive 1708, Abiquiu, NM 87510, marked Hold for CDT hiker with your ETA. Around half of surveyed hikers use it. The accessFrom point is the primary route&apos;s nearest approach; on the alternate the ranch is on your line. Accepts resupply boxes. 6 mi off trail on foot. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>9.7</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Ghost Ranch (Chama River rim)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="36.386622" lon="-106.445709">
     <ele>2231.3</ele>
     <name>Abiquiu (access: CDT primary route nearest Ghost Ranch (Chama River rim))</name>
     <desc>mi 2322.4 (SOBO mi 2322.4) | off. mi 2330.2 | NM | NM map 106 | Leave the CDT here for Abiquiu: 20 mi by hitching. Bode&apos;s, a well-stocked general store, cafe and fuel stop on US 84 fourteen miles south of Ghost Ranch. Not a standard CDT stop, but it is the nearest place to Ghost Ranch where you can actually buy food rather than…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Ghost Ranch (Chama River rim)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="36.209748" lon="-106.320183">
     <ele>1847.1</ele>
@@ -2391,6 +3065,12 @@
     <desc>mi 2322.4 (SOBO mi 2322.4) | off. mi 2330.2 | NM | NM map 106 | Bode&apos;s, a well-stocked general store, cafe and fuel stop on US 84 fourteen miles south of Ghost Ranch. Not a standard CDT stop, but it is the nearest place to Ghost Ranch where you can actually buy food rather than collect it, and hikers whose box has gone astray end up here. Accepts resupply boxes. Post office: 4 County Road 187, Abiquiu, NM 87510 (general delivery). 20 mi off trail by hitching. Checked 2026-09.</desc>
     <link href="https://bodes.com/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Ghost Ranch (Chama River rim)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="36.375263" lon="-106.535297">
     <ele>2416.8</ele>
@@ -2439,6 +3119,11 @@
     <name>Cuba</name>
     <desc>mi 2389.3 (SOBO mi 2389.3) | off. mi 2397.2 | NM | NM (not on an extracted map page) | CDTC Gateway Community, and hikers describe it as having everything: a supermarket on Main Street (US 550), a Family Dollar, a Dollar General, motels and restaurants. The trail passes through the edge of town. It is also the decision point for the Ghost Ranch alternate. The supermarket is untagged by name in OpenStreetMap; the coordinate is that building on US 550. Accepts resupply boxes. Post office: 6358 Main Street, Cuba, NM 87013 (general delivery). 0.8 mi off trail along the trail. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>1.3</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="36.010442" lon="-106.9823">
     <ele>2088.8</ele>
@@ -2522,13 +3207,25 @@
     <ele>1968.5</ele>
     <name>Grants (access: CDT through Grants)</name>
     <desc>mi 2495.6 (SOBO mi 2495.6) | off. mi 2503.8 | NM | NM map 82 | Leave the CDT here for Grants: 3.5 mi on foot. CDTC Gateway Community, on the trail. John Brooks Supermarket is the closest full grocery to the route on the west side of town; the Walmart Supercenter is larger but three miles south-east on the far side of I-40.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>5.6</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT through Grants</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="35.181412" lon="-107.896696">
     <ele>1969</ele>
     <name>Grants</name>
     <desc>mi 2495.6 (SOBO mi 2495.6) | off. mi 2503.8 | NM | NM map 82 | CDTC Gateway Community, on the trail. John Brooks Supermarket is the closest full grocery to the route on the west side of town; the Walmart Supercenter is larger but three miles south-east on the far side of I-40. Motels, a KOA with showers and laundry, restaurants. About 105 to 110 miles from Cuba, one of the longer carries in New Mexico. Accepts resupply boxes. Post office: 816 West Santa Fe Avenue, Grants, NM 87020 (general delivery). 3.5 mi off trail on foot. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>5.6</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT through Grants</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="35.150398" lon="-107.849155">
     <ele>1969.2</ele>
@@ -2613,18 +3310,34 @@
     <name>Pie Town</name>
     <desc>mi 2606.4 (SOBO mi 2606.4) | off. mi 2614.8 | NM | NM map 63 | A box town: there is no grocery, only pie shops, and CDTC flags it as one of the places hikers should mail to. Post office hours are short - mornings only on weekdays and a two-hour window on Saturday - so time your arrival. The Toaster House, the donation-based hiker house on the corner, is in dispute between sources: a 2024 write-up says it has closed, while 2026 accounts describe it as still open, run by Nita Larronde&apos;s children since her death in 2023. Assume nothing and ask ahead. Accepts resupply boxes. Post office: 17 Frontage Road, Pie Town, NM 87827 (general delivery). 0.4 mi off trail along the trail. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>0.6</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="34.299168" lon="-108.138778">
     <ele>2376.2</ele>
     <name>The Toaster House, Pie Town</name>
     <desc>mi 2606.4 (SOBO mi 2606.4) | off. mi 2614.8 | NM | NM map 63 | The donation-based hiker and cyclist house at Pie Town, open to CDT and Great Divide Route travellers since 1982. Its founder Nita Larronde died in 2023 and her children have kept it going; one 2024 CDT guide nonetheless reports it closed. Sources disagree, so check current word before planning a night here. No services beyond shelter, a kitchen and a donation box. 0.4 mi off trail on foot. Checked 2026-09.</desc>
     <type>accommodation</type>
+    <extensions>
+      <tn:offTrailKm>0.6</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="34.301704" lon="-108.13854">
     <ele>2343.7</ele>
     <name>Top of the World Store (access: CDT at Pie Town (US 60))</name>
     <desc>mi 2606.4 (SOBO mi 2606.4) | off. mi 2614.8 | NM | NM map 63 | Leave the CDT here for Top of the World Store: 3 mi on foot. General store and laundromat on US 60 about three miles west of Pie Town, at mile marker 52. A supplement to Pie Town rather than a replacement, and useful mainly to hikers whose box did not arrive.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>4.8</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT at Pie Town (US 60)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="34.2945" lon="-108.187">
     <ele>2347</ele>
@@ -2632,6 +3345,12 @@
     <desc>mi 2606.4 (SOBO mi 2606.4) | off. mi 2614.8 | NM | NM map 63 | General store and laundromat on US 60 about three miles west of Pie Town, at mile marker 52. A supplement to Pie Town rather than a replacement, and useful mainly to hikers whose box did not arrive. There is no OpenStreetMap entry, so the coordinate is derived from the store&apos;s own description of its position on US 60 and is approximate to within about a mile - do not navigate to it. 3 mi off trail on foot. Checked 2026-09.</desc>
     <link href="https://topoftheworldland.com/store/index.html" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>4.8</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT at Pie Town (US 60)</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="34.31037" lon="-108.197561">
     <ele>2259.2</ele>
@@ -2697,13 +3416,25 @@
     <ele>2379.8</ele>
     <name>Reserve (access: CDT at NM 12 near Collins Park)</name>
     <desc>mi 2695.4 (SOBO mi 2695.4) | off. mi 2703.8 | NM | NM map 50 | Leave the CDT here for Reserve: 28 mi by hitching. Jake&apos;s General Merchandise and the Black Gold Emporium on Main Street give Reserve a genuine, if small, resupply - better than its reputation. Motel, restaurants and a post office with unusually good hours.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>45.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 12 near Collins Park</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="33.713135" lon="-108.757529">
     <ele>1759</ele>
     <name>Reserve</name>
     <desc>mi 2695.4 (SOBO mi 2695.4) | off. mi 2703.8 | NM | NM map 50 | Jake&apos;s General Merchandise and the Black Gold Emporium on Main Street give Reserve a genuine, if small, resupply - better than its reputation. Motel, restaurants and a post office with unusually good hours. About 25 to 30 miles west of where the trail meets NM 12 near Collins Park, on a very quiet road; the hitch, not the shopping, is the problem. Accepts resupply boxes. Post office: 10 Balke Street, Reserve, NM 87830 (general delivery). 28 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>45.1</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 12 near Collins Park</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="33.608595" lon="-108.330599">
     <ele>2740.7</ele>
@@ -2787,7 +3518,13 @@
     <ele>2226.3</ele>
     <name>Doc Campbell&apos;s Post (access: CDT primary route nearest Gila Hot Springs)</name>
     <desc>mi 2820.2 (SOBO mi 2820.2) | off. mi 2828.8 | NM | NM map 32 | Leave the CDT here for Doc Campbell&apos;s Post: 12 mi on foot. The store at Gila Hot Springs on NM 15, on the Gila River alternate, and the standard box drop for the Gila. Small but genuinely stocked, with a hiker pre-order service and famous ice cream.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Gila Hot Springs</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="33.198725" lon="-108.208086">
     <ele>1706.9</ele>
@@ -2795,12 +3532,24 @@
     <desc>mi 2820.2 (SOBO mi 2820.2) | off. mi 2828.8 | NM | NM map 32 | The store at Gila Hot Springs on NM 15, on the Gila River alternate, and the standard box drop for the Gila. Small but genuinely stocked, with a hiker pre-order service and famous ice cream. Address packages to Your Name (CDT Hiker, ETA) c/o Doc Campbell&apos;s Post, 3796 Highway 15, Mimbres, NM 88049. Hours as published in 2026: Mon, Tue, Thu, Fri 12:00-16:00, Wed closed, Sat-Sun 10:30-16:00 - short, and the shop is shut one weekday, so arriving late in the day is a real risk. The accessFrom point is the CDTC primary line&apos;s nearest approach, well east of the Gila; on the alternate the store is on your route. Accepts resupply boxes. 12 mi off trail on foot. Checked 2026-09.</desc>
     <link href="https://doccampbellspost.com/" />
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Gila Hot Springs</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="33.071095" lon="-108.087069">
     <ele>2226.3</ele>
     <name>Gila Hot Springs Campground (access: CDT primary route nearest Gila Hot Springs)</name>
     <desc>mi 2820.2 (SOBO mi 2820.2) | off. mi 2828.8 | NM | NM map 32 | Leave the CDT here for Gila Hot Springs Campground: 12 mi on foot. Riverside campground with natural hot-spring pools, a few hundred metres from Doc Campbell&apos;s on the Gila River alternate. Tent sites, showers and RV hookups. The obvious place to stop when you collect a box at the Post.</desc>
-    <type>campsite</type>
+    <type>campsite-access</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Gila Hot Springs</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="33.196351" lon="-108.204974">
     <ele>1706.9</ele>
@@ -2808,6 +3557,12 @@
     <desc>mi 2820.2 (SOBO mi 2820.2) | off. mi 2828.8 | NM | NM map 32 | Riverside campground with natural hot-spring pools, a few hundred metres from Doc Campbell&apos;s on the Gila River alternate. Tent sites, showers and RV hookups. The obvious place to stop when you collect a box at the Post. 12 mi off trail on foot. Checked 2026-09.</desc>
     <link href="http://gilahotspringscampground.com/" />
     <type>campsite</type>
+    <extensions>
+      <tn:offTrailKm>19.3</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>CDT primary route nearest Gila Hot Springs</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="32.980225" lon="-108.137943">
     <ele>2207.8</ele>
@@ -2856,6 +3611,11 @@
     <name>Silver City</name>
     <desc>mi 2868.1 (SOBO mi 2868.1) | off. mi 2876.7 | NM | NM map 26 | CDTC Gateway Community, on the trail, and the biggest town in southern New Mexico: the Silver City Food Basket downtown, a food co-op, Albertsons and a 24-hour Walmart out on the east side, gear shops, hostels, breweries. Where hikers commit to the Gila River alternate or the higher primary line. Accepts resupply boxes. Post office: 500 North Hudson Street, Silver City, NM 88061 (general delivery). 1 mi off trail along the trail. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>1.6</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="32.770457" lon="-108.29723">
     <ele>1899</ele>
@@ -2917,6 +3677,11 @@
     <desc>mi 2943.8 (SOBO mi 2943.8) | off. mi 2952.4 | NM | NM map 15 | CDTC Gateway Community (as Hidalgo County) and the town at the New Mexico end of the trail. Saucedo&apos;s Super Market on Main Street is a full grocery and is also where CDTC says to buy isobutane, calling ahead for stock. The CDTC southern-terminus shuttle picks up at 207 Shakespeare Street behind the Chamber at 06:15 for northbound starts, $175 per rider, booked at least seven days ahead on 719-749-1234. The KOA and the Econo Lodge both do hiker rates. Note that since 2026 the southernmost 1.1 miles of trail and the Crazy Cook monument sit inside a National Defense Area and need written US Army permission arranged weeks in advance. Accepts resupply boxes. Post office: 401 Shakespeare Street, Lordsburg, NM 88045 (general delivery). 0.5 mi off trail along the trail. Checked 2026-09.</desc>
     <link href="https://cdtcoalition.org/explore-the-trail/southern-terminus-shuttle/" />
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>0.8</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="32.329121" lon="-108.723026">
     <ele>1339</ele>
@@ -2942,6 +3707,11 @@
     <desc>mi 2951.0 (SOBO mi 2951.0) | off. mi 2959.7 | NM | NM map 14 | Northernmost of the five CDTC cache boxes in the Bootheel, and the last before Lordsburg northbound. CDTC shuttle riders get two gallons at each box included in the fare; hikers not riding the shuttle can buy a water service for $25 in season, or self-cache. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <link href="https://cdtcoalition.org/explore-the-trail/southern-terminus-shuttle/" />
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="32.2027" lon="-108.65883">
     <ele>1382</ele>
@@ -2953,13 +3723,25 @@
     <ele>1366.3</ele>
     <name>Animas (access: CDT in the Animas Valley)</name>
     <desc>mi 2965.6 (SOBO mi 2965.6) | off. mi 2974.3 | NM | NM map 11 | Leave the CDT here for Animas: 20 mi by hitching. Bootheel Grocery and a post office on NM 338, west of the trail. Rarely used - Hachita is closer to the route - but it is the other settlement within reach of the Bootheel section, and the CDTC water-cache road out to…</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT in the Animas Valley</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="31.951206" lon="-108.796995">
     <ele>1341.1</ele>
     <name>Animas</name>
     <desc>mi 2965.6 (SOBO mi 2965.6) | off. mi 2974.3 | NM | NM map 11 | Bootheel Grocery and a post office on NM 338, west of the trail. Rarely used - Hachita is closer to the route - but it is the other settlement within reach of the Bootheel section, and the CDTC water-cache road out to the Animas Road box runs from here. Accepts resupply boxes. Post office: 2415 State Highway 338, Animas, NM 88020 (general delivery). 20 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>32.2</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT in the Animas Valley</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="32.102597" lon="-108.56401">
     <ele>1377.4</ele>
@@ -2973,6 +3755,11 @@
     <desc>mi 2970.9 (SOBO mi 2970.9) | off. mi 2979.6 | NM | NM map 10 | CDTC cache box in the Bootheel, on NM 113. Stocked for shuttle riders and for the paid water service; otherwise self-cache. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <link href="https://cdtcoalition.org/explore-the-trail/southern-terminus-shuttle/" />
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="32.005825" lon="-108.469065">
     <ele>1451.1</ele>
@@ -2986,6 +3773,11 @@
     <desc>mi 2983.7 (SOBO mi 2983.7) | off. mi 2992.5 | NM | NM map 8 | CDTC cache box where the trail meets NM 9 in the Bootheel, the nearest cache to Hachita. Stocked for shuttle riders and for the paid water service; otherwise self-cache. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <link href="https://cdtcoalition.org/explore-the-trail/southern-terminus-shuttle/" />
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="31.909698" lon="-108.413058">
     <ele>1436.2</ele>
@@ -2997,37 +3789,73 @@
     <ele>1458.2</ele>
     <name>Hachita (access: CDT at NM 9)</name>
     <desc>mi 2990.8 (SOBO mi 2990.8) | off. mi 2999.6 | NM | NM map 7 | Leave the CDT here for Hachita: 5 mi by hitching. The Hachita Food Mart and post office on NM 9, and the only settlement in the Bootheel. A small convenience store with long hours, which counts for a great deal out here. Post office is on 575-483-2075 per CDTC.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>8</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 9</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="31.918449" lon="-108.325071">
     <ele>1359.4</ele>
     <name>Hachita</name>
     <desc>mi 2990.8 (SOBO mi 2990.8) | off. mi 2999.6 | NM | NM map 7 | The Hachita Food Mart and post office on NM 9, and the only settlement in the Bootheel. A small convenience store with long hours, which counts for a great deal out here. Post office is on 575-483-2075 per CDTC. About five miles east of where the trail meets NM 9, and directly on the Columbus alternate road walk. Accepts resupply boxes. Post office: 26 B Street, Hachita, NM 88040 (general delivery). 5 mi off trail by hitching. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>8</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 9</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="31.88816" lon="-108.42268">
     <ele>1458.2</ele>
     <name>Columbus (access: CDT at NM 9)</name>
     <desc>mi 2990.8 (SOBO mi 2990.8) | off. mi 2999.6 | NM | NM map 7 | Leave the CDT here for Columbus: 45 mi on foot. The alternate southern terminus: a border village on NM 11 opposite Palomas, Mexico, reached by walking NM 9 east from the Hachita area instead of turning south to Crazy Cook.</desc>
-    <type>resupply</type>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>72.4</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 9</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="31.831226" lon="-107.634634">
     <ele>1236</ele>
     <name>Columbus</name>
     <desc>mi 2990.8 (SOBO mi 2990.8) | off. mi 2999.6 | NM | NM map 7 | The alternate southern terminus: a border village on NM 11 opposite Palomas, Mexico, reached by walking NM 9 east from the Hachita area instead of turning south to Crazy Cook. The San Jose Store and a Dollar General are the shops. Hikers choose this ending to avoid the Crazy Cook shuttle and, since 2026, the Fort Huachuca permission the National Defense Area now requires. Long, hot, waterless road walking with no shade. Accepts resupply boxes. Post office: Columbus, NM 88029 (general delivery). 45 mi off trail on foot. Checked 2026-09.</desc>
     <type>resupply</type>
+    <extensions>
+      <tn:offTrailKm>72.4</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 9</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="31.88816" lon="-108.42268">
     <ele>1458.2</ele>
     <name>Deming (access: CDT at NM 9)</name>
     <desc>mi 2990.8 (SOBO mi 2990.8) | off. mi 2999.6 | NM | NM map 7 | Leave the CDT here for Deming: 55 mi by hitching. A 24-hour Walmart Supercenter, several dollar stores and motels on I-10, thirty miles north of Columbus on NM 11.</desc>
-    <type>town</type>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>88.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 9</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="32.270573" lon="-107.747232">
     <ele>1321.3</ele>
     <name>Deming</name>
     <desc>mi 2990.8 (SOBO mi 2990.8) | off. mi 2999.6 | NM | NM map 7 | A 24-hour Walmart Supercenter, several dollar stores and motels on I-10, thirty miles north of Columbus on NM 11. The full-grocery backstop for the Columbus alternate, and listed in the older TrailQuest address set as a box town. Not on any version of the trail: it is a bus or a hitch from Columbus or Lordsburg, and the accessFrom point here is the NM 9 crossing only because that is where the alternate begins. Accepts resupply boxes. Post office: Deming, NM 88030 (general delivery). 55 mi off trail by hitching. Checked 2026-09.</desc>
     <type>town</type>
+    <extensions>
+      <tn:offTrailKm>88.5</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>CDT at NM 9</tn:accessName>
+    </extensions>
   </wpt>
   <wpt lat="31.787474" lon="-108.426747">
     <ele>1433.3</ele>
@@ -3041,6 +3869,11 @@
     <desc>mi 3003.2 (SOBO mi 3003.2) | off. mi 3012.0 | NM | NM map 4 | CDTC cache box on NM 81 in the Bootheel, the second box north of Crazy Cook. Stocked for shuttle riders and for the paid water service; otherwise self-cache. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <link href="https://cdtcoalition.org/explore-the-trail/southern-terminus-shuttle/" />
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="31.668059" lon="-108.364429">
     <ele>1444.1</ele>
@@ -3060,6 +3893,11 @@
     <desc>mi 3014.7 (SOBO mi 3014.7) | off. mi 3023.6 | NM | NM map 3 | The first CDTC cache box north of the Crazy Cook southern terminus, and the one that matters most - there is nothing else between it and the border monument. Stocked for shuttle riders and for the paid water service; otherwise self-cache before you start. Coordinates are CDTC&apos;s own. Checked 2026-09.</desc>
     <link href="https://cdtcoalition.org/explore-the-trail/southern-terminus-shuttle/" />
     <type>water</type>
+    <extensions>
+      <tn:offTrailKm>0</tn:offTrailKm>
+      <tn:accessMode>on-trail</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+    </extensions>
   </wpt>
   <wpt lat="31.572119" lon="-108.328885">
     <ele>1602.9</ele>

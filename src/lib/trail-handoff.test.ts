@@ -365,6 +365,42 @@ describe('parseHandoffJson', () => {
       // Deterministic, so re-importing the same file is not a new waypoint.
       expect(parseHandoffJson(text).waypoints[0].id).toBe(wp.id);
     });
+
+    it('keeps well-formed off-trail access fields', () => {
+      const [wp] = parseHandoffJson(
+        withWaypoint({
+          ...good,
+          type: 'town-access',
+          offTrailKm: 35.4,
+          accessMode: 'hitch',
+          acceptsBoxes: true,
+          accessName: '  Monarch Pass  ',
+        })
+      ).waypoints;
+      expect(wp).toMatchObject({
+        offTrailKm: 35.4,
+        accessMode: 'hitch',
+        acceptsBoxes: true,
+        accessName: 'Monarch Pass',
+      });
+    });
+
+    it('drops malformed access fields instead of letting them through the spread', () => {
+      const [wp] = parseHandoffJson(
+        withWaypoint({
+          ...good,
+          offTrailKm: 'thirty five',
+          accessMode: 'teleport',
+          acceptsBoxes: 'yes',
+          accessName: '   ',
+        })
+      ).waypoints;
+      // Absent, not zeroed: 0 km off-trail would read as "the route goes there".
+      expect('offTrailKm' in wp).toBe(false);
+      expect('accessMode' in wp).toBe(false);
+      expect('acceptsBoxes' in wp).toBe(false);
+      expect('accessName' in wp).toBe(false);
+    });
   });
 });
 

@@ -11,7 +11,7 @@
  * Platform-neutral: no Node, DOM or React Native imports.
  */
 
-import type { TrackClassificationConfig } from './types';
+import type { TrackClassificationConfig, WaypointAccess } from './types';
 
 /** Where a trail's climate data was sampled. */
 export interface ClimateLocationConfig {
@@ -91,8 +91,14 @@ export interface TrailConfig {
   elevationSource?: 'gpx' | 'backfilled' | 'none';
 }
 
-/** A raw source waypoint, before it is matched against the track. */
-export interface TrailWaypoint {
+/**
+ * A raw source waypoint, before it is matched against the track.
+ *
+ * {@link WaypointAccess} adds the optional off-trail fields (`offTrailKm`,
+ * `accessMode`, `acceptsBoxes`, `accessName`) carried in from GPX
+ * `<extensions>`; they describe a place you leave the route to reach.
+ */
+export interface TrailWaypoint extends WaypointAccess {
   /** Stable id assigned from the committed registry, or minted for imports. */
   id?: string;
   name: string;
@@ -128,8 +134,12 @@ export interface WaypointVisit {
   distanceFromTrack: number;
 }
 
-/** A waypoint matched to an alternate/side-trip rather than the main route. */
-export interface VariantWaypoint {
+/**
+ * A waypoint matched to an alternate/side-trip rather than the main route.
+ * Carries the same optional off-trail fields as a main-route waypoint: a CDT
+ * alternate passes turn-offs for towns too.
+ */
+export interface VariantWaypoint extends WaypointAccess {
   /** Stable id, shared with the same waypoint on the main route. */
   id?: string;
   name: string;

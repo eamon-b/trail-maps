@@ -190,3 +190,80 @@ describe('generateGpx → parseGpx round trip', () => {
     expect(xml).not.toContain('<type>');
   });
 });
+
+describe('waypoint <extensions> (off-trail access)', () => {
+  const waypoints = (): GpxWaypoint[] => parseGpx(fixture('waypoint-extensions')).waypoints;
+  const byName = (name: string): GpxWaypoint =>
+    waypoints().find(wpt => wpt.name === name) as GpxWaypoint;
+
+  it('reads all four fields, trimming the whitespace around each value', () => {
+    expect(byName('Salida')).toMatchObject({
+      offTrailKm: 35.4,
+      accessMode: 'hitch',
+      acceptsBoxes: true,
+      accessName: 'Monarch Pass (US 50)',
+    });
+  });
+
+  it('leaves the fields a file does not carry absent rather than defaulted', () => {
+    const poncha = byName('Poncha Springs');
+    expect(poncha.offTrailKm).toBe(9);
+    expect(poncha.accessMode).toBe('foot');
+    expect('acceptsBoxes' in poncha).toBe(false);
+    expect('accessName' in poncha).toBe(false);
+  });
+
+  it('drops an unreadable distance, an unknown mode and a blank name', () => {
+    const mystery = byName('Mystery Junction');
+    expect('offTrailKm' in mystery).toBe(false);
+    expect('accessMode' in mystery).toBe(false);
+    expect('accessName' in mystery).toBe(false);
+    // "false" is a value, not an absence: this place takes no boxes.
+    expect(mystery.acceptsBoxes).toBe(false);
+  });
+
+  it('ignores another vendor\'s <extensions> block', () => {
+    const garmin = byName('Garmin Marker');
+    expect(garmin).toMatchObject({ name: 'Garmin Marker', type: 'viewpoint' });
+    for (const field of ['offTrailKm', 'accessMode', 'acceptsBoxes', 'accessName']) {
+      expect(field in garmin).toBe(false);
+    }
+  });
+
+  it('leaves a waypoint with no <extensions> exactly as it was', () => {
+    const plain = parseGpx(fixture('waypoint-types')).waypoints[0];
+    for (const field of ['offTrailKm', 'accessMode', 'acceptsBoxes', 'accessName']) {
+      expect(field in plain).toBe(false);
+    }
+  });
+
+  it('survives a generateGpx → parseGpx round trip', () => {
+    const source: GpxWaypoint[] = [
+      {
+        lat: -33.5,
+        lon: 151.5,
+        ele: 0,
+        name: 'Geraldine',
+        desc: '',
+        type: 'town-access',
+        offTrailKm: 70,
+        accessMode: 'hitch',
+        acceptsBoxes: false,
+        accessName: 'Rangitata road end',
+      },
+    ];
+    const xml = generateGpx('Round Trip', [], source);
+
+    expect(xml).toContain('xmlns:tn="https://tracknotes.app/xmlschemas/gpx-waypoint/1"');
+    expect(xml).toContain('<tn:offTrailKm>70</tn:offTrailKm>');
+    expect(xml).toContain('<tn:acceptsBoxes>false</tn:acceptsBoxes>');
+
+    expect(parseGpx(xml).waypoints[0]).toEqual(source[0]);
+  });
+
+  it('omits <extensions> for a waypoint with no access fields', () => {
+    const plain = [{ lat: 1, lon: 2, ele: 0, name: 'Plain', desc: '' }];
+    const xml = generateGpx('Round Trip', [], plain);
+    expect(xml).not.toContain('<extensions>');
+  });
+});

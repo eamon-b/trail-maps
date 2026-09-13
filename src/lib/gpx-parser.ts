@@ -1,4 +1,5 @@
-import type { GpxData, GpxTrack, GpxRoute, GpxWaypoint, GpxPoint } from './types';
+import type { GpxData, GpxTrack, GpxRoute, GpxWaypoint, GpxPoint, WaypointAccess } from './types';
+import { isAccessMode } from './types';
 import { parseCoordinate } from './parse-coordinate';
 import { defaultXmlAdapter, type XmlAdapter, type XmlNode } from './xml-adapter';
 
@@ -87,6 +88,7 @@ export function parseGpx(xml: string, adapter?: XmlAdapter, limits?: GpxParseLim
       name: text(wpt.querySelector('name')) ?? '',
       desc: text(wpt.querySelector('desc')) ?? '',
       type: explicitType ? explicitType : undefined,
+      ...parseWaypointAccess(wpt),
     };
   });
 
@@ -98,6 +100,50 @@ export function parseGpx(xml: string, adapter?: XmlAdapter, limits?: GpxParseLim
 
 function text(node: XmlNode | null): string | null {
   return node ? node.textContent : null;
+}
+
+/**
+ * Read the optional `tn:` waypoint extensions (`docs/gpx-import.md`).
+ *
+ * Both XML backends ignore namespace prefixes and match the local name
+ * case-sensitively, so `<tn:offTrailKm>` is found as `offTrailKm` under
+ * DOMParser, jsdom and fast-xml-parser alike. The fields are read as direct
+ * children of `<extensions>`; anything missing, blank or unreadable is simply
+ * left off the waypoint, so a file carrying some other vendor's `<extensions>`
+ * parses exactly as it did before.
+ */
+function parseWaypointAccess(wpt: XmlNode): WaypointAccess {
+  const extensions = wpt.querySelector('extensions');
+  if (!extensions) return {};
+
+  // textContent is untrimmed, and a generator that pretty-prints its XML puts a
+  // newline and an indent either side of every value.
+  const read = (tag: string): string | null => {
+    const value = text(extensions.querySelector(tag))?.trim();
+    return value ? value : null;
+  };
+
+  const access: WaypointAccess = {};
+
+  const offTrailKm = read('offTrailKm');
+  if (offTrailKm !== null) {
+    // Guarded like parseElevation: a non-numeric value would otherwise reach
+    // the resupply arithmetic as NaN.
+    const km = parseFloat(offTrailKm);
+    if (Number.isFinite(km)) access.offTrailKm = km;
+  }
+
+  const accessMode = read('accessMode');
+  if (isAccessMode(accessMode)) access.accessMode = accessMode;
+
+  const acceptsBoxes = read('acceptsBoxes');
+  if (acceptsBoxes === 'true') access.acceptsBoxes = true;
+  else if (acceptsBoxes === 'false') access.acceptsBoxes = false;
+
+  const accessName = read('accessName');
+  if (accessName !== null) access.accessName = accessName;
+
+  return access;
 }
 
 function parseElevation(node: XmlNode): number {
@@ -130,6 +176,33 @@ function escapeXml(str: string): string {
 }
 
 /**
+ * Namespace for the Tracknotes `<wpt><extensions>` fields (off-trail access).
+ * Declared on every generated `<gpx>` so a turn-off survives an export.
+ */
+export const TN_WAYPOINT_NAMESPACE = 'https://tracknotes.app/xmlschemas/gpx-waypoint/1';
+
+/**
+ * Serialise the off-trail access fields, or '' when the waypoint has none —
+ * an empty `<extensions>` element is noise in every file that is just a track.
+ */
+function accessExtensionsXml(wpt: GpxWaypoint): string {
+  const fields: string[] = [];
+  if (wpt.offTrailKm !== undefined && Number.isFinite(wpt.offTrailKm)) {
+    fields.push(`<tn:offTrailKm>${wpt.offTrailKm}</tn:offTrailKm>`);
+  }
+  if (wpt.accessMode) fields.push(`<tn:accessMode>${escapeXml(wpt.accessMode)}</tn:accessMode>`);
+  if (wpt.acceptsBoxes !== undefined) {
+    fields.push(`<tn:acceptsBoxes>${wpt.acceptsBoxes}</tn:acceptsBoxes>`);
+  }
+  if (wpt.accessName) fields.push(`<tn:accessName>${escapeXml(wpt.accessName)}</tn:accessName>`);
+  if (fields.length === 0) return '';
+
+  return `    <extensions>
+${fields.map(field => `      ${field}\n`).join('')}    </extensions>
+`;
+}
+
+/**
  * Generate GPX XML from structured data
  */
 export function generateGpx(
@@ -140,6 +213,7 @@ export function generateGpx(
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="GPX Tools"
   xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:tn="${TN_WAYPOINT_NAMESPACE}"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
 `;
@@ -166,6 +240,7 @@ export function generateGpx(
       xml += `    <desc>${escapeXml(wpt.desc)}</desc>
 `;
     }
+    xml += accessExtensionsXml(wpt);
     xml += `  </wpt>
 `;
   }

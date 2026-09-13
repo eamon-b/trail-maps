@@ -160,7 +160,11 @@ export interface VariantWaypoint extends WaypointAccess {
   mergedIds?: string[];
 }
 
-/** An alternate route or side trip hanging off the main route. */
+/**
+ * An alternate route or side trip hanging off the main route. After `findVariantJunctions` the variant reads
+ * forwards: `points[0]` is the branch point (`startDistance`) and the last point
+ * the rejoin, whichever way the source track was drawn.
+ */
 export interface RouteVariant {
   name: string;
   type: 'alternate' | 'side-trip';
@@ -184,11 +188,12 @@ export interface RouteVariant {
   /** The same residual for the rejoin end. */
   endOffsetMeters?: number;
   /**
-   * The alternate this variant hangs off, when its junction is on that
-   * alternate rather than on the main route. `index` is into the trail's
-   * `alternates` array. `startDistance`/`endDistance` stay ordinary absolute
-   * trail km (the parent's junction km plus the walk along the parent), so
-   * every consumer reads a parent-attached variant like any other.
+   * The alternate this variant hangs off, when a junction is on that alternate
+   * rather than on the main route: the one its branch point is on, or failing
+   * that the one its rejoin is on. `index` is into the trail's `alternates`
+   * array. `startDistance`/`endDistance` stay ordinary absolute trail km (the
+   * parent's junction km plus the walk along the parent), so every consumer
+   * reads a parent-attached variant like any other.
    */
   parent?: { name: string; index: number };
   waypoints?: VariantWaypoint[];

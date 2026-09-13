@@ -24,7 +24,7 @@
  *     w_1  Alpha    town          km 10.00   plain on-trail town
  *     w_2  Bravo    town-access   km 20.00  ┐ one turn-off, "Mill Road":
  *     w_3  Charlie  food          km 20.05  ┘ two options, at most one stop
- *     w_4  Delta    resupply      km 30.00
+ *     w_4  Delta    resupply      km 30.00   description with a dotted abbreviation
  *     w_5  Echo     town          km 40.00
  */
 
@@ -108,7 +108,9 @@ function makeTrail() {
       }),
       wp('w_3', 'Charlie', 'food', 20.05, { accessName: 'Mill Road' }),
       wp('w_camp', 'Camp One', 'campsite', 25),
-      wp('w_4', 'Delta', 'resupply', 30),
+      wp('w_4', 'Delta', 'resupply', 30, {
+        description: 'Store beside U.S. 50 with a hiker box. Closed Mondays.',
+      }),
       wp('w_5', 'Echo', 'town', 40),
     ],
   };
@@ -187,6 +189,12 @@ describe('the Resupply tab with nothing chosen yet', () => {
 
     const sub = $('resupply-list').querySelector('.resupply-row[data-id="w_2"] .resupply-sub');
     expect(sub?.textContent).toBe('22.0 km hitch · General store and post office. · accepts boxes');
+  });
+
+  it('does not cut the description short at a dotted abbreviation', async () => {
+    await boot();
+    const sub = $('resupply-list').querySelector('.resupply-row[data-id="w_4"] .resupply-sub');
+    expect(sub?.textContent?.trim()).toBe('Store beside U.S. 50 with a hiker box.');
   });
 
   it('omits the Arrive column until the camp plan has stops and a start date', async () => {

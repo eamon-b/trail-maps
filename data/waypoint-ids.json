@@ -2459,7 +2459,7 @@
     {
       "id": "w_03d4d127",
       "name": "Lima (access: Monida Pass (I-15))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 44.544174,
       "lon": -112.294681
     },
@@ -2550,14 +2550,14 @@
     {
       "id": "w_0c3388a6",
       "name": "Big Sandy Lodge (access: CDT at Big Sandy trailhead)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 42.69574,
       "lon": -109.266675
     },
     {
       "id": "w_0c3388a6523a",
       "name": "Boulder (access: CDT at Big Sandy trailhead)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 42.69574,
       "lon": -109.266675
     },
@@ -2634,7 +2634,7 @@
     {
       "id": "w_1140367c",
       "name": "Jackson (access: CDT primary route nearest Jackson (Big Hole divide))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 45.237288,
       "lon": -113.516446
     },
@@ -2711,7 +2711,7 @@
     {
       "id": "w_15189e47",
       "name": "Twin Lakes (access: CDT / Colorado Trail near CO 82, Twin Lakes)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 39.094605,
       "lon": -106.345821
     },
@@ -2823,7 +2823,7 @@
     {
       "id": "w_1cf0fe43",
       "name": "St Mary (access: CDT near St Mary Lake (Red Eagle))",
-      "type": "town",
+      "type": "town-access",
       "lat": 48.682873,
       "lon": -113.478144
     },
@@ -2858,7 +2858,7 @@
     {
       "id": "w_1f186039",
       "name": "Waterton Park (Alberta) (access: Waterton Lake border monument (Goat Haunt))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 48.998682,
       "lon": -113.906057
     },
@@ -2921,7 +2921,7 @@
     {
       "id": "w_25c0134e",
       "name": "Poncha Springs (access: Monarch Pass (US 50))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 38.496295,
       "lon": -106.325116
     },
@@ -2949,14 +2949,14 @@
     {
       "id": "w_284d4af0",
       "name": "Wisdom (access: Chief Joseph Pass (MT 43))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 45.685884,
       "lon": -113.933344
     },
     {
       "id": "w_286a2109",
       "name": "Helena (access: MacDonald Pass (US 12))",
-      "type": "town",
+      "type": "town-access",
       "lat": 46.561487,
       "lon": -112.308748
     },
@@ -3145,7 +3145,7 @@
     {
       "id": "w_3634f1c7",
       "name": "Animas (access: CDT in the Animas Valley)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 32.131205,
       "lon": -108.6079
     },
@@ -3229,7 +3229,7 @@
     {
       "id": "w_3c8a7822",
       "name": "Atlantic City (access: CDT at Atlantic City)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 42.485601,
       "lon": -108.729092
     },
@@ -3278,7 +3278,7 @@
     {
       "id": "w_43014310",
       "name": "Darby (access: Chief Joseph Pass (MT 43))",
-      "type": "town",
+      "type": "town-access",
       "lat": 45.685884,
       "lon": -113.933344
     },
@@ -3348,14 +3348,14 @@
     {
       "id": "w_4a5a43b3",
       "name": "Lake City (access: Spring Creek Pass (CO 149))",
-      "type": "town",
+      "type": "town-access",
       "lat": 37.940151,
       "lon": -107.15883
     },
     {
       "id": "w_4a5a43b3e41c",
       "name": "Creede (access: Spring Creek Pass (CO 149))",
-      "type": "town",
+      "type": "town-access",
       "lat": 37.940151,
       "lon": -107.15883
     },
@@ -3467,7 +3467,7 @@
     {
       "id": "w_520feb26",
       "name": "Buena Vista (access: Cottonwood Pass (CR 306))",
-      "type": "town",
+      "type": "town-access",
       "lat": 38.827739,
       "lon": -106.409313
     },
@@ -3600,7 +3600,7 @@
     {
       "id": "w_5aaaaf44",
       "name": "Leadore (access: Bannock Pass (ID 29 / MT 324))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 44.814332,
       "lon": -113.27255
     },
@@ -3649,7 +3649,7 @@
     {
       "id": "w_5ed7f738",
       "name": "Sula (access: Lost Trail Pass (US 93 / MT 43))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 45.695156,
       "lon": -113.935349
     },
@@ -3726,7 +3726,7 @@
     {
       "id": "w_64e20c8b",
       "name": "Browning (access: CDT through East Glacier Park)",
-      "type": "town",
+      "type": "town-access",
       "lat": 48.444416,
       "lon": -113.225364
     },
@@ -3761,7 +3761,7 @@
     {
       "id": "w_6706301c",
       "name": "Frisco (access: CDT / Colorado Trail at Copper Mountain (CO 91))",
-      "type": "town",
+      "type": "town-access",
       "lat": 39.495828,
       "lon": -106.145937
     },
@@ -3817,7 +3817,7 @@
     {
       "id": "w_699c7caa",
       "name": "Top of the World Store (access: CDT at Pie Town (US 60))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 34.301704,
       "lon": -108.13854
     },
@@ -3936,14 +3936,14 @@
     {
       "id": "w_733f7c48",
       "name": "Winter Park (access: Berthoud Pass (US 40))",
-      "type": "town",
+      "type": "town-access",
       "lat": 39.797964,
       "lon": -105.776804
     },
     {
       "id": "w_733f7c482bb6",
       "name": "Fraser (access: Berthoud Pass (US 40))",
-      "type": "town",
+      "type": "town-access",
       "lat": 39.797964,
       "lon": -105.776804
     },
@@ -4104,7 +4104,7 @@
     {
       "id": "w_7e281dfe",
       "name": "Grant Village (access: CDT near Shoshone Lake / South Entrance Road)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 44.321897,
       "lon": -110.550094
     },
@@ -4125,14 +4125,14 @@
     {
       "id": "w_7f5220c3",
       "name": "Butte (access: I-15 at Elk Park Pass)",
-      "type": "town",
+      "type": "town-access",
       "lat": 46.003207,
       "lon": -112.440629
     },
     {
       "id": "w_80ab4f82",
       "name": "Chama (access: Cumbres Pass (CO 17))",
-      "type": "town",
+      "type": "town-access",
       "lat": 37.019206,
       "lon": -106.45286
     },
@@ -4251,7 +4251,7 @@
     {
       "id": "w_89aa11e8",
       "name": "West Yellowstone (access: Targhee Pass (US 20))",
-      "type": "town",
+      "type": "town-access",
       "lat": 44.653219,
       "lon": -111.24811
     },
@@ -4342,7 +4342,7 @@
     {
       "id": "w_911c9290",
       "name": "Grants (access: CDT through Grants)",
-      "type": "town",
+      "type": "town-access",
       "lat": 35.150833,
       "lon": -107.848975
     },
@@ -4447,7 +4447,7 @@
     {
       "id": "w_979d8a8e",
       "name": "Dubois (access: Togwotee Pass (US 26 / US 287))",
-      "type": "town",
+      "type": "town-access",
       "lat": 43.752888,
       "lon": -110.067135
     },
@@ -4482,21 +4482,21 @@
     {
       "id": "w_99b02ca4",
       "name": "Mack's Inn (Island Park) (access: Red Rock Pass)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 44.599249,
       "lon": -111.522403
     },
     {
       "id": "w_9a059459",
       "name": "Del Norte (access: Wolf Creek Pass (US 160))",
-      "type": "town",
+      "type": "town-access",
       "lat": 37.483373,
       "lon": -106.800875
     },
     {
       "id": "w_9a51cb11",
       "name": "Jeffrey City (access: CDT in the Great Divide Basin nearest US 287)",
-      "type": "food",
+      "type": "food-access",
       "lat": 42.383351,
       "lon": -107.943339
     },
@@ -4538,7 +4538,7 @@
     {
       "id": "w_9c1ee5ed",
       "name": "Deming (access: CDT at NM 9)",
-      "type": "town",
+      "type": "town-access",
       "lat": 31.88816,
       "lon": -108.42268
     },
@@ -4608,14 +4608,14 @@
     {
       "id": "w_a191d73a",
       "name": "Pagosa Springs (access: Wolf Creek Pass (US 160))",
-      "type": "town",
+      "type": "town-access",
       "lat": 37.483373,
       "lon": -106.800875
     },
     {
       "id": "w_a191d73aa151",
       "name": "South Fork (access: Wolf Creek Pass (US 160))",
-      "type": "town",
+      "type": "town-access",
       "lat": 37.483373,
       "lon": -106.800875
     },
@@ -4636,7 +4636,7 @@
     {
       "id": "w_a294b780",
       "name": "Reserve (access: CDT at NM 12 near Collins Park)",
-      "type": "town",
+      "type": "town-access",
       "lat": 33.608333,
       "lon": -108.385842
     },
@@ -4692,14 +4692,14 @@
     {
       "id": "w_a562b7b4",
       "name": "Hachita (access: CDT at NM 9)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 31.88816,
       "lon": -108.42268
     },
     {
       "id": "w_a562b7b46150",
       "name": "Columbus (access: CDT at NM 9)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 31.88816,
       "lon": -108.42268
     },
@@ -4734,7 +4734,7 @@
     {
       "id": "w_a7aaf531",
       "name": "Lander (access: WY 28 at South Pass)",
-      "type": "town",
+      "type": "town-access",
       "lat": 42.477776,
       "lon": -108.774192
     },
@@ -4804,7 +4804,7 @@
     {
       "id": "w_ab40a482",
       "name": "Pinedale (access: CDT at Pole Creek / Elkhart Park trailhead)",
-      "type": "town",
+      "type": "town-access",
       "lat": 43.046061,
       "lon": -109.62702
     },
@@ -4825,7 +4825,7 @@
     {
       "id": "w_acf44c6f",
       "name": "Lincoln (access: Rogers Pass (MT 200))",
-      "type": "town",
+      "type": "town-access",
       "lat": 47.076439,
       "lon": -112.37114
     },
@@ -4846,7 +4846,7 @@
     {
       "id": "w_aebb7c21",
       "name": "Salida (access: Monarch Pass (US 50))",
-      "type": "town",
+      "type": "town-access",
       "lat": 38.496295,
       "lon": -106.325116
     },
@@ -4916,14 +4916,14 @@
     {
       "id": "w_b375dd11",
       "name": "Benchmark Wilderness Ranch (access: CDT at Benchmark trailhead (South Fork Sun River))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 47.49516,
       "lon": -112.90054
     },
     {
       "id": "w_b375dd112326",
       "name": "Augusta (access: CDT at Benchmark trailhead (South Fork Sun River))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 47.49516,
       "lon": -112.90054
     },
@@ -5049,7 +5049,7 @@
     {
       "id": "w_b8c596b1",
       "name": "Copper Mountain (access: CDT / Colorado Trail at Copper Mountain)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 39.499349,
       "lon": -106.152787
     },
@@ -5112,7 +5112,7 @@
     {
       "id": "w_bf8a169c",
       "name": "Steamboat Springs (access: Buffalo Pass)",
-      "type": "town",
+      "type": "town-access",
       "lat": 40.544271,
       "lon": -106.684945
     },
@@ -5168,7 +5168,7 @@
     {
       "id": "w_c4b0f264",
       "name": "Silverthorne (access: CDT / Colorado Trail near CO 9, Tenmile Range)",
-      "type": "town",
+      "type": "town-access",
       "lat": 39.539701,
       "lon": -106.05922
     },
@@ -5266,7 +5266,7 @@
     {
       "id": "w_cb5d8d3b",
       "name": "Breckenridge (access: Gold Hill trailhead (CO 9))",
-      "type": "town",
+      "type": "town-access",
       "lat": 39.489026,
       "lon": -106.11276
     },
@@ -5301,7 +5301,7 @@
     {
       "id": "w_cc7644c6",
       "name": "Elliston (access: MacDonald Pass (US 12))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 46.561487,
       "lon": -112.308748
     },
@@ -5329,14 +5329,14 @@
     {
       "id": "w_cf638c9e",
       "name": "Ghost Ranch (access: CDT primary route nearest Ghost Ranch (Chama River rim))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 36.386622,
       "lon": -106.445709
     },
     {
       "id": "w_cf638c9ea049",
       "name": "Abiquiu (access: CDT primary route nearest Ghost Ranch (Chama River rim))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 36.386622,
       "lon": -106.445709
     },
@@ -5371,7 +5371,7 @@
     {
       "id": "w_d123bba8",
       "name": "Gila Hot Springs Campground (access: CDT primary route nearest Gila Hot Springs)",
-      "type": "campsite",
+      "type": "campsite-access",
       "lat": 33.071095,
       "lon": -108.087069
     },
@@ -5392,7 +5392,7 @@
     {
       "id": "w_d3ac4147",
       "name": "Granby (access: CDT at Grand Lake)",
-      "type": "town",
+      "type": "town-access",
       "lat": 40.250078,
       "lon": -105.826023
     },
@@ -5434,7 +5434,7 @@
     {
       "id": "w_d694b023",
       "name": "Anaconda (access: CDT primary route nearest Anaconda (Anaconda-Pintler))",
-      "type": "town",
+      "type": "town-access",
       "lat": 46.040674,
       "lon": -113.046581
     },
@@ -5567,7 +5567,7 @@
     {
       "id": "w_e34658ec",
       "name": "Doc Campbell's Post (access: CDT primary route nearest Gila Hot Springs)",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 33.071095,
       "lon": -108.087069
     },
@@ -5602,7 +5602,7 @@
     {
       "id": "w_e7d8d267",
       "name": "Salmon (access: Bannock Pass (ID 29 / MT 324))",
-      "type": "town",
+      "type": "town-access",
       "lat": 44.814332,
       "lon": -113.27255
     },
@@ -5658,14 +5658,14 @@
     {
       "id": "w_ebbd7d4e",
       "name": "Encampment (access: Battle Pass (WY 70))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 41.153749,
       "lon": -106.981306
     },
     {
       "id": "w_ebbd7d4e82d1",
       "name": "Riverside (access: Battle Pass (WY 70))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 41.153749,
       "lon": -106.981306
     },
@@ -5728,7 +5728,7 @@
     {
       "id": "w_eede609e",
       "name": "Leadville (access: Tennessee Pass (US 24))",
-      "type": "town",
+      "type": "town-access",
       "lat": 39.362171,
       "lon": -106.31307
     },
@@ -5756,7 +5756,7 @@
     {
       "id": "w_f1419e0a",
       "name": "Flagg Ranch (access: CDT on the Snake River, south Yellowstone)",
-      "type": "food",
+      "type": "food-access",
       "lat": 44.21746,
       "lon": -110.462872
     },
@@ -5770,7 +5770,7 @@
     {
       "id": "w_f195e47e",
       "name": "Babb (access: Chief Mountain border crossing (US 17 / MT 17))",
-      "type": "resupply",
+      "type": "resupply-access",
       "lat": 48.844229,
       "lon": -113.82698
     },

@@ -383,12 +383,17 @@ function junctionOffset(distanceFromTrack: number): number | undefined {
 }
 
 /**
- * A variant's stored point order follows its own source track, which need not
- * agree with the main route's direction (notably after a `reverseTrack` build).
- * Normalise so the junction range always reads forwards — the viewer renders
- * these as "Branches at: X km / Rejoins: Y km". Returns whether it swapped, so
- * a caller that needs to know which end of `points` carries `startDistance`
- * can follow along.
+ * A variant's source track need not run the way the main route does (notably
+ * after a `reverseTrack` build, or when a CalTopo line was drawn from the far
+ * end). Normalise so the variant reads forwards: the junction pair is swapped so
+ * "Branches at: X km / Rejoins: Y km" has X before Y, and `points` is reversed
+ * so `points[0]` is always the branch point. Everything downstream relies on
+ * that invariant — variant waypoint km are `startDistance` plus the walk from
+ * `points[0]`, and a child alternate's km are measured along its parent from the
+ * same end — so the two must never be swapped independently. The ascent and
+ * descent were measured the way the line was drawn, so they trade places too.
+ *
+ * Returns whether it turned the variant round.
  */
 function normaliseJunctionOrder(variant: RouteVariant): boolean {
   if (
@@ -404,6 +409,8 @@ function normaliseJunctionOrder(variant: RouteVariant): boolean {
   if (variant.startOffsetMeters !== undefined || variant.endOffsetMeters !== undefined) {
     [variant.startOffsetMeters, variant.endOffsetMeters] = [variant.endOffsetMeters, variant.startOffsetMeters];
   }
+  variant.points = [...variant.points].reverse();
+  variant.elevation = { ascent: variant.elevation.descent, descent: variant.elevation.ascent };
   return true;
 }
 
@@ -479,7 +486,6 @@ export function findVariantJunctions(
 export function attachVariantsToParents(
   alternates: RouteVariant[],
   sideTrips: RouteVariant[],
-  trackPoints: TrackPoint[],
   maxJunctionDistance: number = DEFAULT_MAX_JUNCTION_DISTANCE_METERS
 ): { alternates: RouteVariant[]; sideTrips: RouteVariant[] } {
   const all = [...alternates, ...sideTrips].map(variant => ({ ...variant }));
@@ -502,28 +508,21 @@ export function attachVariantsToParents(
   });
   const latMargin = maxJunctionDistance / METERS_PER_DEGREE_LAT;
 
-  // Which end of a variant's own `points` its `startDistance` belongs to.
-  // findVariantJunctions can swap the two junctions so the pair reads forwards
-  // without touching `points`, so this cannot be assumed to be the first point.
-  const startAtFirstPoint = all.map(variant => {
-    const anchor = variant.startTrackIndex !== undefined ? trackPoints[variant.startTrackIndex] : undefined;
-    if (anchor === undefined || variant.points.length < 2) return true;
-    const first = variant.points[0];
-    const last = variant.points[variant.points.length - 1];
-    return (
-      haversineDistanceMeters(first.lat, first.lon, anchor.lat, anchor.lon) <=
-      haversineDistanceMeters(last.lat, last.lon, anchor.lat, anchor.lon)
-    );
-  });
+  // Which alternate each end of a variant attached to, by index into `all`;
+  // undefined for an end on the main route or not yet attached. Kept per end
+  // rather than per variant because the ends attach in separate rounds and can
+  // be swapped afterwards, and `parent` has to name the alternate the *branch
+  // point* ended up on.
+  const startParent: (number | undefined)[] = all.map(() => undefined);
+  const endParent: (number | undefined)[] = all.map(() => undefined);
 
-  /** Absolute trail km of a point on an already-attached parent. */
-  const kmAlongParent = (parentIndex: number, pointIndex: number): number => {
-    const cum = cumulative[parentIndex];
-    const walked = startAtFirstPoint[parentIndex]
-      ? cum[pointIndex]
-      : cum[cum.length - 1] - cum[pointIndex];
-    return Math.round((all[parentIndex].startDistance! + walked) * 100) / 100;
-  };
+  /**
+   * Absolute trail km of a point on an already-attached parent. `points[0]` is
+   * the parent's branch point — normaliseJunctionOrder keeps it that way — so
+   * the walk is simply the cumulative km to the point.
+   */
+  const kmAlongParent = (parentIndex: number, pointIndex: number): number =>
+    Math.round((all[parentIndex].startDistance! + cumulative[parentIndex][pointIndex]) * 100) / 100;
 
   const nearestParent = (
     point: { lat: number; lon: number },
@@ -574,24 +573,30 @@ export function attachVariantsToParents(
 
       if (start !== null) {
         variant.startDistance = kmAlongParent(start.parentIndex, start.pointIndex);
+        startParent[i] = start.parentIndex;
         const offset = junctionOffset(start.distance);
         if (offset !== undefined) variant.startOffsetMeters = offset;
       }
       if (end !== null) {
         variant.endDistance = kmAlongParent(end.parentIndex, end.pointIndex);
+        endParent[i] = end.parentIndex;
         const offset = junctionOffset(end.distance);
         if (offset !== undefined) variant.endOffsetMeters = offset;
       }
 
-      const attachment = start ?? end!;
-      variant.parent = {
-        name: all[attachment.parentIndex].name,
-        index: attachment.parentIndex,
-      };
+      // Turning the variant round also turns `points` round, which anything
+      // hanging off this variant in a later round measures along; and it moves
+      // each end's parent to the other end.
+      if (normaliseJunctionOrder(variant)) {
+        [startParent[i], endParent[i]] = [endParent[i], startParent[i]];
+        cumulative[i] = cumulativeKm(variant.points);
+      }
 
-      // The swap moves `startDistance` to the other end of `points`, which the
-      // km of anything hanging off this variant in a later round depends on.
-      startAtFirstPoint[i] = !normaliseJunctionOrder(variant);
+      // Named for the branch point when that is on an alternate; otherwise for
+      // the rejoin, so a variant that leaves the main route and ends on an
+      // alternate still records which one.
+      const parentIndex = startParent[i] ?? endParent[i]!;
+      variant.parent = { name: all[parentIndex].name, index: parentIndex };
       attachedSomething = true;
     }
   }
@@ -777,7 +782,8 @@ export function enrichWaypoints(
  * Waypoint `totalDistance` is on the TRAIL's absolute km scale: the junction
  * km where the variant leaves the main track (`startDistance`, set by
  * findVariantJunctions — call that first) plus the distance walked along the
- * variant. This keeps variant waypoints directly comparable with main-route
+ * variant from `points[0]`, which the junction pass guarantees is the branch
+ * point. This keeps variant waypoints directly comparable with main-route
  * waypoints in datasheets. Falls back to variant-relative km when the variant
  * never attaches to the main track.
  */
@@ -1311,7 +1317,6 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   const { alternates: enrichedAlternates, sideTrips: enrichedSideTrips } = attachVariantsToParents(
     findVariantJunctions(alternates, points, maxJunctionDistance),
     findVariantJunctions(sideTrips, points, maxJunctionDistance),
-    points,
     maxJunctionDistance
   );
 

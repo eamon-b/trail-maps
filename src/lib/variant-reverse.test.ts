@@ -24,6 +24,16 @@ function makeWaypoint(overrides: Partial<TestWaypoint> = {}): TestWaypoint {
 }
 
 describe('reverseAlternates', () => {
+  it('moves a junction residual to the other end without leaving an undefined key behind', () => {
+    const [reversed] = reverseAlternates<ReversibleVariant>([{ startDistance: 10, endDistance: 30, startOffsetMeters: 700 }], 100);
+    expect(reversed.endOffsetMeters).toBe(700);
+    expect(reversed).not.toHaveProperty('startOffsetMeters');
+
+    const [other] = reverseAlternates<ReversibleVariant>([{ startDistance: 10, endDistance: 30, endOffsetMeters: 900 }], 100);
+    expect(other.startOffsetMeters).toBe(900);
+    expect(other).not.toHaveProperty('endOffsetMeters');
+  });
+
   it('swaps start and end distances', () => {
     const reversed = reverseAlternates([{ startDistance: 10, endDistance: 30 }], 100);
     expect(reversed[0].startDistance).toBe(70);

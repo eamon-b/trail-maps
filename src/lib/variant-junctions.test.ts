@@ -9,8 +9,14 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseGpx } from './gpx-parser';
-import { attachVariantsToParents, buildTrail, findVariantJunctions, flattenGpx } from './trail-ingest';
-import type { RouteVariant, TrackPoint, TrailConfig } from './trail-types';
+import {
+  attachVariantsToParents,
+  buildTrail,
+  enrichVariantWaypoints,
+  findVariantJunctions,
+  flattenGpx,
+} from './trail-ingest';
+import type { RouteVariant, TrackPoint, TrailConfig, TrailWaypoint } from './trail-types';
 
 /** Kilometres per 0.01° at the equator, on the spherical earth `distance.ts` uses. */
 const KM_PER_STEP = 1.11195;
@@ -174,7 +180,7 @@ describe('attachVariantsToParents', () => {
     ]);
 
   function attach(variants: RouteVariant[]): RouteVariant[] {
-    return attachVariantsToParents(findVariantJunctions(variants, route), [], route).alternates;
+    return attachVariantsToParents(findVariantJunctions(variants, route), []).alternates;
   }
 
   it('gives a child the parent junction km plus the walk along the parent', () => {
@@ -213,9 +219,9 @@ describe('attachVariantsToParents', () => {
   });
 
   it('measures from the right end when the parent was normalised backwards', () => {
-    // Same parent drawn the other way round: findVariantJunctions swaps its
-    // junction pair to read forwards but leaves `points` alone, so the walk to
-    // the child's branch point runs from the last point, not the first.
+    // Same parent drawn the other way round: findVariantJunctions turns it to
+    // read forwards, so the walk to the child's branch point must still start
+    // at the km-4.45 end.
     const backwards = alternate('Parent Alternate', [
       [0, 0.1],
       [0.1, 0.1],
@@ -244,8 +250,7 @@ describe('attachVariantsToParents', () => {
     const sideTrip: RouteVariant = { ...child(), type: 'side-trip', name: 'Child Spur' };
     const result = attachVariantsToParents(
       findVariantJunctions([parent()], route),
-      findVariantJunctions([sideTrip], route),
-      route
+      findVariantJunctions([sideTrip], route)
     );
 
     // The spur starts on the parent, so it gets a junction; its far end is a
@@ -266,10 +271,161 @@ describe('attachVariantsToParents', () => {
       ],
       route
     );
-    const { alternates } = attachVariantsToParents(onRoute, [], route);
+    const { alternates } = attachVariantsToParents(onRoute, []);
 
     expect(alternates[0].parent).toBeUndefined();
     expect(alternates[0].startDistance).toBe(onRoute[0].startDistance);
     expect(alternates[0].endDistance).toBe(onRoute[0].endDistance);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Point order
+// ---------------------------------------------------------------------------
+
+describe('a variant drawn against the trail direction', () => {
+  const route = mainRoute(31);
+
+  /** The lollipop parent from above, drawn from its km-11.12 end back to km 4.45. */
+  const backwards = (): RouteVariant => ({
+    ...alternate('Backwards Parent', [
+      [0, 0.1],
+      [0.1, 0.1],
+      [0.1, 0.04],
+      [0, 0.04],
+    ]),
+    elevation: { ascent: 165, descent: 18 },
+  });
+
+  const waypoint = (name: string, lat: number, lon: number): TrailWaypoint => ({
+    name,
+    lat,
+    lon,
+    type: 'waypoint',
+  });
+
+  it('is turned round so its points run from startDistance to endDistance', () => {
+    const [variant] = findVariantJunctions([backwards()], route);
+
+    expect(variant.startDistance).toBeCloseTo(4.45, 2);
+    expect(variant.endDistance).toBeCloseTo(11.12, 2);
+    // The first point is now the branch point and the last the rejoin.
+    expect(variant.points[0]).toMatchObject({ lat: 0, lon: 0.04 });
+    expect(variant.points[variant.points.length - 1]).toMatchObject({ lat: 0, lon: 0.1 });
+    expect(variant.startTrackIndex).toBe(4);
+    expect(variant.endTrackIndex).toBe(10);
+  });
+
+  it('swaps its ascent and descent, which were measured the way it was drawn', () => {
+    const [variant] = findVariantJunctions([backwards()], route);
+    expect(variant.elevation).toEqual({ ascent: 18, descent: 165 });
+  });
+
+  it('leaves a variant already drawn forwards exactly as it was', () => {
+    const forwards = { ...alternate('Forwards', [[0, 0.04], [0.1, 0.04], [0.1, 0.1], [0, 0.1]]), elevation: { ascent: 7, descent: 3 } };
+    const [variant] = findVariantJunctions([forwards], route);
+    expect(variant.points).toEqual(forwards.points);
+    expect(variant.elevation).toEqual({ ascent: 7, descent: 3 });
+  });
+
+  it('gives its waypoints km measured from the branch point, not from the far end', () => {
+    // The corner at lat 0.1 / lon 0.04 is 11.12 km up the northern leg from
+    // where the variant leaves the route at km 4.45.
+    const [variant] = enrichVariantWaypoints(
+      findVariantJunctions([backwards()], route),
+      [waypoint('North-west corner', 0.1, 0.04)]
+    );
+
+    expect(variant.waypoints).toHaveLength(1);
+    expect(variant.waypoints![0].totalDistance).toBeCloseTo(4.45 + 11.12, 1);
+    expect(variant.waypoints![0].distance).toBeCloseTo(11.12, 1);
+  });
+
+  it('is handled the same when the turn happens while attaching to a parent', () => {
+    // A child of the (forwards) parent, drawn from its rejoin back to its
+    // branch point, so the swap happens in attachVariantsToParents rather than
+    // in findVariantJunctions.
+    const parent = alternate('Parent Alternate', [[0, 0.04], [0.1, 0.04], [0.1, 0.1], [0, 0.1]]);
+    const backwardsChild = alternate('Backwards Child', [
+      [0.1, 0.08],
+      [0.14, 0.08],
+      [0.14, 0.06],
+      [0.1, 0.06],
+    ]);
+    const { alternates } = attachVariantsToParents(findVariantJunctions([parent, backwardsChild], route), []);
+    const [, child] = enrichVariantWaypoints(alternates, [waypoint('Child corner', 0.14, 0.06)]);
+
+    expect(child.startDistance).toBeCloseTo(17.79, 1);
+    expect(child.endDistance).toBeCloseTo(20.02, 1);
+    expect(child.points[0]).toMatchObject({ lat: 0.1, lon: 0.06 });
+    // 4.45 km up the child's western leg from where it leaves the parent.
+    expect(child.waypoints![0].totalDistance).toBeCloseTo(17.79 + 4.45, 1);
+  });
+
+  it('turns a grandchild round too, and measures its child from the right end', () => {
+    // Same as the chain test, with the child drawn backwards: the grandchild's
+    // km depend on which end of the child carries its startDistance.
+    const parent = alternate('Parent Alternate', [[0, 0.04], [0.1, 0.04], [0.1, 0.1], [0, 0.1]]);
+    const backwardsChild = alternate('Child Alternate', [[0.1, 0.08], [0.14, 0.08], [0.14, 0.06], [0.1, 0.06]]);
+    const grandchild = alternate('Grandchild Alternate', [[0.14, 0.065], [0.16, 0.065], [0.16, 0.075], [0.14, 0.075]]);
+    const { alternates } = attachVariantsToParents(
+      findVariantJunctions([parent, backwardsChild, grandchild], route),
+      []
+    );
+    expect(alternates[2].startDistance).toBeCloseTo(22.79, 1);
+    expect(alternates[2].endDistance).toBeCloseTo(23.91, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Which parent
+// ---------------------------------------------------------------------------
+
+describe('a variant whose two ends attach to different alternates', () => {
+  /**
+   *   A  the lollipop parent off the main route (km 4.45 → 11.12).
+   *   B  a loop off A's northern leg, to the west: leaves A at lat 0.06,
+   *      runs west to lon 0, north to lat 0.09, back east to A.
+   *   C  starts on A's northern leg at lat 0.02 and ends on B's western leg
+   *      at lat 0.07, never touching the main route.
+   *
+   * C is listed before B, so on the first pass only its start (on A) can
+   * attach; its end (on B) attaches a round later, once B has a km of its own.
+   */
+  const route = mainRoute(31);
+  const A = (): RouteVariant => alternate('Alt A', [[0, 0.04], [0.1, 0.04], [0.1, 0.1], [0, 0.1]]);
+  const B = (): RouteVariant => alternate('Alt B', [[0.06, 0.04], [0.06, 0], [0.09, 0], [0.09, 0.04]]);
+  const cCorners: [number, number][] = [
+    [0.02, 0.04],
+    [0.02, -0.02],
+    [0.07, -0.02],
+    [0.07, 0],
+  ];
+
+  function attach(variants: RouteVariant[]): Map<string, RouteVariant> {
+    const { alternates } = attachVariantsToParents(findVariantJunctions(variants, route), []);
+    return new Map(alternates.map(v => [v.name, v]));
+  }
+
+  it('names the alternate its branch point is on, even when that end attached first', () => {
+    const c = attach([A(), alternate('Alt C', cCorners), B()]).get('Alt C')!;
+
+    // Branches off A 2.22 km up its northern leg; rejoins on B 1.11 km up B's
+    // western leg, which itself starts 4.45 + 6.67 + 4.45 km along.
+    expect(c.startDistance).toBeCloseTo(4.45 + 2.22, 1);
+    expect(c.endDistance).toBeCloseTo(4.45 + 6.67 + 4.45 + 1.11, 1);
+    expect(c.parent).toEqual({ name: 'Alt A', index: 0 });
+  });
+
+  it('names the alternate its branch point is on when the ends were swapped to read forwards', () => {
+    // Drawn from B back to A: its A end attaches first as the "end", then the
+    // pair is swapped so the A end becomes the branch point.
+    const c = attach([A(), alternate('Alt C', [...cCorners].reverse()), B()]).get('Alt C')!;
+
+    expect(c.startDistance).toBeCloseTo(4.45 + 2.22, 1);
+    expect(c.endDistance).toBeCloseTo(4.45 + 6.67 + 4.45 + 1.11, 1);
+    expect(c.parent).toEqual({ name: 'Alt A', index: 0 });
+    expect(c.points[0].lat).toBeCloseTo(0.02, 9);
+    expect(c.points[0].lon).toBeCloseTo(0.04, 9);
   });
 });

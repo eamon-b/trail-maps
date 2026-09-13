@@ -104,14 +104,15 @@ export function reverseAlternates<V extends ReversibleVariant>(
     }
 
     // The two ends trade places along with the points, so a residual recorded
-    // against one end has to travel with it.
-    const offsets =
-      alt.startOffsetMeters !== undefined || alt.endOffsetMeters !== undefined
-        ? { startOffsetMeters: alt.endOffsetMeters, endOffsetMeters: alt.startOffsetMeters }
-        : {};
+    // against one end has to travel with it — and one recorded against neither
+    // must not appear as an `undefined` key on the other.
+    const { startOffsetMeters, endOffsetMeters, ...rest } = alt;
+    const offsets: Pick<ReversibleVariant, 'startOffsetMeters' | 'endOffsetMeters'> = {};
+    if (endOffsetMeters !== undefined) offsets.startOffsetMeters = endOffsetMeters;
+    if (startOffsetMeters !== undefined) offsets.endOffsetMeters = startOffsetMeters;
 
     return {
-      ...alt,
+      ...rest,
       ...offsets,
       startDistance: newStart,
       endDistance: totalDistance - oldStart,

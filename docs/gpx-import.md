@@ -218,6 +218,45 @@ though the guide never writes them itself: a waypoint typed `spring`,
 `creek`, `tap` or `bore` counts as water, and one typed `supermarket`,
 `store`, `roadhouse` or `post-office` counts as resupply.
 
+#### Places you leave the trail to reach
+
+A town is often nowhere near the route: you leave at a road crossing and
+hitch, walk or catch a shuttle the rest of the way. A file can say so, by
+hanging a few extra fields off the waypoint that marks the turn-off:
+
+```xml
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:tn="https://tracknotes.app/xmlschemas/gpx-waypoint/1">
+  <wpt lat="38.4967" lon="-106.3244">
+    <name>Salida</name>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monarch Pass (US 50)</tn:accessName>
+    </extensions>
+  </wpt>
+</gpx>
+```
+
+- `offTrailKm` is how far the place is from the route, one way, in kilometres.
+- `accessMode` is how you cover that distance: `foot`, `hitch`, `shuttle`,
+  `boat`, or `on-trail` for somewhere the route runs straight through.
+- `acceptsBoxes` says whether the place will hold a resupply box you post
+  ahead.
+- `accessName` names the turn-off itself, which is what a list of options at
+  one road end is grouped under.
+
+All four are optional and all four are read on import, so a hand-made file
+can describe a turn-off exactly the way the built-in trails do. They have to
+be direct children of `<extensions>`; anything the guide cannot read — an
+`accessMode` that is not one of the five words, an `offTrailKm` that is not a
+number — is left off rather than guessed at, and another program's
+`<extensions>` block is ignored. Nothing here changes the route: a turn-off
+is a point on the trail at the kilometre where you leave it, not the place
+itself.
+
 ### 10. Identity
 
 - The trail id is `u_` followed by a hash of the file's contents, so

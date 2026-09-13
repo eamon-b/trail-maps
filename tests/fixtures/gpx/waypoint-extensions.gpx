@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test"
+  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:tn="https://tracknotes.app/xmlschemas/gpx-waypoint/1"
+  xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+  <metadata><name>Waypoint Extensions</name></metadata>
+  <!-- Every field, with the whitespace a pretty-printing generator leaves behind. -->
+  <wpt lat="-33.8688" lon="151.2093">
+    <name>Salida</name>
+    <type>town-access</type>
+    <desc>Leave the trail here for Salida.</desc>
+    <extensions>
+      <tn:offTrailKm>
+        35.4
+      </tn:offTrailKm>
+      <tn:accessMode>
+        hitch
+      </tn:accessMode>
+      <tn:acceptsBoxes>
+        true
+      </tn:acceptsBoxes>
+      <tn:accessName>
+        Monarch Pass (US 50)
+      </tn:accessName>
+    </extensions>
+  </wpt>
+  <!-- Only some of the fields; the rest must stay absent, not become defaults. -->
+  <wpt lat="-33.8712" lon="151.2107">
+    <name>Poncha Springs</name>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>9</tn:offTrailKm>
+      <tn:accessMode>foot</tn:accessMode>
+    </extensions>
+  </wpt>
+  <!-- Unreadable values: an unknown mode, a non-numeric distance, a blank name. -->
+  <wpt lat="-33.8724" lon="151.2114">
+    <name>Mystery Junction</name>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>unknown</tn:offTrailKm>
+      <tn:accessMode>teleport</tn:accessMode>
+      <tn:acceptsBoxes>false</tn:acceptsBoxes>
+      <tn:accessName>   </tn:accessName>
+    </extensions>
+  </wpt>
+  <!-- Somebody else's extensions: must parse exactly as a plain waypoint does. -->
+  <wpt lat="-33.8736" lon="151.2121">
+    <name>Garmin Marker</name>
+    <type>viewpoint</type>
+    <extensions>
+      <gpxx:WaypointExtension>
+        <gpxx:DisplayMode>SymbolAndName</gpxx:DisplayMode>
+      </gpxx:WaypointExtension>
+    </extensions>
+  </wpt>
+  <!-- On the alternate, not the main route: proves VariantWaypoint carries the fields. -->
+  <wpt lat="-33.8650" lon="151.2200">
+    <name>Mesopotamia Station</name>
+    <type>resupply-access</type>
+    <extensions>
+      <tn:offTrailKm>2.5</tn:offTrailKm>
+      <tn:accessMode>shuttle</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Rangitata road end</tn:accessName>
+    </extensions>
+  </wpt>
+  <trk>
+    <name>Main Route</name>
+    <trkseg>
+      <trkpt lat="-33.8688" lon="151.2093"><ele>10</ele></trkpt>
+      <trkpt lat="-33.8700" lon="151.2100"><ele>15</ele></trkpt>
+      <trkpt lat="-33.8712" lon="151.2107"><ele>20</ele></trkpt>
+      <trkpt lat="-33.8724" lon="151.2114"><ele>25</ele></trkpt>
+      <trkpt lat="-33.8736" lon="151.2121"><ele>30</ele></trkpt>
+      <trkpt lat="-33.8750" lon="151.2150"><ele>35</ele></trkpt>
+    </trkseg>
+  </trk>
+  <trk>
+    <name>Alt Rangitata</name>
+    <trkseg>
+      <trkpt lat="-33.8700" lon="151.2100"><ele>15</ele></trkpt>
+      <trkpt lat="-33.8650" lon="151.2200"><ele>40</ele></trkpt>
+      <trkpt lat="-33.8750" lon="151.2150"><ele>35</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

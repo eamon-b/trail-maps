@@ -23,6 +23,7 @@
  */
 
 import { hashString, type ImportReport } from './gpx-import';
+import { isAccessMode } from './types';
 import type {
   ClimateLocationConfig,
   DirectionConfig,
@@ -469,7 +470,7 @@ function readWaypoint(value: unknown, index: number, trailId: string): EnrichedW
     ? value.id
     : `uw_${hashString(`${trailId}|${index}|${name}|${lat}|${lon}`)}`;
 
-  return {
+  const waypoint: EnrichedWaypoint = {
     ...(value as Partial<EnrichedWaypoint>),
     id,
     name,
@@ -487,6 +488,31 @@ function readWaypoint(value: unknown, index: number, trailId: string): EnrichedW
     totalDescent: finiteOr(value.totalDescent, 0),
     trackIndex: Number.isInteger(value.trackIndex) ? (value.trackIndex as number) : 0,
   };
+  applyAccessFields(waypoint, value);
+  return waypoint;
+}
+
+/**
+ * Re-check the off-trail access fields, which the spread above copied over
+ * untouched along with every other unknown key.
+ *
+ * They are not defaulted the way the cumulative stats are: a waypoint with no
+ * `offTrailKm` is one that is *on* the route, so a bad value has to disappear
+ * rather than become 0 km away.
+ */
+function applyAccessFields(waypoint: EnrichedWaypoint, value: Record<string, unknown>): void {
+  delete waypoint.offTrailKm;
+  delete waypoint.accessMode;
+  delete waypoint.acceptsBoxes;
+  delete waypoint.accessName;
+
+  if (typeof value.offTrailKm === 'number' && Number.isFinite(value.offTrailKm)) {
+    waypoint.offTrailKm = value.offTrailKm;
+  }
+  if (isAccessMode(value.accessMode)) waypoint.accessMode = value.accessMode;
+  if (typeof value.acceptsBoxes === 'boolean') waypoint.acceptsBoxes = value.acceptsBoxes;
+  const accessName = readName(value.accessName);
+  if (accessName !== null) waypoint.accessName = accessName;
 }
 
 function requireFinite(value: unknown, where: string): number {

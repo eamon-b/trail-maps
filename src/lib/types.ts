@@ -6,7 +6,41 @@ export interface GpxPoint {
   time: string | null;
 }
 
-export interface GpxWaypoint {
+/**
+ * How you leave the route to reach an off-trail place: on foot, by hitching, by
+ * a booked shuttle, by boat, or `on-trail` for a place the route runs through.
+ */
+export const ACCESS_MODES = ['foot', 'hitch', 'shuttle', 'boat', 'on-trail'] as const;
+
+export type AccessMode = (typeof ACCESS_MODES)[number];
+
+/** Narrows untrusted text (GPX extensions, handoff JSON) to an {@link AccessMode}. */
+export function isAccessMode(value: unknown): value is AccessMode {
+  return typeof value === 'string' && (ACCESS_MODES as readonly string[]).includes(value);
+}
+
+/**
+ * Where an off-trail place sits relative to the route, carried in GPX
+ * `<extensions>` under the `tn:` namespace and preserved all the way to the
+ * planner. Every field is optional: a waypoint without them is an ordinary
+ * on-route waypoint, which is what every trail looked like before the
+ * generators started emitting the extensions.
+ *
+ * One shared interface rather than four copies of the same four fields, so the
+ * names cannot drift between the parsed, built, handed-off and planned shapes.
+ */
+export interface WaypointAccess {
+  /** One-way distance from the route to the place, in km. */
+  offTrailKm?: number;
+  /** How that distance is covered. */
+  accessMode?: AccessMode;
+  /** Whether the place holds a mailed resupply box. */
+  acceptsBoxes?: boolean;
+  /** Name of the turn-off itself (e.g. "Monarch Pass (US 50)"). */
+  accessName?: string;
+}
+
+export interface GpxWaypoint extends WaypointAccess {
   /**
    * Stable waypoint id assigned by the build pipeline from the committed
    * registry (`data/waypoint-ids.json`). Absent for freshly-parsed GPX that

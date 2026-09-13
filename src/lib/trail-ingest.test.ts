@@ -96,6 +96,43 @@ describe('buildTrail', () => {
     expect(trail.alternates[0].startDistance!).toBeLessThanOrEqual(trail.alternates[0].endDistance!);
   });
 
+  it('carries the GPX off-trail access fields onto route and variant waypoints', () => {
+    const trail = buildTrail(load('waypoint-extensions'), {
+      config: config({
+        trackClassification: {
+          mainRoutePatterns: ['^Main'],
+          alternatePatterns: ['^Alt'],
+        },
+      }),
+    });
+
+    const salida = trail.waypoints.find(wp => wp.name === 'Salida')!;
+    expect(salida).toMatchObject({
+      type: 'town-access',
+      offTrailKm: 35.4,
+      accessMode: 'hitch',
+      acceptsBoxes: true,
+      accessName: 'Monarch Pass (US 50)',
+    });
+
+    // A waypoint the file says nothing about keeps no access keys at all, so
+    // the generated JSON for every existing trail is unchanged.
+    const garmin = trail.waypoints.find(wp => wp.name === 'Garmin Marker')!;
+    for (const field of ['offTrailKm', 'accessMode', 'acceptsBoxes', 'accessName']) {
+      expect(field in garmin).toBe(false);
+    }
+
+    const onAlternate = trail.alternates[0].waypoints!.find(
+      wp => wp.name === 'Mesopotamia Station'
+    )!;
+    expect(onAlternate).toMatchObject({
+      offTrailKm: 2.5,
+      accessMode: 'shuttle',
+      acceptsBoxes: true,
+      accessName: 'Rangitata road end',
+    });
+  });
+
   it('reverses the route when reverseTrack is set', () => {
     const forward = buildTrail(load('simple-trail'), { config: config() });
     const reversed = buildTrail(load('simple-trail'), { config: config({ reverseTrack: true }) });

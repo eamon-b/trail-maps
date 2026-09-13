@@ -30,7 +30,13 @@ import {
   WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS,
   type DedupableWaypoint,
 } from './waypoint-dedupe';
-import type { CombineTracksWarning, GpxData, GpxPoint, TrackBreak } from './types';
+import type {
+  CombineTracksWarning,
+  GpxData,
+  GpxPoint,
+  TrackBreak,
+  WaypointAccess,
+} from './types';
 import type {
   EnrichedWaypoint,
   OffTrailWaypoint,
@@ -121,6 +127,24 @@ export interface FlattenGpxOptions {
 }
 
 /**
+ * Carry the optional off-trail access fields across a rebuild.
+ *
+ * `flattenGpx` and `enrichVariantWaypoints` construct their waypoints from an
+ * explicit field list rather than a spread, so the fields have to be copied by
+ * hand. Absent ones stay absent — writing `offTrailKm: undefined` would add a
+ * key to every waypoint of every trail, which JSON.stringify drops but
+ * structural comparisons (and reviewers reading a diff) do not.
+ */
+function waypointAccess(source: WaypointAccess): WaypointAccess {
+  const access: WaypointAccess = {};
+  if (source.offTrailKm !== undefined) access.offTrailKm = source.offTrailKm;
+  if (source.accessMode !== undefined) access.accessMode = source.accessMode;
+  if (source.acceptsBoxes !== undefined) access.acceptsBoxes = source.acceptsBoxes;
+  if (source.accessName !== undefined) access.accessName = source.accessName;
+  return access;
+}
+
+/**
  * Flatten a parsed {@link GpxData} into the shape {@link buildTrail} consumes.
  *
  * Semantics match the historical build-script parser:
@@ -159,6 +183,7 @@ export function flattenGpx(data: GpxData, options: FlattenGpxOptions = {}): Pars
       lon: wpt.lon,
       type: wpt.type || classification.type,
       description: wpt.desc || undefined,
+      ...waypointAccess(wpt),
     };
   });
 
@@ -799,6 +824,7 @@ export function enrichVariantWaypoints(
         totalDescent: Math.round(runningDescent),
         variantTrackIndex: visit.trackIndex,
         description: visit.waypoint.description,
+        ...waypointAccess(visit.waypoint),
       });
 
       prevTrackIndex = visit.trackIndex;

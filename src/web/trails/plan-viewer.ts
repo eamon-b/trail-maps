@@ -1,7 +1,8 @@
 /**
  * Plan viewer — web trip planner for multi-day hiking.
  *
- * Three-panel layout: left (Days/Stops tabs), center (map + elevation), right (datasheet).
+ * Three-panel layout: left (Days/Stops/Resupply tabs), center (map + elevation),
+ * right (datasheet — the selected day, or the resupply plan while that tab is open).
  * Plans are persisted to localStorage.
  */
 
@@ -18,7 +19,17 @@ import {
   splitAtRouteBreaks,
 } from '@lib/route-breaks';
 import type { RouteBreak } from '@lib/trail-types';
-import { analyzeResupply } from '@lib/resupply-calculator';
+import {
+  computeResupplyLegs,
+  listResupplyOptions,
+  resolveResupplyStops,
+  summariseResupplyLegs,
+  DEFAULT_RESUPPLY_DAILY_HOURS,
+  type ResupplyLeg,
+  type ResupplyOption,
+  type ResupplyOptionGroup,
+  type ResupplySummary,
+} from '@lib/resupply-plan';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
@@ -67,8 +78,10 @@ let reversedTrail: Trail | null = null;
 let planState: PlanState = { name: '', startDate: null, stops: [] };
 let currentDays: ComputedDay[] = [];
 let selectedDayIndex: number | null = null;
-let activeTab: 'days' | 'stops' = 'days';
+type PlanTab = 'days' | 'stops' | 'resupply';
+let activeTab: PlanTab = 'days';
 let stopsFilter = '';
+let resupplyFilter = '';
 let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Leaflet
@@ -164,6 +177,13 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+/** Day and month only — the resupply table has eight columns in a 220px panel. */
+function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+
 // ---------------------------------------------------------------------------
 // Direction (km-space contract)
 // ---------------------------------------------------------------------------
@@ -216,6 +236,110 @@ function getDayColors(count: number): string[] {
   const colors: string[] = [];
   for (let i = 0; i < count; i++) colors.push(palette[i % palette.length]);
   return colors;
+}
+
+// ---------------------------------------------------------------------------
+// Resupply selection
+// ---------------------------------------------------------------------------
+//
+// The page has no pace inputs, so the two figures the leg calculator needs are
+// fixed here rather than being scattered through the renderers.
+
+/** Naismith flat-ground speed used for every resupply leg on this page. */
+const RESUPPLY_BASE_KMH = 4;
+
+/** Options depend only on the trail, so they are rebuilt only on a direction flip. */
+let cachedResupplyGroups: ResupplyOptionGroup[] = [];
+let cachedResupplyGroupsKey: string | null = null;
+
+/**
+ * Legs are the expensive half: each one walks the full-resolution track for its
+ * ascent, so they are recomputed only when the selection, the direction or the
+ * day plan they report arrivals against actually changes — never once per
+ * `renderAll()`.
+ */
+let cachedResupplyLegs: ResupplyLeg[] = [];
+let cachedResupplyLegsKey: string | null = null;
+
+function resetResupplyCaches(): void {
+  cachedResupplyGroups = [];
+  cachedResupplyGroupsKey = null;
+  cachedResupplyLegs = [];
+  cachedResupplyLegsKey = null;
+}
+
+function resupplyGroups(): ResupplyOptionGroup[] {
+  const key = direction();
+  if (key !== cachedResupplyGroupsKey) {
+    cachedResupplyGroups = listResupplyOptions(activeTrail().waypoints);
+    cachedResupplyGroupsKey = key;
+  }
+  return cachedResupplyGroups;
+}
+
+/** Every option id, in active-direction order — the "All" selection. */
+function allResupplyOptionIds(): string[] {
+  return resupplyGroups().flatMap(group => group.options.map(option => option.id));
+}
+
+/** The ticked ids. An absent `resupplyStops` means every option, as on a fresh plan. */
+function selectedResupplyIds(): Set<string> {
+  return new Set(planState.resupplyStops ?? allResupplyOptionIds());
+}
+
+function resupplyLegs(): ResupplyLeg[] {
+  // Arrival days move when a camp stop moves, not only when one is added, so the
+  // day boundaries themselves are part of the key.
+  const key = [
+    direction(),
+    JSON.stringify(planState.resupplyStops ?? null),
+    planState.startDate ?? '',
+    currentDays.map(day => day.endKm).join(','),
+  ].join('|');
+
+  if (key !== cachedResupplyLegsKey) {
+    const stops = resolveResupplyStops(resupplyGroups(), planState.resupplyStops);
+    cachedResupplyLegs = computeResupplyLegs(activeTrail(), stops, {
+      dailyHours: DEFAULT_RESUPPLY_DAILY_HOURS,
+      baseKmh: RESUPPLY_BASE_KMH,
+      days: currentDays,
+    });
+    cachedResupplyLegsKey = key;
+  }
+  return cachedResupplyLegs;
+}
+
+/** The one line the Resupply datasheet and the Days-tab collapsible both show. */
+function resupplySummaryText(summary: ResupplySummary): string {
+  const stops = `${summary.stops} stop${summary.stops === 1 ? '' : 's'}`;
+  const days = `${summary.longestDays} day${summary.longestDays === 1 ? '' : 's'}`;
+  return `${stops} · longest carry ${summary.longestKm.toFixed(1)} km / ${days} · ` +
+    `${summary.totalFoodKg.toFixed(1)} kg food in total`;
+}
+
+/**
+ * How far off the route the place is, and how you get there — metric, because
+ * the web pages are (the phone is the one that formats by unit preference).
+ */
+function accessSummary(option: ResupplyOption): string {
+  const hasKm = typeof option.offTrailKm === 'number' && option.offTrailKm > 0;
+  const mode = option.accessMode;
+  if (hasKm) return `${option.offTrailKm!.toFixed(1)} km ${mode && mode !== 'on-trail' ? mode : 'off trail'}`;
+  if (mode === 'on-trail') return 'on trail';
+  return mode ?? '';
+}
+
+/**
+ * The lead sentence of a description, which is the part that says what is
+ * there. The trail generators prefix their descriptions with `|`-separated
+ * metadata ("mi 1947.3 (SOBO mi 1947.3) | off. mi 1955.8 | CO | Leave the CDT
+ * here for Salida…"), so the prose is the last segment.
+ */
+function firstSentence(text: string): string {
+  const segments = text.split('|').map(part => part.trim()).filter(part => part !== '');
+  const prose = segments.length > 0 ? segments[segments.length - 1] : '';
+  const match = prose.match(/^[\s\S]*?[.!?](?=\s|$)/);
+  return (match ? match[0] : prose).trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -295,13 +419,22 @@ function drawWaypointMarkers(): void {
   waypointMarkers.forEach(({ marker }) => marker.remove());
   waypointMarkers = [];
 
+  // On the Resupply tab the map answers the question that tab asks: which of the
+  // resupply options am I taking? Ticked ones borrow the camp-stop emphasis and
+  // the rest fade back. Every other tab redraws these markers plain.
+  const showingResupply = activeTab === 'resupply';
+  const optionIds = showingResupply ? new Set(allResupplyOptionIds()) : null;
+  const pickedIds = showingResupply ? selectedResupplyIds() : null;
+
   const waypoints = activeTrail().waypoints ?? [];
   waypoints.forEach(wp => {
     const km = wp.totalDistance ?? 0; // active-direction km
     const type = wp.type ?? 'waypoint';
     const icon = waypointIcon(type);
     const isSelected = isStop(km);
-    const className = `waypoint-marker ${type}${isSelected ? ' is-stop' : ''}`;
+    const isOption = optionIds !== null && wp.id !== undefined && optionIds.has(wp.id);
+    const isPicked = isOption && pickedIds!.has(wp.id!);
+    const className = `waypoint-marker ${type}${isSelected || isPicked ? ' is-stop' : ''}`;
     const divIcon = L.divIcon({
       className: '',
       html: `<div class="${escapeHtml(className)}" title="${escapeHtml(wp.name)}">${icon}</div>`,
@@ -309,6 +442,7 @@ function drawWaypointMarkers(): void {
       iconAnchor: [11, 11],
     });
     const marker = L.marker([wp.lat ?? 0, wp.lon ?? 0], { icon: divIcon });
+    if (isOption && !isPicked) marker.setOpacity(0.4);
     marker.on('click', () => toggleStop(km, wp.name ?? 'Stop'));
     marker.addTo(map!);
     waypointMarkers.push({ marker, waypoint: wp });
@@ -587,28 +721,32 @@ function renderDayList(): void {
   renderWaterCarrySection();
 }
 
+/**
+ * The Days-tab summary of the resupply plan.
+ *
+ * Deliberately only a summary: the legs themselves live in the Resupply tab's
+ * datasheet, and both read the same cached legs so the two can never disagree.
+ */
 function renderResupplySection(): void {
   const section = document.getElementById('resupply-section');
   const body = document.getElementById('resupply-body');
   if (!section || !body) return;
 
-  const waypoints = activeTrail().waypoints ?? [];
-  const analysis = analyzeResupply(waypoints, activeTrail().track.totalDistance);
-
-  if (!analysis.hasResupplyData) {
+  if (resupplyGroups().length === 0) {
     section.hidden = true;
     return;
   }
   section.hidden = false;
 
-  body.innerHTML = analysis.gaps.map(g => {
-    const warn = g.isLong ? ' gap-warn' : ' gap-ok';
-    const badge = g.isLong ? ' ⚠️ LONG' : '';
-    return `<div class="gap-item">
-      <span class="${warn}">🍎${badge}</span>
-      <span>${escapeHtml(g.fromName)} → ${escapeHtml(g.toName)}: ${g.distanceKm} km (~${g.estimatedDays}d)</span>
-    </div>`;
-  }).join('');
+  const summary = summariseResupplyLegs(resupplyLegs());
+  const line = summary.hasData ? resupplySummaryText(summary) : 'No resupply stops ticked.';
+  body.innerHTML = `<div class="gap-item">
+      <span class="gap-ok">🍎</span>
+      <span>${escapeHtml(line)}</span>
+    </div>
+    <button type="button" class="resupply-edit" id="resupply-edit-link">Edit in the Resupply tab</button>`;
+
+  document.getElementById('resupply-edit-link')?.addEventListener('click', () => switchTab('resupply'));
 }
 
 function renderWaterCarrySection(): void {
@@ -681,6 +819,87 @@ function renderStopList(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Left panel — Resupply tab
+// ---------------------------------------------------------------------------
+
+/** The groups the filter box leaves on screen. Filtering never changes a tick. */
+function filteredResupplyGroups(): ResupplyOptionGroup[] {
+  const needle = resupplyFilter.trim().toLowerCase();
+  if (!needle) return resupplyGroups();
+
+  const matches: ResupplyOptionGroup[] = [];
+  for (const group of resupplyGroups()) {
+    // A turn-off's name matching keeps everything reachable from it, which is
+    // the point of searching for "Monarch Pass".
+    if (group.label && group.label.toLowerCase().includes(needle)) {
+      matches.push(group);
+      continue;
+    }
+    const options = group.options.filter(option => option.name.toLowerCase().includes(needle));
+    if (options.length > 0) matches.push({ ...group, options });
+  }
+  return matches;
+}
+
+function renderResupplyList(): void {
+  const container = document.getElementById('resupply-list');
+  const count = document.getElementById('resupply-count');
+  if (!container) return;
+
+  const groups = resupplyGroups();
+  const picked = selectedResupplyIds();
+  const total = groups.reduce((n, group) => n + group.options.length, 0);
+  // Counted over the options the trail actually has, so ids left over from an
+  // older build of it are never reported as ticked.
+  const tickedCount = groups.reduce(
+    (n, group) => n + group.options.filter(option => picked.has(option.id)).length,
+    0
+  );
+  if (count) count.textContent = `${tickedCount} of ${total} selected`;
+
+  if (total === 0) {
+    container.innerHTML = '<p class="days-empty">This trail has no resupply points.</p>';
+    return;
+  }
+
+  const visible = filteredResupplyGroups();
+  if (visible.length === 0) {
+    container.innerHTML = '<p class="days-empty">No resupply points match.</p>';
+    return;
+  }
+
+  container.innerHTML = visible.map(group => {
+    const header = group.label
+      ? `<div class="resupply-group-header">⤴ ${escapeHtml(group.label)} · km ${group.km.toFixed(1)}</div>`
+      : '';
+    const rows = group.options.map(option => renderResupplyRow(option, picked)).join('');
+    return `<div class="resupply-group">${header}${rows}</div>`;
+  }).join('');
+}
+
+function renderResupplyRow(option: ResupplyOption, picked: ReadonlySet<string>): string {
+  const checked = picked.has(option.id);
+  const inputId = `resupply-opt-${option.id}`;
+  const parts = [accessSummary(option)];
+  if (option.description) parts.push(firstSentence(option.description));
+  if (option.acceptsBoxes) parts.push('accepts boxes');
+  const sub = parts.filter(part => part !== '').join(' · ');
+
+  return `<div class="resupply-row${checked ? ' is-picked' : ''}" data-id="${escapeHtml(option.id)}">
+    <div class="resupply-line">
+      <input type="checkbox" class="resupply-check" id="${escapeHtml(inputId)}"
+        data-option-id="${escapeHtml(option.id)}"${checked ? ' checked' : ''} />
+      <label class="resupply-label" for="${escapeHtml(inputId)}">
+        <span class="resupply-icon" title="${escapeHtml(waypointTypeLabel(option.type))}">${waypointIcon(baseWaypointType(option.type))}</span>
+        <span class="resupply-name">${escapeHtml(option.name)}</span>
+        <span class="resupply-km">${option.km.toFixed(1)} km</span>
+      </label>
+    </div>
+    ${sub ? `<div class="resupply-sub">${escapeHtml(sub)}</div>` : ''}
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
 // Right panel — Datasheet
 // ---------------------------------------------------------------------------
 
@@ -749,6 +968,64 @@ function renderDayDatasheet(day: ComputedDay | null): void {
   body.innerHTML = rows.join('');
 }
 
+/**
+ * The resupply plan as a table of carries: one row per leg, trail start to first
+ * stop, stop to stop, last stop to trail end.
+ */
+function renderResupplyDatasheet(): void {
+  const title = document.getElementById('datasheet-title');
+  const subtitle = document.getElementById('datasheet-subtitle');
+  const body = document.getElementById('datasheet-body');
+  if (!title || !subtitle || !body) return;
+
+  title.textContent = 'Resupply plan';
+
+  const legs = resupplyLegs();
+  const summary = summariseResupplyLegs(legs);
+
+  if (!summary.hasData) {
+    subtitle.textContent = '';
+    body.innerHTML = resupplyGroups().length === 0
+      ? '<p class="days-empty">This trail has no resupply points.</p>'
+      : '<p class="days-empty">No resupply stops ticked — tick the ones you plan to use.</p>';
+    return;
+  }
+
+  subtitle.textContent = resupplySummaryText(summary);
+
+  // The arrival day only means anything once the camp plan has stops and a date
+  // to count them from; without both the column would be a row of dashes.
+  const showArrive = activeStops().length > 0 && planState.startDate !== null;
+
+  const header = ['#', 'From → To', 'Distance', 'Ascent', 'Descent', 'Est. days', 'Food']
+    .concat(showArrive ? ['Arrive'] : [])
+    .map(label => `<th>${escapeHtml(label)}</th>`)
+    .join('');
+
+  const rows = legs.map((leg, i) => {
+    const arrive = leg.arrival
+      ? `Day ${leg.arrival.day}${leg.arrival.date ? ` (${formatShortDate(leg.arrival.date)})` : ''}`
+      : '—';
+    return `<tr class="resupply-leg${leg.isLong ? ' is-long' : ''}">
+      <td>${i + 1}</td>
+      <td class="rs-route">${escapeHtml(leg.fromName)} → ${escapeHtml(leg.toName)}</td>
+      <td>${leg.distanceKm.toFixed(1)} km</td>
+      <td>+${leg.ascentM} m</td>
+      <td>-${leg.descentM} m</td>
+      <td class="${leg.isLong ? 'gap-warn' : ''}">${leg.estimatedDays}${leg.isLong ? ' ⚠️' : ''}</td>
+      <td>${leg.food.weightKg.toFixed(1)} kg</td>
+      ${showArrive ? `<td>${escapeHtml(arrive)}</td>` : ''}
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `<div class="ds-table-wrap">
+    <table class="resupply-table">
+      <thead><tr>${header}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
 // ---------------------------------------------------------------------------
 // Interaction
 // ---------------------------------------------------------------------------
@@ -789,6 +1066,38 @@ function toggleStop(km: number, name: string): void {
 
   scheduleSave();
   renderAll();
+}
+
+/**
+ * Tick or untick one resupply option.
+ *
+ * The stored value is always an explicit list, so the first tick of a fresh
+ * plan starts from "everything" (what the page is currently showing) rather
+ * than from nothing. Ids the trail no longer has drop out here, which is the
+ * only place a stale selection is ever pruned.
+ */
+function toggleResupply(id: string): void {
+  const picked = selectedResupplyIds();
+  if (picked.has(id)) picked.delete(id);
+  else picked.add(id);
+  planState.resupplyStops = allResupplyOptionIds().filter(optionId => picked.has(optionId));
+
+  scheduleSave();
+  renderAll();
+}
+
+function setAllResupply(all: boolean): void {
+  planState.resupplyStops = all ? allResupplyOptionIds() : [];
+  scheduleSave();
+  renderAll();
+}
+
+/** Centre the map on a resupply option, so the list and the map stay in step. */
+function panToResupply(id: string): void {
+  if (!map) return;
+  const wp = (activeTrail().waypoints ?? []).find(w => w.id === id);
+  if (!wp) return;
+  map.panTo([wp.lat ?? 0, wp.lon ?? 0]);
 }
 
 function setDirection(dir: PlanDirection): void {
@@ -859,17 +1168,27 @@ function initCollapsibles(): void {
 // Tab switching
 // ---------------------------------------------------------------------------
 
+/**
+ * Switch the left panel, and re-render everything.
+ *
+ * `renderAll()` rather than just the new tab's list: the right-hand datasheet
+ * and the map markers both depend on which tab is showing, so a partial render
+ * would leave the resupply table and the day table disagreeing about what is on
+ * screen. `selectedDayIndex` is untouched, so Days comes back as it was left.
+ */
+function switchTab(tab: PlanTab): void {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', (b as HTMLElement).dataset.tab === tab)
+  );
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+  renderAll();
+}
+
 function initTabs(): void {
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = (btn as HTMLElement).dataset.tab as 'days' | 'stops';
-      activeTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.getElementById(`tab-${tab}`)?.classList.add('active');
-      if (tab === 'stops') renderStopList();
-    });
+    btn.addEventListener('click', () => switchTab((btn as HTMLElement).dataset.tab as PlanTab));
   });
 }
 
@@ -886,9 +1205,14 @@ function renderAll(): void {
   }
   renderDayList();
   if (activeTab === 'stops') renderStopList();
+  if (activeTab === 'resupply') renderResupplyList();
 
-  const selectedDay = selectedDayIndex !== null ? currentDays[selectedDayIndex] ?? null : null;
-  renderDayDatasheet(selectedDay);
+  if (activeTab === 'resupply') {
+    renderResupplyDatasheet();
+  } else {
+    const selectedDay = selectedDayIndex !== null ? currentDays[selectedDayIndex] ?? null : null;
+    renderDayDatasheet(selectedDay);
+  }
 
   redrawMapLayers();
   drawElevationProfile();
@@ -942,6 +1266,41 @@ function initStopsFilter(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Resupply tab controls
+// ---------------------------------------------------------------------------
+
+/**
+ * Delegated from `#resupply-list`, which survives every re-render — the rows
+ * inside it do not.
+ */
+function initResupplyControls(): void {
+  const list = document.getElementById('resupply-list');
+  if (list) {
+    list.addEventListener('change', event => {
+      const input = (event.target as HTMLElement | null)?.closest?.('input.resupply-check');
+      const id = (input as HTMLInputElement | null)?.dataset.optionId;
+      if (id) toggleResupply(id);
+    });
+    // A click anywhere on the row brings the place onto the map, so ticking an
+    // option also shows you where it is.
+    list.addEventListener('click', event => {
+      const row = (event.target as HTMLElement | null)?.closest?.('.resupply-row');
+      const id = (row as HTMLElement | null)?.dataset.id;
+      if (id) panToResupply(id);
+    });
+  }
+
+  document.getElementById('resupply-all')?.addEventListener('click', () => setAllResupply(true));
+  document.getElementById('resupply-none')?.addEventListener('click', () => setAllResupply(false));
+
+  const filter = document.getElementById('resupply-filter') as HTMLInputElement | null;
+  filter?.addEventListener('input', () => {
+    resupplyFilter = filter.value;
+    renderResupplyList();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
 
@@ -981,11 +1340,19 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
     planState = { name: `My ${trail.config.shortName ?? trail.config.name} plan`, startDate: null, stops: [] };
   }
 
+  // Module state outlives a boot (`my-plan.html` can reboot with another trail),
+  // so the per-trail caches are cleared here rather than only on a direction flip.
+  reversedTrail = null;
+  resetResupplyCaches();
+  activeTab = 'days';
+  resupplyFilter = '';
+
   refreshActiveStops();
   initMap();
   initHeader();
   initTabs();
   initStopsFilter();
+  initResupplyControls();
   initCollapsibles();
   setupElevationHover();
 

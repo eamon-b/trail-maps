@@ -17,6 +17,12 @@ function isValidPlanState(data: unknown): data is PlanState {
   if (!Array.isArray(obj.stops)) return false;
   // direction is optional (absent = NOBO); reject anything but the two enum values
   if (obj.direction !== undefined && obj.direction !== 'NOBO' && obj.direction !== 'SOBO') return false;
+  // resupplyStops is optional (absent = every option ticked); when present it is
+  // a list of waypoint ids, so anything else is a hand-edited or stale record.
+  if (obj.resupplyStops !== undefined) {
+    if (!Array.isArray(obj.resupplyStops)) return false;
+    if (obj.resupplyStops.some(id => typeof id !== 'string')) return false;
+  }
   return true;
 }
 

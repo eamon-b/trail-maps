@@ -136,7 +136,18 @@ export function MapPane() {
   // Alternates/side trips live on the trail JSON but sit behind the loose
   // index signature on TrailJson, so widen to the map's structural shapes.
   const alternates = trail.alternates as MapVariant[] | undefined;
-  const sideTrips = trail.sideTrips as MapVariant[] | undefined;
+  // Termini ride in the same array as the side trips (they leave the trail and
+  // do not come back); `type` is what tells them apart, and an older asset that
+  // predates the category simply has none.
+  const allSideTrips = trail.sideTrips as MapVariant[] | undefined;
+  const sideTrips = useMemo(
+    () => (allSideTrips ?? []).filter((v) => v.type !== 'terminus'),
+    [allSideTrips],
+  );
+  const termini = useMemo(
+    () => (allSideTrips ?? []).filter((v) => v.type === 'terminus'),
+    [allSideTrips],
+  );
   const waypoints = trail.waypoints as MapWaypoint[];
   // OSM points of interest, already filtered by the global settings-store
   // filter (duplicates of curated waypoints and switched-off categories gone).
@@ -170,8 +181,9 @@ export function MapPane() {
     };
     add(alternates, 'alternate');
     add(sideTrips, 'side-trip');
+    add(termini, 'terminus');
     return map;
-  }, [alternates, sideTrips]);
+  }, [alternates, sideTrips, termini]);
 
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const selectedVariant = selectedVariantId ? variantsById.get(selectedVariantId) : undefined;
@@ -330,6 +342,7 @@ export function MapPane() {
           breaks={routeBreaks}
           alternates={alternates}
           sideTrips={sideTrips}
+          termini={termini}
           waypoints={waypoints}
           pois={pois}
           currentPosition={position}
@@ -403,6 +416,7 @@ export function MapPane() {
         <TrackLegend
           hasAlternates={hasDrawableVariant(alternates)}
           hasSideTrips={hasDrawableVariant(sideTrips)}
+          hasTermini={hasDrawableVariant(termini)}
           hasPois={pois.length > 0}
         />
       )}

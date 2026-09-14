@@ -5,6 +5,7 @@ import type * as Leaflet from 'leaflet';
 import { findNearestByDistance } from '@lib/track-geometry';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { routeBreakCrossings, splitAtRouteBreaks } from '@lib/route-breaks';
+import { buildPointIndex, type PointIndex } from '@lib/point-index';
 import type { RouteBreak } from '@lib/trail-types';
 import { getDirectionLabel as directionLabelFor } from '@lib/plan-direction';
 import {
@@ -112,7 +113,12 @@ interface VariantPoint {
 
 interface RouteVariant {
   name: string;
-  type: 'alternate' | 'side-trip';
+  /**
+   * A `terminus` is an alternative start or finish: one junction on the main
+   * line (`startDistance`, at `points[0]`) and a free end where an `endpoint`
+   * waypoint sits. It travels in `sideTrips` alongside the ordinary spurs.
+   */
+  type: 'alternate' | 'side-trip' | 'terminus';
   distance?: number;
   startDistance?: number;
   endDistance?: number;
@@ -199,6 +205,17 @@ let mainRoutePolyline: L.Polyline | null = null;
 let routeBreakPolylines: L.Polyline[] = [];
 let trackPoints: TrackPoint[] = [];
 let displayPoints: TrackPoint[] = [];
+// Nearest-point lookup over `displayPoints`, for the map's hover readout. A
+// long trail's display copy is tens of thousands of points and mousemove fires
+// on every pixel, so the scan this replaced was the one O(n) thing on the
+// pointer's path. Rebuilt by `setDisplayPoints`, never assigned elsewhere.
+let displayPointIndex: PointIndex<TrackPoint> = buildPointIndex([]);
+
+/** Point the map line, and its hover index, at a trail's display copy. */
+function setDisplayPoints(points: TrackPoint[]): void {
+  displayPoints = points;
+  displayPointIndex = buildPointIndex(displayPoints);
+}
 let maxDistance = 0;
 let waypointMarkers: Array<{ marker: L.Marker; waypoint: Waypoint; index: number }> = [];
 let offTrailMarkers: L.Marker[] = [];
@@ -441,7 +458,8 @@ function getTypeClass(type?: string): string {
     'beach': 'type-beach',
     'poi': 'type-poi',
     'resupply': 'type-resupply',
-    'endpoint': 'type-endpoint'
+    'endpoint': 'type-endpoint',
+    'terminus': 'type-terminus'
   };
   // A turn-off takes the colour of the place it serves, plus `type-access`,
   // which outlines the chip. So the colour says what kind of place and the
@@ -989,7 +1007,8 @@ function initMap(trail: Trail): void {
 
     drawMainRoute(trail);
     drawAlternates(trail.alternates || []);
-    drawSideTrips(trail.sideTrips || []);
+    drawSideTrips((trail.sideTrips || []).filter(t => t.type !== 'terminus'));
+    drawTermini((trail.sideTrips || []).filter(t => t.type === 'terminus'));
     drawWaypointMarkers(trail.waypoints || []);
     drawOffTrailWaypointMarkers(trail.offTrailWaypoints || []);
     drawPoiMarkers();
@@ -1013,12 +1032,20 @@ function initMap(trail: Trail): void {
 }
 
 function drawMainRoute(trail: Trail): void {
-  displayPoints = trail.track.displayPoints || trail.track.points;
+  setDisplayPoints(trail.track.displayPoints || trail.track.points);
   if (!displayPoints || displayPoints.length === 0) return;
 
   // A trail with route breaks is several lines, not one. Leaflet joins a flat
   // coordinate list up, so handing it one would draw Cook Strait as trail —
   // which is exactly what the single polyline here used to do.
+  //
+  // Left on the default SVG renderer on purpose, even though a long trail now
+  // hands this 20,000+ points: Polyline's default `smoothFactor` of 1 runs
+  // Douglas-Peucker in *screen pixels* on every reprojection, so the path the
+  // browser actually gets never has more vertices than the zoom can resolve.
+  // Canvas would trade that for redrawing the whole line per frame while
+  // panning, and take the route-break dashes and the hover/click handlers into
+  // less well-trodden code for no measured gain.
   mainRoutePolyline = L.polyline(mainRouteLatLngs(trail), {
     color: '#2196F3',
     weight: 3,
@@ -1094,6 +1121,48 @@ function drawSideTrips(sideTrips: RouteVariant[]): void {
       weight: 3,
       opacity: 0.8
     }).addTo(map!).bindPopup(`<strong>${escapeHtml(trip.name)}</strong><br>${escapeHtml(trip.distance)} km`);
+  });
+}
+
+/**
+ * The free end of a terminus: the `endpoint` waypoint the generator puts there,
+ * or failing that the last waypoint on the line.
+ */
+function terminusEndWaypoint(terminus: RouteVariant): VariantWaypoint | undefined {
+  const wps = terminus.waypoints ?? [];
+  return wps.find(wp => wp.type === 'endpoint') ?? wps[wps.length - 1];
+}
+
+/**
+ * Alternative trail ends. Drawn in the alternate's orange — they are a way of
+ * walking the trail, not a detour off it — but dashed and finished with a
+ * marker at the free end, because the one thing that has to read off the map is
+ * that this line stops somewhere rather than coming back.
+ */
+function drawTermini(termini: RouteVariant[]): void {
+  termini.forEach(terminus => {
+    if (!terminus.points || terminus.points.length === 0) return;
+
+    const latLngs = terminus.points.map(p => [p.lat, p.lon] as [number, number]);
+    const endWaypoint = terminusEndWaypoint(terminus);
+    const endName = endWaypoint?.name ?? terminus.name;
+    L.polyline(latLngs, {
+      color: '#ff9800',
+      weight: 3,
+      opacity: 0.9,
+      dashArray: '10 6'
+    }).addTo(map!).bindPopup(
+      `<strong>${escapeHtml(terminus.name)}</strong><br>Alternative trail end` +
+        `<br>${escapeHtml(terminus.distance)} km to ${escapeHtml(endName)}`
+    );
+
+    const end = terminus.points[terminus.points.length - 1];
+    L.marker([end.lat, end.lon], {
+      icon: createWaypointIcon(endWaypoint?.type ?? 'endpoint')
+    }).addTo(map!).bindPopup(
+      `<strong>${escapeHtml(endName)}</strong><br>End of ${escapeHtml(terminus.name)}` +
+        `<br>${escapeHtml(terminus.distance)} km from the junction`
+    );
   });
 }
 
@@ -1188,19 +1257,9 @@ function handleMapHover(e: L.LeafletMouseEvent): void {
   if (!displayPoints.length) return;
 
   const latlng = e.latlng;
-  let nearestPoint: TrackPoint | null = null;
-  let minDist = Infinity;
-
-  for (const p of displayPoints) {
-    const dist = Math.sqrt(
-      Math.pow(p.lat - latlng.lat, 2) +
-      Math.pow(p.lon - latlng.lng, 2)
-    );
-    if (dist < minDist) {
-      minDist = dist;
-      nearestPoint = p;
-    }
-  }
+  // Same nearest point the old full scan returned (degree-space distance,
+  // earliest point on a tie) — just found through the grid index instead.
+  const nearestPoint = displayPointIndex.nearest(latlng.lat, latlng.lng);
 
   if (nearestPoint) {
     showElevationHover(nearestPoint.dist, nearestPoint.ele);
@@ -1369,6 +1428,33 @@ function junctionOffsetNote(offsetMeters: number | undefined): string {
   return ` (\u2248${(offsetMeters / 1000).toFixed(1)} km from the trail)`;
 }
 
+/** CSS class that colours a variant's rows and detail panel. */
+function variantTypeClass(type: RouteVariant['type']): string {
+  if (type === 'side-trip') return 'type-side-trip';
+  if (type === 'terminus') return 'type-terminus';
+  return 'type-alternate';
+}
+
+/** Short label for a variant's class, as shown on its table row badge. */
+function variantTypeLabel(type: RouteVariant['type']): string {
+  if (type === 'side-trip') return 'Side Trip';
+  if (type === 'terminus') return 'Terminus';
+  return 'Alternate';
+}
+
+/**
+ * "Ends at Chief Mountain, 10.4 km from the junction" — the sentence that
+ * replaces an alternate's "Rejoins at" for a route whose far end is the point
+ * of it. Falls back to the variant's own name when no endpoint waypoint came
+ * with the track.
+ */
+function terminusEndsLine(terminus: RouteVariant): string {
+  const endName = terminusEndWaypoint(terminus)?.name ?? terminus.name;
+  const km = terminus.distance;
+  const distancePart = typeof km === 'number' ? `, ${km.toFixed(1)} km from the junction` : '';
+  return `Ends at ${endName}${distancePart}`;
+}
+
 /**
  * Row identity for a variant. The position carries the identity and the name is
  * only there to keep the key readable: alternates are routinely unnamed or
@@ -1429,7 +1515,7 @@ function expandVariantDetail(variantKey: string, variant: RouteVariant): void {
   const headerCells = document.querySelectorAll('.waypoints-table thead th');
   const colspan = headerCells.length || 9;
 
-  const typeClass = variant.type === 'side-trip' ? 'type-side-trip' : '';
+  const typeClass = variantTypeClass(variant.type);
   const wps = variant.waypoints || [];
 
   // Stats line. A variant that hangs off another alternate says so: its km are
@@ -1437,7 +1523,7 @@ function expandVariantDetail(variantKey: string, variant: RouteVariant): void {
   // looking for a junction on the main route that is not there.
   const branchLabel = variant.parent
     ? `Branches off ${escapeHtml(variant.parent.name)} at:`
-    : `${variant.type === 'alternate' ? 'Branches' : 'Starts'} at:`;
+    : `${variant.type === 'side-trip' ? 'Starts' : 'Branches'} at:`;
   let statsHtml = `<span class="variant-stat"><strong>Distance:</strong> ${variant.distance} km</span>`;
   statsHtml += `<span class="variant-stat"><strong>Elevation:</strong> +${variant.elevation?.ascent || 0}m / -${variant.elevation?.descent || 0}m</span>`;
   if (variant.startDistance != null) {
@@ -1445,6 +1531,11 @@ function expandVariantDetail(variantKey: string, variant: RouteVariant): void {
   }
   if (variant.type === 'alternate' && variant.endDistance != null) {
     statsHtml += `<span class="variant-stat"><strong>Rejoins:</strong> ${variant.endDistance.toFixed(1)} km${junctionOffsetNote(variant.endOffsetMeters)}</span>`;
+  }
+  // A terminus has no rejoin to quote; what a reader needs instead is where the
+  // line actually stops and how far away that is.
+  if (variant.type === 'terminus') {
+    statsHtml += `<span class="variant-stat">${escapeHtml(terminusEndsLine(variant))}</span>`;
   }
 
   // Waypoints table
@@ -2008,10 +2099,10 @@ function renderWaypoints(waypoints: Waypoint[] | undefined, alternates: RouteVar
   }
 
   function renderVariantRow(variant: RouteVariant, variantIndex: number, isStart: boolean): string {
-    const typeClass = variant.type === 'alternate' ? 'type-alternate' : 'type-side-trip';
-    const typeLabel = variant.type === 'alternate' ? 'Alternate' : 'Side Trip';
+    const typeClass = variantTypeClass(variant.type);
+    const typeLabel = variantTypeLabel(variant.type);
     const actionLabel = isStart
-      ? (variant.type === 'alternate' ? 'branches' : 'starts')
+      ? (variant.type === 'side-trip' ? 'starts' : 'branches')
       : 'rejoins';
     const distance = isStart ? variant.startDistance : variant.endDistance;
 
@@ -2435,7 +2526,7 @@ function refreshDisplay(trail: Trail): void {
   expandedVariantWaypointIndex = null;
   expandedOffTrailIndex = null;
   trackPoints = trail.track.points;
-  displayPoints = trail.track.displayPoints || trail.track.points;
+  setDisplayPoints(trail.track.displayPoints || trail.track.points);
   maxDistance = trail.track.totalDistance;
 
   updateStats(trail);

@@ -22,7 +22,7 @@
  */
 
 import { formatDistance, formatElevation, type DistanceUnit } from '@lib/format-distance';
-import type { MapVariant, VariantKind } from './map-geojson';
+import { terminusEndWaypoint, type MapVariant, type VariantKind } from './map-geojson';
 
 /** A variant resolved for display, with only the fields the card can show. */
 export interface VariantInfo {
@@ -45,6 +45,8 @@ export interface VariantInfo {
   parentName?: string;
   /** Waypoints carried on the variant itself (0 when it has none). */
   waypointCount: number;
+  /** Name of a terminus's free end, when the track brought an endpoint waypoint. */
+  endName?: string;
 }
 
 /**
@@ -62,7 +64,9 @@ function offsetNote(offsetM: number | undefined, unit: DistanceUnit): string {
 
 /** Human label for the class of variant. */
 export function variantKindLabel(kind: VariantKind): string {
-  return kind === 'alternate' ? 'Alternate' : 'Side trip';
+  if (kind === 'alternate') return 'Alternate';
+  if (kind === 'terminus') return 'Alternative terminus';
+  return 'Side trip';
 }
 
 /** Only finite numbers are worth showing; the bundled data omits unknown fields. */
@@ -88,6 +92,7 @@ export function variantInfo(variant: MapVariant, kind: VariantKind, id: string):
     endOffsetM: num(variant.endOffsetMeters),
     parentName: variant.parent?.name?.trim() || undefined,
     waypointCount: variant.waypoints?.length ?? 0,
+    endName: kind === 'terminus' ? terminusEndWaypoint(variant)?.name?.trim() || undefined : undefined,
   };
 }
 
@@ -109,6 +114,7 @@ export function variantElevationLine(info: VariantInfo, unit: DistanceUnit): str
 /**
  * Where the variant meets the trail:
  *   "Branches at 54.8 km · Rejoins at 58.8 km"        (alternate with a rejoin)
+ *   "Branches at 0.0 km · Ends at Chief Mountain (10.4 km)"  (a terminus)
  *   "Branches at 215.8 km · out-and-back"             (spur, or start == end)
  *   "Branches at 909.5 km"                            (leaves the trail for good)
  *   "Branches off Gila High Route at 1247.0 km"       (hangs off an alternate)
@@ -120,6 +126,13 @@ export function variantJunctionLine(info: VariantInfo, unit: DistanceUnit): stri
   const branchLabel = info.parentName ? `Branches off ${info.parentName}` : 'Branches';
   const branches =
     `${branchLabel} at ${formatDistance(info.startKm, unit)}` + offsetNote(info.startOffsetM, unit);
+  // A terminus has no rejoin to quote and is not walked back: what it ends at,
+  // and how far from the junction that is, is the whole read-out.
+  if (info.kind === 'terminus') {
+    const where = info.endName ?? 'the trail end';
+    const howFar = info.distanceKm != null ? ` (${formatDistance(info.distanceKm, unit)})` : '';
+    return `${branches} · Ends at ${where}${howFar}`;
+  }
   if (info.endKm != null && info.endKm !== info.startKm) {
     const rejoins =
       `Rejoins at ${formatDistance(info.endKm, unit)}` + offsetNote(info.endOffsetM, unit);

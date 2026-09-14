@@ -47,16 +47,30 @@ Each track's name is matched (case-insensitively) against these patterns:
 | --- | --- |
 | `Alt` (as a word), `Alternative`, `Detour`, `Reroute` | an **alternate route** |
 | `ST:` (at the start), `Spur`, `Side Trip` | a **side trip** |
+| `Terminus:` (at the start), or `Terminus` as a word | an **alternative trail end** |
 | anything else | part of the **main route** |
 
-So a file with `Day 1`, `Day 2`, `Day 3`, `Side trip: Summit` and
-`Alt: High route` produces a three-leg main route, one side trip and one
-alternate.
+The first pattern that matches wins, in the order of the table: a track already
+named as an alternate stays an alternate even if the word "terminus" appears in
+it too.
+
+So a file with `Day 1`, `Day 2`, `Day 3`, `Side trip: Summit`,
+`Alt: High route` and `Terminus: Chief Mountain` produces a three-leg main
+route, one side trip, one alternate and one alternative trail end.
 
 Alternates and side trips are drawn on the map and listed as variants. They
 are matched to the main route at both ends (within 500 m) so the guide can
 show where they leave and rejoin; waypoints within 200 m of a variant are
 attributed to it.
+
+An **alternative trail end** is a different way of starting or finishing the
+walk — a second border monument, a different trailhead — where the far end is
+deliberately nowhere near the route. It is matched at one end only: whichever
+end of the track is nearer the main route becomes the junction (so the track
+works drawn either way round), the other end is left where it is, and no rejoin
+is looked for. Put a waypoint of `<type>endpoint</type>` at the far end and the
+guide names the place the route ends at. It is listed with the side trips and
+marked *Terminus*, and it adds nothing to the trail's distance.
 
 ### 4. Main-route tracks are chained into one line
 
@@ -318,7 +332,8 @@ and worth [setting by hand](#fixing-a-category).
 
 - One `<trk>` for the whole walk, or one per day/leg — both work.
 - Name side trips and alternates so they are recognised (`Side trip: …`,
-  `Alt: …`).
+  `Alt: …`), and an alternative start or finish as `Terminus: …` with an
+  `endpoint` waypoint at its far end.
 - Put useful waypoints in the file, and give each one a category the importer
   can see, so the plan calculator can use it. Any of these works: a `<type>`
   element, a prefix on the name (`C:`, `W:`, `T:`…), or simply a descriptive

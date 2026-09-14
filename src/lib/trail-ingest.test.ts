@@ -11,6 +11,7 @@ import { resolve } from 'path';
 import { parseGpx } from './gpx-parser';
 import {
   buildTrail,
+  calculateAdaptiveTolerance,
   flattenGpx,
   type BuildTrailDiagnostics,
   type ParsedGpxResult,
@@ -570,5 +571,38 @@ describe('waypoint km across a route break', () => {
     // 400 m up across the water, if it counted.
     expect(far.totalAscent).toBe(20);
     expect(far.ascent).toBe(0);
+  });
+});
+
+describe('calculateAdaptiveTolerance', () => {
+  /** A dense north-running track: `count` points at `spacingMeters` apart. */
+  function densePoints(count: number, spacingMeters: number) {
+    const degPerMeter = 1 / 111320;
+    return Array.from({ length: count }, (_, i) => ({
+      lat: -25 + i * spacingMeters * degPerMeter,
+      lon: 133,
+    }));
+  }
+
+  it('never exceeds the 25 m ceiling, however long and dense the track', () => {
+    // Roughly the CDT: ~86,000 points over ~4,800 km. Uncapped, the formula
+    // returns ~263 m here, which is 1.5 km between display points.
+    const cdtish = densePoints(86_000, 56);
+    expect(calculateAdaptiveTolerance(cdtish, 3000, 4827)).toBeLessThanOrEqual(25);
+
+    // And an absurd trail stays capped rather than growing further.
+    expect(calculateAdaptiveTolerance(densePoints(500_000, 50), 3000, 25_000)).toBe(25);
+  });
+
+  it('leaves a short track on the uncapped formula', () => {
+    const points = densePoints(12_000, 10);
+    const tolerance = calculateAdaptiveTolerance(points, 3000, 120);
+
+    expect(tolerance).toBeGreaterThan(5);
+    expect(tolerance).toBeLessThan(25);
+  });
+
+  it('still returns zero when the track is already under target', () => {
+    expect(calculateAdaptiveTolerance(densePoints(100, 10), 3000, 1)).toBe(0);
   });
 });

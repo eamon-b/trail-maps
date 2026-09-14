@@ -31,17 +31,24 @@ export interface TrackLegendProps {
   hasAlternates?: boolean;
   /** Show the side-trips row (trail has at least one drawn side trip). */
   hasSideTrips?: boolean;
+  /** Show the alternative-termini row (trail has at least one drawn terminus). */
+  hasTermini?: boolean;
   /** Show the points-of-interest row (POI markers are currently drawn). */
   hasPois?: boolean;
 }
 
-export function TrackLegend({ hasAlternates, hasSideTrips, hasPois }: TrackLegendProps) {
+export function TrackLegend({
+  hasAlternates,
+  hasSideTrips,
+  hasTermini,
+  hasPois,
+}: TrackLegendProps) {
   const { colors, isDark } = useTheme();
   const track = trackColors(isDark ? 'dark' : 'light');
 
   // With no variant class and no POIs there is nothing to disambiguate — the
   // only thing on the map is the trail, so the key would be noise.
-  if (!hasAlternates && !hasSideTrips && !hasPois) return null;
+  if (!hasAlternates && !hasSideTrips && !hasTermini && !hasPois) return null;
 
   return (
     <View
@@ -59,6 +66,12 @@ export function TrackLegend({ hasAlternates, hasSideTrips, hasPois }: TrackLegen
       )}
       {hasSideTrips && (
         <LegendRow color={track.sideTrip} stroke="dotted" label="Side trip" />
+      )}
+      {hasTermini && (
+        // The alternate's violet: a terminus is a way of walking the trail, and
+        // the map tells the two apart by stroke (dash-dot) and by the badge at
+        // the free end.
+        <LegendRow color={track.alternate} stroke="dashed" label="Alternative terminus" />
       )}
       {hasPois && <LegendDot label="Points of interest" />}
     </View>

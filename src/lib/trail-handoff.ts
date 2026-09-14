@@ -227,6 +227,9 @@ export function parseHandoffJson(text: string): ProcessedTrail {
     waypoints: trail.waypoints.map((w, i) => readWaypoint(w, i, trailId)),
     offTrailWaypoints: arrayOrEmpty<OffTrailWaypoint>(trail.offTrailWaypoints),
     alternates: arrayOrEmpty<RouteVariant>(trail.alternates),
+    // Side trips and alternative termini share this array (told apart by
+    // `type`), so a handoff written by a newer web build carries its termini
+    // across untouched and an older one simply has none.
     sideTrips: arrayOrEmpty<RouteVariant>(trail.sideTrips),
     climate: isRecord(trail.climate) ? (trail.climate as Record<string, unknown>) : null,
     climateLocations: Array.isArray(trail.climateLocations)
@@ -266,7 +269,8 @@ export function handoffImportReport(trail: ProcessedTrail): ImportReport {
     tracksFound: 1,
     tracksCombined: 1,
     alternateCount: trail.alternates.length,
-    sideTripCount: trail.sideTrips.length,
+    sideTripCount: trail.sideTrips.filter(v => v.type !== 'terminus').length,
+    terminusCount: trail.sideTrips.filter(v => v.type === 'terminus').length,
     gapWarnings: [],
     // What the app will actually show: a POI flagged as duplicating a curated
     // waypoint is drawn nowhere, so counting it here would promise markers that

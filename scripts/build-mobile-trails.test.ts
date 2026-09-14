@@ -166,11 +166,37 @@ describe('processTrail route breaks', () => {
     expect(out.track.points.length).toBeGreaterThan(4500);
   });
 
-  it('leaves displayIndex alone — displayPoints are not re-simplified', () => {
+  it('leaves a display copy that is already under budget untouched', () => {
     const out = processTrail(brokenTrail());
 
     expect(out.track.displayPoints).toHaveLength(4);
     expect(out.track.breaks?.[0].displayIndex).toBe(2);
+  });
+
+  it('thins an oversized display copy to the budget and re-anchors displayIndex', () => {
+    // Since the tolerance ceiling went into buildTrail, a long trail's web
+    // displayPoints is tens of thousands of points. The phone draws a line no
+    // coarser than its own `points` array, and no finer.
+    const source = brokenTrail();
+    source.track.displayPoints = source.track.points;
+    source.track.breaks[0].displayIndex = source.track.breaks[0].index;
+    const firstPointAfterBreak = source.track.points[source.track.breaks[0].index];
+
+    const out = processTrail(source);
+
+    expect(out.track.displayPoints.length).toBeLessThanOrEqual(5500);
+    expect(out.track.displayPoints.length).toBeGreaterThan(4500);
+
+    // The break still falls between the two stretches, not part-way along one.
+    const displayIndex = out.track.breaks![0].displayIndex;
+    expect(out.track.displayPoints[displayIndex].lat).toBeCloseTo(firstPointAfterBreak.lat, 6);
+    expect(out.track.displayPoints[displayIndex - 1].lat).toBeCloseTo(-41.7999, 3);
+
+    // ...and `index` is still anchored to its own array, independently.
+    expect(out.track.points[out.track.breaks![0].index].lat).toBeCloseTo(
+      firstPointAfterBreak.lat,
+      6
+    );
   });
 
   it('emits no breaks field for a continuous trail', () => {

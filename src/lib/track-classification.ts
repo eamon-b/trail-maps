@@ -22,6 +22,10 @@ export const TRACK_CLASSIFICATION_DEFAULTS: Required<
 > = {
   alternatePatterns: ['\\bAlt\\b', 'Alternative', 'Detour', 'Reroute'],
   sideTripPatterns: ['^ST:', 'Spur', 'Side Trip', 'side trip'],
+  // An alternative trail end. The `Terminus: <name>` spelling is what the
+  // curated generators emit; the looser word match is there for a user's own
+  // file, which has no naming convention to configure.
+  terminusPatterns: ['^Terminus:', '\\bTerminus\\b'],
   fallbackToLongest: true,
 };
 
@@ -71,7 +75,12 @@ function matchesPatterns(name: string, patterns: string[]): boolean {
  * 2. mainRoutePatterns - tracks matching these are marked as 'main'
  * 3. alternatePatterns - tracks matching these are marked as 'alternate'
  * 4. sideTripPatterns - tracks matching these are marked as 'sideTrip'
- * 5. Remaining tracks are 'unclassified'
+ * 5. terminusPatterns - tracks matching these are marked as 'terminus'
+ * 6. Remaining tracks are 'unclassified'
+ *
+ * Terminus comes last on purpose: a file that already says a track is an
+ * `Alternate:` keeps that class even if the name also carries the word, so
+ * adding the category cannot reclassify anything a trail already configured.
  *
  * If no main tracks are found and fallbackToLongest is true (default),
  * the longest unclassified track becomes the main track.
@@ -84,6 +93,7 @@ export function classifyTracks(
     mainTracks: [],
     alternateTracks: [],
     sideTripTracks: [],
+    terminusTracks: [],
     ignoredTracks: [],
     unclassifiedTracks: [],
   };
@@ -95,6 +105,7 @@ export function classifyTracks(
   // Merge config with defaults
   const alternatePatterns = config.alternatePatterns ?? TRACK_CLASSIFICATION_DEFAULTS.alternatePatterns;
   const sideTripPatterns = config.sideTripPatterns ?? TRACK_CLASSIFICATION_DEFAULTS.sideTripPatterns;
+  const terminusPatterns = config.terminusPatterns ?? TRACK_CLASSIFICATION_DEFAULTS.terminusPatterns;
   const fallbackToLongest = config.fallbackToLongest ?? TRACK_CLASSIFICATION_DEFAULTS.fallbackToLongest;
   const mainRoutePatterns = config.mainRoutePatterns ?? [];
   const ignorePatterns = config.ignorePatterns ?? [];
@@ -122,6 +133,9 @@ export function classifyTracks(
     } else if (matchesPatterns(track.name, sideTripPatterns)) {
       classifiedTrack.type = 'sideTrip';
       result.sideTripTracks.push(classifiedTrack);
+    } else if (matchesPatterns(track.name, terminusPatterns)) {
+      classifiedTrack.type = 'terminus';
+      result.terminusTracks.push(classifiedTrack);
     } else {
       result.unclassifiedTracks.push(classifiedTrack);
     }

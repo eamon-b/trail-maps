@@ -249,6 +249,13 @@ export function mapInk(theme: MapTheme): MapInk {
 export const TRACK_DASH = {
   alternate: [3, 1.5],
   sideTrip: [1, 1.5],
+  /**
+   * An alternative trail end. It shares the alternate's violet - it is a way of
+   * walking the trail, not a detour off it - and is told apart by a dash-dot
+   * stroke, the line that reads as "this one runs out" rather than "this one
+   * comes back".
+   */
+  terminus: [3, 1.5, 0.5, 1.5],
 } as const;
 
 /**
@@ -286,6 +293,7 @@ export const TRACK_WIDTHS = {
   mainCasing: 7,
   alternate: 3,
   sideTrip: 3,
+  terminus: 3,
 } as const;
 
 interface MapLogEvent {

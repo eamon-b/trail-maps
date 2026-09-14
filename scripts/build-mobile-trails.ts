@@ -33,6 +33,14 @@ const MOBILE_TRAILS_DIR = path.join(__dirname, '..', 'mobile', 'assets', 'trails
 // Target ~5000 points for main track (enough for elevation profile + ~200m resolution on 1000km trail)
 const TARGET_POINTS = 5000;
 
+// The same budget again for the map line. The web's `displayPoints` is no
+// longer a fixed ~3,000 whatever the trail's length — since the tolerance
+// ceiling went into `calculateAdaptiveTolerance`, a long trail keeps as many as
+// it needs (the CDT ~21,000) so its line stops reading as straight chords. The
+// phone should not pay for that in bundle size: what it draws only has to be no
+// coarser than the `points` array it already ships, which is this budget.
+const DISPLAY_TARGET_POINTS = TARGET_POINTS;
+
 // Name corrections for index.json
 const NAME_FIXES: Record<string, { name: string; shortName: string }> = {
   bibbulmun: { name: 'Bibbulmun Track', shortName: 'Bibb' },
@@ -83,8 +91,8 @@ function truncateWaypoint(wp: Record<string, unknown>): Record<string, unknown> 
 }
 
 /**
- * Simplify the main track to the phone's point budget, without letting
- * Douglas-Peucker walk across a route break.
+ * Simplify a copy of the main track to the phone's point budget, without
+ * letting Douglas-Peucker walk across a route break.
  *
  * Simplifying the whole array at once drops the points either side of a break —
  * the endpoints of two separate lines — and joins them with one that crosses the
@@ -96,17 +104,24 @@ function truncateWaypoint(wp: Record<string, unknown>): Record<string, unknown> 
  * The budget is shared out by point count, so a 1,100-point stretch and a
  * 35,000-point one are thinned by roughly the same factor rather than to the
  * same size.
+ *
+ * `which` names the array being thinned, because the breaks are indexed
+ * separately into each (`index` into `points`, `displayIndex` into
+ * `displayPoints`). The returned `boundaries` are the new first-point-after-a-
+ * break offsets, one per break, for the caller to write back into whichever
+ * field it just re-anchored.
  */
 function simplifyMainTrack(
   points: TrackPoint[],
   breaks: RouteBreak[] | undefined,
-  targetPoints: number
-): { points: TrackPoint[]; breaks?: RouteBreak[] } {
+  targetPoints: number,
+  which: 'points' | 'displayPoints'
+): { points: TrackPoint[]; boundaries: number[] } {
   if (!breaks || breaks.length === 0) {
-    return { points: simplifyToTarget(points, targetPoints) };
+    return { points: simplifyToTarget(points, targetPoints), boundaries: [] };
   }
 
-  const stretches = splitAtRouteBreaks(points, breaks, 'points');
+  const stretches = splitAtRouteBreaks(points, breaks, which);
   const simplified = stretches.map(stretch =>
     // At least two points, or the stretch stops being a line at all.
     simplifyToTarget(stretch, Math.max(2, Math.round((targetPoints * stretch.length) / points.length)))
@@ -114,12 +129,12 @@ function simplifyMainTrack(
 
   const rebuilt = simplified.flat();
   let offset = 0;
-  const rebuiltBreaks = simplified.slice(0, -1).map((stretch, i) => {
+  const boundaries = simplified.slice(0, -1).map(stretch => {
     offset += stretch.length;
-    return { ...breaks[i], index: offset };
+    return offset;
   });
 
-  return { points: rebuilt, breaks: rebuiltBreaks };
+  return { points: rebuilt, boundaries };
 }
 
 /**
@@ -174,12 +189,35 @@ export function processTrail(trail: TrailJson): TrailJson {
   );
 
   // Simplify main track points
-  const simplifiedMain = simplifyMainTrack(annotatedPoints, trail.track.breaks, TARGET_POINTS);
+  const simplifiedMain = simplifyMainTrack(
+    annotatedPoints,
+    trail.track.breaks,
+    TARGET_POINTS,
+    'points',
+  );
   const simplifiedPoints = simplifiedMain.points;
+
+  // And the map line to its own budget. Thinning it keeps a subsequence of a
+  // subsequence of the full-resolution track, so the cumulative climb below
+  // still lines up point for point.
+  const simplifiedDisplay = simplifyMainTrack(
+    trail.track.displayPoints,
+    trail.track.breaks,
+    DISPLAY_TARGET_POINTS,
+    'displayPoints',
+  );
 
   // Custom-route stats are measured over displayPoints, which is thinned too, so
   // it needs the same numbers — read off the full-resolution points it came from.
-  const displayPoints = copyCumulativeOntoSubset(annotatedPoints, trail.track.displayPoints);
+  const displayPoints = copyCumulativeOntoSubset(annotatedPoints, simplifiedDisplay.points);
+
+  // Both index fields now point into arrays this script rebuilt, so each break
+  // carries the offset from whichever pass re-anchored it.
+  const breaks = trail.track.breaks?.map((routeBreak, i) => ({
+    ...routeBreak,
+    index: simplifiedMain.boundaries[i] ?? routeBreak.index,
+    displayIndex: simplifiedDisplay.boundaries[i] ?? routeBreak.displayIndex,
+  }));
 
   // Process alternates
   const alternates = (trail.alternates ?? []).map((alt) => {
@@ -204,14 +242,13 @@ export function processTrail(trail: TrailJson): TrailJson {
     config: trail.config,
     track: {
       points: truncatePoints(simplifiedPoints),
-      // displayPoints are only rounded (and given the cumulative pair above),
-      // never re-simplified, so every break's displayIndex survives this step
-      // untouched. `index` does not — it is re-anchored by simplifyMainTrack.
+      // Both arrays are thinned here, so both of a break's indices are
+      // re-anchored to the result (see `breaks` above).
       displayPoints: truncatePoints(displayPoints),
       totalDistance: Math.round(trail.track.totalDistance * 10) / 10,
       totalAscent: Math.round(trail.track.totalAscent),
       totalDescent: Math.round(trail.track.totalDescent),
-      ...(simplifiedMain.breaks ? { breaks: simplifiedMain.breaks } : {}),
+      ...(breaks ? { breaks } : {}),
     },
     waypoints: trail.waypoints.map(truncateWaypoint),
     alternates,

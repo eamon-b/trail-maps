@@ -163,6 +163,7 @@ function renderStats(ui: Elements, result: ImportGpxResult): void {
   }
   if (report.alternateCount > 0) rows.push(['Alternates', String(report.alternateCount)]);
   if (report.sideTripCount > 0) rows.push(['Side trips', String(report.sideTripCount)]);
+  if (report.terminusCount > 0) rows.push(['Alternative termini', String(report.terminusCount)]);
   // A backfilled profile is real data, but not *the walker's* data — say so here
   // rather than letting "present" imply the GPX carried it.
   rows.push([

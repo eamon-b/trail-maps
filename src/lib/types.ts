@@ -257,6 +257,23 @@ export interface TrackClassificationConfig {
   mainRoutePatterns?: string[];     // Regex patterns for main route tracks
   alternatePatterns?: string[];     // Regex patterns for alternate routes
   sideTripPatterns?: string[];      // Regex patterns for side trips/spurs
+  /**
+   * Regex patterns for *alternative trail ends* - a route that branches off the
+   * main line at one end and whose other end is deliberately free, somewhere
+   * off the route entirely (the CDT's Chief Mountain border crossing, the
+   * Columbus and Antelope Wells southern termini).
+   *
+   * They are not alternates: an alternate rejoins, and asking
+   * `findVariantJunctions` for a rejoin that does not exist leaves one junction
+   * undefined and the UI showing a route with no endpoint. They are not side
+   * trips either: you do not walk back.
+   *
+   * Matched *after* `alternatePatterns` and `sideTripPatterns`, so an
+   * explicitly-named alternate whose name happens to contain "terminus" keeps
+   * the class its file gave it. Defaults to
+   * {@link TRACK_CLASSIFICATION_DEFAULTS.terminusPatterns}.
+   */
+  terminusPatterns?: string[];      // Regex patterns for alternative trail ends
   ignorePatterns?: string[];        // Regex patterns to ignore completely
   fallbackToLongest?: boolean;      // Use longest track if no patterns match (default: true)
   /** The main tracks are consecutive walkable stretches - see {@link RouteStretchConfig}. */
@@ -301,7 +318,7 @@ export interface RouteStretchConfig {
 
 export interface ClassifiedTrack {
   name: string;
-  type: 'main' | 'alternate' | 'sideTrip' | 'ignored' | 'unclassified';
+  type: 'main' | 'alternate' | 'sideTrip' | 'terminus' | 'ignored' | 'unclassified';
   points: GpxPoint[];
   distance: number;
 }
@@ -310,6 +327,8 @@ export interface TrackClassificationResult {
   mainTracks: ClassifiedTrack[];
   alternateTracks: ClassifiedTrack[];
   sideTripTracks: ClassifiedTrack[];
+  /** Alternative trail ends - see {@link TrackClassificationConfig.terminusPatterns}. */
+  terminusTracks: ClassifiedTrack[];
   ignoredTracks: ClassifiedTrack[];
   unclassifiedTracks: ClassifiedTrack[];
 }

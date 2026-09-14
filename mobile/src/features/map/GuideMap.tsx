@@ -81,6 +81,7 @@ import {
   buildRouteBreakCollection,
   buildTrailLine,
   buildUserLocationGeoJSON,
+  buildTerminusEndCollection,
   buildVariantCollection,
   buildWaypointCollection,
   trailCameraBounds,
@@ -227,6 +228,11 @@ export interface GuideMapProps {
   alternates?: MapVariant[];
   /** Side trips (dashed overlay). */
   sideTrips?: MapVariant[];
+  /**
+   * Alternative trail ends: one junction on the main line, and a free end where
+   * a marker is drawn. Dash-dot in the alternate's violet.
+   */
+  termini?: MapVariant[];
   /** Waypoint markers. */
   waypoints?: MapWaypoint[];
   /**
@@ -390,8 +396,17 @@ function buildTrackStyles(theme: MapTheme) {
       lineCap: 'round' as const,
       lineJoin: 'round' as const,
     },
+    terminus: {
+      lineColor: track.alternate,
+      lineWidth: trackWidthExpression(TRACK_WIDTHS.terminus) as unknown as number,
+      lineOpacity: 1,
+      lineCap: 'butt' as const,
+      lineJoin: 'round' as const,
+      lineDasharray: TRACK_DASH.terminus as unknown as number[],
+    },
     alternateHighlight: variantHighlightStyle(track.alternate, TRACK_WIDTHS.alternate),
     sideTripHighlight: variantHighlightStyle(track.sideTrip, TRACK_WIDTHS.sideTrip),
+    terminusHighlight: variantHighlightStyle(track.alternate, TRACK_WIDTHS.terminus),
   };
 }
 
@@ -417,6 +432,7 @@ export const GuideMap = memo(
       breaks,
       alternates,
       sideTrips,
+      termini,
       waypoints,
       pois,
       currentPosition,
@@ -557,6 +573,14 @@ export const GuideMap = memo(
     const sideTripsCollection = useMemo(
       () => buildVariantCollection(sideTrips ?? [], 'side-trip'),
       [sideTrips],
+    );
+    const terminiCollection = useMemo(
+      () => buildVariantCollection(termini ?? [], 'terminus'),
+      [termini],
+    );
+    const terminusEndCollection = useMemo(
+      () => buildTerminusEndCollection(termini ?? []),
+      [termini],
     );
     const highlightFilter = useMemo(
       () => selectedVariantFilter(selectedVariantId),
@@ -748,6 +772,20 @@ export const GuideMap = memo(
         iconIgnorePlacement: true,
       }),
       [],
+    );
+
+    // The badge at a terminus's free end. A plain white disc ringed in the
+    // alternate violet: same shape as a waypoint marker (this *is* a place), same
+    // hue as the line it finishes, and no favorite/water branches, because it is
+    // drawn from the variant rather than from the waypoint list.
+    const terminusEndCircleStyle = useMemo(
+      () => ({
+        circleRadius: MARKER_RADIUS,
+        circleColor: ink.badge,
+        circleStrokeColor: trackColors(mapTheme).alternate,
+        circleStrokeWidth: MARKER_RING_WIDTH,
+      }),
+      [ink.badge, mapTheme],
     );
 
     // The POI badge: the same white disc, drawn smaller and ringed thinner in
@@ -991,6 +1029,44 @@ export const GuideMap = memo(
               style={trackStyles.sideTripHighlight}
             />
             <Layer type="line" id="guide-side-trips-layer" style={trackStyles.sideTrip} />
+          </GeoJSONSource>
+        )}
+
+        {/* Alternative trail ends: dash-dot violet, and a badge at the free end
+            so the line visibly stops somewhere rather than running out */}
+        {terminiCollection.features.length > 0 && (
+          <GeoJSONSource
+            id="guide-termini"
+            data={terminiCollection}
+            onPress={builderMode ? undefined : handleVariantPress}
+            hitbox={VARIANT_HITBOX}
+          >
+            <Layer type="line" id="guide-termini-hit" style={trackStyles.variantHit} />
+            <Layer
+              type="line"
+              id="guide-termini-highlight"
+              filter={highlightFilter}
+              style={trackStyles.terminusHighlight}
+            />
+            <Layer type="line" id="guide-termini-layer" style={trackStyles.terminus} />
+          </GeoJSONSource>
+        )}
+
+        {terminusEndCollection.features.length > 0 && (
+          <GeoJSONSource
+            id="guide-terminus-ends"
+            data={terminusEndCollection}
+            onPress={builderMode ? undefined : handleVariantPress}
+            hitbox={WAYPOINT_HITBOX}
+          >
+            <Layer type="circle" id="guide-terminus-ends-circles" style={terminusEndCircleStyle} />
+            <Layer type="symbol" id="guide-terminus-ends-icons" style={waypointIconStyle} />
+            <Layer
+              type="symbol"
+              id="guide-terminus-ends-labels"
+              minzoom={WAYPOINT_LABEL_MIN_ZOOM}
+              style={labelStyle}
+            />
           </GeoJSONSource>
         )}
 

@@ -161,13 +161,21 @@ export interface VariantWaypoint extends WaypointAccess {
 }
 
 /**
- * An alternate route or side trip hanging off the main route. After `findVariantJunctions` the variant reads
- * forwards: `points[0]` is the branch point (`startDistance`) and the last point
- * the rejoin, whichever way the source track was drawn.
+ * An alternate route, side trip or alternative terminus hanging off the main
+ * route. After `findVariantJunctions` the variant reads forwards: `points[0]`
+ * is the branch point (`startDistance`) and the last point the rejoin,
+ * whichever way the source track was drawn.
+ *
+ * A `terminus` is an alternative start or finish - the CDT's Chief Mountain
+ * border crossing, or the Columbus and Antelope Wells southern ends. It has
+ * exactly one junction (`startDistance`, at `points[0]`) and its last point is
+ * the free end, 10-31 km off the route, where an `endpoint` waypoint sits. It
+ * never gets an `endDistance`: there is nothing to rejoin, and a search for one
+ * is what used to leave these routes drawn with no endpoint at all.
  */
 export interface RouteVariant {
   name: string;
-  type: 'alternate' | 'side-trip';
+  type: 'alternate' | 'side-trip' | 'terminus';
   points: { lat: number; lon: number; ele: number }[];
   distance: number;
   elevation: { ascent: number; descent: number };
@@ -314,6 +322,17 @@ export interface ProcessedTrail {
   waypoints: EnrichedWaypoint[];
   offTrailWaypoints: OffTrailWaypoint[];
   alternates: RouteVariant[];
+  /**
+   * Side trips *and* alternative termini, distinguished by `type`.
+   *
+   * One array rather than two because every consumer of a variant - the map
+   * lines, the camera bounds, the datasheet, direction reversal, the mobile
+   * slimmer, the handoff parser - wants "the routes that leave the trail and do
+   * not come back", and a terminus is exactly that plus a name for its far end.
+   * A separate `termini` array would have meant teaching all of them a third
+   * list, and every older asset would have been missing it. Anything that needs
+   * to tell them apart reads `type === 'terminus'`.
+   */
   sideTrips: RouteVariant[];
   climate: Record<string, unknown> | null;
   climateLocations: ClimateLocationConfig[] | null;

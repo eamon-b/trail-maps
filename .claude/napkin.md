@@ -51,6 +51,9 @@
 9. **[2026-08-22] `src/lib/trail-ingest.ts` is the single GPX→trail pipeline for the build, web imports and mobile imports — any edit can silently change `public/data/generated/*.json` (gitignored, so git won't show it)**
    Do instead: before touching `trail-ingest`/`gpx-parser`/`track-simplify`, run `npm run build:trails && npm run build:mobile-trails` and copy `public/data/generated` + `mobile/assets/trails` aside; after, `diff -r` both (only `dataVersion` may differ) and `git diff data/waypoint-ids.json` must be empty. Imported ids are `u_<base36>`/`uw_<base36>` and are path-validated — never loosen `IMPORTED_ID_PATTERN` (ids become file names under `Paths.document/trails/`).
 
+10. **[2026-09-14] A curated trail's map line is `track.displayPoints`, built to a fixed 3,000-point target whatever the length — on the CDT that is a ~265 m Douglas-Peucker tolerance (1.5 km/point, web AND phone), while alternates are drawn from their full points, so a long trail's main line looks like straight chords next to accurate alternates. The generator's GPX is not the cause (max 3.9 m deviation); the 100,000-point cap that forces it to decimate is `GPX_MAX_POINT_COUNT`, meant for user uploads but inherited by `build-trails.ts` because it passes no `limits`**
+   Do instead: judge the line from `displayPoints` spacing, not the GPX; fix is a tolerance ceiling in `calculateAdaptiveTolerance` (25 m leaves the three short trails byte-identical, CDT → ~21k display points, +2.2 MB JSON) plus, if mobile size matters, a mobile-side displayPoints clamp; for more GPX headroom pass `{ maxPointCount: 0 }` from the build script.
+
 ## User Directives
 1. **[2026-07-29] Use Opus subagents regularly**
    Do instead: delegate well-scoped implementation chunks to parallel `model: "opus"` Agent calls; keep orchestration/integration in the main session.

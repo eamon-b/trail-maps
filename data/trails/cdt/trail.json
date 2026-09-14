@@ -18,13 +18,17 @@
     "sideTripPatterns": [
       "^Side trip: "
     ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
     "ignorePatterns": [
       "^Connector: ",
       "^Walked 2018: "
     ],
-    "fallbackToLongest": false
+    "fallbackToLongest": false,
+    "maxJunctionDistanceMeters": 2000
   },
-  "description": "The Continental Divide Trail, from the Waterton Lake border monument to the Crazy Cook monument on the Mexican border. 3029 miles measured along the full-resolution centreline; 3038 miles in the CDTC's own published mileage, which is what the \"Official mile N\" waypoints are numbered in. Built from the CDTC's FeatureServer centreline with Copernicus GLO-30 elevation on every vertex. The track in this file is decimated to 3000 miles to fit the point budget, so distances computed from it run about 0.97% short of both.",
+  "description": "The Continental Divide Trail, from the Waterton Lake border monument to the Crazy Cook monument on the Mexican border. 3029 miles measured along the full-resolution centreline; 3040 miles in the CDTC's own published mileage, which is what the \"Official mile N\" waypoints are numbered in. Built from the CDTC's FeatureServer centreline with Copernicus GLO-30 elevation on every vertex. The track in this file is decimated to 2997 miles to fit the point budget, so distances computed from it run about 1.06% short of both.",
   "direction": {
     "default": "SOBO",
     "reversed": "NOBO"

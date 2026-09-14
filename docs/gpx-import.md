@@ -47,16 +47,30 @@ Each track's name is matched (case-insensitively) against these patterns:
 | --- | --- |
 | `Alt` (as a word), `Alternative`, `Detour`, `Reroute` | an **alternate route** |
 | `ST:` (at the start), `Spur`, `Side Trip` | a **side trip** |
+| `Terminus:` (at the start), or `Terminus` as a word | an **alternative trail end** |
 | anything else | part of the **main route** |
 
-So a file with `Day 1`, `Day 2`, `Day 3`, `Side trip: Summit` and
-`Alt: High route` produces a three-leg main route, one side trip and one
-alternate.
+The first pattern that matches wins, in the order of the table: a track already
+named as an alternate stays an alternate even if the word "terminus" appears in
+it too.
+
+So a file with `Day 1`, `Day 2`, `Day 3`, `Side trip: Summit`,
+`Alt: High route` and `Terminus: Chief Mountain` produces a three-leg main
+route, one side trip, one alternate and one alternative trail end.
 
 Alternates and side trips are drawn on the map and listed as variants. They
 are matched to the main route at both ends (within 500 m) so the guide can
 show where they leave and rejoin; waypoints within 200 m of a variant are
 attributed to it.
+
+An **alternative trail end** is a different way of starting or finishing the
+walk — a second border monument, a different trailhead — where the far end is
+deliberately nowhere near the route. It is matched at one end only: whichever
+end of the track is nearer the main route becomes the junction (so the track
+works drawn either way round), the other end is left where it is, and no rejoin
+is looked for. Put a waypoint of `<type>endpoint</type>` at the far end and the
+guide names the place the route ends at. It is listed with the side trips and
+marked *Terminus*, and it adds nothing to the trail's distance.
 
 ### 4. Main-route tracks are chained into one line
 
@@ -218,6 +232,45 @@ though the guide never writes them itself: a waypoint typed `spring`,
 `creek`, `tap` or `bore` counts as water, and one typed `supermarket`,
 `store`, `roadhouse` or `post-office` counts as resupply.
 
+#### Places you leave the trail to reach
+
+A town is often nowhere near the route: you leave at a road crossing and
+hitch, walk or catch a shuttle the rest of the way. A file can say so, by
+hanging a few extra fields off the waypoint that marks the turn-off:
+
+```xml
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:tn="https://tracknotes.app/xmlschemas/gpx-waypoint/1">
+  <wpt lat="38.4967" lon="-106.3244">
+    <name>Salida</name>
+    <type>town-access</type>
+    <extensions>
+      <tn:offTrailKm>35.4</tn:offTrailKm>
+      <tn:accessMode>hitch</tn:accessMode>
+      <tn:acceptsBoxes>true</tn:acceptsBoxes>
+      <tn:accessName>Monarch Pass (US 50)</tn:accessName>
+    </extensions>
+  </wpt>
+</gpx>
+```
+
+- `offTrailKm` is how far the place is from the route, one way, in kilometres.
+- `accessMode` is how you cover that distance: `foot`, `hitch`, `shuttle`,
+  `boat`, or `on-trail` for somewhere the route runs straight through.
+- `acceptsBoxes` says whether the place will hold a resupply box you post
+  ahead.
+- `accessName` names the turn-off itself, which is what a list of options at
+  one road end is grouped under.
+
+All four are optional and all four are read on import, so a hand-made file
+can describe a turn-off exactly the way the built-in trails do. They have to
+be direct children of `<extensions>`; anything the guide cannot read — an
+`accessMode` that is not one of the five words, an `offTrailKm` that is not a
+number — is left off rather than guessed at, and another program's
+`<extensions>` block is ignored. Nothing here changes the route: a turn-off
+is a point on the trail at the kilometre where you leave it, not the place
+itself.
+
 ### 10. Identity
 
 - The trail id is `u_` followed by a hash of the file's contents, so
@@ -279,7 +332,8 @@ and worth [setting by hand](#fixing-a-category).
 
 - One `<trk>` for the whole walk, or one per day/leg — both work.
 - Name side trips and alternates so they are recognised (`Side trip: …`,
-  `Alt: …`).
+  `Alt: …`), and an alternative start or finish as `Terminus: …` with an
+  `endpoint` waypoint at its far end.
 - Put useful waypoints in the file, and give each one a category the importer
   can see, so the plan calculator can use it. Any of these works: a `<type>`
   element, a prefix on the name (`C:`, `W:`, `T:`…), or simply a descriptive

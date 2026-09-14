@@ -98,6 +98,12 @@ export interface ImportReport {
   tracksCombined: number;
   alternateCount: number;
   sideTripCount: number;
+  /**
+   * Alternative trail ends (`Terminus: <name>` tracks). They are carried inside
+   * `sideTrips` and told apart by `type`, so this counts them separately rather
+   * than folding them into `sideTripCount`.
+   */
+  terminusCount: number;
   /** Gaps between chained tracks — the route may be discontinuous here. */
   gapWarnings: CombineTracksWarning[];
   /**
@@ -240,6 +246,7 @@ export function importGpx(xmlText: string, options: ImportGpxOptions = {}): Impo
     tracksCombined: built.mainTracksCombined,
     alternateCount: built.alternateCount,
     sideTripCount: built.sideTripCount,
+    terminusCount: built.terminusCount,
     gapWarnings: built.gapWarnings,
     // A GPX file has no POIs; only the handoff branch can report any.
     poiCount: 0,

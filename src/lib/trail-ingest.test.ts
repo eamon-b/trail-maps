@@ -11,6 +11,7 @@ import { resolve } from 'path';
 import { parseGpx } from './gpx-parser';
 import {
   buildTrail,
+  calculateAdaptiveTolerance,
   flattenGpx,
   type BuildTrailDiagnostics,
   type ParsedGpxResult,
@@ -94,6 +95,43 @@ describe('buildTrail', () => {
     expect(trail.alternates[0].startDistance).toBeDefined();
     expect(trail.alternates[0].endDistance).toBeDefined();
     expect(trail.alternates[0].startDistance!).toBeLessThanOrEqual(trail.alternates[0].endDistance!);
+  });
+
+  it('carries the GPX off-trail access fields onto route and variant waypoints', () => {
+    const trail = buildTrail(load('waypoint-extensions'), {
+      config: config({
+        trackClassification: {
+          mainRoutePatterns: ['^Main'],
+          alternatePatterns: ['^Alt'],
+        },
+      }),
+    });
+
+    const salida = trail.waypoints.find(wp => wp.name === 'Salida')!;
+    expect(salida).toMatchObject({
+      type: 'town-access',
+      offTrailKm: 35.4,
+      accessMode: 'hitch',
+      acceptsBoxes: true,
+      accessName: 'Monarch Pass (US 50)',
+    });
+
+    // A waypoint the file says nothing about keeps no access keys at all, so
+    // the generated JSON for every existing trail is unchanged.
+    const garmin = trail.waypoints.find(wp => wp.name === 'Garmin Marker')!;
+    for (const field of ['offTrailKm', 'accessMode', 'acceptsBoxes', 'accessName']) {
+      expect(field in garmin).toBe(false);
+    }
+
+    const onAlternate = trail.alternates[0].waypoints!.find(
+      wp => wp.name === 'Mesopotamia Station'
+    )!;
+    expect(onAlternate).toMatchObject({
+      offTrailKm: 2.5,
+      accessMode: 'shuttle',
+      acceptsBoxes: true,
+      accessName: 'Rangitata road end',
+    });
   });
 
   it('reverses the route when reverseTrack is set', () => {
@@ -533,5 +571,38 @@ describe('waypoint km across a route break', () => {
     // 400 m up across the water, if it counted.
     expect(far.totalAscent).toBe(20);
     expect(far.ascent).toBe(0);
+  });
+});
+
+describe('calculateAdaptiveTolerance', () => {
+  /** A dense north-running track: `count` points at `spacingMeters` apart. */
+  function densePoints(count: number, spacingMeters: number) {
+    const degPerMeter = 1 / 111320;
+    return Array.from({ length: count }, (_, i) => ({
+      lat: -25 + i * spacingMeters * degPerMeter,
+      lon: 133,
+    }));
+  }
+
+  it('never exceeds the 25 m ceiling, however long and dense the track', () => {
+    // Roughly the CDT: ~86,000 points over ~4,800 km. Uncapped, the formula
+    // returns ~263 m here, which is 1.5 km between display points.
+    const cdtish = densePoints(86_000, 56);
+    expect(calculateAdaptiveTolerance(cdtish, 3000, 4827)).toBeLessThanOrEqual(25);
+
+    // And an absurd trail stays capped rather than growing further.
+    expect(calculateAdaptiveTolerance(densePoints(500_000, 50), 3000, 25_000)).toBe(25);
+  });
+
+  it('leaves a short track on the uncapped formula', () => {
+    const points = densePoints(12_000, 10);
+    const tolerance = calculateAdaptiveTolerance(points, 3000, 120);
+
+    expect(tolerance).toBeGreaterThan(5);
+    expect(tolerance).toBeLessThan(25);
+  });
+
+  it('still returns zero when the track is already under target', () => {
+    expect(calculateAdaptiveTolerance(densePoints(100, 10), 3000, 1)).toBe(0);
   });
 });

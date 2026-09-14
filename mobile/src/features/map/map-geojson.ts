@@ -42,8 +42,15 @@ export function trailCameraBounds(points: LatLon[]): CameraBounds | null {
   return [b.west, b.south, b.east, b.north];
 }
 
-/** Which class of variant a collection holds. Also the feature-id prefix. */
-export type VariantKind = 'alternate' | 'side-trip';
+/**
+ * Which class of variant a collection holds. Also the feature-id prefix.
+ *
+ * A `terminus` is an alternative start or finish - one junction on the main
+ * line and a far end that is deliberately off the route (the CDT's Chief
+ * Mountain crossing, Columbus, Antelope Wells). It arrives inside the trail's
+ * `sideTrips` array, told apart by the variant's own `type`.
+ */
+export type VariantKind = 'alternate' | 'side-trip' | 'terminus';
 
 /**
  * A route variant (alternate or side trip) with its own point list. Everything
@@ -62,8 +69,62 @@ export interface MapVariant {
   startDistance?: number;
   /** Km along the main track where it rejoins (absent for out-and-back spurs). */
   endDistance?: number;
+  /** How far the branch/rejoin ends really sit from what they attached to (m). */
+  startOffsetMeters?: number;
+  endOffsetMeters?: number;
+  /** The alternate this variant branches off, when it is not the main route. */
+  parent?: { name?: string };
   /** Waypoints that sit on the variant rather than the main track. */
   waypoints?: unknown[];
+}
+
+/** The waypoint fields a terminus's free end is read from. */
+interface TerminusEndWaypoint {
+  name?: string;
+  type?: string;
+}
+
+/**
+ * The free end of a terminus: the `endpoint` waypoint the generator places
+ * there, or failing that the last waypoint attached to the line.
+ */
+export function terminusEndWaypoint(variant: MapVariant): TerminusEndWaypoint | undefined {
+  const wps = (variant.waypoints ?? []) as TerminusEndWaypoint[];
+  return wps.find((wp) => wp?.type === 'endpoint') ?? wps[wps.length - 1];
+}
+
+/**
+ * Markers for the far end of each terminus - the one thing about these lines
+ * that has to read off the map is that they *stop* somewhere rather than
+ * rejoining. The point is the line's last coordinate (the ingest pass
+ * guarantees `points[0]` is the junction), and the label is the endpoint
+ * waypoint's name when the track brought one.
+ *
+ * `id` matches the line's feature id, so tapping the marker selects the same
+ * variant the line does.
+ */
+export function buildTerminusEndCollection(
+  termini: MapVariant[],
+): FeatureCollection<Point> {
+  const features = termini
+    .map((v, index) => ({ v, index }))
+    .filter(({ v }) => (v.points?.length ?? 0) >= 2)
+    .map(({ v, index }): Feature<Point> => {
+      const end = v.points![v.points!.length - 1];
+      const endWaypoint = terminusEndWaypoint(v);
+      return {
+        type: 'Feature',
+        id: `terminus-end-${index}`,
+        geometry: { type: 'Point', coordinates: [end.lon, end.lat] },
+        properties: {
+          id: variantFeatureId('terminus', index),
+          kind: 'terminus',
+          name: endWaypoint?.name ?? v.name ?? '',
+          icon: waypointIconName(endWaypoint?.type ?? 'endpoint'),
+        },
+      };
+    });
+  return { type: 'FeatureCollection', features };
 }
 
 /**

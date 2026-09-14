@@ -86,6 +86,43 @@ describe('direction field validation', () => {
   });
 });
 
+describe('resupplyStops field validation', () => {
+  it('round-trips a plan with a resupply selection', () => {
+    const state: PlanState = { ...validState, resupplyStops: ['w_12', 'w_40'] };
+    savePlanState('resupply-trail', state);
+    expect(loadPlanState('resupply-trail')).toEqual(state);
+  });
+
+  it('round-trips an empty selection, which is a real choice, not an absent one', () => {
+    const state: PlanState = { ...validState, resupplyStops: [] };
+    savePlanState('resupply-none', state);
+    expect(loadPlanState('resupply-none')?.resupplyStops).toEqual([]);
+  });
+
+  it('accepts a plan without resupplyStops (pre-selection plans = every option)', () => {
+    savePlanState('no-resupply', validState);
+    const loaded = loadPlanState('no-resupply');
+    expect(loaded).toEqual(validState);
+    expect(loaded?.resupplyStops).toBeUndefined();
+  });
+
+  it('rejects a resupplyStops array holding anything but ids', () => {
+    localStorage.setItem(
+      'trail-plan-bad-resupply',
+      JSON.stringify({ ...validState, resupplyStops: ['w_1', 7] }),
+    );
+    expect(loadPlanState('bad-resupply')).toBeNull();
+  });
+
+  it('rejects a non-array resupplyStops', () => {
+    localStorage.setItem(
+      'trail-plan-bad-resupply2',
+      JSON.stringify({ ...validState, resupplyStops: 'w_1' }),
+    );
+    expect(loadPlanState('bad-resupply2')).toBeNull();
+  });
+});
+
 describe('savePlanState error handling', () => {
   it('returns false on QuotaExceededError instead of silently swallowing it', () => {
     // Simulate localStorage being full

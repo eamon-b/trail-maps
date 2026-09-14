@@ -56,6 +56,7 @@
         <div id="left-tabs">
           <button class="tab-btn active" data-tab="days">Days</button>
           <button class="tab-btn" data-tab="stops">Stops</button>
+          <button class="tab-btn" data-tab="resupply">Resupply</button>
         </div>
 
         <!-- Days tab -->
@@ -87,6 +88,19 @@
             <input type="text" id="stops-filter" placeholder="Filter waypoints…" autocomplete="off" />
           </div>
           <div id="stops-list"></div>
+        </div>
+
+        <!-- Resupply tab -->
+        <div id="tab-resupply" class="tab-panel">
+          <div id="resupply-controls">
+            <div id="resupply-controls-row">
+              <span id="resupply-count"></span>
+              <button type="button" class="resupply-btn" id="resupply-all">All</button>
+              <button type="button" class="resupply-btn" id="resupply-none">None</button>
+            </div>
+            <input type="text" id="resupply-filter" placeholder="Filter resupply…" autocomplete="off" />
+          </div>
+          <div id="resupply-list"></div>
         </div>
       </div>
 

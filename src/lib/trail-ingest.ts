@@ -30,7 +30,13 @@ import {
   WAYPOINT_DEDUPE_DEFAULT_RADIUS_METERS,
   type DedupableWaypoint,
 } from './waypoint-dedupe';
-import type { CombineTracksWarning, GpxData, GpxPoint, TrackBreak } from './types';
+import type {
+  CombineTracksWarning,
+  GpxData,
+  GpxPoint,
+  TrackBreak,
+  WaypointAccess,
+} from './types';
 import type {
   EnrichedWaypoint,
   OffTrailWaypoint,
@@ -52,9 +58,18 @@ import type {
 //   users zoom out more. 500km normalizes so a 500km trail gets ~2x base tolerance.
 // - TOLERANCE_MULTIPLIER: Scales the logarithmic reduction factor. Higher values
 //   remove more points but may lose detail on sharp switchbacks.
+// - MAX_TOLERANCE_METERS: Ceiling on the result. Without one the formula above
+//   keeps raising the tolerance until a fixed 3,000-point target is met however
+//   long the trail is, which on the 4,827 km CDT meant a ~263 m tolerance and a
+//   display line at 1.5 km per point — visibly straight chords next to the
+//   alternates, which are drawn from their full points. 25 m is below what is
+//   perceptible at any zoom the map offers and leaves the shorter trails'
+//   display copies byte-identical (they never reach the ceiling); the long ones
+//   simply keep more points than the target, which is the intent.
 const MIN_TOLERANCE_METERS = 5;
 const DISTANCE_SCALE_FACTOR_KM = 500;
 const TOLERANCE_MULTIPLIER = 5;
+const MAX_TOLERANCE_METERS = 25;
 
 // Report main-route sections that double back on themselves for at least this
 // many km. Purely advisory: most are the official route (e.g. the Bibbulmun's
@@ -121,6 +136,24 @@ export interface FlattenGpxOptions {
 }
 
 /**
+ * Carry the optional off-trail access fields across a rebuild.
+ *
+ * `flattenGpx` and `enrichVariantWaypoints` construct their waypoints from an
+ * explicit field list rather than a spread, so the fields have to be copied by
+ * hand. Absent ones stay absent — writing `offTrailKm: undefined` would add a
+ * key to every waypoint of every trail, which JSON.stringify drops but
+ * structural comparisons (and reviewers reading a diff) do not.
+ */
+function waypointAccess(source: WaypointAccess): WaypointAccess {
+  const access: WaypointAccess = {};
+  if (source.offTrailKm !== undefined) access.offTrailKm = source.offTrailKm;
+  if (source.accessMode !== undefined) access.accessMode = source.accessMode;
+  if (source.acceptsBoxes !== undefined) access.acceptsBoxes = source.acceptsBoxes;
+  if (source.accessName !== undefined) access.accessName = source.accessName;
+  return access;
+}
+
+/**
  * Flatten a parsed {@link GpxData} into the shape {@link buildTrail} consumes.
  *
  * Semantics match the historical build-script parser:
@@ -159,6 +192,7 @@ export function flattenGpx(data: GpxData, options: FlattenGpxOptions = {}): Pars
       lon: wpt.lon,
       type: wpt.type || classification.type,
       description: wpt.desc || undefined,
+      ...waypointAccess(wpt),
     };
   });
 
@@ -174,6 +208,8 @@ interface MainRouteSelection {
   classificationSummary: string;
   alternateTracks: ParsedGpxTrack[];
   sideTripTracks: ParsedGpxTrack[];
+  /** Alternative trail ends (`Terminus: <name>`). */
+  terminusTracks: ParsedGpxTrack[];
   mainTrackCount: number;
   gapWarnings: CombineTracksWarning[];
   combinedNames: string[];
@@ -213,6 +249,7 @@ function selectMainRoute(
   if (classification.mainTracks.length > 0) parts.push(`${classification.mainTracks.length} main`);
   if (classification.alternateTracks.length > 0) parts.push(`${classification.alternateTracks.length} alternates`);
   if (classification.sideTripTracks.length > 0) parts.push(`${classification.sideTripTracks.length} side trips`);
+  if (classification.terminusTracks.length > 0) parts.push(`${classification.terminusTracks.length} termini`);
   if (classification.ignoredTracks.length > 0) parts.push(`${classification.ignoredTracks.length} ignored`);
   if (classification.unclassifiedTracks.length > 0) parts.push(`${classification.unclassifiedTracks.length} unclassified`);
   const classificationSummary = parts.length > 0 ? parts.join(', ') : 'no tracks';
@@ -225,11 +262,16 @@ function selectMainRoute(
     name: t.name,
     points: t.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: p.time })),
   }));
+  const terminusTracks: ParsedGpxTrack[] = classification.terminusTracks.map(t => ({
+    name: t.name,
+    points: t.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: p.time })),
+  }));
 
   const base = {
     classificationSummary,
     alternateTracks,
     sideTripTracks,
+    terminusTracks,
     mainTrackCount: classification.mainTracks.length,
   };
 
@@ -274,6 +316,9 @@ function selectMainRoute(
  * Uses a heuristic based on trail length and point density:
  * - More points relative to distance = higher tolerance needed
  * - Starts with a baseline and scales logarithmically
+ *
+ * The result is capped at {@link MAX_TOLERANCE_METERS}, so a long trail
+ * overshoots `targetPoints` rather than losing the shape of its line.
  */
 export function calculateAdaptiveTolerance(
   points: { lat: number; lon: number }[],
@@ -289,7 +334,10 @@ export function calculateAdaptiveTolerance(
   // and reduction ratio (more points to remove = higher tolerance)
   const scaleFactor = Math.log2(reductionRatio) * (1 + totalDistanceKm / DISTANCE_SCALE_FACTOR_KM);
 
-  return MIN_TOLERANCE_METERS + scaleFactor * TOLERANCE_MULTIPLIER;
+  return Math.min(
+    MIN_TOLERANCE_METERS + scaleFactor * TOLERANCE_MULTIPLIER,
+    MAX_TOLERANCE_METERS
+  );
 }
 
 /**
@@ -337,17 +385,133 @@ function findNearestTrackPoint(
 }
 
 /**
+ * How far a variant's end may sit from the route it branches off and still
+ * count as a junction, unless a trail raises it with
+ * `trackClassification.maxJunctionDistanceMeters`.
+ */
+export const DEFAULT_MAX_JUNCTION_DISTANCE_METERS = 500;
+
+/** Metres in a degree of latitude, for turning a tolerance into a bounding box. */
+const METERS_PER_DEGREE_LAT = 111320;
+
+/**
+ * A residual is only worth recording past the standard tolerance. An end
+ * inside 500 m is on the route for every purpose these pages have, so stamping
+ * an offset on it would rewrite every existing trail's variants for nothing.
+ */
+function junctionOffset(distanceFromTrack: number): number | undefined {
+  return distanceFromTrack > DEFAULT_MAX_JUNCTION_DISTANCE_METERS
+    ? Math.round(distanceFromTrack)
+    : undefined;
+}
+
+/**
+ * A variant's source track need not run the way the main route does (notably
+ * after a `reverseTrack` build, or when a CalTopo line was drawn from the far
+ * end). Normalise so the variant reads forwards: the junction pair is swapped so
+ * "Branches at: X km / Rejoins: Y km" has X before Y, and `points` is reversed
+ * so `points[0]` is always the branch point. Everything downstream relies on
+ * that invariant — variant waypoint km are `startDistance` plus the walk from
+ * `points[0]`, and a child alternate's km are measured along its parent from the
+ * same end — so the two must never be swapped independently. The ascent and
+ * descent were measured the way the line was drawn, so they trade places too.
+ *
+ * Returns whether it turned the variant round.
+ */
+function normaliseJunctionOrder(variant: RouteVariant): boolean {
+  if (
+    variant.startDistance === undefined ||
+    variant.endDistance === undefined ||
+    variant.startDistance <= variant.endDistance
+  ) {
+    return false;
+  }
+
+  [variant.startDistance, variant.endDistance] = [variant.endDistance, variant.startDistance];
+  [variant.startTrackIndex, variant.endTrackIndex] = [variant.endTrackIndex, variant.startTrackIndex];
+  if (variant.startOffsetMeters !== undefined || variant.endOffsetMeters !== undefined) {
+    [variant.startOffsetMeters, variant.endOffsetMeters] = [variant.endOffsetMeters, variant.startOffsetMeters];
+  }
+  variant.points = [...variant.points].reverse();
+  variant.elevation = { ascent: variant.elevation.descent, descent: variant.elevation.ascent };
+  return true;
+}
+
+/**
+ * Turn a terminus variant round so `points[0]` is the junction. The ascent and
+ * descent were measured the way the line was drawn, so they trade places too -
+ * the same bookkeeping {@link normaliseJunctionOrder} does for an alternate.
+ */
+function reverseVariantPoints(variant: RouteVariant): RouteVariant {
+  return {
+    ...variant,
+    points: [...variant.points].reverse(),
+    elevation: { ascent: variant.elevation.descent, descent: variant.elevation.ascent },
+  };
+}
+
+/**
+ * Attach an alternative trail end: exactly one junction, and never a search for
+ * a rejoin.
+ *
+ * A terminus branches off the main line at one end and stops somewhere else
+ * entirely - the CDT's Chief Mountain crossing is 10 km off the route, Antelope
+ * Wells 31 km. Run through the ordinary variant path, the free end's nearest
+ * main-route point is hundreds of times too far to be a junction, so
+ * `endDistance` stays undefined and every reader shows a route with no end.
+ * Here the far end is simply not asked about: `startDistance` is the junction,
+ * the last point is the terminus, and `endDistance` is deliberately absent.
+ *
+ * The generator promises the track is drawn junction-first, but a promise about
+ * the orientation of a line is exactly the kind of thing that comes out
+ * backwards, so whichever end is actually nearer the route is taken as the
+ * junction and the points are turned round if it was the last one.
+ */
+function findTerminusJunction(
+  variant: RouteVariant,
+  trackPoints: TrackPoint[],
+  maxJunctionDistance: number
+): RouteVariant {
+  const firstJunction = findNearestTrackPoint(variant.points[0], trackPoints);
+  const lastJunction = findNearestTrackPoint(
+    variant.points[variant.points.length - 1],
+    trackPoints
+  );
+  const junctionIsAtEnd = lastJunction.distanceFromTrack < firstJunction.distanceFromTrack;
+  const junction = junctionIsAtEnd ? lastJunction : firstJunction;
+
+  // Neither end is on the route. Leave it alone and unattached - a parent
+  // alternate may still claim it in attachVariantsToParents.
+  if (junction.distanceFromTrack > maxJunctionDistance) {
+    return { ...variant };
+  }
+
+  const enriched: RouteVariant = junctionIsAtEnd
+    ? reverseVariantPoints(variant)
+    : { ...variant };
+  enriched.startTrackIndex = junction.trackIndex;
+  enriched.startDistance = Math.round(trackPoints[junction.trackIndex].dist * 100) / 100;
+  const offset = junctionOffset(junction.distanceFromTrack);
+  if (offset !== undefined) enriched.startOffsetMeters = offset;
+  return enriched;
+}
+
+/**
  * Enrich route variants with junction point data.
  * Finds where each variant branches from and rejoins the main track.
  */
 export function findVariantJunctions(
   variants: RouteVariant[],
   trackPoints: TrackPoint[],
-  maxJunctionDistance: number = 500 // meters - variants should start/end within this distance of track
+  maxJunctionDistance: number = DEFAULT_MAX_JUNCTION_DISTANCE_METERS
 ): RouteVariant[] {
   return variants.map(variant => {
     if (variant.points.length === 0) {
       return variant;
+    }
+
+    if (variant.type === 'terminus') {
+      return findTerminusJunction(variant, trackPoints, maxJunctionDistance);
     }
 
     // Find where variant starts (branches from main track)
@@ -364,6 +528,8 @@ export function findVariantJunctions(
     if (startJunction.distanceFromTrack <= maxJunctionDistance) {
       enriched.startTrackIndex = startJunction.trackIndex;
       enriched.startDistance = Math.round(trackPoints[startJunction.trackIndex].dist * 100) / 100;
+      const startOffset = junctionOffset(startJunction.distanceFromTrack);
+      if (startOffset !== undefined) enriched.startOffsetMeters = startOffset;
     }
 
     // For alternates, also record where they rejoin
@@ -374,24 +540,182 @@ export function findVariantJunctions(
       if (variant.type === 'alternate' || !isSameAsStart) {
         enriched.endTrackIndex = endJunction.trackIndex;
         enriched.endDistance = Math.round(trackPoints[endJunction.trackIndex].dist * 100) / 100;
+        const endOffset = junctionOffset(endJunction.distanceFromTrack);
+        if (endOffset !== undefined) enriched.endOffsetMeters = endOffset;
       }
     }
 
-    // A variant's stored point order follows its own source track, which need
-    // not agree with the main route's direction (notably after a `reverseTrack`
-    // build). Normalise so the junction range always reads forwards — the
-    // viewer renders these as "Branches at: X km / Rejoins: Y km".
-    if (
-      enriched.startDistance !== undefined &&
-      enriched.endDistance !== undefined &&
-      enriched.startDistance > enriched.endDistance
-    ) {
-      [enriched.startDistance, enriched.endDistance] = [enriched.endDistance, enriched.startDistance];
-      [enriched.startTrackIndex, enriched.endTrackIndex] = [enriched.endTrackIndex, enriched.startTrackIndex];
-    }
+    normaliseJunctionOrder(enriched);
 
     return enriched;
   });
+}
+
+/**
+ * Attach variants whose ends never reached the main route to an alternate that
+ * did — an alternate off an alternate, which CalTopo files are full of.
+ *
+ * Runs after {@link findVariantJunctions}, and only looks at the ends that
+ * pass left unattached. The junction km it records is ordinary absolute trail km:
+ * the parent's own junction km plus the walk along the parent to the branch
+ * point. That is the whole point of doing it this way — nothing downstream
+ * (waypoint enrichment, the datasheet, direction reversal) has to know a
+ * parent exists, it just sees a variant with a normal place on the trail.
+ *
+ * Repeats until nothing more attaches, so a child of a child lands too.
+ *
+ * Only alternates can be parents: a side trip is walked out and back off
+ * something else, so hanging a route off one would be describing a route that
+ * doubles back over itself. And only an alternate's rejoin end is chased — a
+ * side trip's far end is its turnaround, not a junction.
+ *
+ * A terminus (which travels in the side-trip list) is chased at whichever of
+ * its two ends is nearer a parent, never at both: its far end is the trail's
+ * end, not a junction.
+ */
+export function attachVariantsToParents(
+  alternates: RouteVariant[],
+  sideTrips: RouteVariant[],
+  maxJunctionDistance: number = DEFAULT_MAX_JUNCTION_DISTANCE_METERS
+): { alternates: RouteVariant[]; sideTrips: RouteVariant[] } {
+  const all = [...alternates, ...sideTrips].map(variant => ({ ...variant }));
+  const alternateCount = alternates.length;
+  const cumulative = all.map(variant => cumulativeKm(variant.points));
+
+  // Every unattached end is measured against every point of every attached
+  // alternate, which on a trail with a hundred alternates is tens of millions
+  // of haversines. A bounding box per variant throws out the ones that are
+  // nowhere near before any of that runs.
+  const bounds = all.map(variant => {
+    const box = { minLat: Infinity, maxLat: -Infinity, minLon: Infinity, maxLon: -Infinity };
+    for (const point of variant.points) {
+      box.minLat = Math.min(box.minLat, point.lat);
+      box.maxLat = Math.max(box.maxLat, point.lat);
+      box.minLon = Math.min(box.minLon, point.lon);
+      box.maxLon = Math.max(box.maxLon, point.lon);
+    }
+    return box;
+  });
+  const latMargin = maxJunctionDistance / METERS_PER_DEGREE_LAT;
+
+  // Which alternate each end of a variant attached to, by index into `all`;
+  // undefined for an end on the main route or not yet attached. Kept per end
+  // rather than per variant because the ends attach in separate rounds and can
+  // be swapped afterwards, and `parent` has to name the alternate the *branch
+  // point* ended up on.
+  const startParent: (number | undefined)[] = all.map(() => undefined);
+  const endParent: (number | undefined)[] = all.map(() => undefined);
+
+  /**
+   * Absolute trail km of a point on an already-attached parent. `points[0]` is
+   * the parent's branch point — normaliseJunctionOrder keeps it that way — so
+   * the walk is simply the cumulative km to the point.
+   */
+  const kmAlongParent = (parentIndex: number, pointIndex: number): number =>
+    Math.round((all[parentIndex].startDistance! + cumulative[parentIndex][pointIndex]) * 100) / 100;
+
+  const nearestParent = (
+    point: { lat: number; lon: number },
+    selfIndex: number
+  ): { parentIndex: number; pointIndex: number; distance: number } | null => {
+    let best: { parentIndex: number; pointIndex: number; distance: number } | null = null;
+    // Longitude degrees shrink towards the poles; clamp so a near-polar trail
+    // cannot produce an unbounded margin.
+    const lonMargin = latMargin / Math.max(Math.cos((point.lat * Math.PI) / 180), 0.1);
+
+    for (let p = 0; p < alternateCount; p++) {
+      if (p === selfIndex) continue;
+      const parent = all[p];
+      if (parent.startDistance === undefined || parent.points.length === 0) continue;
+      const box = bounds[p];
+      if (
+        point.lat < box.minLat - latMargin ||
+        point.lat > box.maxLat + latMargin ||
+        point.lon < box.minLon - lonMargin ||
+        point.lon > box.maxLon + lonMargin
+      ) {
+        continue;
+      }
+      const near = findNearestTrackPoint(point, parent.points);
+      if (near.distanceFromTrack > maxJunctionDistance) continue;
+      if (best === null || near.distanceFromTrack < best.distance) {
+        best = { parentIndex: p, pointIndex: near.trackIndex, distance: near.distanceFromTrack };
+      }
+    }
+    return best;
+  };
+
+  let attachedSomething = true;
+  while (attachedSomething) {
+    attachedSomething = false;
+
+    for (let i = 0; i < all.length; i++) {
+      const variant = all[i];
+      if (variant.points.length === 0) continue;
+
+      const needsStart = variant.startDistance === undefined;
+      const needsEnd = variant.endDistance === undefined && i < alternateCount;
+      if (!needsStart && !needsEnd) continue;
+
+      // A terminus has one junction and it can be at either end of the line, so
+      // both are offered to the parents and the nearer one wins - the same
+      // orientation repair findTerminusJunction does against the main route.
+      if (variant.type === 'terminus') {
+        const fromFirst = nearestParent(variant.points[0], i);
+        const fromLast = nearestParent(variant.points[variant.points.length - 1], i);
+        const useLast =
+          fromLast !== null && (fromFirst === null || fromLast.distance < fromFirst.distance);
+        const chosen = useLast ? fromLast : fromFirst;
+        if (chosen === null) continue;
+        if (useLast) {
+          const turned = reverseVariantPoints(variant);
+          variant.points = turned.points;
+          variant.elevation = turned.elevation;
+          cumulative[i] = cumulativeKm(variant.points);
+        }
+        variant.startDistance = kmAlongParent(chosen.parentIndex, chosen.pointIndex);
+        const terminusOffset = junctionOffset(chosen.distance);
+        if (terminusOffset !== undefined) variant.startOffsetMeters = terminusOffset;
+        variant.parent = { name: all[chosen.parentIndex].name, index: chosen.parentIndex };
+        attachedSomething = true;
+        continue;
+      }
+
+      const start = needsStart ? nearestParent(variant.points[0], i) : null;
+      const end = needsEnd ? nearestParent(variant.points[variant.points.length - 1], i) : null;
+      if (start === null && end === null) continue;
+
+      if (start !== null) {
+        variant.startDistance = kmAlongParent(start.parentIndex, start.pointIndex);
+        startParent[i] = start.parentIndex;
+        const offset = junctionOffset(start.distance);
+        if (offset !== undefined) variant.startOffsetMeters = offset;
+      }
+      if (end !== null) {
+        variant.endDistance = kmAlongParent(end.parentIndex, end.pointIndex);
+        endParent[i] = end.parentIndex;
+        const offset = junctionOffset(end.distance);
+        if (offset !== undefined) variant.endOffsetMeters = offset;
+      }
+
+      // Turning the variant round also turns `points` round, which anything
+      // hanging off this variant in a later round measures along; and it moves
+      // each end's parent to the other end.
+      if (normaliseJunctionOrder(variant)) {
+        [startParent[i], endParent[i]] = [endParent[i], startParent[i]];
+        cumulative[i] = cumulativeKm(variant.points);
+      }
+
+      // Named for the branch point when that is on an alternate; otherwise for
+      // the rejoin, so a variant that leaves the main route and ends on an
+      // alternate still records which one.
+      const parentIndex = startParent[i] ?? endParent[i]!;
+      variant.parent = { name: all[parentIndex].name, index: parentIndex };
+      attachedSomething = true;
+    }
+  }
+
+  return { alternates: all.slice(0, alternateCount), sideTrips: all.slice(alternateCount) };
 }
 
 /**
@@ -572,7 +896,8 @@ export function enrichWaypoints(
  * Waypoint `totalDistance` is on the TRAIL's absolute km scale: the junction
  * km where the variant leaves the main track (`startDistance`, set by
  * findVariantJunctions — call that first) plus the distance walked along the
- * variant. This keeps variant waypoints directly comparable with main-route
+ * variant from `points[0]`, which the junction pass guarantees is the branch
+ * point. This keeps variant waypoints directly comparable with main-route
  * waypoints in datasheets. Falls back to variant-relative km when the variant
  * never attaches to the main track.
  */
@@ -619,6 +944,7 @@ export function enrichVariantWaypoints(
         totalDescent: Math.round(runningDescent),
         variantTrackIndex: visit.trackIndex,
         description: visit.waypoint.description,
+        ...waypointAccess(visit.waypoint),
       });
 
       prevTrackIndex = visit.trackIndex;
@@ -733,6 +1059,8 @@ export interface BuildTrailDiagnostics {
   displayPointCount: number;
   alternateCount: number;
   sideTripCount: number;
+  /** Alternative trail ends found (they travel inside `sideTrips`). */
+  terminusCount: number;
   waypointCount: number;
   offTrailWaypointCount: number;
   /**
@@ -769,7 +1097,7 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     log(`  Combined ${names.length} tracks: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '...' : ''}`);
   }
 
-  const { alternateTracks, sideTripTracks: classifiedSideTrips } = selection;
+  const { alternateTracks, sideTripTracks: classifiedSideTrips, terminusTracks } = selection;
   let mainRoutePoints = selection.points;
   let breaks = selection.breaks;
   for (const routeBreak of breaks) {
@@ -1000,8 +1328,29 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     });
   }
 
+  // Alternative trail ends ride in the same list as the side trips - they leave
+  // the trail and do not come back, which is what every consumer of that list
+  // already handles - and are told apart by `type`.
+  let terminusCount = 0;
+  for (const track of terminusTracks) {
+    const trackPoints3d = track.points.map(p => ({ lat: p.lat, lon: p.lon, ele: p.ele }));
+    const stats = calculateRouteStats(trackPoints3d);
+    sideTrips.push({
+      name: track.name,
+      type: 'terminus',
+      points: trackPoints3d,
+      distance: Math.round(stats.distance * 10) / 10,
+      elevation: {
+        ascent: Math.round(stats.ascent),
+        descent: Math.round(stats.descent),
+      },
+    });
+    terminusCount++;
+  }
+
   if (alternates.length > 0) log(`  ✓ Found ${alternates.length} alternate routes from GPX`);
-  if (sideTrips.length > 0) log(`  ✓ Found ${sideTrips.length} side trips`);
+  if (sideTrips.length - terminusCount > 0) log(`  ✓ Found ${sideTrips.length - terminusCount} side trips`);
+  if (terminusCount > 0) log(`  ✓ Found ${terminusCount} alternative termini`);
 
   // Update config with calculated distance
   config.lengthKm = Math.round(totalDistance * 10) / 10;
@@ -1098,9 +1447,15 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   // row, so they must never resurface in the off-trail list below.
   const mainMergedAwayIds = new Set(mergedAwayIds);
 
-  // Enrich variants with junction point data (where they connect to main track)
-  const enrichedAlternates = findVariantJunctions(alternates, points);
-  const enrichedSideTrips = findVariantJunctions(sideTrips, points);
+  // Enrich variants with junction point data (where they connect to main track),
+  // then hang whatever is still loose off an alternate that did attach.
+  const maxJunctionDistance =
+    config.trackClassification?.maxJunctionDistanceMeters ?? DEFAULT_MAX_JUNCTION_DISTANCE_METERS;
+  const { alternates: enrichedAlternates, sideTrips: enrichedSideTrips } = attachVariantsToParents(
+    findVariantJunctions(alternates, points, maxJunctionDistance),
+    findVariantJunctions(sideTrips, points, maxJunctionDistance),
+    maxJunctionDistance
+  );
 
   // Enrich variants with waypoint data (which waypoints they pass through).
   // Variants re-match the same source waypoints, so a near-duplicate pair shows
@@ -1121,8 +1476,21 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   // name|lat|lon key would miss a merged-away twin only if two source waypoints
   // shared all three, but the guard costs nothing and states the intent).
   const matchedNames = new Set(enrichedWaypoints.map(ew => `${ew.name}|${ew.lat}|${ew.lon}`));
+  // A terminus carries its own end: the `endpoint` waypoint at the free end is
+  // attached to the variant, and listing it a second time as "off-trail, 31 km
+  // from the route" would describe a place the trail goes as a place it misses.
+  // Only termini are treated this way — an alternate or side trip's waypoints
+  // have always doubled as off-trail rows and those lists are pinned output.
+  const terminusWaypointKeys = new Set<string>();
+  for (const variant of sideTripsWithWaypoints) {
+    if (variant.type !== 'terminus') continue;
+    for (const wp of variant.waypoints ?? []) {
+      terminusWaypointKeys.add(`${wp.name}|${wp.lat}|${wp.lon}`);
+    }
+  }
   const offTrailCandidates: OffTrailWaypoint[] = waypoints
     .filter(wp => !matchedNames.has(`${wp.name}|${wp.lat}|${wp.lon}`))
+    .filter(wp => !terminusWaypointKeys.has(`${wp.name}|${wp.lat}|${wp.lon}`))
     .filter(wp => !(wp.id !== undefined && mainMergedAwayIds.has(wp.id)))
     .map(wp => {
       const { distanceFromTrack } = findNearestTrackPoint(wp, points);
@@ -1155,7 +1523,8 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     pointCount: points.length,
     displayPointCount: displayPoints.length,
     alternateCount: alternatesWithWaypoints.length,
-    sideTripCount: sideTripsWithWaypoints.length,
+    sideTripCount: sideTripsWithWaypoints.filter(v => v.type !== 'terminus').length,
+    terminusCount: sideTripsWithWaypoints.filter(v => v.type === 'terminus').length,
     waypointCount: outputWaypoints.length,
     offTrailWaypointCount: offTrailWaypoints.length,
     keywordTypedWaypointCount,

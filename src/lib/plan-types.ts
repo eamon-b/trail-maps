@@ -7,6 +7,7 @@
  */
 
 import type { PlanDirection } from './plan-direction';
+import type { WaypointAccess } from './types';
 
 /** A planned overnight stop for the web planner. Ordered by km. */
 export interface StopData {
@@ -48,6 +49,13 @@ export interface PlanState {
    * see src/lib/plan-direction.ts for the km-space contract.
    */
   direction?: PlanDirection;
+  /**
+   * The resupply options the hiker has ticked, as waypoint ids. Absent means
+   * "nothing chosen yet", which resolves to every option — see
+   * `resolveResupplyStops`. Ids are direction-agnostic, so a saved selection
+   * survives a direction flip untouched.
+   */
+  resupplyStops?: string[];
 }
 
 /** Gap between consecutive resupply points. */
@@ -80,7 +88,9 @@ export interface PlanTrackPoint {
 }
 
 /** Minimal waypoint shape required by plan calculators. */
-export interface PlanWaypoint {
+export interface PlanWaypoint extends WaypointAccess {
+  /** Stable waypoint id, when the caller has one — a resupply selection is a list of these. */
+  id?: string;
   name?: string;
   type?: string;
   lat?: number;

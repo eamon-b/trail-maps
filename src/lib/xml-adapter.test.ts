@@ -56,7 +56,14 @@ describe('XML adapter parity', () => {
   }
 
   it('agrees after flattening too (names, types, rte fallback)', () => {
-    for (const name of ['simple-trail.gpx', 'route-only.gpx', 'waypoint-types.gpx', 'multi-track.gpx']) {
+    const flattenable = [
+      'simple-trail.gpx',
+      'route-only.gpx',
+      'waypoint-types.gpx',
+      'multi-track.gpx',
+      'waypoint-extensions.gpx',
+    ];
+    for (const name of flattenable) {
       const xml = readFileSync(resolve(FIXTURES, name), 'utf-8');
       expect(flattenGpx(parseGpx(xml, fxpXmlAdapter))).toEqual(
         flattenGpx(parseGpx(xml, domParserXmlAdapter))

@@ -164,6 +164,9 @@
 .waypoint-type.type-side-trip {
   background: #f8bbd0;
 }
+.waypoint-type.type-terminus {
+  background: #ffcc80;
+}
 .waypoint-type.type-accommodation {
   background: #ce93d8;
 }
@@ -229,6 +232,12 @@
   background: var(--row-side-trip);
   border-left: 3px solid #9c27b0;
 }
+/* An alternative trail end: the alternate's orange, dashed — a way of walking
+   the trail whose far end is loose, like the line drawn for it on the map. */
+.variant-row.type-terminus {
+  background: var(--row-alternate);
+  border-left: 3px dashed #ff9800;
+}
 .variant-marker {
   display: flex;
   align-items: center;
@@ -264,6 +273,11 @@
 .variant-type-badge.type-side-trip {
   background: #f3e5f5;
   color: #7b1fa2;
+}
+.variant-type-badge.type-terminus {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px dashed #e65100;
 }
 /* Map/table markers keep light pastel fills, so their glyphs stay dark. */
 .waypoint-marker {
@@ -614,6 +628,7 @@
 .variant-row .expand-chevron.expanded { transform: rotate(90deg); }
 .variant-row.variant-expanded { background: var(--row-alternate) !important; }
 .variant-row.type-side-trip.variant-expanded { background: var(--row-side-trip) !important; }
+.variant-row.type-terminus.variant-expanded { background: var(--row-alternate) !important; }
 /* Waypoints indicator on variant rows */
 .has-waypoints-indicator {
   display: inline-block;
@@ -624,6 +639,7 @@
   margin-left: 0.4rem;
 }
 .variant-row.type-alternate .has-waypoints-indicator { background: #ff9800; }
+.variant-row.type-terminus .has-waypoints-indicator { background: #ff9800; }
 /* Variant detail panel */
 .variant-detail-panel {
   padding: 1rem;
@@ -634,6 +650,10 @@
 .variant-detail-panel.type-side-trip {
   background: var(--row-side-trip);
   border-left-color: #9c27b0;
+}
+.variant-detail-panel.type-terminus {
+  background: var(--row-alternate);
+  border-left-style: dashed;
 }
 .variant-detail-row td {
   padding: 0 !important;

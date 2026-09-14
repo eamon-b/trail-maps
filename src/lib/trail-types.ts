@@ -11,7 +11,7 @@
  * Platform-neutral: no Node, DOM or React Native imports.
  */
 
-import type { TrackClassificationConfig } from './types';
+import type { TrackClassificationConfig, WaypointAccess } from './types';
 
 /** Where a trail's climate data was sampled. */
 export interface ClimateLocationConfig {
@@ -91,8 +91,14 @@ export interface TrailConfig {
   elevationSource?: 'gpx' | 'backfilled' | 'none';
 }
 
-/** A raw source waypoint, before it is matched against the track. */
-export interface TrailWaypoint {
+/**
+ * A raw source waypoint, before it is matched against the track.
+ *
+ * {@link WaypointAccess} adds the optional off-trail fields (`offTrailKm`,
+ * `accessMode`, `acceptsBoxes`, `accessName`) carried in from GPX
+ * `<extensions>`; they describe a place you leave the route to reach.
+ */
+export interface TrailWaypoint extends WaypointAccess {
   /** Stable id assigned from the committed registry, or minted for imports. */
   id?: string;
   name: string;
@@ -128,8 +134,12 @@ export interface WaypointVisit {
   distanceFromTrack: number;
 }
 
-/** A waypoint matched to an alternate/side-trip rather than the main route. */
-export interface VariantWaypoint {
+/**
+ * A waypoint matched to an alternate/side-trip rather than the main route.
+ * Carries the same optional off-trail fields as a main-route waypoint: a CDT
+ * alternate passes turn-offs for towns too.
+ */
+export interface VariantWaypoint extends WaypointAccess {
   /** Stable id, shared with the same waypoint on the main route. */
   id?: string;
   name: string;
@@ -150,10 +160,22 @@ export interface VariantWaypoint {
   mergedIds?: string[];
 }
 
-/** An alternate route or side trip hanging off the main route. */
+/**
+ * An alternate route, side trip or alternative terminus hanging off the main
+ * route. After `findVariantJunctions` the variant reads forwards: `points[0]`
+ * is the branch point (`startDistance`) and the last point the rejoin,
+ * whichever way the source track was drawn.
+ *
+ * A `terminus` is an alternative start or finish - the CDT's Chief Mountain
+ * border crossing, or the Columbus and Antelope Wells southern ends. It has
+ * exactly one junction (`startDistance`, at `points[0]`) and its last point is
+ * the free end, 10-31 km off the route, where an `endpoint` waypoint sits. It
+ * never gets an `endDistance`: there is nothing to rejoin, and a search for one
+ * is what used to leave these routes drawn with no endpoint at all.
+ */
 export interface RouteVariant {
   name: string;
-  type: 'alternate' | 'side-trip';
+  type: 'alternate' | 'side-trip' | 'terminus';
   points: { lat: number; lon: number; ele: number }[];
   distance: number;
   elevation: { ascent: number; descent: number };
@@ -163,6 +185,25 @@ export interface RouteVariant {
   /** km where an alternate rejoins the main route. */
   endDistance?: number;
   endTrackIndex?: number;
+  /**
+   * How far the branch end really sits from what it attached to, in metres.
+   * Only recorded past the standard 500 m tolerance - i.e. only for a trail
+   * that raised `trackClassification.maxJunctionDistanceMeters` to take in a
+   * loose end - so the junction km can be read together with the gap it papers
+   * over rather than pretending the alternate touches the route.
+   */
+  startOffsetMeters?: number;
+  /** The same residual for the rejoin end. */
+  endOffsetMeters?: number;
+  /**
+   * The alternate this variant hangs off, when a junction is on that alternate
+   * rather than on the main route: the one its branch point is on, or failing
+   * that the one its rejoin is on. `index` is into the trail's `alternates`
+   * array. `startDistance`/`endDistance` stay ordinary absolute trail km (the
+   * parent's junction km plus the walk along the parent), so every consumer
+   * reads a parent-attached variant like any other.
+   */
+  parent?: { name: string; index: number };
   waypoints?: VariantWaypoint[];
 }
 
@@ -281,6 +322,17 @@ export interface ProcessedTrail {
   waypoints: EnrichedWaypoint[];
   offTrailWaypoints: OffTrailWaypoint[];
   alternates: RouteVariant[];
+  /**
+   * Side trips *and* alternative termini, distinguished by `type`.
+   *
+   * One array rather than two because every consumer of a variant - the map
+   * lines, the camera bounds, the datasheet, direction reversal, the mobile
+   * slimmer, the handoff parser - wants "the routes that leave the trail and do
+   * not come back", and a terminus is exactly that plus a name for its far end.
+   * A separate `termini` array would have meant teaching all of them a third
+   * list, and every older asset would have been missing it. Anything that needs
+   * to tell them apart reads `type === 'terminus'`.
+   */
   sideTrips: RouteVariant[];
   climate: Record<string, unknown> | null;
   climateLocations: ClimateLocationConfig[] | null;

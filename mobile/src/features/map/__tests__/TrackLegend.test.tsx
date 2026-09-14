@@ -99,6 +99,18 @@ describe('TrackLegend', () => {
     expect(json).toContain(track.sideTrip);
   });
 
+  it('names alternative termini only when the trail has one', () => {
+    expect(labels(render({ hasTermini: true }))).toContain('Alternative terminus');
+    expect(labels(render({ hasAlternates: true }))).not.toContain('Alternative terminus');
+  });
+
+  it('shows the key for a trail whose only variant class is a terminus', () => {
+    // Without this the key would be null and nothing would explain the
+    // dash-dot line — the CDT's Chief Mountain route on an alternate-less map.
+    expect(labels(render({ hasTermini: true }))).toContain('Trail');
+    expect(labels(render({}))).toEqual([]);
+  });
+
   it('follows the map into dark mode instead of naming colours it no longer paints', () => {
     mockIsDark = true;
     const json = rendered(render({ hasAlternates: true, hasSideTrips: true }));

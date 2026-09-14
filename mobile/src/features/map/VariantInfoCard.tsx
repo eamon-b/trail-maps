@@ -43,7 +43,9 @@ export function VariantInfoCard({ info, unit, onDismiss }: VariantInfoCardProps)
   // card can never disagree with the line the user just tapped — including in
   // dark mode, where the map draws the tinted palette.
   const track = trackColors(isDark ? 'dark' : 'light');
-  const swatchColor = info.kind === 'alternate' ? track.alternate : track.sideTrip;
+  // A terminus is drawn in the alternate's violet (dash-dot rather than dashed),
+  // so its swatch takes the same hue.
+  const swatchColor = info.kind === 'side-trip' ? track.sideTrip : track.alternate;
 
   return (
     <View

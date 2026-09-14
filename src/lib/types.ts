@@ -6,7 +6,41 @@ export interface GpxPoint {
   time: string | null;
 }
 
-export interface GpxWaypoint {
+/**
+ * How you leave the route to reach an off-trail place: on foot, by hitching, by
+ * a booked shuttle, by boat, or `on-trail` for a place the route runs through.
+ */
+export const ACCESS_MODES = ['foot', 'hitch', 'shuttle', 'boat', 'on-trail'] as const;
+
+export type AccessMode = (typeof ACCESS_MODES)[number];
+
+/** Narrows untrusted text (GPX extensions, handoff JSON) to an {@link AccessMode}. */
+export function isAccessMode(value: unknown): value is AccessMode {
+  return typeof value === 'string' && (ACCESS_MODES as readonly string[]).includes(value);
+}
+
+/**
+ * Where an off-trail place sits relative to the route, carried in GPX
+ * `<extensions>` under the `tn:` namespace and preserved all the way to the
+ * planner. Every field is optional: a waypoint without them is an ordinary
+ * on-route waypoint, which is what every trail looked like before the
+ * generators started emitting the extensions.
+ *
+ * One shared interface rather than four copies of the same four fields, so the
+ * names cannot drift between the parsed, built, handed-off and planned shapes.
+ */
+export interface WaypointAccess {
+  /** One-way distance from the route to the place, in km. */
+  offTrailKm?: number;
+  /** How that distance is covered. */
+  accessMode?: AccessMode;
+  /** Whether the place holds a mailed resupply box. */
+  acceptsBoxes?: boolean;
+  /** Name of the turn-off itself (e.g. "Monarch Pass (US 50)"). */
+  accessName?: string;
+}
+
+export interface GpxWaypoint extends WaypointAccess {
   /**
    * Stable waypoint id assigned by the build pipeline from the committed
    * registry (`data/waypoint-ids.json`). Absent for freshly-parsed GPX that
@@ -223,10 +257,39 @@ export interface TrackClassificationConfig {
   mainRoutePatterns?: string[];     // Regex patterns for main route tracks
   alternatePatterns?: string[];     // Regex patterns for alternate routes
   sideTripPatterns?: string[];      // Regex patterns for side trips/spurs
+  /**
+   * Regex patterns for *alternative trail ends* - a route that branches off the
+   * main line at one end and whose other end is deliberately free, somewhere
+   * off the route entirely (the CDT's Chief Mountain border crossing, the
+   * Columbus and Antelope Wells southern termini).
+   *
+   * They are not alternates: an alternate rejoins, and asking
+   * `findVariantJunctions` for a rejoin that does not exist leaves one junction
+   * undefined and the UI showing a route with no endpoint. They are not side
+   * trips either: you do not walk back.
+   *
+   * Matched *after* `alternatePatterns` and `sideTripPatterns`, so an
+   * explicitly-named alternate whose name happens to contain "terminus" keeps
+   * the class its file gave it. Defaults to
+   * {@link TRACK_CLASSIFICATION_DEFAULTS.terminusPatterns}.
+   */
+  terminusPatterns?: string[];      // Regex patterns for alternative trail ends
   ignorePatterns?: string[];        // Regex patterns to ignore completely
   fallbackToLongest?: boolean;      // Use longest track if no patterns match (default: true)
   /** The main tracks are consecutive walkable stretches - see {@link RouteStretchConfig}. */
   stretches?: RouteStretchConfig;
+  /**
+   * How far (metres) a variant's end may sit from the route it branches off and
+   * still count as a junction. Defaults to 500 - what every trail built before
+   * this option existed used.
+   *
+   * Raise it for a source whose alternates are drawn as loose ends: CalTopo
+   * files often stop short of the route rather than touching it. Without a
+   * junction a variant has no place on the trail's km scale at all - its
+   * waypoints fall back to variant-relative km, it is dropped from the waypoint
+   * table, and direction reversal has to leave it alone.
+   */
+  maxJunctionDistanceMeters?: number;
 }
 
 /**
@@ -255,7 +318,7 @@ export interface RouteStretchConfig {
 
 export interface ClassifiedTrack {
   name: string;
-  type: 'main' | 'alternate' | 'sideTrip' | 'ignored' | 'unclassified';
+  type: 'main' | 'alternate' | 'sideTrip' | 'terminus' | 'ignored' | 'unclassified';
   points: GpxPoint[];
   distance: number;
 }
@@ -264,6 +327,8 @@ export interface TrackClassificationResult {
   mainTracks: ClassifiedTrack[];
   alternateTracks: ClassifiedTrack[];
   sideTripTracks: ClassifiedTrack[];
+  /** Alternative trail ends - see {@link TrackClassificationConfig.terminusPatterns}. */
+  terminusTracks: ClassifiedTrack[];
   ignoredTracks: ClassifiedTrack[];
   unclassifiedTracks: ClassifiedTrack[];
 }

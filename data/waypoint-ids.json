@@ -2450,6 +2450,20 @@
       "lon": -112.441607
     },
     {
+      "id": "w_02b65b2e",
+      "name": "Ptarmigan Tunnel bypass rejoins off Stoney Indian Pass",
+      "type": "junction",
+      "lat": 48.866723,
+      "lon": -113.71084
+    },
+    {
+      "id": "w_036acdde",
+      "name": "Official mile 2950",
+      "type": "milestone",
+      "lat": 48.48914,
+      "lon": -113.365257
+    },
+    {
       "id": "w_03bec885",
       "name": "Official mile 1780",
       "type": "milestone",
@@ -2497,6 +2511,13 @@
       "type": "milestone",
       "lat": 34.076076,
       "lon": -108.375769
+    },
+    {
+      "id": "w_073803c9",
+      "name": "Elkhart Park (Pinedale) leaves the CDT",
+      "type": "junction",
+      "lat": 42.980047,
+      "lon": -109.562347
     },
     {
       "id": "w_074ca5e3",
@@ -2548,6 +2569,13 @@
       "lon": -108.133636
     },
     {
+      "id": "w_0ab82b0e",
+      "name": "Leadville ghost town branches",
+      "type": "junction",
+      "lat": 46.367698,
+      "lon": -112.427022
+    },
+    {
       "id": "w_0c3388a6",
       "name": "Big Sandy Lodge (access: CDT at Big Sandy trailhead)",
       "type": "resupply-access",
@@ -2576,11 +2604,25 @@
       "lon": -108.204974
     },
     {
+      "id": "w_0d62c059",
+      "name": "Ghost Ranch old route rejoins",
+      "type": "junction",
+      "lat": 36.329581,
+      "lon": -106.624249
+    },
+    {
       "id": "w_0da4386b",
       "name": "Official mile 2580",
       "type": "milestone",
       "lat": 45.938875,
       "lon": -112.437078
+    },
+    {
+      "id": "w_0ddafb1c",
+      "name": "Official mile 2850",
+      "type": "milestone",
+      "lat": 47.79589,
+      "lon": -113.042649
     },
     {
       "id": "w_0e1f087f",
@@ -2595,6 +2637,13 @@
       "type": "junction",
       "lat": 41.804017,
       "lon": -107.233883
+    },
+    {
+      "id": "w_0e867f2c",
+      "name": "Storm Lake / Fourmile Basin rejoins off Anaconda Cutoff",
+      "type": "junction",
+      "lat": 46.06495,
+      "lon": -113.264547
     },
     {
       "id": "w_0e8bb7ee",
@@ -2723,6 +2772,13 @@
       "lon": -105.79281
     },
     {
+      "id": "w_15eb68c1",
+      "name": "Official mile 2920",
+      "type": "milestone",
+      "lat": 48.305901,
+      "lon": -113.312533
+    },
+    {
       "id": "w_161d19f7",
       "name": "Official mile 1210",
       "type": "milestone",
@@ -2772,6 +2828,13 @@
       "lon": -113.017039
     },
     {
+      "id": "w_199736ce",
+      "name": "Ptarmigan Tunnel bypass branches",
+      "type": "junction",
+      "lat": 48.797485,
+      "lon": -113.676072
+    },
+    {
       "id": "w_1a2709aa",
       "name": "Knapsack Col branches",
       "type": "junction",
@@ -2793,11 +2856,25 @@
       "lon": -108.273
     },
     {
+      "id": "w_1a91316d",
+      "name": "Upper Camp Road branches",
+      "type": "junction",
+      "lat": 36.458978,
+      "lon": -106.323845
+    },
+    {
       "id": "w_1b747a31",
       "name": "Official mile 2190",
       "type": "milestone",
       "lat": 44.454002,
       "lon": -112.380477
+    },
+    {
+      "id": "w_1c1a4ff0",
+      "name": "Official mile 3040",
+      "type": "milestone",
+      "lat": 48.998682,
+      "lon": -113.906057
     },
     {
       "id": "w_1c50c412",
@@ -2870,6 +2947,13 @@
       "lon": -105.863394
     },
     {
+      "id": "w_208e25d4",
+      "name": "Old Hachita rejoins",
+      "type": "junction",
+      "lat": 31.888357,
+      "lon": -108.422579
+    },
+    {
       "id": "w_20bb5dd9",
       "name": "Official mile 620",
       "type": "milestone",
@@ -2884,6 +2968,20 @@
       "lon": -107.198843
     },
     {
+      "id": "w_216f315a",
+      "name": "Cuba forest alternate rejoins off Cuba alternate 2",
+      "type": "junction",
+      "lat": 35.874069,
+      "lon": -106.971787
+    },
+    {
+      "id": "w_21bdb814",
+      "name": "Cuba forest alternate branches",
+      "type": "junction",
+      "lat": 35.98743,
+      "lon": -106.895717
+    },
+    {
       "id": "w_2211dfa2",
       "name": "Doc Campbell's Post",
       "type": "resupply",
@@ -2891,11 +2989,25 @@
       "lon": -108.208086
     },
     {
+      "id": "w_22439686",
+      "name": "Walnut Creek (Silver City) leaves the CDT",
+      "type": "junction",
+      "lat": 32.862617,
+      "lon": -108.290009
+    },
+    {
       "id": "w_22e9b0b6",
       "name": "Official mile 1040",
       "type": "milestone",
       "lat": 38.238806,
       "lon": -106.56525
+    },
+    {
+      "id": "w_238b741b",
+      "name": "Official mile 3020",
+      "type": "milestone",
+      "lat": 48.826312,
+      "lon": -113.818334
     },
     {
       "id": "w_23e8f1c6",
@@ -2961,11 +3073,25 @@
       "lon": -112.308748
     },
     {
+      "id": "w_296ce2c4",
+      "name": "Buffalo River bridge branches",
+      "type": "junction",
+      "lat": 43.915612,
+      "lon": -110.207757
+    },
+    {
       "id": "w_29bdf0ff",
       "name": "Official mile 240",
       "type": "milestone",
       "lat": 33.226703,
       "lon": -107.846921
+    },
+    {
+      "id": "w_2a2f599a",
+      "name": "TR101 high-water side trails rejoins",
+      "type": "junction",
+      "lat": 48.212925,
+      "lon": -113.17531
     },
     {
       "id": "w_2aa9143c",
@@ -2996,11 +3122,25 @@
       "lon": -107.250943
     },
     {
+      "id": "w_2bc29ece",
+      "name": "Storm Lake / Fourmile Basin branches off Anaconda Cutoff",
+      "type": "junction",
+      "lat": 46.071246,
+      "lon": -113.260899
+    },
+    {
       "id": "w_2c15812f",
       "name": "Breckenridge",
       "type": "town",
       "lat": 39.488772,
       "lon": -106.046892
+    },
+    {
+      "id": "w_2c1bdc04",
+      "name": "Old Hachita branches",
+      "type": "junction",
+      "lat": 31.920661,
+      "lon": -108.408735
     },
     {
       "id": "w_2c3ae07c",
@@ -3099,6 +3239,13 @@
       "type": "milestone",
       "lat": 44.45435,
       "lon": -110.830462
+    },
+    {
+      "id": "w_334a6c9b",
+      "name": "Dawson / Pitamakan Pass rejoins",
+      "type": "junction",
+      "lat": 48.493724,
+      "lon": -113.367795
     },
     {
       "id": "w_33508b24",
@@ -3220,6 +3367,13 @@
       "lon": -113.039553
     },
     {
+      "id": "w_3b3fb655",
+      "name": "Timberline / Skytop Lake rejoins",
+      "type": "junction",
+      "lat": 45.142295,
+      "lon": -113.568527
+    },
+    {
       "id": "w_3b869439",
       "name": "Granby",
       "type": "town",
@@ -3241,6 +3395,20 @@
       "lon": -113.174029
     },
     {
+      "id": "w_3db431f2",
+      "name": "Govina Canyon leaves the CDT",
+      "type": "junction",
+      "lat": 33.811898,
+      "lon": -108.473473
+    },
+    {
+      "id": "w_3ed47b9c",
+      "name": "Wyoming old route 8 branches",
+      "type": "junction",
+      "lat": 42.193853,
+      "lon": -107.674226
+    },
+    {
       "id": "w_3ef638a8",
       "name": "Official mile 960",
       "type": "milestone",
@@ -3253,6 +3421,13 @@
       "type": "milestone",
       "lat": 45.205081,
       "lon": -113.528942
+    },
+    {
+      "id": "w_41202d8e",
+      "name": "Togwotee Mountain Lodge leaves the CDT off line 660",
+      "type": "junction",
+      "lat": 43.710969,
+      "lon": -110.036816
     },
     {
       "id": "w_4279e8a4",
@@ -3297,11 +3472,25 @@
       "lon": -108.52624
     },
     {
+      "id": "w_448cfc12",
+      "name": "Official mile 2910",
+      "type": "milestone",
+      "lat": 48.268295,
+      "lon": -113.165249
+    },
+    {
       "id": "w_4518ad56",
       "name": "Official mile 2020",
       "type": "milestone",
       "lat": 44.346721,
       "lon": -110.795754
+    },
+    {
+      "id": "w_452059f0",
+      "name": "Leadville ghost town rejoins",
+      "type": "junction",
+      "lat": 46.336997,
+      "lon": -112.478038
     },
     {
       "id": "w_45390503",
@@ -3323,6 +3512,13 @@
       "type": "milestone",
       "lat": 45.557796,
       "lon": -113.817941
+    },
+    {
+      "id": "w_474e03cc",
+      "name": "Marysville branches",
+      "type": "junction",
+      "lat": 46.724824,
+      "lon": -112.442777
     },
     {
       "id": "w_4809b11e",
@@ -3393,6 +3589,13 @@
       "type": "milestone",
       "lat": 42.380576,
       "lon": -108.250973
+    },
+    {
+      "id": "w_4e141cc2",
+      "name": "Highline to Going-to-the-Sun Road rejoins",
+      "type": "junction",
+      "lat": 48.677503,
+      "lon": -113.652129
     },
     {
       "id": "w_4e263fd6",
@@ -3484,6 +3687,13 @@
       "type": "junction",
       "lat": 37.845112,
       "lon": -107.438334
+    },
+    {
+      "id": "w_52c1dfee",
+      "name": "Colorado old route 7 branches",
+      "type": "junction",
+      "lat": 39.109612,
+      "lon": -106.393441
     },
     {
       "id": "w_52c5b67b",
@@ -3605,6 +3815,13 @@
       "lon": -113.27255
     },
     {
+      "id": "w_5b1405da",
+      "name": "Benchmark (east route) rejoins",
+      "type": "junction",
+      "lat": 47.471518,
+      "lon": -112.928595
+    },
+    {
       "id": "w_5b472bf3",
       "name": "Official mile 800",
       "type": "milestone",
@@ -3631,6 +3848,13 @@
       "type": "milestone",
       "lat": 43.05497,
       "lon": -109.631784
+    },
+    {
+      "id": "w_5d58c787",
+      "name": "Summit Mountain rejoins",
+      "type": "junction",
+      "lat": 48.288207,
+      "lon": -113.217597
     },
     {
       "id": "w_5dea98c7",
@@ -3661,11 +3885,32 @@
       "lon": -112.592029
     },
     {
+      "id": "w_5fb45d12",
+      "name": "Larch Hill Pass leaves the CDT off Spotted Bear",
+      "type": "junction",
+      "lat": 47.755411,
+      "lon": -113.110514
+    },
+    {
+      "id": "w_5fb9ac89",
+      "name": "Official mile 2970",
+      "type": "milestone",
+      "lat": 48.600071,
+      "lon": -113.523317
+    },
+    {
       "id": "w_60cbdfc8",
       "name": "Official mile 50",
       "type": "milestone",
       "lat": 32.005825,
       "lon": -108.469065
+    },
+    {
+      "id": "w_61b7db97",
+      "name": "Riverview Road rejoins",
+      "type": "junction",
+      "lat": 42.426303,
+      "lon": -108.644209
     },
     {
       "id": "w_62046729",
@@ -3680,6 +3925,13 @@
       "type": "junction",
       "lat": 42.689474,
       "lon": -109.263731
+    },
+    {
+      "id": "w_62e39bf2",
+      "name": "Wyoming old route 7 branches",
+      "type": "junction",
+      "lat": 41.767113,
+      "lon": -107.265285
     },
     {
       "id": "w_6328a559",
@@ -3745,11 +3997,18 @@
       "lon": -113.27888
     },
     {
+      "id": "w_65bc21c3",
+      "name": "Swiftcurrent Lake west shore rejoins off Chief Mountain Route",
+      "type": "junction",
+      "lat": 48.867437,
+      "lon": -113.69531
+    },
+    {
       "id": "w_65d5479b",
       "name": "Official mile 2780",
       "type": "milestone",
-      "lat": 47.292053,
-      "lon": -112.682609
+      "lat": 47.291279,
+      "lon": -112.682183
     },
     {
       "id": "w_66c6ffed",
@@ -3787,6 +4046,13 @@
       "lon": -107.747232
     },
     {
+      "id": "w_68127421",
+      "name": "Twin Lakes south shore rejoins",
+      "type": "junction",
+      "lat": 39.090585,
+      "lon": -106.317551
+    },
+    {
       "id": "w_68c99cf8",
       "name": "Official mile 980",
       "type": "milestone",
@@ -3806,6 +4072,13 @@
       "type": "town",
       "lat": 48.742223,
       "lon": -113.429731
+    },
+    {
+      "id": "w_69479bc9",
+      "name": "Delmoe Lake Road leaves the CDT",
+      "type": "junction",
+      "lat": 45.972688,
+      "lon": -112.438109
     },
     {
       "id": "w_695148c9",
@@ -3829,11 +4102,25 @@
       "lon": -107.538157
     },
     {
+      "id": "w_6ad475c7",
+      "name": "Colorado old route 6 branches",
+      "type": "junction",
+      "lat": 38.618591,
+      "lon": -106.356499
+    },
+    {
       "id": "w_6af7e9ed",
       "name": "Sublette / Two Ocean / Sheridan rejoins",
       "type": "junction",
       "lat": 43.622285,
       "lon": -110.034729
+    },
+    {
+      "id": "w_6b08c6de",
+      "name": "Ghost Ranch old route branches off Ghost Ranch",
+      "type": "junction",
+      "lat": 36.328694,
+      "lon": -106.515833
     },
     {
       "id": "w_6b956530",
@@ -3871,6 +4158,20 @@
       "lon": -107.46516
     },
     {
+      "id": "w_7080833f",
+      "name": "Official mile 3010",
+      "type": "milestone",
+      "lat": 48.781167,
+      "lon": -113.752781
+    },
+    {
+      "id": "w_71124d0e",
+      "name": "Official mile 2980",
+      "type": "milestone",
+      "lat": 48.681039,
+      "lon": -113.494069
+    },
+    {
       "id": "w_716b0313",
       "name": "Official mile 2550",
       "type": "milestone",
@@ -3897,6 +4198,13 @@
       "type": "milestone",
       "lat": 43.486993,
       "lon": -109.908232
+    },
+    {
+      "id": "w_722bc1ee",
+      "name": "Collegiate East branches off Mount Elbert summit",
+      "type": "junction",
+      "lat": 39.062264,
+      "lon": -106.406605
     },
     {
       "id": "w_72477291",
@@ -3948,6 +4256,13 @@
       "lon": -105.776804
     },
     {
+      "id": "w_733ff2c2",
+      "name": "Official mile 2860",
+      "type": "milestone",
+      "lat": 47.890101,
+      "lon": -113.055439
+    },
+    {
       "id": "w_746a6999",
       "name": "Official mile 730",
       "type": "milestone",
@@ -3977,7 +4292,7 @@
     },
     {
       "id": "w_75fd29da",
-      "name": "Tonahutu Creek (RMNP loop) rejoins",
+      "name": "Tonahutu Creek Route rejoins",
       "type": "junction",
       "lat": 40.256331,
       "lon": -105.815907
@@ -4025,6 +4340,13 @@
       "lon": -107.574245
     },
     {
+      "id": "w_77afce11",
+      "name": "Swiftcurrent Lake west shore branches",
+      "type": "junction",
+      "lat": 48.771782,
+      "lon": -113.678387
+    },
+    {
       "id": "w_77bf9808",
       "name": "Official mile 1050",
       "type": "milestone",
@@ -4067,6 +4389,13 @@
       "lon": -107.515728
     },
     {
+      "id": "w_7af77cfb",
+      "name": "Timberline / Skytop Lake branches off MT 53 old main route",
+      "type": "junction",
+      "lat": 45.169124,
+      "lon": -113.519935
+    },
+    {
       "id": "w_7b208972",
       "name": "Official mile 1590",
       "type": "milestone",
@@ -4079,6 +4408,13 @@
       "type": "junction",
       "lat": 42.694863,
       "lon": -109.264843
+    },
+    {
+      "id": "w_7be47b7f",
+      "name": "Collegiate West (official) rejoins",
+      "type": "junction",
+      "lat": 39.064895,
+      "lon": -106.385247
     },
     {
       "id": "w_7c2ae425",
@@ -4100,6 +4436,13 @@
       "type": "milestone",
       "lat": 40.355132,
       "lon": -106.302688
+    },
+    {
+      "id": "w_7d590429",
+      "name": "Official mile 2900",
+      "type": "milestone",
+      "lat": 48.208705,
+      "lon": -113.180411
     },
     {
       "id": "w_7e281dfe",
@@ -4151,11 +4494,46 @@
       "lon": -113.310805
     },
     {
+      "id": "w_81576173",
+      "name": "TR101 high-water side trails branches",
+      "type": "junction",
+      "lat": 48.254806,
+      "lon": -113.147758
+    },
+    {
       "id": "w_826e6a61",
       "name": "Benchmark Wilderness Ranch",
       "type": "resupply",
       "lat": 47.479,
       "lon": -112.876
+    },
+    {
+      "id": "w_829ad934",
+      "name": "Official mile 2820",
+      "type": "milestone",
+      "lat": 47.634021,
+      "lon": -113.076723
+    },
+    {
+      "id": "w_83029bc2",
+      "name": "Bowen Pass ridge rejoins",
+      "type": "junction",
+      "lat": 40.246518,
+      "lon": -105.828576
+    },
+    {
+      "id": "w_834de386",
+      "name": "Spotted Bear rejoins",
+      "type": "junction",
+      "lat": 47.741254,
+      "lon": -113.11989
+    },
+    {
+      "id": "w_834f5775",
+      "name": "Three Island Lake branches",
+      "type": "junction",
+      "lat": 40.76792,
+      "lon": -106.75127
     },
     {
       "id": "w_845c3369",
@@ -4242,6 +4620,13 @@
       "lon": -113.61267
     },
     {
+      "id": "w_88c113d3",
+      "name": "Official mile 2870",
+      "type": "milestone",
+      "lat": 47.937277,
+      "lon": -112.972575
+    },
+    {
       "id": "w_88f6b041",
       "name": "Official mile 1640",
       "type": "milestone",
@@ -4249,11 +4634,25 @@
       "lon": -107.227223
     },
     {
+      "id": "w_892092b2",
+      "name": "Columbus, NM",
+      "type": "endpoint",
+      "lat": 32.930881,
+      "lon": -108.013809
+    },
+    {
       "id": "w_89aa11e8",
       "name": "West Yellowstone (access: Targhee Pass (US 20))",
       "type": "town-access",
       "lat": 44.653219,
       "lon": -111.24811
+    },
+    {
+      "id": "w_8a3089a6",
+      "name": "Bannack Pass shortcut branches off The red line here is new-ish reroute",
+      "type": "junction",
+      "lat": 44.411597,
+      "lon": -112.812575
     },
     {
       "id": "w_8a6c5b9b",
@@ -4347,6 +4746,13 @@
       "lon": -107.848975
     },
     {
+      "id": "w_911ffa4d",
+      "name": "Official mile 2880",
+      "type": "milestone",
+      "lat": 48.031163,
+      "lon": -113.023951
+    },
+    {
       "id": "w_914cff81",
       "name": "Official mile 1330",
       "type": "milestone",
@@ -4394,6 +4800,13 @@
       "type": "town",
       "lat": 39.945643,
       "lon": -105.811125
+    },
+    {
+      "id": "w_94037745",
+      "name": "Official mile 2930",
+      "type": "milestone",
+      "lat": 48.368679,
+      "lon": -113.319162
     },
     {
       "id": "w_943ac3da",
@@ -4466,6 +4879,13 @@
       "lon": -107.851811
     },
     {
+      "id": "w_988b7469",
+      "name": "Official mile 3000",
+      "type": "milestone",
+      "lat": 48.762452,
+      "lon": -113.693196
+    },
+    {
       "id": "w_98aec01f",
       "name": "Official mile 1520",
       "type": "milestone",
@@ -4515,6 +4935,13 @@
       "lon": -113.755999
     },
     {
+      "id": "w_9b374ba1",
+      "name": "Official mile 2940",
+      "type": "milestone",
+      "lat": 48.450951,
+      "lon": -113.242925
+    },
+    {
       "id": "w_9b4f4e35",
       "name": "Official mile 2840",
       "type": "milestone",
@@ -4534,6 +4961,13 @@
       "type": "water",
       "lat": 32.08053,
       "lon": -108.55637
+    },
+    {
+      "id": "w_9c110cb4",
+      "name": "Twin Lakes south shore branches",
+      "type": "junction",
+      "lat": 39.093549,
+      "lon": -106.364595
     },
     {
       "id": "w_9c1ee5ed",
@@ -4578,11 +5012,18 @@
       "lon": -107.42973
     },
     {
+      "id": "w_9f8f61c4",
+      "name": "Dawson / Pitamakan Pass branches",
+      "type": "junction",
+      "lat": 48.517567,
+      "lon": -113.461043
+    },
+    {
       "id": "w_a0092699",
       "name": "Official mile 2770",
       "type": "milestone",
-      "lat": 47.219433,
-      "lon": -112.614266
+      "lat": 47.219182,
+      "lon": -112.613984
     },
     {
       "id": "w_a038c6e1",
@@ -4746,6 +5187,13 @@
       "lon": -106.452095
     },
     {
+      "id": "w_a8142a58",
+      "name": "Nicholia / Deadman Pass leaves the CDT",
+      "type": "junction",
+      "lat": 44.431105,
+      "lon": -112.862018
+    },
+    {
       "id": "w_a834cb2e",
       "name": "Official mile 2260",
       "type": "milestone",
@@ -4795,6 +5243,13 @@
       "lon": -106.79175
     },
     {
+      "id": "w_aae69bc9",
+      "name": "Collegiate West (official) branches off Mount Elbert summit",
+      "type": "junction",
+      "lat": 39.077568,
+      "lon": -106.393578
+    },
+    {
       "id": "w_ab3d460b",
       "name": "Official mile 860",
       "type": "milestone",
@@ -4823,11 +5278,25 @@
       "lon": -106.937669
     },
     {
+      "id": "w_ac23c933",
+      "name": "Wyoming old route 7 rejoins",
+      "type": "junction",
+      "lat": 41.763082,
+      "lon": -107.269888
+    },
+    {
       "id": "w_acf44c6f",
       "name": "Lincoln (access: Rogers Pass (MT 200))",
       "type": "town-access",
       "lat": 47.076439,
       "lon": -112.37114
+    },
+    {
+      "id": "w_ad3b065a",
+      "name": "Three Island Lake rejoins",
+      "type": "junction",
+      "lat": 40.727047,
+      "lon": -106.6705
     },
     {
       "id": "w_adeda7ca",
@@ -5159,6 +5628,20 @@
       "lon": -106.83305
     },
     {
+      "id": "w_c3c5c978",
+      "name": "Official mile 2830",
+      "type": "milestone",
+      "lat": 47.723217,
+      "lon": -113.162763
+    },
+    {
+      "id": "w_c3e386dd",
+      "name": "Summit Mountain branches",
+      "type": "junction",
+      "lat": 48.321308,
+      "lon": -113.34808
+    },
+    {
       "id": "w_c4661d85",
       "name": "Official mile 2410",
       "type": "milestone",
@@ -5213,6 +5696,13 @@
       "type": "milestone",
       "lat": 36.921087,
       "lon": -106.360231
+    },
+    {
+      "id": "w_c6efb1cc",
+      "name": "Official mile 2890",
+      "type": "milestone",
+      "lat": 48.136512,
+      "lon": -113.060626
     },
     {
       "id": "w_c7d90005",
@@ -5306,11 +5796,25 @@
       "lon": -112.308748
     },
     {
+      "id": "w_cd44c2d0",
+      "name": "Highline to Going-to-the-Sun Road branches",
+      "type": "junction",
+      "lat": 48.773268,
+      "lon": -113.770919
+    },
+    {
       "id": "w_cd78ec0d",
       "name": "Official mile 1470",
       "type": "milestone",
       "lat": 40.380622,
       "lon": -106.579755
+    },
+    {
+      "id": "w_cdbce0ad",
+      "name": "Stoney Indian Pass rejoins off Chief Mountain Route",
+      "type": "junction",
+      "lat": 48.933148,
+      "lon": -113.71303
     },
     {
       "id": "w_cf2fb6b4",
@@ -5325,6 +5829,13 @@
       "type": "junction",
       "lat": 46.208313,
       "lon": -112.57593
+    },
+    {
+      "id": "w_cf6317e1",
+      "name": "Marysville rejoins",
+      "type": "junction",
+      "lat": 46.643473,
+      "lon": -112.313989
     },
     {
       "id": "w_cf638c9e",
@@ -5376,6 +5887,13 @@
       "lon": -108.087069
     },
     {
+      "id": "w_d173e07e",
+      "name": "Colorado old route 7 rejoins",
+      "type": "junction",
+      "lat": 39.105946,
+      "lon": -106.395313
+    },
+    {
       "id": "w_d1f52485",
       "name": "Butte",
       "type": "town",
@@ -5388,6 +5906,13 @@
       "type": "milestone",
       "lat": 36.375263,
       "lon": -106.535297
+    },
+    {
+      "id": "w_d3a9d583",
+      "name": "Benchmark (east route) branches",
+      "type": "junction",
+      "lat": 47.508446,
+      "lon": -112.893585
     },
     {
       "id": "w_d3ac4147",
@@ -5488,6 +6013,13 @@
       "lon": -111.552636
     },
     {
+      "id": "w_db5a9519",
+      "name": "Official mile 3030",
+      "type": "milestone",
+      "lat": 48.905698,
+      "lon": -113.905386
+    },
+    {
       "id": "w_dc70809a",
       "name": "Official mile 2860",
       "type": "milestone",
@@ -5507,6 +6039,13 @@
       "type": "milestone",
       "lat": 33.685683,
       "lon": -108.242129
+    },
+    {
+      "id": "w_dd665c52",
+      "name": "Upper Camp Road rejoins",
+      "type": "junction",
+      "lat": 36.454749,
+      "lon": -106.319072
     },
     {
       "id": "w_ddcfdcd2",
@@ -5544,6 +6083,13 @@
       "lon": -106.429951
     },
     {
+      "id": "w_e0ce2f3a",
+      "name": "Antelope Wells, NM",
+      "type": "endpoint",
+      "lat": 31.333332,
+      "lon": -108.530222
+    },
+    {
       "id": "w_e146dade",
       "name": "Official mile 410",
       "type": "milestone",
@@ -5573,7 +6119,7 @@
     },
     {
       "id": "w_e38900b7",
-      "name": "Tonahutu Creek (RMNP loop) branches",
+      "name": "Tonahutu Creek Route branches",
       "type": "junction",
       "lat": 40.311082,
       "lon": -105.811918
@@ -5584,6 +6130,13 @@
       "type": "milestone",
       "lat": 42.958292,
       "lon": -109.538443
+    },
+    {
+      "id": "w_e400a9c2",
+      "name": "Official mile 2840",
+      "type": "milestone",
+      "lat": 47.749945,
+      "lon": -113.014813
     },
     {
       "id": "w_e5af0d07",
@@ -5612,6 +6165,13 @@
       "type": "milestone",
       "lat": 48.270838,
       "lon": -113.173517
+    },
+    {
+      "id": "w_e81f020b",
+      "name": "Shale Mountain divide branches",
+      "type": "junction",
+      "lat": 43.48039,
+      "lon": -109.893386
     },
     {
       "id": "w_e82deba8",
@@ -5684,11 +6244,25 @@
       "lon": -111.336878
     },
     {
+      "id": "w_ece8bfe4",
+      "name": "Cuba alternate 2 leaves the CDT",
+      "type": "junction",
+      "lat": 35.987236,
+      "lon": -106.896355
+    },
+    {
       "id": "w_ed2db137",
       "name": "Official mile 1730",
       "type": "milestone",
       "lat": 42.38819,
       "lon": -108.423838
+    },
+    {
+      "id": "w_ed49d545",
+      "name": "Official mile 2990",
+      "type": "milestone",
+      "lat": 48.674178,
+      "lon": -113.647527
     },
     {
       "id": "w_ed4f7af2",
@@ -5703,6 +6277,13 @@
       "type": "milestone",
       "lat": 45.928968,
       "lon": -112.928499
+    },
+    {
+      "id": "w_ed77f5dc",
+      "name": "Chief Mountain border crossing",
+      "type": "endpoint",
+      "lat": 48.995937,
+      "lon": -113.659836
     },
     {
       "id": "w_edfc1b4e",
@@ -5740,6 +6321,13 @@
       "lon": -112.974207
     },
     {
+      "id": "w_ef8cf2c5",
+      "name": "Official mile 2800",
+      "type": "milestone",
+      "lat": 47.458438,
+      "lon": -112.921103
+    },
+    {
       "id": "w_f0c1c0e8",
       "name": "Reserve",
       "type": "town",
@@ -5747,11 +6335,32 @@
       "lon": -108.757529
     },
     {
+      "id": "w_f115dfb1",
+      "name": "Colorado old route 6 rejoins",
+      "type": "junction",
+      "lat": 38.61747,
+      "lon": -106.354709
+    },
+    {
+      "id": "w_f11bccc3",
+      "name": "Official mile 2810",
+      "type": "milestone",
+      "lat": 47.553614,
+      "lon": -112.959583
+    },
+    {
       "id": "w_f133c1df",
       "name": "Lordsburg",
       "type": "town",
       "lat": 32.34439,
       "lon": -108.710526
+    },
+    {
+      "id": "w_f140fae9",
+      "name": "Stoney Indian Pass branches",
+      "type": "junction",
+      "lat": 48.797568,
+      "lon": -113.676597
     },
     {
       "id": "w_f1419e0a",
@@ -5789,6 +6398,20 @@
       "lon": -107.307147
     },
     {
+      "id": "w_f29ebd1e",
+      "name": "Shale Mountain divide rejoins",
+      "type": "junction",
+      "lat": 43.474531,
+      "lon": -109.884636
+    },
+    {
+      "id": "w_f2aaa60c",
+      "name": "Wyoming old route 6 branches off Wyoming old route 5",
+      "type": "junction",
+      "lat": 41.007398,
+      "lon": -106.908623
+    },
+    {
       "id": "w_f2d2fc48",
       "name": "Winter Park",
       "type": "town",
@@ -5803,11 +6426,25 @@
       "lon": -106.324091
     },
     {
+      "id": "w_f44e6f76",
+      "name": "Collegiate East rejoins",
+      "type": "junction",
+      "lat": 39.056648,
+      "lon": -106.38856
+    },
+    {
       "id": "w_f4d17948",
       "name": "Lordsburg reroute (CDTC) branches",
       "type": "junction",
       "lat": 32.329121,
       "lon": -108.723026
+    },
+    {
+      "id": "w_f53b71bb",
+      "name": "Official mile 2960",
+      "type": "milestone",
+      "lat": 48.533304,
+      "lon": -113.453324
     },
     {
       "id": "w_f56930ee",
@@ -5922,6 +6559,13 @@
       "lon": -109.856279
     },
     {
+      "id": "w_fc2dcb33",
+      "name": "Wyoming old route 8 rejoins",
+      "type": "junction",
+      "lat": 42.19281,
+      "lon": -107.670133
+    },
+    {
       "id": "w_fccd6992",
       "name": "Official mile 2430",
       "type": "milestone",
@@ -5941,6 +6585,13 @@
       "type": "milestone",
       "lat": 44.731348,
       "lon": -111.329596
+    },
+    {
+      "id": "w_fee6dece",
+      "name": "Official mile 2790",
+      "type": "milestone",
+      "lat": 47.370838,
+      "lon": -112.810199
     },
     {
       "id": "w_ff8135ce",

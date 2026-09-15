@@ -289,6 +289,88 @@ destroyed.
 
 ---
 
+## 6a. Hybrid: tile the batches on a cheap box, join on NVMe
+
+Use this when the build box has **rotational** storage (`lsblk -d -o NAME,ROTA`
+shows `1`). The cell work and the tippecanoe tiling are CPU-bound and run fine
+there; the two tile-join steps are not. tippecanoe writes its dedup mbtiles
+schema (`map` z/x/y → hashed `tile_id`, `images` keyed by that hash), so
+tile-join's ordered scan is a random b-tree probe per tile — 1–3 MB/s on a
+spinning array, i.e. days per shard, and page-cache warming does not survive a
+shared host's eviction. On NVMe the same join takes minutes.
+
+On the build box, tile each shard into batches and stop before the join:
+
+```bash
+npx tsx scripts/build-contours-world.ts --shard asia-east --merge-only --batches-only --clean-work
+# leaves data/tiles/contours-world/asia-east/batch-NN.mbtiles + batch-NN.mbtiles.done
+# (--clean-work removes only the tiers here; a re-run reuses finished batches)
+```
+
+Stream finished batches (and any shard already joined) to R2 as they appear:
+
+```bash
+rclone copyto --s3-no-check-bucket --s3-chunk-size 128M \
+  data/tiles/contours-world/asia-east/batch-00.mbtiles \
+  r2:aus-map-data/contours/world-build/batches/asia-east/batch-00.mbtiles
+# ...and the .done marker next to it; shards go under contours/world-build/shards/
+```
+
+Then on a box with ≥ 3 TB of NVMe (core count barely matters — tile-join and
+`pmtiles convert` are single-threaded), after `bootstrap.sh` and `rclone config`:
+
+```bash
+./scripts/remote/join-on-nvme.sh --pull-only   # start early; overlaps the build box
+./scripts/remote/join-on-nvme.sh               # pull the rest, --join-batches per shard,
+                                               # --join, validate, upload-world.sh
+```
+
+`--join-batches` removes a shard's batches only after its join succeeded, so a
+killed join re-runs from the same inputs. Delete the `contours/world-build/`
+prefix from R2 once `world.pmtiles` is verified there.
+
+### What the September 2026 run measured
+
+The world archive (ten shards, ice sheets skipped) was built this way: batches
+on an 80-core vast.ai box with a spinning array ($0.50/h), joins on an AWS
+i4i.4xlarge (16 vCPU, 123 GB RAM, 3.4 TB instance-store NVMe, $1.50/h).
+
+| Step | Measured |
+| --- | --- |
+| Batches in R2 (all shards) | 806 GB across 24 batch files + 3 pre-joined shards |
+| R2 → EC2 pull, 8 streams | ~1 GB/s (640 GB in 11 min) |
+| `tile-join` on NVMe, per shard, 3 concurrent | 40–95 GB/h each, CPU-bound at 2–3 cores per process |
+| world `tile-join` (763 GB of shard files → 806 GB mbtiles) | 4.7 h integrity pass + 6 h merge |
+| `pmtiles convert` (232 M tiles) | 5.5 h → **642 GB `world.pmtiles`** |
+| Upload EC2 → R2 | ~45 MB/s (4.3 h); AWS egress ≈ $0.09/GB, i.e. ~$60 |
+
+Things that bit us on this run, in addition to section 8:
+
+- **tile-join runs `PRAGMA integrity_check` on every input before reading a
+  tile.** That is a full read of each file (hours for 700 GB) with no output
+  and ~10 % CPU. It is not stuck; `/proc/<pid>/io` `read_bytes` keeps climbing.
+  Joined shard files (plain `tiles` table + unique index) check slower than
+  tippecanoe's dedup batches.
+- **Never run `join-on-nvme.sh` while a shard is only partly uploaded.** Its
+  per-shard step joins whatever batches are present, and once
+  `world_<shard>.mbtiles` exists the shard is skipped forever. Gate each join
+  on a completeness marker written by the build box after its last batch and
+  `.done` marker are uploaded (we used `batches/<shard>/COMPLETE` holding the
+  batch count and compared it with the local batch and marker counts).
+- **Disk during the final phase:** shard files (~760 GB) + `world.mbtiles`
+  (~810 GB) + the convert's temp file (~690 GB, in `$TMPDIR` — point it at the
+  NVMe, the root disk is tiny) + `world.pmtiles` (~640 GB) does not fit in
+  3.4 TB. Delete the shard files after `world.mbtiles` passes its zoom check
+  and before `pmtiles convert`; they are rebuildable from the R2 batches.
+- **One silently corrupt tier file** (`ERROR 1: Unexpected I/O failure` from
+  GDAL, SIGBUS from tippecanoe) cost a batch two failed attempts. `ogrinfo`
+  exits 0 on that error, so a validity scan must grep its stderr for `ERROR`.
+- The EC2 security group pins SSH to an IP; a home connection's new address
+  after a reboot looks exactly like a dead box. Check the group before
+  assuming the instance is gone.
+
+---
+
 ## 7. Deploy the Worker and verify
 
 The Worker serves `/{source}/{z}/{x}/{y}.pbf` and gains a `world` source
@@ -359,6 +441,8 @@ Everything is resumable; nothing needs to start over.
 | Build died during the cell phase (OOM, disk, reboot) | Re-run the exact same `./scripts/remote/run-shard.sh <shard>`. Cells with a `.done` marker in `data/tiles/contours-world/{shard}/` are skipped; only pending cells rebuild. |
 | Build died during the tippecanoe merge | `./scripts/remote/run-shard.sh <shard> --merge-only` — redoes only the merge from the staged `*_z*.fgb` tiers (no GDAL work). |
 | A cell looks wrong / settings changed | Delete that cell's `.done` marker and `{cellId}_z*.fgb`, then re-run the shard. Or `--force` to rebuild everything. |
+| Batched merge died during tippecanoe | Re-run the same `--merge-only` (or `--batches-only`) command: batches with a `.done` marker whose recorded cell list matches are reused; the one that died re-tiles. |
+| Batched merge died during tile-join | `--join-batches` re-joins the kept batches; on a spinning disk consider section 6a instead. |
 | Join died | Re-run `--join`. Delete any partial `world.mbtiles` / `world.pmtiles` first — a killed run leaves a headerless file. |
 | Upload died | Re-run `upload-world.sh`; rclone restarts the multipart upload. Verify byte counts afterwards (`--verify-only`). |
 | DEM download died | Re-run; the fetcher skips tiles already on disk. |

@@ -60,6 +60,12 @@ export interface ThemeColors {
   waypointHazard: string;
   /** Favorite / saved heart */
   waypointFavorite: string;
+  /**
+   * A waypoint the hiker has ticked as a resupply stop. Only ever drawn once a
+   * plan exists (see `selectResupplyStopIds`), and it outranks the favourite
+   * colour where both apply — the plan is the rarer, more deliberate signal.
+   */
+  resupplyPlanned: string;
 
   // Water-status semantics (source reliability: flowing → low → dry)
   waterFlowing: string;
@@ -128,6 +134,7 @@ const themes: Record<ThemeVariant, ThemeColors> = {
     waypointJunction: palette.wpJunctionLight,
     waypointHazard: palette.wpHazardLight,
     waypointFavorite: palette.wpFavoriteLight,
+    resupplyPlanned: palette.resupplyPlannedLight,
 
     waterFlowing: palette.infoLight,
     waterLow: palette.warningLight,
@@ -186,6 +193,7 @@ const themes: Record<ThemeVariant, ThemeColors> = {
     waypointJunction: palette.wpJunctionDark,
     waypointHazard: palette.wpHazardDark,
     waypointFavorite: palette.wpFavoriteDark,
+    resupplyPlanned: palette.resupplyPlannedDark,
 
     waterFlowing: palette.infoDark,
     waterLow: palette.warningDark,

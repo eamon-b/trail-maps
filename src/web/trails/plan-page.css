@@ -46,13 +46,23 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   border-radius: 4px;
   font-size: 0.9rem;
 }
-#plan-date-group {
+#plan-date-group,
+#plan-pace-group {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   white-space: nowrap;
   font-size: 0.875rem;
 }
+#plan-pace,
+#plan-daily-hours {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+/* Wide enough for two digits and the spinner, no wider. */
+#plan-daily-hours { width: 4.5rem; }
 #plan-start-date {
   padding: 0.35rem 0.6rem;
   border: 1px solid var(--border-color);

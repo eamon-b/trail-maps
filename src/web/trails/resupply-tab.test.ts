@@ -31,6 +31,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { PACE_KMH } from '@lib/plan-types';
 
 const ROOT = path.resolve(__dirname, '../../..');
 const TRAIL_ID = 'resupply-fixture';
@@ -67,6 +68,25 @@ const countText = (): string => ($('resupply-count').textContent ?? '').trim();
 
 const rowNames = (): string[] =>
   [...$('resupply-list').querySelectorAll('.resupply-name')].map(el => (el.textContent ?? '').trim());
+
+/** The Days tab's per-day stat line, as "~13.8h". */
+const dayHours = (): string[] =>
+  [...$('days-list').querySelectorAll('.day-card-stats span')]
+    .map(el => (el.textContent ?? '').trim())
+    .filter(text => text.startsWith('~'));
+
+const paceSelect = (): HTMLSelectElement => $('plan-pace') as HTMLSelectElement;
+const hoursInput = (): HTMLInputElement => $('plan-daily-hours') as HTMLInputElement;
+
+const setPace = (value: string): void => {
+  paceSelect().value = value;
+  paceSelect().dispatchEvent(new Event('change'));
+};
+
+const setDailyHours = (value: string): void => {
+  hoursInput().value = value;
+  hoursInput().dispatchEvent(new Event('change'));
+};
 
 function makeTrail() {
   const ELE = [0, 100, 300, 200, 600, 700];
@@ -353,5 +373,121 @@ describe('the Arrive column', () => {
     expect(legHeaders()).toContain('Arrive');
     // The first carry ends at Alpha (km 10), inside day 1 — the 1st of March.
     expect(legRows()[0][7]).toBe('Day 1 (1 Mar)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pace and hours per day
+// ---------------------------------------------------------------------------
+//
+// The two figures the leg calculator needs are the hiker's, not the page's
+// (CLAUDE.md, "the app informs the hiker's decisions"). Every number below is
+// hand-computed from the fixture track with Naismith:
+//
+//   hours = km / baseKmh + ascent / 600 + max(0, (descent - 300) / 600)
+
+describe('the pace and hours inputs', () => {
+  it('offers exactly the shared presets, and starts on Average / 8 h', async () => {
+    await boot(false);
+
+    expect([...paceSelect().options].map(option => option.value)).toEqual(
+      Object.keys(PACE_KMH),
+    );
+    expect([...paceSelect().options].map(option => option.textContent)).toEqual([
+      'Slow (3 km/h)', 'Average (4 km/h)', 'Fast (5 km/h)',
+    ]);
+    expect(paceSelect().value).toBe('average');
+    expect(hoursInput().value).toBe('8');
+  });
+
+  it('raises a leg from one day to two at Slow', async () => {
+    await boot();
+    check('w_1').click(); // drop Alpha
+    check('w_2').click(); // …and Mill Road, both options
+    check('w_3').click();
+
+    // Trail Start → Delta is 30.0 km, climbing 100 + 200 with a 100 m drop:
+    // 30/4 + 300/600 = 8.0 h exactly, which is one 8-hour day.
+    expect(legRows()[0]).toEqual([
+      '1', 'Trail Start → Delta', '30.0 km', '+300 m', '-100 m', '1', '0.7 kg',
+    ]);
+
+    // At 3 km/h the same carry is 30/3 + 0.5 = 10.5 h — a second day of food.
+    setPace('slow');
+    expect(legRows()[0]).toEqual([
+      '1', 'Trail Start → Delta', '30.0 km', '+300 m', '-100 m', '2', '1.4 kg',
+    ]);
+  });
+
+  it('drops a leg from two days to one at 16 hours a day', async () => {
+    await boot();
+    check('w_4').click(); // drop Delta
+    check('w_5').click(); // …and Echo
+
+    // Bravo / Charlie → Trail End: 30.0 km, +500 / -100 → 7.5 + 0.8333 = 8.33 h.
+    expect(legRows()[2][5]).toBe('2');
+    expect($('datasheet-subtitle').textContent).toBe(
+      '2 stops · longest carry 30.0 km / 2 days · 2.7 kg food in total',
+    );
+
+    setDailyHours('16');
+    expect(legRows()[2][5]).toBe('1');
+    expect($('datasheet-subtitle').textContent).toBe(
+      '2 stops · longest carry 30.0 km / 1 day · 2.0 kg food in total',
+    );
+  });
+
+  it('moves the Days tab\u2019s hours with pace, so the two tabs agree', async () => {
+    await boot(false);
+
+    // One camp stop, so the Days tab shows day cards rather than its empty note.
+    tabButton('stops').click();
+    $('stops-list').querySelector<HTMLElement>('.stop-row[data-km="25"]')!.click();
+    tabButton('days').click();
+
+    // Two days of 25.0 km. The km-25 stop snaps back to the km-20 track point,
+    // so day 1 climbs 100 + 200 and day 2 climbs 400 + 100 with a 100 m drop:
+    //   25/4 + 300/600 = 6.75 h   25/4 + 500/600 = 7.08 h
+    expect(dayHours()).toEqual(['~6.8h', '~7.1h']);
+
+    setPace('slow');
+    //   25/3 + 300/600 = 8.83 h   25/3 + 500/600 = 9.17 h
+    expect(dayHours()).toEqual(['~8.8h', '~9.2h']);
+  });
+
+  it('persists both, and reloads a pre-input plan at Average / 8 h', async () => {
+    await boot(false);
+    setPace('fast');
+    setDailyHours('10');
+    flushSave();
+
+    const saved = JSON.parse(localStorage.getItem(`trail-plan-${TRAIL_ID}`)!);
+    expect(saved.pace).toBe('fast');
+    expect(saved.dailyHours).toBe(10);
+
+    await boot(false);
+    expect(paceSelect().value).toBe('fast');
+    expect(hoursInput().value).toBe('10');
+
+    // A plan saved before the inputs existed has neither field.
+    delete saved.pace;
+    delete saved.dailyHours;
+    localStorage.setItem(`trail-plan-${TRAIL_ID}`, JSON.stringify(saved));
+    await boot(false);
+    expect(paceSelect().value).toBe('average');
+    expect(hoursInput().value).toBe('8');
+  });
+
+  it('ignores an unusable hours entry and clamps the rest into range', async () => {
+    await boot(false);
+
+    setDailyHours('');
+    expect(hoursInput().value).toBe('8');
+
+    setDailyHours('99');
+    expect(hoursInput().value).toBe('16');
+
+    setDailyHours('0');
+    expect(hoursInput().value).toBe('1');
   });
 });

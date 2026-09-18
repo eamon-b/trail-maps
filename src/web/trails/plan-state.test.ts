@@ -123,6 +123,37 @@ describe('resupplyStops field validation', () => {
   });
 });
 
+describe('pace and dailyHours validation', () => {
+  it('round-trips a plan with both inputs set', () => {
+    const state: PlanState = { ...validState, pace: 'slow', dailyHours: 6 };
+    savePlanState('pace-trail', state);
+    expect(loadPlanState('pace-trail')).toEqual(state);
+  });
+
+  it('accepts a plan without them (pre-input plans = Average / 8 h)', () => {
+    savePlanState('no-pace', validState);
+    const loaded = loadPlanState('no-pace');
+    expect(loaded).toEqual(validState);
+    expect(loaded?.pace).toBeUndefined();
+    expect(loaded?.dailyHours).toBeUndefined();
+  });
+
+  it('rejects a pace that is not one of the three presets', () => {
+    localStorage.setItem('trail-plan-bad-pace', JSON.stringify({ ...validState, pace: 'brisk' }));
+    expect(loadPlanState('bad-pace')).toBeNull();
+  });
+
+  it('rejects a non-finite or non-positive dailyHours', () => {
+    for (const [key, hours] of [['zero', 0], ['neg', -4], ['text', '8']] as const) {
+      localStorage.setItem(`trail-plan-${key}`, JSON.stringify({ ...validState, dailyHours: hours }));
+      expect(loadPlanState(key)).toBeNull();
+    }
+    // NaN/Infinity do not survive JSON.stringify, so they arrive as null.
+    localStorage.setItem('trail-plan-nan', JSON.stringify({ ...validState, dailyHours: Number.NaN }));
+    expect(loadPlanState('nan')).toBeNull();
+  });
+});
+
 describe('savePlanState error handling', () => {
   it('returns false on QuotaExceededError instead of silently swallowing it', () => {
     // Simulate localStorage being full

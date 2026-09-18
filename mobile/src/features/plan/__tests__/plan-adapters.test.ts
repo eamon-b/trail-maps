@@ -24,6 +24,7 @@ import type { TrailJson } from '../../../services/trail-assets';
 // Real bundled fixtures: work in Jest via the require() map.
 const cape = require('../../../../assets/trails/cape_to_cape.json') as TrailJson;
 const aawt = require('../../../../assets/trails/aawt.json') as TrailJson;
+const cdt = require('../../../../assets/trails/cdt.json') as TrailJson;
 
 /** Build the Naismith time index the splitter consumes. */
 function indexOf(trail: TrailJson): TimeIndex {
@@ -51,6 +52,19 @@ function syntheticTrail(): TrailJson {
       { id: 'w0', name: 'Start', lat: 0, lon: 0, type: 'trailhead', totalDistance: 0 },
       { id: 'c1', name: 'Camp A', lat: 0, lon: 0, type: 'campsite', totalDistance: 20 },
       { id: 't1', name: 'Townsville', lat: 0, lon: 0, type: 'town', totalDistance: 40 },
+      // 50 m along and named after the same turn-off: one group, one stop —
+      // the Salida / Poncha Springs shape, in miniature.
+      {
+        id: 't2',
+        name: 'Poncha',
+        lat: 0,
+        lon: 0,
+        type: 'town',
+        totalDistance: 40.05,
+        offTrailKm: 5,
+        accessMode: 'hitch',
+        accessName: 'Highway 1',
+      },
       { id: 'wt', name: 'Tank', lat: 0, lon: 0, type: 'water-tank', totalDistance: 55 },
       { id: 'c2', name: 'Camp B', lat: 0, lon: 0, type: 'campsite', totalDistance: 60 },
       { id: 'end', name: 'Finish', lat: 0, lon: 0, type: 'trailhead', totalDistance: 100 },
@@ -246,18 +260,11 @@ describe('computePlan over the real trail', () => {
 
   it('surfaces resupply legs (cape_to_cape has 3 towns)', () => {
     const plan = computePlan(cape, inputs);
-    expect(plan.resupply.hasResupplyData).toBe(true);
-    expect(plan.foodCarries.length).toBeGreaterThan(0);
+    expect(plan.resupplyGroups.length).toBe(3);
+    expect(plan.resupplyLegs.length).toBeGreaterThan(0);
     // Each leg carries the calculator's own food-weight estimate.
-    expect(plan.foodCarries[0].food.weightKg).toBeGreaterThan(0);
-  });
-
-  it('derives resupply day counts from the effective km/day (Decision 6)', () => {
-    const plan = computePlan(cape, inputs);
-    const effKm = Math.max(1, plan.effectiveDailyKm);
-    for (const g of plan.resupply.gaps) {
-      expect(g.estimatedDays).toBe(Math.ceil((g.toKm - g.fromKm) / effKm));
-    }
+    expect(plan.resupplyLegs[0].food.weightKg).toBeGreaterThan(0);
+    expect(plan.resupplySummary.hasData).toBe(true);
   });
 
   it('reports no water data when the trail has no water-type waypoints', () => {
@@ -374,11 +381,12 @@ describe('section scoping', () => {
     });
     expect(plan.days[0].startKm).toBe(prevelly.km);
     expect(plan.days[plan.days.length - 1].endKm).toBe(yallingup.km);
-    // Every resupply point lies inside the section.
-    for (const p of plan.resupply.points) {
-      expect(p.km).toBeGreaterThanOrEqual(prevelly.km);
-      expect(p.km).toBeLessThanOrEqual(yallingup.km);
+    // Every leg lies inside the section, though the option list is trail-wide.
+    for (const leg of plan.resupplyLegs) {
+      expect(leg.fromKm).toBeGreaterThanOrEqual(prevelly.km);
+      expect(leg.toKm).toBeLessThanOrEqual(yallingup.km);
     }
+    expect(plan.resupplyGroups.length).toBe(3);
   });
 });
 
@@ -405,5 +413,116 @@ describe('direction-flip recompute', () => {
 
     // Endpoints swap: reversed day 1 starts where the forward plan ended.
     expect(back.days[0].startName).toBe(forward.days[forward.days.length - 1].endName);
+  });
+});
+
+describe('resupply selection', () => {
+  const full: PlanInputs = { startKm: 0, endKm: 100, dailyHours: 8, pace: 'average' };
+
+  /**
+   * The synthetic trail on a steady 2 m/km climb plus a second, separate town,
+   * so a leg's ascent and a merge are both exact hand sums: 0→40 climbs 80 m,
+   * 40→70 climbs 60 m, 70→100 climbs 60 m.
+   */
+  function twoTownTrail(): TrailJson {
+    const points = Array.from({ length: 101 }, (_, i) => ({
+      lat: 0,
+      lon: i * 0.001,
+      ele: 100 + i * 2,
+      dist: i,
+    }));
+    const base = syntheticTrail();
+    return {
+      ...base,
+      waypoints: [
+        ...base.waypoints,
+        { id: 't3', name: 'Creede', lat: 0, lon: 0, type: 'town', totalDistance: 70 },
+      ],
+      track: { points, displayPoints: points, totalDistance: 100, totalAscent: 200, totalDescent: 0 },
+    };
+  }
+
+  it('ticks every option by default: one stop per group, one leg per boundary', () => {
+    const plan = computePlan(syntheticTrail(), full);
+    // The twin towns 50 m apart are one turn-off, so one group and one stop.
+    expect(plan.resupplyGroups.length).toBe(1);
+    expect(plan.resupplyGroups[0].label).toBe('Highway 1');
+    expect(plan.resupplyStops).toEqual([
+      { km: 40, name: 'Townsville / Poncha', optionIds: ['t1', 't2'] },
+    ]);
+    expect(plan.resupplyLegs.map((l) => [l.fromName, l.toName])).toEqual([
+      ['Trail Start', 'Townsville / Poncha'],
+      ['Townsville / Poncha', 'Trail End'],
+    ]);
+  });
+
+  it('joins two ticks in one group into a single stop', () => {
+    const plan = computePlan(syntheticTrail(), { ...full, resupplyStops: ['t1', 't2'] });
+    expect(plan.resupplyStops.length).toBe(1);
+    expect(plan.resupplyStops[0].name).toBe('Townsville / Poncha');
+    // One tick in the same group is the same stop, under its own name.
+    const one = computePlan(syntheticTrail(), { ...full, resupplyStops: ['t2'] });
+    expect(one.resupplyStops.map((s) => s.name)).toEqual(['Poncha']);
+  });
+
+  it('merges the legs of an unticked stop, summing distance and ascent', () => {
+    const trail = twoTownTrail();
+    const every = computePlan(trail, full);
+    expect(every.resupplyLegs.map((l) => l.distanceKm)).toEqual([40, 30, 30]);
+    expect(every.resupplyLegs.map((l) => l.ascentM)).toEqual([80, 60, 60]);
+
+    // Untick the first group: its two legs become one.
+    const merged = computePlan(trail, { ...full, resupplyStops: ['t3'] });
+    expect(merged.resupplyLegs.map((l) => [l.fromName, l.toName])).toEqual([
+      ['Trail Start', 'Creede'],
+      ['Creede', 'Trail End'],
+    ]);
+    expect(merged.resupplyLegs[0].distanceKm).toBe(40 + 30);
+    expect(merged.resupplyLegs[0].ascentM).toBe(80 + 60);
+  });
+
+  it('an explicit empty selection is a plan with no stops, not the default', () => {
+    const plan = computePlan(twoTownTrail(), { ...full, resupplyStops: [] });
+    expect(plan.resupplyStops).toEqual([]);
+    expect(plan.resupplyLegs).toEqual([]);
+    expect(plan.resupplySummary.hasData).toBe(false);
+    // The options themselves are still offered — the list is trail-wide.
+    expect(plan.resupplyGroups.length).toBe(2);
+  });
+
+  it('takes days per leg from the hiker’s hours and pace, not the day split', () => {
+    // The first leg is 40 flat km: 10 h at 4 km/h, 13.3 h at 3 km/h.
+    const trail = syntheticTrail();
+    const at8 = computePlan(trail, full);
+    expect(at8.resupplyLegs[0].estimatedHours).toBeCloseTo(10, 5);
+    expect(at8.resupplyLegs[0].estimatedDays).toBe(2);
+    expect(computePlan(trail, { ...full, pace: 'slow' }).resupplyLegs[0].estimatedDays).toBe(2);
+    expect(computePlan(trail, { ...full, dailyHours: 16 }).resupplyLegs[0].estimatedDays).toBe(1);
+  });
+
+  it('drops a ticked stop outside the section, keeping the list trail-wide', () => {
+    const plan = computePlan(twoTownTrail(), { ...full, endKm: 50 });
+    // Creede (70 km) is ticked but out of range: no leg reaches it.
+    expect(plan.resupplyLegs.map((l) => l.toName)).toEqual(['Townsville / Poncha', 'Trail End']);
+    for (const leg of plan.resupplyLegs) expect(leg.toKm).toBeLessThanOrEqual(50);
+    expect(plan.resupplyStops.length).toBe(2);
+    expect(plan.resupplyGroups.length).toBe(2);
+  });
+
+  it('groups the real CDT asset and resolves Monarch Pass to one stop', () => {
+    const plan = computePlan(cdt, {
+      startKm: 0,
+      endKm: cdt.track.totalDistance,
+      dailyHours: 8,
+      pace: 'average',
+    });
+    const options = plan.resupplyGroups.reduce((n, g) => n + g.options.length, 0);
+    expect(options).toBeGreaterThanOrEqual(60);
+    // Several towns share a turn-off, so there are strictly fewer groups.
+    expect(plan.resupplyGroups.length).toBeLessThan(options);
+
+    const monarch = plan.resupplyGroups.find((g) => g.label?.startsWith('Monarch Pass'))!;
+    expect(monarch.options.length).toBeGreaterThan(1);
+    expect(plan.resupplyStops.filter((s) => s.km === monarch.km).length).toBe(1);
   });
 });

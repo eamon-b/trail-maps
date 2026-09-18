@@ -7,6 +7,10 @@
  * chips scopes the list by family (water / camp / town / shelter / all), and a
  * "scroll to me" button jumps to the hiker's position within the filtered list.
  *
+ * Waypoints the hiker has ticked as resupply stops carry a "Resupply" pill, and
+ * a "Planned" chip reduces the list to the plan — but only once a plan exists
+ * (see `usePlannedResupplyIds`; null means nothing is planned, not everything).
+ *
  * Water waypoints also carry a freshness-ranked status chip ("Flowing · 3d")
  * when the comment cache holds recent reports — see `water-aggregate` for the
  * ranking and `use-water-status` for the read.
@@ -38,6 +42,7 @@ import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
 import { useFavoritesStore } from '../../state/favorites-store';
+import { usePlannedResupplyIds } from '../plan/use-planned-resupply';
 import type { TrailJson } from '../../services/trail-loader';
 import { useGuide } from './GuideContext';
 import { useGuidePaneFocus } from './GuideFocusContext';
@@ -77,6 +82,8 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const units = useSettingsStore((s) => s.units);
   const { currentKm } = useGuidePositionContext();
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
+  // Null until the hiker has chosen resupply stops — no pill, no Planned chip.
+  const plannedIds = usePlannedResupplyIds(trailId, trail);
   // Freshness-ranked water verdicts, keyed by the *bundled* waypoint id (the id
   // comments are filed against; legacy waypoints without one carry no reports).
   const waterByWaypoint = useWaterStatus(trailId);
@@ -87,15 +94,31 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
 
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
 
+  const chips = useMemo(
+    () => FILTER_FAMILIES.filter((f) => f.value !== 'planned' || plannedIds != null),
+    [plannedIds],
+  );
+
+  // The Planned chip can vanish under the hiker (clearing the plan from the Plan
+  // screen). Derive the effective family rather than resetting state in an
+  // effect, so the list never renders one frame filtered to nothing.
+  const activeFamily: WaypointFamily =
+    family === 'planned' && plannedIds == null ? 'all' : family;
+
   const data = useMemo(() => {
     const waypointRows = toWaypointRows(orderedWaypoints(trail)).filter((row) =>
-      matchesFamily(row.waypoint.type, family, favoriteSet.has(row.key)),
+      matchesFamily(
+        row.waypoint.type,
+        activeFamily,
+        favoriteSet.has(row.key),
+        plannedIds?.has(row.key) ?? false,
+      ),
     );
     // A POI row is never a favourite, so the 'favorites' chip drops them all —
     // `poiCategoriesForFamily` already says so, via `matchesPoiFamily`.
-    const pois = visiblePois.filter((poi) => matchesPoiFamily(poi.category, family));
+    const pois = visiblePois.filter((poi) => matchesPoiFamily(poi.category, activeFamily));
     return interleaveListRows(waypointRows, pois);
-  }, [trail, family, favoriteSet, visiblePois]);
+  }, [trail, activeFamily, favoriteSet, plannedIds, visiblePois]);
 
   const hasPoiRows = useMemo(() => data.some((row) => row.kind === 'poi'), [data]);
 
@@ -169,8 +192,8 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Sticky category filter chips */}
       <View style={[styles.filterBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        {FILTER_FAMILIES.map((f) => {
-          const active = f.value === family;
+        {chips.map((f) => {
+          const active = f.value === activeFamily;
           return (
             <Pressable
               key={f.value}
@@ -227,6 +250,7 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
                 units={units}
                 currentKm={currentKm}
                 favorite={favoriteSet.has(row.key)}
+                planned={plannedIds?.has(row.key) ?? false}
                 water={
                   waypoint.id && isWaterFamily(waypoint.type)
                     ? waterByWaypoint.get(waypoint.id) ?? null
@@ -241,9 +265,11 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
         )}
         ListEmptyComponent={
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {family === 'favorites'
+            {activeFamily === 'favorites'
               ? 'No favorites yet. Tap the heart on a waypoint to save it here.'
-              : 'No waypoints match this filter.'}
+              : activeFamily === 'planned'
+                ? 'No planned resupply stops. Choose them from the Plan screen.'
+                : 'No waypoints match this filter.'}
           </Text>
         }
         // The credit line rides with the rows: it only owes OSM a mention when
@@ -294,12 +320,15 @@ function WaypointRow({
   units,
   currentKm,
   favorite,
+  planned,
   water,
 }: {
   waypoint: Waypoint;
   units: 'km' | 'mi';
   currentKm: number | null;
   favorite: boolean;
+  /** A ticked resupply stop — only ever true once a plan exists. */
+  planned: boolean;
   /** Aggregated water verdict, for water waypoints with recent reports. */
   water?: WaterAggregate | null;
 }) {
@@ -327,6 +356,13 @@ function WaypointRow({
             >
               ♥
             </Text>
+          )}
+          {planned && (
+            <View style={[styles.plannedPill, { borderColor: colors.resupplyPlanned }]}>
+              <Text style={[styles.plannedPillText, { color: colors.resupplyPlanned }]}>
+                Resupply
+              </Text>
+            </View>
           )}
           {water && <WaterStatusChip aggregate={water} />}
         </View>
@@ -433,6 +469,17 @@ const styles = StyleSheet.create({
   },
   favoriteBadge: {
     fontSize: glyphSizes.xs,
+  },
+  plannedPill: {
+    flexShrink: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  plannedPillText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   waterChip: {
     flexShrink: 0,

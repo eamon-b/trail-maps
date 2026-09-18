@@ -67,6 +67,12 @@ export const palette = {
   wpFavoriteLight: '#D81E5B',
   wpFavoriteDark: '#FF7BA6',
 
+  // Planned resupply stop — a saturated orange, deliberately far from the
+  // favourite pink and the water blue so a ringed marker says which of the
+  // three it is at a glance.
+  resupplyPlannedLight: '#C2410C',
+  resupplyPlannedDark: '#FFA94D',
+
   // Modal/backdrop scrim (theme-independent translucent black)
   scrim: 'rgba(0, 0, 0, 0.5)',
 } as const;

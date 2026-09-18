@@ -248,6 +248,13 @@ export interface GuideMapProps {
   /** Starred waypoint ids — enlarged and ringed in the favorite color. */
   favoriteIds?: ReadonlySet<string>;
   /**
+   * Waypoint ids the hiker has planned as resupply stops (see the guide's
+   * `usePlannedResupplyIds`). Ringed like a favourite but in the planned
+   * colour, and they win where a waypoint is both. Absent until a plan exists,
+   * which is deliberately different from an empty set.
+   */
+  plannedResupplyIds?: ReadonlySet<string>;
+  /**
    * Aggregated water status per bundled waypoint id (see the guide's
    * `useWaterStatus`). Tints a water source's marker ring by its status; markers
    * without an entry keep their category ring.
@@ -438,6 +445,7 @@ export const GuideMap = memo(
       currentPosition,
       accuracy,
       favoriteIds,
+      plannedResupplyIds,
       waterStatusById,
       onWaypointTap,
       onPoiTap,
@@ -593,8 +601,9 @@ export const GuideMap = memo(
           (type) => waypointColor(type, colors),
           favoriteIds,
           waterStatusById,
+          plannedResupplyIds,
         ),
-      [waypoints, colors, favoriteIds, waterStatusById],
+      [waypoints, colors, favoriteIds, waterStatusById, plannedResupplyIds],
     );
 
     const poiCollection = useMemo(
@@ -726,17 +735,23 @@ export const GuideMap = memo(
     // sources were last reported dry. Deliberately ring-only: no extra layer, no
     // new glyph, and a starred waypoint still wins (the favorite ring is what the
     // hiker asked to see).
+    //
+    // A planned resupply stop outranks both: the plan is the rarer, more
+    // deliberate signal, and it borrows the favourite's radius and ring width so
+    // the only difference between the two is the colour.
     const waypointCircleStyle = useMemo(
       () => ({
         circleRadius: [
           'case',
-          ['get', 'favorite'],
+          ['any', ['get', 'plannedResupply'], ['get', 'favorite']],
           FAVORITE_MARKER_RADIUS,
           MARKER_RADIUS,
         ] as unknown as number,
         circleColor: ink.badge,
         circleStrokeColor: [
           'case',
+          ['get', 'plannedResupply'],
+          colors.resupplyPlanned,
           ['get', 'favorite'],
           colors.waypointFavorite,
           [
@@ -753,12 +768,19 @@ export const GuideMap = memo(
         ] as unknown as string,
         circleStrokeWidth: [
           'case',
-          ['get', 'favorite'],
+          ['any', ['get', 'plannedResupply'], ['get', 'favorite']],
           FAVORITE_MARKER_RING_WIDTH,
           MARKER_RING_WIDTH,
         ] as unknown as number,
       }),
-      [ink.badge, colors.waypointFavorite, colors.waterFlowing, colors.waterLow, colors.waterDry],
+      [
+        ink.badge,
+        colors.resupplyPlanned,
+        colors.waypointFavorite,
+        colors.waterFlowing,
+        colors.waterLow,
+        colors.waterDry,
+      ],
     );
 
     // Per-type glyph over the badge. `iconAllowOverlap` + `iconIgnorePlacement`

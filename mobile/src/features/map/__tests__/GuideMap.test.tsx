@@ -453,6 +453,8 @@ describe('GuideMap', () => {
     // reads in either app theme.
     expect(style.circleStrokeColor).toEqual([
       'case',
+      ['get', 'plannedResupply'],
+      '#123456',
       ['get', 'favorite'],
       '#123456',
       [
@@ -468,8 +470,43 @@ describe('GuideMap', () => {
       ],
     ]);
     expect(style.circleColor).toBe(mapInk('light').badge);
-    // Bigger than the 5 px dot it replaces, and favorites are bigger still.
-    expect(style.circleRadius).toEqual(['case', ['get', 'favorite'], 11, 9]);
+    // Bigger than the 5 px dot it replaces, and favorites/planned stops are
+    // bigger still.
+    expect(style.circleRadius).toEqual([
+      'case',
+      ['any', ['get', 'plannedResupply'], ['get', 'favorite']],
+      11,
+      9,
+    ]);
+  });
+
+  it('rings a planned resupply stop ahead of a favorite, at the favorite size', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          favoriteIds={new Set(['w_1'])}
+          plannedResupplyIds={new Set(['w_1'])}
+        />,
+      );
+    });
+    await flush();
+
+    const shape = sourceById(tree, 'guide-waypoints').props.data as GeoJSON.FeatureCollection;
+    expect(shape.features[0].properties!.plannedResupply).toBe(true);
+    expect(shape.features[0].properties!.favorite).toBe(true);
+
+    // The paint expression resolves planned BEFORE favorite, so a waypoint that
+    // is both draws the planned ring.
+    const circles = nodeById(tree, 'circle', 'guide-waypoints-circles');
+    const strokeColor = (circles.props.style as { circleStrokeColor: unknown[] }).circleStrokeColor;
+    expect(strokeColor[1]).toEqual(['get', 'plannedResupply']);
+    expect(strokeColor[3]).toEqual(['get', 'favorite']);
   });
 
   it('feeds the aggregated water status into the marker source', async () => {

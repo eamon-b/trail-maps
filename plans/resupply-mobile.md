@@ -2,8 +2,10 @@
 
 Status: planned 2026-09-17; decisions 1 and 2 taken with Eamon 2026-09-18 (PR #77 review) and
 marked **[decided]** below. Phase 4 of `plans/resupply-selection.md` (that document, the shared
-calculator and the web tab all arrive with PR #74, `feature/load-cdt-data`). Tracked as issue #73.
-Nothing here is implemented yet.
+calculator and the web tab landed with PR #74, `feature/load-cdt-data`, now on `main`). Tracked
+as issue #73. **Implemented 2026-09-18 on PR #77** (phases 0 through 4 and the Phase 5 tests,
+docs and Maestro update; the emulator pass and screenshots in Phase 5 still want a human with
+the device). The phase sections below are kept as the record of what was built and why.
 
 The review also set a rule that outlives this plan, now in CLAUDE.md under "Key Patterns": **the
 app informs the hiker's decisions; it never makes them.** Pace, hours per day and every other

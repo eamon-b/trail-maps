@@ -52,13 +52,15 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
+import { accessSummary } from '@lib/resupply-display';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
 import { isResupplyWaypoint } from '@lib/waypoint-taxonomy';
 import { useTheme } from '../../../../src/theme';
 import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
-import { useSettingsStore } from '../../../../src/state/settings-store';
+import { useSettingsStore, type Units } from '../../../../src/state/settings-store';
+import type { TrailJsonWaypoint } from '../../../../src/services/trail-assets';
 import { useGuide } from '../../../../src/features/guide/GuideContext';
 import { useGuidePositionContext } from '../../../../src/features/guide/GuidePositionContext';
 import { ShareIconButton } from '../../../../src/features/share/ShareIconButton';
@@ -251,6 +253,7 @@ export default function WaypointDetailScreen() {
 
   const marker = waypointColor(waypoint.type, colors);
   const description = syncedDescription ?? waypoint.description;
+  const accessLine = accessLineFor(waypoint, units);
   const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
   const duplicatePois = duplicatePoisFor(trail, waypoint.id);
   const km = waypoint.totalDistance ?? 0;
@@ -327,6 +330,11 @@ export default function WaypointDetailScreen() {
             <Text style={[styles.description, { color: colors.textSecondary }]}>
               {description}
             </Text>
+          ) : null}
+          {/* How far off the route the place is, and how you get there — the
+              same words the picker uses (@lib/resupply-display). */}
+          {accessLine ? (
+            <Text style={[styles.accessLine, { color: colors.textSecondary }]}>{accessLine}</Text>
           ) : null}
         </View>
 
@@ -652,6 +660,18 @@ function FavoriteHeart({ filled, onPress }: { filled: boolean; onPress: () => vo
 // Stat chip
 // ---------------------------------------------------------------------------
 
+/**
+ * "22.5 km hitch from Chief Mountain border crossing · accepts boxes" — where a
+ * place actually is when it is not on the route. Empty for an on-route
+ * waypoint, which is most of them, and then nothing is rendered.
+ */
+function accessLineFor(waypoint: TrailJsonWaypoint, units: Units): string {
+  const summary = accessSummary(waypoint, (km) => formatDistance(km, units));
+  if (summary === '') return '';
+  const where = waypoint.accessName ? `${summary} from ${waypoint.accessName}` : summary;
+  return waypoint.acceptsBoxes ? `${where} · accepts boxes` : where;
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
@@ -844,6 +864,7 @@ const styles = StyleSheet.create({
   typeChipText: { ...typography.dataSmall, textTransform: 'capitalize' },
   name: { ...typography.displaySmall },
   description: { ...typography.body },
+  accessLine: { ...typography.bodySmall },
 
   plannedBanner: {
     alignSelf: 'flex-start',

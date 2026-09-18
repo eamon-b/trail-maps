@@ -87,6 +87,12 @@ export default function GuideLayout() {
         <Stack.Screen name="downloads" options={{ title: 'Offline maps' }} />
         <Stack.Screen name="routes" options={{ title: 'Routes' }} />
         <Stack.Screen name="plan" options={{ title: 'Plan' }} />
+        {/* A modal over the plan: 70 CDT rows want a header, a scroll and a
+            back gesture, which a sheet has none of. */}
+        <Stack.Screen
+          name="resupply"
+          options={{ title: 'Resupply stops', presentation: 'modal' }}
+        />
         {/* Title is overridden with the waypoint name from within the screen. */}
         <Stack.Screen name="waypoint/[waypointId]" options={{ title: 'Waypoint' }} />
         {/* Title is overridden with the POI name from within the screen. */}

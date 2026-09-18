@@ -1,6 +1,8 @@
 # Resupply selection
 
-Status: planned 2026-09-13; phases 1a, 1b, 1c, 2 and 3 implemented 2026-09-13 on `feature/load-cdt-data` (generator branches unpushed; mobile Phase 4 still open). Decisions taken with Eamon on the same day are marked **[decided]**;
+Status: planned 2026-09-13; phases 1a, 1b, 1c, 2 and 3 implemented 2026-09-13 on `feature/load-cdt-data` (generator branches unpushed). Mobile Phase 4 is being implemented under
+`plans/resupply-mobile.md`, which also carries the web's pace / daily-hours inputs (its Phase 0,
+2026-09-18). Decisions taken with Eamon on the same day are marked **[decided]**;
 questions still open are collected at the end.
 
 ## Why
@@ -275,8 +277,8 @@ renders one table from `computeResupplyLegs`:
 - "Arrive" shows `Day N (date)` from `currentDays` when the camp plan has stops and a start date,
   else the column is omitted. `isLong` legs get the existing warning styling.
 - A summary line above: `N stops · longest carry X km / Y days · Z kg food in total`.
-- Web has no pace or daily-hours input; use 4 km/h and 8 h/day (constants named in one place,
-  `RESUPPLY_DAILY_HOURS`). Adding inputs is out of scope.
+- The page's own pace and hours-per-day inputs feed the legs (and the day plan), so the days a
+  carry takes are the hiker's figures, not the page's — `plans/resupply-mobile.md` Phase 0.
 - The existing `#resupply-section` collapsible under the Days tab is reduced to the same summary
   line plus "Edit in the Resupply tab", fed from the same legs, so the two never disagree.
 
@@ -352,8 +354,8 @@ from the registry and must not be regenerated.
 - Ticked resupplies forcing a zero day or a camp stop in the day plan.
 - Alternates implied by a resupply choice (Ghost Ranch, Doc Campbell's, Columbus terminus) —
   choosing the town does not switch the route.
-- Web pace / daily-hours inputs; per-leg "food to buy" (that is the `resupply` app's job; a
-  future export of these legs to it is the obvious bridge).
+- Per-leg "food to buy" (that is the `resupply` app's job; a future export of these legs to it is
+  the obvious bridge).
 - Elevation-profile markers for ticked stops; leg polylines on the map.
 - A per-option "days off" / zero entry.
 
@@ -368,3 +370,9 @@ from the registry and must not be regenerated.
    `(access: …)` name for now?
 4. Web constants 4 km/h and 8 h/day for leg days — fine, or do you want the page to grow pace and
    daily-hours inputs like the phone?
+   **[answered]** Inputs, and the constants go: a UI module must never fix how far or how long is
+   reasonable (CLAUDE.md, "the app informs the hiker's decisions; it never makes them"). Done in
+   Phase 0 of `plans/resupply-mobile.md`, 2026-09-18 — a `<select id="plan-pace">` and
+   `<input id="plan-daily-hours">` beside "Start:", persisted as `PlanState.pace` /
+   `PlanState.dailyHours`, feeding `computeResupplyLegs` *and* `computeDays`;
+   `computeResupplyLegs` now requires both and throws rather than substituting either.

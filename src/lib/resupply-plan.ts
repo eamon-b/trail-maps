@@ -22,6 +22,13 @@
  * Nothing here is cached. `computeResupplyLegs` walks the track once per leg,
  * which on a web (full-resolution) track is real work — callers recompute only
  * when the selection, direction or section changes.
+ *
+ * Pace and hours per day are the caller's to supply, never this module's to
+ * assume: how far a day is belongs to the hiker (CLAUDE.md, "the app informs the
+ * hiker's decisions"). `computeResupplyLegs` therefore *requires* `dailyHours`
+ * and `baseKmh` and throws on a figure it cannot walk at, rather than
+ * substituting one — a silent fallback is how a fixed 4 km/h reached the web
+ * page in the first place.
  */
 
 import type { ComputedDay, SectionConfig } from './plan-types';
@@ -31,7 +38,7 @@ import type { PlanTrail } from './day-calculator';
 import { estimateHikingHoursRaw } from './day-calculator';
 import { calculateElevationBetween } from './track-geometry';
 import { routeBreakStarts } from './route-breaks';
-import { isResupplyWaypoint } from './waypoint-taxonomy';
+import { isAccessWaypoint, isResupplyWaypoint } from './waypoint-taxonomy';
 import type { FoodCarryEstimate, ResupplyGap, ResupplyPoint } from './resupply-calculator';
 import {
   calculateFoodWeight,
@@ -126,10 +133,10 @@ export interface ListResupplyOptionsOptions {
 }
 
 export interface ComputeResupplyLegsOptions {
-  /** Walking hours per day. Drives days-per-leg, and so the food weight. */
+  /** The hiker's walking hours per day. Drives days-per-leg, and so the food weight. */
   dailyHours: number;
-  /** Naismith flat-ground base speed. Default 4, as everywhere else. */
-  baseKmh?: number;
+  /** The hiker's Naismith flat-ground base speed (km/h) — `PACE_KMH[pace]`. */
+  baseKmh: number;
   /** Scope the legs to a section, exactly as `analyzeResupplyForSection` does. */
   section?: SectionConfig | null;
   longThresholdDays?: number;
@@ -149,15 +156,20 @@ export interface ResupplySummary {
 /** Default grouping radius: the CDT's twins share a km, so this is slack, not need. */
 export const DEFAULT_GROUP_WITHIN_KM = 0.1;
 
-/** Walking hours per day when a caller has no pace input of its own (the web page). */
-export const DEFAULT_RESUPPLY_DAILY_HOURS = 8;
-
 /** The boundary names `computeResupplyGaps` uses; re-stated so callers can match on them. */
 const TRAIL_START_NAME = 'Trail Start';
 const TRAIL_END_NAME = 'Trail End';
 
 /** Floating-point slack, so a km difference of exactly the threshold still joins. */
 const KM_EPSILON = 1e-9;
+
+/** Reject a pace or hours figure this module would otherwise have to invent. */
+function requirePositive(value: number, option: string): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RangeError(`computeResupplyLegs: ${option} must be a positive number, got ${String(value)}`);
+  }
+  return value;
+}
 
 /**
  * Every resupply the trail offers, clustered by where you leave the route.
@@ -271,6 +283,43 @@ export function resolveResupplyStops(
   return stops;
 }
 
+/** Every option id the trail offers, in group order — the "All" selection. */
+export function allResupplyOptionIds(groups: readonly ResupplyOptionGroup[]): string[] {
+  return groups.flatMap(group => group.options.map(option => option.id));
+}
+
+/**
+ * The waypoints a selection marks as *planned resupply points*, for the surfaces
+ * that highlight them (the phone's map, profile, list, detail and distance strip).
+ *
+ * `null` in — nothing has been chosen yet — is `null` out: the every-option
+ * default feeds the legs, but painting every town as "planned" before anyone
+ * planned anything would be noise, not information.
+ *
+ * A place and its turn-off are two waypoints (Kerikeri the town, `Kerikeri
+ * turnoff` the `town-access` point on the route), and both belong to the plan
+ * when either is ticked: the turn-off is the km the hiker's food has to reach.
+ * So every ticked id is planned, plus every turn-off sharing a group with one.
+ * Ids no group has are dropped, the way `resolveResupplyStops` ignores them.
+ */
+export function plannedResupplyIds(
+  groups: readonly ResupplyOptionGroup[],
+  selectedIds: ReadonlySet<string> | null
+): ReadonlySet<string> | null {
+  if (!selectedIds) return null;
+
+  const planned = new Set<string>();
+  for (const group of groups) {
+    const ticked = group.options.filter(option => selectedIds.has(option.id));
+    if (ticked.length === 0) continue;
+    for (const option of ticked) planned.add(option.id);
+    for (const option of group.options) {
+      if (isAccessWaypoint(option.type)) planned.add(option.id);
+    }
+  }
+  return planned;
+}
+
 /**
  * The carries implied by a set of stops: trail start → stop 1 → … → trail end.
  *
@@ -285,15 +334,18 @@ export function resolveResupplyStops(
  *
  * Legs come out in the order of the trail passed in. Callers hand over the
  * direction-applied trail, as they do to `computeDays`.
+ *
+ * @throws RangeError if `dailyHours` or `baseKmh` is not a positive finite
+ *   number. Both are the hiker's figures; a caller without one is a bug, not a
+ *   case to paper over with a default.
  */
 export function computeResupplyLegs(
   trail: PlanTrail,
   stops: readonly ResupplyStop[],
   opts: ComputeResupplyLegsOptions
 ): ResupplyLeg[] {
-  const dailyHours =
-    Number.isFinite(opts.dailyHours) && opts.dailyHours > 0 ? opts.dailyHours : DEFAULT_RESUPPLY_DAILY_HOURS;
-  const baseKmh = opts.baseKmh ?? 4;
+  const dailyHours = requirePositive(opts.dailyHours, 'dailyHours');
+  const baseKmh = requirePositive(opts.baseKmh, 'baseKmh');
   const longThresholdDays = opts.longThresholdDays ?? DEFAULT_LONG_THRESHOLD_DAYS;
   const gramsPerDay = opts.gramsPerDay ?? DEFAULT_GRAMS_PER_DAY;
 

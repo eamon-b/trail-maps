@@ -135,6 +135,12 @@ const TYPE_MAPPING: Record<string, keyof NextWaypointsByType> = {
 /**
  * The next waypoint of each important type. Accepts pre-computed distances to
  * avoid recalculating when the caller already has them.
+ *
+ * `plannedIds` narrows the `town` slot to the hiker's own resupply plan: with a
+ * plan, the next town is the next *planned* one, and there being none ahead is
+ * an answer, not a reason to fall back to an unplanned town. Omit it (no plan
+ * made) and the slot behaves as it always did. It never touches the other three
+ * slots — water, camp and shelter are not resupply.
  */
 export function getNextWaypointsByType<W extends DistanceWaypoint>(
   currentKm: number,
@@ -143,6 +149,7 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
   precomputedDistances?: WaypointDistance<W>[],
   baseKmh = 4,
   breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+  plannedIds?: ReadonlySet<string>,
 ): NextWaypointsByType<W> {
   const distances =
     precomputedDistances ??
@@ -151,9 +158,11 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
   const result: NextWaypointsByType<W> = {};
   for (const wd of distances) {
     const key = TYPE_MAPPING[wd.waypoint.type];
-    if (key && !result[key]) {
-      result[key] = wd;
+    if (!key || result[key]) continue;
+    if (key === 'town' && plannedIds && !(wd.waypoint.id && plannedIds.has(wd.waypoint.id))) {
+      continue;
     }
+    result[key] = wd;
   }
   return result;
 }

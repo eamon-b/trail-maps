@@ -44,6 +44,7 @@ describe('Design Tokens — Themes', () => {
     'danger', 'dangerText', 'warning', 'warningText', 'success', 'info',
     'waypointWater', 'waypointCamp', 'waypointTown', 'waypointShelter',
     'waypointJunction', 'waypointHazard', 'waypointFavorite',
+    'resupplyPlanned',
     'waterFlowing', 'waterLow', 'waterDry',
     'downloadIdle', 'downloadActive', 'downloadDone', 'downloadError',
     'chartGrid', 'chartLine', 'chartFillTop', 'chartFillBottom',
@@ -89,7 +90,7 @@ describe('Design Tokens — Themes', () => {
   it('waypoint category colors are all distinct within each theme', () => {
     const waypointKeys: (keyof ThemeColors)[] = [
       'waypointWater', 'waypointCamp', 'waypointTown', 'waypointShelter',
-      'waypointJunction', 'waypointFavorite',
+      'waypointJunction', 'waypointFavorite', 'resupplyPlanned',
     ];
     for (const variant of themeVariants) {
       const theme = resolveTheme(variant);
@@ -170,7 +171,7 @@ describe('Design Tokens — Themes', () => {
       it(`${label}: waypoint + water-status + gps colors meet 3:1 against background`, () => {
         const keys: (keyof ThemeColors)[] = [
           'waypointWater', 'waypointCamp', 'waypointTown', 'waypointShelter',
-          'waypointJunction', 'waypointHazard', 'waypointFavorite',
+          'waypointJunction', 'waypointHazard', 'waypointFavorite', 'resupplyPlanned',
           'waterFlowing', 'waterLow', 'waterDry', 'gps',
         ];
         for (const key of keys) {

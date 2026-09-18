@@ -110,6 +110,12 @@ export interface ElevationProfileProps {
   waypoints?: ProfileWaypoint[];
   /** Starred waypoint ids — drawn larger, in the favorite color. */
   favoriteIds?: ReadonlySet<string>;
+  /**
+   * Waypoint ids the hiker has planned as resupply stops — drawn at the
+   * favourite size in the planned colour, and they win where a waypoint is
+   * both. Absent until a plan exists.
+   */
+  plannedIds?: ReadonlySet<string>;
   /** Display unit for the axis labels + scrub readout. */
   unit: DistanceUnit;
   /** Controlled visible window [startKm, endKm]. */
@@ -143,6 +149,7 @@ export function ElevationProfile({
   totalKm,
   waypoints,
   favoriteIds,
+  plannedIds,
   unit,
   window,
   onWindowChange,
@@ -253,12 +260,17 @@ export function ElevationProfile({
         if (wp.kind === 'poi') {
           return { color: poiColor(wp.type, colors), radius: POI_MARKER_RADIUS, fill: false };
         }
+        // Planned beats favourite: the plan is the rarer, more deliberate
+        // signal, and it borrows the favourite radius so only the colour differs.
+        if (plannedIds?.has(wp.id)) {
+          return { color: colors.resupplyPlanned, radius: FAVORITE_MARKER_RADIUS };
+        }
         return favoriteIds?.has(wp.id)
           ? { color: colors.waypointFavorite, radius: FAVORITE_MARKER_RADIUS }
           : { color: waypointColor(wp.type, colors), radius: MARKER_RADIUS };
       },
     );
-  }, [metrics, waypoints, favoriteIds, window.startKm, window.endKm, left, chartWidth, chartHeight, colors]);
+  }, [metrics, waypoints, favoriteIds, plannedIds, window.startKm, window.endKm, left, chartWidth, chartHeight, colors]);
 
   const gridLines = useMemo(() => {
     if (!metrics) return [];

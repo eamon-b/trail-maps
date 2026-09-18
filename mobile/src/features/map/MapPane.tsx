@@ -30,6 +30,7 @@ import { glyphSizes, radii, spacing, touchTarget, typography } from '../../token
 import { resolveOfflinePack } from '../../services/offline-pack-resolver';
 import { useDownloadsStore } from '../../state/downloads-store';
 import { useFavoritesStore } from '../../state/favorites-store';
+import { usePlannedResupplyIds } from '../plan/use-planned-resupply';
 import { useSettingsStore } from '../../state/settings-store';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePaneFocus } from '../guide/GuideFocusContext';
@@ -127,6 +128,8 @@ export function MapPane() {
   // Freshness-ranked water verdicts — tint the ring of water markers that have
   // recent reports (see GuideMap's waypointCircleStyle).
   const waterStatusById = useWaterStatus(trailId);
+  // Null until the hiker has made a resupply plan; the ring draws nothing then.
+  const plannedResupplyIds = usePlannedResupplyIds(trailId, trail);
 
   const { position, accuracy, status, start } = useGuidePositionContext();
 
@@ -348,6 +351,7 @@ export function MapPane() {
           currentPosition={position}
           accuracy={accuracy}
           favoriteIds={favoriteSet}
+          plannedResupplyIds={plannedResupplyIds ?? undefined}
           waterStatusById={waterStatusById}
           onWaypointTap={onWaypointTap}
           onPoiTap={onPoiTap}

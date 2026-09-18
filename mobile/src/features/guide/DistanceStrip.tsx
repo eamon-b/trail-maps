@@ -5,11 +5,18 @@
  *   no-permission — a single unobtrusive "Show my location" pill (starts GPS)
  *   acquiring     — a quiet "Locating…" hint
  *   fix           — horizontally-scrollable chips: next water / camp / waypoint,
- *                   each with distance and a Naismith ETA (direction-aware)
+ *                   each with distance and a Naismith ETA (direction-aware),
+ *                   plus a "Next resupply" chip once the hiker has made a
+ *                   resupply plan
  *   off-trail     — a leading "X m off trail" chip, then the same next chips
  *
  * All distances/ETAs come from the shared `distance-calculator`; the trail is
  * already direction-applied by the guide, so "next" always means ahead.
+ *
+ * The resupply chip only exists while a plan does, and past the last planned
+ * stop it says so rather than offering the next unplanned town — quietly
+ * undoing the plan on the one screen that matters on the trail would be worse
+ * than an empty answer.
  */
 
 import React, { useMemo } from 'react';
@@ -26,6 +33,7 @@ import {
   type WaypointDistance,
 } from '../../services/distance-calculator';
 import { selectPaceBaseKmh, usePlanInputsStore } from '../plan/plan-inputs-store';
+import { usePlannedResupplyIds } from '../plan/use-planned-resupply';
 import { ShareIconButton } from '../share/ShareIconButton';
 import { useCheckInShare } from '../share/use-check-in-share';
 import { useGuide } from './GuideContext';
@@ -38,6 +46,8 @@ export function DistanceStrip() {
   const baseKmh = usePlanInputsStore(selectPaceBaseKmh(trailId));
   const units = useSettingsStore((s) => s.units);
   const { status, currentKm, offTrailMeters, position, start } = useGuidePositionContext();
+  // Null until a resupply plan exists — no chip at all until then.
+  const plannedIds = usePlannedResupplyIds(trailId, trail);
   const shareCheckIn = useCheckInShare();
 
   const chips = useMemo(() => {
@@ -51,7 +61,15 @@ export function DistanceStrip() {
       baseKmh,
       routeBreakStarts(trail.track.breaks, 'points'),
     );
-    const byType = getNextWaypointsByType(currentKm, waypoints, trackPoints, distances);
+    const byType = getNextWaypointsByType(
+      currentKm,
+      waypoints,
+      trackPoints,
+      distances,
+      baseKmh,
+      undefined,
+      plannedIds ?? undefined,
+    );
 
     const items: { key: string; label: string; value: string }[] = [];
     const push = (key: string, label: string, wd?: WaypointDistance) => {
@@ -64,10 +82,15 @@ export function DistanceStrip() {
     };
     push('water', 'Next water', byType.water);
     push('camp', 'Next camp', byType.campsite);
+    if (plannedIds) {
+      if (byType.town) push('resupply', 'Next resupply', byType.town);
+      // Label-less: the sentence is the whole chip.
+      else items.push({ key: 'resupply', label: '', value: 'No planned resupply ahead' });
+    }
     // "Next waypoint" is the closest upcoming point of any type.
     push('next', 'Next waypoint', distances[0]);
     return items;
-  }, [trail, currentKm, units, baseKmh]);
+  }, [trail, currentKm, units, baseKmh, plannedIds]);
 
   // --- No fix yet: a single "Show my location" pill / locating hint --------
   if (status === 'no-permission') {
@@ -123,7 +146,9 @@ export function DistanceStrip() {
             key={chip.key}
             style={[styles.chip, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
           >
-            <Text style={[styles.chipLabel, { color: colors.textSecondary }]}>{chip.label}</Text>
+            {chip.label !== '' && (
+              <Text style={[styles.chipLabel, { color: colors.textSecondary }]}>{chip.label}</Text>
+            )}
             <Text style={[styles.chipValue, { color: colors.textPrimary }]}>{chip.value}</Text>
           </View>
         ))}

@@ -5,7 +5,7 @@ appId: com.tracknotes.app
 # summary, and day splits render and survive a pace-driven recompute.
 #
 # Asserts only on stable text: the header/input labels, pace control, summary
-# labels, "Day 1", and the three section headers. Deliberately avoids specific
+# labels, "Day 1", the three section headers, and the resupply picker's chips. Deliberately avoids specific
 # km values, waypoint names, and day-card footer text (all in flux).
 - runFlow: shared/launch-dev.yaml
 
@@ -45,6 +45,16 @@ appId: com.tracknotes.app
       text: "Water carries"
     direction: DOWN
     timeout: 20000
+
+# The resupply picker opens as a modal with the selection controls. Cape to
+# Cape has three options, so the chip renders. Asserts only on the chip labels
+# — waypoint names are data in flux.
+- tapOn: "Choose stops"
+- extendedWaitUntil:
+    visible: "All"
+    timeout: 15000
+- assertVisible: "Reset"
+- pressKey: back
 
 # Back returns to the guide shell.
 - pressKey: back

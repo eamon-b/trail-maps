@@ -42,9 +42,11 @@ jest.mock('@shopify/react-native-skia', () => {
 });
 
 // --- Local theme mock -----------------------------------------------------
+// Every colour resolves to its own token name, so a test can say *which* token
+// a marker was painted with rather than only that it got a colour.
 jest.mock('../../../theme', () => ({
   useTheme: () => ({
-    colors: new Proxy({}, { get: () => '#123456' }),
+    colors: new Proxy({}, { get: (_t: unknown, key: string) => `token:${key}` }),
   }),
   useReduceMotion: () => false,
 }));
@@ -242,6 +244,63 @@ describe('ElevationProfile', () => {
     layoutAll(root);
     expect(root.toJSON()).toBeTruthy();
     act(() => root.unmount());
+  });
+
+  describe('planned resupply markers', () => {
+    interface CircleProps {
+      r: number;
+      color: string;
+      style?: string;
+    }
+    const circles = (root: ReactTestRenderer): CircleProps[] =>
+      root.root.findAllByType(Circle).map((n) => n.props as unknown as CircleProps);
+
+    it('draws a planned stop in the planned colour, at the favorite radius', () => {
+      let root!: ReactTestRenderer;
+      act(() => {
+        root = TestRenderer.create(
+          <ElevationProfile
+            {...baseProps}
+            plannedIds={new Set(['w1'])}
+            onWindowChange={jest.fn()}
+          />,
+        );
+      });
+      layoutAll(root);
+
+      const drawn = circles(root);
+      expect(drawn[0]).toMatchObject({ color: 'token:resupplyPlanned', r: 6 });
+      // The unplanned waypoint keeps its category colour and the smaller dot.
+      expect(drawn[1]).toMatchObject({ color: 'token:waypointCamp', r: 4 });
+      act(() => root.unmount());
+    });
+
+    it('draws a waypoint that is both planned and favorited as planned', () => {
+      let root!: ReactTestRenderer;
+      act(() => {
+        root = TestRenderer.create(
+          <ElevationProfile
+            {...baseProps}
+            favoriteIds={new Set(['w1'])}
+            plannedIds={new Set(['w1'])}
+            onWindowChange={jest.fn()}
+          />,
+        );
+      });
+      layoutAll(root);
+      expect(circles(root)[0].color).toBe('token:resupplyPlanned');
+      act(() => root.unmount());
+    });
+
+    it('marks nothing when no plan has been made', () => {
+      let root!: ReactTestRenderer;
+      act(() => {
+        root = TestRenderer.create(<ElevationProfile {...baseProps} onWindowChange={jest.fn()} />);
+      });
+      layoutAll(root);
+      expect(circles(root).some((c) => c.color === 'token:resupplyPlanned')).toBe(false);
+      act(() => root.unmount());
+    });
   });
 
   describe('POI ticks', () => {

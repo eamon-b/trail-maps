@@ -7,6 +7,29 @@
  */
 
 import type { TrackData, TrailPOI } from '@lib/trail-types';
+import type { WaypointAccess } from '@lib/types';
+
+/**
+ * One bundled waypoint. The off-route fields come from the shared
+ * {@link WaypointAccess}, so what the build writes and what the guide screens
+ * read cannot drift: a town 22 km down a hitch is that shape everywhere.
+ */
+export interface TrailJsonWaypoint extends WaypointAccess {
+  /** Stable per-waypoint id baked into bundled data (e.g. "w_766c3fd2"). */
+  id?: string;
+  name: string;
+  lat: number;
+  lon: number;
+  type: string;
+  description?: string;
+  elevation?: number;
+  distance?: number;
+  totalDistance?: number;
+  ascent?: number;
+  descent?: number;
+  totalAscent?: number;
+  totalDescent?: number;
+}
 
 /**
  * The serialized shape of a bundled trail JSON.
@@ -28,22 +51,7 @@ export interface TrailJson {
     direction: { default: string; reversed: string };
     [key: string]: unknown;
   };
-  waypoints: {
-    /** Stable per-waypoint id baked into bundled data (e.g. "w_766c3fd2"). */
-    id?: string;
-    name: string;
-    lat: number;
-    lon: number;
-    type: string;
-    description?: string;
-    elevation?: number;
-    distance?: number;
-    totalDistance?: number;
-    ascent?: number;
-    descent?: number;
-    totalAscent?: number;
-    totalDescent?: number;
-  }[];
+  waypoints: TrailJsonWaypoint[];
   /** Identical to the build pipeline's `TrackData` — shared, not re-declared. */
   track: TrackData;
   /**

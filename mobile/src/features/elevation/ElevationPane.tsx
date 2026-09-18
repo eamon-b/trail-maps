@@ -13,6 +13,9 @@
  * prop, tagged `kind: 'poi'` so the profile draws them hollow and the tap lands
  * on their own detail screen. They are appended only once the window is narrow
  * enough for the rings to be readable (see POI_PROFILE_MAX_WINDOW_KM).
+ *
+ * Waypoints the hiker has ticked as resupply stops are marked in the planned
+ * colour at the favourite size, at every zoom (nothing thins waypoint markers).
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,6 +26,7 @@ import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
 import { useFavoritesStore } from '../../state/favorites-store';
+import { usePlannedResupplyIds } from '../plan/use-planned-resupply';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
@@ -45,6 +49,8 @@ export function ElevationPane() {
   const units = useSettingsStore((s) => s.units);
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
+  // Null until a resupply plan exists; nothing is marked planned before then.
+  const plannedIds = usePlannedResupplyIds(trailId, trail);
   const pois = useVisiblePois(trail);
   const router = useRouter();
 
@@ -189,6 +195,7 @@ export function ElevationPane() {
           totalKm={totalKm}
           waypoints={profileWaypoints}
           favoriteIds={favoriteSet}
+          plannedIds={plannedIds ?? undefined}
           unit={units}
           currentKm={currentKm}
           window={window}

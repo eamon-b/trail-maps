@@ -13,6 +13,11 @@
  * cache already holds every comment for the trail, paging is a widening LIMIT
  * over that cache rather than a network page fetch.
  *
+ * A resupply-family waypoint also carries the hiker's own plan: a banner when it
+ * is one of their ticked stops, and a toggle to add or drop it. The first tap
+ * from an untouched trail makes a plan with every *other* option still ticked —
+ * planning one town should not unplan the rest.
+ *
  * Two other things ride the same sync channel: a "Report" affordance on other
  * people's synced rows (offline-first, via the outbox — an App Store UGC
  * requirement) and the curated waypoint description, which overrides the
@@ -47,12 +52,15 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
+import { accessSummary } from '@lib/resupply-display';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
+import { isResupplyWaypoint } from '@lib/waypoint-taxonomy';
 import { useTheme } from '../../../../src/theme';
 import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
-import { useSettingsStore } from '../../../../src/state/settings-store';
+import { useSettingsStore, type Units } from '../../../../src/state/settings-store';
+import type { TrailJsonWaypoint } from '../../../../src/services/trail-assets';
 import { useGuide } from '../../../../src/features/guide/GuideContext';
 import { useGuidePositionContext } from '../../../../src/features/guide/GuidePositionContext';
 import { ShareIconButton } from '../../../../src/features/share/ShareIconButton';
@@ -69,6 +77,15 @@ import {
 } from '../../../../src/features/guide/waypoint-detail';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
+import {
+  selectPrefs,
+  usePlanInputsStore,
+} from '../../../../src/features/plan/plan-inputs-store';
+import {
+  resupplyOptionIdsFor,
+  toggleResupplyStop,
+  usePlannedResupplyIds,
+} from '../../../../src/features/plan/use-planned-resupply';
 import { isServerKnown } from '../../../../src/services/server-trails';
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
@@ -119,6 +136,22 @@ export default function WaypointDetailScreen() {
   const session = useIdentityStore((s) => s.session);
   const isFav = useFavoritesStore(selectIsFavorite(trailId, waypointId));
   const toggleFavorite = useFavoritesStore((s) => s.toggle);
+
+  // --- Resupply plan -------------------------------------------------------
+  // Only a waypoint with a stable id can be an option (the selection stores
+  // ids), and only a resupply-family type is offered at all.
+  const plannedIds = usePlannedResupplyIds(trailId, trail);
+  const storedStops = usePlanInputsStore(selectPrefs(trailId)).resupplyStops;
+  const setResupplyStops = usePlanInputsStore((s) => s.setResupplyStops);
+  const optionId = waypoint?.id && isResupplyWaypoint(waypoint.type) ? waypoint.id : null;
+  const isPlanned = optionId != null && (plannedIds?.has(optionId) ?? false);
+  const toggleResupply = useCallback(() => {
+    if (!optionId) return;
+    setResupplyStops(
+      trailId,
+      toggleResupplyStop(storedStops, resupplyOptionIdsFor(trail), optionId),
+    );
+  }, [optionId, setResupplyStops, storedStops, trail, trailId]);
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
@@ -220,6 +253,7 @@ export default function WaypointDetailScreen() {
 
   const marker = waypointColor(waypoint.type, colors);
   const description = syncedDescription ?? waypoint.description;
+  const accessLine = accessLineFor(waypoint, units);
   const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
   const duplicatePois = duplicatePoisFor(trail, waypoint.id);
   const km = waypoint.totalDistance ?? 0;
@@ -283,6 +317,13 @@ export default function WaypointDetailScreen() {
             </View>
           </View>
           <Text style={[styles.name, { color: colors.textPrimary }]}>{waypoint.name}</Text>
+          {isPlanned && (
+            <View style={[styles.plannedBanner, { borderColor: colors.resupplyPlanned }]}>
+              <Text style={[styles.plannedBannerText, { color: colors.resupplyPlanned }]}>
+                Planned resupply stop
+              </Text>
+            </View>
+          )}
           {/* Curated descriptions arrive over the sync channel; the bundled
               trail JSON is the fallback. */}
           {description ? (
@@ -290,7 +331,29 @@ export default function WaypointDetailScreen() {
               {description}
             </Text>
           ) : null}
+          {/* How far off the route the place is, and how you get there — the
+              same words the picker uses (@lib/resupply-display). */}
+          {accessLine ? (
+            <Text style={[styles.accessLine, { color: colors.textSecondary }]}>{accessLine}</Text>
+          ) : null}
         </View>
+
+        {optionId && (
+          <Pressable
+            onPress={toggleResupply}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isPlanned }}
+            style={({ pressed }) => [
+              styles.planButton,
+              { borderColor: colors.resupplyPlanned },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.planButtonText, { color: colors.resupplyPlanned }]}>
+              {isPlanned ? 'Remove from resupply plan' : 'Plan resupply here'}
+            </Text>
+          </Pressable>
+        )}
 
         {/* Stats row */}
         <View style={styles.stats}>
@@ -597,6 +660,18 @@ function FavoriteHeart({ filled, onPress }: { filled: boolean; onPress: () => vo
 // Stat chip
 // ---------------------------------------------------------------------------
 
+/**
+ * "22.5 km hitch from Chief Mountain border crossing · accepts boxes" — where a
+ * place actually is when it is not on the route. Empty for an on-route
+ * waypoint, which is most of them, and then nothing is rendered.
+ */
+function accessLineFor(waypoint: TrailJsonWaypoint, units: Units): string {
+  const summary = accessSummary(waypoint, (km) => formatDistance(km, units));
+  if (summary === '') return '';
+  const where = waypoint.accessName ? `${summary} from ${waypoint.accessName}` : summary;
+  return waypoint.acceptsBoxes ? `${where} · accepts boxes` : where;
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
@@ -789,6 +864,24 @@ const styles = StyleSheet.create({
   typeChipText: { ...typography.dataSmall, textTransform: 'capitalize' },
   name: { ...typography.displaySmall },
   description: { ...typography.body },
+  accessLine: { ...typography.bodySmall },
+
+  plannedBanner: {
+    alignSelf: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  plannedBannerText: { ...typography.dataSmall, fontWeight: '600' },
+  planButton: {
+    alignSelf: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  planButtonText: { ...typography.titleSmall },
 
   heart: { padding: spacing.xs },
   heartIcon: { fontSize: glyphSizes.xxl },

@@ -49,10 +49,23 @@ describe('matchesFamily', () => {
     expect(matchesFamily('anything', 'all', false)).toBe(true);
   });
 
-  it('exposes exactly the six chips (favorites second)', () => {
+  it("the 'planned' family is an id-based cut, like favorites", () => {
+    // Type is irrelevant; only the isPlanned flag decides.
+    expect(matchesFamily('town', 'planned', false, true)).toBe(true);
+    expect(matchesFamily('town', 'planned', true, false)).toBe(false);
+    expect(matchesFamily('junction', 'planned', false, true)).toBe(true);
+  });
+
+  it('type-based families ignore the isPlanned flag', () => {
+    expect(matchesFamily('town', 'town', false, false)).toBe(true);
+    expect(matchesFamily('water', 'town', false, true)).toBe(false);
+  });
+
+  it('exposes exactly the seven chips (favorites second, planned third)', () => {
     expect(FILTER_FAMILIES.map((f) => f.value)).toEqual([
       'all',
       'favorites',
+      'planned',
       'water',
       'camp',
       'town',
@@ -92,9 +105,11 @@ describe('poiCategoriesForFamily', () => {
   });
 
   it('shows no POIs for the families OSM has no counterpart for', () => {
-    // A hut is a curated waypoint or nothing, and a POI can never be starred.
+    // A hut is a curated waypoint or nothing, and a POI can never be starred
+    // nor ticked as a resupply stop.
     expect([...poiCategoriesForFamily('shelter')]).toEqual([]);
     expect([...poiCategoriesForFamily('favorites')]).toEqual([]);
+    expect([...poiCategoriesForFamily('planned')]).toEqual([]);
   });
 });
 

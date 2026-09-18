@@ -254,6 +254,29 @@ describe('buildWaypointCollection', () => {
     expect(fc.features.map((f) => f.properties!.favorite)).toEqual([false, true, true]);
   });
 
+  it('defaults every feature to plannedResupply:false when no set is given', () => {
+    const fc = buildWaypointCollection(waypoints, colorForType);
+    expect(fc.features.map((f) => f.properties!.plannedResupply)).toEqual([false, false, false]);
+  });
+
+  it('flags features whose id is in the planned-resupply set', () => {
+    const fc = buildWaypointCollection(
+      waypoints,
+      colorForType,
+      undefined,
+      undefined,
+      new Set(['w_camp']),
+    );
+    expect(fc.features.map((f) => f.properties!.plannedResupply)).toEqual([false, true, false]);
+  });
+
+  it('flags nothing planned when no plan has been made (a null set is not passed)', () => {
+    // The pane passes `undefined` for a null selection — "no plan" must never
+    // read as "everything is planned".
+    const fc = buildWaypointCollection(waypoints, colorForType, new Set(['w_camp']), undefined);
+    expect(fc.features.some((f) => f.properties!.plannedResupply)).toBe(false);
+  });
+
   it("defaults waterStatus to '' when no lookup is given", () => {
     const fc = buildWaypointCollection(waypoints, colorForType);
     expect(fc.features.map((f) => f.properties!.waterStatus)).toEqual(['', '', '']);

@@ -18,14 +18,26 @@ import { categoryToken, type WaypointColorToken } from '../elevation/waypoint-ca
 
 /**
  * Filter families surfaced as chips. 'all' shows every waypoint; 'favorites'
- * shows only starred waypoints (an id-based, not type-based, cut).
+ * and 'planned' are id-based rather than type-based cuts (starred waypoints,
+ * and the resupply stops the hiker ticked on the Plan screen).
  */
-export type WaypointFamily = 'all' | 'favorites' | 'water' | 'camp' | 'town' | 'shelter';
+export type WaypointFamily =
+  | 'all'
+  | 'favorites'
+  | 'planned'
+  | 'water'
+  | 'camp'
+  | 'town'
+  | 'shelter';
 
-/** The chips, in display order. */
+/**
+ * The chips, in display order. 'Planned' only renders once a resupply plan
+ * exists — the pane hides it while `usePlannedResupplyIds` is null.
+ */
 export const FILTER_FAMILIES: { value: WaypointFamily; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'favorites', label: 'Favorites' },
+  { value: 'planned', label: 'Planned' },
   { value: 'water', label: 'Water' },
   { value: 'camp', label: 'Camp' },
   { value: 'town', label: 'Town' },
@@ -49,19 +61,26 @@ export function familyForType(type: string): Exclude<WaypointFamily, 'all'> | 'o
 }
 
 /**
- * Whether a waypoint is shown under the given family filter. `isFavorite` is
- * only consulted for the 'favorites' family (an id-based cut); the type-based
- * families ignore it.
+ * Whether a waypoint is shown under the given family filter. `isFavorite` and
+ * `isPlanned` are only consulted for their own families (id-based cuts); the
+ * type-based families ignore both.
  */
-export function matchesFamily(type: string, family: WaypointFamily, isFavorite = false): boolean {
+export function matchesFamily(
+  type: string,
+  family: WaypointFamily,
+  isFavorite = false,
+  isPlanned = false,
+): boolean {
   if (family === 'all') return true;
   if (family === 'favorites') return isFavorite;
+  if (family === 'planned') return isPlanned;
   return familyForType(type) === family;
 }
 
 const FAMILY_TO_POI_CATEGORIES: Record<WaypointFamily, readonly TrailPOICategory[]> = {
   all: POI_CATEGORIES,
   favorites: [],
+  planned: [],
   water: ['water'],
   camp: ['camping'],
   town: ['resupply', 'restaurant'],
@@ -72,8 +91,9 @@ const FAMILY_TO_POI_CATEGORIES: Record<WaypointFamily, readonly TrailPOICategory
  * The OSM POI categories a chip shows.
  *
  * 'shelter' has no OSM counterpart the enrichment produces (a hut is either a
- * curated waypoint or nothing), and 'favorites' is an id-based cut over curated
- * waypoints — a POI can never be starred — so both show no POI rows at all.
+ * curated waypoint or nothing); 'favorites' and 'planned' are id-based cuts over
+ * curated waypoints — a POI is never starred and never a resupply option — so
+ * all three show no POI rows at all.
  * 'town' is the one family that spans two categories: a supermarket and a pub
  * are the same errand to a walker.
  */

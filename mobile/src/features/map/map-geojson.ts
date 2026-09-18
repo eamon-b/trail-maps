@@ -274,6 +274,10 @@ export function waypointFeatureId(wp: MapWaypoint, index: number): string {
  *  - a `favorite` boolean (true when the id is in `favoriteIds`) so the same
  *    circle layer can enlarge/ring starred markers via a `case` paint
  *    expression, without a second source or breaking clustering;
+ *  - a `plannedResupply` boolean (true when the id is in `plannedIds`) so the
+ *    same layer can ring a ticked resupply stop. `plannedIds` is absent until
+ *    the hiker has made a plan, and an absent set flags nothing — "no plan" is
+ *    never "everything is planned";
  *  - a `waterStatus` string ('flowing' | 'low' | 'dry', or '' when unknown) so
  *    the same circle layer can tint a water source's ring by its aggregated
  *    status via a `match` expression. Empty string rather than null keeps the
@@ -284,6 +288,7 @@ export function buildWaypointCollection(
   colorForType: (type: string) => string,
   favoriteIds?: ReadonlySet<string>,
   waterStatusById?: WaterStatusLookup,
+  plannedIds?: ReadonlySet<string>,
 ): FeatureCollection<Point> {
   const features: Feature<Point>[] = waypoints.map((wp, i) => {
     const id = waypointFeatureId(wp, i);
@@ -301,6 +306,7 @@ export function buildWaypointCollection(
         color: colorForType(wp.type),
         icon: waypointIconName(wp.type),
         favorite: favoriteIds?.has(id) ?? false,
+        plannedResupply: plannedIds?.has(id) ?? false,
         // Keyed by the *bundled* waypoint id, because that is the id reports are
         // filed against — a legacy waypoint with only a name+index fallback id
         // can never have any.

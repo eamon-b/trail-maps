@@ -2,6 +2,7 @@ import {
   usePlanInputsStore,
   selectPrefs,
   selectPaceBaseKmh,
+  selectResupplyStopIds,
   clampHours,
   migratePlanInputs,
   DEFAULT_PREFS,
@@ -89,6 +90,99 @@ describe('plan-inputs-store', () => {
       expect(selectPaceBaseKmh('aawt')(state)).toBe(3);
       // An untouched trail is unaffected — still the Average default.
       expect(selectPaceBaseKmh('heysen')(state)).toBe(4);
+    });
+  });
+
+  describe('resupplyStops', () => {
+    it('round-trips an explicit selection', () => {
+      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a', 'w_b']);
+      expect(selectPrefs('cdt')(usePlanInputsStore.getState()).resupplyStops).toEqual([
+        'w_a',
+        'w_b',
+      ]);
+    });
+
+    it('is undefined for an entry saved before the field existed', () => {
+      usePlanInputsStore.getState().setPace('cdt', 'fast');
+      expect(selectPrefs('cdt')(usePlanInputsStore.getState()).resupplyStops).toBeUndefined();
+    });
+
+    it('keeps selectPrefs stable after setResupplyStops', () => {
+      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a']);
+      const state = usePlanInputsStore.getState();
+      expect(selectPrefs('cdt')(state)).toBe(selectPrefs('cdt')(state));
+    });
+
+    it('collapses a non-string-array value to undefined', () => {
+      usePlanInputsStore.setState({
+        byTrail: { cdt: { dailyHours: 8, pace: 'average', resupplyStops: 'w_a' } as never },
+      });
+      expect(selectPrefs('cdt')(usePlanInputsStore.getState()).resupplyStops).toBeUndefined();
+
+      usePlanInputsStore.setState({
+        byTrail: { cdt: { dailyHours: 8, pace: 'average', resupplyStops: [1, 2] } as never },
+      });
+      expect(selectPrefs('cdt')(usePlanInputsStore.getState()).resupplyStops).toBeUndefined();
+    });
+
+    it('keeps pace and hours when the selection is cleared', () => {
+      const { setPace, setDailyHours, setResupplyStops, clearResupplyStops } =
+        usePlanInputsStore.getState();
+      setPace('cdt', 'slow');
+      setDailyHours('cdt', 10);
+      setResupplyStops('cdt', ['w_a']);
+      clearResupplyStops('cdt');
+
+      const prefs = selectPrefs('cdt')(usePlanInputsStore.getState());
+      expect(prefs).toEqual({ pace: 'slow', dailyHours: 10 });
+      expect(prefs.resupplyStops).toBeUndefined();
+    });
+
+    it('is dropped with the whole entry by clearTrail', () => {
+      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a']);
+      usePlanInputsStore.getState().clearTrail('cdt');
+      expect(usePlanInputsStore.getState().byTrail.cdt).toBeUndefined();
+      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
+    });
+
+    it('is independent between two trails', () => {
+      const { setResupplyStops } = usePlanInputsStore.getState();
+      setResupplyStops('cdt', ['w_a']);
+      setResupplyStops('te_araroa', ['w_z']);
+      const state = usePlanInputsStore.getState();
+      expect([...selectResupplyStopIds('cdt')(state)!]).toEqual(['w_a']);
+      expect([...selectResupplyStopIds('te_araroa')(state)!]).toEqual(['w_z']);
+    });
+  });
+
+  describe('selectResupplyStopIds', () => {
+    it('is null until the first setResupplyStops', () => {
+      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
+      usePlanInputsStore.getState().setPace('cdt', 'fast');
+      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
+    });
+
+    it('returns a stable Set for the same stored selection', () => {
+      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a', 'w_b']);
+      const state = usePlanInputsStore.getState();
+      const a = selectResupplyStopIds('cdt')(state);
+      const b = selectResupplyStopIds('cdt')(state);
+      // Same reference — zustand compares selector output with Object.is.
+      expect(a).toBe(b);
+      expect(a!.has('w_b')).toBe(true);
+    });
+
+    it('is null again after clearResupplyStops', () => {
+      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a']);
+      usePlanInputsStore.getState().clearResupplyStops('cdt');
+      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
+    });
+
+    it('gives an empty Set for an explicit empty selection, not null', () => {
+      usePlanInputsStore.getState().setResupplyStops('cdt', []);
+      const set = selectResupplyStopIds('cdt')(usePlanInputsStore.getState());
+      expect(set).not.toBeNull();
+      expect(set!.size).toBe(0);
     });
   });
 

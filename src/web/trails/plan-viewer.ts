@@ -9,7 +9,8 @@
 import type * as Leaflet from 'leaflet';
 declare const L: typeof Leaflet;
 
-import type { PlanTrackPoint, PlanWaypoint, StopData, ComputedDay, PlanState } from '@lib/plan-types';
+import type { PlanTrackPoint, PlanWaypoint, StopData, ComputedDay, PlanState, Pace } from '@lib/plan-types';
+import { PACE_KMH, isPace } from '@lib/plan-types';
 import { computeDays } from '@lib/day-calculator';
 import { findNearestByDistance } from '@lib/track-geometry';
 import {
@@ -20,16 +21,16 @@ import {
 } from '@lib/route-breaks';
 import type { RouteBreak } from '@lib/trail-types';
 import {
+  allResupplyOptionIds,
   computeResupplyLegs,
   listResupplyOptions,
   resolveResupplyStops,
   summariseResupplyLegs,
-  DEFAULT_RESUPPLY_DAILY_HOURS,
   type ResupplyLeg,
   type ResupplyOption,
   type ResupplyOptionGroup,
-  type ResupplySummary,
 } from '@lib/resupply-plan';
+import { accessSummary, firstSentence, resupplySummaryText } from '@lib/resupply-display';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
@@ -71,6 +72,17 @@ interface Trail {
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
+
+/**
+ * Starting positions of the two header inputs, used for a plan saved before they
+ * existed. They are the initial value of a control the hiker can see and change,
+ * not a figure the page holds on their behalf.
+ */
+const DEFAULT_PACE: Pace = 'average';
+const DEFAULT_DAILY_HOURS = 8;
+/** The range the number input offers; a hand-edited plan is clamped into it. */
+const MIN_DAILY_HOURS = 1;
+const MAX_DAILY_HOURS = 16;
 
 let trail: Trail;
 /** Lazily-built reversed copy of `trail`; only computed when SOBO is first viewed. */
@@ -199,6 +211,23 @@ function direction(): PlanDirection {
   return planState.direction ?? 'NOBO';
 }
 
+/**
+ * The hiker's pace and hours per day. Both are inputs in the header; these
+ * defaults are only the initial value of the control, for a plan saved before
+ * the inputs existed — nothing on this page decides how far a day is.
+ */
+function pace(): Pace {
+  return planState.pace ?? DEFAULT_PACE;
+}
+
+function baseKmh(): number {
+  return PACE_KMH[pace()];
+}
+
+function dailyHours(): number {
+  return planState.dailyHours ?? DEFAULT_DAILY_HOURS;
+}
+
 /** The trail oriented in the active direction. */
 function activeTrail(): Trail {
   return direction() === 'SOBO' ? (reversedTrail ??= createReversedTrail(trail)) : trail;
@@ -241,12 +270,6 @@ function getDayColors(count: number): string[] {
 // ---------------------------------------------------------------------------
 // Resupply selection
 // ---------------------------------------------------------------------------
-//
-// The page has no pace inputs, so the two figures the leg calculator needs are
-// fixed here rather than being scattered through the renderers.
-
-/** Naismith flat-ground speed used for every resupply leg on this page. */
-const RESUPPLY_BASE_KMH = 4;
 
 /** Options depend only on the trail, so they are rebuilt only on a direction flip. */
 let cachedResupplyGroups: ResupplyOptionGroup[] = [];
@@ -277,14 +300,14 @@ function resupplyGroups(): ResupplyOptionGroup[] {
   return cachedResupplyGroups;
 }
 
-/** Every option id, in active-direction order — the "All" selection. */
-function allResupplyOptionIds(): string[] {
-  return resupplyGroups().flatMap(group => group.options.map(option => option.id));
-}
+// The web pages are metric; the shared display helpers take the formatter so the
+// phone can follow the hiker's unit setting with the same words.
+const formatKm = (km: number): string => `${km.toFixed(1)} km`;
+const formatFoodKg = (kg: number): string => `${kg.toFixed(1)} kg`;
 
 /** The ticked ids. An absent `resupplyStops` means every option, as on a fresh plan. */
 function selectedResupplyIds(): Set<string> {
-  return new Set(planState.resupplyStops ?? allResupplyOptionIds());
+  return new Set(planState.resupplyStops ?? allResupplyOptionIds(resupplyGroups()));
 }
 
 function resupplyLegs(): ResupplyLeg[] {
@@ -294,81 +317,21 @@ function resupplyLegs(): ResupplyLeg[] {
     direction(),
     JSON.stringify(planState.resupplyStops ?? null),
     planState.startDate ?? '',
+    pace(),
+    dailyHours(),
     currentDays.map(day => day.endKm).join(','),
   ].join('|');
 
   if (key !== cachedResupplyLegsKey) {
     const stops = resolveResupplyStops(resupplyGroups(), planState.resupplyStops);
     cachedResupplyLegs = computeResupplyLegs(activeTrail(), stops, {
-      dailyHours: DEFAULT_RESUPPLY_DAILY_HOURS,
-      baseKmh: RESUPPLY_BASE_KMH,
+      dailyHours: dailyHours(),
+      baseKmh: baseKmh(),
       days: currentDays,
     });
     cachedResupplyLegsKey = key;
   }
   return cachedResupplyLegs;
-}
-
-/** The one line the Resupply datasheet and the Days-tab collapsible both show. */
-function resupplySummaryText(summary: ResupplySummary): string {
-  const stops = `${summary.stops} stop${summary.stops === 1 ? '' : 's'}`;
-  const days = `${summary.longestDays} day${summary.longestDays === 1 ? '' : 's'}`;
-  return `${stops} · longest carry ${summary.longestKm.toFixed(1)} km / ${days} · ` +
-    `${summary.totalFoodKg.toFixed(1)} kg food in total`;
-}
-
-/**
- * How far off the route the place is, and how you get there — metric, because
- * the web pages are (the phone is the one that formats by unit preference).
- */
-function accessSummary(option: ResupplyOption): string {
-  const hasKm = typeof option.offTrailKm === 'number' && option.offTrailKm > 0;
-  const mode = option.accessMode;
-  if (hasKm) return `${option.offTrailKm!.toFixed(1)} km ${mode && mode !== 'on-trail' ? mode : 'off trail'}`;
-  if (mode === 'on-trail') return 'on trail';
-  return mode ?? '';
-}
-
-/**
- * Dotted tokens that end no sentence: "U.S. 50", "Mt. Sonder", "approx. 3 km".
- * A single capital letter before the dot (the "S" of "U.S.") is handled by the
- * pattern itself; these are the multi-letter ones a trail description uses.
- */
-const NON_TERMINAL_ABBREVIATIONS = new Set([
-  'mt', 'mtn', 'st', 'hwy', 'rd', 'jct', 'approx', 'alt', 'elev', 'ft', 'km', 'mi', 'no', 'vs', 'etc', 'inc', 'co', 'ltd',
-]);
-
-/**
- * The lead sentence of a description, which is the part that says what is
- * there. The trail generators prefix their descriptions with `|`-separated
- * metadata ("mi 1947.3 (SOBO mi 1947.3) | off. mi 1955.8 | CO | Leave the CDT
- * here for Salida…"), so the prose is the last segment.
- *
- * A sentence ends at `.`, `!` or `?` followed by whitespace or the end of the
- * text — unless the dot closes an initial or an abbreviation ("U.S. 50",
- * "Mt. Sonder"), which would otherwise cut the sentence to "Store beside U.S."
- */
-function firstSentence(text: string): string {
-  const segments = text.split('|').map(part => part.trim()).filter(part => part !== '');
-  const prose = segments.length > 0 ? segments[segments.length - 1] : '';
-
-  const terminator = /[.!?](?=\s|$)/g;
-  let match: RegExpExecArray | null;
-  while ((match = terminator.exec(prose)) !== null) {
-    const end = match.index + 1;
-    if (match[0] === '.' && isAbbreviationDot(prose, match.index)) continue;
-    return prose.slice(0, end).trim();
-  }
-  return prose.trim();
-}
-
-/** Whether the dot at `index` closes an initial ("U.S.") or a listed abbreviation ("Mt."). */
-function isAbbreviationDot(prose: string, index: number): boolean {
-  const word = prose.slice(0, index).match(/(\S+)$/)?.[1] ?? '';
-  // "U.S." — the dot after the S sits behind a single capital letter, itself
-  // behind another dotted letter or the start of the word.
-  if (/^(?:[A-Z]\.)*[A-Z]$/.test(word)) return true;
-  return NON_TERMINAL_ABBREVIATIONS.has(word.replace(/^[^a-z]+/i, '').toLowerCase());
 }
 
 // ---------------------------------------------------------------------------
@@ -452,7 +415,7 @@ function drawWaypointMarkers(): void {
   // resupply options am I taking? Ticked ones borrow the camp-stop emphasis and
   // the rest fade back. Every other tab redraws these markers plain.
   const showingResupply = activeTab === 'resupply';
-  const optionIds = showingResupply ? new Set(allResupplyOptionIds()) : null;
+  const optionIds = showingResupply ? new Set(allResupplyOptionIds(resupplyGroups())) : null;
   const pickedIds = showingResupply ? selectedResupplyIds() : null;
 
   const waypoints = activeTrail().waypoints ?? [];
@@ -774,7 +737,7 @@ function renderResupplySection(): void {
   section.hidden = false;
 
   const summary = summariseResupplyLegs(resupplyLegs());
-  const line = summary.hasData ? resupplySummaryText(summary) : 'No resupply stops ticked.';
+  const line = summary.hasData ? resupplySummaryText(summary, formatKm, formatFoodKg) : 'No resupply stops ticked.';
   body.innerHTML = `<div class="gap-item">
       <span class="gap-ok">🍎</span>
       <span>${escapeHtml(line)}</span>
@@ -915,7 +878,7 @@ function renderResupplyList(): void {
 function renderResupplyRow(option: ResupplyOption, picked: ReadonlySet<string>): string {
   const checked = picked.has(option.id);
   const inputId = `resupply-opt-${option.id}`;
-  const parts = [accessSummary(option)];
+  const parts = [accessSummary(option, formatKm)];
   if (option.description) parts.push(firstSentence(option.description));
   if (option.acceptsBoxes) parts.push('accepts boxes');
   const sub = parts.filter(part => part !== '').join(' · ');
@@ -1026,7 +989,7 @@ function renderResupplyDatasheet(): void {
     return;
   }
 
-  subtitle.textContent = resupplySummaryText(summary);
+  subtitle.textContent = resupplySummaryText(summary, formatKm, formatFoodKg);
 
   // The arrival day only means anything once the camp plan has stops and a date
   // to count them from; without both the column would be a row of dashes.
@@ -1115,14 +1078,14 @@ function toggleResupply(id: string): void {
   const picked = selectedResupplyIds();
   if (picked.has(id)) picked.delete(id);
   else picked.add(id);
-  planState.resupplyStops = allResupplyOptionIds().filter(optionId => picked.has(optionId));
+  planState.resupplyStops = allResupplyOptionIds(resupplyGroups()).filter(optionId => picked.has(optionId));
 
   scheduleSave();
   renderAll();
 }
 
 function setAllResupply(all: boolean): void {
-  planState.resupplyStops = all ? allResupplyOptionIds() : [];
+  planState.resupplyStops = all ? allResupplyOptionIds(resupplyGroups()) : [];
   scheduleSave();
   renderAll();
 }
@@ -1155,6 +1118,27 @@ function setStartDate(date: string): void {
 function setPlanName(name: string): void {
   planState.name = name;
   scheduleSave();
+}
+
+/** Pace feeds both the day plan's hours and every resupply leg's days. */
+function setPace(value: Pace): void {
+  if (pace() === value) return;
+  planState.pace = value;
+  scheduleSave();
+  renderAll();
+}
+
+/** Ignores a blank or non-numeric entry and clamps the rest to the input's range. */
+function setDailyHours(raw: string): void {
+  // `Number('')` is 0, which would clamp to the minimum rather than be ignored.
+  if (raw.trim() === '') return;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return;
+  const clamped = Math.min(MAX_DAILY_HOURS, Math.max(MIN_DAILY_HOURS, Math.round(parsed)));
+  if (dailyHours() === clamped) return;
+  planState.dailyHours = clamped;
+  scheduleSave();
+  renderAll();
 }
 
 // ---------------------------------------------------------------------------
@@ -1233,7 +1217,7 @@ function initTabs(): void {
 
 function renderAll(): void {
   refreshActiveStops();
-  currentDays = computeDays(activeTrail(), activeStops(), planState.startDate);
+  currentDays = computeDays(activeTrail(), activeStops(), planState.startDate, undefined, baseKmh());
   // Clamp selectedDayIndex in case stops were removed
   if (selectedDayIndex !== null && selectedDayIndex >= currentDays.length) {
     selectedDayIndex = null;
@@ -1268,6 +1252,8 @@ function initHeader(): void {
   const nameInput = document.getElementById('plan-name-input') as HTMLInputElement;
   const dateInput = document.getElementById('plan-start-date') as HTMLInputElement;
   const directionBtn = document.getElementById('direction-toggle') as HTMLButtonElement;
+  const paceSelect = document.getElementById('plan-pace') as HTMLSelectElement | null;
+  const hoursInput = document.getElementById('plan-daily-hours') as HTMLInputElement | null;
 
   if (nameInput) {
     nameInput.value = planState.name;
@@ -1277,6 +1263,33 @@ function initHeader(): void {
   if (dateInput) {
     dateInput.value = planState.startDate ?? '';
     dateInput.addEventListener('change', () => setStartDate(dateInput.value));
+  }
+
+  if (paceSelect) {
+    // Built from PACE_KMH rather than the markup, so the label and the speed the
+    // calculators walk at cannot drift apart.
+    paceSelect.innerHTML = '';
+    for (const [value, kmh] of Object.entries(PACE_KMH)) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = `${value[0].toUpperCase()}${value.slice(1)} (${kmh} km/h)`;
+      paceSelect.appendChild(option);
+    }
+    paceSelect.value = pace();
+    paceSelect.addEventListener('change', () => {
+      if (isPace(paceSelect.value)) setPace(paceSelect.value);
+    });
+  }
+
+  if (hoursInput) {
+    hoursInput.min = String(MIN_DAILY_HOURS);
+    hoursInput.max = String(MAX_DAILY_HOURS);
+    hoursInput.value = String(dailyHours());
+    hoursInput.addEventListener('change', () => {
+      setDailyHours(hoursInput.value);
+      // A blank or out-of-range entry is rejected, so the box shows what is in force.
+      hoursInput.value = String(dailyHours());
+    });
   }
 
   if (directionBtn) {

@@ -2,32 +2,40 @@
  * Plan screen — the planner heritage, reborn as a single read-only guide
  * screen. No persisted plans: it is a LIVE calculator. Pick a section, set your
  * daily hours and pace, and the shared @lib calculators derive day splits,
- * resupply legs, and water carries on the fly. Only your pace + hours are
- * remembered per trail; the section defaults to the full trail on open.
+ * resupply legs, and water carries on the fly. Pace, hours and the resupply
+ * selection are remembered per trail; the section defaults to the full trail
+ * on open.
  *
  * Everything downstream derives from the direction-applied guide trail, so a
  * direction flip recomputes the whole plan for free.
  */
 
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
+import { resupplySummaryText } from '@lib/resupply-display';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { useTheme } from '../../../src/theme';
 import { radii, spacing, typography } from '../../../src/tokens';
-import { useSettingsStore } from '../../../src/state/settings-store';
+import { useSettingsStore, type Units } from '../../../src/state/settings-store';
 import { useGuide } from '../../../src/features/guide/GuideContext';
-import { computePlan, type PlanInputs } from '../../../src/features/plan/plan-adapters';
+import {
+  computePlan,
+  type PlanInputs,
+  type PlanResult,
+} from '../../../src/features/plan/plan-adapters';
 import { sectionOptions } from '../../../src/features/plan/plan-section';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
 import { PlanInputsCard } from '../../../src/features/plan/PlanInputsCard';
 import { DaySplitList } from '../../../src/features/plan/DaySplitList';
 import { ResupplyCard } from '../../../src/features/plan/ResupplyCard';
 import { WaterCarryCard } from '../../../src/features/plan/WaterCarryCard';
-import { formatHours } from '../../../src/features/plan/plan-format';
+import { formatFoodWeight, formatHours } from '../../../src/features/plan/plan-format';
 
 export default function PlanScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const { trail, trailId, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
 
@@ -71,6 +79,7 @@ export default function PlanScreen() {
     pace: prefs.pace,
     startName,
     endName,
+    resupplyStops: prefs.resupplyStops,
   };
 
   const plan = useMemo(
@@ -82,8 +91,18 @@ export default function PlanScreen() {
         pace: prefs.pace,
         startName,
         endName,
+        resupplyStops: prefs.resupplyStops,
       }),
-    [trail, startKm, endKm, startName, endName, prefs.dailyHours, prefs.pace],
+    [
+      trail,
+      startKm,
+      endKm,
+      startName,
+      endName,
+      prefs.dailyHours,
+      prefs.pace,
+      prefs.resupplyStops,
+    ],
   );
 
   // Naismith's climbing term is silently zero for a trail with no profile, so
@@ -141,10 +160,32 @@ export default function PlanScreen() {
             <DaySplitList days={plan.days} targetHours={plan.targetHours} units={units} />
           </Section>
 
-          <Section title="Resupply">
+          <Section
+            title="Resupply"
+            subtitle={resupplySubtitle(plan, units, prefs.resupplyStops === undefined)}
+            action={
+              plan.resupplyGroups.length > 0 ? (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/guide/[trailId]/resupply',
+                      params: { trailId, startKm: String(startKm), endKm: String(endKm) },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose stops"
+                  hitSlop={spacing.sm}
+                  style={({ pressed }) => pressed && styles.pressed}
+                >
+                  <Text style={[styles.chooseStops, { color: colors.accent }]}>Choose stops</Text>
+                </Pressable>
+              ) : undefined
+            }
+          >
             <ResupplyCard
-              legs={plan.foodCarries}
-              hasData={plan.resupply.hasResupplyData}
+              legs={plan.resupplyLegs}
+              hasOptions={plan.resupplyGroups.length > 0}
+              stopCount={plan.resupplyStops.length}
               units={units}
             />
           </Section>
@@ -162,20 +203,47 @@ export default function PlanScreen() {
   );
 }
 
+/**
+ * The Resupply subtitle: the legs' own one-liner, so subtitle and card cannot
+ * disagree. Before a plan is made it says so — a hiker should be able to tell
+ * the every-option default from a plan that happens to tick everything.
+ */
+function resupplySubtitle(
+  plan: PlanResult,
+  units: Units,
+  everyOption: boolean,
+): string | undefined {
+  // Nothing to summarise on a trail with no resupply at all — the card says so.
+  if (plan.resupplyGroups.length === 0) return undefined;
+  if (!plan.resupplySummary.hasData) return 'No resupply stops ticked.';
+  const text = resupplySummaryText(
+    plan.resupplySummary,
+    (km) => formatDistance(km, units),
+    (kg) => formatFoodWeight(kg, units),
+  );
+  return everyOption ? `Every option · ${text}` : text;
+}
+
 function Section({
   title,
   subtitle,
+  action,
   children,
 }: {
   title: string;
   /** One line of caveat under the heading, e.g. what the numbers can't account for. */
   subtitle?: string;
+  /** Optional control on the heading row, right-aligned (e.g. "Choose stops"). */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { colors } = useTheme();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
+      <View style={styles.sectionHead}>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
+        {action}
+      </View>
       {subtitle !== undefined && (
         <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
       )}
@@ -218,7 +286,10 @@ const styles = StyleSheet.create({
   summaryLabel: { ...typography.caption },
 
   section: { gap: spacing.md },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { ...typography.titleLarge },
+  chooseStops: { ...typography.bodySmall, fontWeight: '700' },
+  pressed: { opacity: 0.6 },
   // Negative top margin pulls the caveat up against its heading, so the section
   // gap still reads as separating the heading block from the content.
   sectionSubtitle: { ...typography.bodySmall, marginTop: -spacing.xs },

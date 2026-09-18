@@ -1,5 +1,6 @@
 /**
- * Remembers the hiker's plan *preferences* per trail: daily hours + pace.
+ * Remembers the hiker's plan *preferences* per trail: daily hours, pace, and
+ * the resupply stops they have chosen.
  *
  * Deliberately does NOT persist the section start/end km. Those live in
  * direction-applied km space, which flips meaning when the guide direction is
@@ -20,6 +21,15 @@ import { PACE_KMH, type Pace } from './plan-adapters';
 export interface PlanPrefs {
   dailyHours: number;
   pace: Pace;
+  /**
+   * Waypoint ids of the resupply options the hiker ticked, in trail order.
+   *
+   * Absent means no plan has been made: the legs card falls back to every
+   * option, and *nothing* is highlighted as planned. An explicit `[]` is a
+   * plan with nothing in it, which is a different thing — so this field is
+   * deliberately missing from DEFAULT_PREFS rather than defaulting to a list.
+   */
+  resupplyStops?: string[];
 }
 
 export const DEFAULT_PREFS: PlanPrefs = { dailyHours: 8, pace: 'average' };
@@ -33,6 +43,10 @@ export interface PlanInputsState {
   byTrail: Record<string, PlanPrefs>;
   setDailyHours: (trailId: string, hours: number) => void;
   setPace: (trailId: string, pace: Pace) => void;
+  /** Store an explicit resupply selection (see PlanPrefs.resupplyStops). */
+  setResupplyStops: (trailId: string, ids: string[]) => void;
+  /** Back to "no plan made" — distinct from ticking every option. */
+  clearResupplyStops: (trailId: string) => void;
   /**
    * Forget a trail's prefs entirely. Called when an imported trail is deleted
    * (`services/imported-trail-store`) so the persisted blob doesn't accumulate
@@ -79,6 +93,23 @@ export const usePlanInputsStore = create<PlanInputsState>()(
             [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), pace },
           },
         })),
+      setResupplyStops: (trailId, ids) =>
+        set((s) => ({
+          byTrail: {
+            ...s.byTrail,
+            // A fresh array in a fresh entry, so the selectPrefs /
+            // selectResupplyStopIds memos both miss and recompute.
+            [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), resupplyStops: [...ids] },
+          },
+        })),
+      clearResupplyStops: (trailId) =>
+        set((s) => {
+          const stored = s.byTrail[trailId];
+          if (!stored || stored.resupplyStops === undefined) return s;
+          // Drop the field, keep pace/hours — this is "unplan", not "reset".
+          const { resupplyStops: _dropped, ...rest } = stored;
+          return { byTrail: { ...s.byTrail, [trailId]: rest } };
+        }),
       clearTrail: (trailId) =>
         set((s) => {
           if (!(trailId in s.byTrail)) return s;
@@ -127,6 +158,11 @@ const mergedPrefsCache = new WeakMap<PlanPrefs, PlanPrefs>();
  * never `undefined` for an entry persisted before it existed (migrate only
  * guarantees the map shape, not per-field completeness). Returns a stable
  * reference — see `mergedPrefsCache`.
+ *
+ * `resupplyStops` is the one field that needs scrubbing here rather than in
+ * `migrate`: it is optional, so a hand-edited or corrupt blob would otherwise
+ * reach the selection surfaces as garbage. Anything that is not an array of
+ * strings collapses to `undefined` — "no plan made", the safe reading.
  */
 export function selectPrefs(trailId: string) {
   return (s: PlanInputsState): PlanPrefs => {
@@ -135,9 +171,46 @@ export function selectPrefs(trailId: string) {
     let merged = mergedPrefsCache.get(stored);
     if (!merged) {
       merged = { ...DEFAULT_PREFS, ...stored };
+      if (merged.resupplyStops !== undefined && !isStringArray(merged.resupplyStops)) {
+        delete merged.resupplyStops;
+      }
       mergedPrefsCache.set(stored, merged);
     }
     return merged;
+  };
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === 'string');
+}
+
+/**
+ * Resupply-stop ids as a Set, keyed by the stored array's identity so zustand's
+ * Object.is compare stays stable across renders — the same mechanism as
+ * `mergedPrefsCache`.
+ */
+const stopIdSetCache = new WeakMap<string[], ReadonlySet<string>>();
+
+/**
+ * Reactive selector for the trail's chosen resupply stops: a Set of waypoint
+ * ids, or `null` when no plan has been made.
+ *
+ * This is the one thing every "planned" surface reads — map, elevation profile,
+ * list pane, waypoint detail and the hike distance strip — so "planned" means
+ * the same on all of them. `null` means *nothing* is planned, never everything:
+ * the untouched default still feeds the legs card with every option, but
+ * painting every town as planned before anyone planned anything would be noise.
+ */
+export function selectResupplyStopIds(trailId: string) {
+  return (s: PlanInputsState): ReadonlySet<string> | null => {
+    const ids = selectPrefs(trailId)(s).resupplyStops;
+    if (!ids) return null;
+    let set = stopIdSetCache.get(ids);
+    if (!set) {
+      set = new Set(ids);
+      stopIdSetCache.set(ids, set);
+    }
+    return set;
   };
 }
 

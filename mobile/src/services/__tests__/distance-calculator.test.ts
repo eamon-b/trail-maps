@@ -80,6 +80,50 @@ describe('getNextWaypointsByType', () => {
     const ahead = calculateDistancesToWaypoints(1, reversed, TRACK).map((r) => r.waypoint.name);
     expect(ahead).toEqual(['Old Hut', 'Township', 'Camp One', 'Spring', 'Trailhead']);
   });
+
+  describe('with a resupply plan', () => {
+    // Two towns ahead; only the far one is in the plan.
+    const TOWNS: DistanceWaypoint[] = [
+      ...WAYPOINTS,
+      { id: 'f', name: 'Turn-off', type: 'town-access', totalDistance: 9 },
+    ];
+
+    it('skips an unplanned town for the next planned one', () => {
+      const next = getNextWaypointsByType(
+        1,
+        TOWNS,
+        TRACK,
+        undefined,
+        4,
+        undefined,
+        new Set(['f']),
+      );
+      // 'Township' (km 6) is nearer but unplanned; the planned turn-off wins.
+      expect(next.town?.waypoint.name).toBe('Turn-off');
+      // The other slots are untouched by the plan.
+      expect(next.water?.waypoint.name).toBe('Spring');
+      expect(next.shelter?.waypoint.name).toBe('Old Hut');
+    });
+
+    it('leaves the town slot empty past the last planned stop', () => {
+      const next = getNextWaypointsByType(
+        7,
+        TOWNS,
+        TRACK,
+        undefined,
+        4,
+        undefined,
+        new Set(['d']),
+      );
+      // 'Township' is behind and the turn-off ahead is not planned: no answer
+      // beats falling back to an unplanned town.
+      expect(next.town).toBeUndefined();
+    });
+
+    it('is unfiltered when no plan has been made', () => {
+      expect(getNextWaypointsByType(1, TOWNS, TRACK).town?.waypoint.name).toBe('Township');
+    });
+  });
 });
 
 describe('formatEtaMinutes', () => {

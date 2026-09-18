@@ -140,6 +140,7 @@ Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: 
 - **Static site**: All pages are pre-generated, no runtime server required
 - **Client-side rendering**: Trail viewer loads JSON data and renders interactively
 - **Web maps**: Leaflet with OpenTopoMap tiles for topographic display
+- **The app informs the hiker's decisions; it never makes them.** Pace, hours per day, and any other figure that says how far or how long is "reasonable" is the hiker's input, not ours. A UI module must never fix such a figure in a constant (the web plan page's former `RESUPPLY_BASE_KMH = 4` / `DEFAULT_RESUPPLY_DAILY_HOURS = 8` are the named example, removed per `plans/resupply-mobile.md` Phase 0): give the page the input the phone already has, persist it with the plan, and feed the calculator from it. A *default* is fine only as the initial value of an input the hiker can see and change; a shared calculator should require the figure rather than silently substitute one. The same applies to thresholds that colour a judgement — "long carry", "dry stretch", grams of food per day — which are on the follow-up list to become inputs
 
 ## Testing
 

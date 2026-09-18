@@ -12,6 +12,11 @@
  * do (computeDays splits at explicit stops; it has no auto-splitter) plus the
  * camp-snapping the guide adds on top.
  *
+ * Resupply is the one place this module composes rather than passes through:
+ * the trail's options are listed and grouped, the hiker's ticked ids resolved
+ * into stops, and the legs between those stops measured — all in
+ * `@lib/resupply-plan`, driven by the hiker's own pace and hours.
+ *
  * Pure + React-free so every derivation is unit-testable.
  */
 
@@ -25,38 +30,38 @@ import {
   type TimeIndex,
 } from '@lib/day-calculator';
 import {
-  analyzeResupplyForSection,
-  foodCarryForGap,
-  type ResupplyAnalysis,
-  type FoodCarryEstimate,
-} from '@lib/resupply-calculator';
+  computeResupplyLegs,
+  listResupplyOptions,
+  resolveResupplyStops,
+  summariseResupplyLegs,
+  type ResupplyLeg,
+  type ResupplyOptionGroup,
+  type ResupplyStop,
+  type ResupplySummary,
+} from '@lib/resupply-plan';
 import {
   analyzeWaterCarryForSection,
   DEFAULT_DRY_STRETCH_KM,
   type WaterCarryAnalysis,
 } from '@lib/water-carry-calculator';
-import type { SectionConfig, ComputedDay, ResupplyGap, WaterGap } from '@lib/plan-types';
+import {
+  PACE_KMH,
+  type ComputedDay,
+  type Pace,
+  type SectionConfig,
+  type WaterGap,
+} from '@lib/plan-types';
 import type { TrailJson } from '../../services/trail-assets';
 import { categoryToken } from '../elevation/waypoint-category';
 import { isAccessWaypoint } from '@lib/waypoint-taxonomy';
 import { routeBreakStarts } from '@lib/route-breaks';
 
-/** Pace preset. Maps to a flat-ground walking speed (km/h). */
-export type Pace = 'slow' | 'average' | 'fast';
-
 /**
- * Flat-ground base walking speed (km/h) per pace preset. This is the Naismith
- * base speed threaded into `estimateHikingTime` / the time index: Slow walks the
- * same terrain-aware formula at 3 km/h flat-speed, Fast at 5. The daily target is
- * expressed in *hours* (used raw), so pace shortens/lengthens the km a day covers
- * without inflating its hours. 'average' == 4 preserves the identity "flat day
- * hours ≈ your daily hours" (8 h flat ≈ 32 km).
+ * Pace preset and its flat-ground base speed, shared with the web through
+ * `@lib/plan-types` so the two platforms cannot drift. Re-exported because the
+ * store and the inputs card import them from here.
  */
-export const PACE_KMH: Record<Pace, number> = {
-  slow: 3,
-  average: 4,
-  fast: 5,
-};
+export { PACE_KMH, type Pace } from '@lib/plan-types';
 
 /** The hiker's live inputs for the plan screen. */
 export interface PlanInputs {
@@ -77,6 +82,11 @@ export interface PlanInputs {
   startName?: string;
   /** Optional display name for the section end (see `startName`). */
   endName?: string;
+  /**
+   * The resupply option ids the hiker ticked. `undefined` means they have not
+   * chosen yet, which resolves to every option — see `resolveResupplyStops`.
+   */
+  resupplyStops?: readonly string[];
 }
 
 /**
@@ -107,15 +117,20 @@ export interface PlanResult {
   targetHours: number;
   /**
    * Realized average km/day of the computed split (`sectionKm / days.length`).
-   * Drives resupply "≈ N days" and food weights so they reflect the actual plan,
-   * not a flat-ground promise. Falls back to `baseKmh × dailyHours` for a
-   * degenerate section that produced no days.
+   * The "Avg/day" summary stat and nothing else: the resupply legs take their
+   * days from the hiker's pace and hours over the leg's own terrain. Falls back
+   * to `baseKmh × dailyHours` for a degenerate section that produced no days.
    */
   effectiveDailyKm: number;
   days: PlanDay[];
-  resupply: ResupplyAnalysis;
-  /** Resupply gaps paired with their food-carry weight estimate. */
-  foodCarries: { gap: ResupplyGap; food: FoodCarryEstimate }[];
+  /** Every resupply the trail offers, clustered by turn-off — the picker's list. */
+  resupplyGroups: ResupplyOptionGroup[];
+  /** What the hiker's selection resolves to (one stop per ticked group). */
+  resupplyStops: ResupplyStop[];
+  /** The carries between those stops, scoped to the section. */
+  resupplyLegs: ResupplyLeg[];
+  /** The one-line version of the legs, for the section subtitle. */
+  resupplySummary: ResupplySummary;
   water: WaterCarryAnalysis;
   /** Longest water carries in the section, biggest first (top N). */
   topWaterCarries: WaterGap[];
@@ -328,21 +343,23 @@ export function computePlan(trail: TrailJson, inputs: PlanInputs): PlanResult {
     return { ...d, endKind, snappedToCamp: endKind === 'camp' };
   });
 
-  // Resupply "≈ N days" / food weights derive from the realized plan (Decision 6):
-  // the effective km/day of the actual split, not a flat-ground target. computeDays
-  // always yields ≥1 day, so the fallback is an unreachable safeguard; a 0-length
-  // section gives effectiveDailyKm = 0, which computeResupplyGaps clamps to 1 km
-  // (and such a section has no gaps anyway).
+  // computeDays always yields ≥1 day, so the fallback is an unreachable
+  // safeguard for a degenerate (zero-length) section.
   const sectionKm = section.endKm - section.startKm;
   const effectiveDailyKm = days.length > 0 ? sectionKm / days.length : baseKmh * inputs.dailyHours;
 
-  const resupply = analyzeResupplyForSection(
-    trail.waypoints,
-    section.startKm,
-    section.endKm,
-    effectiveDailyKm,
-  );
-  const foodCarries = resupply.gaps.map((gap) => ({ gap, food: foodCarryForGap(gap) }));
+  // The option list is trail-wide — the hiker sections later, and the choice is
+  // about the trail, not this section. Only the legs are section-scoped, which
+  // the calculator does itself.
+  const resupplyGroups = listResupplyOptions(trail.waypoints);
+  const resupplyStops = resolveResupplyStops(resupplyGroups, inputs.resupplyStops);
+  const resupplyLegs = computeResupplyLegs(planTrail, resupplyStops, {
+    dailyHours: targetH,
+    baseKmh,
+    section,
+    days,
+  });
+  const resupplySummary = summariseResupplyLegs(resupplyLegs);
 
   const water = analyzeWaterCarryForSection(
     trail.waypoints,
@@ -357,8 +374,10 @@ export function computePlan(trail: TrailJson, inputs: PlanInputs): PlanResult {
     targetHours: targetH,
     effectiveDailyKm,
     days,
-    resupply,
-    foodCarries,
+    resupplyGroups,
+    resupplyStops,
+    resupplyLegs,
+    resupplySummary,
     water,
     topWaterCarries,
   };

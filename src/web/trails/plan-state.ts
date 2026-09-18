@@ -6,6 +6,7 @@
  */
 
 import type { PlanState } from '@lib/plan-types';
+import { isPace } from '@lib/plan-types';
 
 const STORAGE_KEY = (trailId: string) => `trail-plan-${trailId}`;
 
@@ -22,6 +23,14 @@ function isValidPlanState(data: unknown): data is PlanState {
   if (obj.resupplyStops !== undefined) {
     if (!Array.isArray(obj.resupplyStops)) return false;
     if (obj.resupplyStops.some(id => typeof id !== 'string')) return false;
+  }
+  // pace / dailyHours are optional (absent = the input's initial value, Average
+  // and 8 h); a stored figure outside what the inputs offer is a hand-edited or
+  // stale record, and the calculators now refuse a pace they cannot walk at.
+  if (obj.pace !== undefined && !isPace(obj.pace)) return false;
+  if (obj.dailyHours !== undefined) {
+    if (typeof obj.dailyHours !== 'number') return false;
+    if (!Number.isFinite(obj.dailyHours) || obj.dailyHours <= 0) return false;
   }
   return true;
 }

@@ -40,6 +40,12 @@
         <label for="plan-start-date" style="font-size:0.875rem;">Start:</label>
         <input type="date" id="plan-start-date" />
       </div>
+      <div id="plan-pace-group">
+        <label for="plan-pace">Pace:</label>
+        <select id="plan-pace"></select>
+        <label for="plan-daily-hours">Hours/day:</label>
+        <input type="number" id="plan-daily-hours" min="1" max="16" step="1" />
+      </div>
       <button type="button" id="direction-toggle" title="Toggle hiking direction">
         <span class="direction-arrows" aria-hidden="true">⇄</span>
         <span id="direction-label">NOBO</span>

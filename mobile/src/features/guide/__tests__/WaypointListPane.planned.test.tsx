@@ -47,7 +47,11 @@ jest.mock('../use-visible-pois', () => ({
   useVisiblePois: () => [],
 }));
 
-/** Hahndorf is off the route; the turn-off that serves it is on it. */
+/**
+ * Hahndorf is off the route; the turn-off that serves it is on it. Mount Barker
+ * is a second town off the same turn-off — a different place, reached the same
+ * way, and never planned by ticking Hahndorf.
+ */
 const trail = {
   track: { totalDistance: 30 },
   waypoints: [
@@ -65,6 +69,15 @@ const trail = {
       type: 'town',
       totalDistance: 12,
       offTrailKm: 4,
+      accessMode: 'hitch',
+      accessName: 'Mount Barker Road',
+    },
+    {
+      id: 'w_other',
+      name: 'Mount Barker',
+      type: 'town-access',
+      totalDistance: 12,
+      offTrailKm: 9,
       accessMode: 'hitch',
       accessName: 'Mount Barker Road',
     },
@@ -150,18 +163,20 @@ describe('WaypointListPane planned resupply', () => {
     expect(allText(tree)).not.toContain('Resupply');
   });
 
-  it('pills the ticked stop and its turn-off once a plan exists', () => {
+  it('pills the ticked stop and its turn-off, but not the next town along the road', () => {
     usePlanInputsStore.getState().setResupplyStops('heysen', ['w_town']);
     const tree = render();
     expect(chipLabels(tree)).toContain('Planned');
 
-    // Both the town and the turn-off that serves it are planned: the turn-off is
-    // the km the food has to reach.
+    // The town and the turn-off that serves it are planned — the turn-off is the
+    // km the food has to reach. Mount Barker, a separate town off the same road,
+    // is not: nobody chose it.
     pressChip(tree, 'Planned');
     act(() => {
       jest.runOnlyPendingTimers();
     });
     expect(rowLabels(tree)).toEqual(['Open Hahndorf turn-off', 'Open Hahndorf']);
+    expect(rowLabels(tree)).not.toContain('Open Mount Barker');
     expect(allText(tree)).toContain('Resupply');
   });
 

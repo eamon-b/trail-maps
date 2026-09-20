@@ -277,15 +277,22 @@ describe('the full import journey', () => {
 
     (document.querySelector('.tab-btn[data-tab="stops"]') as HTMLButtonElement).click();
     await flush(20);
+    // An imported GPX's waypoints are rarely typed as camps, so the Stops tab's
+    // overnight-candidate default has nothing to tick: this is the switch a
+    // hiker planning around an imported track reaches for.
+    (document.getElementById('stops-show-all') as HTMLInputElement).click();
     const row = [...document.querySelectorAll('.stop-row')].find(node =>
       node.textContent?.includes('Yallingup'),
     ) as HTMLElement;
     row.click();
     // The save is debounced; the assertion is that it lands under `id`.
     await new Promise(resolve => setTimeout(resolve, 1100));
-    const saved = window.localStorage.getItem(`trail-plan-${id}`);
-    expect(saved, 'plan state saved under the import id, not some other key').toBeTruthy();
-    expect(JSON.parse(saved!).stops).toHaveLength(1);
+    const saved = window.localStorage.getItem(`trail-plan-doc-${id}`);
+    expect(saved, 'plan document saved under the import id, not some other key').toBeTruthy();
+    const document_ = JSON.parse(saved!);
+    expect(document_.stops).toHaveLength(1);
+    // Keyed to the import's own `uw_` waypoint id, so it survives a re-import.
+    expect(document_.stops[0].waypointId).toMatch(/^uw_/);
 
     // --- reload: the plan comes back -------------------------------------
     vi.resetModules();
@@ -308,7 +315,9 @@ describe('the full import journey', () => {
     // The id is a content hash: re-importing the same file lands on it again,
     // so anything left in localStorage would come back attached to what the
     // user thinks is a fresh trail.
+    expect(window.localStorage.getItem(`trail-plan-doc-${id}`)).toBeNull();
     expect(window.localStorage.getItem(`trail-plan-${id}`)).toBeNull();
+    expect(window.localStorage.getItem(`trail-plan-ui-${id}`)).toBeNull();
     expect(JSON.parse(window.localStorage.getItem('trailDirectionPrefs') ?? '{}')[id]).toBeUndefined();
   }, 20_000);
 

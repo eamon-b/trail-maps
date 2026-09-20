@@ -22,9 +22,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { BUNDLED_PLAN_FILLS, inlinePlanShell } from '../../../scripts/lib/plan-shell';
 
 const ROOT = path.resolve(__dirname, '../../..');
 const TRAIL_ID = 'planned-highlight-fixture';
+
+/** The bundled plan page as the build ships it: the template with the shell inlined. */
+function bundledPlanPageHtml(): string {
+  return inlinePlanShell(
+    fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-template.html'), 'utf8'),
+    fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-shell.html'), 'utf8'),
+    BUNDLED_PLAN_FILLS
+  );
+}
 
 const $ = (id: string): HTMLElement => {
   const node = document.getElementById(id);
@@ -113,7 +123,7 @@ function makeTrail() {
 }
 
 async function boot(): Promise<void> {
-  const html = fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-template.html'), 'utf8');
+  const html = bundledPlanPageHtml();
   document.documentElement.innerHTML = html
     .replace(/<!DOCTYPE html>/i, '')
     .replace(/<\/?html[^>]*>/gi, '');
@@ -289,7 +299,7 @@ describe('changing the selection', () => {
 
 describe('a trail with no resupply options', () => {
   it('renders no marking at all (an imported GPX, on my-plan.html)', async () => {
-    const html = fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-template.html'), 'utf8');
+    const html = bundledPlanPageHtml();
     document.documentElement.innerHTML = html
       .replace(/<!DOCTYPE html>/i, '')
       .replace(/<\/?html[^>]*>/gi, '');

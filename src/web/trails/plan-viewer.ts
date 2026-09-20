@@ -9,9 +9,31 @@
 import type * as Leaflet from 'leaflet';
 declare const L: typeof Leaflet;
 
-import type { PlanTrackPoint, PlanWaypoint, StopData, ComputedDay, PlanState, Pace } from '@lib/plan-types';
-import { PACE_KMH, isPace } from '@lib/plan-types';
-import { computeDays } from '@lib/day-calculator';
+import type {
+  PlanTrackPoint,
+  PlanWaypoint,
+  ComputedDay,
+  PlanDocument,
+  PlanStop,
+  Pace,
+} from '@lib/plan-types';
+import { PACE_KMH, PLAN_LIMITS, isPace } from '@lib/plan-types';
+import {
+  computePlanDays,
+  overnightCandidates,
+  servicesAtStop,
+  setDirection as editDirection,
+  setNights as editNights,
+  setPlanName as editPlanName,
+  setStartDate as editStartDate,
+  setStopBooked as editStopBooked,
+  setStopNote as editStopNote,
+  toggleStop as editToggleStop,
+  findStop,
+  isStopSelected,
+  type StopKey,
+  type StopServices,
+} from '@lib/plan-editor';
 import { findNearestByDistance } from '@lib/track-geometry';
 import {
   routeBreakCrossings,
@@ -19,7 +41,8 @@ import {
   sliceAcrossRouteBreaks,
   splitAtRouteBreaks,
 } from '@lib/route-breaks';
-import type { RouteBreak } from '@lib/trail-types';
+import type { RouteBreak, TrailPOI } from '@lib/trail-types';
+import { OSM_ATTRIBUTION } from '@lib/poi-display';
 import {
   allResupplyOptionIds,
   computeResupplyLegs,
@@ -37,7 +60,13 @@ import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { baseWaypointType, waypointTypeLabel } from '@lib/waypoint-taxonomy';
-import { loadPlanState, savePlanState } from './plan-state';
+import {
+  loadOrMigratePlan,
+  loadPlanUiPrefs,
+  savePlanDocument,
+  savePlanUiPrefs,
+  type PlanUiPrefs,
+} from './plan-state';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
 // `title="…"` and `class="…"`, and an imported GPX supplies both.
@@ -68,6 +97,12 @@ interface Trail {
     breaks?: RouteBreak[];
   };
   waypoints?: PlanWaypoint[];
+  /**
+   * OSM points of interest, on the same km scale as the waypoints. Absent when
+   * the trail has never been fetched for them (CDT, Te Araroa) — which is not
+   * the same as "nothing near this stop", and the Stops tab says so.
+   */
+  pois?: TrailPOI[];
 }
 
 // ---------------------------------------------------------------------------
@@ -88,13 +123,25 @@ const MAX_DAILY_HOURS = 16;
 let trail: Trail;
 /** Lazily-built reversed copy of `trail`; only computed when SOBO is first viewed. */
 let reversedTrail: Trail | null = null;
-let planState: PlanState = { name: '', startDate: null, stops: [] };
+/**
+ * The plan being edited. Replaced wholesale by every edit — `@lib/plan-editor`
+ * never mutates, so this binding is the only thing that changes, and a render
+ * always reads one consistent document.
+ */
+let plan: PlanDocument;
 let currentDays: ComputedDay[] = [];
 let selectedDayIndex: number | null = null;
 type PlanTab = 'days' | 'stops' | 'resupply';
 let activeTab: PlanTab = 'days';
 let stopsFilter = '';
 let resupplyFilter = '';
+/**
+ * This browser's view of the planner: the Stops tab's "show all" switch and the
+ * hiker's pace and hours per day. Not part of the synced document — the phone
+ * keeps its own copies of pace and hours in its inputs store, and a plan shared
+ * with a friend should not carry how fast you walk.
+ */
+let uiPrefs: PlanUiPrefs = { showAllWaypoints: false };
 let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Leaflet
@@ -146,6 +193,49 @@ function waypointIcon(type?: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Services at a stop
+// ---------------------------------------------------------------------------
+
+/** The flags of `StopServices`, in the order the strip shows them. */
+type ServiceFlag = Exclude<keyof StopServices, 'pois'>;
+
+const SERVICE_GLYPHS: ReadonlyArray<{ flag: ServiceFlag; glyph: string; label: string }> = [
+  { flag: 'camping', glyph: '\u26FA', label: 'Camping' },
+  { flag: 'lodging', glyph: '\u{1F6CF}\u{FE0F}', label: 'Lodging' },
+  { flag: 'shop', glyph: '\u{1F6D2}', label: 'Shop' },
+  { flag: 'food', glyph: '\u{1F37D}\u{FE0F}', label: 'Food' },
+  { flag: 'water', glyph: '\u{1F4A7}', label: 'Water' },
+  { flag: 'transport', glyph: '\u{1F68C}', label: 'Transport' },
+];
+
+/**
+ * What is within a kilometre of this place, from the trail's OSM POIs.
+ *
+ * @param km active-direction km. `createReversedTrail` mirrors POI distances
+ *   along with everything else, so the POIs of `activeTrail()` are already on
+ *   the same scale as the waypoint km the rows show.
+ */
+function servicesAt(km: number): StopServices | undefined {
+  return servicesAtStop({ km }, activeTrail().pois);
+}
+
+/**
+ * Six glyphs, greyed where the service is absent. Empty when the trail has no
+ * POI data at all: a strip of six grey glyphs would read as "nothing here",
+ * which is a different and more dangerous claim than "we do not know" — the
+ * tab footer says which it is.
+ */
+function servicesStripHtml(services: StopServices | undefined): string {
+  if (!services) return '';
+  const glyphs = SERVICE_GLYPHS.map(({ flag, glyph, label }) => {
+    const present = services[flag];
+    const title = present ? label : `No ${label.toLowerCase()} nearby`;
+    return `<span class="stop-svc${present ? '' : ' is-off'}" title="${escapeHtml(title)}">${glyph}</span>`;
+  }).join('');
+  return `<div class="stop-services">${glyphs}</div>`;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -190,6 +280,25 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+/** The first line of a note — all a day card or a datasheet row has room for. */
+function firstLine(text: string): string {
+  return text.split('\n')[0].trim();
+}
+
+/**
+ * The "Booked" badge and the note, shown wherever a stop is reported: the day
+ * card that ends there and that stop's row in the datasheet.
+ */
+function stopFooterHtml(stop: PlanStop | undefined): string {
+  if (!stop) return '';
+  const note = firstLine(stop.note ?? '');
+  if (!stop.booked && !note) return '';
+  return `<div class="stop-footer">
+      ${stop.booked ? '<span class="booked-badge">Booked</span>' : ''}
+      ${note ? `<span class="stop-note-text">${escapeHtml(note)}</span>` : ''}
+    </div>`;
+}
+
 /** Day and month only — the resupply table has eight columns in a 220px panel. */
 function formatShortDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -201,15 +310,15 @@ function formatShortDate(iso: string): string {
 // Direction (km-space contract)
 // ---------------------------------------------------------------------------
 //
-// planState.stops[].km is ALWAYS stored NOBO-absolute (the trail as built).
-// Everything at runtime — renderers, computeDays, marker clicks — works in
+// plan.stops[].km is ALWAYS stored NOBO-absolute (the trail as built).
+// Everything at runtime — renderers, computePlanDays, marker clicks — works in
 // "active" km, i.e. the currently viewed direction. The only conversions are:
 //   storage -> active: activeStops() (used by renderAll and the renderers)
-//   active -> storage: toNoboKm() in toggleStop()
+//   active -> storage: stopKeyFor() / toNoboKm() in toggleStop()
 // No renderer may branch on direction; they just read activeTrail()/activeStops().
 
 function direction(): PlanDirection {
-  return planState.direction ?? 'NOBO';
+  return plan.direction;
 }
 
 /**
@@ -218,15 +327,21 @@ function direction(): PlanDirection {
  * the inputs existed — nothing on this page decides how far a day is.
  */
 function pace(): Pace {
-  return planState.pace ?? DEFAULT_PACE;
+  return uiPrefs.pace ?? DEFAULT_PACE;
 }
 
 function baseKmh(): number {
   return PACE_KMH[pace()];
 }
 
+/** Change one or more view preferences and write them for this browser. */
+function setUiPrefs(patch: Partial<PlanUiPrefs>): void {
+  uiPrefs = { ...uiPrefs, ...patch };
+  savePlanUiPrefs(trail.config.id, uiPrefs);
+}
+
 function dailyHours(): number {
-  return planState.dailyHours ?? DEFAULT_DAILY_HOURS;
+  return uiPrefs.dailyHours ?? DEFAULT_DAILY_HOURS;
 }
 
 /** The trail oriented in the active direction. */
@@ -240,15 +355,33 @@ function activeTrail(): Trail {
  * before anything reads it; isStop(), the markers, and the elevation profile
  * then share one array instead of clone-and-sorting per waypoint.
  */
-let cachedActiveStops: StopData[] = [];
+let cachedActiveStops: PlanStop[] = [];
 
 function refreshActiveStops(): void {
-  cachedActiveStops = stopsToActive(planState.stops, direction(), trail.track.totalDistance);
+  cachedActiveStops = stopsToActive(plan.stops, direction(), trail.track.totalDistance);
 }
 
 /** Stored stops mapped into active-direction km, sorted ascending. */
-function activeStops(): StopData[] {
+function activeStops(): PlanStop[] {
   return cachedActiveStops;
+}
+
+/**
+ * The stop key for a place the user pointed at in the active direction: the
+ * waypoint's id when it has one, and always its km converted back to storage
+ * space. Every editor call on this page goes through it, so no call site does
+ * the NOBO conversion by hand.
+ */
+function stopKeyFor(waypoint: { id?: string; km: number }): StopKey {
+  return {
+    ...(waypoint.id ? { waypointId: waypoint.id } : {}),
+    km: toNoboKm(waypoint.km, direction(), trail.track.totalDistance),
+  };
+}
+
+/** The stored stop for an active-km position, or undefined. */
+function stopAtActiveKm(km: number): PlanStop | undefined {
+  return activeStops().find(stop => Math.abs(stop.km - km) < KM_EPSILON);
 }
 
 /** Display label for a direction, from trail config with NOBO/SOBO fallback. */
@@ -313,7 +446,7 @@ const formatFoodKg = (kg: number): string => `${kg.toFixed(1)} kg`;
 
 /** The ticked ids. An absent `resupplyStops` means every option, as on a fresh plan. */
 function selectedResupplyIds(): Set<string> {
-  return new Set(planState.resupplyStops ?? allResupplyOptionIds(resupplyGroups()));
+  return new Set(plan.resupplyStops ?? allResupplyOptionIds(resupplyGroups()));
 }
 
 /**
@@ -336,7 +469,7 @@ let cachedPlannedIds: ReadonlySet<string> | null = null;
 let cachedPlannedStops: Array<{ km: number; name: string }> = [];
 
 function refreshPlannedResupply(): void {
-  const selected = planState.resupplyStops ? new Set(planState.resupplyStops) : null;
+  const selected = plan.resupplyStops ? new Set(plan.resupplyStops) : null;
   cachedPlannedIds = plannedResupplyIds(resupplyGroups(), selected);
   const planned = cachedPlannedIds;
   cachedPlannedStops = planned
@@ -391,15 +524,15 @@ function resupplyLegs(): ResupplyLeg[] {
   // day boundaries themselves are part of the key.
   const key = [
     direction(),
-    JSON.stringify(planState.resupplyStops ?? null),
-    planState.startDate ?? '',
+    JSON.stringify(plan.resupplyStops ?? null),
+    plan.startDate ?? '',
     pace(),
     dailyHours(),
     currentDays.map(day => day.endKm).join(','),
   ].join('|');
 
   if (key !== cachedResupplyLegsKey) {
-    const stops = resolveResupplyStops(resupplyGroups(), planState.resupplyStops);
+    const stops = resolveResupplyStops(resupplyGroups(), plan.resupplyStops);
     cachedResupplyLegs = computeResupplyLegs(activeTrail(), stops, {
       dailyHours: dailyHours(),
       baseKmh: baseKmh(),
@@ -518,14 +651,48 @@ function drawWaypointMarkers(): void {
     if (isOption && !isPicked) marker.setOpacity(0.4);
     // A click means what the tab means: on the Resupply tab the highlighted
     // markers are the ticked options, so clicking one ticks or unticks it.
-    // Every other marker, and every marker on the other tabs, is a camp stop.
+    // Everywhere else it opens the waypoint's popup — a stop is never toggled
+    // by the click itself, because a mis-aimed click on a 22 px marker used to
+    // silently rewrite the day plan.
     marker.on('click', () => {
-      if (isOption) toggleResupply(wp.id!);
-      else toggleStop(km, wp.name ?? 'Stop');
+      if (isOption) {
+        toggleResupply(wp.id!);
+        return;
+      }
+      marker.bindPopup(waypointPopupContent(wp, km), { className: 'plan-wp-popup' }).openPopup();
     });
     marker.addTo(map!);
     waypointMarkers.push({ marker, waypoint: wp });
   });
+}
+
+/**
+ * The popup a waypoint marker opens: what the place is, and one button that
+ * makes it a stop or stops it being one.
+ *
+ * Built as a detached element rather than an HTML string so the button's
+ * handler is wired here, where `wp` and `km` are in hand. Leaflet takes an
+ * element as popup content, and the content is rebuilt on every click, so the
+ * button always reads the plan as it is now.
+ *
+ * @param km active-direction km.
+ */
+function waypointPopupContent(wp: PlanWaypoint, km: number): HTMLElement {
+  const selected = isStopSelected(plan, stopKeyFor({ id: wp.id, km }));
+  const el = document.createElement('div');
+  el.className = 'wp-popup';
+  el.innerHTML = `
+    <div class="wp-popup-name">${escapeHtml(wp.name)}</div>
+    <div class="wp-popup-sub">${escapeHtml(waypointTypeLabel(wp.type))} · ${km.toFixed(1)} km</div>
+    ${servicesStripHtml(servicesAt(km))}
+    <button type="button" class="wp-popup-btn${selected ? ' is-stop' : ''}">
+      ${selected ? 'Remove stop' : 'Stop here'}
+    </button>`;
+  el.querySelector('.wp-popup-btn')?.addEventListener('click', () => {
+    toggleStop(km, wp.name ?? 'Stop', wp.id);
+    map?.closePopup();
+  });
+  return el;
 }
 
 function redrawMapLayers(): void {
@@ -569,7 +736,7 @@ function redrawMapLayers(): void {
     if (!wp) return;
     const divIcon = L.divIcon({
       className: '',
-      html: `<div class="stop-flag-icon" title="${escapeHtml(stop.waypointName)}">⛺</div>`,
+      html: `<div class="stop-flag-icon" title="${escapeHtml(stop.name)}">⛺</div>`,
       iconSize: [24, 24],
       iconAnchor: [12, 12],
     });
@@ -774,7 +941,7 @@ function renderDayList(): void {
     ? ''
     : `<p class="days-empty">Distance-only estimate — this trail has no elevation data, so climbing time isn't included.</p>`;
 
-  if (days.length === 1 && planState.stops.length === 0) {
+  if (days.length === 1 && plan.stops.length === 0) {
     container.innerHTML = `${elevationNote}<p class="days-empty">Add stops in the Stops tab to split the trail into days.</p>`;
     renderResupplySection();
     renderWaterCarrySection();
@@ -791,6 +958,12 @@ function renderDayList(): void {
     // its own ends included: the day you walk into town is the day it matters.
     const plannedNames = plannedNamesBetween(day.startKm, day.endKm);
     const planned = plannedNames.length > 0;
+    // A rest day is not a card of its own — it is nights at the stop this day
+    // ends at, and the reason every later date has moved on.
+    const rest = day.restDays ?? 0;
+    const restLine = rest > 0
+      ? `<div class="day-card-rest">+${rest} rest day${rest === 1 ? '' : 's'} at ${escapeHtml(day.endName)}</div>`
+      : '';
     return `
       <div class="day-card${selected}${planned ? ' planned-resupply' : ''}" data-day-index="${i}">
         <div class="day-card-header">
@@ -806,6 +979,8 @@ function renderDayList(): void {
           ${waterStr}
           ${planned ? plannedBadge(plannedNames) : ''}
         </div>
+        ${restLine}
+        ${stopFooterHtml(stopAtActiveKm(day.endKm))}
       </div>`;
   }).join('');
 
@@ -882,47 +1057,127 @@ function renderWaterCarrySection(): void {
 // Left panel — Stops tab
 // ---------------------------------------------------------------------------
 
+/**
+ * The places the Stops tab offers.
+ *
+ * `overnightCandidates` by default — camps, huts, shelters and towns, the
+ * places you can actually sleep — because a list of every road crossing and
+ * creek on a 3,000 km trail is not a list you pick a night's stop from. The
+ * "Show all waypoints" switch restores the old behaviour for the hiker who
+ * wants to camp at a river junction.
+ */
+function stopCandidates(): PlanWaypoint[] {
+  const waypoints = activeTrail().waypoints ?? [];
+  return uiPrefs.showAllWaypoints ? waypoints.slice() : overnightCandidates(waypoints);
+}
+
+/** The nights / note / booked controls that open under a ticked row. */
+function stopEditorHtml(stop: PlanStop): string {
+  const note = stop.note ?? '';
+  return `<div class="stop-editor">
+      <div class="stop-editor-line">
+        <span class="stop-editor-label">Nights</span>
+        <button type="button" class="nights-btn" data-nights-delta="-1"
+          aria-label="One night fewer"${stop.nights <= 1 ? ' disabled' : ''}>\u2212</button>
+        <span class="nights-value">${stop.nights}</span>
+        <button type="button" class="nights-btn" data-nights-delta="1"
+          aria-label="One night more"${stop.nights >= PLAN_LIMITS.nightsMax ? ' disabled' : ''}>+</button>
+        <span class="nights-hint">2 nights = 1 rest day</span>
+      </div>
+      <input type="text" class="stop-note" placeholder="Note\u2026"
+        maxlength="${PLAN_LIMITS.noteMax}" value="${escapeHtml(note)}" />
+      <label class="stop-booked">
+        <input type="checkbox" class="stop-booked-check"${stop.booked ? ' checked' : ''} />
+        Booked
+      </label>
+    </div>`;
+}
+
 function renderStopList(): void {
   const container = document.getElementById('stops-list');
   if (!container) return;
 
-  const waypoints = (activeTrail().waypoints ?? []).filter(wp =>
-    !stopsFilter || (wp.name ?? '').toLowerCase().includes(stopsFilter.toLowerCase())
-  );
+  renderStopsFooter();
+
+  const candidates = stopCandidates();
+  const needle = stopsFilter.trim().toLowerCase();
+  const waypoints = needle
+    ? candidates.filter(wp => (wp.name ?? '').toLowerCase().includes(needle))
+    : candidates;
 
   if (waypoints.length === 0) {
-    container.innerHTML = '<p style="padding:1rem;font-size:0.85rem;color:var(--text-secondary);">No waypoints match.</p>';
+    container.innerHTML = candidates.length === 0
+      ? '<p class="days-empty">This trail names nowhere to spend a night. Tick \u201CShow all waypoints\u201D to pick from every point on the route.</p>'
+      : '<p class="days-empty">No waypoints match.</p>';
     return;
   }
 
   container.innerHTML = waypoints.map((wp, i) => {
     const km = wp.totalDistance ?? 0;
-    const selected = isStop(km);
-    const checkmark = selected ? '✓' : '\u00A0';
-    const type = wp.type ?? 'waypoint';
-    const icon = waypointIcon(type);
-    // Gap from previous waypoint in filtered list
+    const stop = findStop(plan, stopKeyFor({ id: wp.id, km }));
+    const selected = stop !== undefined;
+    const checkmark = selected ? '\u2713' : '\u00A0';
+    const icon = waypointIcon(wp.type ?? 'waypoint');
+    // Gap from the previous row on screen, so a filtered or candidates-only
+    // list reads as the distances you would actually walk between them.
     const prevKm = i > 0 ? (waypoints[i - 1].totalDistance ?? 0) : 0;
     const gap = i > 0 ? `+${(km - prevKm).toFixed(1)}` : '';
     const planned = isPlannedResupply(wp);
-    return `<div class="stop-row${selected ? ' is-stop' : ''}${planned ? ' planned-resupply' : ''}" data-km="${km}">
-      <span class="stop-check">${checkmark}</span>
-      <span class="stop-type-icon">${icon}</span>
-      <span class="stop-name">${escapeHtml(wp.name)}</span>
-      ${planned ? plannedBadge() : ''}
-      <span class="stop-km">${km.toFixed(1)} km</span>
-      ${gap ? `<span class="stop-gap">(${gap})</span>` : ''}
+    const idAttr = wp.id ? ` data-id="${escapeHtml(wp.id)}"` : '';
+    const rowClass = `stop-row${selected ? ' is-stop' : ''}${planned ? ' planned-resupply' : ''}`;
+    return `<div class="stop-item${selected ? ' is-stop' : ''}" data-km="${km}"${idAttr}>
+      <div class="${rowClass}" data-km="${km}"${idAttr}>
+        <div class="stop-line">
+          <span class="stop-check">${checkmark}</span>
+          <span class="stop-type-icon" title="${escapeHtml(waypointTypeLabel(wp.type))}">${icon}</span>
+          <span class="stop-name">${escapeHtml(wp.name)}</span>
+          ${planned ? plannedBadge() : ''}
+          <span class="stop-km">${km.toFixed(1)} km</span>
+          ${gap ? `<span class="stop-gap">(${gap})</span>` : ''}
+        </div>
+        ${servicesStripHtml(servicesAt(km))}
+      </div>
+      ${stop ? stopEditorHtml(stop) : ''}
     </div>`;
   }).join('');
+}
 
-  container.querySelectorAll('.stop-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const km = parseFloat((row as HTMLElement).dataset.km ?? '0');
-      const found = (activeTrail().waypoints ?? []).find(w => Math.abs((w.totalDistance ?? 0) - km) < KM_EPSILON);
-      const name = found?.name ?? 'Stop';
-      toggleStop(km, name);
-    });
-  });
+/**
+ * The one line under the stop list: where the service glyphs come from, or
+ * that this trail has no OSM data at all. Never "no services" — see
+ * `servicesStripHtml`.
+ */
+function renderStopsFooter(): void {
+  const footer = document.getElementById('stops-footer');
+  if (!footer) return;
+  const hasPois = activeTrail().pois !== undefined;
+  footer.className = `stops-footer${hasPois ? '' : ' is-missing'}`;
+  // textContent: both strings are ours, and this keeps the attribution
+  // literally what `@lib/poi-display` says it is.
+  footer.textContent = hasPois ? OSM_ATTRIBUTION : 'No OpenStreetMap data for this trail yet';
+}
+
+/**
+ * The stop a row (or a control inside its editor) is about.
+ *
+ * Read off the `.stop-item` wrapper rather than passed in a closure: every
+ * render replaces the rows, and the handlers are delegated from `#stops-list`,
+ * which does not.
+ */
+function stopKeyFromRow(el: HTMLElement): { key: StopKey; km: number; name: string } | null {
+  const item = el.closest<HTMLElement>('.stop-item');
+  if (!item) return null;
+  const km = parseFloat(item.dataset.km ?? '');
+  if (!Number.isFinite(km)) return null;
+  const id = item.dataset.id;
+  const waypoint = (activeTrail().waypoints ?? []).find(wp =>
+    id !== undefined ? wp.id === id : Math.abs((wp.totalDistance ?? 0) - km) < KM_EPSILON
+  );
+  return {
+    key: stopKeyFor({ id, km }),
+    km,
+    name: waypoint?.name ?? 'Stop',
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1070,13 +1325,22 @@ function renderDayDatasheet(day: ComputedDay | null): void {
     prevKm = km;
   });
 
-  // End row
+  // End row — the day's stop, so it carries that stop's note and booked tick.
+  const endStop = stopAtActiveKm(day.endKm);
   const endPlanned = isPlannedResupplyKm(day.endKm);
   rows.push(`<div class="ds-row ds-end${endPlanned ? ' planned-resupply' : ''}">
     <span class="ds-type-icon">\u26FA</span>
     <span class="ds-name">${escapeHtml(day.endName)}${endPlanned ? plannedBadge() : ''}</span>
     <span class="ds-km">${day.endKm.toFixed(1)} km</span>
   </div>`);
+  const endFooter = stopFooterHtml(endStop);
+  if (endFooter) rows.push(`<div class="ds-stop-meta">${endFooter}</div>`);
+  const endRest = day.restDays ?? 0;
+  if (endRest > 0) {
+    rows.push(
+      `<div class="ds-stop-meta"><span class="ds-rest">+${endRest} rest day${endRest === 1 ? '' : 's'} here</span></div>`
+    );
+  }
 
   body.innerHTML = rows.join('');
 }
@@ -1108,7 +1372,7 @@ function renderResupplyDatasheet(): void {
 
   // The arrival day only means anything once the camp plan has stops and a date
   // to count them from; without both the column would be a row of dashes.
-  const showArrive = activeStops().length > 0 && planState.startDate !== null;
+  const showArrive = activeStops().length > 0 && plan.startDate !== null;
 
   const header = ['#', 'From → To', 'Distance', 'Ascent', 'Descent', 'Est. days', 'Food']
     .concat(showArrive ? ['Arrive'] : [])
@@ -1164,21 +1428,37 @@ function selectDay(index: number | null): void {
   }
 }
 
-/** @param km active-direction km (as shown in the UI); stored NOBO-absolute */
-function toggleStop(km: number, name: string): void {
+/**
+ * Add or remove a stop.
+ *
+ * @param km active-direction km (as shown in the UI); stored NOBO-absolute
+ * @param id the waypoint's registry id, when it has one — the editor keys a
+ *   stop by it, so a stop survives a rebuild that nudges the waypoint's km.
+ */
+function toggleStop(km: number, name: string, id?: string): void {
   const noboKm = toNoboKm(km, direction(), trail.track.totalDistance);
-  const existingIdx = planState.stops.findIndex(s => Math.abs(s.km - noboKm) < KM_EPSILON);
-  if (existingIdx >= 0) {
-    planState.stops = planState.stops.filter((_, i) => i !== existingIdx);
-  } else {
-    const stop: StopData = { km: noboKm, waypointName: name };
-    const insertIdx = planState.stops.findIndex(s => s.km > noboKm);
-    if (insertIdx === -1) planState.stops.push(stop);
-    else planState.stops.splice(insertIdx, 0, stop);
-  }
+  applyEdit(editToggleStop(plan, { ...(id ? { id } : {}), km: noboKm, name }));
+}
 
+/**
+ * Take an edited document, unless the editor returned the same one.
+ *
+ * `@lib/plan-editor` returns the input document unchanged for a no-op — a
+ * second waypoint at an occupied km, a note that did not change — and that is
+ * exactly the signal not to mark the plan unsaved or repaint the page.
+ */
+function applyEdit(next: PlanDocument, options: { render?: boolean } = {}): void {
+  if (next === plan) return;
+  plan = next;
   scheduleSave();
-  renderAll();
+  if (options.render !== false) renderAll();
+}
+
+/** Nights at a stop, by the row's − / + buttons. Clamped by the editor. */
+function changeNights(key: StopKey, delta: number): void {
+  const stop = findStop(plan, key);
+  if (!stop) return;
+  applyEdit(editNights(plan, key, stop.nights + delta));
 }
 
 /**
@@ -1193,16 +1473,23 @@ function toggleResupply(id: string): void {
   const picked = selectedResupplyIds();
   if (picked.has(id)) picked.delete(id);
   else picked.add(id);
-  planState.resupplyStops = allResupplyOptionIds(resupplyGroups()).filter(optionId => picked.has(optionId));
-
-  scheduleSave();
-  renderAll();
+  setResupplyStops(allResupplyOptionIds(resupplyGroups()).filter(optionId => picked.has(optionId)));
 }
 
 function setAllResupply(all: boolean): void {
-  planState.resupplyStops = all ? allResupplyOptionIds(resupplyGroups()) : [];
-  scheduleSave();
-  renderAll();
+  setResupplyStops(all ? allResupplyOptionIds(resupplyGroups()) : []);
+}
+
+/**
+ * Write the resupply selection into the document.
+ *
+ * `resupplyStops` is a field of `PlanDocument` that `@lib/plan-editor` has no
+ * setter for — it predates the day planner and no other platform edits it — so
+ * this follows the editors' contract by hand: a new document, never a mutation,
+ * with `updatedAt` restamped so a later sync sees the change.
+ */
+function setResupplyStops(ids: string[]): void {
+  applyEdit({ ...plan, resupplyStops: ids, updatedAt: new Date().toISOString() });
 }
 
 /** Centre the map on a resupply option, so the list and the map stay in step. */
@@ -1215,31 +1502,33 @@ function panToResupply(id: string): void {
 
 function setDirection(dir: PlanDirection): void {
   if (direction() === dir) return;
-  planState.direction = dir;
   selectedDayIndex = null;
-  scheduleSave();
-  updateDirectionButton();
   // renderAll() recomputes days from the reoriented trail and rebuilds day
   // polylines, stop markers, waypoint markers, and the elevation profile.
-  renderAll();
+  applyEdit(editDirection(plan, dir));
+  // After the edit: the button's label is read back out of the document.
+  updateDirectionButton();
 }
 
 function setStartDate(date: string): void {
-  planState.startDate = date || null;
-  scheduleSave();
-  renderAll();
+  // The editor throws on anything that is not a real calendar day; an empty
+  // input (the date field cleared) is a null start date, not a bad one.
+  try {
+    applyEdit(editStartDate(plan, date || null));
+  } catch {
+    setSaveStatus('error');
+  }
 }
 
 function setPlanName(name: string): void {
-  planState.name = name;
-  scheduleSave();
+  // No re-render: the name appears nowhere but the input the user is typing in.
+  applyEdit(editPlanName(plan, name), { render: false });
 }
 
 /** Pace feeds both the day plan's hours and every resupply leg's days. */
 function setPace(value: Pace): void {
   if (pace() === value) return;
-  planState.pace = value;
-  scheduleSave();
+  setUiPrefs({ pace: value });
   renderAll();
 }
 
@@ -1251,8 +1540,7 @@ function setDailyHours(raw: string): void {
   if (!Number.isFinite(parsed)) return;
   const clamped = Math.min(MAX_DAILY_HOURS, Math.max(MIN_DAILY_HOURS, Math.round(parsed)));
   if (dailyHours() === clamped) return;
-  planState.dailyHours = clamped;
-  scheduleSave();
+  setUiPrefs({ dailyHours: clamped });
   renderAll();
 }
 
@@ -1260,13 +1548,28 @@ function setDailyHours(raw: string): void {
 // Persistence
 // ---------------------------------------------------------------------------
 
+/**
+ * Mark the plan dirty and write it 800 ms after the last edit.
+ *
+ * Every edit funnels through here, so this is the one place a later sync arm
+ * has to reach: `commitSave` is where the document is known-good and settled.
+ */
 function scheduleSave(): void {
   setSaveStatus('unsaved');
   if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
-  saveDebounceTimer = setTimeout(() => {
-    const ok = savePlanState(trail.config.id, planState);
-    setSaveStatus(ok ? 'saved' : 'error');
-  }, 800);
+  saveDebounceTimer = setTimeout(commitSave, 800);
+}
+
+/**
+ * Write the document to `localStorage`.
+ *
+ * Phase 3c hooks in here: a linked browser also PUTs the document to the
+ * comments API from this point, after the local write has succeeded — local
+ * first, so a plan is never lost to a flaky network.
+ */
+function commitSave(): void {
+  const ok = savePlanDocument(trail.config.id, plan);
+  setSaveStatus(ok ? 'saved' : 'error');
 }
 
 function setSaveStatus(status: 'saved' | 'unsaved' | 'error'): void {
@@ -1336,7 +1639,10 @@ function renderAll(): void {
   // profile read the same set, so ticking a stop in the Resupply tab shows up
   // everywhere on the next render rather than on the next tab switch.
   refreshPlannedResupply();
-  currentDays = computeDays(activeTrail(), activeStops(), planState.startDate, undefined, baseKmh());
+  // computePlanDays, not computeDays: it converts the document's NOBO stops
+  // into the active km of the trail it is handed and pushes each day's date
+  // along by the rest days taken before it.
+  currentDays = computePlanDays(activeTrail(), plan, { baseKmh: baseKmh() });
   // Clamp selectedDayIndex in case stops were removed
   if (selectedDayIndex !== null && selectedDayIndex >= currentDays.length) {
     selectedDayIndex = null;
@@ -1375,12 +1681,12 @@ function initHeader(): void {
   const hoursInput = document.getElementById('plan-daily-hours') as HTMLInputElement | null;
 
   if (nameInput) {
-    nameInput.value = planState.name;
+    nameInput.value = plan.name;
     nameInput.addEventListener('input', () => setPlanName(nameInput.value));
   }
 
   if (dateInput) {
-    dateInput.value = planState.startDate ?? '';
+    dateInput.value = plan.startDate ?? '';
     dateInput.addEventListener('change', () => setStartDate(dateInput.value));
   }
 
@@ -1420,15 +1726,77 @@ function initHeader(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Stops filter
+// Stops tab controls
 // ---------------------------------------------------------------------------
 
-function initStopsFilter(): void {
-  const input = document.getElementById('stops-filter') as HTMLInputElement;
-  if (!input) return;
-  input.addEventListener('input', () => {
+/**
+ * The filter box, the "Show all waypoints" switch, and the row and per-stop
+ * controls.
+ *
+ * All of the row handlers are delegated from `#stops-list`, which survives
+ * every re-render — the rows and the open editor inside it do not.
+ */
+function initStopsControls(): void {
+  const input = document.getElementById('stops-filter') as HTMLInputElement | null;
+  input?.addEventListener('input', () => {
     stopsFilter = input.value;
     renderStopList();
+  });
+
+  const showAll = document.getElementById('stops-show-all') as HTMLInputElement | null;
+  if (showAll) {
+    showAll.checked = uiPrefs.showAllWaypoints;
+    showAll.addEventListener('change', () => {
+      setUiPrefs({ showAllWaypoints: showAll.checked });
+      renderStopList();
+    });
+  }
+
+  const list = document.getElementById('stops-list');
+  if (!list) return;
+
+  list.addEventListener('click', event => {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+
+    const nights = target.closest<HTMLElement>('.nights-btn');
+    if (nights) {
+      const found = stopKeyFromRow(nights);
+      if (found) changeNights(found.key, Number(nights.dataset.nightsDelta ?? '0'));
+      return;
+    }
+
+    // Inside the open editor, a click belongs to the control it landed on —
+    // the note field and the Booked tick must not toggle the stop off.
+    if (target.closest('.stop-editor')) return;
+
+    const row = target.closest<HTMLElement>('.stop-row');
+    if (!row) return;
+    const found = stopKeyFromRow(row);
+    if (found) toggleStop(found.km, found.name, row.dataset.id);
+  });
+
+  // Typing does not re-render: the list would be rebuilt under the cursor and
+  // take the focus with it. The edit is saved on every keystroke (debounced)
+  // and the day cards catch up when the field is left.
+  list.addEventListener('input', event => {
+    const note = (event.target as HTMLElement | null)?.closest<HTMLInputElement>('.stop-note');
+    if (!note) return;
+    const found = stopKeyFromRow(note);
+    if (found) applyEdit(editStopNote(plan, found.key, note.value), { render: false });
+  });
+
+  list.addEventListener('change', event => {
+    const target = event.target as HTMLElement | null;
+    const booked = target?.closest<HTMLInputElement>('.stop-booked-check');
+    if (booked) {
+      const found = stopKeyFromRow(booked);
+      if (found) applyEdit(editStopBooked(plan, found.key, booked.checked));
+      return;
+    }
+    // The note's own `change` fires when the field is left; nothing has to be
+    // stored again, the day cards and the datasheet just need the new text.
+    if (target?.closest('.stop-note')) renderAll();
   });
 }
 
@@ -1499,13 +1867,11 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
 
   trail = data;
 
-  // Load or create plan
-  const saved = loadPlanState(trailId);
-  if (saved) {
-    planState = saved;
-  } else {
-    planState = { name: `My ${trail.config.shortName ?? trail.config.name} plan`, startDate: null, stops: [] };
-  }
+  // The stored document, a one-off migration of the pre-day-planner
+  // `trail-plan-<id>` save, or a fresh empty plan. A server copy, when Phase 3c
+  // lands, is applied over whatever this returns before the first render.
+  plan = loadOrMigratePlan(trailId, trail).plan;
+  uiPrefs = loadPlanUiPrefs(trailId);
 
   // Module state outlives a boot (`my-plan.html` can reboot with another trail),
   // so the per-trail caches are cleared here rather than only on a direction flip.
@@ -1513,12 +1879,14 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
   resetResupplyCaches();
   activeTab = 'days';
   resupplyFilter = '';
+  stopsFilter = '';
+  selectedDayIndex = null;
 
   refreshActiveStops();
   initMap();
   initHeader();
   initTabs();
-  initStopsFilter();
+  initStopsControls();
   initResupplyControls();
   initCollapsibles();
   setupElevationHover();

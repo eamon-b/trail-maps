@@ -49,7 +49,8 @@ Shared processing modules (used by both web and mobile):
 - `poi-display.ts` - The platform-neutral half of showing OSM POIs, shared by the web viewer and the app: category labels, `poiDisplayName`, `summarisePoiTags` (+ the `safeHttpUrl`/`safeTelUrl` guards every POI link must pass), `slimPoi` (what `build-mobile-trails.ts` and the mobile import store write), the `PoiFilterState` shape and its normaliser, `visiblePois`/`countPoisByCategory` (both skip `duplicateOf`), `interleavePoisByDistance`, `mirrorPoiDistances`, and the slash-free `poiRouteKey` (`type-id`) that names a POI in an Expo Router param. `src/web/trails/trail-pois-ui.ts` re-exports it and keeps only the HTML/`localStorage` half
 - `point-index.ts` - Uniform-grid nearest-point lookup (`buildPointIndex`, `PointIndex.nearest`) in raw degree space, for answering "which track point is under the cursor?" without scanning a 20,000-point display copy on every mousemove. Platform-neutral, so the mobile map can reuse it; the web trail viewer rebuilds its index wherever `displayPoints` is set
 - `types.ts` - TypeScript interfaces
-- `plan-types.ts` - Plan data types shared with mobile
+- `plan-types.ts` - Plan data types shared with mobile. `PlanDocument` (id-keyed stops with `nights`, `note`, `booked`; `PLAN_LIMITS`) is the one plan shape: the wire body of `PUT /v1/plans/:id`, mobile's `plans.document_json`, the web `localStorage` value and the shared-plan payload. `PlanState` is legacy, read only by the web migration
+- `plan-editor.ts` - The pure plan editor both platforms drive (spec: `plans/day-planner.md`): `toggleStop`, `setNights`/`setStopNote`/`setStopBooked`, start date and direction, `overnightCandidates`, `computePlanDays` (nights cascade into dates and `restDays`), `servicesAtStop` over the trail's OSM POIs (1 km, `duplicateOf` included, `undefined` when the trail has no POI data), `migratePlanState`, `isPlanDocument`. Every editor returns a new document or the same object for a no-op; stop km stay NOBO-absolute
 - `track-geometry.ts` - Nearest-point lookup and elevation gain/loss between km positions. `calculateElevationBetween` (and `buildTimeIndex` in `day-calculator.ts`) take an optional `breakStarts` set — pass `routeBreakStarts(track.breaks, 'points' | 'displayPoints')` for whichever array you hand them, or a trail with route breaks climbs the gap between landings. When the points carry `cumAscent`/`cumDescent` (`annotateCumulativeElevation`, written into the mobile assets before thinning) both read the difference of the two ends instead of walking the steps between them, and `breakStarts` is not consulted — the break step was already left out of the sums. Summing a thinned track's own steps reported 65-86% of its real climb
 - `day-calculator.ts` - Hiking time estimation and day splitting; `buildTimeIndex` reads the points' `cumAscent`/`cumDescent` when they carry them, so it keeps matching `calculateElevationBetween` to the metre on thinned and full-resolution tracks alike
 - `resupply-calculator.ts` - Town resupply point calculations (incl. food carry weight); which waypoints count comes from `isResupplyWaypoint` in `waypoint-taxonomy.ts`
@@ -59,7 +60,7 @@ Shared processing modules (used by both web and mobile):
 
 **Ingestion is shared, not forked:** `scripts/build-trails.ts` and `importGpx` both call `buildTrail`, so a GPX file produces the same trail in the build, on the web and on the phone. The build script keeps only what needs a file system: CalTopo GeoJSON, the CSV waypoint fallback, climate, curated descriptions, the `data/waypoint-ids.json` registry, and HTML generation — each passed in as a hook. Any change to `trail-ingest.ts` must leave `public/data/generated/*.json` byte-identical unless the change is intentional.
 
-**Shared calculators:** `track-geometry.ts`, `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` are the single implementations used by both web and mobile. Mobile imports them via the `@lib` alias (Metro `watchFolders` + tsconfig paths + Jest `moduleNameMapper`). Parameter types are structural (e.g. `PlanWaypoint`, `PlanStopInput`) so each platform's own trail/waypoint/stop shapes are accepted without conversion. On mobile the Plan screen is a live calculator (nothing persisted except pace + daily hours per trail); the adapters live in `mobile/src/features/plan/plan-adapters.ts`.
+**Shared calculators:** `track-geometry.ts`, `day-calculator.ts`, `resupply-calculator.ts`, and `water-carry-calculator.ts` are the single implementations used by both web and mobile. Mobile imports them via the `@lib` alias (Metro `watchFolders` + tsconfig paths + Jest `moduleNameMapper`). Parameter types are structural (e.g. `PlanWaypoint`, `PlanStopInput`) so each platform's own trail/waypoint/stop shapes are accepted without conversion. On mobile the Plan screen edits a saved `PlanDocument` through `@lib/plan-editor` (SQLite `plans`, `state/plans-store.ts`); the old hours-and-pace splitter survives only as a "Suggest stops" button that fills an empty list once and never runs on its own. The adapters live in `mobile/src/features/plan/plan-adapters.ts`.
 
 ### Build Scripts (`scripts/`)
 
@@ -97,6 +98,8 @@ Shared processing modules (used by both web and mobile):
 - `upload.html` / `upload.ts` - User GPX import: drag-drop → `importGpx` → report (+ optional elevation backfill) → IndexedDB
 - `how-import-works.html` - "How your file is processed" page; the article body is `docs/gpx-import.md`, rendered at build time by the `gpx-import-doc` Vite plugin (GitHub-style heading ids, so `#anchors` against the doc keep working)
 - `my-trail.html` / `my-plan.html` (+ `.ts`) - Trail/plan pages for imported trails, booted from `?id=` via `imported-trails-db.ts` and the viewers' `preloadedTrail` argument; "Export for Tracknotes" handoff
+- `trails/plan-sync.ts`, `api/` (`client.ts`, `session.ts`, `plans.ts`) - The plan page's sync arm, on only when `VITE_API_BASE_URL` is set (the comments/plans API origin; public, ships in the bundle; unset = local-only planner with the Sync/Share controls removed). A browser links to the phone's identity by entering the code the phone mints (Settings → Linked browsers); the linked token lives in `localStorage` `tracknotes.webSession`, only ever rides in the `Authorization` header, and can be unlinked from the page. Imported (`u_`) trails never sync
+- `shared-plan.html` / `shared-plan.ts` - Read-only view of a shared plan (`?s=<shareId>`, public `GET /v1/shared/plans/:id`), with "Open in Tracknotes" (`tracknotes://plan/<shareId>`) and "Copy to my plans". The worker's `SITE_BASE` var builds the share URL and must point at the deployed site
 - `imported-trails-db.ts` - IndexedDB store (`tracknotes-imports`) for imported `ProcessedTrail`s; `index.html` lists them under "My trails"
 - `web-utils.ts` - `escapeHtml`, `getQueryParam` — every user-supplied string (trail names) must go through `escapeHtml`
 
@@ -259,14 +262,15 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 
 - `_layout.tsx` — Root Stack (ThemeProvider, GestureHandlerRootView)
 - `index.tsx` — "My Guides" home: bundled trails (download badges) + imported ones ("Imported" badge, long-press to delete); ＋ header action picks a GPX
-- `settings.tsx` — App settings (units, display name)
+- `settings.tsx` — App settings (units, display name, Linked browsers: mint a link code, list and revoke linked tokens)
 - `import.tsx` — Modal: review a picked GPX (name, counts, warnings) then save it as a guide
 - `guide/[trailId]/_layout.tsx` — Per-trail guide stack, wrapped in `GuideProvider` + `GuidePositionProvider`; header actions for Routes / Plan / Offline maps / Settings
 - `guide/[trailId]/index.tsx` — Guide home: renders `GuideView` (Map | Elevation | List panes)
 - `guide/[trailId]/downloads.tsx` — Offline maps: download/delete tile packs
-- `guide/[trailId]/plan.tsx` — Live plan calculator (day splits, resupply, water carries)
+- `guide/[trailId]/plan.tsx` — Day planner over the saved plan: name, start date, day cards with dates and rest days, Stops section (overnight candidates with OSM services strips; a ticked stop expands to nights / note / booked), Suggest stops, resupply, water carries
+- `plan/[shareId].tsx` — Shared plan opened from `tracknotes://plan/<shareId>`: read-only days, "Save as my plan"
 - `guide/[trailId]/routes.tsx` — Saved custom routes (built on the map pane)
-- `guide/[trailId]/waypoint/[waypointId].tsx` — Waypoint detail + offline-first comments (+ a collapsed "From OpenStreetMap" section when a POI duplicates the waypoint)
+- `guide/[trailId]/waypoint/[waypointId].tsx` — Waypoint detail + offline-first comments (+ a collapsed "From OpenStreetMap" section when a POI duplicates the waypoint), and a "Stop here" toggle backed by the plans store
 - `guide/[trailId]/poi/[poiKey].tsx` — OSM point-of-interest detail (`poiKey` is `@lib/poi-display`'s `poiRouteKey`, `type-id`): tag lines, scheme-guarded links, OSM/Maps deep links, attribution. No favorites, comments or network
 
 ### Mobile Source Structure (`mobile/src/`)
@@ -284,7 +288,7 @@ Feature-sliced: UI lives with its feature, not in a global components dir.
   - `settings/`, `share/` — display-name section; check-in sharing
 - `api/` — comments API client (device auth, typed fetch wrapper, uuid via `globalThis.expo.uuidv4`)
 - `db/` — SQLite layer: `database.ts`, `schema.ts`, and repos (comments, favorites, outbox, routes, imported-trails)
-- `sync/` — comment sync engine, connectivity watcher, sync events
+- `sync/` — comment sync engine, connectivity watcher, sync events. Plans ride the same outbox (`kind` `plan` / `plan-delete`, latest document per plan wins, drained inside the one single-flight drain) and `pullPlans` runs after each trail pull against the `__plans__` `sync_state` row; the server's `updatedAt` is written back so last-writer-wins compares one clock. `sync/plan-sync.ts` is the store→outbox bridge, gated on `isServerKnown`
 - `state/` — Zustand stores: settings, downloads, favorites, identity
 - `services/` — trail-loader/assets/bounds (bundled + imported: `loadTrail`, `listAllTrails`, `isServerKnown`), imported-trail-store (JSON at `Paths.document/trails/{id}.json` + `imported_trails` registry row), server-trails (`isServerKnown` — comment sync and the composer are gated off for `u_` ids, so no request ever carries an imported trail id), offline-pack-resolver (an import whose bbox sits inside a bundled trail's coverage borrows that pack; otherwise offline maps are unavailable), tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
 - `hooks/` — `useLocation` (GPS + trail snapping), `useGuidePosition`

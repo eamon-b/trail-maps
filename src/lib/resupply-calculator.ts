@@ -169,42 +169,6 @@ export function analyzeResupply(
 }
 
 /**
- * Section-scoped resupply analysis. Mirrors analyzeWaterCarryForSection.
- */
-export function analyzeResupplyForSection(
-  waypoints: PlanWaypoint[],
-  startKm: number,
-  endKm: number,
-  dailyKm: number = DEFAULT_DAILY_KM,
-  longThresholdDays: number = DEFAULT_LONG_THRESHOLD_DAYS,
-): ResupplyAnalysis {
-  const allPoints = extractResupplyPoints(waypoints);
-  const sectionPoints = allPoints.filter(p => p.km >= startKm && p.km <= endKm);
-
-  if (sectionPoints.length === 0) {
-    return {
-      points: [],
-      gaps: [],
-      longestGapKm: 0,
-      longestGapDays: 0,
-      hasResupplyData: allPoints.length > 0,
-    };
-  }
-
-  const gaps = computeResupplyGaps(sectionPoints, startKm, endKm, dailyKm, longThresholdDays);
-  const longestGapKm = gaps.reduce((max, g) => Math.max(max, g.distanceKm), 0);
-  const longestGapDays = gaps.reduce((max, g) => Math.max(max, g.estimatedDays), 0);
-
-  return {
-    points: sectionPoints,
-    gaps,
-    longestGapKm,
-    longestGapDays,
-    hasResupplyData: true,
-  };
-}
-
-/**
  * Correlate resupply points with computed days.
  */
 export interface ResupplyDayInfo {

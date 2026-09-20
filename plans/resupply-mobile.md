@@ -359,12 +359,19 @@ Decision 2's second half. One flag, read from `selectResupplyStopIds(trailId)` i
 the way `favorite` already is on each surface. The set is `null` until a plan is made, and every
 surface treats `null` as "nothing is planned" — not as "everything is".
 
-Which waypoint is "planned"? The ticked *option* ids. A ticked town that is 22 km off the route
-is a `town` waypoint at the turn-off's km, and its turn-off is a separate `town-access`
-waypoint (Te Araroa, the CDT after #74); both carry the flag when either is ticked, resolved once
-in `selectResupplyStopIds` by walking `listResupplyOptions`' groups — a turn-off with one ticked
-option is a place the hiker's food has to reach, so it is planned too. Keeping that lookup in the
-selector means the five surfaces below never learn what a group is.
+Which waypoint is "planned"? The ticked *option* ids, plus the point on the route that serves a
+ticked place — resolved once in `plannedResupplyIds` by walking `listResupplyOptions`' groups, so
+the five surfaces below never learn what a group is. Te Araroa records a place twice (`Kerikeri`,
+0.7 km off, and `Kerikeri turnoff`, the `town-access` point you leave at), and ticking the town
+plans the turn-off with it: that is the km the food has to reach.
+
+What is *not* pulled in is another destination sharing the group. The CDT types the off-route
+town itself `town-access`, so Monarch Pass offers Salida (35 km one way) and Poncha Springs
+(27 km the other) as two options on one hitch, and ticking one must leave the other unplanned.
+`isTurnOffFor` in `@lib/resupply-plan` is the test: an access-typed option is a ticked option's
+turn-off when it carries no off-trail distance of its own (it is the route point), or when it is
+the same place as a ticked *destination*, recorded twice at the same off-trail distance. Two
+access-typed options kilometres apart are never each other's turn-off.
 
 - **Map** (`map-geojson.ts`, `GuideMap.tsx`): a `plannedResupply` boolean on each waypoint
   feature next to `favorite`; the circle layer's `case` gains a branch — ring in
@@ -379,10 +386,16 @@ selector means the five surfaces below never learn what a group is.
   plan (`matchesFamily` gains the case; the chip only renders when the set is non-null).
 - **Waypoint detail** (`waypoint/[waypointId].tsx`): a `Planned resupply stop` banner under the
   title, and — because this is where a hiker standing at a trail junction decides — a
-  `Plan resupply here` / `Remove from resupply plan` toggle for any resupply-family waypoint,
-  calling the same `setResupplyStops` (adding to the current explicit list, or to the full
-  default list when none exists, so the first tap from a detail screen makes a plan with every
-  other option still ticked). This is also where the access fields go: a line under the
+  `Plan resupply here` / `Remove from resupply plan` toggle, calling the same `setResupplyStops`
+  (ticking into the current explicit list, or into the full default list when none exists, so the
+  first tap from a detail screen makes a plan with every other option still ticked). Both halves
+  come from one hook, `useWaypointResupplyPlan`, because the banner reads the *derived* planned
+  set while the button writes the *stored* ticks, and those must agree: the toggle is offered
+  only for a waypoint the trail actually lists as an option (never for a resupply-family waypoint
+  the options list cannot place, whose first tap would otherwise store the whole list and invent
+  a plan), its label follows the hiker's own tick, and a turn-off planned by the place it serves
+  shows `Planned stop for Kerikeri` with no toggle at all — nothing was ticked here to untick.
+  This is also where the access fields go: a line under the
   description, `22.5 km by hitching from Chief Mountain border crossing · accepts boxes`, via
   the lifted `accessSummary`.
 - **Hike distance strip** (`DistanceStrip.tsx`, `services/distance-calculator.ts`): the "next
@@ -394,9 +407,11 @@ selector means the five surfaces below never learn what a group is.
 
 Tests: `map-geojson.test.ts` flag on / off / null; `GuideMap.test.tsx` planned wins over
 favourite; `geometry.test.ts` planned marker survives thinning; a `WaypointListPane` test for the
-pill and the `Planned` chip; the detail screen toggle test (first tap from `undefined` stores the
-full list plus/minus one id); `distance-calculator.test.ts` for the planned-ahead case and the
-empty case.
+pill and the `Planned` chip (and no pill for a second town off the same turn-off);
+`use-planned-resupply.test.tsx` for the detail screen's hook (first tap from `undefined` stores
+the full list plus the id, a second press removes it, an implied turn-off has no toggle, a
+non-option has none either); `resupply-plan.test.ts` for the CDT twins and the Te Araroa pair;
+`distance-calculator.test.ts` for the planned-ahead case and the empty case.
 
 ### 4e. What does not change
 
@@ -496,8 +511,9 @@ needs the calculator and the regenerated assets from #74. 1b touches web code, s
   `Every option` subtitle are the way back; if it still confuses on device, the alternative is to
   make the picker's default *nothing ticked* — a decision the web already took the other way,
   so raise it rather than diverge.
-- **Two ids per place.** A ticked off-route town and its on-route turn-off are two waypoints,
-  and the selector marks both planned. The distance strip must count the turn-off (that is the
+- **Two ids per place.** A ticked place and the turn-off that serves it are two waypoints, and
+  the selector marks both planned — but only when they are the same place (see `isTurnOffFor`);
+  two towns on one hitch are not. The distance strip must count the turn-off (that is the
   km the hiker's food has to reach) and never the town itself, or "next resupply in 22 km" would
   be the hitch, not the trail. `calculateDistancesToWaypoints` already resolves resupply-family
   types through `RESUPPLY_TYPES`, which lists the `-access` types one by one; keep it so.

@@ -281,6 +281,104 @@ describe('plannedResupplyIds', () => {
   it('plans nothing for an explicit empty selection', () => {
     expect([...plannedResupplyIds(groups, new Set())!]).toEqual([]);
   });
+
+  // The CDT's shape: the off-route town *itself* is access-typed, so two towns a
+  // hitch apart share one group. Monarch Pass, as the data actually ships it.
+  describe('two towns on one hitch', () => {
+    const monarch = listResupplyOptions([
+      {
+        id: 'w_bfb496d7',
+        name: 'Monarch Pass (Monarch Crest Store)',
+        type: 'resupply',
+        totalDistance: 3098.1,
+        offTrailKm: 0.2,
+        accessMode: 'on-trail',
+      },
+      {
+        id: 'w_aebb7c21',
+        name: 'Salida (access: Monarch Pass (US 50))',
+        type: 'town-access',
+        totalDistance: 3098.1,
+        offTrailKm: 35.4,
+        accessMode: 'hitch',
+        accessName: 'Monarch Pass (US 50)',
+      },
+      {
+        id: 'w_25c0134e',
+        name: 'Poncha Springs (access: Monarch Pass (US 50))',
+        type: 'resupply-access',
+        totalDistance: 3098.1,
+        offTrailKm: 27.4,
+        accessMode: 'hitch',
+        accessName: 'Monarch Pass (US 50)',
+      },
+    ]);
+
+    it('is one group', () => {
+      expect(monarch).toHaveLength(1);
+    });
+
+    it('plans only the town that was ticked, never its off-route twin', () => {
+      const planned = plannedResupplyIds(monarch, new Set(['w_aebb7c21']))!;
+      expect([...planned]).toEqual(['w_aebb7c21']);
+      expect(planned.has('w_25c0134e')).toBe(false);
+    });
+
+    it('leaves the on-trail store out of a plan that did not tick it', () => {
+      const planned = plannedResupplyIds(monarch, new Set(['w_25c0134e']))!;
+      expect([...planned]).toEqual(['w_25c0134e']);
+    });
+  });
+
+  // Te Araroa records the pair twice, and both records carry the same off-trail
+  // distance: the town's is how far it is, the turn-off's is how far it is to it.
+  describe('a place recorded as both a destination and a turn-off', () => {
+    const kerikeri = listResupplyOptions([
+      {
+        id: 'w_fd2ca336',
+        name: 'Kerikeri turnoff',
+        type: 'town-access',
+        totalDistance: 221.3,
+        offTrailKm: 0.7,
+      },
+      { id: 'w_0ed51431', name: 'Kerikeri', type: 'town', totalDistance: 221.3, offTrailKm: 0.7 },
+    ]);
+
+    it('plans the turn-off alongside the town it serves', () => {
+      expect([...plannedResupplyIds(kerikeri, new Set(['w_0ed51431']))!].sort()).toEqual([
+        'w_0ed51431',
+        'w_fd2ca336',
+      ]);
+    });
+
+    it('plans a turn-off ticked on its own without dragging the town in', () => {
+      expect([...plannedResupplyIds(kerikeri, new Set(['w_fd2ca336']))!]).toEqual(['w_fd2ca336']);
+    });
+  });
+
+  it('keeps one road junction with several destinations apart', () => {
+    // Te Araroa's Rangitata: four turn-offs at one km, each for a different
+    // place, each its own distance away.
+    const rangitata = listResupplyOptions([
+      { id: 'geraldine', name: 'Geraldine turnoff', type: 'town-access', totalDistance: 1500, offTrailKm: 70 },
+      { id: 'peel', name: 'Peel Forest turnoff', type: 'resupply-access', totalDistance: 1500, offTrailKm: 50 },
+      { id: 'meso', name: 'Mesopotamia Station turnoff', type: 'food-access', totalDistance: 1500, offTrailKm: 2.5 },
+    ]);
+
+    expect(rangitata).toHaveLength(1);
+    expect([...plannedResupplyIds(rangitata, new Set(['geraldine']))!]).toEqual(['geraldine']);
+  });
+
+  it('pulls in a turn-off with an off-trail distance of zero', () => {
+    // A generator that writes 0 rather than omitting the field means the same
+    // thing: the point is on the route.
+    const zeroed = listResupplyOptions([
+      { id: 'town', name: 'Town', type: 'town', totalDistance: 10, offTrailKm: 2 },
+      { id: 'off', name: 'Town turnoff', type: 'town-access', totalDistance: 10, offTrailKm: 0 },
+    ]);
+
+    expect([...plannedResupplyIds(zeroed, new Set(['town']))!].sort()).toEqual(['off', 'town']);
+  });
 });
 
 describe('computeResupplyLegs', () => {

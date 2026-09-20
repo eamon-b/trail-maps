@@ -137,7 +137,7 @@ export interface ComputeResupplyLegsOptions {
   dailyHours: number;
   /** The hiker's Naismith flat-ground base speed (km/h) — `PACE_KMH[pace]`. */
   baseKmh: number;
-  /** Scope the legs to a section, exactly as `analyzeResupplyForSection` does. */
+  /** Scope the legs to a section: only stops inside it, ends at its bounds. */
   section?: SectionConfig | null;
   longThresholdDays?: number;
   gramsPerDay?: number;
@@ -296,10 +296,15 @@ export function allResupplyOptionIds(groups: readonly ResupplyOptionGroup[]): st
  * default feeds the legs, but painting every town as "planned" before anyone
  * planned anything would be noise, not information.
  *
- * A place and its turn-off are two waypoints (Kerikeri the town, `Kerikeri
- * turnoff` the `town-access` point on the route), and both belong to the plan
- * when either is ticked: the turn-off is the km the hiker's food has to reach.
- * So every ticked id is planned, plus every turn-off sharing a group with one.
+ * Every ticked id is planned. On top of that, a ticked place pulls in the point
+ * on the route that serves it, because that is the km the hiker's food has to
+ * reach — but *only* that point, never another destination on the same hitch.
+ * {@link isTurnOffFor} is where the two are told apart, and the distinction is
+ * the whole point of this function: at the CDT's Monarch Pass, Salida (35 km
+ * one way) and Poncha Springs (27 km the other) are two options in one group,
+ * and a highlight saying "your food reaches here" about the town the hiker did
+ * not choose is worse than no highlight at all.
+ *
  * Ids no group has are dropped, the way `resolveResupplyStops` ignores them.
  */
 export function plannedResupplyIds(
@@ -314,10 +319,44 @@ export function plannedResupplyIds(
     if (ticked.length === 0) continue;
     for (const option of ticked) planned.add(option.id);
     for (const option of group.options) {
-      if (isAccessWaypoint(option.type)) planned.add(option.id);
+      if (ticked.some(pick => isTurnOffFor(option, pick))) planned.add(option.id);
     }
   }
   return planned;
+}
+
+/**
+ * Is `option` the route point a hiker leaves at to reach `ticked` — rather than
+ * a second destination reached from the same place?
+ *
+ * It has to be access-typed to begin with (`town-access`, `resupply-access`, …),
+ * which is how the data says "you are not there yet". Then one of two things
+ * makes it this ticked option's turn-off:
+ *
+ *  - It carries no off-trail distance of its own, so the data places it on the
+ *    route. That is a turn-off for whatever the hiker ticked in its group.
+ *  - It is the *same place* as a ticked destination, recorded twice: Te Araroa
+ *    ships `Kerikeri` (`town`, 0.7 km off) and `Kerikeri turnoff` (`town-access`,
+ *    0.7 km off) as a pair, the second being where you leave the route for the
+ *    first. Matching on the off-trail distance is what identifies the pair, so a
+ *    ticked place only ever pulls in the access record that describes it.
+ *
+ * Neither holds between two CDT towns on one hitch: both are access-typed (so
+ * neither is anybody's turn-off under the second rule, which needs a ticked
+ * *destination*) and both are kilometres off the route. `resolveResupplyStops`
+ * needs no such test — it reads ticks only, and a group's stop sits at the
+ * group's own km either way.
+ */
+function isTurnOffFor(option: ResupplyOption, ticked: ResupplyOption): boolean {
+  if (option.id === ticked.id || !isAccessWaypoint(option.type)) return false;
+  const off = offTrailKmOf(option);
+  if (off === 0) return true;
+  return !isAccessWaypoint(ticked.type) && Math.abs(off - offTrailKmOf(ticked)) < KM_EPSILON;
+}
+
+/** How far off the route an option is; an absent or unusable figure means "on it". */
+function offTrailKmOf(option: ResupplyOption): number {
+  return typeof option.offTrailKm === 'number' && option.offTrailKm > 0 ? option.offTrailKm : 0;
 }
 
 /**

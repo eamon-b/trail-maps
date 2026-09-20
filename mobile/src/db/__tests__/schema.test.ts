@@ -257,7 +257,7 @@ describe('schema v4 — imported-trail registry', () => {
     const version = await db.getFirstAsync<{ version: number }>(
       'SELECT version FROM schema_version'
     );
-    expect(version?.version).toBe(4);
+    expect(version?.version).toBe(SCHEMA_VERSION);
 
     const favorites = await db.getAllAsync<{ waypoint_id: string }>(
       "SELECT waypoint_id FROM favorites WHERE trail_id = 'larapinta'"
@@ -279,5 +279,104 @@ describe('schema v4 — imported-trail registry', () => {
       'tiles_downloaded',
       'updated_at',
     ]);
+  });
+});
+
+describe('schema v5 — plan documents', () => {
+  async function seedPlan(
+    db: Awaited<ReturnType<typeof createMigratedTestDb>>,
+    overrides: { id?: string; trailId?: string; deletedAt?: string | null } = {},
+  ) {
+    await db.runAsync(
+      `INSERT INTO plans (id, trail_id, document_json, updated_at, source, deleted_at)
+       VALUES (?, ?, '{}', '2026-09-20T00:00:00Z', 'local', ?)`,
+      [overrides.id ?? 'p1', overrides.trailId ?? 'larapinta', overrides.deletedAt ?? null],
+    );
+  }
+
+  it('creates the plans table with the expected columns', async () => {
+    const db = await createMigratedTestDb();
+    const cols = await db.getAllAsync<{ name: string; notnull: number; pk: number }>(
+      "PRAGMA table_info('plans')",
+    );
+    const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
+    expect(Object.keys(byName).sort()).toEqual([
+      'deleted_at',
+      'document_json',
+      'id',
+      'source',
+      'trail_id',
+      'updated_at',
+    ]);
+    expect(byName.id.pk).toBe(1);
+    for (const col of ['trail_id', 'document_json', 'updated_at', 'source']) {
+      expect(byName[col].notnull).toBe(1);
+    }
+    expect(byName.deleted_at.notnull).toBe(0);
+  });
+
+  it('rejects an unknown source', async () => {
+    const db = await createMigratedTestDb();
+    await expectDbRejection(() =>
+      db.runAsync(
+        `INSERT INTO plans (id, trail_id, document_json, updated_at, source)
+         VALUES ('p9', 'larapinta', '{}', '2026-09-20T00:00:00Z', 'guessed')`,
+      ),
+    );
+  });
+
+  it('allows only one LIVE plan per trail', async () => {
+    const db = await createMigratedTestDb();
+    await seedPlan(db, { id: 'p1' });
+    await expectDbRejection(() => seedPlan(db, { id: 'p2' }));
+  });
+
+  it('lets a tombstoned plan coexist with a live one for the same trail', async () => {
+    const db = await createMigratedTestDb();
+    await seedPlan(db, { id: 'old', deletedAt: '2026-09-19T00:00:00Z' });
+    await seedPlan(db, { id: 'new' });
+    const rows = await db.getAllAsync<{ id: string }>(
+      "SELECT id FROM plans WHERE trail_id = 'larapinta' ORDER BY id",
+    );
+    expect(rows.map((r) => r.id)).toEqual(['new', 'old']);
+  });
+
+  it('adds sync_state.plans_synced_at beside the other channel high-water marks', async () => {
+    const db = await createMigratedTestDb();
+    const cols = await db.getAllAsync<{ name: string }>("PRAGMA table_info('sync_state')");
+    const names = cols.map((c) => c.name);
+    expect(names).toContain('plans_synced_at');
+    expect(names).toContain('meta_synced_at');
+    expect(names).toContain('last_synced_at');
+  });
+
+  it('upgrades a v4 database in place, preserving its rows', async () => {
+    const db = createTestDatabase();
+    await migrateDatabase(db as never, 4);
+    await db.runAsync(
+      "INSERT INTO favorites (trail_id, waypoint_id) VALUES ('larapinta', 'w_abcd1234')"
+    );
+
+    let tables = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table'"
+    );
+    expect(tables.map((t) => t.name)).not.toContain('plans');
+
+    await migrateDatabase(db as never);
+
+    tables = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table'"
+    );
+    expect(tables.map((t) => t.name)).toContain('plans');
+
+    const version = await db.getFirstAsync<{ version: number }>(
+      'SELECT version FROM schema_version'
+    );
+    expect(version?.version).toBe(5);
+
+    const favorites = await db.getAllAsync<{ waypoint_id: string }>(
+      "SELECT waypoint_id FROM favorites WHERE trail_id = 'larapinta'"
+    );
+    expect(favorites.map((f) => f.waypoint_id)).toEqual(['w_abcd1234']);
   });
 });

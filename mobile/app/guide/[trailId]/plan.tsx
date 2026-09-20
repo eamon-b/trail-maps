@@ -1,43 +1,90 @@
 /**
- * Plan screen — the planner heritage, reborn as a single read-only guide
- * screen. No persisted plans: it is a LIVE calculator. Pick a section, set your
- * daily hours and pace, and the shared @lib calculators derive day splits,
- * resupply legs, and water carries on the fly. Pace, hours and the resupply
- * selection are remembered per trail; the section defaults to the full trail
- * on open.
+ * Plan screen — the day planner.
  *
- * Everything downstream derives from the direction-applied guide trail, so a
- * direction flip recomputes the whole plan for free.
+ * The plan is a document now (`@lib/plan-types` `PlanDocument`), one per trail,
+ * stored in SQLite and edited only by tapping places on and off the Stops list.
+ * Nothing on this screen generates a split by itself: the day cards are
+ * `computePlanDays` over the stops the hiker chose, and the hours-and-pace
+ * splitter survives solely as the "Suggest stops" button, which fills an EMPTY
+ * list once and then gets out of the way (plans/day-planner.md, "Suggest, never
+ * generate"). That is the whole point of the rebuild — the old screen recomputed
+ * its own boundaries on every input change, so there was nothing a hiker could
+ * hold on to.
+ *
+ * Direction still belongs to the guide. The guide trail is direction-applied,
+ * while stops are stored NOBO-absolute (`@lib/plan-direction`), so the screen
+ * converts at the edges (`plan-stops.ts`) and keeps the document's `direction`
+ * in step with the guide's — flipping direction never moves a stop.
+ *
+ * The section steppers, pace and daily hours stay. Pace and hours drive the
+ * Naismith estimates on the day cards and the "Suggest stops" split; the
+ * section scopes the whole screen, including the resupply and water cards,
+ * which are unchanged apart from taking the realized km/day of the *planned*
+ * split rather than a generated one.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
 import { resupplySummaryText } from '@lib/resupply-display';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
+import { getDirectionLabel } from '@lib/plan-direction';
+import type { PlanTrail } from '@lib/day-calculator';
+import type { PlanDocument, SectionConfig } from '@lib/plan-types';
+import {
+  computePlanDays,
+  setDirection,
+  setNights,
+  setPlanName,
+  setStartDate,
+  setStopBooked,
+  setStopNote,
+  toggleStop,
+} from '@lib/plan-editor';
 import { useTheme } from '../../../src/theme';
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../src/state/settings-store';
+import { selectPlan, usePlansStore } from '../../../src/state/plans-store';
 import { useGuide } from '../../../src/features/guide/GuideContext';
 import {
-  computePlan,
-  type PlanInputs,
-  type PlanResult,
+  computePlanExtras,
+  overnightWaypoints,
+  PACE_KMH,
+  type PlanDay,
+  type PlanExtras,
 } from '../../../src/features/plan/plan-adapters';
+import {
+  planDirectionOf,
+  stopCandidates,
+  stopKeyOf,
+  suggestedStops,
+  toggleTargetOf,
+} from '../../../src/features/plan/plan-stops';
 import { sectionOptions } from '../../../src/features/plan/plan-section';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
+import { PlanHeaderCard } from '../../../src/features/plan/PlanHeaderCard';
 import { PlanInputsCard } from '../../../src/features/plan/PlanInputsCard';
 import { DaySplitList } from '../../../src/features/plan/DaySplitList';
+import { StopsSection } from '../../../src/features/plan/StopsSection';
 import { ResupplyCard } from '../../../src/features/plan/ResupplyCard';
 import { WaterCarryCard } from '../../../src/features/plan/WaterCarryCard';
-import { formatFoodWeight, formatHours } from '../../../src/features/plan/plan-format';
+import { formatFoodWeight } from '../../../src/features/plan/plan-format';
 
 export default function PlanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { trail, trailId, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
+  const planDirection = planDirectionOf(direction);
+
+  const plan = usePlansStore(selectPlan(trailId));
+  const hydratePlan = usePlansStore((s) => s.hydrate);
+  const applyEdit = usePlansStore((s) => s.apply);
+
+  useEffect(() => {
+    void hydratePlan(trailId);
+  }, [hydratePlan, trailId]);
 
   const prefs = usePlanInputsStore(selectPrefs(trailId));
   const setDailyHours = usePlanInputsStore((s) => s.setDailyHours);
@@ -66,43 +113,105 @@ export default function PlanScreen() {
 
   const startOption = options[startIdx];
   const endOption = options[endIdx];
-  const startKm = startOption?.km ?? 0;
-  const endKm = endOption?.km ?? trail.track.totalDistance;
-  // Prefer the picked option's name so duplicate-km waypoints resolve to the
-  // exact one the stepper is showing (computePlan falls back to nameAtKm).
-  const startName = startOption?.name;
-  const endName = endOption?.name;
-  const inputs: PlanInputs = {
-    startKm,
-    endKm,
-    dailyHours: prefs.dailyHours,
-    pace: prefs.pace,
-    startName,
-    endName,
-    resupplyStops: prefs.resupplyStops,
+  const sectionConfig: SectionConfig = {
+    startKm: startOption?.km ?? 0,
+    endKm: endOption?.km ?? trail.track.totalDistance,
+    startName: startOption?.name ?? `${trail.config.name} Start`,
+    endName: endOption?.name ?? `${trail.config.name} End`,
   };
+  const baseKmh = PACE_KMH[prefs.pace];
 
-  const plan = useMemo(
+  // The document the screen renders. A trail with no plan yet shows an empty
+  // one (the whole section as a single day) rather than a blank screen — the
+  // real document is minted by the first edit, so an untouched guide never
+  // accumulates a plan to sync.
+  //
+  // Its direction is forced to the guide's for THIS render. The effect below
+  // persists that, but an effect runs after the paint, and rendering one frame
+  // of stops mirrored about the wrong end would visibly jump.
+  const displayPlan = useMemo<PlanDocument>(() => {
+    const base: PlanDocument = plan ?? {
+      id: '',
+      trailId,
+      name: '',
+      direction: planDirection,
+      startDate: null,
+      stops: [],
+      updatedAt: '',
+      version: 1,
+    };
+    return base.direction === planDirection ? base : { ...base, direction: planDirection };
+  }, [plan, planDirection, trailId]);
+
+  useEffect(() => {
+    if (plan && plan.direction !== planDirection) {
+      void applyEdit(trailId, (p) => setDirection(p, planDirection));
+    }
+  }, [applyEdit, plan, planDirection, trailId]);
+
+  const sectionKm = Math.max(0, sectionConfig.endKm - sectionConfig.startKm);
+  const validSection = sectionConfig.endKm > sectionConfig.startKm && options.length >= 2;
+
+  // Camp/hut km (the snapper's narrower set — a town stop is a stop, not a
+  // campsite), used only to pick the day card's end glyph.
+  const campKms = useMemo(
+    () => new Set(overnightWaypoints(trail).map((c) => c.km)),
+    [trail],
+  );
+
+  const days = useMemo<PlanDay[]>(() => {
+    if (!validSection) return [];
+    const computed = computePlanDays(trail as unknown as PlanTrail, displayPlan, {
+      baseKmh,
+      section: sectionConfig,
+    });
+    return computed.map((day, i) => {
+      const isLast = i === computed.length - 1;
+      const endKind = isLast ? 'finish' : campKms.has(day.endKm) ? 'camp' : 'stop';
+      return { ...day, endKind, snappedToCamp: endKind === 'camp' };
+    });
+    // sectionConfig is rebuilt each render from these four primitives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    trail,
+    displayPlan,
+    baseKmh,
+    validSection,
+    campKms,
+    sectionConfig.startKm,
+    sectionConfig.endKm,
+    sectionConfig.startName,
+    sectionConfig.endName,
+  ]);
+
+  const effectiveDailyKm = days.length > 0 ? sectionKm / days.length : baseKmh * prefs.dailyHours;
+
+  const extras = useMemo(
     () =>
-      computePlan(trail, {
-        startKm,
-        endKm,
+      computePlanExtras(trail, sectionConfig, {
         dailyHours: prefs.dailyHours,
-        pace: prefs.pace,
-        startName,
-        endName,
+        baseKmh,
+        days,
         resupplyStops: prefs.resupplyStops,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       trail,
-      startKm,
-      endKm,
-      startName,
-      endName,
+      sectionConfig.startKm,
+      sectionConfig.endKm,
+      sectionConfig.startName,
+      sectionConfig.endName,
       prefs.dailyHours,
-      prefs.pace,
+      baseKmh,
+      days,
       prefs.resupplyStops,
     ],
+  );
+
+  const [showAllWaypoints, setShowAllWaypoints] = useState(false);
+  const candidates = useMemo(
+    () => stopCandidates(trail, planDirection, { all: showAllWaypoints }),
+    [trail, planDirection, showAllWaypoints],
   );
 
   // Naismith's climbing term is silently zero for a trail with no profile, so
@@ -112,14 +221,28 @@ export default function PlanScreen() {
   // screen's "Fetch elevation".)
   const distanceOnly = !trailElevationIsUsable(trail);
 
-  const sectionKm = Math.max(0, inputs.endKm - inputs.startKm);
-  const validSection = inputs.endKm > inputs.startKm && options.length >= 2;
+  const planDefaults = { name: trail.config.name, direction: planDirection };
+  const edit = (fn: (p: PlanDocument) => PlanDocument) => {
+    void applyEdit(trailId, fn, planDefaults);
+  };
 
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
     >
+      <PlanHeaderCard
+        name={displayPlan.name}
+        namePlaceholder={trail.config.name}
+        startDate={displayPlan.startDate}
+        directionLabel={getDirectionLabel(trail.config.direction, planDirection, {
+          default: 'Start → End',
+          reversed: 'End → Start',
+        })}
+        onName={(name) => edit((p) => setPlanName(p, name))}
+        onStartDate={(iso) => edit((p) => setStartDate(p, iso))}
+      />
+
       <PlanInputsCard
         options={options}
         startIdx={startIdx}
@@ -132,6 +255,22 @@ export default function PlanScreen() {
         onDailyHours={(h) => setDailyHours(trailId, h)}
         onPace={(p) => setPace(trailId, p)}
         onResetSection={resetSection}
+        canSuggestStops={validSection && displayPlan.stops.length === 0}
+        onSuggestStops={() => {
+          const suggested = suggestedStops(
+            trail,
+            sectionConfig,
+            prefs.dailyHours,
+            baseKmh,
+            planDirection,
+          );
+          if (suggested.length === 0) return;
+          // One edit, one write: toggling each stop through its own `apply`
+          // would be a SQLite round trip (and later a PUT) per day.
+          edit((p) =>
+            suggested.reduce((acc, candidate) => toggleStop(acc, toggleTargetOf(candidate)), p),
+          );
+        }}
       />
 
       {!validSection ? (
@@ -143,10 +282,9 @@ export default function PlanScreen() {
       ) : (
         <>
           <View style={[styles.summary, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-            <SummaryStat label="Days" value={String(plan.days.length)} />
+            <SummaryStat label="Days" value={String(days.length)} />
             <SummaryStat label="Distance" value={formatDistance(sectionKm, units)} />
-            <SummaryStat label="Target/day" value={formatHours(plan.targetHours)} />
-            <SummaryStat label="Avg/day" value={formatDistance(plan.effectiveDailyKm, units)} />
+            <SummaryStat label="Avg/day" value={formatDistance(effectiveDailyKm, units)} />
           </View>
 
           <Section
@@ -157,19 +295,41 @@ export default function PlanScreen() {
                 : undefined
             }
           >
-            <DaySplitList days={plan.days} targetHours={plan.targetHours} units={units} />
+            <DaySplitList days={days} targetHours={prefs.dailyHours} units={units} />
+          </Section>
+
+          <Section
+            title="Stops"
+            subtitle="Tap a place to make it a stop. Tap it again to take it out."
+          >
+            <StopsSection
+              candidates={candidates}
+              plan={plan}
+              pois={trail.pois}
+              units={units}
+              showAll={showAllWaypoints}
+              onShowAll={setShowAllWaypoints}
+              onToggle={(c) => edit((p) => toggleStop(p, toggleTargetOf(c)))}
+              onNights={(c, nights) => edit((p) => setNights(p, stopKeyOf(c), nights))}
+              onNote={(c, note) => edit((p) => setStopNote(p, stopKeyOf(c), note))}
+              onBooked={(c, booked) => edit((p) => setStopBooked(p, stopKeyOf(c), booked))}
+            />
           </Section>
 
           <Section
             title="Resupply"
-            subtitle={resupplySubtitle(plan, units, prefs.resupplyStops === undefined)}
+            subtitle={resupplySubtitle(extras, units, prefs.resupplyStops === undefined)}
             action={
-              plan.resupplyGroups.length > 0 ? (
+              extras.resupplyGroups.length > 0 ? (
                 <Pressable
                   onPress={() =>
                     router.push({
                       pathname: '/guide/[trailId]/resupply',
-                      params: { trailId, startKm: String(startKm), endKm: String(endKm) },
+                      params: {
+                        trailId,
+                        startKm: String(sectionConfig.startKm),
+                        endKm: String(sectionConfig.endKm),
+                      },
                     })
                   }
                   accessibilityRole="button"
@@ -183,17 +343,17 @@ export default function PlanScreen() {
             }
           >
             <ResupplyCard
-              legs={plan.resupplyLegs}
-              hasOptions={plan.resupplyGroups.length > 0}
-              stopCount={plan.resupplyStops.length}
+              legs={extras.resupplyLegs}
+              hasOptions={extras.resupplyGroups.length > 0}
+              stopCount={extras.resupplyStops.length}
               units={units}
             />
           </Section>
 
           <Section title="Water carries">
             <WaterCarryCard
-              carries={plan.topWaterCarries}
-              hasData={plan.water.hasWaterData}
+              carries={extras.topWaterCarries}
+              hasData={extras.water.hasWaterData}
               units={units}
             />
           </Section>
@@ -209,15 +369,15 @@ export default function PlanScreen() {
  * the every-option default from a plan that happens to tick everything.
  */
 function resupplySubtitle(
-  plan: PlanResult,
+  extras: PlanExtras,
   units: Units,
   everyOption: boolean,
 ): string | undefined {
   // Nothing to summarise on a trail with no resupply at all — the card says so.
-  if (plan.resupplyGroups.length === 0) return undefined;
-  if (!plan.resupplySummary.hasData) return 'No resupply stops ticked.';
+  if (extras.resupplyGroups.length === 0) return undefined;
+  if (!extras.resupplySummary.hasData) return 'No resupply stops ticked.';
   const text = resupplySummaryText(
-    plan.resupplySummary,
+    extras.resupplySummary,
     (km) => formatDistance(km, units),
     (kg) => formatFoodWeight(kg, units),
   );

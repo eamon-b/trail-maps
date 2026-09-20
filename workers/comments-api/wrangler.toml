@@ -31,3 +31,7 @@ bucket_name = "aus-map-data"
 # pub-….r2.dev URL still resolves but is rate-limited and uncached). The worker
 # returns full URLs built from this + the object key. Tests override it.
 PHOTOS_PUBLIC_BASE = "https://data.contour-map-tiles.net"
+
+# Origin of the deployed web site (the Vercel deploy, per docs/privacy-policy.md).
+# Share links are `SITE_BASE/shared-plan.html?s=<shareId>`. Tests override it.
+SITE_BASE = "https://trail-maps.vercel.app"

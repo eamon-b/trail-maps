@@ -19,6 +19,15 @@ import {
   putComment,
 } from './comments';
 import { uploadCommentPhoto } from './photos';
+import {
+  deletePlan,
+  getSharedPlan,
+  listPlans,
+  putPlan,
+  sharePlan,
+  unsharePlan,
+} from './plans';
+import { createLinkCode, linkDevice, listDevices, revokeDevice } from './link';
 
 /** Split a pathname into decoded, non-empty segments. */
 function segments(pathname: string): string[] {
@@ -50,11 +59,61 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return methodNotAllowed();
     }
 
+    // /v1/devices/link — unauthenticated: the code is the credential
+    if (rest.length === 2 && rest[0] === 'devices' && rest[1] === 'link') {
+      if (method === 'POST') return await linkDevice(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/link-codes
+    if (rest.length === 1 && rest[0] === 'link-codes') {
+      if (method === 'POST') return await createLinkCode(request, env, ctx);
+      return methodNotAllowed();
+    }
+
     // /v1/me
     if (rest.length === 1 && rest[0] === 'me') {
       if (method === 'GET') return await getMe(request, env, ctx);
       if (method === 'PATCH') return await updateMe(request, env, ctx);
       if (method === 'DELETE') return await deleteMe(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/me/devices
+    if (rest.length === 2 && rest[0] === 'me' && rest[1] === 'devices') {
+      if (method === 'GET') return await listDevices(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/me/devices/:deviceId
+    if (rest.length === 3 && rest[0] === 'me' && rest[1] === 'devices') {
+      if (method === 'DELETE') return await revokeDevice(request, env, ctx, rest[2]);
+      return methodNotAllowed();
+    }
+
+    // /v1/plans
+    if (rest.length === 1 && rest[0] === 'plans') {
+      if (method === 'GET') return await listPlans(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/plans/:id
+    if (rest.length === 2 && rest[0] === 'plans') {
+      if (method === 'PUT') return await putPlan(request, env, ctx, rest[1]);
+      if (method === 'DELETE') return await deletePlan(request, env, ctx, rest[1]);
+      return methodNotAllowed();
+    }
+
+    // /v1/plans/:id/share
+    if (rest.length === 3 && rest[0] === 'plans' && rest[2] === 'share') {
+      if (method === 'POST') return await sharePlan(request, env, ctx, rest[1]);
+      if (method === 'DELETE') return await unsharePlan(request, env, ctx, rest[1]);
+      return methodNotAllowed();
+    }
+
+    // /v1/shared/plans/:shareId — public read-only
+    if (rest.length === 3 && rest[0] === 'shared' && rest[1] === 'plans') {
+      if (method === 'GET') return await getSharedPlan(env, rest[2]);
       return methodNotAllowed();
     }
 

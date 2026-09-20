@@ -26,6 +26,7 @@ import {
 import { countDuplicatePois, markDuplicatePois } from '../src/lib/poi-dedup.js';
 import { countNoiseByReason, dropNoisePois } from '../src/lib/poi-noise.js';
 import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
+import { BUNDLED_PLAN_FILLS, inlinePlanShell } from './lib/plan-shell.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -52,6 +53,7 @@ const TRAIL_PAGES_DIR = path.join(PROJECT_ROOT, 'src/web/trails');
 const TRAIL_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'trail-template.html');
 const CLIMATE_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'climate-template.html');
 const PLAN_TEMPLATE_PATH = path.join(TRAIL_PAGES_DIR, 'plan-template.html');
+const PLAN_SHELL_PATH = path.join(TRAIL_PAGES_DIR, 'plan-shell.html');
 
 /**
  * Parse CalTopo GeoJSON for waypoint categorization, descriptions, and route variants
@@ -479,7 +481,14 @@ function generatePlanPage(trail: ProcessedTrail): void {
     return;
   }
 
-  const template = fs.readFileSync(PLAN_TEMPLATE_PATH, 'utf-8');
+  // The planner markup itself lives in plan-shell.html, shared with
+  // my-plan.html (which Vite inlines it into). Inline it first, so the
+  // substitutions below reach the {{TRAIL_NAME}} inside it too.
+  const template = inlinePlanShell(
+    fs.readFileSync(PLAN_TEMPLATE_PATH, 'utf-8'),
+    fs.readFileSync(PLAN_SHELL_PATH, 'utf-8'),
+    BUNDLED_PLAN_FILLS
+  );
 
   const html = template
     .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))

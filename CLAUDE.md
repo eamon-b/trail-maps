@@ -91,6 +91,7 @@ Shared processing modules (used by both web and mobile):
 - `trails/trail-viewer.ts` - Interactive trail viewer (map, elevation profile, waypoints). The main route is one Leaflet polyline per stretch on the default SVG renderer: Polyline's `smoothFactor` already runs Douglas-Peucker in screen pixels per reprojection, so a 20,000-point line costs the browser no more vertices than the zoom can resolve. Map hover goes through `@lib/point-index` — set `displayPoints` only via `setDisplayPoints`, which rebuilds that index. The waypoints table ("datasheet") filters to the water or food/resupply family via `@lib/waypoint-taxonomy`; when filtered, the leg columns are recomputed between *visible* rows so resupply-leg distances read directly off the table. Row interaction is delegated from `#waypoints-container`, not the tbody, because every re-render replaces the tbody
 - `trails/climate-template.html` - Template for climate data pages
 - `trails/plan-template.html` - Template for plan visualization pages
+- `trails/plan-shell.html` - The one copy of the plan page's `#plan-shell` markup (header + three panels). `build-trails.ts` inlines it into `plan-template.html` and the `plan-shell` Vite plugin inlines it into `my-plan.html` at the `<!-- @plan-shell -->` marker, with per-page header fills from `scripts/lib/plan-shell.ts`
 - `trails/plan-viewer.ts` - Interactive plan viewer
 - `trails/plan-state.ts` - Plan state management
 - `upload.html` / `upload.ts` - User GPX import: drag-drop → `importGpx` → report (+ optional elevation backfill) → IndexedDB

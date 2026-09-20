@@ -31,8 +31,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { BUNDLED_PLAN_FILLS, inlinePlanShell } from '../../../scripts/lib/plan-shell';
 
 const ROOT = path.resolve(__dirname, '../../..');
+
+/**
+ * The bundled plan page as `build-trails.ts` assembles it: `plan-template.html`
+ * with the shared `plan-shell.html` markup inlined at its marker.
+ */
+function bundledPlanPageHtml(): string {
+  return inlinePlanShell(
+    fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-template.html'), 'utf8'),
+    fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-shell.html'), 'utf8'),
+    BUNDLED_PLAN_FILLS
+  );
+}
+
 const TRAIL_ID = 'resupply-fixture';
 
 const $ = (id: string): HTMLElement => {
@@ -118,7 +132,7 @@ function makeTrail() {
 
 /** Boot the shipped plan markup with a preloaded trail, on the Resupply tab. */
 async function boot(openResupply = true): Promise<void> {
-  const html = fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-template.html'), 'utf8');
+  const html = bundledPlanPageHtml();
   document.documentElement.innerHTML = html
     .replace(/<!DOCTYPE html>/i, '')
     .replace(/<\/?html[^>]*>/gi, '');

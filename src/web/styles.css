@@ -57,6 +57,11 @@
   --temp-min: #1976d2;
   --water: #0284c7;
   --select: #3b82f6;
+  /* A planned resupply stop, on every plan-page surface. Matches the phone's
+     `resupplyPlanned` token, and is deliberately unlike --select so a stop that
+     is both a camp and a planned resupply still reads as both. */
+  --resupply-planned: #c2410c;
+  --resupply-planned-tint: #fff1e6;
 
   /* OpenStreetMap POI categories (markers, chips, checkbox dots) */
   --poi-water: #0ea5e9;
@@ -139,6 +144,8 @@
     --temp-max: #f87171;
     --temp-min: #60a5fa;
     --water: #38bdf8;
+    --resupply-planned: #ffa94d;
+    --resupply-planned-tint: #3a2413;
 
     --poi-water: #38bdf8;
     --poi-camping: #4ade80;
@@ -201,6 +208,8 @@
   --temp-max: #f87171;
   --temp-min: #60a5fa;
   --water: #38bdf8;
+  --resupply-planned: #ffa94d;
+  --resupply-planned-tint: #3a2413;
 
   --poi-water: #38bdf8;
   --poi-camping: #4ade80;

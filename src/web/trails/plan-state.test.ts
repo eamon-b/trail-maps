@@ -138,19 +138,36 @@ describe('pace and dailyHours validation', () => {
     expect(loaded?.dailyHours).toBeUndefined();
   });
 
-  it('rejects a pace that is not one of the three presets', () => {
+  // A bad pace or hours figure has an obvious stand-in — the header input's own
+  // initial value — so it is dropped on its own. Throwing the record away with
+  // it would cost the hiker the plan's name, stops and dates over a field the
+  // page can default.
+  it('drops a pace that is not one of the three presets, keeping the rest of the plan', () => {
     localStorage.setItem('trail-plan-bad-pace', JSON.stringify({ ...validState, pace: 'brisk' }));
-    expect(loadPlanState('bad-pace')).toBeNull();
+    const loaded = loadPlanState('bad-pace');
+    expect(loaded).toEqual(validState);
+    expect(loaded?.pace).toBeUndefined();
   });
 
-  it('rejects a non-finite or non-positive dailyHours', () => {
+  it('drops a non-finite or non-positive dailyHours, keeping the rest of the plan', () => {
     for (const [key, hours] of [['zero', 0], ['neg', -4], ['text', '8']] as const) {
       localStorage.setItem(`trail-plan-${key}`, JSON.stringify({ ...validState, dailyHours: hours }));
-      expect(loadPlanState(key)).toBeNull();
+      const loaded = loadPlanState(key);
+      expect(loaded).toEqual(validState);
+      expect(loaded?.dailyHours).toBeUndefined();
     }
     // NaN/Infinity do not survive JSON.stringify, so they arrive as null.
     localStorage.setItem('trail-plan-nan', JSON.stringify({ ...validState, dailyHours: Number.NaN }));
-    expect(loadPlanState('nan')).toBeNull();
+    expect(loadPlanState('nan')).toEqual(validState);
+  });
+
+  it('keeps the stops, name and dates of a plan whose pace is unusable', () => {
+    localStorage.setItem(
+      'trail-plan-bad-pace2',
+      JSON.stringify({ ...validState, direction: 'SOBO', resupplyStops: ['w_1'], pace: 7, dailyHours: 0 }),
+    );
+    const loaded = loadPlanState('bad-pace2');
+    expect(loaded).toEqual({ ...validState, direction: 'SOBO', resupplyStops: ['w_1'] });
   });
 });
 

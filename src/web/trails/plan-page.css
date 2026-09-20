@@ -146,6 +146,51 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 }
 .tab-panel.active { display: flex; flex-direction: column; }
 
+/* ---- Planned resupply ----
+ * One marking, on every surface that lists or draws a waypoint: the stops the
+ * hiker ticked in the Resupply tab. It sits *outside* the selection emphasis
+ * (an outline rather than a background), so a day that is both the selected day
+ * and a resupply day still reads as both — and where the two colours meet, the
+ * plan wins, as it does on the phone.
+ */
+.planned-badge {
+  flex-shrink: 0;
+  padding: 0 0.3rem;
+  border: 1px solid var(--resupply-planned);
+  border-radius: 999px;
+  color: var(--resupply-planned);
+  background: var(--resupply-planned-tint);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.planned-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.35rem 0.25rem 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+/* The row treatments. Each is listed after the rule it has to beat. */
+.day-card.planned-resupply,
+.stop-row.planned-resupply,
+.ds-row.planned-resupply {
+  box-shadow: inset 3px 0 0 var(--resupply-planned);
+}
+.day-card.planned-resupply { border-color: var(--resupply-planned); }
+/* The datasheet's badge sits inside the name cell (a three-column grid has no
+ * room for a fourth), so that cell becomes a row of its own. */
+.ds-row.planned-resupply .ds-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
 /* Days tab */
 #days-list {
   flex: 1;
@@ -528,6 +573,13 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 /* Markers keep light pastel fills over the map, so their glyphs stay dark. */
 .waypoint-marker { color: #1f2937; }
 .waypoint-marker.is-stop { border-color: var(--select); border-width: 3px; }
+/* After .is-stop on purpose: a planned stop that is also a camp stop shows the
+ * plan's ring, which is the rarer and more consequential of the two. */
+.waypoint-marker.planned-resupply {
+  border-color: var(--resupply-planned);
+  border-width: 3px;
+  box-shadow: 0 0 0 2px var(--resupply-planned), 0 2px 5px rgba(0,0,0,0.3);
+}
 .stop-flag-icon {
   display: flex;
   align-items: center;

@@ -413,6 +413,15 @@ the full list plus the id, a second press removes it, an implied turn-off has no
 non-option has none either); `resupply-plan.test.ts` for the CDT twins and the Te Araroa pair;
 `distance-calculator.test.ts` for the planned-ahead case and the empty case.
 
+**The web marks the same stops.** `plan-viewer.ts` derives one `plannedResupplyIds` set per
+`renderAll()` (`null` = nothing chosen yet = nothing marked, exactly as `usePlannedResupplyIds`
+does on the phone) and paints it on the Days tab's day cards, the Stops rows, the datasheet rows
+including the two day-boundary rows, the map markers and the elevation profile — a
+`planned-resupply` class plus a "Planned resupply" badge, coloured by the `--resupply-planned`
+token (light and dark) that mirrors the app's `resupplyPlanned`. A legend under the Days tab's
+resupply summary says what the badge means. Before this the web emphasised picked stops only
+inside the Resupply tab.
+
 ### 4e. What does not change
 
 - The camp/day plan is untouched by any of this: a planned resupply never adds a day boundary

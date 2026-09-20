@@ -144,6 +144,24 @@ describe('clicking a waypoint marker', () => {
     expect(marker('Bravo').opacity).toBe(1);
   });
 
+  it('rings a planned stop on every tab, and only once a plan exists', async () => {
+    await boot();
+    // A fresh plan has every option ticked for the carries, but nothing planned.
+    expect(markers.some(m => m.html.includes('planned-resupply'))).toBe(false);
+
+    tabButton('resupply').click();
+    check('w_2').click(); // an explicit selection: everything but Bravo
+
+    expect(marker('Alpha').html).toContain('planned-resupply');
+    expect(marker('Bravo').html).not.toContain('planned-resupply');
+    // The camp-stop marker is not a resupply option, so it never gets the ring.
+    expect(marker('Camp One').html).not.toContain('planned-resupply');
+
+    // The ring stays when the hiker leaves the tab that made the plan.
+    tabButton('days').click();
+    expect(marker('Alpha').html).toContain('planned-resupply');
+  });
+
   it('still toggles a camp stop for a waypoint that is not a resupply option', async () => {
     await boot();
     tabButton('resupply').click();

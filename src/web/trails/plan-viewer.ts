@@ -24,6 +24,7 @@ import {
   allResupplyOptionIds,
   computeResupplyLegs,
   listResupplyOptions,
+  plannedResupplyIds,
   resolveResupplyStops,
   summariseResupplyLegs,
   type ResupplyLeg,
@@ -289,6 +290,11 @@ function resetResupplyCaches(): void {
   cachedResupplyGroupsKey = null;
   cachedResupplyLegs = [];
   cachedResupplyLegsKey = null;
+  // Markers are drawn once by initMap() before the first renderAll(), so the
+  // planned set has to start empty rather than carry another trail's plan into
+  // a reboot (my-plan.html boots this module again per imported trail).
+  cachedPlannedIds = null;
+  cachedPlannedStops = [];
 }
 
 function resupplyGroups(): ResupplyOptionGroup[] {
@@ -308,6 +314,76 @@ const formatFoodKg = (kg: number): string => `${kg.toFixed(1)} kg`;
 /** The ticked ids. An absent `resupplyStops` means every option, as on a fresh plan. */
 function selectedResupplyIds(): Set<string> {
   return new Set(planState.resupplyStops ?? allResupplyOptionIds(resupplyGroups()));
+}
+
+/**
+ * The waypoints the hiker's selection marks as *planned* resupply stops.
+ *
+ * Same contract as the phone's `usePlannedResupplyIds`: `null` — nothing chosen
+ * yet — highlights nothing. The every-option default feeds the legs, but
+ * painting every town as planned before anyone planned anything would be noise.
+ *
+ * Refreshed once per `renderAll()` rather than read per row: the km list behind
+ * it is a scan of the trail's waypoints, and the Days tab alone asks about every
+ * one of them.
+ */
+let cachedPlannedIds: ReadonlySet<string> | null = null;
+/**
+ * The planned waypoints themselves, in active-direction km — a handful even on
+ * the CDT, so the day cards and the profile ask this list rather than scanning
+ * the trail's waypoints once per day.
+ */
+let cachedPlannedStops: Array<{ km: number; name: string }> = [];
+
+function refreshPlannedResupply(): void {
+  const selected = planState.resupplyStops ? new Set(planState.resupplyStops) : null;
+  cachedPlannedIds = plannedResupplyIds(resupplyGroups(), selected);
+  const planned = cachedPlannedIds;
+  cachedPlannedStops = planned
+    ? (activeTrail().waypoints ?? [])
+        .filter(wp => wp.id !== undefined && planned.has(wp.id))
+        .map(wp => ({ km: wp.totalDistance ?? 0, name: wp.name ?? 'Resupply' }))
+    : [];
+}
+
+/**
+ * True once the hiker has planned at least one stop. An explicit empty
+ * selection is a real choice, but it badges nothing, so the surfaces that only
+ * exist to explain the badge (the legend, the profile's ticks) stay away.
+ */
+function hasResupplyPlan(): boolean {
+  return cachedPlannedStops.length > 0;
+}
+
+function isPlannedResupply(wp: { id?: string }): boolean {
+  return cachedPlannedIds !== null && wp.id !== undefined && cachedPlannedIds.has(wp.id);
+}
+
+/**
+ * The same question for a row named only by km — a day boundary in the
+ * datasheet, whose start/end names come from the day plan, not a waypoint.
+ */
+function isPlannedResupplyKm(km: number): boolean {
+  return cachedPlannedStops.some(stop => Math.abs(stop.km - km) < KM_EPSILON);
+}
+
+/** The planned stops inside a km range, named — the day card's tooltip. */
+function plannedNamesBetween(startKm: number, endKm: number): string[] {
+  return cachedPlannedStops
+    .filter(stop => stop.km >= startKm - KM_EPSILON && stop.km <= endKm + KM_EPSILON)
+    .map(stop => stop.name);
+}
+
+/**
+ * The one marking of a planned stop, so every surface says the same thing.
+ * `names` spells out which places it is, where the row is a day rather than a
+ * waypoint; `title` is what makes the badge self-explanatory without a legend.
+ */
+function plannedBadge(names: readonly string[] = []): string {
+  const title = names.length > 0
+    ? `Planned resupply: ${names.join(', ')}`
+    : 'Planned resupply — ticked in the Resupply tab';
+  return `<span class="planned-badge" title="${escapeHtml(title)}">Planned resupply</span>`;
 }
 
 function resupplyLegs(): ResupplyLeg[] {
@@ -426,7 +502,12 @@ function drawWaypointMarkers(): void {
     const isSelected = isStop(km);
     const isOption = optionIds !== null && wp.id !== undefined && optionIds.has(wp.id);
     const isPicked = isOption && pickedIds!.has(wp.id!);
-    const className = `waypoint-marker ${type}${isSelected || isPicked ? ' is-stop' : ''}`;
+    // A planned stop keeps its ring on every tab, and the ring wins over the
+    // camp-stop border where a marker is both. The ring is the whole marking —
+    // the title stays the plain name, which is what the map's tooltip is for.
+    const isPlanned = isPlannedResupply(wp);
+    const className = `waypoint-marker ${type}${isSelected || isPicked ? ' is-stop' : ''}` +
+      `${isPlanned ? ' planned-resupply' : ''}`;
     const divIcon = L.divIcon({
       className: '',
       html: `<div class="${escapeHtml(className)}" title="${escapeHtml(wp.name)}">${icon}</div>`,
@@ -614,6 +695,21 @@ function drawElevationProfile(): void {
     }
   }
 
+  // Planned resupply stops — a short tick off the baseline, in the planned
+  // colour, so the profile agrees with the lists about where the food runs out.
+  if (hasResupplyPlan()) {
+    const plannedColor = themeColor('--resupply-planned', '#c2410c');
+    for (const stop of cachedPlannedStops) {
+      const x = PAD.left + (stop.km / maxDist) * width;
+      ctx.strokeStyle = plannedColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, PAD.top + height);
+      ctx.lineTo(x, PAD.top + height - 10);
+      ctx.stroke();
+    }
+  }
+
   // Stop markers on elevation
   activeStops().forEach(stop => {
     const x = PAD.left + (stop.km / maxDist) * width;
@@ -691,8 +787,12 @@ function renderDayList(): void {
       ? `<span class="water-info">💧 ${day.waterSources} water</span>`
       : '<span>💧 0 water</span>';
     const selected = selectedDayIndex === i ? ' selected' : '';
+    // A day is "planned resupply" when one of the ticked stops falls inside it,
+    // its own ends included: the day you walk into town is the day it matters.
+    const plannedNames = plannedNamesBetween(day.startKm, day.endKm);
+    const planned = plannedNames.length > 0;
     return `
-      <div class="day-card${selected}" data-day-index="${i}">
+      <div class="day-card${selected}${planned ? ' planned-resupply' : ''}" data-day-index="${i}">
         <div class="day-card-header">
           <span class="day-card-number">Day ${day.dayNumber}</span>
           ${dateStr}
@@ -704,6 +804,7 @@ function renderDayList(): void {
           <span>-${day.descentM} m</span>
           <span>~${day.estimatedHours}h</span>
           ${waterStr}
+          ${planned ? plannedBadge(plannedNames) : ''}
         </div>
       </div>`;
   }).join('');
@@ -738,10 +839,16 @@ function renderResupplySection(): void {
 
   const summary = summariseResupplyLegs(resupplyLegs());
   const line = summary.hasData ? resupplySummaryText(summary, formatKm, formatFoodKg) : 'No resupply stops ticked.';
+  // Says what the badge on a day card, a stops row or a map marker means. Only
+  // shown once there is a plan, because until then nothing is badged.
+  const legend = hasResupplyPlan()
+    ? `<div class="planned-legend">${plannedBadge()} marks a stop you ticked, wherever it appears.</div>`
+    : '';
   body.innerHTML = `<div class="gap-item">
       <span class="gap-ok">🍎</span>
       <span>${escapeHtml(line)}</span>
     </div>
+    ${legend}
     <button type="button" class="resupply-edit" id="resupply-edit-link">Edit in the Resupply tab</button>`;
 
   document.getElementById('resupply-edit-link')?.addEventListener('click', () => switchTab('resupply'));
@@ -797,10 +904,12 @@ function renderStopList(): void {
     // Gap from previous waypoint in filtered list
     const prevKm = i > 0 ? (waypoints[i - 1].totalDistance ?? 0) : 0;
     const gap = i > 0 ? `+${(km - prevKm).toFixed(1)}` : '';
-    return `<div class="stop-row${selected ? ' is-stop' : ''}" data-km="${km}">
+    const planned = isPlannedResupply(wp);
+    return `<div class="stop-row${selected ? ' is-stop' : ''}${planned ? ' planned-resupply' : ''}" data-km="${km}">
       <span class="stop-check">${checkmark}</span>
       <span class="stop-type-icon">${icon}</span>
       <span class="stop-name">${escapeHtml(wp.name)}</span>
+      ${planned ? plannedBadge() : ''}
       <span class="stop-km">${km.toFixed(1)} km</span>
       ${gap ? `<span class="stop-gap">(${gap})</span>` : ''}
     </div>`;
@@ -916,9 +1025,10 @@ function renderDayDatasheet(day: ComputedDay | null): void {
       const km = wp.totalDistance ?? 0;
       const prevKm = i > 0 ? (waypoints[i - 1].totalDistance ?? 0) : null;
       const deltaStr = prevKm !== null ? `+${(km - prevKm).toFixed(1)} km` : 'start';
-      return `<div class="ds-row">
+      const planned = isPlannedResupply(wp);
+      return `<div class="ds-row${planned ? ' planned-resupply' : ''}">
         <span class="ds-type-icon" title="${escapeHtml(waypointTypeLabel(wp.type))}">${waypointIcon(wp.type)}</span>
-        <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}</span>
+        <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}${planned ? plannedBadge() : ''}</span>
         <span class="ds-km">${km.toFixed(1)}<br><small style="color:var(--text-secondary)">${deltaStr}</small></span>
       </div>`;
     }).join('');
@@ -935,10 +1045,13 @@ function renderDayDatasheet(day: ComputedDay | null): void {
 
   const rows: string[] = [];
 
-  // Start row
-  rows.push(`<div class="ds-row ds-start">
+  // Start and end rows are named by the day plan, not by a waypoint record, so
+  // they are matched on km — a day that begins or ends in a planned town is
+  // badged like any other row.
+  const startPlanned = isPlannedResupplyKm(day.startKm);
+  rows.push(`<div class="ds-row ds-start${startPlanned ? ' planned-resupply' : ''}">
     <span class="ds-type-icon">\u{1F6A9}</span>
-    <span class="ds-name">${escapeHtml(day.startName)}</span>
+    <span class="ds-name">${escapeHtml(day.startName)}${startPlanned ? plannedBadge() : ''}</span>
     <span class="ds-km">${day.startKm.toFixed(1)} km</span>
   </div>`);
 
@@ -948,18 +1061,20 @@ function renderDayDatasheet(day: ComputedDay | null): void {
     const km = wp.totalDistance ?? 0;
     if (Math.abs(km - day.startKm) < 0.01 || Math.abs(km - day.endKm) < 0.01) return;
     const delta = (km - prevKm).toFixed(1);
-    rows.push(`<div class="ds-row">
+    const planned = isPlannedResupply(wp);
+    rows.push(`<div class="ds-row${planned ? ' planned-resupply' : ''}">
       <span class="ds-type-icon" title="${escapeHtml(waypointTypeLabel(wp.type))}">${waypointIcon(wp.type)}</span>
-      <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}</span>
+      <span class="ds-name" title="${escapeHtml(wp.name)}">${escapeHtml(wp.name)}${planned ? plannedBadge() : ''}</span>
       <span class="ds-km">${km.toFixed(1)}<br><small style="color:var(--text-secondary)">+${delta}</small></span>
     </div>`);
     prevKm = km;
   });
 
   // End row
-  rows.push(`<div class="ds-row ds-end">
+  const endPlanned = isPlannedResupplyKm(day.endKm);
+  rows.push(`<div class="ds-row ds-end${endPlanned ? ' planned-resupply' : ''}">
     <span class="ds-type-icon">\u26FA</span>
-    <span class="ds-name">${escapeHtml(day.endName)}</span>
+    <span class="ds-name">${escapeHtml(day.endName)}${endPlanned ? plannedBadge() : ''}</span>
     <span class="ds-km">${day.endKm.toFixed(1)} km</span>
   </div>`);
 
@@ -1217,6 +1332,10 @@ function initTabs(): void {
 
 function renderAll(): void {
   refreshActiveStops();
+  // Before any renderer asks: every tab, the datasheet, the markers and the
+  // profile read the same set, so ticking a stop in the Resupply tab shows up
+  // everywhere on the next render rather than on the next tab switch.
+  refreshPlannedResupply();
   currentDays = computeDays(activeTrail(), activeStops(), planState.startDate, undefined, baseKmh());
   // Clamp selectedDayIndex in case stops were removed
   if (selectedDayIndex !== null && selectedDayIndex >= currentDays.length) {

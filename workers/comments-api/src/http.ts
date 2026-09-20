@@ -12,6 +12,8 @@ export interface Env {
   PHOTOS: R2Bucket;
   /** Public read base for R2 objects, e.g. the bucket's custom domain (no trailing slash needed). */
   PHOTOS_PUBLIC_BASE: string;
+  /** Origin of the deployed web site; share links are built from it. */
+  SITE_BASE: string;
 }
 
 /** Wide-open CORS — this is a public, read-mostly hobby API. */

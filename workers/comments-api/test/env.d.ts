@@ -11,6 +11,7 @@ declare global {
       DB: D1Database;
       PHOTOS: R2Bucket;
       PHOTOS_PUBLIC_BASE: string;
+      SITE_BASE: string;
       TEST_MIGRATIONS: D1Migration[];
     }
   }

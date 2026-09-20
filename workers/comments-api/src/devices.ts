@@ -23,12 +23,18 @@ export async function registerDevice(request: Request, env: Env): Promise<Respon
   const userId = crypto.randomUUID();
   const now = new Date().toISOString();
 
-  await env.DB.prepare(
-    `INSERT INTO users (id, display_name, token_hash, is_admin, is_banned, created_at, last_seen_at)
-     VALUES (?, ?, ?, 0, 0, ?, ?)`
-  )
-    .bind(userId, displayName, tokenHash, now, now)
-    .run();
+  // `users.token_hash` is written for one more release (rollback safety); the
+  // authenticating lookup is the `device_tokens` row.
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO users (id, display_name, token_hash, is_admin, is_banned, created_at, last_seen_at)
+       VALUES (?, ?, ?, 0, 0, ?, ?)`
+    ).bind(userId, displayName, tokenHash, now, now),
+    env.DB.prepare(
+      `INSERT INTO device_tokens (token_hash, user_id, kind, label, created_at, last_seen_at, expires_at, revoked_at)
+       VALUES (?, ?, 'primary', NULL, ?, ?, NULL, NULL)`
+    ).bind(tokenHash, userId, now, now),
+  ]);
 
   const payload: RegisterDeviceResponse = { userId, token, displayName };
   return json(payload, 201);
@@ -84,6 +90,10 @@ const DELETED_DISPLAY_NAME = 'Deleted user';
  *
  * Reports the user filed are deliberately kept: they are a moderation record and
  * only reference the now-scrubbed row.
+ *
+ * Plans are soft-deleted the same way comments are (their tombstones flow
+ * through `GET /v1/plans`), and every device token — the phone's and any linked
+ * browser's — is revoked, so no second device outlives the account.
  */
 export async function deleteMe(
   request: Request,
@@ -109,6 +119,16 @@ export async function deleteMe(
               photo_urls_json = NULL, photo_hashes_json = NULL
         WHERE user_id = ? AND deleted_at IS NULL`
     ).bind(now, now, user.id),
+    env.DB.prepare(
+      `UPDATE plans SET deleted_at = ?, updated_at = ? WHERE user_id = ? AND deleted_at IS NULL`
+    ).bind(now, now, user.id),
+    env.DB.prepare(
+      `UPDATE device_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL`
+    ).bind(now, user.id),
+    env.DB.prepare(`UPDATE link_codes SET used_at = ? WHERE user_id = ? AND used_at IS NULL`).bind(
+      now,
+      user.id
+    ),
     env.DB.prepare(
       `UPDATE users
           SET display_name = ?, token_hash = ?, is_admin = 0, is_banned = 1

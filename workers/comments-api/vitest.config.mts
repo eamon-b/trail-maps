@@ -21,6 +21,7 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             PHOTOS_PUBLIC_BASE: 'https://photos.test',
+            SITE_BASE: 'https://site.test',
           },
           // Local R2 bucket backing the PHOTOS binding (wrangler.toml declares
           // the binding; this provisions its miniflare-local store for tests).

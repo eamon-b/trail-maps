@@ -1,8 +1,10 @@
 import { SELF, env } from 'cloudflare:test';
 import { expect } from 'vitest';
 import type {
+  LinkCodeResponse,
   RegisterDeviceResponse,
 } from '../../../src/lib/comments-api-types';
+import type { PlanDocument, PlanStop } from '../../../src/lib/plan-types';
 
 const BASE = 'https://comments.test';
 
@@ -130,5 +132,99 @@ export async function uploadPhoto(
       'Content-Type': contentType,
     },
     body,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Plans
+// ---------------------------------------------------------------------------
+
+/** A valid `PUT /v1/plans/:id` body (a PlanDocument minus `updatedAt`). */
+export function planBody(
+  id: string,
+  overrides: Partial<Omit<PlanDocument, 'updatedAt'>> = {}
+): Omit<PlanDocument, 'updatedAt'> {
+  return {
+    id,
+    trailId: 'heysen',
+    name: 'Heysen SOBO',
+    direction: 'NOBO',
+    startDate: '2026-04-01',
+    stops: [
+      { km: 12.4, name: 'Mount Lofty', nights: 1, waypointId: 'heysen-camp-01' },
+      { km: 31.9, name: 'Norton Summit', nights: 2, note: 'rang ahead', booked: true },
+    ] as PlanStop[],
+    version: 1,
+    ...overrides,
+  };
+}
+
+/** PUT a plan document under a client-minted id. */
+export async function putPlan(
+  device: Device,
+  id: string,
+  body: unknown
+): Promise<Response> {
+  return SELF.fetch(url(`/v1/plans/${id}`), {
+    method: 'PUT',
+    headers: authHeaders(device),
+    body: JSON.stringify(body),
+  });
+}
+
+/** Convenience: create a valid plan, returning its id + response. */
+export async function createPlan(
+  device: Device,
+  overrides: Partial<Omit<PlanDocument, 'updatedAt'>> = {}
+): Promise<{ id: string; res: Response }> {
+  const id = crypto.randomUUID();
+  const res = await putPlan(device, id, planBody(id, overrides));
+  return { id, res };
+}
+
+/** GET this device's plans (delta when `query` carries `since`). */
+export async function listPlans(device: Device, query = ''): Promise<Response> {
+  return SELF.fetch(url(`/v1/plans${query}`), { headers: authHeaders(device) });
+}
+
+// ---------------------------------------------------------------------------
+// Device linking
+// ---------------------------------------------------------------------------
+
+/** POST /v1/link-codes as the phone. */
+export async function createLinkCode(device: Device): Promise<Response> {
+  return SELF.fetch(url('/v1/link-codes'), {
+    method: 'POST',
+    headers: authHeaders(device),
+    body: JSON.stringify({}),
+  });
+}
+
+/** Mint a link code and return it (asserting the 201). */
+export async function linkCode(device: Device): Promise<LinkCodeResponse> {
+  const res = await createLinkCode(device);
+  expect(res.status).toBe(201);
+  return (await res.json()) as LinkCodeResponse;
+}
+
+/**
+ * A fresh IP per call: the exchange endpoint is capped per IP per hour, and
+ * tests in a file share one database, so a fixed address would make unrelated
+ * tests race each other into a 429.
+ */
+export function freshIp(): string {
+  const n = Math.floor(Math.random() * 0xffff);
+  return `203.0.113.${n % 250}:${n}`;
+}
+
+/** POST /v1/devices/link as an unauthenticated browser. */
+export async function linkDevice(
+  body: { code?: unknown; label?: unknown },
+  ip = freshIp()
+): Promise<Response> {
+  return SELF.fetch(url('/v1/devices/link'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+    body: JSON.stringify(body),
   });
 }

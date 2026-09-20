@@ -6,6 +6,7 @@
 import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { requireAdmin, requireUser } from './auth';
+import { decodeCursor, encodeCursor } from './cursor';
 import { deleteCommentPhotos, parsePhotoUrls } from './photos';
 import {
   assertClientCommentId,
@@ -53,29 +54,6 @@ export interface CommentRow {
   photo_urls_json: string | null;
   /** JSON array of sha-256 hex digests, index-aligned with `photo_urls_json`. */
   photo_hashes_json: string | null;
-}
-
-// ---------------------------------------------------------------------------
-// Keyset cursor helpers — base64("sortValue|id")
-// ---------------------------------------------------------------------------
-
-function encodeCursor(sortValue: string, id: string): string {
-  return btoa(`${sortValue}|${id}`);
-}
-
-function decodeCursor(raw: string | null): { sortValue: string; id: string } | null {
-  if (!raw) return null;
-  let decoded: string;
-  try {
-    decoded = atob(raw);
-  } catch {
-    throw new HttpError(400, 'invalid_cursor', 'cursor is not valid base64');
-  }
-  const sep = decoded.indexOf('|');
-  if (sep === -1) {
-    throw new HttpError(400, 'invalid_cursor', 'malformed cursor');
-  }
-  return { sortValue: decoded.slice(0, sep), id: decoded.slice(sep + 1) };
 }
 
 function toFeedComment(row: CommentRow, displayName: string): FeedComment {

@@ -8,6 +8,8 @@
  * free of anything that would break either the RN bundler or workerd.
  */
 
+import type { PlanDocument } from './plan-types';
+
 /** Structured water report status for a waypoint comment. */
 export type WaterStatus = 'flowing' | 'low' | 'dry';
 
@@ -260,7 +262,122 @@ export interface AdminCommentsResponse {
   comments: AdminComment[];
 }
 
+// ---------------------------------------------------------------------------
+// Plans (day planner) — private per-user documents, synced like comments
+// ---------------------------------------------------------------------------
+
+/**
+ * A live plan as returned by `GET /v1/plans`. The document carries the server
+ * clock in its own `updatedAt`, so a shared or exported copy is self-contained;
+ * the entry repeats it for the delta-sync high-water mark.
+ */
+export interface PlanSyncEntry {
+  id: string;
+  trailId: string;
+  document: PlanDocument;
+  /** Share id if the plan has been shared, else null. */
+  shareId: string | null;
+  updatedAt: string;
+  deleted?: false;
+}
+
+/** A tombstone for a plan deleted since the client's last sync. */
+export interface PlanTombstone {
+  id: string;
+  trailId: string;
+  deleted: true;
+  updatedAt: string;
+}
+
+/** An entry in the plan delta feed: either a live plan or a tombstone. */
+export type PlanSyncEntryUnion = PlanSyncEntry | PlanTombstone;
+
+/** GET /v1/plans?since=&cursor=&limit= response (this user's plans only). */
+export interface PlansSyncResponse {
+  plans: PlanSyncEntryUnion[];
+  /** Keyset cursor for the next ascending page, or null when exhausted. */
+  nextCursor: string | null;
+  /** Server clock at query time; the client persists this as the next `since`. */
+  syncedAt: string;
+}
+
+/**
+ * PUT /v1/plans/:id request body: the whole `PlanDocument` minus `updatedAt`,
+ * which the server stamps. `id` must equal the `:id` path segment.
+ */
+export type PutPlanRequest = Omit<PlanDocument, 'updatedAt'>;
+
+/** PUT /v1/plans/:id response (201 on create, 200 on replace/replay). */
+export type PutPlanResponse = PlanSyncEntry;
+
+/** POST /v1/plans/:id/share response. Idempotent: a re-share replays the id. */
+export interface SharePlanResponse {
+  shareId: string;
+  /** Absolute URL of the public read-only page. */
+  url: string;
+}
+
+/** GET /v1/shared/plans/:shareId response (public, no-store). */
+export interface SharedPlanResponse {
+  document: PlanDocument;
+  trailId: string;
+  ownerDisplayName: string;
+}
+
+// ---------------------------------------------------------------------------
+// Device linking — a browser borrows the phone's identity via a short code
+// ---------------------------------------------------------------------------
+
+/** POST /v1/link-codes response (auth: the phone). */
+export interface LinkCodeResponse {
+  /** 8 chars from an alphabet without 0/O/1/I. Single use. */
+  code: string;
+  expiresAt: string;
+}
+
+/** POST /v1/devices/link request body (no auth: the browser being linked). */
+export interface LinkDeviceRequest {
+  code: string;
+  /** Optional human label for the device list, <= 60 chars. */
+  label?: string | null;
+}
+
+/**
+ * POST /v1/devices/link 201 response — the same shape as device registration,
+ * but the token belongs to the existing account and expires (180 days, rolling
+ * from last use).
+ */
+export interface LinkDeviceResponse {
+  userId: string;
+  token: string;
+  displayName: string;
+  expiresAt: string;
+}
+
+/** One row of `GET /v1/me/devices`. Never carries the token or its full hash. */
+export interface DeviceTokenSummary {
+  /** Opaque handle (the first 12 hex chars of the token hash) for revocation. */
+  id: string;
+  kind: 'primary' | 'linked';
+  label: string | null;
+  createdAt: string;
+  lastSeenAt: string | null;
+  expiresAt: string | null;
+  /** True for the token that authenticated this request. */
+  current: boolean;
+}
+
+/** GET /v1/me/devices response. */
+export interface DevicesResponse {
+  devices: DeviceTokenSummary[];
+}
+
 /** Narrowing helper: is a sync entry a tombstone? */
 export function isSyncTombstone(entry: SyncEntry): entry is SyncTombstone {
   return (entry as SyncTombstone).deleted === true;
+}
+
+/** Narrowing helper: is a plan sync entry a tombstone? */
+export function isPlanTombstone(entry: PlanSyncEntryUnion): entry is PlanTombstone {
+  return (entry as PlanTombstone).deleted === true;
 }

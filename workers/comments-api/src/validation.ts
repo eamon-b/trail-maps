@@ -5,6 +5,9 @@
 
 import { HttpError } from './http';
 import type { ReportReason, WaterStatus } from '../../../src/lib/comments-api-types';
+import { PLAN_LIMITS } from '../../../src/lib/plan-types';
+import type { PlanDocument, PlanStop } from '../../../src/lib/plan-types';
+import type { PlanDirection } from '../../../src/lib/plan-direction';
 
 /**
  * Allowlist of trail ids that may receive comments.
@@ -193,4 +196,203 @@ export function parseLimit(raw: string | null, fallback: number, max: number): n
   const n = Number.parseInt(raw, 10);
   if (Number.isNaN(n) || n < 1) return fallback;
   return Math.min(n, max);
+}
+
+// ---------------------------------------------------------------------------
+// Plans (day planner)
+// ---------------------------------------------------------------------------
+
+const PLAN_DIRECTIONS: readonly PlanDirection[] = ['NOBO', 'SOBO'];
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_STOP_NAME_LEN = 200;
+
+/** Assert `:id` from a plan path is a client-minted UUID v4. */
+export function assertClientPlanId(id: string): void {
+  if (!isUuidV4(id)) {
+    throw new HttpError(400, 'invalid_plan_id', 'Plan id must be a UUID v4');
+  }
+}
+
+/**
+ * A plan's trail must be a bundled trail. An imported trail's `u_…` id is
+ * rejected here rather than stored, so a bug in a client's "is this trail
+ * server-known?" gate can never leak someone's private import to the server.
+ */
+export function validatePlanTrailId(raw: unknown): string {
+  if (typeof raw !== 'string' || !ALLOWED_TRAILS.includes(raw)) {
+    throw new HttpError(
+      400,
+      'trail_not_allowed',
+      'trailId must be one of the bundled trails (imported trails stay on the device)'
+    );
+  }
+  return raw;
+}
+
+function planError(code: string, message: string): HttpError {
+  return new HttpError(400, code, message);
+}
+
+function validatePlanStop(raw: unknown, index: number): PlanStop {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw planError('invalid_stop', `stops[${index}] must be an object`);
+  }
+  const value = raw as Record<string, unknown>;
+
+  const km = value.km;
+  if (typeof km !== 'number' || !Number.isFinite(km) || km < 0) {
+    throw planError('invalid_stop', `stops[${index}].km must be a non-negative number`);
+  }
+
+  const name = value.name;
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    throw planError('invalid_stop', `stops[${index}].name is required`);
+  }
+  if (name.length > MAX_STOP_NAME_LEN) {
+    throw planError('invalid_stop', `stops[${index}].name must be at most ${MAX_STOP_NAME_LEN} characters`);
+  }
+
+  const nights = value.nights;
+  if (
+    typeof nights !== 'number' ||
+    !Number.isInteger(nights) ||
+    nights < 1 ||
+    nights > PLAN_LIMITS.nightsMax
+  ) {
+    throw planError(
+      'invalid_stop',
+      `stops[${index}].nights must be an integer between 1 and ${PLAN_LIMITS.nightsMax}`
+    );
+  }
+
+  const stop: PlanStop = { km, name: name.trim(), nights };
+
+  if (value.waypointId !== undefined && value.waypointId !== null) {
+    stop.waypointId = validateWaypointId(value.waypointId);
+  }
+
+  if (value.note !== undefined && value.note !== null) {
+    if (typeof value.note !== 'string') {
+      throw planError('invalid_stop', `stops[${index}].note must be a string`);
+    }
+    const note = value.note.trim();
+    if (note.length > PLAN_LIMITS.noteMax) {
+      throw planError(
+        'invalid_stop',
+        `stops[${index}].note must be at most ${PLAN_LIMITS.noteMax} characters`
+      );
+    }
+    if (note.length > 0) stop.note = note;
+  }
+
+  if (value.booked !== undefined && value.booked !== null) {
+    if (typeof value.booked !== 'boolean') {
+      throw planError('invalid_stop', `stops[${index}].booked must be a boolean`);
+    }
+    if (value.booked) stop.booked = true;
+  }
+
+  return stop;
+}
+
+/**
+ * Validate a `PUT /v1/plans/:id` body (a `PlanDocument` minus `updatedAt`) and
+ * return the document as it will be stored, stamped with the server clock.
+ *
+ * The whole document is rebuilt field by field rather than passed through, so
+ * nothing a client invents is persisted and the 64 KB ceiling is measured on
+ * exactly the bytes we store.
+ */
+export function validatePlanDocument(
+  body: Record<string, unknown>,
+  pathId: string,
+  updatedAt: string
+): PlanDocument {
+  if (typeof body.id !== 'string' || body.id !== pathId) {
+    throw planError('id_mismatch', 'Body id must equal the id in the path');
+  }
+
+  const trailId = validatePlanTrailId(body.trailId);
+
+  if (typeof body.name !== 'string') {
+    throw planError('invalid_plan_name', 'name must be a string');
+  }
+  const name = body.name.trim();
+  if (name.length > PLAN_LIMITS.nameMax) {
+    throw planError('invalid_plan_name', `name must be at most ${PLAN_LIMITS.nameMax} characters`);
+  }
+
+  if (typeof body.direction !== 'string' || !PLAN_DIRECTIONS.includes(body.direction as PlanDirection)) {
+    throw planError('invalid_direction', "direction must be 'NOBO' or 'SOBO'");
+  }
+  const direction = body.direction as PlanDirection;
+
+  let startDate: string | null = null;
+  if (body.startDate !== undefined && body.startDate !== null) {
+    if (typeof body.startDate !== 'string' || !ISO_DATE_RE.test(body.startDate)) {
+      throw planError('invalid_start_date', 'startDate must be a YYYY-MM-DD date or null');
+    }
+    const parsed = new Date(`${body.startDate}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== body.startDate) {
+      throw planError('invalid_start_date', 'startDate must be a real calendar date');
+    }
+    startDate = body.startDate;
+  }
+
+  if (!Array.isArray(body.stops)) {
+    throw planError('invalid_stops', 'stops must be an array');
+  }
+  if (body.stops.length > PLAN_LIMITS.stopsMax) {
+    throw planError('too_many_stops', `A plan may have at most ${PLAN_LIMITS.stopsMax} stops`);
+  }
+  const stops = body.stops.map((stop, i) => validatePlanStop(stop, i));
+  for (let i = 1; i < stops.length; i++) {
+    if (stops[i].km < stops[i - 1].km) {
+      throw planError('stops_unsorted', 'stops must be sorted by km ascending');
+    }
+  }
+
+  if (body.version !== 1) {
+    throw planError('invalid_plan_version', 'version must be 1');
+  }
+
+  const document: PlanDocument = {
+    id: pathId,
+    trailId,
+    name,
+    direction,
+    startDate,
+    stops,
+    updatedAt,
+    version: 1,
+  };
+
+  if (body.resupplyStops !== undefined && body.resupplyStops !== null) {
+    if (!Array.isArray(body.resupplyStops)) {
+      throw planError('invalid_resupply_stops', 'resupplyStops must be an array of waypoint ids');
+    }
+    if (body.resupplyStops.length > PLAN_LIMITS.stopsMax) {
+      throw planError(
+        'invalid_resupply_stops',
+        `resupplyStops may have at most ${PLAN_LIMITS.stopsMax} entries`
+      );
+    }
+    document.resupplyStops = body.resupplyStops.map((id) => validateWaypointId(id));
+  }
+
+  return document;
+}
+
+/** Serialise a validated document, rejecting anything over the 64 KB ceiling. */
+export function serialisePlanDocument(document: PlanDocument): string {
+  const json = JSON.stringify(document);
+  const bytes = new TextEncoder().encode(json).byteLength;
+  if (bytes > PLAN_LIMITS.documentBytes) {
+    throw new HttpError(
+      413,
+      'plan_too_large',
+      `A plan document must be at most ${PLAN_LIMITS.documentBytes} bytes`
+    );
+  }
+  return json;
 }

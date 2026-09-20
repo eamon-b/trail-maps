@@ -52,8 +52,7 @@ import {
   type WaterGap,
 } from '@lib/plan-types';
 import type { TrailJson } from '../../services/trail-assets';
-import { categoryToken } from '../elevation/waypoint-category';
-import { isAccessWaypoint } from '@lib/waypoint-taxonomy';
+import { overnightCandidates } from '@lib/plan-editor';
 import { routeBreakStarts } from '@lib/route-breaks';
 
 /**
@@ -149,16 +148,20 @@ export interface WaypointOption {
  * (campsite/hut/etc.), in km order. Used only for snapping day boundaries —
  * the guide's own semantic grouping, wider than the resupply/water calculators'
  * narrow type sets.
+ *
+ * The membership rule itself is `@lib/plan-editor`'s `overnightCandidates`, so
+ * the phone's snapper and the shared day planner agree on what a bed is (it
+ * also does the turn-off exclusion: `hut-access` colours as a hut but is a
+ * roadside, and the hut is somewhere off the route).
+ *
+ * `includeTowns: false` keeps *this* caller's behaviour. The shared default
+ * counts a town as an overnight candidate — for a Stops list you tap, a town
+ * is the commonest place to spend a night — but this function's job is to land
+ * a *generated* day boundary on a camp or a hut, and widening it to towns
+ * would silently move boundaries the splitter's tests pin.
  */
 export function overnightWaypoints(trail: TrailJson): WaypointOption[] {
-  return trail.waypoints
-    .filter((wp) => {
-      // A turn-off is a roadside, not a bed. `hut-access` colours as a hut but
-      // must not be offered as a day-end — the hut is somewhere off the route.
-      if (isAccessWaypoint(wp.type)) return false;
-      const token = categoryToken(wp.type);
-      return token === 'waypointCamp' || token === 'waypointShelter';
-    })
+  return overnightCandidates(trail.waypoints, { includeTowns: false })
     .map(toOption)
     .sort((a, b) => a.km - b.km);
 }

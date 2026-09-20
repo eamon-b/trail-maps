@@ -8,7 +8,7 @@
  */
 
 import { clearDirectionPreference, initTrailViewer, setTrailPois } from './trails/trail-viewer';
-import { clearPlanState } from './trails/plan-state';
+import { clearPlanStorage } from './trails/plan-state';
 import { markDuplicatePois } from '@lib/poi-dedup';
 import { dropNoisePois } from '@lib/poi-noise';
 import { handoffFileName, serializeTrailHandoff } from '@lib/trail-handoff';
@@ -437,7 +437,7 @@ function initDeleteButton(trailId: string, name: string): void {
         // id is a content hash of the source GPX, re-importing the very same
         // file lands on it again — so anything left behind here would reappear
         // attached to what the user believes is a brand-new trail.
-        clearPlanState(trailId);
+        clearPlanStorage(trailId);
         clearDirectionPreference(trailId);
         window.location.href = './';
       })

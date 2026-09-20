@@ -338,9 +338,9 @@ describe('a saved selection', () => {
     check('w_5').click();
     flushSave();
 
-    expect(JSON.parse(localStorage.getItem(`trail-plan-${TRAIL_ID}`)!).resupplyStops).toEqual([
-      'w_1', 'w_2', 'w_3',
-    ]);
+    expect(
+      JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)!).resupplyStops,
+    ).toEqual(['w_1', 'w_2', 'w_3']);
 
     await boot();
     expect(countText()).toBe('3 of 5 selected');
@@ -469,27 +469,46 @@ describe('the pace and hours inputs', () => {
     expect(dayHours()).toEqual(['~8.8h', '~9.2h']);
   });
 
-  it('persists both, and reloads a pre-input plan at Average / 8 h', async () => {
+  it('persists both for this browser, outside the synced plan document', async () => {
     await boot(false);
     setPace('fast');
     setDailyHours('10');
     flushSave();
 
-    const saved = JSON.parse(localStorage.getItem(`trail-plan-${TRAIL_ID}`)!);
-    expect(saved.pace).toBe('fast');
-    expect(saved.dailyHours).toBe(10);
+    // Pace and hours are view preferences, not part of the plan: the phone
+    // keeps its own, and a shared plan should not say how fast its author walks.
+    const prefs = JSON.parse(localStorage.getItem(`trail-plan-ui-${TRAIL_ID}`)!);
+    expect(prefs.pace).toBe('fast');
+    expect(prefs.dailyHours).toBe(10);
+    const doc = JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`) ?? 'null');
+    expect(doc?.pace).toBeUndefined();
+    expect(doc?.dailyHours).toBeUndefined();
 
     await boot(false);
     expect(paceSelect().value).toBe('fast');
     expect(hoursInput().value).toBe('10');
 
-    // A plan saved before the inputs existed has neither field.
-    delete saved.pace;
-    delete saved.dailyHours;
-    localStorage.setItem(`trail-plan-${TRAIL_ID}`, JSON.stringify(saved));
+    // A browser that never touched the inputs starts at Average / 8 h.
+    localStorage.removeItem(`trail-plan-ui-${TRAIL_ID}`);
     await boot(false);
     expect(paceSelect().value).toBe('average');
     expect(hoursInput().value).toBe('8');
+  });
+
+  it('carries the pace and hours of a pre-day-planner save across the migration', async () => {
+    localStorage.setItem(
+      `trail-plan-${TRAIL_ID}`,
+      JSON.stringify({ name: 'Old plan', startDate: null, stops: [], pace: 'slow', dailyHours: 6 })
+    );
+    await boot(false);
+    expect(paceSelect().value).toBe('slow');
+    expect(hoursInput().value).toBe('6');
+
+    // The migrated document itself carries neither.
+    const doc = JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)!);
+    expect(doc.name).toBe('Old plan');
+    expect(doc.pace).toBeUndefined();
+    expect(doc.dailyHours).toBeUndefined();
   });
 
   it('ignores an unusable hours entry and clamps the rest into range', async () => {

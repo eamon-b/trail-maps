@@ -2,18 +2,19 @@
   The plan page's markup — the header bar and the three-panel body — in one
   copy.
 
-  Two pages render the same planner: `plan-template.html`, which
+  Three pages render the same planner: `plan-template.html`, which
   `scripts/build-trails.ts` turns into `src/web/trails/<id>/plan.html` for each
-  bundled trail, and `my-plan.html`, the planner for a GPX the user imported.
+  bundled trail, `my-plan.html`, the planner for a GPX the user imported, and
+  `shared-plan.html`, the read-only view of a plan someone shared a link to.
   Everything from `<div id="plan-shell">` to its closing tag lives here, and
   each of those pages carries an `@plan-shell` marker comment on a line of its
   own where it goes. `generatePlanPage` in `scripts/build-trails.ts` inlines
   it into the template (before its own `{{...}}` substitution); the
-  `plan-shell` plugin in `vite.config.ts` inlines it into `my-plan.html` at
-  dev/build time.
+  `plan-shell` plugin in `vite.config.ts` inlines it into `my-plan.html` and
+  `shared-plan.html` at dev/build time.
 
-  The two headers differ in three small ways, and the shell carries two
-  placeholders for them rather than a second copy of the header:
+  The headers differ in a few small ways, and the shell carries two
+  placeholders for them rather than a third copy of the header:
 
     {{PLAN_HEADER_TRAIL}}  the back link and the trail title. A bundled page
                            links to `index.html` and has the name substituted
@@ -22,7 +23,9 @@
                            href are only known once `my-plan.ts` has read the
                            trail out of IndexedDB.
     {{PLAN_HEADER_EXTRA}}  the theme toggle, which only the bundled pages have
-                           (`my-plan.html` loads no `theme.ts`). Empty there.
+                           (`my-plan.html` loads no `theme.ts`). Empty there;
+                           on `shared-plan.html` it is the "Shared by" line and
+                           the two actions a shared plan offers.
 
   Placeholders beat keeping the differing lines in the page files: doing that
   would split `#plan-header` across two files again and put its open and close
@@ -53,7 +56,58 @@
         <span id="direction-label">NOBO</span>
       </button>
       <span id="save-status">Saved</span>
+      <span id="sync-status" hidden></span>
+      <button type="button" id="sync-btn" class="plan-header-btn" hidden>Sync</button>
+      <button type="button" id="share-btn" class="plan-header-btn" hidden>Share</button>
       {{PLAN_HEADER_EXTRA}}
+    </div>
+
+    <!--
+      Linking this browser to the phone's account, and the share link. Both are
+      removed outright by `plan-sync.ts` when the site was built without
+      VITE_API_BASE_URL, so an unconfigured build has no dead controls in it.
+    -->
+    <dialog id="link-dialog" class="link-dialog">
+      <form id="link-form">
+        <h2 class="link-title">Sync this plan</h2>
+        <div id="link-unlinked">
+          <p class="link-help">
+            On your phone open Settings &rarr; Linked browsers &rarr; Link a browser,
+            then enter the code here.
+          </p>
+          <label class="link-field" for="link-code">Code</label>
+          <input type="text" id="link-code" class="link-input" maxlength="11"
+            autocomplete="off" autocapitalize="characters" spellcheck="false"
+            placeholder="XXXXXXXX" />
+          <label class="link-field" for="link-label">Name this browser</label>
+          <input type="text" id="link-label" class="link-input" maxlength="60" />
+          <p id="link-error" class="link-error" hidden></p>
+        </div>
+        <div id="link-linked" hidden>
+          <p class="link-help">
+            Linked as <strong id="link-display-name"></strong>. Changes to this plan
+            sync with your phone.
+          </p>
+          <button type="button" id="link-unlink" class="link-danger">Unlink this browser</button>
+        </div>
+        <div class="link-actions">
+          <button type="button" id="link-cancel" class="plan-header-btn">Close</button>
+          <button type="submit" id="link-submit" class="plan-header-btn is-primary">Link</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="share-panel" class="share-panel" hidden>
+      <p class="share-help">Anyone with this link can read this plan.</p>
+      <div class="share-row">
+        <input type="text" id="share-url" class="link-input" readonly />
+        <button type="button" id="share-copy" class="plan-header-btn">Copy</button>
+      </div>
+      <p id="share-note" class="share-note" hidden></p>
+      <div class="share-row share-row-end">
+        <button type="button" id="share-unshare" class="link-danger">Stop sharing</button>
+        <button type="button" id="share-close" class="plan-header-btn">Close</button>
+      </div>
     </div>
 
     <!-- Three-panel body -->

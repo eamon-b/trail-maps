@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { resolve } from 'path';
 import { readdirSync, existsSync, statSync, readFileSync } from 'fs';
 import { Marked, type Tokens } from 'marked';
-import { IMPORTED_PLAN_FILLS, inlinePlanShell } from './scripts/lib/plan-shell';
+import { IMPORTED_PLAN_FILLS, SHARED_PLAN_FILLS, inlinePlanShell } from './scripts/lib/plan-shell';
 
 // Dynamically find all trail page directories (index.html and climate.html)
 function getTrailInputs(): Record<string, string> {
@@ -70,21 +70,28 @@ function gpxImportDocPlugin(): Plugin {
   };
 }
 
-// Inlines the shared planner markup (src/web/trails/plan-shell.html) into
-// my-plan.html, where an `@plan-shell` marker comment holds its place. The
-// bundled trail pages get the same file from build-trails.ts, so the header
-// and the three panels exist in exactly one copy. Read per transform, not
-// once: in dev, editing the shell should show up on reload.
+// Inlines the shared planner markup (src/web/trails/plan-shell.html) into the
+// two hand-written planner pages — my-plan.html (an imported GPX) and
+// shared-plan.html (a read-only plan someone linked to) — where an
+// `@plan-shell` marker comment holds its place. The bundled trail pages get
+// the same file from build-trails.ts, so the header and the three panels exist
+// in exactly one copy. Read per transform, not once: in dev, editing the shell
+// should show up on reload.
 function planShellPlugin(): Plugin {
   const shellPath = resolve(__dirname, 'src/web/trails/plan-shell.html');
+  const pages: Array<[string, typeof IMPORTED_PLAN_FILLS]> = [
+    ['my-plan.html', IMPORTED_PLAN_FILLS],
+    ['shared-plan.html', SHARED_PLAN_FILLS],
+  ];
 
   return {
     name: 'plan-shell',
     transformIndexHtml: {
       order: 'pre',
       handler(html, ctx) {
-        if (!ctx.filename.endsWith('my-plan.html')) return html;
-        return inlinePlanShell(html, readFileSync(shellPath, 'utf-8'), IMPORTED_PLAN_FILLS);
+        const page = pages.find(([name]) => ctx.filename.endsWith(name));
+        if (!page) return html;
+        return inlinePlanShell(html, readFileSync(shellPath, 'utf-8'), page[1]);
       },
     },
   };
@@ -114,6 +121,8 @@ export default defineConfig({
         'how-import-works': resolve(__dirname, 'src/web/how-import-works.html'),
         'my-trail': resolve(__dirname, 'src/web/my-trail.html'),
         'my-plan': resolve(__dirname, 'src/web/my-plan.html'),
+        // The read-only view of a plan somebody shared a link to (`?s=<id>`).
+        'shared-plan': resolve(__dirname, 'src/web/shared-plan.html'),
         // Dynamically include all generated trail pages
         ...getTrailInputs(),
       },

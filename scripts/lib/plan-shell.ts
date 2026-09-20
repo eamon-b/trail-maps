@@ -1,12 +1,12 @@
 /**
- * One copy of the plan page's markup, shared by both planner pages.
+ * One copy of the plan page's markup, shared by all three planner pages.
  *
  * `src/web/trails/plan-shell.html` holds the `#plan-shell` body (the header
  * bar and the three-panel planner). This module is the only thing that knows
  * how to put it into a page: `scripts/build-trails.ts` uses it for
  * `plan-template.html`, the `plan-shell` plugin in `vite.config.ts` uses it
- * for `my-plan.html`, and the tests that boot either page's markup use it too,
- * so nothing has to repeat the fills.
+ * for `my-plan.html` and `shared-plan.html`, and the tests that boot any of
+ * those pages' markup use it too, so nothing has to repeat the fills.
  *
  * Deliberately free of `fs` and of `__dirname`/`import.meta.url`: this file is
  * loaded from an ESM tsx script, from esbuild's bundle of the Vite config and
@@ -20,7 +20,7 @@ export const PLAN_SHELL_MARKER = '<!-- @plan-shell -->';
 /** Matches the marker on a line of its own, with any indentation. */
 const MARKER_LINE = /^[^\S\n]*<!-- @plan-shell -->[^\S\n]*$/m;
 
-/** The header pieces that differ between the two planner pages. */
+/** The header pieces that differ between the planner pages. */
 export interface PlanShellFills {
   /** Back link + trail title (`{{PLAN_HEADER_TRAIL}}`). */
   headerTrail: string;
@@ -49,6 +49,26 @@ export const IMPORTED_PLAN_FILLS: PlanShellFills = {
     '<a id="back-link" href="./" class="back-link">← Trail</a>\n' +
     '      <span class="trail-title" id="trail-title">Imported trail</span>',
   headerExtra: '',
+};
+
+/**
+ * `shared-plan.html`, the read-only view of someone else's plan.
+ *
+ * The title and the owner's name are filled at runtime by `shared-plan.ts`
+ * once `GET /v1/shared/plans/:id` has answered, so both carry ids and neutral
+ * placeholder text. The two actions a shared plan offers ride in the header's
+ * extra slot: the deep link into the app, and — for a linked browser — a copy
+ * into the reader's own plans. Both start hidden; the boot script shows the
+ * ones that apply.
+ */
+export const SHARED_PLAN_FILLS: PlanShellFills = {
+  headerTrail:
+    '<a id="back-link" href="./" class="back-link">← Trails</a>\n' +
+    '      <span class="trail-title" id="trail-title">Shared plan</span>',
+  headerExtra:
+    '<span id="shared-by" class="shared-by"></span>\n' +
+    '      <a id="open-in-app" class="plan-header-btn" href="#" hidden>Open in Tracknotes</a>\n' +
+    '      <button type="button" id="copy-to-plans" class="plan-header-btn" hidden>Copy to my plans</button>',
 };
 
 /**

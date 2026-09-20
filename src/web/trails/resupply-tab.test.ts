@@ -318,9 +318,9 @@ describe('a saved selection', () => {
     check('w_5').click();
     flushSave();
 
-    expect(JSON.parse(localStorage.getItem(`trail-plan-${TRAIL_ID}`)!).resupplyStops).toEqual([
-      'w_1', 'w_2', 'w_3',
-    ]);
+    expect(
+      JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)!).resupplyStops,
+    ).toEqual(['w_1', 'w_2', 'w_3']);
 
     await boot();
     expect(countText()).toBe('3 of 5 selected');

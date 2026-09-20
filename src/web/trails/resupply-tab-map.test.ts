@@ -4,8 +4,12 @@
  * `resupply-tab.test.ts` runs without Leaflet; this file stubs just enough of
  * it to capture the marker click handlers the viewer installs, so the two
  * meanings of "click a town" can be told apart: on the Days and Stops tabs it
- * adds or removes a camp stop, on the Resupply tab it ticks or unticks the
- * resupply option — the thing that tab highlights on the map.
+ * opens a popup whose button adds or removes a camp stop, on the Resupply tab
+ * it ticks or unticks the resupply option — the thing that tab highlights on
+ * the map.
+ *
+ * The popup content is a real element the viewer builds and wires, so the stub
+ * only has to remember what it was handed.
  */
 
 import fs from 'node:fs';
@@ -33,6 +37,8 @@ interface StubMarker {
   html: string;
   opacity: number;
   handlers: Record<string, () => void>;
+  /** The element passed to `bindPopup`, i.e. what the last click opened. */
+  popup: HTMLElement | null;
 }
 
 let markers: StubMarker[] = [];
@@ -54,21 +60,33 @@ function installLeafletStub(): void {
     polyline: layer,
     divIcon: (opts: { html: string }) => opts,
     marker: (_latLng: unknown, opts: { icon: { html: string } }) => {
-      const marker: StubMarker = { html: opts.icon.html, opacity: 1, handlers: {} };
+      const marker: StubMarker = { html: opts.icon.html, opacity: 1, handlers: {}, popup: null };
       markers.push(marker);
-      return {
+      const handle = {
         on: (event: string, fn: () => void) => void (marker.handlers[event] = fn),
         addTo: () => undefined,
         remove: () => void markers.splice(markers.indexOf(marker), 1),
         setOpacity: (value: number) => void (marker.opacity = value),
+        bindPopup: (content: HTMLElement) => {
+          marker.popup = content;
+          return handle;
+        },
+        openPopup: () => handle,
       };
+      return handle;
     },
   };
   (globalThis as unknown as { L: unknown }).L = L;
 }
 
+/**
+ * The waypoint marker for a place — not the ⛺ flag that is dropped on top of
+ * it once it is a stop, which carries the same `title` and no handlers.
+ */
 const marker = (name: string): StubMarker => {
-  const found = markers.find(m => m.html.includes(`title="${name}"`));
+  const found = markers.find(
+    m => m.html.includes('waypoint-marker') && m.html.includes(`title="${name}"`),
+  );
   if (!found) throw new Error(`no marker for ${name}`);
   return found;
 };
@@ -81,7 +99,16 @@ const tabButton = (tab: string): HTMLButtonElement =>
 
 const savedPlan = (): { stops: unknown[]; resupplyStops?: string[] } => {
   vi.advanceTimersByTime(900);
-  return JSON.parse(localStorage.getItem(`trail-plan-${TRAIL_ID}`) ?? '{"stops":[]}');
+  return JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`) ?? '{"stops":[]}');
+};
+
+/** Click a marker, then press the "Stop here" / "Remove stop" button it opened. */
+const pressPopupButton = (name: string): void => {
+  const found = marker(name);
+  found.handlers.click();
+  const button = found.popup?.querySelector<HTMLButtonElement>('.wp-popup-btn');
+  if (!button) throw new Error(`the popup for ${name} has no stop button`);
+  button.click();
 };
 
 function makeTrail() {
@@ -123,12 +150,31 @@ afterEach(() => {
 });
 
 describe('clicking a waypoint marker', () => {
-  it('toggles a camp stop on the Days tab', async () => {
+  it('opens a popup rather than silently toggling a stop', async () => {
     await boot();
     marker('Alpha').handlers.click();
 
+    const popup = marker('Alpha').popup;
+    expect(popup?.querySelector('.wp-popup-name')?.textContent).toBe('Alpha');
+    expect(popup?.querySelector('.wp-popup-btn')?.textContent?.trim()).toBe('Stop here');
+    // The click itself changed nothing — that is the whole point of the popup.
+    expect(savedPlan().stops).toHaveLength(0);
+  });
+
+  it('toggles a camp stop from the popup button on the Days tab', async () => {
+    await boot();
+    pressPopupButton('Alpha');
+
     expect(savedPlan().stops).toHaveLength(1);
     expect(savedPlan().resupplyStops).toBeUndefined();
+
+    // Re-opened, the popup now offers to take the stop away again.
+    marker('Alpha').handlers.click();
+    expect(marker('Alpha').popup?.querySelector('.wp-popup-btn')?.textContent?.trim()).toBe(
+      'Remove stop',
+    );
+    pressPopupButton('Alpha');
+    expect(savedPlan().stops).toHaveLength(0);
   });
 
   it('toggles the resupply tick on the Resupply tab, not a camp stop', async () => {
@@ -138,6 +184,7 @@ describe('clicking a waypoint marker', () => {
 
     marker('Alpha').handlers.click();
 
+    expect(marker('Alpha').popup).toBeNull();
     expect(check('w_1').checked).toBe(false);
     expect(check('w_2').checked).toBe(true);
     expect(savedPlan().resupplyStops).toEqual(['w_2']);
@@ -158,10 +205,10 @@ describe('clicking a waypoint marker', () => {
     expect(marker('Bravo').opacity).toBe(1);
   });
 
-  it('still toggles a camp stop for a waypoint that is not a resupply option', async () => {
+  it('still offers a camp stop for a waypoint that is not a resupply option', async () => {
     await boot();
     tabButton('resupply').click();
-    marker('Camp One').handlers.click();
+    pressPopupButton('Camp One');
 
     expect(savedPlan().stops).toHaveLength(1);
     expect(check('w_1').checked).toBe(true);

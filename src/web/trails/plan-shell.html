@@ -88,8 +88,14 @@
         <div id="tab-stops" class="tab-panel">
           <div id="stops-search">
             <input type="text" id="stops-filter" placeholder="Filter waypoints…" autocomplete="off" />
+            <label id="stops-show-all-label">
+              <input type="checkbox" id="stops-show-all" />
+              Show all waypoints
+            </label>
           </div>
           <div id="stops-list"></div>
+          <!-- Where the service glyphs come from, or that this trail has none. -->
+          <div id="stops-footer" class="stops-footer"></div>
         </div>
 
         <!-- Resupply tab -->

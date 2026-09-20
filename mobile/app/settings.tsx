@@ -1,6 +1,6 @@
 /**
- * App settings — units, the account section where the comment display name can
- * be renamed (the promise the first-post prompt makes), and About, which
+ * App settings — units, the account sections (rename the comment display name,
+ * link a browser to this account's plans, delete the account), and About, which
  * carries the privacy-policy link the app stores require in-app.
  */
 
@@ -9,6 +9,7 @@ import { useTheme } from '../src/theme';
 import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
 import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
+import { LinkedBrowsersSection } from '../src/features/settings/LinkedBrowsersSection';
 import { DeleteAccountSection } from '../src/features/settings/DeleteAccountSection';
 import { AboutSection } from '../src/features/settings/AboutSection';
 import { useSettingsStore, type Units } from '../src/state/settings-store';
@@ -39,6 +40,9 @@ export default function SettingsScreen() {
       </View>
 
       <DisplayNameSection />
+      {/* Between the name and the delete button: both are about the account,
+          and linking is the one that needs the account to exist first. */}
+      <LinkedBrowsersSection />
       <DeleteAccountSection />
       {/* Last: About is always visible, while the two account sections above
           hide themselves on a device with no identity. */}

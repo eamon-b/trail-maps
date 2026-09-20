@@ -125,6 +125,7 @@ describe('classifyIncomingUrl', () => {
 
   it.each([
     ['a deep link', 'tracknotes://guide/bibbulmun-track'],
+    ['a shared-plan link', 'tracknotes://plan/Ab3xYz'],
     ['a dev-client link', 'tracknotes://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081'],
     ['an https URL', 'https://example.com/trail.gpx'],
     ['a schemeless string', '/storage/emulated/0/walk.gpx'],

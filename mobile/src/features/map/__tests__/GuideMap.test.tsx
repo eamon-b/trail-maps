@@ -133,6 +133,65 @@ afterEach(() => {
   warnSpy.mockRestore();
 });
 
+describe('planned stops', () => {
+  it('rings a waypoint that is a stop of the plan, under its badge', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          plannedStopIds={new Set(['w_1'])}
+        />,
+      );
+    });
+    await flush();
+
+    const ring = nodeById(tree, 'circle', 'guide-waypoints-plan-rings');
+    expect(ring).toBeTruthy();
+    // Hollow: only the stroke is drawn, so the badge under it is untouched.
+    expect((ring.props.style as { circleOpacity: number }).circleOpacity).toBe(0);
+    expect((ring.props.style as { circleStrokeWidth: number }).circleStrokeWidth).toBeGreaterThan(0);
+
+    // Drawn BEFORE the badge circles, so the ring sits beneath the marker.
+    const circleIds = layersOfType(tree, 'circle').map((n) => n.props.id as string);
+    expect(circleIds.indexOf('guide-waypoints-plan-rings')).toBeLessThan(
+      circleIds.indexOf('guide-waypoints-circles'),
+    );
+
+    // The feature itself carries the flag the layer filters on.
+    const source = sourceById(tree, 'guide-waypoints');
+    const feature = (source.props.data as { features: { properties: { plannedStop: boolean } }[] })
+      .features[0];
+    expect(feature.properties.plannedStop).toBe(true);
+  });
+
+  it('mounts no ring layer for a guide with no plan', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+        />,
+      );
+    });
+    await flush();
+
+    expect(nodeById(tree, 'circle', 'guide-waypoints-plan-rings')).toBeUndefined();
+    const source = sourceById(tree, 'guide-waypoints');
+    const feature = (source.props.data as { features: { properties: { plannedStop: boolean } }[] })
+      .features[0];
+    expect(feature.properties.plannedStop).toBe(false);
+  });
+});
+
 describe('GuideMap', () => {
   it('shows a loading state before the style resolves, then mounts the map (online)', async () => {
     getOnline.mockResolvedValue(ONLINE_STYLE);

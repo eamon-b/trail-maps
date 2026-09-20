@@ -32,6 +32,9 @@ import { useDownloadsStore } from '../../state/downloads-store';
 import { useFavoritesStore } from '../../state/favorites-store';
 import { useSettingsStore } from '../../state/settings-store';
 import { useGuide } from '../guide/GuideContext';
+import { selectPlan, usePlansStore } from '../../state/plans-store';
+import { planDirectionOf } from '../plan/plan-stops';
+import { plannedStopFeatureIds } from '../plan/plan-overlay';
 import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { boundsForKmRange, isSameFocus, kmRangeInBounds } from '../guide/guide-focus';
@@ -73,7 +76,7 @@ const TILE_BASE_URL = process.env.EXPO_PUBLIC_TILE_BASE_URL ?? '';
 
 export function MapPane() {
   const { colors } = useTheme();
-  const { trail, trailId } = useGuide();
+  const { trail, trailId, direction } = useGuide();
   // An imported guide has no tile pack of its own; it borrows a bundled one
   // when its track sits inside that trail's coverage (see
   // `services/offline-pack-resolver`). Everything tile-shaped below — the
@@ -123,6 +126,21 @@ export function MapPane() {
 
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
+  // Stops of the hiker's plan get a ring on their marker. The plan stores km
+  // NOBO-absolute while this trail is direction-applied, so the conversion goes
+  // through `plan-overlay` — the same module the elevation profile uses, so the
+  // two panes can never disagree about which hut tonight is.
+  const plan = usePlansStore(selectPlan(trailId));
+  const plannedStopIds = useMemo(
+    () =>
+      plannedStopFeatureIds(
+        plan,
+        trail.waypoints,
+        planDirectionOf(direction),
+        trail.track.totalDistance,
+      ),
+    [plan, trail, direction],
+  );
   const units = useSettingsStore((s) => s.units);
   // Freshness-ranked water verdicts — tint the ring of water markers that have
   // recent reports (see GuideMap's waypointCircleStyle).
@@ -348,6 +366,7 @@ export function MapPane() {
           currentPosition={position}
           accuracy={accuracy}
           favoriteIds={favoriteSet}
+          plannedStopIds={plannedStopIds}
           waterStatusById={waterStatusById}
           onWaypointTap={onWaypointTap}
           onPoiTap={onPoiTap}

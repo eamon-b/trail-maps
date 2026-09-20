@@ -1,11 +1,16 @@
 /**
  * Outbox repository — the durable FIFO queue of pending writes (comment
- * creates, deletes, photo uploads, and moderation reports) that the sync layer
- * drains against the API. `kind='photo'` rows carry
+ * creates, deletes, photo uploads, moderation reports, and day-plan documents)
+ * that the sync layer drains against the API. `kind='photo'` rows carry
  * `{ commentId, localUri, contentType }` and are gated by the drain until their
  * comment row is server-confirmed; `kind='report'` rows carry
- * `{ commentId, reason, detail }` and have no local comment row of their own
- * (see `sync/comment-sync`).
+ * `{ commentId, reason, detail }` and have no local comment row of their own;
+ * `kind='plan'` rows carry the whole `PlanDocument` and `kind='plan-delete'`
+ * rows carry `{ id }` (see `sync/comment-sync`).
+ *
+ * `waypoint_id` is the row's ENTITY KEY, not always a waypoint: a comment write
+ * names the waypoint it is filed against, a plan write names the plan id. It is
+ * what {@link replacePending} matches on, so one column serves both.
  *
  * The outbox holds only un-acknowledged work: a row is removed the moment its
  * write is confirmed. `attempts` / `last_error` drive the retry backoff and the
@@ -16,7 +21,14 @@
 
 import type { SqlDatabase } from './sql-database';
 
-export type OutboxKind = 'comment' | 'delete' | 'photo' | 'report';
+/**
+ * What a queued row is.
+ *
+ * `plan` is a FULL REPLACE of one plan document, so only the newest row for a
+ * plan is worth sending — see {@link replacePending}, which the plan enqueue
+ * path calls first. `plan-delete` tombstones it server-side.
+ */
+export type OutboxKind = 'comment' | 'delete' | 'photo' | 'report' | 'plan' | 'plan-delete';
 export type OutboxStatus = 'pending' | 'sending' | 'failed';
 
 export interface OutboxItem {
@@ -35,6 +47,7 @@ export interface EnqueueInput {
   id: string;
   kind: OutboxKind;
   trailId?: string | null;
+  /** The entity this write is about: a waypoint id, or a plan id for plan rows. */
   waypointId?: string | null;
   /** Serialized request body. */
   payload: unknown;
@@ -139,6 +152,38 @@ export async function markFailed(db: SqlDatabase, id: string, error: string): Pr
 /** Remove an item once its write is confirmed. */
 export async function remove(db: SqlDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM outbox WHERE id = ?', [id]);
+}
+
+/**
+ * Drop every not-in-flight row of `kind` for one entity key, so a freshly
+ * enqueued row supersedes them.
+ *
+ * This is what keeps a burst of plan edits from becoming a burst of PUTs: a
+ * plan write replaces the whole document, so the only row worth sending is the
+ * latest, and an older one would merely re-send a state the newer row already
+ * contains (and burn a request against the server's daily plan-write budget).
+ * Comments are never coalesced this way — each one is its own text.
+ *
+ * `sending` rows are deliberately spared. They are mid-flight against the API;
+ * deleting the row would lose the drain's handle on the response, and the
+ * newer row simply drains after it (FIFO by `created_at`).
+ *
+ * @returns how many rows were dropped.
+ */
+export async function replacePending(
+  db: SqlDatabase,
+  kind: OutboxKind,
+  key: string,
+): Promise<number> {
+  const before = await db.getFirstAsync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM outbox WHERE kind = ? AND waypoint_id = ? AND status != 'sending'",
+    [kind, key],
+  );
+  await db.runAsync(
+    "DELETE FROM outbox WHERE kind = ? AND waypoint_id = ? AND status != 'sending'",
+    [kind, key],
+  );
+  return before?.n ?? 0;
 }
 
 /** Total queued items (for badges / diagnostics). */

@@ -13,6 +13,11 @@
  * prop, tagged `kind: 'poi'` so the profile draws them hollow and the tap lands
  * on their own detail screen. They are appended only once the window is narrow
  * enough for the rings to be readable (see POI_PROFILE_MAX_WINDOW_KM).
+ *
+ * The hiker's plan rides along too, as `stopKms`: one tick per day boundary, in
+ * the active km space (`features/plan/plan-overlay`). Unlike the POI ticks they
+ * are drawn at every zoom — there are at most a few dozen of them, and where
+ * tomorrow ends is exactly the thing a whole-trail view is being consulted for.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,12 +28,15 @@ import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
 import { useFavoritesStore } from '../../state/favorites-store';
+import { selectPlan, usePlansStore } from '../../state/plans-store';
 import { useGuide } from '../guide/GuideContext';
 import { useGuidePaneFocus } from '../guide/GuideFocusContext';
 import { useGuidePositionContext } from '../guide/GuidePositionContext';
 import { isSameFocus } from '../guide/guide-focus';
 import { orderedWaypoints } from '../guide/guide-trail';
 import { useVisiblePois } from '../guide/use-visible-pois';
+import { planDirectionOf } from '../plan/plan-stops';
+import { plannedStopKms } from '../plan/plan-overlay';
 import { useRoutesStore } from '../routes/routes-store';
 import { routeHighlightRanges, type RouteTrackPoint } from '../routes/route-geometry';
 import { ElevationProfile, type ProfileReadout, type ProfileWaypoint } from './ElevationProfile';
@@ -40,7 +48,7 @@ const ZOOM_EPSILON_KM = 0.01;
 
 export function ElevationPane() {
   const { colors } = useTheme();
-  const { trail, trailId } = useGuide();
+  const { trail, trailId, direction } = useGuide();
   const { currentKm } = useGuidePositionContext();
   const units = useSettingsStore((s) => s.units);
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
@@ -65,6 +73,15 @@ export function ElevationPane() {
   // POI ticks: elevation sampled off the track once per (visible POIs, track),
   // not per frame — the sampling is a binary search per POI.
   const poiMarkers = useMemo(() => poiProfileMarkers(pois, points), [pois, points]);
+
+  // The plan's day boundaries as ticks. Stops are stored NOBO-absolute and this
+  // trail is direction-applied, so the conversion goes through the same
+  // `plan-overlay` module the map's stop rings use.
+  const plan = usePlansStore(selectPlan(trailId));
+  const stopKms = useMemo(
+    () => plannedStopKms(plan, planDirectionOf(direction), totalKm),
+    [plan, direction, totalKm],
+  );
 
   // Active custom route → shade its on-trail spans on the profile.
   const activePoints = useRoutesStore((s) => s.activePointsByTrail[trailId]);
@@ -194,6 +211,7 @@ export function ElevationPane() {
           window={window}
           onWindowChange={setWindow}
           highlightRanges={highlightRanges}
+          stopKms={stopKms}
           onWaypointTap={onWaypointTap}
           onScrub={setReadout}
         />

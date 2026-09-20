@@ -5,7 +5,7 @@
  *   - the network transitioning back to connected (expo-network), and
  *   - the app returning to the foreground (AppState).
  * On either edge — and once when the guide opens — it drains the outbox and
- * pulls the active trail's delta. `runSync` is exported (and injectable) so the
+ * pulls the active trail's delta plus this user's day plans. `runSync` is exported (and injectable) so the
  * edge logic is testable without native modules.
  *
  * A user-imported guide has no server side at all (see `services/server-trails`),
@@ -19,18 +19,35 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import * as Network from 'expo-network';
 import { isServerKnown } from '../services/server-trails';
-import { drainOutbox, pullTrail, type DrainResult, type PullResult } from './comment-sync';
+import { drainOutbox, pullPlans, pullTrail, type DrainResult, type PullResult } from './comment-sync';
 
 export interface RunSyncResult {
   drain: DrainResult;
   pull: PullResult | null;
+  /** Null when the plan pull threw before producing an outcome. */
+  plans: PullResult | null;
 }
 
-/** Drain the outbox, then pull the active trail (if any). */
+/**
+ * Drain the outbox, pull the active trail (if any), then pull this user's day
+ * plans.
+ *
+ * Plans ride the same trigger but are a SEPARATE channel — user-scoped, not
+ * trail-scoped — so a failure there must not turn a successful comment pull
+ * into an error. Same reasoning (and same swallowed try/catch) as the curated
+ * descriptions inside `pullTrail`.
+ */
 export async function runSync(trailId: string | null): Promise<RunSyncResult> {
   const drain = await drainOutbox();
   const pull = trailId ? await pullTrail(trailId) : null;
-  return { drain, pull };
+  let plans: PullResult | null = null;
+  try {
+    plans = await pullPlans();
+  } catch {
+    // Keep the comment sync's outcome; the plans mark is unchanged and the
+    // next trigger retries.
+  }
+  return { drain, pull, plans };
 }
 
 /** Whether a network-state change represents a regain (disconnected → up). */

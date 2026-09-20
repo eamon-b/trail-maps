@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { resolve } from 'path';
 import { readdirSync, existsSync, statSync, readFileSync } from 'fs';
 import { Marked, type Tokens } from 'marked';
+import { IMPORTED_PLAN_FILLS, inlinePlanShell } from './scripts/lib/plan-shell';
 
 // Dynamically find all trail page directories (index.html and climate.html)
 function getTrailInputs(): Record<string, string> {
@@ -69,6 +70,26 @@ function gpxImportDocPlugin(): Plugin {
   };
 }
 
+// Inlines the shared planner markup (src/web/trails/plan-shell.html) into
+// my-plan.html, where an `@plan-shell` marker comment holds its place. The
+// bundled trail pages get the same file from build-trails.ts, so the header
+// and the three panels exist in exactly one copy. Read per transform, not
+// once: in dev, editing the shell should show up on reload.
+function planShellPlugin(): Plugin {
+  const shellPath = resolve(__dirname, 'src/web/trails/plan-shell.html');
+
+  return {
+    name: 'plan-shell',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        if (!ctx.filename.endsWith('my-plan.html')) return html;
+        return inlinePlanShell(html, readFileSync(shellPath, 'utf-8'), IMPORTED_PLAN_FILLS);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   root: 'src/web',
   base: './',
@@ -79,7 +100,7 @@ export default defineConfig({
       allow: ['../..'],
     },
   },
-  plugins: [gpxImportDocPlugin()],
+  plugins: [gpxImportDocPlugin(), planShellPlugin()],
   build: {
     outDir: '../../dist',
     emptyOutDir: true,

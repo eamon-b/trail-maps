@@ -25,12 +25,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { closeImportedTrailsDb, getTrail, listTrailSummaries } from './imported-trails-db';
+import {
+  IMPORTED_PLAN_FILLS,
+  PLAN_SHELL_MARKER,
+  inlinePlanShell,
+} from '../../scripts/lib/plan-shell';
 
 const ROOT = path.resolve(__dirname, '../..');
 
 /** Load one of the real pages into the document, with a given query string. */
 function loadPage(file: string, search = ''): void {
-  const html = fs.readFileSync(path.join(ROOT, 'src/web', file), 'utf8');
+  let html = fs.readFileSync(path.join(ROOT, 'src/web', file), 'utf8');
+  // my-plan.html only carries a marker for the shared planner markup; the Vite
+  // plugin inlines it for the browser, so do the same here.
+  if (html.includes(PLAN_SHELL_MARKER)) {
+    const shell = fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-shell.html'), 'utf8');
+    html = inlinePlanShell(html, shell, IMPORTED_PLAN_FILLS);
+  }
   document.documentElement.innerHTML = html
     .replace(/<!DOCTYPE html>/i, '')
     .replace(/<\/?html[^>]*>/gi, '');

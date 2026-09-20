@@ -1,8 +1,8 @@
 # Day planner
 
-Status: planned 2026-09-20 on `claude/day-planner-feature-plan-nhcadj`; nothing implemented yet.
-Decisions taken with Eamon on the same day are marked **[decided]**; questions still open are
-collected at the end.
+Status: planned 2026-09-20 on `claude/day-planner-feature-plan-nhcadj`; the open questions were
+answered the same day and implementation started on that branch. Decisions taken with Eamon are
+marked **[decided]**; the former open questions are recorded as decisions at the end.
 
 ## Why
 
@@ -103,11 +103,22 @@ by anyone you send a link to.
 - **[decided] v1 scope includes** start date and rest days (nights per stop), services at each
   stop from OSM POIs, and a note plus booked flag per stop. **One plan per trail per user**
   (multiple named plans were offered and not chosen).
-- Assumed unless Eamon objects (see open questions): plans for imported trails (`u_` ids) stay
-  local, exactly as comments do; conflicts are last-writer-wins by server `updatedAt`, as for
-  comments; a browser's token lives in `localStorage` but is a separate, revocable, expiring
-  token rather than the phone's; the Stops list defaults to overnight candidates with an "All
-  waypoints" switch.
+- **[decided] Suggest, never generate.** The phone's hours-and-pace splitter survives only as
+  an explicit "Suggest stops" button that fills an *empty* stop list you then edit. It never
+  runs on its own, never on open, never after an edit.
+- **[decided] Rest days are nights at a stop.** "Stay two nights in Salida" is `nights: 2` on
+  that stop; there are no free-floating zero-day entries.
+- **[decided] Services radius is 1 km** along the trail either side of the stop, with no extra
+  cap on `distanceFromTrail`.
+- **[decided] Linked-browser tokens last 180 days**, rolling from `last_seen_at`.
+- **[decided] The share page shows the owner's display name.**
+- **[decided] No silent toggles on the web map.** Clicking a waypoint marker opens a popup with
+  a "Stop here" / "Remove stop" button; the click itself no longer toggles the stop
+  (`plan-viewer.ts:478`). The Resupply-tab marker click keeps its tick behaviour.
+- **[decided]** plans for imported trails (`u_` ids) stay local, exactly as comments do;
+  conflicts are last-writer-wins by server `updatedAt`, as for comments; a browser's token lives
+  in `localStorage` but is a separate, revocable, expiring token rather than the phone's; the
+  Stops list defaults to overnight candidates with an "All waypoints" switch.
 
 ## Data contract — the plan document
 
@@ -276,6 +287,12 @@ both. No behaviour change; diff of `site/` is only whitespace.
   tab footer). A ticked row expands to a nights stepper, a note field and a "Booked" tick.
 - `toggleStop` :1090 becomes a call to the editor and a `scheduleSave`.
 
+### Map
+
+A waypoint marker click opens a Leaflet popup (name, km, services strip) with one button:
+"Stop here" or "Remove stop". The former click-to-toggle at `plan-viewer.ts:478` goes; the
+Resupply-tab behaviour of that click is unchanged.
+
 ### Days tab and datasheet
 
 - Day card gains the date (already) and "+1 rest day at X" when `restDays > 0`; a rest day is
@@ -354,7 +371,8 @@ Files: `mobile/app/guide/[trailId]/plan.tsx`, `mobile/src/features/plan/*`, `db/
   `servicesAtStop` (icons from `features/map` POI category set). Tapping toggles through the
   store. A ticked row expands to nights stepper, note, booked.
 - Inputs card: daily hours and pace stay (they drive ETA text); the generator becomes a
-  "Suggest stops" action that *fills* the list when it is empty, if open question 1 says yes.
+  "Suggest stops" button, enabled only while the stop list is empty, that fills it once. Nothing
+  ever regenerates the list on its own.
 - Summary strip: days, total, average per walking day.
 
 ### Waypoint detail
@@ -421,17 +439,10 @@ RN-safe (no DOM, no Node); `comments-api-types.ts` stays plain types; rebase, ne
 - Exporting a plan as GPX/ICS/PDF.
 - Merging concurrent edits from two devices (last-writer-wins, as for comments).
 
-## Open questions for Eamon
+## Open questions, answered 2026-09-20
 
-1. The phone's generator (hours + pace → snapped stops): drop it entirely, or keep it as an
-   explicit "Suggest stops" button that fills an *empty* stop list you then edit? Assumed: keep
-   it as the button, never automatic.
-2. Services strip radius: 1 km along the trail either side of the stop (assumed), or also a
-   cap on `distanceFromTrail`? A town's shop 3 km off the route is real but not "at" the stop.
-3. Linked-browser token life: 180 days with rolling `last_seen_at` (assumed), or a fixed expiry
-   that forces re-linking?
-4. Rest days as `nights` on a stop (assumed, matches "stay two nights in Salida"), or as
-   separate zero-day entries you can place anywhere?
-5. Share page shows the owner's display name (assumed) — or anonymous?
-6. Does the day list on the web also want the "Stop here" affordance on the map marker popup
-   (today a marker click toggles the stop silently, `plan-viewer.ts:478`)?
+All six were answered as assumed and are now decisions above: the generator stays as an explicit
+"Suggest stops" button and is never automatic; the services radius is 1 km along the trail; a
+linked browser token lives 180 days, rolling; rest days are nights at a stop; the share page
+shows the owner's display name; the web map marker gets a "Stop here" popup and the silent
+toggle is removed.

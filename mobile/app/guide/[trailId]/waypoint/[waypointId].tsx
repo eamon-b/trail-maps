@@ -13,10 +13,12 @@
  * cache already holds every comment for the trail, paging is a widening LIMIT
  * over that cache rather than a network page fetch.
  *
- * A resupply-family waypoint also carries the hiker's own plan: a banner when it
- * is one of their ticked stops, and a toggle to add or drop it. The first tap
- * from an untouched trail makes a plan with every *other* option still ticked —
- * planning one town should not unplan the rest.
+ * A waypoint the trail offers as a resupply option also carries the hiker's own
+ * plan: a banner when it is one of their ticked stops, and a toggle to add or
+ * drop it. The first tap from an untouched trail makes a plan with every other
+ * option still ticked — planning one town should not unplan the rest. A turn-off
+ * planned by the place it serves says so in the banner and offers no toggle:
+ * nothing was ticked here to untick (`useWaypointResupplyPlan`).
  *
  * Two other things ride the same sync channel: a "Report" affordance on other
  * people's synced rows (offline-first, via the outbox — an App Store UGC
@@ -56,7 +58,6 @@ import { accessSummary } from '@lib/resupply-display';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
-import { isResupplyWaypoint } from '@lib/waypoint-taxonomy';
 import { useTheme } from '../../../../src/theme';
 import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../../src/state/settings-store';
@@ -77,15 +78,7 @@ import {
 } from '../../../../src/features/guide/waypoint-detail';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
-import {
-  selectPrefs,
-  usePlanInputsStore,
-} from '../../../../src/features/plan/plan-inputs-store';
-import {
-  resupplyOptionIdsFor,
-  toggleResupplyStop,
-  usePlannedResupplyIds,
-} from '../../../../src/features/plan/use-planned-resupply';
+import { useWaypointResupplyPlan } from '../../../../src/features/plan/use-planned-resupply';
 import { isServerKnown } from '../../../../src/services/server-trails';
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
@@ -138,20 +131,16 @@ export default function WaypointDetailScreen() {
   const toggleFavorite = useFavoritesStore((s) => s.toggle);
 
   // --- Resupply plan -------------------------------------------------------
-  // Only a waypoint with a stable id can be an option (the selection stores
-  // ids), and only a resupply-family type is offered at all.
-  const plannedIds = usePlannedResupplyIds(trailId, trail);
-  const storedStops = usePlanInputsStore(selectPrefs(trailId)).resupplyStops;
-  const setResupplyStops = usePlanInputsStore((s) => s.setResupplyStops);
-  const optionId = waypoint?.id && isResupplyWaypoint(waypoint.type) ? waypoint.id : null;
-  const isPlanned = optionId != null && (plannedIds?.has(optionId) ?? false);
-  const toggleResupply = useCallback(() => {
-    if (!optionId) return;
-    setResupplyStops(
-      trailId,
-      toggleResupplyStop(storedStops, resupplyOptionIdsFor(trail), optionId),
-    );
-  }, [optionId, setResupplyStops, storedStops, trail, trailId]);
+  // One read for both halves: what the banner says, and what a tap does. Only a
+  // waypoint the trail offers as an option gets a toggle at all, and a turn-off
+  // planned by the place it serves gets the banner without one — it was never
+  // ticked, so there is nothing here to untick.
+  const {
+    isPlanned,
+    plannedVia,
+    isSelected,
+    toggle: toggleResupply,
+  } = useWaypointResupplyPlan(trailId, trail, waypoint?.id);
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
@@ -320,7 +309,9 @@ export default function WaypointDetailScreen() {
           {isPlanned && (
             <View style={[styles.plannedBanner, { borderColor: colors.resupplyPlanned }]}>
               <Text style={[styles.plannedBannerText, { color: colors.resupplyPlanned }]}>
-                Planned resupply stop
+                {/* A turn-off is planned by the place it serves, so say which:
+                    that is where the hiker changes it. */}
+                {plannedVia ? `Planned stop for ${plannedVia}` : 'Planned resupply stop'}
               </Text>
             </View>
           )}
@@ -338,11 +329,11 @@ export default function WaypointDetailScreen() {
           ) : null}
         </View>
 
-        {optionId && (
+        {toggleResupply && (
           <Pressable
             onPress={toggleResupply}
             accessibilityRole="button"
-            accessibilityState={{ selected: isPlanned }}
+            accessibilityState={{ selected: isSelected }}
             style={({ pressed }) => [
               styles.planButton,
               { borderColor: colors.resupplyPlanned },
@@ -350,7 +341,7 @@ export default function WaypointDetailScreen() {
             ]}
           >
             <Text style={[styles.planButtonText, { color: colors.resupplyPlanned }]}>
-              {isPlanned ? 'Remove from resupply plan' : 'Plan resupply here'}
+              {isSelected ? 'Remove from resupply plan' : 'Plan resupply here'}
             </Text>
           </Pressable>
         )}

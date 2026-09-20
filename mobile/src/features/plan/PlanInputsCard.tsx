@@ -36,6 +36,21 @@ export interface PlanInputsCardProps {
   onDailyHours: (hours: number) => void;
   onPace: (pace: Pace) => void;
   onResetSection: () => void;
+  /**
+   * Fill an empty plan with the hours-and-pace splitter's stops, once.
+   *
+   * The generator survives only as this button (plans/day-planner.md: "Suggest,
+   * never generate"). Omit the prop and no button renders — which is what the
+   * card's own tests do.
+   */
+  onSuggestStops?: () => void;
+  /**
+   * Whether that button is enabled. False disables it with a line saying why:
+   * suggesting into a plan that already has stops would overwrite hand-picked
+   * work, so the affordance is shown and explained rather than hidden the
+   * moment the first stop is ticked.
+   */
+  canSuggestStops?: boolean;
 }
 
 export function PlanInputsCard(props: PlanInputsCardProps) {
@@ -111,6 +126,31 @@ export function PlanInputsCard(props: PlanInputsCardProps) {
         <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Pace</Text>
         <SegmentedControl options={PACE_OPTIONS} value={pace} onChange={props.onPace} />
       </View>
+
+      {props.onSuggestStops && (
+        <View style={styles.suggestRow}>
+          <Pressable
+            onPress={props.onSuggestStops}
+            disabled={props.canSuggestStops === false}
+            accessibilityRole="button"
+            accessibilityLabel="Suggest stops"
+            accessibilityState={{ disabled: props.canSuggestStops === false }}
+            style={({ pressed }) => [
+              styles.suggestButton,
+              { backgroundColor: colors.accent },
+              pressed && styles.pressed,
+              props.canSuggestStops === false && styles.disabled,
+            ]}
+          >
+            <Text style={[styles.suggestLabel, { color: colors.accentText }]}>Suggest stops</Text>
+          </Pressable>
+          <Text style={[styles.suggestHint, { color: colors.textSecondary }]}>
+            {props.canSuggestStops === false
+              ? 'Clear your stops to suggest a fresh set.'
+              : 'Fills the empty list once, at your hours and pace. Edit it from there.'}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -218,6 +258,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepGlyph: { fontSize: glyphSizes.md, fontWeight: '700' },
+
+  suggestRow: { gap: spacing.xs },
+  suggestButton: {
+    minHeight: touchTarget.min,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  suggestLabel: { ...typography.bodySmall, fontWeight: '700' },
+  suggestHint: { ...typography.caption },
   pressed: { opacity: 0.6 },
   disabled: { opacity: 0.35 },
 });

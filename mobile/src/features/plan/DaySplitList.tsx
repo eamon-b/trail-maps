@@ -1,9 +1,15 @@
 /**
  * Day-split list — one card per computed day. Every number comes from the
  * shared day-calculator (`computeDays` → distance, ascent/descent, est. hours,
- * water-source count). The end indicator is the guide-added snapping, keyed off
- * the day's three-state `endKind`: a real campsite/shelter (`camp`), a wild camp
- * (`wild`), or the section finish (`finish` — a town/hut/trailhead at the end).
+ * water-source count). The end indicator is keyed off the day's `endKind`: a
+ * campsite/shelter (`camp`), any other place the hiker chose to stop (`stop`),
+ * a wild camp the generator invented (`wild`), or the section finish (`finish`
+ * — a town/hut/trailhead at the end).
+ *
+ * With a plan behind it each card also carries the day's date and, when the
+ * hiker is staying more than one night at its end, the rest days that push
+ * every later date along. A rest day is never a card of its own: it is a night
+ * spent at a stop, not a day walked.
  */
 
 import React from 'react';
@@ -23,6 +29,8 @@ function endLabel(day: PlanDay): string {
       return `🏁 ${day.endName}`;
     case 'camp':
       return `⛺ ${day.endName}`;
+    case 'stop':
+      return day.endName;
     default:
       return 'No campsite nearby — wild camp';
   }
@@ -35,6 +43,8 @@ function endColor(day: PlanDay, colors: ThemeColors): string {
       return colors.success;
     case 'camp':
       return colors.waypointCamp;
+    case 'stop':
+      return colors.textPrimary;
     default:
       return colors.textSecondary;
   }
@@ -86,6 +96,10 @@ export function DaySplitList({
             </Text>
           </View>
 
+          {day.date !== undefined && (
+            <Text style={[styles.date, { color: colors.textSecondary }]}>{day.date}</Text>
+          )}
+
           <View style={styles.stats}>
             <Stat label="Distance" value={formatDistance(day.distanceKm, units)} />
             <Stat label="Ascent" value={`↑ ${formatElevation(day.ascentM, units)}`} />
@@ -101,6 +115,12 @@ export function DaySplitList({
               {day.waterSources} water source{day.waterSources === 1 ? '' : 's'}
             </Text>
           </View>
+
+          {day.restDays !== undefined && day.restDays > 0 && (
+            <Text style={[styles.rest, { color: colors.accent }]}>
+              {`+${day.restDays} rest day${day.restDays === 1 ? '' : 's'} at ${day.endName}`}
+            </Text>
+          )}
 
           {day.estimatedHours > allowanceFor(day) && (
             <Text style={[styles.overHint, { color: colors.warning }]}>
@@ -142,6 +162,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   route: { ...typography.titleSmall, flexShrink: 1 },
+  date: { ...typography.caption, fontVariant: ['tabular-nums'] },
+  rest: { ...typography.caption },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   stat: { gap: 2 },
   statLabel: { ...typography.caption },

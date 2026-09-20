@@ -1,13 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 // Fresh v1 schema for Tracknotes. Waypoints and track geometry stay OUT of
 // SQLite — bundled trails ship as JSON assets, and user-imported trails are
 // written as JSON files on disk (`{documentDir}/trails/{id}.json`) with only a
 // lightweight registry row in `imported_trails` (v4). SQLite therefore holds
-// per-guide state, the imported-trail registry, the comment cache, and the
-// offline outbox — never track geometry.
+// per-guide state, the imported-trail registry, the comment cache, plan
+// documents (v5), and the offline outbox — never track geometry.
 const MIGRATIONS: Record<number, string> = {
   1: `
     CREATE TABLE IF NOT EXISTS guides (
@@ -183,6 +183,45 @@ const MIGRATIONS: Record<number, string> = {
     );
 
     UPDATE schema_version SET version = 4;
+  `,
+
+  // Migration 5: the day planner's plan documents (plans/day-planner.md).
+  //
+  // One plan per trail per user, stored as the WHOLE `PlanDocument` JSON rather
+  // than a stops table. The document is the wire shape (`PUT /v1/plans/:id`),
+  // the web `localStorage` value and the share payload all at once, so shredding
+  // it into columns here would mean a lossy re-assembly on every sync and a
+  // migration on every future document field. It is size-capped at 64 KB by the
+  // shared editor, which is what makes a JSON column safe.
+  //
+  // `source` mirrors `comments`: 'local' is an edit this device made that the
+  // outbox has not yet confirmed, 'server' a copy that came back from the API.
+  // `deleted_at` is the tombstone a delete syncs as; the unique index is
+  // therefore PARTIAL — one LIVE plan per trail, while any number of tombstoned
+  // rows may linger for the same trail until they drain.
+  //
+  // `sync_state.plans_synced_at` is the plans high-water mark, kept as another
+  // per-channel column beside `last_synced_at` (comments) and `meta_synced_at`
+  // (descriptions). Plans are user-scoped rather than trail-scoped, so the row
+  // that carries it is the `trail_id = '__plans__'` sentinel (written by the
+  // sync phase) — the precedent of one column per channel is worth more than a
+  // table of its own for a single timestamp.
+  5: `
+    CREATE TABLE IF NOT EXISTS plans (
+      id TEXT PRIMARY KEY NOT NULL,
+      trail_id TEXT NOT NULL,
+      document_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      source TEXT NOT NULL CHECK (source IN ('local', 'server')),
+      deleted_at TEXT
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_trail_live
+      ON plans(trail_id) WHERE deleted_at IS NULL;
+
+    ALTER TABLE sync_state ADD COLUMN plans_synced_at TEXT;
+
+    UPDATE schema_version SET version = 5;
   `,
 };
 

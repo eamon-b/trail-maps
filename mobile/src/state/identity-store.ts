@@ -18,7 +18,9 @@ import {
 } from '../api/auth';
 import { getDatabase } from '../db/database';
 import { purgeLocalAccountData } from '../features/settings/account-deletion';
+import { pullPlans } from '../sync/comment-sync';
 import { emitSyncChange } from '../sync/sync-events';
+import { usePlansStore } from './plans-store';
 
 export type IdentityStatus = 'unknown' | 'anonymous' | 'registered';
 
@@ -55,6 +57,11 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
   register: async (displayName: string) => {
     const session = await registerDevice(displayName);
     set({ session, status: 'registered', authError: false });
+    // Plans are private, so nothing could be pulled before this moment. A phone
+    // that just linked itself to an account which already has plans (the app
+    // reinstalled, or a browser that planned first) should show them without
+    // waiting for the next reconnect edge.
+    void pullPlans().catch(() => undefined);
     return session;
   },
 
@@ -71,6 +78,9 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
     if (userId) {
       const db = await getDatabase();
       await purgeLocalAccountData(db, userId);
+      // The plan cache is in memory and would otherwise outlive the rows the
+      // purge just dropped, re-showing a deleted account's plans until remount.
+      usePlansStore.getState().clearAll();
       // The purge deletes rows out from under any mounted feed or water-status
       // chip; nothing else will emit for it (this device never syncs as that
       // user again), so nudge subscribers to re-read instead of leaving the

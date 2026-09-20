@@ -13,6 +13,13 @@
  *                         independently, so a failure there never fails the
  *                         comment pull.
  *
+ *   pullPlans()         — GET this user's day plans since
+ *                         `sync_state.__plans__.plans_synced_at`, apply them
+ *                         last-writer-wins, apply tombstones, persist the new
+ *                         mark. User-scoped rather than trail-scoped, and
+ *                         authenticated: a device with no identity has no plans
+ *                         to ask for.
+ *
  *   drainOutbox()       — walk the FIFO outbox, PUT/DELETE/POST each item against
  *                         the idempotent write endpoints. On 2xx flip the mirrored
  *                         comment to `source='server'` and drop the outbox row.
@@ -23,6 +30,10 @@
  *                         A `report` item is settled by a 2xx (201 first report,
  *                         200 idempotent repeat) and equally by a 404/410 —
  *                         a comment that no longer exists needs no moderation.
+ *                         A `plan` item is a full-document PUT whose answer
+ *                         re-stamps the local copy with the server clock, with
+ *                         one id adoption on 409 `plan_exists`; a `plan-delete`
+ *                         is settled by a 204 and equally by a 404.
  *
  * Retry backoff is `min(2^attempts * 30s, 1h)` measured from the item's
  * `created_at`; attempts start at 0 (send immediately), and each 4xx failure
@@ -31,20 +42,26 @@
 
 import type {
   PhotoContentType,
+  PlanSyncEntry,
   PutCommentRequest,
   ReportReason,
   WaterStatus,
 } from '@lib/comments-api-types';
-import { isSyncTombstone } from '@lib/comments-api-types';
+import { isPlanTombstone, isSyncTombstone } from '@lib/comments-api-types';
+import { isPlanDocument } from '@lib/plan-editor';
+import type { PlanDocument } from '@lib/plan-types';
 import { getDatabase } from '../db/database';
 import type { SqlDatabase } from '../db/sql-database';
 import * as commentsRepo from '../db/comments-repo';
 import type { CommentSource } from '../db/comments-repo';
 import * as outboxRepo from '../db/outbox-repo';
+import * as plansRepo from '../db/plans-repo';
 import * as waypointMetaRepo from '../db/waypoint-meta-repo';
 import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/client';
 import * as commentsApi from '../api/comments';
+import * as plansApi from '../api/plans';
 import { getSession, type Session } from '../api/auth';
+import { usePlansStore } from '../state/plans-store';
 import { uuidv4 } from '../api/uuid';
 import { isServerKnown } from '../services/server-trails';
 import type { SelectedPhoto } from '../features/comments/photo-upload';
@@ -103,6 +120,12 @@ export interface SyncDeps {
   force?: boolean;
   /** Test seam for reading photo bytes from a local URI. */
   readBytes?: ReadBytes;
+  /**
+   * Nudge the in-memory plan cache for a trail whose plan the pull changed.
+   * Defaults to re-reading it from SQLite through `state/plans-store`; tests
+   * inject a spy so the pull never reaches the real (native) database.
+   */
+  refreshPlan?: (trailId: string) => void;
 }
 
 async function resolveDb(deps: SyncDeps): Promise<SqlDatabase> {
@@ -148,6 +171,66 @@ async function writeSince(db: SqlDatabase, trailId: string, syncedAt: string): P
   );
 }
 
+/**
+ * `sync_state.trail_id` of the row carrying the plans high-water mark.
+ *
+ * Plans are user-scoped, not trail-scoped: one `GET /v1/plans` brings every
+ * trail's plan at once, so there is no trail to key the mark to. The sentinel
+ * keeps the established one-column-per-channel shape (`last_synced_at`,
+ * `meta_synced_at`, `plans_synced_at`) instead of adding a table for a single
+ * timestamp. `__plans__` can never collide with a trail id — bundled ids are
+ * slugs and imported ones are `u_<hash>`.
+ */
+export const PLANS_SYNC_KEY = '__plans__';
+
+async function readPlansSince(db: SqlDatabase): Promise<string | undefined> {
+  const row = await db.getFirstAsync<{ plans_synced_at: string | null }>(
+    'SELECT plans_synced_at FROM sync_state WHERE trail_id = ?',
+    [PLANS_SYNC_KEY],
+  );
+  return row?.plans_synced_at ?? undefined;
+}
+
+async function writePlansSince(db: SqlDatabase, syncedAt: string): Promise<void> {
+  await db.runAsync(
+    `INSERT INTO sync_state (trail_id, plans_synced_at) VALUES (?, ?)
+     ON CONFLICT(trail_id) DO UPDATE SET plans_synced_at = excluded.plans_synced_at`,
+    [PLANS_SYNC_KEY, syncedAt],
+  );
+}
+
+/**
+ * Normalise a live plan entry into the document to store.
+ *
+ * The row's own columns win over whatever the document body says: the server
+ * stamps `updated_at` on the row and mirrors it into the document, and a
+ * document that disagrees (an old build, a hand-edited share payload) would
+ * otherwise poison the last-writer-wins comparison for good.
+ */
+function entryDocument(entry: PlanSyncEntry): PlanDocument | null {
+  const doc = {
+    ...entry.document,
+    id: entry.id,
+    trailId: entry.trailId,
+    updatedAt: entry.updatedAt,
+  };
+  return isPlanDocument(doc) ? doc : null;
+}
+
+function refreshPlanCache(trailId: string, deps: SyncDeps): void {
+  if (deps.refreshPlan) {
+    deps.refreshPlan(trailId);
+    return;
+  }
+  // A mounted Plan screen (or a map drawing stop rings) is reading the cached
+  // document, not SQLite; without this the pull lands silently and shows up
+  // only on the next remount.
+  void usePlansStore
+    .getState()
+    .hydrate(trailId)
+    .catch(() => undefined);
+}
+
 // ---------------------------------------------------------------------------
 // pullTrailMeta — curated waypoint descriptions
 // ---------------------------------------------------------------------------
@@ -184,7 +267,9 @@ export type PullOutcome =
   | 'offline'
   | 'error'
   /** The trail is user-imported: it has no server side, so nothing was pulled. */
-  | 'not-server-trail';
+  | 'not-server-trail'
+  /** Plans only: they are private, so with no device identity there is nothing to pull. */
+  | 'no-identity';
 
 export interface PullResult {
   outcome: PullOutcome;
@@ -263,6 +348,78 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
 }
 
 // ---------------------------------------------------------------------------
+// pullPlans
+// ---------------------------------------------------------------------------
+
+/**
+ * Pull this user's day plans (delta since `sync_state.__plans__.plans_synced_at`)
+ * and mirror them locally.
+ *
+ * Unlike the comment pull this is USER-scoped, not trail-scoped: one request
+ * brings every trail's plan, which is why it is called once per sync rather
+ * than once per open guide, and why a device with no identity simply has
+ * nothing to ask for (`no-identity`, not an error).
+ *
+ * Conflicts are last-writer-wins on `updatedAt`, decided by `plansRepo`: a
+ * local edit still queued in the outbox carries this device's clock and keeps
+ * winning until its PUT lands and the server's stamp comes back. A tombstone
+ * entry deletes locally the same way.
+ */
+export async function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
+  const baseUrl = deps.baseUrl ?? getBaseUrl();
+  if (!baseUrl) return { outcome: 'unconfigured', applied: 0, syncedAt: null };
+
+  const session = await (deps.getSessionFn ?? getSession)();
+  if (!session) return { outcome: 'no-identity', applied: 0, syncedAt: null };
+
+  const db = await resolveDb(deps);
+  const ctx: plansApi.ApiContext = {
+    baseUrl,
+    fetchImpl: deps.fetchImpl,
+    token: session.token,
+  };
+  const since = await readPlansSince(db);
+
+  let result: plansApi.PlansResult;
+  try {
+    result = await plansApi.listPlans(ctx, { since });
+  } catch (e) {
+    if (e instanceof NetworkError) return { outcome: 'offline', applied: 0, syncedAt: null };
+    return { outcome: 'error', applied: 0, syncedAt: null };
+  }
+
+  let applied = 0;
+  const changedTrails = new Set<string>();
+  for (const entry of result.entries) {
+    if (isPlanTombstone(entry)) {
+      await plansRepo.tombstone(db, entry.id, entry.updatedAt);
+      changedTrails.add(entry.trailId);
+      applied += 1;
+      continue;
+    }
+    const doc = entryDocument(entry);
+    if (!doc) {
+      // A document this build cannot read is not worth storing: `plansRepo`
+      // would reject it on the way back out and report the plan as absent.
+      console.warn(`pullPlans: plan ${entry.id} is not a valid PlanDocument — skipped`);
+      continue;
+    }
+    const stored = await plansRepo.upsertServer(db, doc);
+    if (stored) changedTrails.add(doc.trailId);
+    applied += 1;
+  }
+
+  await writePlansSince(db, result.syncedAt);
+
+  for (const trailId of changedTrails) {
+    refreshPlanCache(trailId, deps);
+    emitSyncChange({ trailId });
+  }
+
+  return { outcome: 'pulled', applied, syncedAt: result.syncedAt };
+}
+
+// ---------------------------------------------------------------------------
 // drainOutbox
 // ---------------------------------------------------------------------------
 
@@ -332,8 +489,15 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   // drain finished cleanly or bailed early), nudging any mounted feed to re-read.
   const changedWaypoints = new Set<string>();
   let changedTrail: string | undefined;
-  const noteChange = (item: { trailId: string | null; waypointId: string | null }) => {
-    if (item.waypointId) changedWaypoints.add(item.waypointId);
+  const noteChange = (item: {
+    kind: outboxRepo.OutboxKind;
+    trailId: string | null;
+    waypointId: string | null;
+  }) => {
+    // A plan row's entity key is a plan id, not a waypoint — announcing it as
+    // one would have every mounted comment feed re-query for nothing.
+    const isPlan = item.kind === 'plan' || item.kind === 'plan-delete';
+    if (item.waypointId && !isPlan) changedWaypoints.add(item.waypointId);
     if (item.trailId) changedTrail = item.trailId;
   };
   const finish = (outcome: DrainOutcome): DrainResult => {
@@ -400,6 +564,11 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
             detail: payload.detail,
           });
         }
+      } else if (item.kind === 'plan') {
+        await sendPlan(db, ctx, JSON.parse(item.payloadJson) as PlanDocument);
+      } else if (item.kind === 'plan-delete') {
+        const { id } = JSON.parse(item.payloadJson) as { id: string };
+        await plansApi.deletePlan(ctx, id);
       } else {
         const payload = JSON.parse(item.payloadJson) as PutCommentRequest;
         const server = await commentsApi.putComment(ctx, item.id, payload);
@@ -426,6 +595,14 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
       if (e instanceof ApiError && e.status === 404 && item.kind === 'delete') {
         // Already gone server-side — the delete is a no-op success.
         await commentsRepo.deleteById(db, item.id);
+        await outboxRepo.remove(db, item.id);
+        noteChange(item);
+        sent += 1;
+        continue;
+      }
+      if (e instanceof ApiError && e.status === 404 && item.kind === 'plan-delete') {
+        // The plan is already gone (deleted from another device, or never
+        // reached the server at all) — which is exactly what we asked for.
         await outboxRepo.remove(db, item.id);
         noteChange(item);
         sent += 1;
@@ -464,6 +641,134 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   }
 
   return finish(sent > 0 || failed > 0 ? 'drained' : 'idle');
+}
+
+// ---------------------------------------------------------------------------
+// Plan writes
+// ---------------------------------------------------------------------------
+
+/**
+ * Store the server's answer to a plan PUT, so the local copy carries the SERVER
+ * clock from here on — the only clock last-writer-wins can safely compare
+ * across devices.
+ *
+ * Skipped when the stored document is no longer the one we sent: an edit made
+ * while the PUT was in flight is already queued behind it, and stamping the
+ * older document over it would show yesterday's plan until that write lands.
+ */
+async function applyServerPlan(
+  db: SqlDatabase,
+  sent: PlanDocument,
+  entry: PlanSyncEntry,
+): Promise<void> {
+  const stored = await plansRepo.getById(db, sent.id);
+  if (stored && stored.document.updatedAt !== sent.updatedAt) return;
+  const doc = entryDocument(entry);
+  if (!doc) return;
+  await plansRepo.upsertServer(db, doc);
+}
+
+/**
+ * PUT one plan document, adopting the server's id if it says this trail already
+ * has a plan under a different one.
+ *
+ * `plan_exists` is what two devices that each minted a document for the same
+ * trail look like (the trail's plan is created lazily by the first edit, so an
+ * offline phone and a linked browser can both mint one). The server names the
+ * id it is keeping; adopting it locally and re-sending immediately is the whole
+ * reconciliation — and it is deliberately ONE retry, so a server that keeps
+ * answering `plan_exists` marks the item failed through the generic 4xx path
+ * rather than looping.
+ */
+async function sendPlan(
+  db: SqlDatabase,
+  ctx: plansApi.ApiContext,
+  doc: PlanDocument,
+): Promise<void> {
+  try {
+    const entry = await plansApi.putPlan(ctx, doc);
+    await applyServerPlan(db, doc, entry);
+    return;
+  } catch (e) {
+    const existingId = plansApi.planExistsId(e);
+    if (!existingId || existingId === doc.id) throw e;
+    // The local row is re-keyed first: `upsertLocal` drops the other live row
+    // for the trail, so the adopted id is the only plan this device holds even
+    // if the retry below never reaches the server.
+    const adopted: PlanDocument = { ...doc, id: existingId };
+    await plansRepo.upsertLocal(db, adopted);
+    const entry = await plansApi.putPlan(ctx, adopted);
+    await applyServerPlan(db, adopted, entry);
+  }
+}
+
+/**
+ * Queue a plan document for `PUT /v1/plans/:id`, superseding any queued-but-not
+ * -yet-sent write for the same plan.
+ *
+ * The queue is the durability boundary: the row is written before anything
+ * touches the network, so an app killed between an edit and its request still
+ * sends it on the next launch. {@link assertServerTrail} is the same gate the
+ * comment writes use — an imported trail's plan lives in SQLite and nowhere
+ * else, and reaching here with one is a bug, not a case to swallow.
+ */
+export async function enqueuePlan(
+  trailId: string,
+  doc: PlanDocument,
+  deps: SyncDeps = {},
+): Promise<void> {
+  assertServerTrail(trailId);
+  const db = await resolveDb(deps);
+  await outboxRepo.replacePending(db, 'plan', doc.id);
+  await outboxRepo.enqueue(db, {
+    id: uuidv4(),
+    kind: 'plan',
+    trailId,
+    // The entity key for a plan row — what `replacePending` coalesces on.
+    waypointId: doc.id,
+    payload: doc,
+    // Always an explicit ISO instant. The column's default is SQLite's
+    // `datetime('now')`, whose `YYYY-MM-DD HH:MM:SS` has no zone, and
+    // `isDrainable` parses it as LOCAL time — east of UTC that puts a
+    // just-queued row hours in the "future" and holds the write back.
+    createdAt: new Date((deps.now ?? Date.now)()).toISOString(),
+  });
+}
+
+/** Queue a plan write and try to send it now. Returns the drain's outcome. */
+export async function submitPlan(
+  trailId: string,
+  doc: PlanDocument,
+  deps: SyncDeps = {},
+): Promise<DrainResult> {
+  const db = await resolveDb(deps);
+  await enqueuePlan(trailId, doc, { ...deps, db });
+  return drainOutbox({ ...deps, db });
+}
+
+/**
+ * Queue a plan tombstone. The local row is tombstoned by the caller (the repo),
+ * so this is only the server half.
+ */
+export async function submitPlanDelete(
+  trailId: string,
+  planId: string,
+  deps: SyncDeps = {},
+): Promise<DrainResult> {
+  assertServerTrail(trailId);
+  const db = await resolveDb(deps);
+  // A queued write for a plan being deleted is pointless work, and sending it
+  // after the delete would resurrect the plan (PUT undeletes).
+  await outboxRepo.replacePending(db, 'plan', planId);
+  await outboxRepo.enqueue(db, {
+    id: uuidv4(),
+    kind: 'plan-delete',
+    trailId,
+    waypointId: planId,
+    payload: { id: planId },
+    createdAt: new Date((deps.now ?? Date.now)()).toISOString(),
+  });
+  return drainOutbox({ ...deps, db });
 }
 
 // ---------------------------------------------------------------------------

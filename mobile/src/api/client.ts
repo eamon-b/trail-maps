@@ -22,12 +22,23 @@ import type { ApiError as ApiErrorBody } from '@lib/comments-api-types';
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /**
+   * The decoded response body, when there was one.
+   *
+   * The error envelope itself is already unpacked into `code`/`message`; this
+   * keeps the fields that ride ALONGSIDE it, which some 409s need to be
+   * recoverable rather than merely reportable — `PUT /v1/plans/:id` answers
+   * `plan_exists` with the `existingId` the client is meant to adopt, and
+   * dropping it would strand the plan (see `api/plans.planExistsId`).
+   */
+  readonly body?: unknown;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, body?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.body = body;
   }
 }
 
@@ -109,7 +120,7 @@ async function decodeResponse<T>(response: ResponseLike): Promise<T> {
     const errBody = parsed as ApiErrorBody | undefined;
     const code = errBody?.error?.code ?? 'http_error';
     const message = errBody?.error?.message ?? response.statusText ?? 'Request failed';
-    throw new ApiError(response.status, code, message);
+    throw new ApiError(response.status, code, message, parsed);
   }
 
   return parsed as T;

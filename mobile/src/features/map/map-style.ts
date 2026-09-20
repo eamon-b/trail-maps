@@ -241,6 +241,27 @@ export function mapInk(theme: MapTheme): MapInk {
 }
 
 /**
+ * Ring drawn around a waypoint marker that is a stop of the hiker's plan.
+ *
+ * A hue of its own, kept clear of the track budget (red main, violet
+ * alternates, teal side trips, amber custom route, blue GPS) and of the
+ * favorite ring: a night booked at a hut is not the same statement as a starred
+ * waypoint, and on a map showing both the two must not be mistaken for each
+ * other. Green reads as "chosen" and appears nowhere else in the overlay.
+ *
+ * Same hue in both themes, lifted on dark exactly as the track palette is.
+ */
+const PLAN_STOP_RING = {
+  light: '#1B7F3B',
+  dark: '#4ADE80',
+} as const;
+
+/** Colour of the plan-stop ring for a map theme. */
+export function planStopRing(theme: MapTheme): string {
+  return PLAN_STOP_RING[theme];
+}
+
+/**
  * Dash patterns, in multiples of each layer's own line width (MapLibre's unit).
  * Colour alone should never be the only signal, so the classes also differ in
  * stroke: the main track is solid, alternates are long-dashed, side trips are

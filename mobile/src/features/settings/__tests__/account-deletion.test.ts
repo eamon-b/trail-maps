@@ -78,6 +78,42 @@ describe('purgeLocalAccountData', () => {
     expect(await ids('outbox')).toEqual([]);
   });
 
+  it('takes the account’s day plans and their sync mark with it', async () => {
+    await db.runAsync(
+      `INSERT INTO plans (id, trail_id, document_json, updated_at, source)
+       VALUES ('p-1', 'larapinta', '{}', '2026-09-01T00:00:00Z', 'local')`,
+    );
+    await db.runAsync(
+      `INSERT INTO plans (id, trail_id, document_json, updated_at, source, deleted_at)
+       VALUES ('p-2', 'aawt', '{}', '2026-09-01T00:00:00Z', 'server', '2026-09-02T00:00:00Z')`,
+    );
+    await db.runAsync(
+      `INSERT INTO sync_state (trail_id, plans_synced_at) VALUES ('__plans__', 'T1')`,
+    );
+
+    await purgeLocalAccountData(db as unknown as SqlDatabase, ME);
+
+    // Tombstones go too: there is no account left to sync them to.
+    expect(await ids('plans')).toEqual([]);
+    expect(
+      await db.getAllAsync("SELECT * FROM sync_state WHERE trail_id = '__plans__'"),
+    ).toHaveLength(0);
+  });
+
+  it('leaves another trail’s comment cursor alone while clearing the plans mark', async () => {
+    await db.runAsync(
+      `INSERT INTO sync_state (trail_id, last_synced_at) VALUES ('larapinta', 'T9')`,
+    );
+    await db.runAsync(
+      `INSERT INTO sync_state (trail_id, plans_synced_at) VALUES ('__plans__', 'T1')`,
+    );
+
+    await purgeLocalAccountData(db as unknown as SqlDatabase, ME);
+
+    const rows = await db.getAllAsync<{ trail_id: string }>('SELECT trail_id FROM sync_state');
+    expect(rows.map((r) => r.trail_id)).toEqual(['larapinta']);
+  });
+
   it('leaves device-local content that was never on the server', async () => {
     await db.runAsync(
       `INSERT INTO favorites (trail_id, waypoint_id) VALUES ('larapinta', 'wp-1')`,

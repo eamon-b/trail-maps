@@ -139,9 +139,9 @@ export async function upsertLocal(db: SqlDatabase, doc: PlanDocument): Promise<v
 /**
  * Store a copy that came from the server, last-writer-wins.
  *
- * TODO(day-planner 4b): this is what `pullPlans` in `sync/comment-sync.ts`
- * feeds, one document per entry of `GET /v1/plans?since=`; a tombstone entry
- * calls `tombstone` instead. Nothing calls it yet.
+ * Fed by `pullPlans` in `sync/comment-sync.ts`, one document per entry of
+ * `GET /v1/plans?since=` (a tombstone entry calls `tombstone` instead), and by
+ * the drain when a `PUT` comes back with the server's own clock on it.
  *
  * Applied only when nothing is stored for this plan (by id, else the trail's
  * live row) or the incoming `updatedAt` is strictly newer. A stored tombstone
@@ -194,11 +194,8 @@ export async function deleteForTrail(db: SqlDatabase, trailId: string): Promise<
 /**
  * Drop every plan. Account deletion only — the local copies belong to the
  * account being erased, so they go with it rather than lingering to re-sync
- * under a new identity.
- *
- * TODO(day-planner 4b): call this from `features/settings/account-deletion.ts`
- * `purgeLocalAccountData`, beside the comments/outbox/favorites deletes. Until
- * then a deleted account leaves its plans on the device.
+ * under a new identity. Called by `features/settings/account-deletion.ts`
+ * `purgeLocalAccountData`, which also clears the `__plans__` sync mark.
  */
 export async function purgeAll(db: SqlDatabase): Promise<void> {
   await db.runAsync('DELETE FROM plans');

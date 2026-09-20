@@ -86,6 +86,32 @@ describe('DaySplitList', () => {
     expect(allText(render([interior], 16))).toContain('+3.5 h over target');
   });
 
+  it('shows the date when the plan has a start date', () => {
+    const tree = render([day({ date: '2026-10-01' }), day({ dayNumber: 2, date: '2026-10-02' })], 8);
+    const text = allText(tree);
+    expect(text).toContain('2026-10-01');
+    expect(text).toContain('2026-10-02');
+    // No start date, no date line.
+    expect(allText(render([day({})], 8))).not.toContain('2026-');
+  });
+
+  it('calls out the rest days taken at a day\u2019s end stop', () => {
+    expect(allText(render([day({ endName: 'Salida', restDays: 1 })], 8))).toContain(
+      '+1 rest day at Salida',
+    );
+    expect(allText(render([day({ endName: 'Salida', restDays: 3 })], 8))).toContain(
+      '+3 rest days at Salida',
+    );
+    expect(allText(render([day({ restDays: 0 })], 8))).not.toContain('rest day');
+  });
+
+  it('renders a hand-picked stop plainly — no campsite claim, no wild camp', () => {
+    const text = allText(render([day({ endKind: 'stop', endName: 'Ghost Town', snappedToCamp: false })], 8));
+    expect(text).toContain('Ghost Town');
+    expect(text).not.toContain('⛺');
+    expect(text).not.toContain('wild camp');
+  });
+
   it('renders the empty state for no days', () => {
     const tree = render([], 8);
     expect(allText(tree)).toContain('Choose a section');

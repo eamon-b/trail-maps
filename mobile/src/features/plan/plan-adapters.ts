@@ -90,12 +90,17 @@ export interface PlanInputs {
 
 /**
  * How a day's end boundary was resolved:
- *  - `camp`   — snapped to a real campsite/shelter waypoint (interior day).
- *  - `wild`   — no camp in range; a wild camp at the naive target km.
+ *  - `camp`   — a real campsite/shelter waypoint (interior day).
+ *  - `stop`   — a stop the hiker chose that is NOT a camp or hut: a town, a
+ *    road crossing, a river. Only the day planner produces these; the
+ *    generator below never does, since it only ever snaps to camps.
+ *  - `wild`   — no camp in range; a wild camp at the naive target km. The
+ *    generator's fallback; a hand-picked plan has no such thing, because every
+ *    stop in it is a place.
  *  - `finish` — the section end itself (the last day). Neither camp nor wild:
  *    it lands on whatever the section ends at (town, hut, trailhead, …).
  */
-export type DayEndKind = 'camp' | 'wild' | 'finish';
+export type DayEndKind = 'camp' | 'stop' | 'wild' | 'finish';
 
 /** A day card: the calculator's ComputedDay plus how its end boundary resolved. */
 export interface PlanDay extends ComputedDay {
@@ -351,16 +356,59 @@ export function computePlan(trail: TrailJson, inputs: PlanInputs): PlanResult {
   const sectionKm = section.endKm - section.startKm;
   const effectiveDailyKm = days.length > 0 ? sectionKm / days.length : baseKmh * inputs.dailyHours;
 
+  return {
+    section,
+    targetHours: targetH,
+    effectiveDailyKm,
+    days,
+    ...computePlanExtras(trail, section, {
+      dailyHours: targetH,
+      baseKmh,
+      days,
+      resupplyStops: inputs.resupplyStops,
+    }),
+  };
+}
+
+/** The parts of a plan that do not come from WHERE the day boundaries fall. */
+export type PlanExtras = Pick<
+  PlanResult,
+  'resupplyGroups' | 'resupplyStops' | 'resupplyLegs' | 'resupplySummary' | 'water' | 'topWaterCarries'
+>;
+
+/** What the resupply legs need beyond the section: the hiker's pace, hours, days and ticks. */
+export interface PlanExtrasInputs {
+  dailyHours: number;
+  baseKmh: number;
+  /** The day boundaries the legs report arrival days against. */
+  days: ComputedDay[];
+  /** The ticked resupply option ids; `undefined` resolves to every option. */
+  resupplyStops?: readonly string[];
+}
+
+/**
+ * Resupply legs and water carries for a section.
+ *
+ * Split out of `computePlan` because the day planner does not generate days at
+ * all — its splits come from the stops the hiker ticked (`computePlanDays`) —
+ * but it still wants these two cards, and running the generator to get them
+ * would be exactly the automatic split the planner exists to remove.
+ */
+export function computePlanExtras(
+  trail: TrailJson,
+  section: SectionConfig,
+  inputs: PlanExtrasInputs,
+): PlanExtras {
   // The option list is trail-wide — the hiker sections later, and the choice is
   // about the trail, not this section. Only the legs are section-scoped, which
   // the calculator does itself.
   const resupplyGroups = listResupplyOptions(trail.waypoints);
   const resupplyStops = resolveResupplyStops(resupplyGroups, inputs.resupplyStops);
-  const resupplyLegs = computeResupplyLegs(planTrail, resupplyStops, {
-    dailyHours: targetH,
-    baseKmh,
+  const resupplyLegs = computeResupplyLegs(trail as unknown as PlanTrail, resupplyStops, {
+    dailyHours: inputs.dailyHours,
+    baseKmh: inputs.baseKmh,
     section,
-    days,
+    days: inputs.days,
   });
   const resupplySummary = summariseResupplyLegs(resupplyLegs);
 
@@ -372,18 +420,7 @@ export function computePlan(trail: TrailJson, inputs: PlanInputs): PlanResult {
   );
   const topWaterCarries = [...water.gaps].sort((a, b) => b.distanceKm - a.distanceKm).slice(0, 5);
 
-  return {
-    section,
-    targetHours: targetH,
-    effectiveDailyKm,
-    days,
-    resupplyGroups,
-    resupplyStops,
-    resupplyLegs,
-    resupplySummary,
-    water,
-    topWaterCarries,
-  };
+  return { resupplyGroups, resupplyStops, resupplyLegs, resupplySummary, water, topWaterCarries };
 }
 
 /** Resolve a display name for an exact km (a waypoint at that km, else null). */

@@ -1,0 +1,66 @@
+appId: com.tracknotes.app
+---
+# Plan stops — the day planner's core loop: tap places on the Stops list and
+# watch the day cards split. Opens a guide, opens the planner, ticks the first
+# two places offered, and checks a second day card appeared.
+#
+# Asserts on the section headings, the day-card numbers, and two campsite names
+# that have been in the bundled Cape to Cape data since it landed. It does not
+# assert on distances or day-card footers, which move with the calculators.
+- runFlow: shared/launch-dev.yaml
+
+# From the guide list, open the smallest/fastest trail.
+- tapOn: "Cape to Cape Track"
+
+# Wait for the guide three-pane shell (Map | Elevation | List) to load.
+- extendedWaitUntil:
+    visible: "Elevation"
+    timeout: 30000
+
+# Open the planner from the header action (icon-only — selected by its
+# accessibilityLabel "Plan").
+- tapOn: "Plan"
+
+- extendedWaitUntil:
+    visible: "Daily hours"
+    timeout: 15000
+
+# An untouched plan is one day: start to finish.
+- assertVisible: "Day 1"
+- assertNotVisible: "Day 2"
+
+# Scroll to the Stops list and tick the first two places offered.
+- scrollUntilVisible:
+    element:
+      text: "Stops"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "Tap a place to make it a stop. Tap it again to take it out."
+
+# Tick two of the places offered. Each row's accessibility label is the
+# waypoint's name; these two are the first campsites on the Cape to Cape
+# (km 15.8 and km 45.1) and have been in the bundled data since it landed.
+- tapOn: "Deepdene Campsite"
+- tapOn: "Contos Campsite"
+
+# Two stops -> three walking days; scroll back up to the day cards to see them.
+- scrollUntilVisible:
+    element:
+      text: "Day splits"
+    direction: UP
+    timeout: 20000
+- assertVisible: "Day 2"
+- assertVisible: "Day 3"
+
+# Suggesting stops is off once the list has some.
+- scrollUntilVisible:
+    element:
+      text: "Clear your stops to suggest a fresh set."
+    direction: UP
+    timeout: 20000
+
+# Back returns to the guide shell.
+- pressKey: back
+- extendedWaitUntil:
+    visible: "Elevation"
+    timeout: 15000

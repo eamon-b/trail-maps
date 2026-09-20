@@ -76,9 +76,19 @@ import {
   relativeDate,
   waterStatusMeta,
 } from '../../../../src/features/guide/waypoint-detail';
+import { findStop, setNights, setStopBooked, setStopNote, toggleStop } from '@lib/plan-editor';
+import type { PlanDocument } from '@lib/plan-types';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
 import { useWaypointResupplyPlan } from '../../../../src/features/plan/use-planned-resupply';
+import { selectPlan, usePlansStore } from '../../../../src/state/plans-store';
+import { StopEditor } from '../../../../src/features/plan/StopEditor';
+import {
+  planDirectionOf,
+  stopCandidateOf,
+  stopKeyOf,
+  toggleTargetOf,
+} from '../../../../src/features/plan/plan-stops';
 import { isServerKnown } from '../../../../src/services/server-trails';
 import { getDatabase } from '../../../../src/db/database';
 import * as commentsRepo from '../../../../src/db/comments-repo';
@@ -105,7 +115,7 @@ export default function WaypointDetailScreen() {
     waypointId: string;
   }>();
   const { colors } = useTheme();
-  const { trail } = useGuide();
+  const { trail, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const { currentKm, position, status } = useGuidePositionContext();
   const shareCheckIn = useCheckInShare();
@@ -141,6 +151,36 @@ export default function WaypointDetailScreen() {
     isSelected,
     toggle: toggleResupply,
   } = useWaypointResupplyPlan(trailId, trail, waypoint?.id);
+
+  // The plan's view of THIS waypoint. The guide trail is direction-applied and
+  // a stop is stored NOBO-absolute, so the conversion goes through the same
+  // helper the Plan screen's list uses (`plan-stops`) — deriving it here a
+  // second time is how the two screens would come to disagree about which stop
+  // a tap means.
+  const plan = usePlansStore(selectPlan(trailId));
+  const hydratePlan = usePlansStore((s) => s.hydrate);
+  const applyPlanEdit = usePlansStore((s) => s.apply);
+  useEffect(() => {
+    void hydratePlan(trailId);
+  }, [hydratePlan, trailId]);
+
+  const stopCandidate = useMemo(
+    () =>
+      waypoint
+        ? stopCandidateOf(waypoint, planDirectionOf(direction), trail.track.totalDistance)
+        : null,
+    [waypoint, direction, trail.track.totalDistance],
+  );
+  const planStop = plan && stopCandidate ? findStop(plan, stopKeyOf(stopCandidate)) : undefined;
+  const editPlan = useCallback(
+    (fn: (p: PlanDocument) => PlanDocument) => {
+      void applyPlanEdit(trailId, fn, {
+        name: trail.config.name,
+        direction: planDirectionOf(direction),
+      });
+    },
+    [applyPlanEdit, direction, trail.config.name, trailId],
+  );
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
@@ -299,6 +339,12 @@ export default function WaypointDetailScreen() {
                   });
                 }}
               />
+              {stopCandidate && (
+                <StopHereToggle
+                  isStop={planStop !== undefined}
+                  onPress={() => editPlan((p) => toggleStop(p, toggleTargetOf(stopCandidate)))}
+                />
+              )}
               <FavoriteHeart
                 filled={isFav}
                 onPress={() => void toggleFavorite(trailId, waypointId)}
@@ -359,6 +405,23 @@ export default function WaypointDetailScreen() {
             />
           )}
         </View>
+
+        {/* A stop of the plan: nights here (two is a rest day), a note, and the
+            hand-ticked "booked". Same controls as the Plan screen's Stops
+            list — one component, so "2 nights" means the same in both. */}
+        {planStop && stopCandidate && (
+          <View style={[styles.stopCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.stopTitle, { color: colors.textPrimary }]}>Stop on your plan</Text>
+            <StopEditor
+              stop={planStop}
+              onNights={(nights) => editPlan((p) => setNights(p, stopKeyOf(stopCandidate), nights))}
+              onNote={(note) => editPlan((p) => setStopNote(p, stopKeyOf(stopCandidate), note))}
+              onBooked={(booked) =>
+                editPlan((p) => setStopBooked(p, stopKeyOf(stopCandidate), booked))
+              }
+            />
+          </View>
+        )}
 
         {/* The OSM records this waypoint's place duplicates — hidden everywhere
             else in the app, surfaced here for the fields OSM has and the
@@ -626,6 +689,37 @@ function PhotoViewer({ uri, onClose }: { uri: string | null; onClose: () => void
 }
 
 // ---------------------------------------------------------------------------
+// Plan stop toggle
+// ---------------------------------------------------------------------------
+
+/**
+ * "Stop here" / "Remove stop", beside the heart.
+ *
+ * A glyph rather than a labelled button because it sits in a three-icon row in
+ * the hero; the words live on the accessibility label, which is also what a
+ * Maestro flow taps.
+ */
+function StopHereToggle({ isStop, onPress }: { isStop: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={isStop ? 'Remove stop' : 'Stop here'}
+      accessibilityState={{ selected: isStop }}
+      hitSlop={spacing.sm}
+      style={({ pressed }) => [styles.heart, pressed && styles.pressed]}
+    >
+      <Text
+        style={[styles.heartIcon, { color: isStop ? colors.waypointCamp : colors.textSecondary }]}
+      >
+        ⛺
+      </Text>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Favorite heart
 // ---------------------------------------------------------------------------
 
@@ -846,6 +940,13 @@ const styles = StyleSheet.create({
   hero: { gap: spacing.sm },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  stopCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  stopTitle: { ...typography.titleSmall },
   typeChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

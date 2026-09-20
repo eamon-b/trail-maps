@@ -30,7 +30,9 @@ import {
   upsertImportedTrail,
   type ImportedTrail,
 } from '../db/imported-trails-repo';
+import * as plansRepo from '../db/plans-repo';
 import { usePlanInputsStore } from '../features/plan/plan-inputs-store';
+import { usePlansStore } from '../state/plans-store';
 import type { TrailJson } from './trail-assets';
 
 /** Root directory for imported trail JSON: {documentDir}/trails/ */
@@ -134,7 +136,11 @@ export async function readImportedTrail(id: string): Promise<TrailJson | null> {
  *
  * Registry row + the manual SQL cascade first (favorites, routes/route_points,
  * sync_state, comments, outbox, waypoint_meta — see `imported-trails-repo`),
- * then the JSON file, then the plan-inputs preference entry.
+ * then the JSON file, then the day plan and the plan-inputs preference entry.
+ *
+ * The plan is HARD-deleted rather than tombstoned: an imported trail's plan is
+ * local-only (its `u_` id is never sent to the server, exactly as its comments
+ * are not), so there is nothing for a tombstone to tell anyone.
  *
  * Deleting a bundled trail id is a no-op on the file/registry side (there is no
  * row and no file), so callers don't have to pre-check the source.
@@ -148,6 +154,8 @@ export async function deleteImportedTrailEverywhere(
   const file = importedTrailFile(id);
   if (file.exists) file.delete();
 
+  await plansRepo.deleteForTrail(db, id);
+  usePlansStore.getState().clear(id);
   usePlanInputsStore.getState().clearTrail(id);
 }
 

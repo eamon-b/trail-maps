@@ -60,7 +60,7 @@
     {
       "waypointId": "w_6252a410",
       "name": "Thomson River",
-      "description": "Another access point to the Thomson as the track works along the valley. Reliable running water, untreated."
+      "description": "Another access point to the Thomson as the track works along the valley. A river rather than a ridge creek, and untreated."
     },
     {
       "waypointId": "w_c976732e",
@@ -265,7 +265,7 @@
     {
       "waypointId": "w_b403445f",
       "name": "Diamantina Hut",
-      "description": "Historic shelter hut on the high ground at Mt Hotham, close to the Great Alpine Road. Road access and the Hotham village nearby make this the obvious resupply or exit point on this half of the trail, though what is open varies with the season."
+      "description": "Historic shelter hut on the high ground at Mt Hotham, close to the Great Alpine Road. Road access and the Hotham village nearby make this the main resupply or exit point on this half of the trail, though what is open varies with the season."
     },
     {
       "waypointId": "w_44d4a5fd",
@@ -790,7 +790,7 @@
     {
       "waypointId": "w_acd5a313",
       "name": "Pond Creek 1",
-      "description": "Creek on the climb from the Cotter towards Cotter Gap. Small, seasonal and untreated, and the last certain water below the gap."
+      "description": "Creek on the climb from the Cotter towards Cotter Gap. Small, seasonal and untreated, and the last marked water below the gap."
     },
     {
       "waypointId": "w_23f5a73a",
@@ -940,7 +940,7 @@
     {
       "waypointId": "w_3072c4bb",
       "name": "Camp Creek",
-      "description": "The creek at Cleve Cole Hut on Mt Bogong, not to be confused with the Camp Creek at Mt Speculation on the main line. High alpine water: seasonal and untreated."
+      "description": "The creek at Cleve Cole Hut on Mt Bogong — a different Camp Creek from the one at Mt Speculation on the main line. High alpine water: seasonal and untreated."
     },
     {
       "waypointId": "w_a9b5ab88",
@@ -1090,7 +1090,7 @@
     {
       "waypointId": "w_fb477287",
       "name": "Old Currango Homestead",
-      "description": "Slab-built homestead on the Currango plains, said to be among the oldest surviving buildings in the park. It is fragile heritage fabric, and camping is well clear of the walls."
+      "description": "Slab-built homestead on the Currango plains, said to be among the oldest surviving buildings in the park. It is fragile heritage fabric, and camping is outside the buildings."
     },
     {
       "waypointId": "w_c674312f",

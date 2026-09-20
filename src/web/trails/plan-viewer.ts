@@ -64,6 +64,7 @@ import {
   savePlanDocument,
   savePlanUiPrefs,
 } from './plan-state';
+import { initPlanSync, type PlanSyncController, type PlanSyncHost } from './plan-sync';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
 // `title="…"` and `class="…"`, and an imported GPX supplies both.
@@ -124,6 +125,14 @@ let resupplyFilter = '';
 /** Stops tab: list every waypoint rather than only the overnight candidates. */
 let showAllWaypoints = false;
 let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * Read-only mode: the shared-plan page, showing someone else's plan. Nothing
+ * is written — not to `localStorage`, not to the server — and every control
+ * that would edit the document is a piece of text instead.
+ */
+let readOnly = false;
+/** The sync arm, when this page has one (never in read-only mode). */
+let syncController: PlanSyncController | null = null;
 
 // Leaflet
 let map: L.Map | null = null;
@@ -632,13 +641,18 @@ function waypointPopupContent(wp: PlanWaypoint, km: number): HTMLElement {
   const selected = isStopSelected(plan, stopKeyFor({ id: wp.id, km }));
   const el = document.createElement('div');
   el.className = 'wp-popup';
+  // A shared plan's popup says what the place is and whether it is a stop of
+  // that plan; there is nothing here for a reader to press.
+  const action = readOnly
+    ? (selected ? '<div class="wp-popup-flag">Stop on this plan</div>' : '')
+    : `<button type="button" class="wp-popup-btn${selected ? ' is-stop' : ''}">
+      ${selected ? 'Remove stop' : 'Stop here'}
+    </button>`;
   el.innerHTML = `
     <div class="wp-popup-name">${escapeHtml(wp.name)}</div>
     <div class="wp-popup-sub">${escapeHtml(waypointTypeLabel(wp.type))} · ${km.toFixed(1)} km</div>
     ${servicesStripHtml(servicesAt(km))}
-    <button type="button" class="wp-popup-btn${selected ? ' is-stop' : ''}">
-      ${selected ? 'Remove stop' : 'Stop here'}
-    </button>`;
+    ${action}`;
   el.querySelector('.wp-popup-btn')?.addEventListener('click', () => {
     toggleStop(km, wp.name ?? 'Stop', wp.id);
     map?.closePopup();
@@ -999,6 +1013,15 @@ function stopCandidates(): PlanWaypoint[] {
 /** The nights / note / booked controls that open under a ticked row. */
 function stopEditorHtml(stop: PlanStop): string {
   const note = stop.note ?? '';
+  // Read-only: the Stops tab is hidden on a shared plan, but a row that does
+  // get rendered shows the stop's nights and note as text, never as fields.
+  if (readOnly) {
+    return `<div class="stop-editor is-static">
+      <span class="stop-editor-label">${stop.nights} night${stop.nights === 1 ? '' : 's'}</span>
+      ${note ? `<span class="stop-note-text">${escapeHtml(note)}</span>` : ''}
+      ${stop.booked ? '<span class="booked-badge">Booked</span>' : ''}
+    </div>`;
+  }
   return `<div class="stop-editor">
       <div class="stop-editor-line">
         <span class="stop-editor-label">Nights</span>
@@ -1172,7 +1195,7 @@ function renderResupplyRow(option: ResupplyOption, picked: ReadonlySet<string>):
   return `<div class="resupply-row${checked ? ' is-picked' : ''}" data-id="${escapeHtml(option.id)}">
     <div class="resupply-line">
       <input type="checkbox" class="resupply-check" id="${escapeHtml(inputId)}"
-        data-option-id="${escapeHtml(option.id)}"${checked ? ' checked' : ''} />
+        data-option-id="${escapeHtml(option.id)}"${checked ? ' checked' : ''}${readOnly ? ' disabled' : ''} />
       <label class="resupply-label" for="${escapeHtml(inputId)}">
         <span class="resupply-icon" title="${escapeHtml(waypointTypeLabel(option.type))}">${waypointIcon(baseWaypointType(option.type))}</span>
         <span class="resupply-name">${escapeHtml(option.name)}</span>
@@ -1352,6 +1375,7 @@ function selectDay(index: number | null): void {
  *   stop by it, so a stop survives a rebuild that nudges the waypoint's km.
  */
 function toggleStop(km: number, name: string, id?: string): void {
+  if (readOnly) return;
   const noboKm = toNoboKm(km, direction(), trail.track.totalDistance);
   applyEdit(editToggleStop(plan, { ...(id ? { id } : {}), km: noboKm, name }));
 }
@@ -1386,6 +1410,7 @@ function changeNights(key: StopKey, delta: number): void {
  * only place a stale selection is ever pruned.
  */
 function toggleResupply(id: string): void {
+  if (readOnly) return;
   const picked = selectedResupplyIds();
   if (picked.has(id)) picked.delete(id);
   else picked.add(id);
@@ -1393,6 +1418,7 @@ function toggleResupply(id: string): void {
 }
 
 function setAllResupply(all: boolean): void {
+  if (readOnly) return;
   setResupplyStops(all ? allResupplyOptionIds() : []);
 }
 
@@ -1452,21 +1478,26 @@ function setPlanName(name: string): void {
  * has to reach: `commitSave` is where the document is known-good and settled.
  */
 function scheduleSave(): void {
+  // A shared plan is someone else's: a direction flip or a resupply tick is a
+  // way of reading it, and neither is written anywhere.
+  if (readOnly) return;
   setSaveStatus('unsaved');
   if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
   saveDebounceTimer = setTimeout(commitSave, 800);
 }
 
 /**
- * Write the document to `localStorage`.
+ * Write the document to `localStorage`, then hand it to the sync arm.
  *
- * Phase 3c hooks in here: a linked browser also PUTs the document to the
- * comments API from this point, after the local write has succeeded — local
- * first, so a plan is never lost to a flaky network.
+ * Local first, always: a linked browser PUTs the document from here, after the
+ * local write has succeeded, so a plan is never lost to a flaky network. The
+ * sync arm decides for itself whether there is anything to send.
  */
 function commitSave(): void {
+  if (readOnly) return;
   const ok = savePlanDocument(trail.config.id, plan);
   setSaveStatus(ok ? 'saved' : 'error');
+  syncController?.onLocalSave();
 }
 
 function setSaveStatus(status: 'saved' | 'unsaved' | 'error'): void {
@@ -1571,14 +1602,30 @@ function initHeader(): void {
   const dateInput = document.getElementById('plan-start-date') as HTMLInputElement;
   const directionBtn = document.getElementById('direction-toggle') as HTMLButtonElement;
 
-  if (nameInput) {
-    nameInput.value = plan.name;
-    nameInput.addEventListener('input', () => setPlanName(nameInput.value));
-  }
+  if (readOnly) {
+    // Someone else's plan: the name and the start date are what it says, not
+    // fields. The direction toggle stays — turning a route round is a way of
+    // reading it, and nothing it changes is written anywhere.
+    replaceWithStatic(nameInput, plan.name, 'plan-name-static');
+    const dateGroup = document.getElementById('plan-date-group');
+    if (dateGroup) {
+      dateGroup.textContent = plan.startDate
+        ? `Start: ${formatDate(plan.startDate)}`
+        : 'No start date';
+      dateGroup.classList.add('is-static');
+    }
+    const saveStatus = document.getElementById('save-status');
+    if (saveStatus) saveStatus.hidden = true;
+  } else {
+    if (nameInput) {
+      nameInput.value = plan.name;
+      nameInput.addEventListener('input', () => setPlanName(nameInput.value));
+    }
 
-  if (dateInput) {
-    dateInput.value = plan.startDate ?? '';
-    dateInput.addEventListener('change', () => setStartDate(dateInput.value));
+    if (dateInput) {
+      dateInput.value = plan.startDate ?? '';
+      dateInput.addEventListener('change', () => setStartDate(dateInput.value));
+    }
   }
 
   if (directionBtn) {
@@ -1587,6 +1634,41 @@ function initHeader(): void {
       setDirection(direction() === 'NOBO' ? 'SOBO' : 'NOBO');
     });
   }
+}
+
+/** Swap an input for the text it would have held. `textContent`, never HTML. */
+function replaceWithStatic(input: HTMLElement | null, text: string, className: string): void {
+  if (!input) return;
+  const span = document.createElement('span');
+  span.className = className;
+  span.textContent = text;
+  input.replaceWith(span);
+}
+
+/**
+ * Put the header back in step with the document.
+ *
+ * Only the sync arm needs this: every other edit starts at one of these
+ * controls, so the control already agrees with the plan. A document adopted
+ * from the server does not — it may carry a different name, start date and
+ * direction than the one the fields are showing.
+ */
+function refreshHeaderInputs(): void {
+  const nameInput = document.getElementById('plan-name-input') as HTMLInputElement | null;
+  if (nameInput) nameInput.value = plan.name;
+  const dateInput = document.getElementById('plan-start-date') as HTMLInputElement | null;
+  if (dateInput) dateInput.value = plan.startDate ?? '';
+  updateDirectionButton();
+}
+
+/**
+ * Hide what a reader of someone else's plan cannot use: the Stops tab is the
+ * editor, so it goes entirely rather than sitting there inert.
+ */
+function applyReadOnlyChrome(): void {
+  document.querySelector('.tab-btn[data-tab="stops"]')?.setAttribute('hidden', '');
+  document.getElementById('tab-stops')?.setAttribute('hidden', '');
+  document.getElementById('plan-shell')?.classList.add('is-readonly');
 }
 
 // ---------------------------------------------------------------------------
@@ -1705,14 +1787,62 @@ function initResupplyControls(): void {
 // ---------------------------------------------------------------------------
 
 /**
+ * What `plan-sync.ts` is given: the document, and the two ways it may write
+ * one back. Nothing else of the viewer is exposed to it.
+ */
+function planSyncHost(trailId: string): PlanSyncHost {
+  return {
+    trailId,
+    getPlan: () => plan,
+    adoptServerPlan(next: PlanDocument): void {
+      // The server's copy wins outright (last writer wins, as for comments),
+      // so it is stored and drawn exactly as it arrived — no `scheduleSave`,
+      // which would stamp our clock on it and send it straight back.
+      plan = next;
+      savePlanDocument(trail.config.id, plan);
+      setSaveStatus('saved');
+      refreshHeaderInputs();
+      renderAll();
+    },
+    stampPlan(patch: Partial<PlanDocument>): void {
+      plan = { ...plan, ...patch };
+      savePlanDocument(trail.config.id, plan);
+    },
+  };
+}
+
+/** How this boot of the planner differs from the ordinary editable one. */
+export interface PlanViewerOptions {
+  /**
+   * Show the plan, never edit it: the Stops tab goes, the header inputs become
+   * text, the marker popup loses its button, and nothing is written to
+   * `localStorage` or to the server. The shared-plan page's mode.
+   */
+  readOnly?: boolean;
+  /**
+   * The document to show, instead of the one this browser has stored. Used by
+   * the shared-plan page, which is handed a plan by `GET /v1/shared/plans/:id`
+   * and must not read or write this browser's own plan for that trail.
+   */
+  preloadedPlan?: PlanDocument;
+}
+
+/**
  * Boot the plan page.
  *
  * @param trailId  The key plan state is persisted under.
  * @param preloadedTrail  An already-loaded trail — passed by the imported-trail
  *   plan page (`my-plan.html`), which reads from IndexedDB instead of
- *   `/data/generated/{id}.json`. When omitted the trail is fetched as before.
+ *   `/data/generated/{id}.json`, and by the shared-plan page, which fetches it
+ *   itself so it can say which trail is missing. When omitted the trail is
+ *   fetched as before.
+ * @param options  Read-only mode and/or a plan to show (see `PlanViewerOptions`).
  */
-export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): Promise<void> {
+export async function initPlanViewer(
+  trailId: string,
+  preloadedTrail?: Trail,
+  options: PlanViewerOptions = {},
+): Promise<void> {
   const data = preloadedTrail ?? await loadTrailData(trailId);
   if (!data) {
     document.body.innerHTML = `<div style="padding:2rem;text-align:center">
@@ -1731,12 +1861,14 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
   }
 
   trail = data;
+  readOnly = options.readOnly === true;
 
-  // The stored document, a one-off migration of the pre-day-planner
-  // `trail-plan-<id>` save, or a fresh empty plan. A server copy, when Phase 3c
-  // lands, is applied over whatever this returns before the first render.
-  plan = loadOrMigratePlan(trailId, trail).plan;
-  showAllWaypoints = loadPlanUiPrefs(trailId).showAllWaypoints;
+  // The document handed in (a shared plan), else the stored one, a one-off
+  // migration of the pre-day-planner `trail-plan-<id>` save, or a fresh empty
+  // plan. A newer server copy replaces it a moment after the first render —
+  // see `plan-sync.ts`; the page is drawn first and never waits on the network.
+  plan = options.preloadedPlan ?? loadOrMigratePlan(trailId, trail).plan;
+  showAllWaypoints = readOnly ? false : loadPlanUiPrefs(trailId).showAllWaypoints;
 
   // Module state outlives a boot (`my-plan.html` can reboot with another trail),
   // so the per-trail caches are cleared here rather than only on a direction flip.
@@ -1748,6 +1880,7 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
   selectedDayIndex = null;
 
   refreshActiveStops();
+  if (readOnly) applyReadOnlyChrome();
   initMap();
   initHeader();
   initTabs();
@@ -1757,6 +1890,12 @@ export async function initPlanViewer(trailId: string, preloadedTrail?: Trail): P
   setupElevationHover();
 
   renderAll();
+
+  // The sync arm, last: it draws its own header controls and then talks to the
+  // network, so the planner is on screen and usable before any of that starts.
+  // A shared plan is nobody's to sync, so it never gets one.
+  syncController?.destroy();
+  syncController = readOnly ? null : initPlanSync(planSyncHost(trailId));
 
   // Redraw elevation on resize
   window.addEventListener('resize', debounce(() => {

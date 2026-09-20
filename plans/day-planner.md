@@ -1,7 +1,11 @@
 # Day planner
 
 Status: planned 2026-09-20 on `claude/day-planner-feature-plan-nhcadj`; the open questions were
-answered the same day and implementation started on that branch. Decisions taken with Eamon are
+answered the same day and rows 1-4c of the sequencing table were implemented on that branch the
+same day (row 5, deploy, is outstanding: `npm run migrate:remote` then `npm run deploy` in
+`workers/comments-api` — the migration must land before the worker, since auth now reads
+`device_tokens` — then set `VITE_API_BASE_URL` on the site build and ship the app by EAS Update;
+no native change was needed, the start date is a validated text field and there is no QR yet). Decisions taken with Eamon are
 marked **[decided]**; the former open questions are recorded as decisions at the end.
 
 ## Why

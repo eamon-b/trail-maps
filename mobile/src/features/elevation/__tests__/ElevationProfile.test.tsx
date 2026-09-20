@@ -9,7 +9,7 @@
 
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { Circle } from '@shopify/react-native-skia';
+import { Circle, Line } from '@shopify/react-native-skia';
 import { ElevationProfile } from '../ElevationProfile';
 import type { ProfilePoint } from '../lod';
 
@@ -370,6 +370,66 @@ describe('ElevationProfile', () => {
 
       act(() => mockTapHandlers[0]({ x: dot.cx, y: dot.cy }));
       expect(onWaypointTap).toHaveBeenLastCalledWith('w1', 'waypoint');
+      act(() => root.unmount());
+    });
+  });
+
+  describe('day-boundary ticks', () => {
+    /** The full-height rules (grid lines are hairlines; ticks are 1.5 px). */
+    function tickLines(root: ReactTestRenderer) {
+      return root.root
+        .findAllByType(Line)
+        .map((n) => n.props as unknown as { strokeWidth: number; p1: { x: number } })
+        .filter((l) => l.strokeWidth === 1.5);
+    }
+
+    it('draws one tick per planned stop inside the window', () => {
+      let root!: ReactTestRenderer;
+      act(() => {
+        root = TestRenderer.create(
+          <ElevationProfile
+            {...baseProps}
+            stopKms={[25, 60]}
+            onWindowChange={jest.fn()}
+          />,
+        );
+      });
+      layoutAll(root);
+
+      const ticks = tickLines(root);
+      expect(ticks).toHaveLength(2);
+      // Ordered along the axis, like the km that produced them.
+      expect(ticks[0].p1.x).toBeLessThan(ticks[1].p1.x);
+      act(() => root.unmount());
+    });
+
+    it('draws nothing for a guide with no plan', () => {
+      let root!: ReactTestRenderer;
+      act(() => {
+        root = TestRenderer.create(
+          <ElevationProfile {...baseProps} stopKms={[]} onWindowChange={jest.fn()} />,
+        );
+      });
+      layoutAll(root);
+      expect(tickLines(root)).toHaveLength(0);
+      act(() => root.unmount());
+    });
+
+    it('drops a boundary that has been scrolled out of the window', () => {
+      let root!: ReactTestRenderer;
+      act(() => {
+        root = TestRenderer.create(
+          <ElevationProfile
+            {...baseProps}
+            window={{ startKm: 0, endKm: 30 }}
+            stopKms={[25, 60]}
+            onWindowChange={jest.fn()}
+          />,
+        );
+      });
+      layoutAll(root);
+      // Only km 25 is on screen; km 60 is not clamped to the edge.
+      expect(tickLines(root)).toHaveLength(1);
       act(() => root.unmount());
     });
   });

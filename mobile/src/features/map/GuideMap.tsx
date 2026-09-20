@@ -99,6 +99,7 @@ import {
   isContourTileLoadFailure,
   labelFontForSource,
   mapInk,
+  planStopRing,
   mapRemountKey,
   TRACK_DASH,
   TRACK_WIDTHS,
@@ -164,6 +165,16 @@ const MARKER_RING_WIDTH = 2.5;
 const FAVORITE_MARKER_RADIUS = 11;
 const FAVORITE_MARKER_RING_WIDTH = 3.5;
 /**
+ * The plan-stop ring sits OUTSIDE the badge: a hollow circle a few pixels wider
+ * than the marker it belongs to, drawn under it so the badge and its glyph stay
+ * exactly as they are. A ring rather than a colour swap because a stop is a
+ * statement about a place, not a different kind of place — the hut is still a
+ * hut when you decide to sleep there.
+ */
+const PLAN_STOP_RING_RADIUS = 13;
+const PLAN_STOP_FAVORITE_RING_RADIUS = 15;
+const PLAN_STOP_RING_WIDTH = 2.5;
+/**
  * Icon scale for the 96 px glyph PNGs. 0.165 lands the glyph's ~76 px content
  * box at ~12.5 px on screen, whose diagonal just fits inside the Ø18 white
  * badge — bigger and the corners of the wider glyphs spill over the ring.
@@ -190,6 +201,12 @@ const POI_LABEL_SORT_KEY = 10;
 
 const CLUSTER_FILTER = ['has', 'point_count'] as FilterSpecification;
 const INDIVIDUAL_FILTER = ['!', ['has', 'point_count']] as FilterSpecification;
+/** An unclustered marker that is a stop of the plan (see `plannedStopIds`). */
+const PLANNED_STOP_FILTER = [
+  'all',
+  ['!', ['has', 'point_count']],
+  ['==', ['get', 'plannedStop'], true],
+] as FilterSpecification;
 
 const CAMERA_PADDING = { top: 48, right: 32, bottom: 48, left: 32 };
 
@@ -254,6 +271,12 @@ export interface GuideMapProps {
    * which is deliberately different from an empty set.
    */
   plannedResupplyIds?: ReadonlySet<string>;
+  /**
+   * Waypoint ids that are stops of the hiker's plan — ringed so the nights they
+   * have chosen are visible on the map they are walking. Absent or empty draws
+   * no ring layer at all, which is the case for every guide with no plan.
+   */
+  plannedStopIds?: ReadonlySet<string>;
   /**
    * Aggregated water status per bundled waypoint id (see the guide's
    * `useWaterStatus`). Tints a water source's marker ring by its status; markers
@@ -441,6 +464,7 @@ export const GuideMap = memo(
       sideTrips,
       termini,
       waypoints,
+      plannedStopIds,
       pois,
       currentPosition,
       accuracy,
@@ -602,9 +626,14 @@ export const GuideMap = memo(
           favoriteIds,
           waterStatusById,
           plannedResupplyIds,
+          plannedStopIds,
         ),
-      [waypoints, colors, favoriteIds, waterStatusById, plannedResupplyIds],
+      [waypoints, colors, favoriteIds, waterStatusById, plannedResupplyIds, plannedStopIds],
     );
+
+    // No plan, no layer: the common case is a guide nobody has planned, and an
+    // empty filter layer is still a layer MapLibre walks on every frame.
+    const hasPlannedStops = (plannedStopIds?.size ?? 0) > 0;
 
     const poiCollection = useMemo(
       () => buildPoiCollection(pois ?? [], (category) => poiColor(category, colors)),
@@ -781,6 +810,25 @@ export const GuideMap = memo(
         colors.waterLow,
         colors.waterDry,
       ],
+    );
+
+    // The plan ring: hollow, one width for a plain marker and one for the
+    // larger favorite badge, so it clears whichever it is drawn around.
+    // `circleOpacity: 0` leaves only the stroke — a fill would hide the badge
+    // this layer is drawn beneath.
+    const plannedStopRingStyle = useMemo(
+      () => ({
+        circleRadius: [
+          'case',
+          ['get', 'favorite'],
+          PLAN_STOP_FAVORITE_RING_RADIUS,
+          PLAN_STOP_RING_RADIUS,
+        ] as unknown as number,
+        circleOpacity: 0,
+        circleStrokeColor: planStopRing(mapTheme),
+        circleStrokeWidth: PLAN_STOP_RING_WIDTH,
+      }),
+      [mapTheme],
     );
 
     // Per-type glyph over the badge. `iconAllowOverlap` + `iconIgnorePlacement`
@@ -1190,6 +1238,14 @@ export const GuideMap = memo(
               filter={CLUSTER_FILTER}
               style={clusterCountStyle}
             />
+            {hasPlannedStops && (
+              <Layer
+                type="circle"
+                id="guide-waypoints-plan-rings"
+                filter={PLANNED_STOP_FILTER}
+                style={plannedStopRingStyle}
+              />
+            )}
             <Layer
               type="circle"
               id="guide-waypoints-circles"

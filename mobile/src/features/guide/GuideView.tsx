@@ -21,6 +21,7 @@ import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { spacing } from '../../tokens';
 import { useFavoritesStore } from '../../state/favorites-store';
+import { usePlansStore } from '../../state/plans-store';
 import { useCommentSync } from '../../sync/connectivity';
 import { ElevationPane } from '../elevation/ElevationPane';
 import { MapPane } from '../map/MapPane';
@@ -50,13 +51,17 @@ function GuidePanes() {
   const { trail, trailId } = useGuide();
   const { pane, switchPane } = useGuideFocus();
 
-  // Hydrate favorite hearts for the list badges (local, every guide), and run
+  // Hydrate favorite hearts and the trail's plan (both local, every guide), and run
   // comment sync in the background (drain outbox + pull delta on open /
   // reconnect / foreground). The sync hook is called unconditionally and gates
   // itself on the server boundary, so an imported guide wires up no listeners
   // and issues no request — see `sync/connectivity`.
   useEffect(() => {
     void useFavoritesStore.getState().hydrate(trailId);
+    // The plan feeds the map's stop rings and the profile's day ticks, so it
+    // has to be in memory before either pane draws — not only once the Plan
+    // screen has been opened.
+    void usePlansStore.getState().hydrate(trailId);
   }, [trailId]);
   useCommentSync(trailId);
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -6,6 +7,7 @@ import { ThemeProvider, useTheme } from '../src/theme';
 import { HeaderActions, HeaderIconButton } from '../src/navigation/HeaderIconButton';
 import { pickGpxFile } from '../src/features/import/import-gpx';
 import { useIncomingFile } from '../src/features/import/incoming-file';
+import { registerPlanSync, unregisterPlanSync } from '../src/sync/plan-sync';
 
 function ThemedStack() {
   const { colors } = useTheme();
@@ -17,6 +19,16 @@ function ThemedStack() {
   // screen. Mounted here because it is the one component guaranteed to exist
   // for the whole app lifetime.
   useIncomingFile();
+
+  // Every local plan edit goes through one store hook; this is where that hook
+  // is pointed at the outbox. Mounted here for the same reason as the line
+  // above — the root layout is the only component alive for the whole session,
+  // and a plan can be edited from the Plan screen, a waypoint detail or a
+  // shared-plan import, none of which should each have to wire their own sync.
+  useEffect(() => {
+    registerPlanSync();
+    return () => unregisterPlanSync();
+  }, []);
 
   // The picker runs here rather than on the import screen so that screen only
   // ever has to process a URI it was given — see app/import.tsx.
@@ -75,6 +87,10 @@ function ThemedStack() {
           name="import"
           options={{ title: 'Import GPX', presentation: 'modal' }}
         />
+        {/* A plan someone shared: `tracknotes://plan/<shareId>`. Expo Router
+            resolves the deep link off app.json's `scheme`, so no manifest work
+            and no associated domain is involved. */}
+        <Stack.Screen name="plan/[shareId]" options={{ title: 'Shared plan' }} />
         {/* Guide group renders its own nested Stack (header + provider). */}
         <Stack.Screen name="guide/[trailId]" options={{ headerShown: false }} />
       </Stack>

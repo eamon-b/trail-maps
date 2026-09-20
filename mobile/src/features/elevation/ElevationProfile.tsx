@@ -10,6 +10,7 @@
  *  - waypoint markers on the trace, plus hollow rings for OSM points of
  *    interest (tap → `onWaypointTap`, which is handed the marker's `kind` so
  *    the parent can route a POI to its own screen),
+ *  - day-boundary ticks for the hiker's plan (`stopKms`),
  *  - tap-to-scrub crosshair snapped to the nearest track point,
  *  - a `currentKm` GPS marker (plumbing only).
  *
@@ -75,6 +76,15 @@ const MARKER_RADIUS = 4;
 const FAVORITE_MARKER_RADIUS = 6;
 /** POI tick radius (px) — smaller than a waypoint dot, and drawn hollow. */
 const POI_MARKER_RADIUS = 3;
+/**
+ * Day-boundary tick: a thin full-height rule with a foot on the axis.
+ *
+ * Full height because a day boundary is a statement about the whole column —
+ * everything left of it is today — and a foot on the axis so the boundary is
+ * still findable when the rule is crossing a busy stretch of trace.
+ */
+const STOP_TICK_WIDTH = 1.5;
+const STOP_TICK_FOOT_RADIUS = 3;
 /** Ring thickness (px) of a hollow POI tick. */
 const POI_MARKER_STROKE = 1.5;
 /** Max window state pushes per second while a gesture is active. */
@@ -127,6 +137,12 @@ export interface ElevationProfileProps {
    * route's trail spans). Clipped to the visible window.
    */
   highlightRanges?: { startKm: number; endKm: number }[];
+  /**
+   * Day-boundary km of the hiker's plan, in the SAME (active) km space as
+   * `points` — see `features/plan/plan-overlay`. Each one draws a tick; an
+   * empty list (a guide with no plan) draws nothing.
+   */
+  stopKms?: number[];
   /** Current GPS position (km) — draws the position marker. */
   currentKm?: number | null;
   /** Tap on a marker: its id, and which kind of thing it marks. */
@@ -154,6 +170,7 @@ export function ElevationProfile({
   window,
   onWindowChange,
   highlightRanges,
+  stopKms,
   currentKm,
   onWaypointTap,
   onScrub,
@@ -300,6 +317,17 @@ export function ElevationProfile({
     }
     return bands;
   }, [metrics, highlightRanges, window.startKm, window.endKm, xOf]);
+
+  // Day boundaries, km-anchored like everything else here: they pan and zoom
+  // with the trail and simply leave the plot when scrolled past. Off-window
+  // boundaries are dropped rather than clamped — `xOf` pins to the plot edge,
+  // and a tick stuck against the axis would read as a boundary that is there.
+  const stopTickXs = useMemo(() => {
+    if (!metrics || !stopKms || stopKms.length === 0) return [];
+    return stopKms
+      .filter((km) => km >= window.startKm && km <= window.endKm)
+      .map((km) => xOf(km));
+  }, [metrics, stopKms, window.startKm, window.endKm, xOf]);
 
   // GPS marker + scrub crosshair are both km-anchored: they follow the trail
   // under pan/zoom and disappear once scrolled out of the visible window.
@@ -524,6 +552,25 @@ export function ElevationProfile({
               strokeJoin="round"
             />
           )}
+
+          {/* Day boundaries, under the markers: a stop's own waypoint dot sits
+              on this line and must stay readable on top of it. */}
+          {stopTickXs.map((x, i) => (
+            <Group key={`stop-${i}`}>
+              <Line
+                p1={vec(x, PADDING.top)}
+                p2={vec(x, PADDING.top + chartHeight)}
+                color={colors.accent}
+                strokeWidth={STOP_TICK_WIDTH}
+              />
+              <Circle
+                cx={x}
+                cy={PADDING.top + chartHeight}
+                r={STOP_TICK_FOOT_RADIUS}
+                color={colors.accent}
+              />
+            </Group>
+          ))}
 
           {markers.map((m) =>
             m.fill ? (

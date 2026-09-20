@@ -281,14 +281,19 @@ export function waypointFeatureId(wp: MapWaypoint, index: number): string {
  *  - a `waterStatus` string ('flowing' | 'low' | 'dry', or '' when unknown) so
  *    the same circle layer can tint a water source's ring by its aggregated
  *    status via a `match` expression. Empty string rather than null keeps the
- *    property's type stable through the native bridge.
+ *    property's type stable through the native bridge;
+ *  - a `plannedStop` boolean (true when the id is in `plannedStopIds`) so a
+ *    second circle layer can draw the plan ring UNDER the badge without a
+ *    second source — the markers are clustered, and a parallel source would
+ *    cluster differently and drift out of register while panning.
  */
 export function buildWaypointCollection(
   waypoints: MapWaypoint[],
   colorForType: (type: string) => string,
   favoriteIds?: ReadonlySet<string>,
   waterStatusById?: WaterStatusLookup,
-  plannedIds?: ReadonlySet<string>,
+  plannedResupplyIds?: ReadonlySet<string>,
+  plannedStopIds?: ReadonlySet<string>,
 ): FeatureCollection<Point> {
   const features: Feature<Point>[] = waypoints.map((wp, i) => {
     const id = waypointFeatureId(wp, i);
@@ -306,11 +311,12 @@ export function buildWaypointCollection(
         color: colorForType(wp.type),
         icon: waypointIconName(wp.type),
         favorite: favoriteIds?.has(id) ?? false,
-        plannedResupply: plannedIds?.has(id) ?? false,
+        plannedResupply: plannedResupplyIds?.has(id) ?? false,
         // Keyed by the *bundled* waypoint id, because that is the id reports are
         // filed against — a legacy waypoint with only a name+index fallback id
         // can never have any.
         waterStatus: (wp.id ? waterStatusById?.get(wp.id)?.status : undefined) ?? '',
+        plannedStop: plannedStopIds?.has(id) ?? false,
       },
     };
   });

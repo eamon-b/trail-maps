@@ -51,15 +51,14 @@ export interface PlanDefaults {
 }
 
 /**
- * Called after every successful local write, with the document that was
- * stored.
+ * Called after every successful local write, with the document that was stored.
  *
- * TODO(day-planner 4b): the sync agent points this at the outbox — enqueue a
- * `plan` item for `PUT /v1/plans/:id` (debounced; each toggle is an edit, not a
- * request) and gate it on `services/server-trails.isServerKnown`, so an
- * imported trail's plan stays local exactly as its comments do. Left unset
- * here: with no handler a plan is a purely local document, which is the
- * correct behaviour until the sync branches exist.
+ * `sync/plan-sync` installs the real handler at app start: it queues a `plan`
+ * outbox row for `PUT /v1/plans/:id` and debounces the drain, gated on
+ * `services/server-trails.isServerKnown` so an imported trail's plan stays
+ * local exactly as its comments do. Left unset here on purpose — the store must
+ * work with no sync at all (that is what an imported guide, and any build
+ * without an API base URL, gets).
  */
 let onPlanChanged: ((doc: PlanDocument) => void) | undefined;
 
@@ -87,6 +86,12 @@ export interface PlansState {
   ) => Promise<PlanDocument | null>;
   /** Forget a trail's cached plan (it stays in SQLite unless the repo dropped it). */
   clear: (trailId: string) => void;
+  /**
+   * Forget every cached plan. Account deletion only: the rows are gone from
+   * SQLite by then, so a cache left standing would show a deleted account's
+   * plans until the app restarted.
+   */
+  clearAll: () => void;
 }
 
 export const usePlansStore = create<PlansState>((set, get) => ({
@@ -143,6 +148,8 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       delete next[trailId];
       return { byTrail: next };
     }),
+
+  clearAll: () => set((s) => (Object.keys(s.byTrail).length === 0 ? s : { byTrail: {} })),
 }));
 
 /** Reactive selector for a trail's plan (undefined when it has none). */

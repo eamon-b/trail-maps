@@ -10,7 +10,17 @@ import { isPace } from '@lib/plan-types';
 
 const STORAGE_KEY = (trailId: string) => `trail-plan-${trailId}`;
 
-function isValidPlanState(data: unknown): data is PlanState {
+/**
+ * The fields a record must have to be a plan at all. A record missing one of
+ * them, or holding the wrong kind of value in it, is not a plan we can repair —
+ * there is no sensible stand-in for a stops array or a direction.
+ *
+ * `pace` and `dailyHours` are deliberately *not* checked here: they are the
+ * initial values of two header inputs, so a bad one has an obvious fallback and
+ * is dropped by {@link withUsableInputs} rather than costing the hiker the plan
+ * around it.
+ */
+function isPlanStateShape(data: unknown): data is PlanState {
   if (typeof data !== 'object' || data === null) return false;
   const obj = data as Record<string, unknown>;
   if (typeof obj.name !== 'string') return false;
@@ -24,24 +34,36 @@ function isValidPlanState(data: unknown): data is PlanState {
     if (!Array.isArray(obj.resupplyStops)) return false;
     if (obj.resupplyStops.some(id => typeof id !== 'string')) return false;
   }
-  // pace / dailyHours are optional (absent = the input's initial value, Average
-  // and 8 h); a stored figure outside what the inputs offer is a hand-edited or
-  // stale record, and the calculators now refuse a pace they cannot walk at.
-  if (obj.pace !== undefined && !isPace(obj.pace)) return false;
-  if (obj.dailyHours !== undefined) {
-    if (typeof obj.dailyHours !== 'number') return false;
-    if (!Number.isFinite(obj.dailyHours) || obj.dailyHours <= 0) return false;
-  }
   return true;
+}
+
+/**
+ * Drop a pace or hours figure the header inputs could never have produced, and
+ * keep everything else.
+ *
+ * Both are optional (absent = the input's initial value, Average and 8 h), and
+ * the calculators now refuse a pace they cannot walk at — so a hand-edited or
+ * stale figure has to go. Throwing the whole record away with it would lose the
+ * plan's name, its stops and its dates over a field the page can default, so
+ * only the bad field is removed.
+ */
+function withUsableInputs(state: PlanState): PlanState {
+  const cleaned: PlanState = { ...state };
+  if (cleaned.pace !== undefined && !isPace(cleaned.pace)) delete cleaned.pace;
+  const hours: unknown = cleaned.dailyHours;
+  if (hours !== undefined && (typeof hours !== 'number' || !Number.isFinite(hours) || hours <= 0)) {
+    delete cleaned.dailyHours;
+  }
+  return cleaned;
 }
 
 export function loadPlanState(trailId: string): PlanState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY(trailId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!isValidPlanState(parsed)) return null;
-    return parsed;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isPlanStateShape(parsed)) return null;
+    return withUsableInputs(parsed);
   } catch {
     return null;
   }

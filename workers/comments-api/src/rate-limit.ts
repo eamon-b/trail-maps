@@ -21,6 +21,14 @@ export const RATE_BUCKETS = {
 
 export type RateBucket = (typeof RATE_BUCKETS)[keyof typeof RATE_BUCKETS];
 
+/**
+ * The longest window any bucket counts over: a row older than this can never
+ * be counted by anything, whatever bucket or key it belongs to.
+ */
+export const MAX_RATE_WINDOW_MS = Math.max(
+  ...Object.values(RATE_BUCKETS).map((spec) => spec.windowMs)
+);
+
 /** Count the events for (bucket, key) still inside the window. */
 export async function countRateEvents(
   env: Env,
@@ -37,7 +45,14 @@ export async function countRateEvents(
   return row?.n ?? 0;
 }
 
-/** Record one event, and prune this subject's expired rows off the response path. */
+/**
+ * Record one event, and prune expired rows off the response path.
+ *
+ * Two sweeps, both cheap: this subject's own rows outside its window (the
+ * common case, straight down the `(bucket, key, created_at)` index), and every
+ * row anywhere older than the longest window — otherwise a subject that never
+ * comes back, an IP that tried once, leaves its rows in the table for good.
+ */
 export async function recordRateEvent(
   env: Env,
   spec: RateBucket,
@@ -46,18 +61,21 @@ export async function recordRateEvent(
   ctx?: ExecutionContext
 ): Promise<void> {
   const windowStart = new Date(nowMs - spec.windowMs).toISOString();
+  const staleEverywhere = new Date(nowMs - MAX_RATE_WINDOW_MS).toISOString();
   await env.DB.prepare(`INSERT INTO rate_events (bucket, key, created_at) VALUES (?, ?, ?)`)
     .bind(spec.bucket, key, new Date(nowMs).toISOString())
     .run();
 
-  const prune = env.DB.prepare(
-    `DELETE FROM rate_events WHERE bucket = ? AND key = ? AND created_at < ?`
-  )
-    .bind(spec.bucket, key, windowStart)
-    .run()
-    .catch(() => {
-      /* pruning is housekeeping; never fail a request over it */
-    });
+  const prune = env.DB.batch([
+    env.DB.prepare(`DELETE FROM rate_events WHERE bucket = ? AND key = ? AND created_at < ?`).bind(
+      spec.bucket,
+      key,
+      windowStart
+    ),
+    env.DB.prepare(`DELETE FROM rate_events WHERE created_at < ?`).bind(staleEverywhere),
+  ]).catch(() => {
+    /* pruning is housekeeping; never fail a request over it */
+  });
   if (ctx) ctx.waitUntil(prune);
 }
 

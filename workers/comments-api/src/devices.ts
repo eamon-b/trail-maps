@@ -4,7 +4,7 @@
 
 import { json, noContent, readJson } from './http';
 import type { Env } from './http';
-import { generateToken, requireUser, sha256Hex } from './auth';
+import { generateToken, requirePrimaryUser, requireUser, sha256Hex } from './auth';
 import type { UserRow } from './auth';
 import { deleteCommentPhotos } from './photos';
 import { validateDisplayName } from './validation';
@@ -93,14 +93,15 @@ const DELETED_DISPLAY_NAME = 'Deleted user';
  *
  * Plans are soft-deleted the same way comments are (their tombstones flow
  * through `GET /v1/plans`), and every device token — the phone's and any linked
- * browser's — is revoked, so no second device outlives the account.
+ * browser's — is revoked, so no second device outlives the account. Only the
+ * phone may ask: a linked browser is a window onto the account, not the account.
  */
 export async function deleteMe(
   request: Request,
   env: Env,
   ctx: ExecutionContext
 ): Promise<Response> {
-  const user = await requireUser(request, env, ctx);
+  const user = await requirePrimaryUser(request, env, ctx);
 
   // Snapshot which comments have photos before the update clears the column.
   const { results: withPhotos } = await env.DB.prepare(

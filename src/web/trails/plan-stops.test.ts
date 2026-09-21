@@ -547,3 +547,48 @@ describe('a plan saved before the day planner', () => {
     expect(localStorage.getItem(`trail-plan-${TRAIL_ID}`)).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// An edit the editor refuses
+// ---------------------------------------------------------------------------
+
+describe('a tick the plan has no room for', () => {
+  it('says why on the save line, and leaves the plan as it was', async () => {
+    // A plan already at the document's stop ceiling, stored as this browser
+    // would have stored it. The stops sit between km 60 and 70, clear of the
+    // waypoint being ticked.
+    const stops = Array.from({ length: 500 }, (_, i) => ({
+      km: 60 + i * 0.02,
+      name: `Camp ${i}`,
+      nights: 1,
+    }));
+    localStorage.setItem(
+      `trail-plan-doc-${TRAIL_ID}`,
+      JSON.stringify({
+        id: 'plan-full',
+        trailId: TRAIL_ID,
+        name: 'Full plan',
+        direction: 'NOBO',
+        startDate: null,
+        stops,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        version: 1,
+      }),
+    );
+
+    await boot();
+    clickRow('Salida');
+
+    // The editor's own words, without the module prefix it writes them with.
+    expect($('save-status').textContent).toMatch(/at most 500 stops/);
+    expect($('save-status').textContent).not.toMatch(/plan-editor/);
+    expect($('save-status').className).toBe('unsaved');
+
+    // Nothing was applied and nothing was scheduled: the document on disk is
+    // the one that was there before the tick.
+    flushSave();
+    expect(savedDocument().stops).toHaveLength(500);
+    expect(savedDocument().stops.some(stop => stop.name === 'Salida')).toBe(false);
+    expect(stopItem('Salida').classList.contains('is-stop')).toBe(false);
+  });
+});

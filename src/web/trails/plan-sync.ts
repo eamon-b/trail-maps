@@ -14,6 +14,14 @@
  * already happened when `onLocalSave()` is called, so a plan is never lost to
  * a flaky network — the server copy is the second write, not the first.
  *
+ * Reads come before writes wherever the page may have fallen behind: at boot,
+ * when the network returns, when the tab is looked at again, and before a push
+ * from a page that has sat idle. There is no poll — one `GET` when there is a
+ * reason for one — and nothing is ever written over the account's copy without
+ * having compared against it first. `syncedUpdatedAt` is the server stamp this
+ * page last saw, which is what lets `reconcile` tell an ordinary refresh from
+ * a genuine two-writer conflict, and say which side of one won.
+ *
  * Nothing in here runs at all unless `VITE_API_BASE_URL` was set at build
  * time; without it the buttons are removed and the planner is exactly the
  * local-only page it was before. Imported (`u_`) trails keep their plans on
@@ -22,6 +30,7 @@
  */
 
 import type { PlanDocument } from '@lib/plan-types';
+import { isPlanDocument } from '@lib/plan-editor';
 import { ApiError, NetworkError, getApiBase } from '../api/client';
 import {
   LINK_CODE_LENGTH,
@@ -79,6 +88,20 @@ function clockTime(date: Date): string {
   return `${hh}:${mm}`;
 }
 
+/**
+ * Backoff for a refusal the server might yet accept: 30 s, 2 min, 5 min, then
+ * the edit waits for the next one (or for the tab to be looked at again).
+ * Bounded on purpose — a page left open overnight must not keep knocking.
+ */
+const RETRY_DELAYS_MS = [30_000, 120_000, 300_000];
+
+/**
+ * How stale the last server read may be before a push takes one `GET` first.
+ * This is the whole of the page's freshness policy: no poll, no interval — it
+ * asks when it has a reason to, and otherwise stays quiet.
+ */
+const REFRESH_INTERVAL_MS = 5 * 60_000;
+
 /** Newer of two ISO stamps, tolerating a document whose stamp is unparseable. */
 function isNewer(a: string, b: string): boolean {
   const left = Date.parse(a);
@@ -121,14 +144,29 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
   let session: WebSession | null = loadSession();
   /** A `PUT` is in the air. */
   let inFlight = false;
+  /** The whole push — the `PUT` and any follow-up — so `share()` can wait on it. */
+  let currentPush: Promise<void> | null = null;
   /** An edit landed while one was in the air; push again when it returns. */
   let dirty = false;
-  /** The document `updatedAt` the server has confirmed; null until it has. */
+  /** A `GET` is in the air. */
+  let pulling = false;
+  /**
+   * The server stamp this page last saw — from the `PUT` that stored our copy,
+   * or from the copy we adopted. It is what makes a conflict recognisable: a
+   * server stamp that is not this one means somebody else wrote.
+   */
   let syncedUpdatedAt: string | null = null;
-  /** A `NetworkError` is waiting on `online` (or on the next edit). */
-  let retryWhenOnline = false;
-  /** 409 `plan_exists` adopts the server's id once — never in a loop. */
+  /** Edits made here that no `PUT` has confirmed yet. */
+  let localEdits = false;
+  /** When the server was last read, so an idle page can freshen before a push. */
+  let lastPullAt: number | null = null;
+  /** A conflict the reader should keep seeing after the sync settles. */
+  let conflictNote: string | null = null;
+  /** 409 `plan_exists` adopts the server's id once per push — never in a loop. */
   let adoptedExistingId = false;
+  /** Backoff attempts spent on the refusal in hand; reset by a `PUT` that lands. */
+  let retryAttempt = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let destroyed = false;
 
   // -------------------------------------------------------------------------
@@ -143,7 +181,11 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
   }
 
   function setSynced(): void {
-    setStatus(`Synced ${clockTime(new Date())}`);
+    // A conflict is not cleared by the sync that followed it: the reader is
+    // told what happened to their edits until they make another one.
+    const stamp = `Synced ${clockTime(new Date())}`;
+    if (conflictNote) setStatus(`${conflictNote} \u00B7 ${stamp}`, 'warn');
+    else setStatus(stamp);
   }
 
   /** The button reads who this browser is signed in as, once it is linked. */
@@ -169,26 +211,105 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
   // -------------------------------------------------------------------------
 
   /**
-   * Boot: ask the server what it holds for this trail. A copy newer than the
-   * local one replaces it (last writer wins, as for comments); otherwise the
-   * local one is pushed, which also covers "the server has none".
+   * Read what the server holds for this trail and reconcile it with ours.
+   *
+   * Runs at boot, when the network comes back, when the tab is looked at
+   * again, and before a push from a page that has been idle. One request each
+   * time, and never on a timer: the plan on screen is only ever a few seconds
+   * behind the phone when there is a reason for it to be.
    */
-  async function initialSync(): Promise<void> {
+  async function pull(): Promise<void> {
     if (!session || destroyed) return;
+    // A `PUT` in the air is about to report the server's stamp anyway, and a
+    // second read alongside it would reconcile against a copy that is already
+    // out of date by the time it lands.
+    if (inFlight || pulling) return;
+    pulling = true;
     setStatus('Syncing…');
     try {
       const { entry } = await fetchMyPlan(session, host.trailId);
+      pulling = false;
       if (destroyed) return;
-      if (entry && isNewer(entry.document.updatedAt, host.getPlan().updatedAt)) {
-        syncedUpdatedAt = entry.document.updatedAt;
-        host.adoptServerPlan(entry.document);
-        setSynced();
+      lastPullAt = Date.now();
+      if (entry && !isPlanDocument(entry.document)) {
+        // Everything off the wire is data, not instructions: a document this
+        // page cannot read is dropped whole rather than half-adopted, and the
+        // local plan is left exactly as it was.
+        setStatus('Sync failed: the server sent a plan this page cannot read', 'warn');
         return;
       }
-      await push();
+      await reconcile(entry?.document ?? null);
     } catch (err) {
+      pulling = false;
       handleFailure(err);
     }
+  }
+
+  /**
+   * Decide between the server's copy and this page's.
+   *
+   * Two clocks are involved and neither can be trusted against the other:
+   * `updatedAt` on the server's copy is the server's stamp, ours is this
+   * browser's. Last writer by timestamp is still the rule — the phone and this
+   * browser are nearly always the same person minutes apart, and anything
+   * cleverer needs a history the document does not carry — but the losing side
+   * is now said out loud rather than vanishing.
+   *
+   * The cases, in order:
+   *
+   *  - Nothing unsynced here, and we have spoken to the server before: its
+   *    copy is simply the truth, whatever the clocks say. A browser clock an
+   *    hour fast must not pin a stale copy over the phone's newer one.
+   *  - Unsynced edits here AND a server stamp we have never seen: a real
+   *    conflict. Timestamps still decide it; `conflictNote` says which way.
+   *  - Otherwise (the boot read, before any server stamp is known — the local
+   *    copy may well hold edits made offline in an earlier session): last
+   *    writer by timestamp, quietly.
+   */
+  async function reconcile(serverDoc: PlanDocument | null): Promise<void> {
+    if (!serverDoc) {
+      // The server holds no plan for this trail, so ours is the only copy.
+      await push();
+      return;
+    }
+    // The feed's cursor is inclusive, so a pull can hand back the very row we
+    // last stored. An equal stamp is therefore not news, it is the same copy:
+    // nothing is adopted and nothing is sent.
+    const serverIsNew = serverDoc.updatedAt !== syncedUpdatedAt;
+
+    if (!localEdits) {
+      if (syncedUpdatedAt !== null) {
+        if (serverIsNew) adopt(serverDoc);
+        else setSynced();
+        return;
+      }
+    } else if (syncedUpdatedAt !== null && serverIsNew) {
+      if (isNewer(serverDoc.updatedAt, host.getPlan().updatedAt)) {
+        conflictNote = 'Replaced by the copy from your phone';
+        adopt(serverDoc);
+      } else {
+        conflictNote = 'Kept your edits';
+        await push();
+      }
+      return;
+    }
+
+    if (isNewer(serverDoc.updatedAt, host.getPlan().updatedAt)) {
+      adopt(serverDoc);
+      return;
+    }
+    await push();
+  }
+
+  /** Take the server's copy, and stop trying to send the one it replaced. */
+  function adopt(serverDoc: PlanDocument): void {
+    syncedUpdatedAt = serverDoc.updatedAt;
+    localEdits = false;
+    dirty = false;
+    retryAttempt = 0;
+    clearRetry();
+    host.adoptServerPlan(serverDoc);
+    setSynced();
   }
 
   /**
@@ -196,54 +317,103 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
    * `PUT` is still in the air (in which case one more goes out when it lands —
    * a burst of toggles is one request, not one per toggle, and the debounce in
    * the viewer has already collapsed most of it).
+   *
+   * Returns a promise that settles when the whole push has, follow-ups
+   * included, so `share()` can wait for the plan to be on the server before it
+   * asks for a link to it.
    */
-  async function push(): Promise<void> {
-    if (!session || destroyed) return;
-    if (inFlight) {
+  function push(): Promise<void> {
+    if (!session || destroyed) return Promise.resolve();
+    if (currentPush) {
       dirty = true;
-      return;
+      return currentPush;
     }
-    const sent = host.getPlan();
-    if (syncedUpdatedAt !== null && sent.updatedAt === syncedUpdatedAt) {
-      setSynced();
-      return;
-    }
+    clearRetry();
+    const running = pushLoop().finally(() => {
+      if (currentPush === running) currentPush = null;
+    });
+    currentPush = running;
+    return running;
+  }
 
-    inFlight = true;
-    setStatus('Syncing…');
-    try {
-      const entry = await putPlan(session, sent);
-      inFlight = false;
-      adoptedExistingId = false;
-      if (destroyed) return;
-      // Only stamp the server's clock on when nothing was edited under us;
-      // otherwise the newer local document keeps its own stamp and the
-      // follow-up push below sends it.
-      if (host.getPlan().updatedAt === sent.updatedAt) {
-        syncedUpdatedAt = entry.updatedAt;
-        host.stampPlan({ updatedAt: entry.updatedAt });
+  /**
+   * One `PUT`, then another if the document moved on under it or the server
+   * handed us its own id. A loop rather than recursion, so the promise
+   * `push()` returns covers every request the edit causes.
+   */
+  async function pushLoop(): Promise<void> {
+    for (;;) {
+      if (!session || destroyed) return;
+      const sent = host.getPlan();
+      if (syncedUpdatedAt !== null && sent.updatedAt === syncedUpdatedAt) {
+        setSynced();
+        return;
       }
-      setSynced();
-      if (dirty) {
+
+      inFlight = true;
+      setStatus('Syncing…');
+      try {
+        const entry = await putPlan(session, sent);
+        inFlight = false;
+        if (destroyed) return;
+        adoptedExistingId = false;
+        retryAttempt = 0;
+        // Only stamp the server's clock on when nothing was edited under us;
+        // otherwise the newer local document keeps its own stamp and the
+        // follow-up below sends it.
+        if (host.getPlan().updatedAt === sent.updatedAt) {
+          syncedUpdatedAt = entry.updatedAt;
+          localEdits = false;
+          host.stampPlan({ updatedAt: entry.updatedAt });
+        }
+        setSynced();
+        if (!dirty) return;
         dirty = false;
-        await push();
+      } catch (err) {
+        inFlight = false;
+        if (destroyed) return;
+        // The server already holds a plan for this trail under another id, and
+        // has just said which: send the same document again under that id.
+        if (adoptExistingId(err)) continue;
+        handlePushFailure(err);
+        return;
       }
-    } catch (err) {
-      inFlight = false;
-      await handlePushFailure(err);
     }
   }
 
-  /** A failure with no document in flight (the boot read). */
+  /**
+   * 409 `plan_exists`: this browser's document is the same plan by a different
+   * name, so it takes the id the server named rather than becoming a second
+   * plan. True when the id was taken and the document should go again.
+   */
+  function adoptExistingId(err: unknown): boolean {
+    if (adoptedExistingId) return false;
+    if (!(err instanceof ApiError) || err.status !== 409 || err.code !== 'plan_exists') return false;
+    const existingId = (err.body as { existingId?: unknown } | undefined)?.existingId;
+    if (typeof existingId !== 'string') return false;
+    adoptedExistingId = true;
+    host.stampPlan({ id: existingId });
+    return true;
+  }
+
+  /** A failure with no document in flight (a read). */
   function handleFailure(err: unknown): void {
     if (destroyed) return;
     if (err instanceof NetworkError) {
-      retryWhenOnline = true;
+      // `onOnline` re-reads the server and reconciles, so a boot read that
+      // failed here never turns into a blind `PUT` of a stale document.
       setStatus('Offline, will retry', 'warn');
       return;
     }
     if (err instanceof ApiError && err.status === 401) {
       onUnauthorised();
+      return;
+    }
+    if (err instanceof ApiError && err.code === 'primary_token_required') {
+      // Something only the phone's own token may do. Nothing on this page asks
+      // for it, but a code the reader cannot act on is no answer if one ever
+      // does — say where the button is instead.
+      setStatus('Only your phone can do that — open Tracknotes there', 'warn');
       return;
     }
     if (err instanceof ApiError) {
@@ -253,31 +423,62 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
     setStatus('Sync failed', 'warn');
   }
 
-  async function handlePushFailure(err: unknown): Promise<void> {
+  /**
+   * True for a refusal that is about this moment rather than this document:
+   * too many requests, or a server having a bad minute.
+   *
+   * Everything else is permanent and retrying it would be noise — a 400
+   * (`duplicate_stop_km`, `duplicate_stop_waypoint`) will be refused the same
+   * way for ever, and a 403 `banned` account will not be unbanned by asking
+   * again. Those show their code and stop.
+   */
+  function isRetriable(err: unknown): err is ApiError {
+    return err instanceof ApiError && (err.status === 429 || err.status >= 500);
+  }
+
+  function handlePushFailure(err: unknown): void {
     if (destroyed) return;
-    if (
-      err instanceof ApiError &&
-      err.status === 409 &&
-      err.code === 'plan_exists' &&
-      !adoptedExistingId
-    ) {
-      const existingId = (err.body as { existingId?: unknown } | undefined)?.existingId;
-      if (typeof existingId === 'string') {
-        // The server already holds a plan for this trail under another id —
-        // this browser's document is the same plan by a different name, so it
-        // takes that id and replaces it rather than becoming a second plan.
-        adoptedExistingId = true;
-        host.stampPlan({ id: existingId });
-        await push();
-        return;
-      }
+    // Whatever went wrong, the next 409 may adopt again: leaving the flag set
+    // for the life of the page would strand the plan under an id the server
+    // refuses.
+    adoptedExistingId = false;
+    if (isRetriable(err)) {
+      // Too many requests, or the server having a bad minute. The edit is
+      // saved locally either way; this is only about when it goes up.
+      setStatus(`Sync failed: ${err.code}`, 'warn');
+      scheduleRetry();
+      return;
     }
     handleFailure(err);
+  }
+
+  function clearRetry(): void {
+    if (retryTimer === null) return;
+    clearTimeout(retryTimer);
+    retryTimer = null;
+  }
+
+  /** Book the next backoff attempt, if there is one left. */
+  function scheduleRetry(): void {
+    if (retryAttempt >= RETRY_DELAYS_MS.length) return;
+    const delay = RETRY_DELAYS_MS[retryAttempt];
+    retryAttempt += 1;
+    clearRetry();
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      void push();
+    }, delay);
+  }
+
+  /** True when the last good read is old enough to be worth refreshing. */
+  function readIsStale(): boolean {
+    return lastPullAt !== null && Date.now() - lastPullAt > REFRESH_INTERVAL_MS;
   }
 
   /** The token is gone (revoked from the phone, or expired). */
   function onUnauthorised(): void {
     clearSession();
+    clearRetry();
     session = null;
     syncedUpdatedAt = null;
     renderChrome();
@@ -342,12 +543,14 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
       renderChrome();
       // A freshly linked browser has a local plan the account has never seen,
       // so this is where it first goes up.
-      await initialSync();
+      await pull();
     } catch (err) {
       if (err instanceof NetworkError) {
         setLinkError('Could not reach the server. Check your connection and try again.');
       } else if (err instanceof ApiError && err.code === 'code_invalid') {
         setLinkError('That code is not valid or has expired. Ask your phone for a new one.');
+      } else if (err instanceof ApiError && err.code === 'primary_token_required') {
+        setLinkError('Only your phone can do that. Open Tracknotes on your phone and try there.');
       } else if (err instanceof ApiError && err.code === 'rate_limited') {
         setLinkError('Too many attempts. Wait a few minutes and try again.');
       } else if (err instanceof ApiError) {
@@ -389,8 +592,10 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
     if (!session || !sharePanel) return;
     setShareNote('');
     try {
-      // A plan the server has never seen cannot be shared; the push is the
-      // same one every edit makes, so this costs nothing when it is up to date.
+      // A plan the server has never seen cannot be shared, so the document
+      // goes up first. `push()` settles only when the `PUT` in the air (and
+      // any follow-up it causes) has landed — sharing a plan the server has
+      // not stored yet would mint a link to the version before this edit.
       await push();
       const { url } = await sharePlan(session, host.getPlan().id);
       if (shareUrlInput) shareUrlInput.value = url;
@@ -439,10 +644,23 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
   // Wiring
   // -------------------------------------------------------------------------
 
+  /**
+   * The network is back. Re-read before writing: whatever failed may have been
+   * the boot read, and pushing on its own would send a document this page has
+   * never compared against the server's — straight over whatever the phone
+   * synced in the meantime. `pull()` ends in a push when ours is the copy to
+   * keep, so nothing is lost either way.
+   */
   const onOnline = (): void => {
-    if (!retryWhenOnline || !session) return;
-    retryWhenOnline = false;
-    void push();
+    if (!session || destroyed) return;
+    void pull();
+  };
+
+  /** Coming back to the tab is the other moment a stale plan is worth a read. */
+  const onVisibilityChange = (): void => {
+    if (!session || destroyed) return;
+    if (document.visibilityState !== 'visible') return;
+    void pull();
   };
 
   syncBtn.addEventListener('click', openDialog);
@@ -470,19 +688,32 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
     if (sharePanel) sharePanel.hidden = true;
   });
   window.addEventListener('online', onOnline);
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   renderChrome();
-  if (session) void initialSync();
+  // Boot: ask the server what it holds for this trail, and reconcile.
+  if (session) void pull();
 
   return {
     onLocalSave(): void {
       if (!session || destroyed) return;
-      retryWhenOnline = false;
-      void push();
+      localEdits = true;
+      // The reader has moved on; whatever the last conflict was, it is no
+      // longer what the status line should be saying.
+      conflictNote = null;
+      // A page that has sat idle asks what the server holds before writing
+      // over it — one `GET`, at most every REFRESH_INTERVAL_MS, and the
+      // reconciliation that follows pushes this edit when it is the newer one.
+      // Only when nothing is already in the air, though: `pull()` declines to
+      // run alongside a request, and this edit would go nowhere.
+      if (currentPush === null && !pulling && readIsStale()) void pull();
+      else void push();
     },
     destroy(): void {
       destroyed = true;
+      clearRetry();
       window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     },
   };
 }

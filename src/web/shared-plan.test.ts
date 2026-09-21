@@ -159,6 +159,9 @@ describe('the shared plan page', () => {
     // The editor is gone, not merely inert.
     expect(document.querySelector('.tab-btn[data-tab="stops"]')?.hasAttribute('hidden')).toBe(true);
     expect($('tab-stops').hasAttribute('hidden')).toBe(true);
+    // And the class `plan-page.css` hides the Resupply tab's All/None buttons
+    // with — the last two controls that would edit a plan this page cannot save.
+    expect($('plan-shell').classList.contains('is-readonly')).toBe(true);
 
     // The header is text, not fields.
     expect(document.getElementById('plan-name-input')).toBeNull();
@@ -227,6 +230,27 @@ describe('the shared plan page', () => {
     expect($('plan-missing').hidden).toBe(false);
     expect($('plan-missing-detail').textContent).toMatch(/no longer shared/);
     expect($('plan-shell').hidden).toBe(true);
+  });
+
+  it('refuses a document it cannot read, rather than drawing it', async () => {
+    sharedReply = {
+      status: 200,
+      body: {
+        // `stops` is the plan; a string where the array should be would sort
+        // into nonsense several renders away from the cause.
+        document: { ...sharedDoc(), stops: 'Salida, High Hut' },
+        trailId: TRAIL_ID,
+        ownerDisplayName: HOSTILE_NAME,
+      },
+    };
+    await boot();
+
+    expect($('plan-missing').hidden).toBe(false);
+    expect($('plan-missing-detail').textContent).toMatch(/cannot read|can read/);
+    expect($('plan-shell').hidden).toBe(true);
+    // Nothing of it reached the page, the trail fetch included.
+    expect($('days-list').textContent).not.toContain('Salida');
+    expect(requests.some(url => url.includes('/data/generated/'))).toBe(false);
   });
 
   it('says so when this site does not carry the trail', async () => {

@@ -300,6 +300,30 @@ describe('the All and None buttons', () => {
     expect(countText()).toBe('5 of 5 selected');
     expect(legRows()).toHaveLength(5);
   });
+
+  it('writes once for two presses of All, because the second changes nothing', async () => {
+    await boot();
+    const writes = vi.spyOn(Storage.prototype, 'setItem');
+    try {
+      $('resupply-all').click();
+      flushSave();
+      const after = localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`);
+      const first = writes.mock.calls.filter(([key]) => key === `trail-plan-doc-${TRAIL_ID}`).length;
+      expect(first).toBe(1);
+
+      $('resupply-all').click();
+      flushSave();
+
+      // The shared editor hands back the same document for a selection that did
+      // not change, so there is nothing to stamp, store or send.
+      expect(
+        writes.mock.calls.filter(([key]) => key === `trail-plan-doc-${TRAIL_ID}`).length,
+      ).toBe(1);
+      expect(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)).toBe(after);
+    } finally {
+      writes.mockRestore();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

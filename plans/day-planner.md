@@ -2,11 +2,14 @@
 
 Status: planned 2026-09-20 on `claude/day-planner-feature-plan-nhcadj`; the open questions were
 answered the same day and rows 1-4c of the sequencing table were implemented on that branch the
-same day (row 5, deploy, is outstanding: `npm run migrate:remote` then `npm run deploy` in
-`workers/comments-api` — the migration must land before the worker, since auth now reads
-`device_tokens` — then set `VITE_API_BASE_URL` on the site build and ship the app by EAS Update;
-no native change was needed, the start date is a validated text field and there is no QR yet). Decisions taken with Eamon are
-marked **[decided]**; the former open questions are recorded as decisions at the end.
+same day. Reviewed 2026-09-21 (four review passes, one per layer) on
+`claude/pr77-maze-review-secrets-emvjvy`, which rebased the work onto `main` — where the
+resupply-selection feature (#77) had landed in the meantime — reconciled the two (see "Where the
+hiker's inputs live" below) and fixed the review findings. Row 5, deploy, is outstanding and its
+recipe is under "Deploy" at the end of this file; note that **the app cannot ship as an EAS
+Update** (expo-updates is not installed and `app.json` has no `updates`/`runtimeVersion`), so
+the phone side needs an `eas build`. Decisions taken with Eamon are marked **[decided]**; the
+former open questions are recorded as decisions at the end.
 
 ## Why
 
@@ -123,6 +126,16 @@ by anyone you send a link to.
   conflicts are last-writer-wins by server `updatedAt`, as for comments; a browser's token lives
   in `localStorage` but is a separate, revocable, expiring token rather than the phone's; the
   Stops list defaults to overnight candidates with an "All waypoints" switch.
+- **[decided 2026-09-21] Where the hiker's inputs live.** After the rebase onto #77 the web
+  `PlanState` carried `pace`/`dailyHours` and the phone kept its resupply selection device-local
+  in `plan-inputs-store`, while this feature made `PlanDocument` the one synced shape. Resolved
+  as: **pace and hours are per device** (web: `PlanUiPrefs` under `trail-plan-ui-<id>`, migrated
+  out of the legacy `PlanState`; phone: `plan-inputs-store`), because a shared plan should not
+  say how fast its author walks and the phone already kept its own; **the resupply selection is
+  in the document** (`PlanDocument.resupplyStops`, edited through `setResupplyStops` in
+  `plan-editor.ts` on both platforms), because it is part of the plan and the web had already
+  put it there. The phone reads a legacy `plan-inputs-store` selection only while the document
+  has none.
 
 ## Data contract — the plan document
 
@@ -419,7 +432,7 @@ tick two stops → two day cards).
 | 4a | Mobile: schema v5, repo, store, Plan screen, waypoint toggle | `mobile/` | 1 |
 | 4b | Mobile: sync branches, `pullPlans`, settings linking, share import | `mobile/` | 2a, 2b, 4a |
 | 4c | Mobile: map ring + profile ticks | `mobile/` | 4a |
-| 5 | Deploy: `migrate:remote`, `deploy`; `eas build` (date picker is native); EAS update after | ops | 2, 4 |
+| 5 | Deploy: `migrate:remote`, `deploy`; `VITE_API_BASE_URL` on the site; `eas build` (no EAS Update is configured) — see "Deploy" below | ops | 2, 4 |
 
 1, 2b and 3a have no dependencies and can run as three parallel subagents on the branch (no file
 overlap). 2a and 4a start once 1's types are on the branch; 3b once 3a is. 3c and 4b close the
@@ -450,3 +463,28 @@ All six were answered as assumed and are now decisions above: the generator stay
 linked browser token lives 180 days, rolling; rest days are nights at a stop; the share page
 shows the owner's display name; the web map marker gets a "Stop here" popup and the silent
 toggle is removed.
+
+## Deploy
+
+Everything below needs credentials the build container does not hold: a Cloudflare API token
+(Workers Scripts + D1 edit; Workers Routes + DNS edit on the `contour-map-tiles.net` zone for
+the custom domain) and account id for `wrangler`, an Expo access token for `eas`, and either the
+Vercel dashboard or a Vercel token for the site variable.
+
+1. **Worker, migration first.** `cd workers/comments-api && npm run migrate:remote && npm run deploy`.
+   The migration must land before the worker because `auth.ts` joins `device_tokens` on every
+   authenticated request; the other order 500s every request until the table exists. A phone
+   that registers in the gap between the two commands gets a `users` row and no `device_tokens`
+   row; `auth.ts` now self-heals that on its first request, so no second backfill is needed.
+   `SITE_BASE` in `wrangler.toml` is the deployed site (`https://trail-maps.vercel.app`, verified
+   2026-09-21) and is baked into every share link. Smoke: `curl https://api.contour-map-tiles.net/health`.
+2. **Site.** Set `VITE_API_BASE_URL=https://api.contour-map-tiles.net` on the Vercel project
+   (Production and Preview) and redeploy; without it the planner is local-only and the Sync/Share
+   controls are removed. Vite's `envDir` is `src/web`, so a repo-root `.env` is ignored — set it
+   in the host, not a file. The site can ship before the worker (local-only) but Sync needs 1.
+3. **App.** A new binary: `cd mobile && eas build --non-interactive --profile production --platform android`
+   (and iOS, which may need an interactive Apple sign-in the first time). EAS Update is not an
+   option until `expo-updates` is installed and `app.json` carries `updates` + `runtimeVersion` —
+   itself a native change and a new build. Nothing in this feature changed native code, so a
+   development client already installed keeps working against Metro.
+

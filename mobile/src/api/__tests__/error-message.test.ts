@@ -15,11 +15,18 @@ describe('apiErrorMessage', () => {
     expect(msg).toBe(NETWORK_ERROR_MESSAGE);
   });
 
-  it('maps 401/403 to the identity message', () => {
+  it('maps 401 to the identity message', () => {
     expect(apiErrorMessage(new ApiError(401, 'unauthorized', 'nope'), FALLBACK)).toBe(
       AUTH_ERROR_MESSAGE,
     );
-    expect(apiErrorMessage(new ApiError(403, 'forbidden', 'nope'), FALLBACK)).toBe(
+  });
+
+  it('says what a 403 says — it is the only part a hiker can act on', () => {
+    expect(
+      apiErrorMessage(new ApiError(403, 'banned', 'This account has been suspended.'), FALLBACK),
+    ).toBe('This account has been suspended.');
+    // Only a silent 403 falls back to the identity copy.
+    expect(apiErrorMessage(new ApiError(403, 'forbidden', '  '), FALLBACK)).toBe(
       AUTH_ERROR_MESSAGE,
     );
   });

@@ -392,8 +392,12 @@ export async function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
   const changedTrails = new Set<string>();
   for (const entry of result.entries) {
     if (isPlanTombstone(entry)) {
-      await plansRepo.tombstone(db, entry.id, entry.updatedAt);
-      changedTrails.add(entry.trailId);
+      // Last-writer-wins applies to a delete too: a tombstone older than an
+      // edit still queued here would throw that edit away, and the queued PUT
+      // would then undelete the plan server-side.
+      if (await plansRepo.tombstoneFromServer(db, entry.id, entry.updatedAt)) {
+        changedTrails.add(entry.trailId);
+      }
       applied += 1;
       continue;
     }
@@ -501,7 +505,12 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
     if (item.trailId) changedTrail = item.trailId;
   };
   const finish = (outcome: DrainOutcome): DrainResult => {
-    if (sent > 0) emitSyncChange({ trailId: changedTrail, waypointIds: [...changedWaypoints] });
+    // Failures announce themselves too: the row that failed is what a screen
+    // reads to say a write has not landed (`outboxRepo.lastFailure`), and it is
+    // the only change a drain that sent nothing made.
+    if (sent > 0 || failed > 0) {
+      emitSyncChange({ trailId: changedTrail, waypointIds: [...changedWaypoints] });
+    }
     return { outcome, sent, failed };
   };
 
@@ -565,7 +574,7 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
           });
         }
       } else if (item.kind === 'plan') {
-        await sendPlan(db, ctx, JSON.parse(item.payloadJson) as PlanDocument);
+        await sendPlan(db, ctx, JSON.parse(item.payloadJson) as PlanDocument, deps);
       } else if (item.kind === 'plan-delete') {
         const { id } = JSON.parse(item.payloadJson) as { id: string };
         await plansApi.deletePlan(ctx, id);
@@ -652,9 +661,18 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
  * clock from here on — the only clock last-writer-wins can safely compare
  * across devices.
  *
- * Skipped when the stored document is no longer the one we sent: an edit made
+ * Skipped when the stored row is no longer the document we sent: an edit made
  * while the PUT was in flight is already queued behind it, and stamping the
  * older document over it would show yesterday's plan until that write lands.
+ * A tombstone written while the PUT was in flight is skipped for the same
+ * reason — the delete is queued, and re-storing the document would put the
+ * plan back on this screen until it drains.
+ *
+ * Past that guard the write is UNCONDITIONAL (`upsertServerAck`, not
+ * `upsertServer`): it is the same document with the server's clock on it, so
+ * it is by construction the newest copy. Comparing stamps here would let a
+ * device clock running ahead of the server keep its own — and then discard
+ * every edit from a linked browser until the two clocks crossed.
  */
 async function applyServerPlan(
   db: SqlDatabase,
@@ -662,10 +680,10 @@ async function applyServerPlan(
   entry: PlanSyncEntry,
 ): Promise<void> {
   const stored = await plansRepo.getById(db, sent.id);
-  if (stored && stored.document.updatedAt !== sent.updatedAt) return;
+  if (stored && (stored.deletedAt !== null || stored.document.updatedAt !== sent.updatedAt)) return;
   const doc = entryDocument(entry);
   if (!doc) return;
-  await plansRepo.upsertServer(db, doc);
+  await plansRepo.upsertServerAck(db, doc);
 }
 
 /**
@@ -684,6 +702,7 @@ async function sendPlan(
   db: SqlDatabase,
   ctx: plansApi.ApiContext,
   doc: PlanDocument,
+  deps: SyncDeps,
 ): Promise<void> {
   try {
     const entry = await plansApi.putPlan(ctx, doc);
@@ -697,6 +716,10 @@ async function sendPlan(
     // if the retry below never reaches the server.
     const adopted: PlanDocument = { ...doc, id: existingId };
     await plansRepo.upsertLocal(db, adopted);
+    // And the cache with it: a screen still holding the abandoned id would
+    // edit that document, and every one of those edits would 409 into this
+    // same adoption — two PUTs per tap, forever.
+    refreshPlanCache(adopted.trailId, deps);
     const entry = await plansApi.putPlan(ctx, adopted);
     await applyServerPlan(db, adopted, entry);
   }
@@ -711,6 +734,11 @@ async function sendPlan(
  * sends it on the next launch. {@link assertServerTrail} is the same gate the
  * comment writes use — an imported trail's plan lives in SQLite and nowhere
  * else, and reaching here with one is a bug, not a case to swallow.
+ *
+ * A queued DELETE for the same plan goes too, the mirror of what
+ * {@link submitPlanDelete} does to a queued write. The plan exists again (this
+ * document is it), and FIFO would otherwise send the delete and then undelete
+ * it with this PUT, leaving the server live and the local row tombstoned.
  */
 export async function enqueuePlan(
   trailId: string,
@@ -720,6 +748,7 @@ export async function enqueuePlan(
   assertServerTrail(trailId);
   const db = await resolveDb(deps);
   await outboxRepo.replacePending(db, 'plan', doc.id);
+  await outboxRepo.replacePending(db, 'plan-delete', doc.id);
   await outboxRepo.enqueue(db, {
     id: uuidv4(),
     kind: 'plan',

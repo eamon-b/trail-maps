@@ -186,6 +186,29 @@ export async function replacePending(
   return before?.n ?? 0;
 }
 
+/**
+ * The error on the most recent FAILED row of `kind` for one entity key, or
+ * null when nothing of that kind is failing.
+ *
+ * A 4xx leaves the row `failed` with the server's message on it and drains no
+ * further, which is otherwise invisible: the local document still looks saved,
+ * because it is. This is how a screen can say that the copy on the server is
+ * not the one on the phone.
+ */
+export async function lastFailure(
+  db: SqlDatabase,
+  kind: OutboxKind,
+  key: string,
+): Promise<string | null> {
+  const row = await db.getFirstAsync<{ last_error: string | null }>(
+    `SELECT last_error FROM outbox
+     WHERE kind = ? AND waypoint_id = ? AND status = 'failed'
+     ORDER BY created_at DESC, id DESC LIMIT 1`,
+    [kind, key],
+  );
+  return row ? (row.last_error ?? null) : null;
+}
+
 /** Total queued items (for badges / diagnostics). */
 export async function count(db: SqlDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM outbox');

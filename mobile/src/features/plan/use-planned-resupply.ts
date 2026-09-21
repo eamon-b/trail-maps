@@ -15,6 +15,15 @@
  * `useWaypointResupplyPlan` at the foot of the file is the detail screen's
  * version of the same read: it answers what to show AND what a tap should do,
  * so those two can never disagree.
+ *
+ * **The selection lives in the plan document**, next to the stops, because it
+ * is the same choice the web page writes into the same synced `PlanDocument` —
+ * a device-local copy would mean a hiker's browser and phone quietly disagreed
+ * about which towns they were posting food to. The old device-local field
+ * (`plan-inputs-store`'s `resupplyStops`) is still READ, as a fallback for a
+ * selection made before this build, and cleared by Reset; nothing writes it.
+ * Pace and daily hours stay there, deliberately: they are how fast this hiker
+ * walks, not part of the plan the two platforms share.
  */
 
 import { useCallback, useMemo } from 'react';
@@ -25,7 +34,13 @@ import {
   type ResupplyCandidateWaypoint,
   type ResupplyOptionGroup,
 } from '@lib/resupply-plan';
-import { selectPrefs, selectResupplyStopIds, usePlanInputsStore } from './plan-inputs-store';
+import { setResupplyStops } from '@lib/plan-editor';
+import {
+  selectResupplyStops,
+  usePlansStore,
+  type PlanDefaults,
+} from '../../state/plans-store';
+import { selectPrefs, usePlanInputsStore } from './plan-inputs-store';
 
 /** The only thing this module needs from a trail: its waypoints. */
 export interface PlannedResupplyTrail {
@@ -81,6 +96,52 @@ export function toggleResupplyStop(
 }
 
 /**
+ * The trail's stored selection: the plan document's, or — only while the
+ * document has none — the device-local one a pre-sync build left behind.
+ *
+ * Returns the stored array itself as well as the Set, because a write has to
+ * start from the list the hiker is looking at. Both keep a stable identity
+ * while the selection does, so a caller's memo does not churn.
+ *
+ * The plans store is hydrated by whatever screen the hiker opened (the guide
+ * does it on mount, `GuideView`), so an unhydrated cache reads as "no document
+ * yet" for one frame — the same thing it reads as for a trail with no plan.
+ */
+function useStoredResupplyStops(trailId: string): {
+  stored: string[] | undefined;
+  selected: ReadonlySet<string> | null;
+} {
+  const planned = usePlansStore(selectResupplyStops(trailId));
+  const legacy = usePlanInputsStore(selectPrefs(trailId)).resupplyStops;
+  const stored = planned ?? legacy;
+  const selected = useMemo(() => (stored ? new Set(stored) : null), [stored]);
+  return { stored, selected };
+}
+
+/**
+ * Store an explicit selection in the trail's plan, minting the plan if this is
+ * the hiker's first edit to it. The write is floating on purpose: `apply` never
+ * rejects, and every caller is an `onPress`.
+ */
+export function saveResupplyStops(
+  trailId: string,
+  ids: readonly string[],
+  defaults: PlanDefaults,
+): void {
+  void usePlansStore.getState().apply(trailId, (p) => setResupplyStops(p, ids), defaults);
+}
+
+/**
+ * Back to "no plan made" — which is what turns every planned highlight off.
+ * Both copies go: the document's field, and the legacy device-local one, or a
+ * selection made before this build would come straight back as the fallback.
+ */
+export function resetResupplyStops(trailId: string, defaults: PlanDefaults): void {
+  void usePlansStore.getState().apply(trailId, (p) => setResupplyStops(p, undefined), defaults);
+  usePlanInputsStore.getState().clearResupplyStops(trailId);
+}
+
+/**
  * The trail's planned resupply waypoint ids, reactive to the stored selection.
  * `trailId` and `trail` are separate because the guide's trail is the
  * direction-applied one while the selection is keyed by the plain trail id.
@@ -89,7 +150,7 @@ export function usePlannedResupplyIds(
   trailId: string,
   trail: PlannedResupplyTrail,
 ): ReadonlySet<string> | null {
-  const selected = usePlanInputsStore(selectResupplyStopIds(trailId));
+  const { selected } = useStoredResupplyStops(trailId);
   // Grouping the whole CDT's 80 options is not free; key it on the trail alone
   // so ticking a box does not regroup.
   const groups = useMemo(() => listResupplyOptions(trail.waypoints), [trail]);
@@ -131,10 +192,10 @@ export function useWaypointResupplyPlan(
   trailId: string,
   trail: PlannedResupplyTrail,
   waypointId: string | null | undefined,
+  /** What to mint the plan with, should this tap be the first edit to it. */
+  defaults: PlanDefaults,
 ): WaypointResupplyPlan {
-  const selected = usePlanInputsStore(selectResupplyStopIds(trailId));
-  const stored = usePlanInputsStore(selectPrefs(trailId)).resupplyStops;
-  const setResupplyStops = usePlanInputsStore((s) => s.setResupplyStops);
+  const { stored, selected } = useStoredResupplyStops(trailId);
   // Keyed on the trail alone, as `usePlannedResupplyIds` is: ticking a box must
   // not regroup the CDT's 70 options.
   const groups = useMemo(() => listResupplyOptions(trail.waypoints), [trail]);
@@ -151,8 +212,12 @@ export function useWaypointResupplyPlan(
 
   const toggle = useCallback(() => {
     if (!optionId) return;
-    setResupplyStops(trailId, setResupplyStopSelected(stored, allIds, optionId, !isSelected));
-  }, [allIds, isSelected, optionId, setResupplyStops, stored, trailId]);
+    saveResupplyStops(
+      trailId,
+      setResupplyStopSelected(stored, allIds, optionId, !isSelected),
+      defaults,
+    );
+  }, [allIds, defaults, isSelected, optionId, stored, trailId]);
 
   return {
     isPlanned,

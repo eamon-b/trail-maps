@@ -85,6 +85,8 @@ describe('plans-repo', () => {
       const d = await db();
       await plansRepo.upsertLocal(d, doc({ name: 'Mine' }));
 
+      // `GET /v1/plans?since=` is inclusive, so the row whose stamp equals the
+      // one already stored comes back on every delta — it must be a no-op.
       expect(await plansRepo.upsertServer(d, doc({ name: 'Same clock' }))).toBe(false);
       expect(
         await plansRepo.upsertServer(
@@ -165,13 +167,59 @@ describe('plans-repo', () => {
     expect(rows.map((r) => r.id)).toEqual(['kept']);
   });
 
-  it('purgeAll drops every plan', async () => {
+  it('purgeSynced drops the account’s plans and keeps an imported trail’s', async () => {
     const d = await db();
     await plansRepo.upsertLocal(d, doc());
     await plansRepo.upsertLocal(d, doc({ id: 'other', trailId: 'heysen' }));
+    await plansRepo.upsertLocal(d, doc({ id: 'mine', trailId: 'u_import' }));
+    await plansRepo.upsertLocal(d, doc({ id: 'dead', trailId: 'bibbulmun' }));
+    await plansRepo.tombstone(d, 'dead');
 
-    await plansRepo.purgeAll(d);
+    // The real gate is `services/server-trails.isServerKnown`.
+    const purged = await plansRepo.purgeSynced(d, (trailId) => !trailId.startsWith('u_'));
 
-    expect(await d.getAllAsync('SELECT id FROM plans')).toHaveLength(0);
+    expect(purged).toBe(3);
+    const rows = await d.getAllAsync<{ id: string }>('SELECT id FROM plans');
+    // The imported trail's plan was never on the server, so it is not the
+    // deleted account's to take; the tombstone of a bundled one still goes.
+    expect(rows.map((r) => r.id)).toEqual(['mine']);
+  });
+
+  describe('upsertServerAck (the answer to our own PUT)', () => {
+    it('stores the server’s stamp even when the local one is ahead', async () => {
+      const d = await db();
+      // A device clock a day fast: `upsertServer` would refuse this forever.
+      await plansRepo.upsertLocal(d, doc({ updatedAt: '2026-09-21T10:00:00Z' }));
+
+      await plansRepo.upsertServerAck(d, doc({ updatedAt: '2026-09-20T10:00:05Z' }));
+
+      const row = await plansRepo.getById(d, 'plan-1');
+      expect(row?.updatedAt).toBe('2026-09-20T10:00:05Z');
+      expect(row?.source).toBe('server');
+    });
+  });
+
+  describe('tombstoneFromServer (last-writer-wins)', () => {
+    it('applies a delete newer than what is stored', async () => {
+      const d = await db();
+      await plansRepo.upsertLocal(d, doc());
+
+      expect(await plansRepo.tombstoneFromServer(d, 'plan-1', '2026-09-21T00:00:00Z')).toBe(true);
+      expect(await plansRepo.getByTrail(d, TRAIL)).toBeNull();
+    });
+
+    it('leaves an unsent local edit alone when the delete is older', async () => {
+      const d = await db();
+      await plansRepo.upsertLocal(d, doc({ name: 'Edited', updatedAt: '2026-09-22T00:00:00Z' }));
+
+      expect(await plansRepo.tombstoneFromServer(d, 'plan-1', '2026-09-21T00:00:00Z')).toBe(false);
+      expect((await plansRepo.getByTrail(d, TRAIL))?.name).toBe('Edited');
+    });
+
+    it('ignores a delete for a plan this device never had', async () => {
+      const d = await db();
+      expect(await plansRepo.tombstoneFromServer(d, 'unknown', '2026-09-21T00:00:00Z')).toBe(false);
+      expect(await d.getAllAsync('SELECT id FROM plans')).toHaveLength(0);
+    });
   });
 });

@@ -1,8 +1,10 @@
 /**
  * Planned resupply stops in the datasheet: the row pill, the `Planned` chip
  * (which only exists once a plan does), and the empty state that points at the
- * Plan screen. The real `plan-inputs-store` drives it, so what is asserted here
- * is the whole path from a stored selection to a rendered pill.
+ * Plan screen. The real stores drive it, so what is asserted here is the whole
+ * path from a stored selection to a rendered pill — from the plan document,
+ * which is where the selection lives and what a sync brings in, and from the
+ * device-local prefs of a build that predates it.
  */
 
 import React from 'react';
@@ -13,6 +15,8 @@ import TestRenderer, {
 } from 'react-test-renderer';
 import { WaypointListPane } from '../WaypointListPane';
 import { usePlanInputsStore } from '../../plan/plan-inputs-store';
+import { usePlansStore } from '../../../state/plans-store';
+import type { PlanDocument } from '@lib/plan-types';
 import type { TrailJson } from '../../../services/trail-loader';
 
 jest.mock('../../../theme', () => ({
@@ -129,6 +133,21 @@ function rowLabels(tree: ReactTestRenderer): string[] {
     .map((n) => n.props.accessibilityLabel as string);
 }
 
+/** A stored plan whose only interesting field is the resupply selection. */
+function planWith(resupplyStops: string[]): PlanDocument {
+  return {
+    id: 'p1',
+    trailId: 'heysen',
+    name: 'Heysen',
+    direction: 'NOBO',
+    startDate: null,
+    stops: [],
+    resupplyStops,
+    updatedAt: '2026-09-01T00:00:00Z',
+    version: 1,
+  };
+}
+
 let mounted: ReactTestRenderer | null = null;
 
 function render(): ReactTestRenderer {
@@ -147,6 +166,7 @@ describe('WaypointListPane planned resupply', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     usePlanInputsStore.setState({ byTrail: {} });
+    usePlansStore.setState({ byTrail: {} });
   });
 
   afterEach(() => {
@@ -164,7 +184,7 @@ describe('WaypointListPane planned resupply', () => {
   });
 
   it('pills the ticked stop and its turn-off, but not the next town along the road', () => {
-    usePlanInputsStore.getState().setResupplyStops('heysen', ['w_town']);
+    usePlansStore.setState({ byTrail: { heysen: planWith(['w_town']) } });
     const tree = render();
     expect(chipLabels(tree)).toContain('Planned');
 
@@ -181,12 +201,37 @@ describe('WaypointListPane planned resupply', () => {
   });
 
   it('points at the Plan screen when the plan is empty', () => {
-    usePlanInputsStore.getState().setResupplyStops('heysen', []);
+    usePlansStore.setState({ byTrail: { heysen: planWith([]) } });
     const tree = render();
     pressChip(tree, 'Planned');
     act(() => {
       jest.runOnlyPendingTimers();
     });
+    expect(allText(tree)).toContain(
+      'No planned resupply stops. Choose them from the Plan screen.',
+    );
+  });
+
+  it('still reads a selection made before the plan document carried one', () => {
+    // No document at all — only what an older build persisted on this device.
+    usePlanInputsStore.setState({
+      byTrail: { heysen: { dailyHours: 8, pace: 'average', resupplyStops: ['w_town'] } },
+    });
+    const tree = render();
+    expect(chipLabels(tree)).toContain('Planned');
+  });
+
+  it('prefers the document over the device-local leftovers', () => {
+    usePlanInputsStore.setState({
+      byTrail: { heysen: { dailyHours: 8, pace: 'average', resupplyStops: ['w_town'] } },
+    });
+    usePlansStore.setState({ byTrail: { heysen: planWith([]) } });
+    const tree = render();
+    pressChip(tree, 'Planned');
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    // The document says nothing is planned, and it wins.
     expect(allText(tree)).toContain(
       'No planned resupply stops. Choose them from the Plan screen.',
     );

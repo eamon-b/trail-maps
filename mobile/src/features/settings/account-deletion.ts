@@ -19,6 +19,7 @@
 
 import type { SqlDatabase } from '../../db/sql-database';
 import * as plansRepo from '../../db/plans-repo';
+import { isServerKnown } from '../../services/server-trails';
 import { PLANS_SYNC_KEY } from '../../sync/comment-sync';
 
 /**
@@ -35,10 +36,15 @@ import { PLANS_SYNC_KEY } from '../../sync/comment-sync';
  * registers next. The `__plans__` high-water mark goes with them, so a fresh
  * account's first pull is a full snapshot rather than a delta since the deleted
  * account's last sync.
+ *
+ * An IMPORTED guide's plan is the exception, hence the `isServerKnown` gate: it
+ * was never on the server and belongs to the import, not to the identity, so
+ * deleting the account must not take it — the same boundary that keeps it out
+ * of the outbox in the first place.
  */
 export async function purgeLocalAccountData(db: SqlDatabase, userId: string): Promise<void> {
   await db.runAsync('DELETE FROM comments WHERE author_id = ?', [userId]);
-  await plansRepo.purgeAll(db);
+  await plansRepo.purgeSynced(db, isServerKnown);
   await db.runAsync('DELETE FROM sync_state WHERE trail_id = ?', [PLANS_SYNC_KEY]);
   await db.runAsync('DELETE FROM outbox');
 }

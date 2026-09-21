@@ -1,12 +1,21 @@
 /**
  * `usePlannedResupplyIds` is the single read every "planned" surface makes, so
- * what matters here is that it answers from the live store and that a turn-off
- * is planned whenever the place it serves is.
+ * what matters here is that it answers from the plan DOCUMENT (the thing the
+ * web writes and sync carries), falls back to the device-local selection an
+ * older build left behind, and that a turn-off is planned whenever the place it
+ * serves is.
+ *
+ * The plans store is real; only `apply` is stubbed, so a write is checked for
+ * what it asks the editor to do without a SQLite round trip. `plans-store`'s
+ * own tests cover the persistence.
  */
 
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { usePlanInputsStore } from '../plan-inputs-store';
+import { setResupplyStops } from '@lib/plan-editor';
+import type { PlanDocument } from '@lib/plan-types';
+import { DEFAULT_PREFS, usePlanInputsStore } from '../plan-inputs-store';
+import { usePlansStore, type PlanDefaults } from '../../../state/plans-store';
 import {
   plannedIdsFor,
   setResupplyStopSelected,
@@ -16,6 +25,50 @@ import {
   type PlannedResupplyTrail,
   type WaypointResupplyPlan,
 } from '../use-planned-resupply';
+
+const DEFAULTS: PlanDefaults = { name: 'CDT', direction: 'NOBO' };
+
+/** A stored plan carrying a resupply selection and nothing else of interest. */
+function planWith(resupplyStops: string[] | undefined): PlanDocument {
+  return {
+    id: 'p1',
+    trailId: 'cdt',
+    name: 'CDT',
+    direction: 'NOBO',
+    startDate: null,
+    stops: [],
+    ...(resupplyStops ? { resupplyStops } : {}),
+    updatedAt: '2026-09-01T00:00:00Z',
+    version: 1,
+  };
+}
+
+/** Put a document in the cache, the way a hydrate or a pull does. */
+function storePlan(plan: PlanDocument | undefined): void {
+  usePlansStore.setState({ byTrail: { cdt: plan } });
+}
+
+/** What an older build left on this device, and nothing writes any more. */
+function storeLegacy(ids: string[]): void {
+  usePlanInputsStore.setState({
+    byTrail: { cdt: { ...DEFAULT_PREFS, resupplyStops: ids } },
+  });
+}
+
+/**
+ * Stand in for the real `apply`: run the editor over the cached document (or a
+ * blank one) and cache the result, so a write is visible to the next render.
+ */
+function stubApply(): jest.Mock {
+  const apply = jest.fn(async (trailId: string, edit: (p: PlanDocument) => PlanDocument) => {
+    const base = usePlansStore.getState().byTrail[trailId] ?? planWith(undefined);
+    const next = edit(base);
+    usePlansStore.setState({ byTrail: { ...usePlansStore.getState().byTrail, [trailId]: next } });
+    return next;
+  });
+  usePlansStore.setState({ apply: apply as never });
+  return apply;
+}
 
 /**
  * Monarch Pass: one turn-off on the route, two towns a hitch away — each typed
@@ -114,11 +167,15 @@ describe('usePlannedResupplyIds', () => {
     return null;
   }
 
-  beforeEach(() => {
-    usePlanInputsStore.setState({ byTrail: {} });
+  function mount() {
     act(() => {
       renderer = TestRenderer.create(<Harness />);
     });
+  }
+
+  beforeEach(() => {
+    usePlanInputsStore.setState({ byTrail: {} });
+    usePlansStore.setState({ byTrail: {} });
   });
 
   afterEach(() => {
@@ -127,19 +184,44 @@ describe('usePlannedResupplyIds', () => {
   });
 
   it('is null until a plan is made', () => {
+    mount();
     expect(latest).toBeNull();
   });
 
-  it('follows the store', () => {
+  it('follows the document', () => {
+    mount();
     act(() => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_poncha']);
+      storePlan(planWith(['w_poncha']));
     });
     expect([...latest!].sort()).toEqual(['w_pass', 'w_poncha']);
 
     act(() => {
-      usePlanInputsStore.getState().clearResupplyStops('cdt');
+      storePlan(planWith(undefined));
     });
     expect(latest).toBeNull();
+  });
+
+  it('highlights a selection that arrived from the server with no local prefs', () => {
+    // Exactly what a pull leaves behind: a document in the cache, nothing in
+    // the device-local store.
+    storePlan(planWith(['w_salida']));
+    mount();
+    expect([...latest!].sort()).toEqual(['w_pass', 'w_salida']);
+    expect(usePlanInputsStore.getState().byTrail.cdt).toBeUndefined();
+  });
+
+  it('falls back to a selection made before the document carried one', () => {
+    storeLegacy(['w_creede']);
+    mount();
+    expect([...latest!]).toEqual(['w_creede']);
+  });
+
+  it('prefers the document once it has a selection of its own', () => {
+    storeLegacy(['w_creede']);
+    storePlan(planWith([]));
+    mount();
+    // An explicit empty selection is a plan with nothing in it, and it wins.
+    expect(latest!.size).toBe(0);
   });
 });
 
@@ -170,7 +252,7 @@ describe('useWaypointResupplyPlan', () => {
 
   function mount(waypointId: string | undefined) {
     function Harness() {
-      latest = useWaypointResupplyPlan('cdt', trail, waypointId);
+      latest = useWaypointResupplyPlan('cdt', trail, waypointId, DEFAULTS);
       return null;
     }
     act(() => {
@@ -183,10 +265,12 @@ describe('useWaypointResupplyPlan', () => {
       latest.toggle?.();
     });
 
-  const stored = () => usePlanInputsStore.getState().byTrail.cdt?.resupplyStops;
+  const stored = () => usePlansStore.getState().byTrail.cdt?.resupplyStops;
 
   beforeEach(() => {
     usePlanInputsStore.setState({ byTrail: {} });
+    usePlansStore.setState({ byTrail: {} });
+    stubApply();
   });
 
   afterEach(() => {
@@ -211,9 +295,7 @@ describe('useWaypointResupplyPlan', () => {
   });
 
   it('removes a ticked stop in one press', () => {
-    act(() => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_salida', 'w_creede']);
-    });
+    storePlan(planWith(['w_salida', 'w_creede']));
     mount('w_salida');
     expect(latest.isSelected).toBe(true);
 
@@ -224,9 +306,7 @@ describe('useWaypointResupplyPlan', () => {
   });
 
   it('shows a turn-off as planned via the place it serves, with no toggle', () => {
-    act(() => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_salida']);
-    });
+    storePlan(planWith(['w_salida']));
     mount('w_pass');
 
     expect(latest.isPlanned).toBe(true);
@@ -238,9 +318,7 @@ describe('useWaypointResupplyPlan', () => {
   });
 
   it('does not plan the other town on the same hitch', () => {
-    act(() => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_salida']);
-    });
+    storePlan(planWith(['w_salida']));
     mount('w_poncha');
 
     expect(latest.isPlanned).toBe(false);
@@ -260,5 +338,36 @@ describe('useWaypointResupplyPlan', () => {
     mount(undefined);
     expect(latest.toggle).toBeNull();
     expect(latest.isPlanned).toBe(false);
+  });
+
+  it('writes through the plans store, with the defaults a new plan needs', () => {
+    const apply = stubApply();
+    mount('w_creede');
+    press();
+
+    expect(apply).toHaveBeenCalledTimes(1);
+    const [trailId, , defaults] = apply.mock.calls[0];
+    expect(trailId).toBe('cdt');
+    expect(defaults).toEqual(DEFAULTS);
+    // The editor it handed over is the shared one, applied to the document.
+    expect(stored()).toEqual(['w_pass', 'w_salida', 'w_poncha', 'w_creede']);
+  });
+
+  it('starts a first tick from the legacy selection, then leaves it behind', () => {
+    storeLegacy(['w_salida']);
+    mount('w_creede');
+    press();
+
+    // The tap adds to what the hiker could see, which was the legacy list.
+    expect(stored()).toEqual(['w_salida', 'w_creede']);
+    // And from here the document answers, not the leftovers.
+    expect(latest.isSelected).toBe(true);
+  });
+});
+
+describe('the editor the writers use', () => {
+  it('drops the field entirely for "no plan made"', () => {
+    const plan = planWith(['w_salida']);
+    expect(setResupplyStops(plan, undefined).resupplyStops).toBeUndefined();
   });
 });

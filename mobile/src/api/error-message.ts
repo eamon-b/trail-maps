@@ -27,10 +27,16 @@ export const AUTH_ERROR_MESSAGE =
 export function apiErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof NetworkError) return NETWORK_ERROR_MESSAGE;
   if (err instanceof ApiError) {
-    if (err.status === 401 || err.status === 403) return AUTH_ERROR_MESSAGE;
+    // 401 is about the token and nothing else, so it always reads as identity.
+    // A 403 is the server saying WHY this account may not do this — a banned
+    // account, a link code asked for from a linked browser rather than the
+    // phone — and its sentence is the only part a hiker can act on, so it is
+    // shown like any other 4xx. Identity copy is the fallback when it is silent.
+    if (err.status === 401) return AUTH_ERROR_MESSAGE;
     // 4xx validation messages from the API are already human-readable
     // ("displayName must be at most 40 characters"); 5xx messages are not.
     if (err.status < 500 && err.message.trim().length > 0) return err.message;
+    if (err.status === 403) return AUTH_ERROR_MESSAGE;
     return fallback;
   }
   return fallback;

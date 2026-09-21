@@ -82,18 +82,33 @@ describe('PlanHeaderCard', () => {
     expect(allText(tree)).not.toContain('Use YYYY-MM-DD');
   });
 
-  it('shows an inline error for a malformed or impossible date, and emits nothing', () => {
+  it('shows an inline error for an impossible date, and emits nothing', () => {
     const { tree, props } = render();
-    type(tree, 'Start date', '01/10/26');
-    act(() => (field(tree, 'Start date').props.onBlur as () => void)());
-    expect(props.onStartDate).not.toHaveBeenCalled();
-    expect(allText(tree)).toContain('Use YYYY-MM-DD');
-
     // A well-formed string that is not a real day (there is no 31 February).
     type(tree, 'Start date', '2026-02-31');
-    act(() => (field(tree, 'Start date').props.onBlur as () => void)());
     expect(props.onStartDate).not.toHaveBeenCalled();
     expect(allText(tree)).toContain('Use YYYY-MM-DD');
+  });
+
+  it('puts the plan’s own date back when a rejected value is left behind', () => {
+    const { tree, props } = render({ startDate: '2026-10-01' });
+    type(tree, 'Start date', '01/10/26');
+    act(() => (field(tree, 'Start date').props.onBlur as () => void)());
+
+    // Nothing was stored, so the field must not keep showing something that
+    // reads as entered — field and document have to agree after a blur.
+    expect(props.onStartDate).not.toHaveBeenCalled();
+    expect(field(tree, 'Start date').props.value).toBe('2026-10-01');
+    expect(allText(tree)).not.toContain('Use YYYY-MM-DD');
+  });
+
+  it('empties the field when the plan has no date and the entry is rejected', () => {
+    const { tree, props } = render();
+    type(tree, 'Start date', '2026-02-31');
+    act(() => (field(tree, 'Start date').props.onBlur as () => void)());
+
+    expect(props.onStartDate).not.toHaveBeenCalled();
+    expect(field(tree, 'Start date').props.value).toBe('');
   });
 
   it('clears the date when the field is emptied', () => {

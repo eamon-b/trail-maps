@@ -133,7 +133,13 @@ describe('the plan outbox branch', () => {
       { status: 200, body: entry(doc({ id: 'server-id' }), '2026-05-05T00:00:00Z') },
     ]);
 
-    const res = await submitPlan('heysen', local, { db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+    const res = await submitPlan('heysen', local, {
+      db: d,
+      baseUrl: BASE,
+      fetchImpl,
+      getSessionFn,
+      refreshPlan,
+    });
 
     expect(res).toMatchObject({ outcome: 'drained', sent: 1 });
     expect(requests(fetchImpl)).toHaveLength(2);
@@ -142,6 +148,73 @@ describe('the plan outbox branch', () => {
     expect(await plansRepo.getById(d, 'p1')).toBeNull();
     expect((await plansRepo.getByTrail(d, 'heysen'))?.id).toBe('server-id');
     expect(await outboxRepo.count(d)).toBe(0);
+    // And the in-memory cache is re-read: a screen still holding 'p1' would
+    // 409 into this same adoption on every single edit.
+    expect(refreshPlan).toHaveBeenCalledWith('heysen');
+  });
+
+  it('stamps the server’s clock on even when this device’s runs ahead', async () => {
+    const d = await db();
+    // A phone a day fast. Last-writer-wins compares stamps, so until the local
+    // copy carries the SERVER's clock every browser edit looks older than it.
+    const local = doc({ updatedAt: '2026-05-06T00:00:00Z' });
+    await plansRepo.upsertLocal(d, local);
+    const fetchImpl = scriptedFetch([{ status: 200, body: entry(local, '2026-05-05T00:00:00Z') }]);
+
+    await submitPlan('heysen', local, { db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+
+    const stored = await plansRepo.getById(d, 'p1');
+    expect(stored?.updatedAt).toBe('2026-05-05T00:00:00Z');
+    expect(stored?.source).toBe('server');
+  });
+
+  it('leaves an edit made while the PUT was in flight alone', async () => {
+    const d = await db();
+    const sent = doc();
+    await plansRepo.upsertLocal(d, sent);
+    const fetchImpl = scriptedFetch([{ status: 200, body: entry(sent, '2026-05-05T00:00:00Z') }]);
+    // The next tap lands before the answer does; its write is queued behind.
+    await plansRepo.upsertLocal(d, doc({ name: 'Renamed', updatedAt: '2026-01-02T00:00:00Z' }));
+
+    await submitPlan('heysen', sent, { db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+
+    const stored = await plansRepo.getById(d, 'p1');
+    expect(stored?.document.name).toBe('Renamed');
+    expect(stored?.source).toBe('local');
+  });
+
+  it('does not resurrect a plan deleted while the PUT was in flight', async () => {
+    const d = await db();
+    const sent = doc();
+    await plansRepo.upsertLocal(d, sent);
+    const fetchImpl = scriptedFetch([{ status: 200, body: entry(sent, '2026-05-05T00:00:00Z') }]);
+    // Deleted from the Plan screen before the answer came back; the DELETE is
+    // queued behind this write.
+    await plansRepo.tombstone(d, 'p1', '2026-01-03T00:00:00Z');
+
+    await submitPlan('heysen', sent, { db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+
+    expect(await plansRepo.getByTrail(d, 'heysen')).toBeNull();
+    expect((await plansRepo.getById(d, 'p1'))?.deletedAt).toBe('2026-01-03T00:00:00Z');
+  });
+
+  it('marks a banned account’s write failed, with the reason readable', async () => {
+    const d = await db();
+    const local = doc();
+    await plansRepo.upsertLocal(d, local);
+    const fetchImpl = scriptedFetch([
+      { status: 403, body: { error: { code: 'banned', message: 'This account is suspended.' } } },
+    ]);
+
+    const res = await submitPlan('heysen', local, { db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+
+    // Permanent, like any other 4xx: one attempt, no retry loop, and the row
+    // stays so the Plan screen can say the server has not got this copy.
+    expect(res).toMatchObject({ outcome: 'drained', sent: 0, failed: 1 });
+    expect(requests(fetchImpl)).toHaveLength(1);
+    const failure = await outboxRepo.lastFailure(d, 'plan', 'p1');
+    expect(failure).toContain('banned');
+    expect(failure).toContain('This account is suspended.');
   });
 
   it('keeps a second plan_exists as a failure rather than looping', async () => {
@@ -264,6 +337,26 @@ describe('coalescing', () => {
     expect(requests(fetchImpl)).toHaveLength(1);
     expect(await outboxRepo.count(d)).toBe(0);
   });
+
+  it('drops a queued delete when the plan is written again', async () => {
+    const d = await db();
+    // Delete queued while offline, then the plan is edited (or a shared one is
+    // saved over it) before the queue drains. FIFO would DELETE and then PUT,
+    // leaving the server live and this device tombstoned.
+    await outboxRepo.enqueue(d, {
+      id: 'del-row',
+      kind: 'plan-delete',
+      trailId: 'heysen',
+      waypointId: 'p1',
+      payload: { id: 'p1' },
+      createdAt: '2026-01-01T00:00:00Z',
+    });
+    await enqueuePlan('heysen', doc(), { db: d });
+
+    const rows = await outboxRepo.listPending(d);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe('plan');
+  });
 });
 
 describe('pullPlans', () => {
@@ -292,6 +385,31 @@ describe('pullPlans', () => {
     expect(await plansRepo.getByTrail(d, 'heysen')).toBeNull();
     expect(await planSince(d)).toBe('T2');
     expect(String(requests(fetchImpl)[1][0])).toContain('since=T1');
+  });
+
+  it('leaves a newer local edit alone when the server says it was deleted', async () => {
+    const d = await db();
+    // An edit made on the phone, still queued. An older delete arriving now
+    // would throw it away — and the queued write would then undelete the plan
+    // server-side, so the two copies end up disagreeing for good.
+    await plansRepo.upsertLocal(d, doc({ name: 'Mine', updatedAt: '2026-06-01T00:00:00Z' }));
+    const fetchImpl = scriptedFetch([
+      {
+        body: {
+          plans: [{ id: 'p1', trailId: 'heysen', deleted: true, updatedAt: '2026-05-01T00:00:00Z' }],
+          nextCursor: null,
+          syncedAt: 'T1',
+        },
+      },
+    ]);
+
+    const res = await pullPlans({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, refreshPlan });
+
+    expect(res.outcome).toBe('pulled');
+    expect((await plansRepo.getByTrail(d, 'heysen'))?.name).toBe('Mine');
+    expect(refreshPlan).not.toHaveBeenCalled();
+    // The entry was still seen, so the mark advances.
+    expect(await planSince(d)).toBe('T1');
   });
 
   it('leaves a newer local edit alone (last writer wins)', async () => {

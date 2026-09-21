@@ -1,10 +1,10 @@
 /**
  * Local purge after account deletion.
  *
- * The blast radius is the point of these tests: the user's own comments and the
- * whole outbox go, and everything else — other hikers' cached comments,
- * favourites, saved routes — has to survive, because the Settings copy promises
- * exactly that.
+ * The blast radius is the point of these tests: the user's own comments, the
+ * plans they synced and the whole outbox go, and everything else — other
+ * hikers' cached comments, favourites, saved routes, and an imported guide's
+ * own plan — has to survive, because the Settings copy promises exactly that.
  */
 
 import { createMigratedTestDb } from '../../../db/__tests__/test-helpers';
@@ -98,6 +98,23 @@ describe('purgeLocalAccountData', () => {
     expect(
       await db.getAllAsync("SELECT * FROM sync_state WHERE trail_id = '__plans__'"),
     ).toHaveLength(0);
+  });
+
+  it('keeps an imported guide’s plan — it was never on the server', async () => {
+    await db.runAsync(
+      `INSERT INTO plans (id, trail_id, document_json, updated_at, source)
+       VALUES ('p-bundled', 'larapinta', '{}', '2026-09-01T00:00:00Z', 'local')`,
+    );
+    await db.runAsync(
+      `INSERT INTO plans (id, trail_id, document_json, updated_at, source)
+       VALUES ('p-imported', 'u_abc123', '{}', '2026-09-01T00:00:00Z', 'local')`,
+    );
+
+    await purgeLocalAccountData(db as unknown as SqlDatabase, ME);
+
+    // The import is device-local content, like its favourites and its GPX —
+    // the account being deleted has no claim on it.
+    expect(await ids('plans')).toEqual(['p-imported']);
   });
 
   it('leaves another trail’s comment cursor alone while clearing the plans mark', async () => {

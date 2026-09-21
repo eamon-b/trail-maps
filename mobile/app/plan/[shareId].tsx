@@ -55,6 +55,7 @@ export default function SharedPlanScreen() {
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
   const applyEdit = usePlansStore((s) => s.apply);
+  const hydratePlan = usePlansStore((s) => s.hydrate);
 
   const [shared, setShared] = useState<Shared | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,15 @@ export default function SharedPlanScreen() {
       cancelled = true;
     };
   }, [shareId, baseUrl]);
+
+  // Nothing has opened this trail's guide on a cold start from a deep link, so
+  // the plan cache is empty — and an empty cache is indistinguishable from
+  // "this hiker has no plan", which is exactly the question Save has to answer.
+  // Read SQLite as soon as the shared plan names its trail.
+  const sharedTrailId = shared?.trailId;
+  useEffect(() => {
+    if (sharedTrailId) void hydratePlan(sharedTrailId);
+  }, [hydratePlan, sharedTrailId]);
 
   // The bundled trail, oriented the way the plan was made: `computePlanDays`
   // converts the stops out of their NOBO-absolute storage, but it cannot
@@ -128,9 +138,17 @@ export default function SharedPlanScreen() {
     [applyEdit, router],
   );
 
-  const onSave = useCallback(() => {
+  const onSave = useCallback(async () => {
     if (!shared || !trail || saving) return;
     const { document, trailId } = shared;
+    // The mount hydrate may not have landed yet (or may have failed), and
+    // deciding from an un-read cache is how a plan gets replaced — here AND on
+    // the server — without the hiker ever being asked. A key present in
+    // `byTrail` is the "this has been read" mark; undefined against a present
+    // key is a genuine "no plan".
+    if (!(trailId in usePlansStore.getState().byTrail)) {
+      await hydratePlan(trailId);
+    }
     const existing = usePlansStore.getState().byTrail[trailId];
     if (!existing) {
       void save(document, trailId);
@@ -146,7 +164,7 @@ export default function SharedPlanScreen() {
         { text: 'Replace', style: 'destructive', onPress: () => void save(document, trailId) },
       ],
     );
-  }, [shared, trail, saving, save]);
+  }, [shared, trail, saving, save, hydratePlan]);
 
   const body = () => {
     if (!baseUrl) {
@@ -196,7 +214,7 @@ export default function SharedPlanScreen() {
         <DaySplitList days={days} targetHours={DEFAULT_PREFS.dailyHours} units={units} />
 
         <Pressable
-          onPress={onSave}
+          onPress={() => void onSave()}
           disabled={saving}
           accessibilityRole="button"
           accessibilityLabel="Save as my plan"

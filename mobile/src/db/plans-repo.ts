@@ -173,6 +173,22 @@ function isNewer(incoming: string, stored: string): boolean {
 }
 
 /**
+ * Store the server's acknowledgement of a document THIS device just sent —
+ * same document, server clock — so the local copy is stamped by the one clock
+ * last-writer-wins can compare across devices.
+ *
+ * Unconditional, unlike {@link upsertServer}: by construction this is the
+ * newest copy there is, and a device clock running ahead of the server would
+ * otherwise keep its own stamp and then discard every browser edit until the
+ * clocks crossed. The caller (`sync/comment-sync`'s `applyServerPlan`) is
+ * responsible for checking that the stored row is still the document that was
+ * sent, and is not a tombstone — this function asks no questions.
+ */
+export async function upsertServerAck(db: SqlDatabase, doc: PlanDocument): Promise<void> {
+  await write(db, doc, 'server');
+}
+
+/**
  * Soft-delete a plan: the row stays as a tombstone so the delete can be synced
  * (and so a stale server copy cannot resurrect it), and the partial unique
  * index immediately frees the trail for a new plan.
@@ -180,6 +196,28 @@ function isNewer(incoming: string, stored: string): boolean {
 export async function tombstone(db: SqlDatabase, id: string, now?: string): Promise<void> {
   const at = now ?? new Date().toISOString();
   await db.runAsync('UPDATE plans SET deleted_at = ?, updated_at = ? WHERE id = ?', [at, at, id]);
+}
+
+/**
+ * Apply a delete the SERVER reported, last-writer-wins — the tombstone half of
+ * {@link upsertServer}, and the same rule.
+ *
+ * A pull can carry a delete older than an edit this device has made but not yet
+ * sent; applying it unconditionally would throw that edit away, and the queued
+ * write would then resurrect the plan server-side. An unknown id is stored
+ * nowhere to tombstone, so it is simply ignored.
+ *
+ * @returns true when the delete was applied, false when the local copy won.
+ */
+export async function tombstoneFromServer(
+  db: SqlDatabase,
+  id: string,
+  updatedAt: string,
+): Promise<boolean> {
+  const stored = await rowById(db, id);
+  if (!stored || !isNewer(updatedAt, stored.updated_at)) return false;
+  await tombstone(db, id, updatedAt);
+  return true;
 }
 
 /**
@@ -192,11 +230,24 @@ export async function deleteForTrail(db: SqlDatabase, trailId: string): Promise<
 }
 
 /**
- * Drop every plan. Account deletion only — the local copies belong to the
- * account being erased, so they go with it rather than lingering to re-sync
- * under a new identity. Called by `features/settings/account-deletion.ts`
+ * Drop the plans that belonged to the account being erased. Account deletion
+ * only — those copies go with the identity rather than lingering to re-sync
+ * under a new one. Called by `features/settings/account-deletion.ts`
  * `purgeLocalAccountData`, which also clears the `__plans__` sync mark.
+ *
+ * `isSynced` is the server boundary (`services/server-trails.isServerKnown`):
+ * an imported guide's plan was never on the server and is not the account's to
+ * delete — it is device-local content, exactly like the import it belongs to,
+ * and Settings promises that content stays.
+ *
+ * @returns how many trails' plans were dropped.
  */
-export async function purgeAll(db: SqlDatabase): Promise<void> {
-  await db.runAsync('DELETE FROM plans');
+export async function purgeSynced(
+  db: SqlDatabase,
+  isSynced: (trailId: string) => boolean,
+): Promise<number> {
+  const rows = await db.getAllAsync<{ trail_id: string }>('SELECT DISTINCT trail_id FROM plans');
+  const trailIds = rows.map((r) => r.trail_id).filter(isSynced);
+  for (const trailId of trailIds) await deleteForTrail(db, trailId);
+  return trailIds.length;
 }

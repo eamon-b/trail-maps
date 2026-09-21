@@ -2,13 +2,23 @@ import {
   usePlanInputsStore,
   selectPrefs,
   selectPaceBaseKmh,
-  selectResupplyStopIds,
   clampHours,
   migratePlanInputs,
   DEFAULT_PREFS,
   MIN_DAILY_HOURS,
   MAX_DAILY_HOURS,
 } from '../plan-inputs-store';
+
+/**
+ * Seed a legacy selection the way a build before the plan document wrote one.
+ * Nothing sets it any more — the store only reads it and clears it.
+ */
+function seedLegacySelection(trailId: string, ids: string[]): void {
+  const byTrail = usePlanInputsStore.getState().byTrail;
+  usePlanInputsStore.setState({
+    byTrail: { ...byTrail, [trailId]: { ...(byTrail[trailId] ?? DEFAULT_PREFS), resupplyStops: ids } },
+  });
+}
 
 describe('plan-inputs-store', () => {
   beforeEach(() => {
@@ -93,9 +103,9 @@ describe('plan-inputs-store', () => {
     });
   });
 
-  describe('resupplyStops', () => {
-    it('round-trips an explicit selection', () => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a', 'w_b']);
+  describe('the legacy resupplyStops field', () => {
+    it('reads back a selection an older build persisted', () => {
+      seedLegacySelection('cdt', ['w_a', 'w_b']);
       expect(selectPrefs('cdt')(usePlanInputsStore.getState()).resupplyStops).toEqual([
         'w_a',
         'w_b',
@@ -105,12 +115,6 @@ describe('plan-inputs-store', () => {
     it('is undefined for an entry saved before the field existed', () => {
       usePlanInputsStore.getState().setPace('cdt', 'fast');
       expect(selectPrefs('cdt')(usePlanInputsStore.getState()).resupplyStops).toBeUndefined();
-    });
-
-    it('keeps selectPrefs stable after setResupplyStops', () => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a']);
-      const state = usePlanInputsStore.getState();
-      expect(selectPrefs('cdt')(state)).toBe(selectPrefs('cdt')(state));
     });
 
     it('collapses a non-string-array value to undefined', () => {
@@ -126,63 +130,24 @@ describe('plan-inputs-store', () => {
     });
 
     it('keeps pace and hours when the selection is cleared', () => {
-      const { setPace, setDailyHours, setResupplyStops, clearResupplyStops } =
-        usePlanInputsStore.getState();
+      const { setPace, setDailyHours, clearResupplyStops } = usePlanInputsStore.getState();
       setPace('cdt', 'slow');
       setDailyHours('cdt', 10);
-      setResupplyStops('cdt', ['w_a']);
+      seedLegacySelection('cdt', ['w_a']);
+      // Reset drops the leftovers so they cannot come back as the fallback,
+      // and leaves how fast this hiker walks alone.
       clearResupplyStops('cdt');
 
       const prefs = selectPrefs('cdt')(usePlanInputsStore.getState());
-      expect(prefs).toEqual({ pace: 'slow', dailyHours: 10 });
       expect(prefs.resupplyStops).toBeUndefined();
+      expect(prefs.pace).toBe('slow');
+      expect(prefs.dailyHours).toBe(10);
     });
 
     it('is dropped with the whole entry by clearTrail', () => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a']);
+      seedLegacySelection('cdt', ['w_a']);
       usePlanInputsStore.getState().clearTrail('cdt');
       expect(usePlanInputsStore.getState().byTrail.cdt).toBeUndefined();
-      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
-    });
-
-    it('is independent between two trails', () => {
-      const { setResupplyStops } = usePlanInputsStore.getState();
-      setResupplyStops('cdt', ['w_a']);
-      setResupplyStops('te_araroa', ['w_z']);
-      const state = usePlanInputsStore.getState();
-      expect([...selectResupplyStopIds('cdt')(state)!]).toEqual(['w_a']);
-      expect([...selectResupplyStopIds('te_araroa')(state)!]).toEqual(['w_z']);
-    });
-  });
-
-  describe('selectResupplyStopIds', () => {
-    it('is null until the first setResupplyStops', () => {
-      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
-      usePlanInputsStore.getState().setPace('cdt', 'fast');
-      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
-    });
-
-    it('returns a stable Set for the same stored selection', () => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a', 'w_b']);
-      const state = usePlanInputsStore.getState();
-      const a = selectResupplyStopIds('cdt')(state);
-      const b = selectResupplyStopIds('cdt')(state);
-      // Same reference — zustand compares selector output with Object.is.
-      expect(a).toBe(b);
-      expect(a!.has('w_b')).toBe(true);
-    });
-
-    it('is null again after clearResupplyStops', () => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', ['w_a']);
-      usePlanInputsStore.getState().clearResupplyStops('cdt');
-      expect(selectResupplyStopIds('cdt')(usePlanInputsStore.getState())).toBeNull();
-    });
-
-    it('gives an empty Set for an explicit empty selection, not null', () => {
-      usePlanInputsStore.getState().setResupplyStops('cdt', []);
-      const set = selectResupplyStopIds('cdt')(usePlanInputsStore.getState());
-      expect(set).not.toBeNull();
-      expect(set!.size).toBe(0);
     });
   });
 

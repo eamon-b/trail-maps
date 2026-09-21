@@ -12,12 +12,15 @@ import { createMigratedTestDb } from '../../db/__tests__/test-helpers';
 import { getDatabase } from '../../db/database';
 import * as plansRepo from '../../db/plans-repo';
 import {
+  planEditFailureMessage,
   selectIsStop,
   selectPlan,
+  selectPlanError,
+  selectResupplyStops,
   setPlanChangedHandler,
   usePlansStore,
 } from '../plans-store';
-import { setPlanName, setStartDate, toggleStop } from '@lib/plan-editor';
+import { setPlanName, setResupplyStops, setStartDate, toggleStop } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import type { SqlDatabase } from '../../db/sql-database';
 
@@ -31,13 +34,14 @@ const mockGetDatabase = getDatabase as jest.Mock;
 
 const TRAIL = 'larapinta';
 const CAMP = { id: 'w_camp', km: 12.5, name: 'Standley Chasm' };
+const HUT = { id: 'w_hut', km: 30, name: 'Serpentine Chalet' };
 
 let db: SqlDatabase;
 
 beforeEach(async () => {
   db = (await createMigratedTestDb()) as unknown as SqlDatabase;
   mockGetDatabase.mockResolvedValue(db);
-  usePlansStore.setState({ byTrail: {} });
+  usePlansStore.setState({ byTrail: {}, lastError: {} });
   setPlanChangedHandler(undefined);
 });
 
@@ -159,6 +163,94 @@ describe('plans-store.apply', () => {
     expect(selectPlan(TRAIL)(usePlansStore.getState())?.name).toBe('Kept');
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  it('stores the trail’s resupply selection in the document', async () => {
+    await store().apply(TRAIL, (p) => setResupplyStops(p, ['w_town']), { name: 'Larapinta' });
+    expect(selectResupplyStops(TRAIL)(usePlansStore.getState())).toEqual(['w_town']);
+
+    await store().apply(TRAIL, (p) => setResupplyStops(p, undefined));
+    expect(selectResupplyStops(TRAIL)(usePlansStore.getState())).toBeUndefined();
+    // And it is the stored document that says so, not just the cache.
+    expect((await plansRepo.getByTrail(db, TRAIL))?.resupplyStops).toBeUndefined();
+  });
+});
+
+describe('plans-store.apply failures', () => {
+  it('says why an edit was refused, and stops saying it once one lands', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await store().apply(TRAIL, (p) => toggleStop(p, CAMP), { name: 'Larapinta' });
+    expect(selectPlanError(TRAIL)(usePlansStore.getState())).toBeNull();
+
+    await store().apply(TRAIL, () => {
+      throw new Error('plan-editor: a plan can hold at most 500 stops');
+    });
+
+    // The editors' prefix is for the log, not for the hiker.
+    expect(selectPlanError(TRAIL)(usePlansStore.getState())).toBe(
+      'a plan can hold at most 500 stops',
+    );
+    // And it belongs to this trail alone.
+    expect(selectPlanError('heysen')(usePlansStore.getState())).toBeNull();
+
+    await store().apply(TRAIL, (p) => setPlanName(p, 'Fine'));
+    expect(selectPlanError(TRAIL)(usePlansStore.getState())).toBeNull();
+    warn.mockRestore();
+  });
+
+  it('has something to say about a throw that carries no message', () => {
+    expect(planEditFailureMessage(new Error('plan-editor:   '))).toBe(
+      'The edit could not be saved.',
+    );
+    expect(planEditFailureMessage('plan-editor: too big')).toBe('too big');
+  });
+});
+
+describe('plans-store cache consistency', () => {
+  it('drops a hydrate that read the row before an edit replaced it', async () => {
+    await store().apply(TRAIL, (p) => setPlanName(p, 'First'), { name: 'Larapinta' });
+    const stale = selectPlan(TRAIL)(usePlansStore.getState())!;
+
+    // A hydrate whose read is still in flight when the next tap lands.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const read = jest.spyOn(plansRepo, 'getByTrail').mockImplementation(async () => {
+      await held;
+      return stale;
+    });
+
+    const hydrating = store().hydrate(TRAIL);
+    await store().apply(TRAIL, (p) => setPlanName(p, 'Second'));
+    release();
+    await hydrating;
+
+    // Without the generation check this would read 'First' again.
+    expect(selectPlan(TRAIL)(usePlansStore.getState())?.name).toBe('Second');
+    read.mockRestore();
+  });
+
+  it('serialises two taps close enough together to overlap', async () => {
+    await store().apply(TRAIL, (p) => setPlanName(p, 'Start'), { name: 'Larapinta' });
+
+    // Both fired before either has been awaited — two overlapping `BEGIN`s if
+    // they were allowed to interleave, and one of the two edits lost.
+    const [first, second] = await Promise.all([
+      store().apply(TRAIL, (p) => toggleStop(p, CAMP)),
+      store().apply(TRAIL, (p) => toggleStop(p, HUT)),
+    ]);
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    const stored = await plansRepo.getByTrail(db, TRAIL);
+    expect(stored?.stops.map((stop) => stop.name)).toEqual([
+      'Standley Chasm',
+      'Serpentine Chalet',
+    ]);
+    // The second edit started from the first one's result, so the cache and
+    // the row agree.
+    expect(selectPlan(TRAIL)(usePlansStore.getState())?.stops).toHaveLength(2);
   });
 });
 

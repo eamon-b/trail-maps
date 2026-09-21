@@ -145,12 +145,19 @@ export default function WaypointDetailScreen() {
   // waypoint the trail offers as an option gets a toggle at all, and a turn-off
   // planned by the place it serves gets the banner without one — it was never
   // ticked, so there is nothing here to untick.
+  //
+  // Both this and the "Stop here" toggle below can be the first edit a trail's
+  // plan ever gets, so both carry the same defaults the Plan screen mints with.
+  const planDefaults = useMemo(
+    () => ({ name: trail.config.name, direction: planDirectionOf(direction) }),
+    [trail.config.name, direction],
+  );
   const {
     isPlanned,
     plannedVia,
     isSelected,
     toggle: toggleResupply,
-  } = useWaypointResupplyPlan(trailId, trail, waypoint?.id);
+  } = useWaypointResupplyPlan(trailId, trail, waypoint?.id, planDefaults);
 
   // The plan's view of THIS waypoint. The guide trail is direction-applied and
   // a stop is stored NOBO-absolute, so the conversion goes through the same
@@ -174,12 +181,9 @@ export default function WaypointDetailScreen() {
   const planStop = plan && stopCandidate ? findStop(plan, stopKeyOf(stopCandidate)) : undefined;
   const editPlan = useCallback(
     (fn: (p: PlanDocument) => PlanDocument) => {
-      void applyPlanEdit(trailId, fn, {
-        name: trail.config.name,
-        direction: planDirectionOf(direction),
-      });
+      void applyPlanEdit(trailId, fn, planDefaults);
     },
-    [applyPlanEdit, direction, trail.config.name, trailId],
+    [applyPlanEdit, planDefaults, trailId],
   );
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);

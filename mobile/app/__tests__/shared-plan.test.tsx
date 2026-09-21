@@ -46,6 +46,13 @@ jest.mock('../../src/api/uuid', () => ({ uuidv4: () => 'new-plan-id' }));
 const mockFetchShared = fetchSharedPlan as jest.Mock;
 const mockGetTrailJson = getTrailJson as jest.Mock;
 
+/**
+ * The screen reads SQLite through the store's `hydrate`; the default here does
+ * nothing (no database in this suite), and the tests that care about the cold
+ * path replace it with one that answers.
+ */
+const noopHydrate = jest.fn(async () => {});
+
 const TRAIL = {
   config: { name: 'Heysen Trail', direction: 'NOBO' },
   track: {
@@ -82,7 +89,7 @@ beforeEach(() => {
     trailId: 'heysen',
     ownerDisplayName: 'Trail Ghost',
   });
-  usePlansStore.setState({ byTrail: {} });
+  usePlansStore.setState({ byTrail: {}, hydrate: noopHydrate as never });
 });
 
 afterEach(() => {
@@ -195,6 +202,49 @@ describe('SharedPlanScreen', () => {
       (buttons as { text: string; onPress?: () => void }[])[1].onPress?.();
       await new Promise((resolve) => setImmediate(resolve));
     });
+    expect(apply).toHaveBeenCalledTimes(1);
+    alert.mockRestore();
+  });
+
+  it('warns on a cold start too, when only SQLite knows about the plan', async () => {
+    // The whole point of the deep link: nothing has opened this guide, so the
+    // cache is empty. Deciding from it would replace the hiker's plan — here
+    // and on the server — without ever asking.
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const apply = jest.fn(async () => DOC);
+    const hydrate = jest.fn(async (trailId: string) => {
+      usePlansStore.setState({
+        byTrail: { ...usePlansStore.getState().byTrail, [trailId]: { ...DOC, id: 'on-disk' } },
+      });
+    });
+    usePlansStore.setState({ apply: apply as never, hydrate: hydrate as never, byTrail: {} });
+
+    const r = await mount();
+    await pressSave(r);
+
+    expect(hydrate).toHaveBeenCalledWith('heysen');
+    expect(apply).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  it('saves without a prompt when the read comes back empty', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const apply = jest.fn(async (_trailId: string, edit: (p: PlanDocument) => PlanDocument) =>
+      edit(DOC),
+    );
+    // A hydrate that finds nothing marks the trail as read with no plan.
+    const hydrate = jest.fn(async (trailId: string) => {
+      usePlansStore.setState({
+        byTrail: { ...usePlansStore.getState().byTrail, [trailId]: undefined },
+      });
+    });
+    usePlansStore.setState({ apply: apply as never, hydrate: hydrate as never, byTrail: {} });
+
+    const r = await mount();
+    await pressSave(r);
+
+    expect(alert).not.toHaveBeenCalled();
     expect(apply).toHaveBeenCalledTimes(1);
     alert.mockRestore();
   });

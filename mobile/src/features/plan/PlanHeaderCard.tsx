@@ -24,6 +24,9 @@ import { PLAN_LIMITS } from '@lib/plan-types';
 import { useTheme } from '../../theme';
 import { radii, spacing, touchTarget, typography } from '../../tokens';
 
+/** `YYYY-MM-DD` — the field's `maxLength`, and where "half-typed" ends. */
+const ISO_DATE_LENGTH = 10;
+
 export interface PlanHeaderCardProps {
   name: string;
   /** Shown when the plan is unnamed — normally the trail's name. */
@@ -130,6 +133,22 @@ function StartDateField({
     setError(true);
   };
 
+  // Leaving the field ends the edit, so a value the plan never took cannot stay
+  // in it: half a date sitting under a red border reads as entered, and the day
+  // cards would be counting from the old one. Putting the plan's own date back
+  // is the only outcome that leaves field and document saying the same thing.
+  const finish = () => {
+    const trimmed = draft.trim();
+    if (trimmed === '' || isIsoDate(trimmed)) {
+      commit(draft);
+      return;
+    }
+    const current = startDate ?? '';
+    known.current = current;
+    setDraft(current);
+    setError(false);
+  };
+
   return (
     <View style={styles.dateRow}>
       <Text style={[styles.label, { color: colors.textSecondary }]}>Start date</Text>
@@ -139,22 +158,29 @@ function StartDateField({
           onChangeText={(text) => {
             setDraft(text);
             const trimmed = text.trim();
+            // Measured before the narrowing: `isIsoDate` asserts `string`, so
+            // TypeScript has nothing left of `trimmed` in the else branch.
+            const fullLength = trimmed.length >= ISO_DATE_LENGTH;
             // Commit the moment it becomes a real date (or is cleared); a
             // half-typed one only clears any error, so the field never nags
-            // while you are still typing it.
+            // while you are still typing it. A full ten characters that still
+            // is not a date (2026-02-31) is finished and wrong, and saying so
+            // there is the only chance to — leaving the field puts the plan's
+            // own date back.
             if (trimmed === '' || isIsoDate(trimmed)) commit(text);
+            else if (fullLength) setError(true);
             else if (error) setError(false);
           }}
-          onBlur={() => commit(draft)}
-          onSubmitEditing={() => commit(draft)}
-          onEndEditing={() => commit(draft)}
+          onBlur={finish}
+          onSubmitEditing={finish}
+          onEndEditing={finish}
           placeholder="YYYY-MM-DD"
           placeholderTextColor={colors.textSecondary}
           accessibilityLabel="Start date"
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="numbers-and-punctuation"
-          maxLength={10}
+          maxLength={ISO_DATE_LENGTH}
           style={[
             styles.dateInput,
             {

@@ -45,7 +45,7 @@ import {
 import { useTheme } from '../../../src/theme';
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../src/state/settings-store';
-import { selectPlan, usePlansStore } from '../../../src/state/plans-store';
+import { selectPlan, selectPlanError, usePlansStore } from '../../../src/state/plans-store';
 import { useGuide } from '../../../src/features/guide/GuideContext';
 import {
   computePlanExtras,
@@ -63,6 +63,7 @@ import {
 } from '../../../src/features/plan/plan-stops';
 import { sectionOptions } from '../../../src/features/plan/plan-section';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
+import { usePlanSyncError } from '../../../src/features/plan/use-plan-sync-error';
 import { PlanHeaderCard } from '../../../src/features/plan/PlanHeaderCard';
 import { PlanInputsCard } from '../../../src/features/plan/PlanInputsCard';
 import { DaySplitList } from '../../../src/features/plan/DaySplitList';
@@ -89,6 +90,12 @@ export default function PlanScreen() {
   const prefs = usePlanInputsStore(selectPrefs(trailId));
   const setDailyHours = usePlanInputsStore((s) => s.setDailyHours);
   const setPace = usePlanInputsStore((s) => s.setPace);
+
+  // The two ways a plan can be out of step with itself, in the order that
+  // matters: an edit this screen refused, then a write the server did.
+  const editError = usePlansStore(selectPlanError(trailId));
+  const syncError = usePlanSyncError(plan?.id);
+  const notice = planNotice(editError, syncError);
 
   // Waypoints bracketed by synthetic termini so the default section is the whole
   // track (0 → totalDistance) and both trail ends are reachable — see
@@ -186,13 +193,17 @@ export default function PlanScreen() {
 
   const effectiveDailyKm = days.length > 0 ? sectionKm / days.length : baseKmh * prefs.dailyHours;
 
+  // The resupply selection is the document's (the web writes the same field);
+  // the device-local one is only what a build before that left behind.
+  const resupplyStops = displayPlan.resupplyStops ?? prefs.resupplyStops;
+
   const extras = useMemo(
     () =>
       computePlanExtras(trail, sectionConfig, {
         dailyHours: prefs.dailyHours,
         baseKmh,
         days,
-        resupplyStops: prefs.resupplyStops,
+        resupplyStops,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -204,7 +215,7 @@ export default function PlanScreen() {
       prefs.dailyHours,
       baseKmh,
       days,
-      prefs.resupplyStops,
+      resupplyStops,
     ],
   );
 
@@ -242,6 +253,12 @@ export default function PlanScreen() {
         onName={(name) => edit((p) => setPlanName(p, name))}
         onStartDate={(iso) => edit((p) => setStartDate(p, iso))}
       />
+
+      {notice !== null && (
+        <Text style={[styles.notice, { color: colors.danger }]} accessibilityRole="alert">
+          {notice}
+        </Text>
+      )}
 
       <PlanInputsCard
         options={options}
@@ -318,7 +335,7 @@ export default function PlanScreen() {
 
           <Section
             title="Resupply"
-            subtitle={resupplySubtitle(extras, units, prefs.resupplyStops === undefined)}
+            subtitle={resupplySubtitle(extras, units, resupplyStops === undefined)}
             action={
               extras.resupplyGroups.length > 0 ? (
                 <Pressable
@@ -361,6 +378,19 @@ export default function PlanScreen() {
       )}
     </ScrollView>
   );
+}
+
+/**
+ * The one line under the header card when something did not land.
+ *
+ * A refused edit comes first: it is the tap the hiker just made, and it did not
+ * change the plan at all. A failed write did — locally — so it is reported as
+ * what it is, a copy the server has not got.
+ */
+function planNotice(editError: string | null, syncError: string | null): string | null {
+  if (editError) return `Not saved: ${editError}`;
+  if (syncError) return `Not synced: ${syncError}`;
+  return null;
 }
 
 /**
@@ -425,6 +455,9 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.xl },
+
+  // Pulled up against the card it belongs to, the way a section's caveat is.
+  notice: { ...typography.bodySmall, marginTop: -spacing.md },
 
   guard: {
     borderWidth: StyleSheet.hairlineWidth,

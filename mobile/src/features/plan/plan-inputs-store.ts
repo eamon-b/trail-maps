@@ -1,6 +1,12 @@
 /**
- * Remembers the hiker's plan *preferences* per trail: daily hours, pace, and
- * the resupply stops they have chosen.
+ * Remembers the hiker's plan *preferences* per trail: daily hours and pace.
+ *
+ * These two are device-local by design — they are how fast this hiker walks,
+ * not part of the plan a browser and a phone share — which is exactly why the
+ * resupply selection is no longer among them: it is the same choice the web
+ * writes into the synced `PlanDocument`, so it lives there now
+ * (`use-planned-resupply.ts`). `resupplyStops` survives here READ-ONLY, as the
+ * fallback for a selection made before that build, and is dropped by Reset.
  *
  * Deliberately does NOT persist the section start/end km. Those live in
  * direction-applied km space, which flips meaning when the guide direction is
@@ -22,7 +28,10 @@ export interface PlanPrefs {
   dailyHours: number;
   pace: Pace;
   /**
-   * Waypoint ids of the resupply options the hiker ticked, in trail order.
+   * Legacy: waypoint ids of the resupply options the hiker ticked, in trail
+   * order. Nothing writes this any more — the selection is a field of the
+   * synced plan document — but a phone updated from an older build still holds
+   * one here, and it is read whenever the document has none.
    *
    * Absent means no plan has been made: the legs card falls back to every
    * option, and *nothing* is highlighted as planned. An explicit `[]` is a
@@ -43,9 +52,11 @@ export interface PlanInputsState {
   byTrail: Record<string, PlanPrefs>;
   setDailyHours: (trailId: string, hours: number) => void;
   setPace: (trailId: string, pace: Pace) => void;
-  /** Store an explicit resupply selection (see PlanPrefs.resupplyStops). */
-  setResupplyStops: (trailId: string, ids: string[]) => void;
-  /** Back to "no plan made" — distinct from ticking every option. */
+  /**
+   * Drop the legacy selection (see PlanPrefs.resupplyStops). Called by the
+   * picker's Reset alongside clearing the document's own field, so a
+   * pre-document selection cannot come back as the fallback.
+   */
   clearResupplyStops: (trailId: string) => void;
   /**
    * Forget a trail's prefs entirely. Called when an imported trail is deleted
@@ -91,15 +102,6 @@ export const usePlanInputsStore = create<PlanInputsState>()(
           byTrail: {
             ...s.byTrail,
             [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), pace },
-          },
-        })),
-      setResupplyStops: (trailId, ids) =>
-        set((s) => ({
-          byTrail: {
-            ...s.byTrail,
-            // A fresh array in a fresh entry, so the selectPrefs /
-            // selectResupplyStopIds memos both miss and recompute.
-            [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), resupplyStops: [...ids] },
           },
         })),
       clearResupplyStops: (trailId) =>
@@ -182,36 +184,6 @@ export function selectPrefs(trailId: string) {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string');
-}
-
-/**
- * Resupply-stop ids as a Set, keyed by the stored array's identity so zustand's
- * Object.is compare stays stable across renders — the same mechanism as
- * `mergedPrefsCache`.
- */
-const stopIdSetCache = new WeakMap<string[], ReadonlySet<string>>();
-
-/**
- * Reactive selector for the trail's chosen resupply stops: a Set of waypoint
- * ids, or `null` when no plan has been made.
- *
- * This is the one thing every "planned" surface reads — map, elevation profile,
- * list pane, waypoint detail and the hike distance strip — so "planned" means
- * the same on all of them. `null` means *nothing* is planned, never everything:
- * the untouched default still feeds the legs card with every option, but
- * painting every town as planned before anyone planned anything would be noise.
- */
-export function selectResupplyStopIds(trailId: string) {
-  return (s: PlanInputsState): ReadonlySet<string> | null => {
-    const ids = selectPrefs(trailId)(s).resupplyStops;
-    if (!ids) return null;
-    let set = stopIdSetCache.get(ids);
-    if (!set) {
-      set = new Set(ids);
-      stopIdSetCache.set(ids, set);
-    }
-    return set;
-  };
 }
 
 /**

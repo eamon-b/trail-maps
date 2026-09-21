@@ -62,7 +62,7 @@ export interface ThemeColors {
   waypointFavorite: string;
   /**
    * A waypoint the hiker has ticked as a resupply stop. Only ever drawn once a
-   * plan exists (see `selectResupplyStopIds`), and it outranks the favourite
+   * plan exists (see `usePlannedResupplyIds`), and it outranks the favourite
    * colour where both apply — the plan is the rarer, more deliberate signal.
    */
   resupplyPlanned: string;

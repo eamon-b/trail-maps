@@ -26,7 +26,14 @@
  * `void applyEdit(...)`, and the editors throw for real (a 500-stop plan, a
  * document over 64 KB) — a rejected floating promise there is an unhandled
  * rejection that takes the screen down instead of the edit. Failures are
- * logged and leave the stored plan untouched.
+ * logged, leave the stored plan untouched, and land in `lastError` so the Plan
+ * screen can say what happened instead of appearing to ignore the tap.
+ *
+ * Calls for one trail are also serialised. `plansRepo` writes inside a bare
+ * `BEGIN`, so two taps close enough together to overlap would nest one
+ * transaction inside another and throw; a per-trail promise chain makes the
+ * second edit start from the first one's result, which is what a hiker tapping
+ * twice means anyway.
  */
 
 import { create } from 'zustand';
@@ -70,6 +77,14 @@ export function setPlanChangedHandler(handler?: (doc: PlanDocument) => void): vo
 export interface PlansState {
   /** trailId → the trail's plan; absent until hydrated, undefined when there is none. */
   byTrail: Record<string, PlanDocument | undefined>;
+  /**
+   * trailId → why the last edit did not land, or null once one has.
+   *
+   * A refused edit is otherwise invisible: `apply` swallows the throw to keep a
+   * floating promise from taking the screen down, so without this the tap
+   * simply appears to do nothing.
+   */
+  lastError: Record<string, string | null>;
   /** Read the trail's plan out of SQLite into the cache. */
   hydrate: (trailId: string) => Promise<void>;
   /**
@@ -94,16 +109,51 @@ export interface PlansState {
   clearAll: () => void;
 }
 
-export const usePlansStore = create<PlansState>((set, get) => ({
-  byTrail: {},
+/**
+ * Per-trail cache generation, bumped by every write and by every hydrate that
+ * starts. A hydrate is a read that takes a round trip through SQLite, so one
+ * begun before an `apply` can resolve after it and put the pre-edit document
+ * back on screen; comparing the generation it started with against the current
+ * one tells it that it is holding a stale row and should say nothing.
+ */
+const cacheGeneration = new Map<string, number>();
 
-  hydrate: async (trailId: string) => {
-    const db = await getDatabase();
-    const plan = await plansRepo.getByTrail(db, trailId);
-    set((s) => ({ byTrail: { ...s.byTrail, [trailId]: plan ?? undefined } }));
-  },
+function bumpGeneration(trailId: string): number {
+  const next = (cacheGeneration.get(trailId) ?? 0) + 1;
+  cacheGeneration.set(trailId, next);
+  return next;
+}
 
-  apply: async (trailId, edit, defaults) => {
+/**
+ * Per-trail write chain — the mutex behind `apply`. Each entry is the tail of
+ * that trail's edits; it never rejects, because `apply`'s body swallows its own
+ * failures, so `.then(run, run)` is belt and braces rather than error handling.
+ */
+const writeChains = new Map<string, Promise<unknown>>();
+
+/**
+ * What to show a hiker when an edit is refused. The editors throw with a
+ * `plan-editor:` prefix — useful in a log, noise on a screen — so it is
+ * stripped once here rather than at every surface that reads the error.
+ */
+export function planEditFailureMessage(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  return raw.replace(/^plan-editor:\s*/, '').trim() || 'The edit could not be saved.';
+}
+
+export const usePlansStore = create<PlansState>((set, get) => {
+  /** Record (or clear) a trail's last failure, without churning the state. */
+  const noteError = (trailId: string, message: string | null) =>
+    set((s) => {
+      if ((s.lastError[trailId] ?? null) === message) return s;
+      return { lastError: { ...s.lastError, [trailId]: message } };
+    });
+
+  const applyNow = async (
+    trailId: string,
+    edit: (plan: PlanDocument) => PlanDocument,
+    defaults?: PlanDefaults,
+  ): Promise<PlanDocument | null> => {
     try {
       const db = await getDatabase();
       // The cache may not have been hydrated yet (a waypoint detail screen can
@@ -125,32 +175,87 @@ export const usePlansStore = create<PlansState>((set, get) => ({
       // have still lands in the cache.
       if (next === base) {
         if (current !== cached) {
+          bumpGeneration(trailId);
           set((s) => ({ byTrail: { ...s.byTrail, [trailId]: current } }));
         }
+        noteError(trailId, null);
         return current ?? null;
       }
 
       assertPlanDocumentWithinLimits(next);
       await plansRepo.upsertLocal(db, next);
+      bumpGeneration(trailId);
       set((s) => ({ byTrail: { ...s.byTrail, [trailId]: next } }));
+      noteError(trailId, null);
       onPlanChanged?.(next);
       return next;
     } catch (e) {
       console.warn(`plans-store: edit to ${trailId} was not applied`, e);
+      noteError(trailId, planEditFailureMessage(e));
       return null;
     }
-  },
+  };
 
-  clear: (trailId: string) =>
-    set((s) => {
-      if (!(trailId in s.byTrail)) return s;
-      const next = { ...s.byTrail };
-      delete next[trailId];
-      return { byTrail: next };
-    }),
+  return {
+    byTrail: {},
+    lastError: {},
 
-  clearAll: () => set((s) => (Object.keys(s.byTrail).length === 0 ? s : { byTrail: {} })),
-}));
+    hydrate: async (trailId: string) => {
+      const generation = bumpGeneration(trailId);
+      const db = await getDatabase();
+      const plan = await plansRepo.getByTrail(db, trailId);
+      // An edit (or a newer hydrate) landed while this read was out, so the row
+      // it came back with is already history — dropping it is the whole point.
+      if (cacheGeneration.get(trailId) !== generation) return;
+      set((s) => ({ byTrail: { ...s.byTrail, [trailId]: plan ?? undefined } }));
+    },
+
+    apply: (trailId, edit, defaults) => {
+      const run = () => applyNow(trailId, edit, defaults);
+      const chained = (writeChains.get(trailId) ?? Promise.resolve()).then(run, run);
+      writeChains.set(trailId, chained);
+      return chained;
+    },
+
+    clear: (trailId: string) =>
+      set((s) => {
+        if (!(trailId in s.byTrail) && !(trailId in s.lastError)) return s;
+        bumpGeneration(trailId);
+        const byTrail = { ...s.byTrail };
+        delete byTrail[trailId];
+        // The failure goes with the plan it was about — this is called when an
+        // imported guide is deleted, and there is nothing left to say it of.
+        const lastError = { ...s.lastError };
+        delete lastError[trailId];
+        return { byTrail, lastError };
+      }),
+
+    clearAll: () =>
+      set((s) => {
+        if (Object.keys(s.byTrail).length === 0) return s;
+        for (const trailId of Object.keys(s.byTrail)) bumpGeneration(trailId);
+        return { byTrail: {}, lastError: {} };
+      }),
+  };
+});
+
+/**
+ * Reactive selector for the trail's ticked resupply options, as stored in the
+ * document. `undefined` is "no plan made" — the selection surfaces read that as
+ * *nothing* planned, never everything (see `features/plan/use-planned-resupply`,
+ * which falls back to the device-local selection a pre-sync build left behind).
+ *
+ * Returns the document's own array, so its identity is stable under zustand's
+ * `Object.is` compare until the selection itself changes.
+ */
+export function selectResupplyStops(trailId: string) {
+  return (s: PlansState): string[] | undefined => s.byTrail[trailId]?.resupplyStops;
+}
+
+/** Reactive selector for why the trail's last edit did not land (null if it did). */
+export function selectPlanError(trailId: string) {
+  return (s: PlansState): string | null => s.lastError[trailId] ?? null;
+}
 
 /** Reactive selector for a trail's plan (undefined when it has none). */
 export function selectPlan(trailId: string) {

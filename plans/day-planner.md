@@ -5,11 +5,18 @@ answered the same day and rows 1-4c of the sequencing table were implemented on 
 same day. Reviewed 2026-09-21 (four review passes, one per layer) on
 `claude/pr77-maze-review-secrets-emvjvy`, which rebased the work onto `main` — where the
 resupply-selection feature (#77) had landed in the meantime — reconciled the two (see "Where the
-hiker's inputs live" below) and fixed the review findings. Row 5, deploy, is outstanding and its
-recipe is under "Deploy" at the end of this file; note that **the app cannot ship as an EAS
-Update** (expo-updates is not installed and `app.json` has no `updates`/`runtimeVersion`), so
-the phone side needs an `eas build`. Decisions taken with Eamon are marked **[decided]**; the
-former open questions are recorded as decisions at the end.
+hiker's inputs live" below) and fixed the review findings. Row 5, deploy, was run 2026-09-21
+from `main` at `90dec99` (recipe under "Deploy" at the end of this file): migration
+`0004_plans_devices.sql` applied to the remote D1 and the worker deployed (version
+`079ac798`, `/health` ok); the production Android build finished on EAS (build
+`43180486-a902-4ae9-a9bc-1eb210d91da9`, an `.aab` for store distribution, 0.1.0 build 1, native
+fingerprint unchanged from the August dev client). Still open: `VITE_API_BASE_URL` on the Vercel
+project (no Vercel token in the build container — until it is set the live site is local-only),
+and the iOS build, which `--non-interactive` refuses until the distribution certificate has been
+validated with an interactive Apple sign-in. Note that **the app cannot ship as an EAS Update**
+(expo-updates is not installed and `app.json` has no `updates`/`runtimeVersion`), so the phone
+side needs an `eas build`. Decisions taken with Eamon are marked **[decided]**; the former open
+questions are recorded as decisions at the end.
 
 ## Why
 

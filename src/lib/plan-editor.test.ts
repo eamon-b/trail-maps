@@ -12,6 +12,7 @@ import {
   setDirection,
   setNights,
   setPlanName,
+  setResupplyStops,
   setStartDate,
   setStopBooked,
   setStopNote,
@@ -159,6 +160,19 @@ describe('toggleStop', () => {
     expect(days.map(d => d.endKm)).toEqual([20, 100]);
   });
 
+  it('refuses a non-finite km rather than storing a stop that cannot be loaded back', () => {
+    // A NaN km survives the limits check but fails `isPlanDocument` on the next
+    // load, which costs the hiker the whole plan rather than one stop.
+    const plan = emptyPlan();
+    expect(() => toggleStop(plan, { id: 'w_a', km: Number.NaN, name: 'Nowhere' }, opts)).toThrow(
+      /plan-editor: stop km must be a finite number/,
+    );
+    expect(() =>
+      toggleStop(plan, { km: Number.POSITIVE_INFINITY, name: 'Nowhere' }, opts),
+    ).toThrow(/finite/);
+    expect(plan.stops).toEqual([]);
+  });
+
   it('finds a stop by id, then by km', () => {
     const plan = toggleStop(emptyPlan(), { id: 'w_a', km: 20, name: 'Camp A' }, opts);
     expect(findStop(plan, { waypointId: 'w_a', km: 999 })?.name).toBe('Camp A');
@@ -289,6 +303,44 @@ describe('overnightCandidates', () => {
   });
 });
 
+describe('setResupplyStops', () => {
+  it('stores the selection in the order given, as a copy', () => {
+    const ids = ['w_town', 'w_store'];
+    const plan = setResupplyStops(emptyPlan(), ids, opts);
+    expect(plan.resupplyStops).toEqual(['w_town', 'w_store']);
+    ids.push('w_late');
+    expect(plan.resupplyStops).toEqual(['w_town', 'w_store']); // not the caller's array
+  });
+
+  it('is a no-op when the selection already reads the same', () => {
+    const plan = setResupplyStops(emptyPlan(), ['w_town', 'w_store'], opts);
+    expect(setResupplyStops(plan, ['w_town', 'w_store'], opts)).toBe(plan);
+    // Order is part of the value, so a reordering is a change.
+    expect(setResupplyStops(plan, ['w_store', 'w_town'], opts)).not.toBe(plan);
+  });
+
+  it('clears the selection with undefined — "no plan made", not "nothing ticked"', () => {
+    const plan = setResupplyStops(emptyPlan(), ['w_town'], opts);
+    const cleared = setResupplyStops(plan, undefined, opts);
+    expect(cleared).not.toHaveProperty('resupplyStops');
+    // An explicit empty selection is a different thing, and is stored.
+    expect(setResupplyStops(plan, [], opts).resupplyStops).toEqual([]);
+  });
+
+  it('is a no-op when clearing a plan that has no selection', () => {
+    const plan = emptyPlan();
+    expect(setResupplyStops(plan, undefined, opts)).toBe(plan);
+  });
+
+  it('restamps updatedAt on a real change', () => {
+    const plan = emptyPlan();
+    const later = setResupplyStops(plan, ['w_town'], { now: () => '2026-09-21T00:00:00.000Z' });
+    expect(later.updatedAt).toBe('2026-09-21T00:00:00.000Z');
+    const cleared = setResupplyStops(later, undefined, { now: () => '2026-09-22T00:00:00.000Z' });
+    expect(cleared.updatedAt).toBe('2026-09-22T00:00:00.000Z');
+  });
+});
+
 describe('migratePlanState', () => {
   // A realistic saved state: km-keyed, no ids, a direction and a resupply
   // selection, as `trail-plan-<id>` holds today.
@@ -325,6 +377,70 @@ describe('migratePlanState', () => {
       version: 1,
     });
     expect(isPlanDocument(plan)).toBe(true);
+  });
+
+  /** Two waypoints 6 m apart — both inside KM_EPSILON of a km between them. */
+  const crowded: PlanWaypoint[] = [
+    { id: 'w_near_a', name: 'Near A', type: 'campsite', totalDistance: 10 },
+    { id: 'w_near_b', name: 'Near B', type: 'campsite', totalDistance: 10.006 },
+  ];
+
+  it('keys a legacy km to the nearest waypoint, not the first in array order', () => {
+    const plan = migratePlanState(
+      { name: 'x', startDate: null, stops: [{ km: 10.007, waypointName: 'Near B' }] },
+      'flat',
+      crowded,
+      opts,
+    );
+    expect(plan.stops).toEqual([{ waypointId: 'w_near_b', km: 10.006, name: 'Near B', nights: 1 }]);
+  });
+
+  it('drops a stop that resolves onto one already taken', () => {
+    // Two legacy km, two different nearby waypoints, one place: keeping both
+    // would build a document the save path rejects for sharing a km.
+    const plan = migratePlanState(
+      {
+        name: 'x',
+        startDate: null,
+        stops: [
+          { km: 10.001, waypointName: 'Near A' },
+          { km: 10.007, waypointName: 'Near B' },
+        ],
+      },
+      'flat',
+      crowded,
+      opts,
+    );
+    expect(plan.stops).toEqual([{ waypointId: 'w_near_a', km: 10, name: 'Near A', nights: 1 }]);
+  });
+
+  it('truncates to the first stopsMax stops in km order', () => {
+    const stops = Array.from({ length: PLAN_LIMITS.stopsMax + 20 }, (_, i) => ({
+      km: (PLAN_LIMITS.stopsMax + 20 - i) * 0.5, // descending: km order is not array order
+      waypointName: `Stop ${i}`,
+    }));
+    const plan = migratePlanState({ name: 'x', startDate: null, stops }, 'flat', [], opts);
+    expect(plan.stops).toHaveLength(PLAN_LIMITS.stopsMax);
+    expect(plan.stops[0].km).toBe(0.5);
+    expect(plan.stops[PLAN_LIMITS.stopsMax - 1].km).toBe(PLAN_LIMITS.stopsMax * 0.5);
+  });
+
+  it('never produces a document the save path would reject', () => {
+    // Everything a hand-edited or ancient save can throw at it at once.
+    const nasty: PlanState = {
+      name: 'Nasty',
+      startDate: null,
+      stops: [
+        { km: 10.001, waypointName: 'Near A' },
+        { km: 10.007, waypointName: 'Near B' }, // resolves 6 m from the last one
+        { km: Number.NaN, waypointName: 'Nowhere' },
+        ...Array.from({ length: 600 }, (_, i) => ({ km: 100 + i, waypointName: `Wild ${i}` })),
+      ],
+    };
+    const plan = migratePlanState(nasty, 'flat', crowded, opts);
+    expect(() => assertPlanDocumentWithinLimits(plan)).not.toThrow();
+    expect(isPlanDocument(plan)).toBe(true);
+    expect(plan.stops).toHaveLength(PLAN_LIMITS.stopsMax);
   });
 
   it('defaults a directionless legacy save to NOBO and a bad date to null', () => {
@@ -386,6 +502,32 @@ describe('servicesAtStop', () => {
       transport: false,
       pois: [],
     });
+  });
+
+  it('reads shop=no and public_transport=no as absent, not present', () => {
+    // OSM tags a former shop `shop=no` and a stop no route serves any more
+    // `public_transport=no`; both used to read as "there is one here".
+    const closed = [
+      poi({
+        id: 9,
+        category: 'emergency',
+        distanceAlongTrail: 50,
+        tags: { shop: 'no', public_transport: 'no' },
+      }),
+    ];
+    expect(servicesAtStop({ km: 50 }, closed)).toMatchObject({ shop: false, transport: false });
+  });
+
+  it('still flags a real shop or a real transport tag', () => {
+    const open = [
+      poi({
+        id: 10,
+        category: 'emergency',
+        distanceAlongTrail: 50,
+        tags: { shop: 'convenience', public_transport: 'platform' },
+      }),
+    ];
+    expect(servicesAtStop({ km: 50 }, open)).toMatchObject({ shop: true, transport: true });
   });
 
   it('is undefined for a trail whose POIs were never fetched', () => {
@@ -464,6 +606,14 @@ describe('limits', () => {
     ).toThrow(/share km/);
   });
 
+  it('rejects a non-finite km, which the next load would reject anyway', () => {
+    const base = planWithStops(1);
+    const broken: PlanDocument = { ...base, stops: [{ ...base.stops[0], km: Number.NaN }] };
+    expect(() => assertPlanDocumentWithinLimits(broken)).toThrow(/non-finite km/);
+    // …which is the point: JSON round-tripping a NaN km loses the plan whole.
+    expect(isPlanDocument(JSON.parse(JSON.stringify(broken)))).toBe(false);
+  });
+
   it('refuses to add a stop past the ceiling', () => {
     const full = planWithStops(PLAN_LIMITS.stopsMax);
     expect(() => toggleStop(full, { id: 'w_new', km: 999, name: 'One too many' }, opts)).toThrow(
@@ -483,6 +633,17 @@ describe('isPlanDocument', () => {
     expect(isPlanDocument(JSON.parse(JSON.stringify(valid)))).toBe(true);
   });
 
+  it('requires stops ascending by km, as the server does (stops_unsorted)', () => {
+    const ascending = [
+      { waypointId: 'w_a', km: 20, name: 'Camp A', nights: 1 },
+      { waypointId: 'w_b', km: 50, name: 'Camp B', nights: 1 },
+    ];
+    expect(isPlanDocument({ ...valid, stops: ascending })).toBe(true);
+    // Out of order, the adjacent-pair km check in the limits assert is blind to
+    // a collision, and `PUT /v1/plans/:id` answers stops_unsorted.
+    expect(isPlanDocument({ ...valid, stops: [...ascending].reverse() })).toBe(false);
+  });
+
   it('rejects malformed input', () => {
     expect(isPlanDocument(null)).toBe(false);
     expect(isPlanDocument('{}')).toBe(false);
@@ -497,5 +658,37 @@ describe('isPlanDocument', () => {
     expect(isPlanDocument({ ...valid, stops: [{ ...valid.stops[0], nights: 0 }] })).toBe(false);
     expect(isPlanDocument({ ...valid, stops: [{ ...valid.stops[0], booked: 'yes' }] })).toBe(false);
     expect(isPlanDocument({ ...valid, resupplyStops: [1, 2] })).toBe(false);
+  });
+});
+
+
+describe('thrown messages', () => {
+  it('every error a UI handler can catch starts with plan-editor:', () => {
+    // The callers show these as they stand, so the prefix and the wording are
+    // part of the contract, not debug text.
+    const full: PlanDocument = {
+      ...emptyPlan(),
+      stops: Array.from({ length: PLAN_LIMITS.stopsMax }, (_, i) => ({
+        waypointId: `w_${i}`,
+        km: i + 1,
+        name: `Stop ${i}`,
+        nights: 1,
+      })),
+    };
+    const thrown = [
+      () => toggleStop(full, { id: 'w_new', km: 9999, name: 'One too many' }, opts),
+      () => toggleStop(emptyPlan(), { id: 'w_new', km: Number.NaN, name: 'Nowhere' }, opts),
+      () => setStartDate(emptyPlan(), '1/10/2026', opts),
+      () => assertPlanDocumentWithinLimits({ ...full, stops: [{ ...full.stops[0], nights: 0 }] }),
+    ];
+    for (const run of thrown) {
+      expect(run).toThrow(/^plan-editor: /);
+    }
+    expect(() => toggleStop(full, { id: 'w_new', km: 9999, name: 'One too many' }, opts)).toThrow(
+      'plan-editor: a plan may hold at most 500 stops',
+    );
+    expect(() => setStartDate(emptyPlan(), '1/10/2026', opts)).toThrow(
+      'plan-editor: startDate must be YYYY-MM-DD, got "1/10/2026"',
+    );
   });
 });

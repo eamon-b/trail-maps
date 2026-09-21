@@ -239,7 +239,11 @@ export function setDirection(
  * tapping the same waypoint twice can never leave two stops behind, even if
  * the second tap came from a row whose km differs in the last decimal.
  *
+ * Every message thrown here (and by `setStartDate`) starts with `plan-editor:`
+ * and is stable, so a UI handler can catch one and show it as it stands.
+ *
  * @param waypoint.km NOBO-absolute km (convert active km with `toNoboKm`).
+ * @throws when `waypoint.km` is not a finite number.
  * @throws when the plan is already at `PLAN_LIMITS.stopsMax`.
  */
 export function toggleStop(
@@ -247,6 +251,13 @@ export function toggleStop(
   waypoint: ToggleTarget,
   opts?: PlanEditOptions,
 ): PlanDocument {
+  // A NaN km matches nothing, sorts nowhere and slips past the limits check,
+  // but `isPlanDocument` rejects it on the next load — so a single bad number
+  // costs the hiker the whole plan. Refuse it here, while the caller still has
+  // somewhere to show the error.
+  if (!Number.isFinite(waypoint.km)) {
+    throw new Error(`plan-editor: stop km must be a finite number, got ${String(waypoint.km)}`);
+  }
   const key: StopKey = { waypointId: waypoint.id, km: waypoint.km };
   const index = findStopIndex(plan, key);
   if (index !== -1) {
@@ -369,6 +380,34 @@ export function setStopBooked(
 }
 
 // ---------------------------------------------------------------------------
+// Resupply selection
+// ---------------------------------------------------------------------------
+
+/**
+ * Set the resupply selection: the ids of the resupply options the hiker
+ * ticked, in any order (stored in the order given). `undefined` means "no plan
+ * made" — every option feeds the carries and nothing is highlighted — which is
+ * a different thing from an explicit empty selection.
+ *
+ * The same object comes back when the selection already reads the same, so a
+ * second press of All or None is not a write and not a request.
+ */
+export function setResupplyStops(
+  plan: PlanDocument,
+  ids: readonly string[] | undefined,
+  opts?: PlanEditOptions,
+): PlanDocument {
+  const current = plan.resupplyStops;
+  if (ids === undefined) {
+    return current === undefined ? plan : { ...omitKey(plan, 'resupplyStops'), updatedAt: stamp(opts) };
+  }
+  if (current !== undefined && current.length === ids.length && current.every((id, i) => id === ids[i])) {
+    return plan;
+  }
+  return { ...plan, resupplyStops: [...ids], updatedAt: stamp(opts) };
+}
+
+// ---------------------------------------------------------------------------
 // Legacy migration
 // ---------------------------------------------------------------------------
 
@@ -378,16 +417,60 @@ export function setStopBooked(
  * `StopData` is km-keyed and carries no id, so each legacy km is resolved
  * against the trail's waypoints by `KM_EPSILON` — the same tolerance the stop
  * was matched with when it was saved, since it was saved *from* a waypoint's
- * already-rounded build-time km. A stop that matches a waypoint takes that
- * waypoint's id and km (canonical from here on); one that matches nothing
- * keeps its km and stays id-less, which `findStop` handles.
+ * already-rounded build-time km. Within that tolerance the *nearest* waypoint
+ * wins, not the first one the array happens to hold: two waypoints 6 m apart
+ * are both inside `KM_EPSILON`, and array order is the build's, not the
+ * hiker's. A stop that matches a waypoint takes that waypoint's id and km
+ * (canonical from here on); one that matches nothing keeps its km and stays
+ * id-less, which `findStop` handles.
  *
  * Every stop gets `nights: 1` — the legacy shape had no notion of a rest day.
  * Name, start date, direction and the resupply selection carry over unchanged.
  *
+ * **The result always passes `assertPlanDocumentWithinLimits`.** A migration
+ * that produced a document the save path rejects would lose the plan it was
+ * meant to rescue, so the two document-level stop rules are applied here:
+ * near-duplicates are dropped (same id, or km within `KM_EPSILON` — the
+ * uniqueness rule the assert enforces, not the looser `sameStop` lookup), and
+ * a legacy save holding more than `PLAN_LIMITS.stopsMax` stops keeps the first
+ * `stopsMax` in km order and drops the tail. A legacy stop whose km is not a
+ * finite number is skipped outright — there is no position to rescue it to.
+ *
  * Runs once on the web, when a `trail-plan-<id>` key is found and no document
  * exists.
  */
+/**
+ * The waypoint nearest `km` within `KM_EPSILON`, or `undefined`.
+ *
+ * Nearest, not first: `KM_EPSILON` is 10 m of slack, and real trails carry
+ * waypoints closer together than that. Ties keep the earlier waypoint, which
+ * is the only stable answer available.
+ */
+function nearestWaypoint(waypoints: readonly PlanWaypoint[], km: number): PlanWaypoint | undefined {
+  let best: PlanWaypoint | undefined;
+  let bestGap = KM_EPSILON;
+  for (const wp of waypoints) {
+    if (typeof wp.totalDistance !== 'number') continue;
+    const gap = Math.abs(wp.totalDistance - km);
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = wp;
+    }
+  }
+  return best;
+}
+
+/**
+ * True when two stops could not both live in one document: the uniqueness rule
+ * `assertPlanDocumentWithinLimits` enforces (same waypoint id, OR km within
+ * `KM_EPSILON`). Stricter than `sameStop`, which is a *lookup* and stops
+ * comparing km once both sides have an id.
+ */
+function collidesWith(a: PlanStop, b: PlanStop): boolean {
+  if (a.waypointId !== undefined && a.waypointId === b.waypointId) return true;
+  return Math.abs(a.km - b.km) < KM_EPSILON;
+}
+
 export function migratePlanState(
   state: PlanState,
   trailId: string,
@@ -396,11 +479,8 @@ export function migratePlanState(
 ): PlanDocument {
   const stops: PlanStop[] = [];
   for (const legacy of state.stops ?? []) {
-    const match = waypoints.find(
-      wp =>
-        typeof wp.totalDistance === 'number' &&
-        Math.abs(wp.totalDistance - legacy.km) < KM_EPSILON,
-    );
+    if (!Number.isFinite(legacy.km)) continue;
+    const match = nearestWaypoint(waypoints, legacy.km);
     const stop: PlanStop = {
       ...(match?.id ? { waypointId: match.id } : {}),
       km: match?.totalDistance ?? legacy.km,
@@ -408,10 +488,9 @@ export function migratePlanState(
       nights: 1,
     };
     // A legacy save could in principle hold two stops at the same place (two
-    // co-located waypoints); the document forbids it, so the first wins.
-    if (stops.some(existing => sameStop(existing, { waypointId: stop.waypointId, km: stop.km }))) {
-      continue;
-    }
+    // co-located waypoints, or two km that resolved to neighbouring ones); the
+    // document forbids both, so the first wins.
+    if (stops.some(existing => collidesWith(existing, stop))) continue;
     stops.push(stop);
   }
   return {
@@ -420,7 +499,7 @@ export function migratePlanState(
     name: clampName(state.name ?? ''),
     direction: state.direction ?? 'NOBO',
     startDate: isIsoDate(state.startDate) ? state.startDate : null,
-    stops: sortStops(stops),
+    stops: sortStops(stops).slice(0, PLAN_LIMITS.stopsMax),
     ...(state.resupplyStops ? { resupplyStops: [...state.resupplyStops] } : {}),
     updatedAt: stamp(opts),
     version: 1,
@@ -608,6 +687,19 @@ const WATER_MAN_MADE: ReadonlySet<string> = new Set(['water_tap', 'water_well', 
 const TRANSPORT_AMENITIES: ReadonlySet<string> = new Set(['bus_station', 'ferry_terminal', 'taxi']);
 
 /**
+ * A tag's value, with the literal `no` read as "the tag is absent".
+ *
+ * OSM uses `shop=no` and `public_transport=no` to say *there is no shop here*
+ * (commonly on a former shop, or on a stop a route no longer serves). Testing
+ * such a tag for truthiness flags the opposite of what it says — the same
+ * reason `drinking_water` is compared against `'yes'` rather than read as a
+ * flag.
+ */
+function tagValue(value: string | undefined): string | undefined {
+  return value === undefined || value === 'no' ? undefined : value;
+}
+
+/**
  * The services near a stop, from the trail's OSM POIs.
  *
  * `undefined` means *this trail has no POI data at all* (`pois === undefined`
@@ -619,6 +711,9 @@ const TRANSPORT_AMENITIES: ReadonlySet<string> = new Set(['bus_station', 'ferry_
  * curated waypoint is the one marker for that place, but their OSM
  * `website`/`opening_hours` is exactly what a stop card wants to show, and
  * dropping them would make the hut you are standing at look service-less.
+ *
+ * Route breaks are ignored: the window is along-trail km only, so a POI on the
+ * far side of a ferry crossing is credited to a stop 1 km away on this side.
  *
  * @param radiusKm along-trail half-window. 1 km by default (the decision in
  *   `plans/day-planner.md`); there is deliberately no cap on
@@ -644,10 +739,11 @@ export function servicesAtStop(
     const tags = poi.tags ?? {};
     const amenity = tags.amenity;
     const tourism = tags.tourism;
+    const shop = tagValue(tags.shop);
     if (poi.category === 'camping') services.camping = true;
     if (tourism && LODGING_TOURISM.has(tourism)) services.lodging = true;
-    if (poi.category === 'resupply' || tags.shop) services.shop = true;
-    if (poi.category === 'restaurant' || (amenity && FOOD_AMENITIES.has(amenity)) || tags.shop === 'bakery') {
+    if (poi.category === 'resupply' || shop !== undefined) services.shop = true;
+    if (poi.category === 'restaurant' || (amenity && FOOD_AMENITIES.has(amenity)) || shop === 'bakery') {
       services.food = true;
     }
     if (
@@ -662,7 +758,7 @@ export function servicesAtStop(
       poi.category === 'transport' ||
       tags.highway === 'bus_stop' ||
       (amenity && TRANSPORT_AMENITIES.has(amenity)) ||
-      tags.public_transport !== undefined ||
+      tagValue(tags.public_transport) !== undefined ||
       tags.railway === 'station'
     ) {
       services.transport = true;
@@ -719,6 +815,12 @@ export function assertPlanDocumentWithinLimits(plan: PlanDocument): void {
   }
   const seenIds = new Set<string>();
   for (const stop of plan.stops) {
+    // `isPlanDocument` rejects a non-finite km on the next load, so letting one
+    // be saved here trades an error the caller can show for a plan that comes
+    // back empty.
+    if (!Number.isFinite(stop.km)) {
+      throw new Error(`plan-editor: "${stop.name}" has a non-finite km (${String(stop.km)})`);
+    }
     if (!Number.isFinite(stop.nights) || stop.nights < 1 || stop.nights > PLAN_LIMITS.nightsMax) {
       throw new Error(
         `plan-editor: "${stop.name}" has ${stop.nights} nights, outside 1..${PLAN_LIMITS.nightsMax}`,
@@ -779,6 +881,14 @@ export function isPlanDocument(value: unknown): value is PlanDocument {
   if (value.direction !== 'NOBO' && value.direction !== 'SOBO') return false;
   if (value.startDate !== null && !isIsoDate(value.startDate)) return false;
   if (!Array.isArray(value.stops) || !value.stops.every(isPlanStop)) return false;
+  // Ascending km is a document rule, not a convention: the km-uniqueness check
+  // in `assertPlanDocumentWithinLimits` only compares adjacent stops, and the
+  // server rejects an unsorted array outright (`stops_unsorted`). Equal km is
+  // left to the limits check, which is the one that knows about `KM_EPSILON`.
+  const stops = value.stops as PlanStop[];
+  for (let i = 1; i < stops.length; i++) {
+    if (stops[i].km < stops[i - 1].km) return false;
+  }
   if (
     value.resupplyStops !== undefined &&
     (!Array.isArray(value.resupplyStops) || !value.resupplyStops.every(id => typeof id === 'string'))

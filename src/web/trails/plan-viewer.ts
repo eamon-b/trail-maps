@@ -25,6 +25,7 @@ import {
   setDirection as editDirection,
   setNights as editNights,
   setPlanName as editPlanName,
+  setResupplyStops as editResupplyStops,
   setStartDate as editStartDate,
   setStopBooked as editStopBooked,
   setStopNote as editStopNote,
@@ -974,7 +975,9 @@ function renderDayList(): void {
     const planned = plannedNames.length > 0;
     // A rest day is not a card of its own — it is nights at the stop this day
     // ends at, and the reason every later date has moved on.
-    const rest = day.restDays ?? 0;
+    // Through `Number` for the same reason as the stepper above: the count
+    // comes from a document that may have arrived over the network.
+    const rest = Number(day.restDays ?? 0);
     const restLine = rest > 0
       ? `<div class="day-card-rest">+${rest} rest day${rest === 1 ? '' : 's'} at ${escapeHtml(day.endName)}</div>`
       : '';
@@ -1088,11 +1091,16 @@ function stopCandidates(): PlanWaypoint[] {
 /** The nights / note / booked controls that open under a ticked row. */
 function stopEditorHtml(stop: PlanStop): string {
   const note = stop.note ?? '';
+  // `nights` is a number in any document that passed `isPlanDocument`, but
+  // this is HTML and the document may have come off the wire: coerce rather
+  // than trust, so nothing but a number can reach the markup.
+  const nights = Number(stop.nights);
+  const nightsText = escapeHtml(String(Number.isFinite(nights) ? nights : 1));
   // Read-only: the Stops tab is hidden on a shared plan, but a row that does
   // get rendered shows the stop's nights and note as text, never as fields.
   if (readOnly) {
     return `<div class="stop-editor is-static">
-      <span class="stop-editor-label">${stop.nights} night${stop.nights === 1 ? '' : 's'}</span>
+      <span class="stop-editor-label">${nightsText} night${nights === 1 ? '' : 's'}</span>
       ${note ? `<span class="stop-note-text">${escapeHtml(note)}</span>` : ''}
       ${stop.booked ? '<span class="booked-badge">Booked</span>' : ''}
     </div>`;
@@ -1101,10 +1109,10 @@ function stopEditorHtml(stop: PlanStop): string {
       <div class="stop-editor-line">
         <span class="stop-editor-label">Nights</span>
         <button type="button" class="nights-btn" data-nights-delta="-1"
-          aria-label="One night fewer"${stop.nights <= 1 ? ' disabled' : ''}>\u2212</button>
-        <span class="nights-value">${stop.nights}</span>
+          aria-label="One night fewer"${nights <= 1 ? ' disabled' : ''}>\u2212</button>
+        <span class="nights-value">${nightsText}</span>
         <button type="button" class="nights-btn" data-nights-delta="1"
-          aria-label="One night more"${stop.nights >= PLAN_LIMITS.nightsMax ? ' disabled' : ''}>+</button>
+          aria-label="One night more"${nights >= PLAN_LIMITS.nightsMax ? ' disabled' : ''}>+</button>
         <span class="nights-hint">2 nights = 1 rest day</span>
       </div>
       <input type="text" class="stop-note" placeholder="Note\u2026"
@@ -1461,7 +1469,29 @@ function selectDay(index: number | null): void {
 function toggleStop(km: number, name: string, id?: string): void {
   if (readOnly) return;
   const noboKm = toNoboKm(km, direction(), trail.track.totalDistance);
-  applyEdit(editToggleStop(plan, { ...(id ? { id } : {}), km: noboKm, name }));
+  tryEdit(() => editToggleStop(plan, { ...(id ? { id } : {}), km: noboKm, name }));
+}
+
+/**
+ * Run an editor that is allowed to refuse, and say so where the save status
+ * goes.
+ *
+ * `@lib/plan-editor` throws for the few edits that would build a document the
+ * limits — and the server — would reject: the 500-stop ceiling, a km that is
+ * not a number, a start date that is not a date. Every message it throws
+ * starts with `plan-editor:` and is written to be shown as it stands, so the
+ * prefix comes off and the rest goes on screen. The document is left exactly
+ * as it was, which is the point: the refusal is not a half-applied edit.
+ */
+function tryEdit(edit: () => PlanDocument, options: { render?: boolean } = {}): void {
+  let next: PlanDocument;
+  try {
+    next = edit();
+  } catch (err) {
+    setEditError(err);
+    return;
+  }
+  applyEdit(next, options);
 }
 
 /**
@@ -1509,13 +1539,12 @@ function setAllResupply(all: boolean): void {
 /**
  * Write the resupply selection into the document.
  *
- * `resupplyStops` is a field of `PlanDocument` that `@lib/plan-editor` has no
- * setter for — it predates the day planner and no other platform edits it — so
- * this follows the editors' contract by hand: a new document, never a mutation,
- * with `updatedAt` restamped so a later sync sees the change.
+ * Through the shared editor, like every other edit: a selection that did not
+ * change comes back as the same document and `applyEdit` drops it, so pressing
+ * All on an already-full list is not a save — and not a `PUT`.
  */
 function setResupplyStops(ids: string[]): void {
-  applyEdit({ ...plan, resupplyStops: ids, updatedAt: new Date().toISOString() });
+  applyEdit(editResupplyStops(plan, ids));
 }
 
 /** Centre the map on a resupply option, so the list and the map stay in step. */
@@ -1539,11 +1568,7 @@ function setDirection(dir: PlanDirection): void {
 function setStartDate(date: string): void {
   // The editor throws on anything that is not a real calendar day; an empty
   // input (the date field cleared) is a null start date, not a bad one.
-  try {
-    applyEdit(editStartDate(plan, date || null));
-  } catch {
-    setSaveStatus('error');
-  }
+  tryEdit(() => editStartDate(plan, date || null));
 }
 
 function setPlanName(name: string): void {
@@ -1601,6 +1626,20 @@ function commitSave(): void {
   const ok = savePlanDocument(trail.config.id, plan);
   setSaveStatus(ok ? 'saved' : 'error');
   syncController?.onLocalSave();
+}
+
+/**
+ * Show why an edit was refused, on the line the save status uses. Warn-coloured
+ * like an unsaved plan, because that is what it is: the change never happened.
+ */
+function setEditError(err: unknown): void {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  const message = err instanceof Error ? err.message : String(err);
+  // The editor's messages are written to be shown; only the module prefix is
+  // ours rather than the reader's.
+  el.textContent = message.replace(/^plan-editor:\s*/, '') || 'That change was refused';
+  el.className = 'unsaved';
 }
 
 function setSaveStatus(status: 'saved' | 'unsaved' | 'error'): void {

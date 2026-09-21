@@ -174,6 +174,20 @@ export function clearPlanState(trailId: string): void {
 // Boot
 // ---------------------------------------------------------------------------
 
+/**
+ * Complain once per message, never in a loop: these are boot-time conditions
+ * (no storage, an unmigratable record) that would otherwise print on every
+ * render that touched them.
+ */
+const warned = new Set<string>();
+
+function warnOnce(message: string, cause?: unknown): void {
+  if (warned.has(message)) return;
+  warned.add(message);
+  if (cause === undefined) console.warn(message);
+  else console.warn(message, cause);
+}
+
 /** What `loadOrMigratePlan` needs of a trail: its name, and its waypoints. */
 export interface PlanTrailSource {
   config: { id: string; name: string; shortName?: string };
@@ -217,17 +231,30 @@ export function loadOrMigratePlan(
 
   const legacy = loadPlanState(trailId);
   if (legacy) {
-    const migrated = migratePlanState(legacy, trailId, trail.waypoints ?? [], opts);
-    savePlanDocument(trailId, migrated);
-    // Pace and hours are not part of the document (see PlanUiPrefs), so they
-    // move to this browser's view preferences rather than being lost.
-    if (legacy.pace !== undefined || legacy.dailyHours !== undefined) {
-      const prefs = loadPlanUiPrefs(trailId);
-      if (legacy.pace !== undefined) prefs.pace = legacy.pace;
-      if (legacy.dailyHours !== undefined) prefs.dailyHours = legacy.dailyHours;
-      savePlanUiPrefs(trailId, prefs);
+    try {
+      const migrated = migratePlanState(legacy, trailId, trail.waypoints ?? [], opts);
+      if (!savePlanDocument(trailId, migrated)) {
+        // Storage refused it — a full or disabled `localStorage`. The plan is
+        // still the one this session edits; it is the next load that pays,
+        // migrating again under a new id. Said once, in the console, rather
+        // than silently or on every save.
+        warnOnce(`Could not store the migrated plan for ${trailId}; it stays in this tab only.`);
+      }
+      // Pace and hours are not part of the document (see PlanUiPrefs), so they
+      // move to this browser's view preferences rather than being lost.
+      if (legacy.pace !== undefined || legacy.dailyHours !== undefined) {
+        const prefs = loadPlanUiPrefs(trailId);
+        if (legacy.pace !== undefined) prefs.pace = legacy.pace;
+        if (legacy.dailyHours !== undefined) prefs.dailyHours = legacy.dailyHours;
+        savePlanUiPrefs(trailId, prefs);
+      }
+      return { plan: migrated, origin: 'migrated' };
+    } catch (err) {
+      // The migration itself refused the record (no uuid source, a stop the
+      // document rules will not take). A fresh empty plan is a worse day than
+      // the old stops, but it is a working page rather than a blank one.
+      warnOnce(`Could not migrate the stored plan for ${trailId}`, err);
     }
-    return { plan: migrated, origin: 'migrated' };
   }
 
   const name = `My ${trail.config.shortName ?? trail.config.name} plan`;

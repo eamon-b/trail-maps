@@ -6,7 +6,7 @@
  * below pin both, and the one-way bridge between them.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   clearPlanDocument,
   clearPlanState,
@@ -405,6 +405,47 @@ describe('loadOrMigratePlan', () => {
   it('re-keys a document stored under a different trail id', () => {
     savePlanDocument('renamed', { ...validDocument, trailId: 'the-old-id' });
     expect(loadOrMigratePlan('renamed', TRAIL, { idFactory: ids() }).plan.trailId).toBe('renamed');
+  });
+
+  it('keeps the migrated plan for this session when storage refuses it', () => {
+    savePlanState(TRAIL_ID, validState);
+    const setItem = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const loaded = loadOrMigratePlan(TRAIL_ID, TRAIL, { idFactory: ids() });
+      // The plan the hiker is looking at is still their migrated plan, not a
+      // blank one, and the console says once why it will not survive the tab.
+      expect(loaded.origin).toBe('migrated');
+      expect(loaded.plan.stops).toHaveLength(1);
+      expect(warn).toHaveBeenCalled();
+    } finally {
+      setItem.mockRestore();
+      warn.mockRestore();
+    }
+  });
+
+  it('falls back to an empty plan when the migration itself refuses', () => {
+    savePlanState(TRAIL_ID, validState);
+    // The first id minted is the migration's; it is the one that fails.
+    let minted = 0;
+    const idFactory = (): string => {
+      minted += 1;
+      if (minted === 1) throw new Error('plan-editor: no uuid source available');
+      return `id-${minted}`;
+    };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const loaded = loadOrMigratePlan(TRAIL_ID, TRAIL, { idFactory });
+      expect(loaded.origin).toBe('new');
+      expect(loaded.plan.stops).toEqual([]);
+      expect(warn).toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('migrates an imported trail against its uw_ waypoint ids', () => {

@@ -463,6 +463,15 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   background: var(--bg-secondary);
   border-color: var(--accent-color);
 }
+/*
+ * Someone else's plan (`applyReadOnlyChrome`): the ticks are already disabled
+ * and the Stops tab is gone, so All and None are the last controls that would
+ * change a document this page cannot write. They go too, rather than sitting
+ * there doing nothing when pressed.
+ */
+#plan-shell.is-readonly .resupply-btn {
+  display: none;
+}
 #resupply-controls input {
   width: 100%;
   padding: 0.4rem 0.6rem;

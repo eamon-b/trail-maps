@@ -66,6 +66,8 @@ interface Reply {
 let requests: Recorded[] = [];
 /** Answers one request; `null` means "throw, as a dead network does". */
 let handler: (req: Recorded) => Reply | null;
+/** Hold a `PUT` open this long, so a test can press Share while one is in the air. */
+let putDelayMs = 0;
 
 function installFetchStub(): void {
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
@@ -79,6 +81,9 @@ function installFetchStub(): void {
       authorization: headers.Authorization,
     };
     requests.push(req);
+    if (req.method === 'PUT' && putDelayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, putDelayMs));
+    }
     const reply = handler(req);
     if (!reply) throw new TypeError('Failed to fetch');
     return {
@@ -100,6 +105,31 @@ const entryFor = (document: PlanDocument, updatedAt: string) => ({
   shareId: null,
   updatedAt,
 });
+
+/**
+ * A server holding `stored` (set it to what the phone has written), accepting
+ * every PUT. The `let` is read on each request, so a test can change what the
+ * account holds part-way through.
+ */
+function serverHolding(get: () => PlanDocument | null): (req: Recorded) => Reply {
+  return req => {
+    if (req.method === 'GET' && req.path.startsWith('/v1/plans?')) {
+      const held = get();
+      return {
+        status: 200,
+        body: {
+          plans: held ? [entryFor(held, held.updatedAt)] : [],
+          nextCursor: null,
+          syncedAt: 'now',
+        },
+      };
+    }
+    if (req.method === 'PUT') {
+      return { status: 200, body: entryFor(req.body as PlanDocument, '2026-07-01T10:00:00.000Z') };
+    }
+    throw new Error(`unscripted ${req.method} ${req.path}`);
+  };
+}
 
 /** The default server: no plan stored, every PUT accepted. */
 function plainServer(stamp = '2026-07-01T10:00:00.000Z'): (req: Recorded) => Reply {
@@ -211,6 +241,7 @@ beforeEach(() => {
   localStorage.clear();
   requests = [];
   handler = plainServer();
+  putDelayMs = 0;
   vi.useFakeTimers();
   vi.stubEnv('VITE_API_BASE_URL', API);
   installLeafletStub();
@@ -503,6 +534,369 @@ describe('a linked browser', () => {
     $('share-unshare').click();
     await vi.advanceTimersByTimeAsync(0);
     expect($('share-panel').hidden).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Coming back: the network, the tab, and what the phone did meanwhile
+// ---------------------------------------------------------------------------
+
+describe('a page that was away', () => {
+  it('re-reads the server when the network returns, rather than pushing over it', async () => {
+    linkedSession();
+    // Boot with nothing reachable: the read fails, so this page has never seen
+    // what the account holds.
+    handler = () => null;
+    await boot();
+    expect($('sync-status').textContent).toBe('Offline, will retry');
+    expect(putsOf()).toHaveLength(0);
+
+    // Meanwhile the phone wrote a plan for this trail.
+    let held: PlanDocument | null = serverDoc();
+    handler = serverHolding(() => held);
+    requests = [];
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    // The copy from the phone is adopted; the stale local one is never sent.
+    expect(($('plan-name-input') as HTMLInputElement).value).toBe('From the phone');
+    expect(storedPlan().id).toBe('plan-server');
+    expect(putsOf()).toHaveLength(0);
+    held = null;
+  });
+
+  it('re-reads the server when the tab is looked at again', async () => {
+    linkedSession();
+    let held: PlanDocument | null = null;
+    handler = serverHolding(() => held);
+    await boot();
+    expect(putsOf()).toHaveLength(1);
+
+    // The phone edits the plan while this tab sits in the background.
+    held = serverDoc({ updatedAt: '2026-07-02T09:00:00.000Z' });
+    requests = [];
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect($('days-list').textContent).toContain('High Hut');
+    expect(storedPlan().id).toBe('plan-server');
+    expect(putsOf()).toHaveLength(0);
+  });
+
+  it('takes the server copy whatever the two clocks say, when nothing here is unsynced', async () => {
+    linkedSession();
+    let held: PlanDocument | null = null;
+    handler = serverHolding(() => held);
+    await boot();
+
+    // A stamp from the year 2000: older than anything this browser holds, and
+    // adopted all the same — nothing here is at stake, so the server's copy is
+    // simply what the account holds.
+    held = serverDoc({ updatedAt: '2000-01-01T00:00:00.000Z' });
+    requests = [];
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(($('plan-name-input') as HTMLInputElement).value).toBe('From the phone');
+    expect(putsOf()).toHaveLength(0);
+  });
+
+  it('treats the stamp it last stored as no news at all', async () => {
+    linkedSession();
+    let held: PlanDocument | null = null;
+    handler = serverHolding(() => held);
+    await boot();
+    const before = storedPlan();
+
+    // The feed's cursor is inclusive, so a pull can hand back the very row the
+    // boot push stored. Same stamp, same copy: nothing to adopt, nothing to send.
+    held = { ...before, updatedAt: before.updatedAt };
+    requests = [];
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(storedPlan()).toEqual(before);
+    expect(putsOf()).toHaveLength(0);
+    expect($('sync-status').textContent).toMatch(/^Synced /);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Two people, one plan
+// ---------------------------------------------------------------------------
+
+describe('an edit made here while the phone was writing too', () => {
+  /** Boot synced, then let five minutes pass so the next edit reads first. */
+  async function bootThenIdle(held: () => PlanDocument | null): Promise<void> {
+    linkedSession();
+    handler = serverHolding(held);
+    await boot();
+    await vi.advanceTimersByTimeAsync(6 * 60_000);
+    requests = [];
+  }
+
+  it('says so when the copy from the phone wins', async () => {
+    let held: PlanDocument | null = null;
+    await bootThenIdle(() => held);
+    // The phone wrote while this tab was idle, and its stamp is the newer one.
+    held = serverDoc({ updatedAt: '2099-01-01T00:00:00.000Z' });
+
+    openStopsTab();
+    clickStop('Salida');
+    await settle();
+
+    // The edit read before it wrote, so the newer copy was never overwritten.
+    expect(putsOf()).toHaveLength(0);
+    expect(($('plan-name-input') as HTMLInputElement).value).toBe('From the phone');
+    expect($('sync-status').textContent).toMatch(/^Replaced by the copy from your phone/);
+    expect($('sync-status').className).toBe('sync-warn');
+  });
+
+  it('says so when the edit made here wins', async () => {
+    let held: PlanDocument | null = null;
+    await bootThenIdle(() => held);
+    held = serverDoc({ updatedAt: '2000-01-01T00:00:00.000Z' });
+
+    openStopsTab();
+    clickStop('Salida');
+    await settle();
+
+    expect(putsOf()).toHaveLength(1);
+    expect((putsOf()[0].body as PlanDocument).stops.map(stop => stop.name)).toEqual(['Salida']);
+    expect(($('plan-name-input') as HTMLInputElement).value).toBe('My Fixture plan');
+    expect($('sync-status').textContent).toMatch(/^Kept your edits/);
+    expect($('sync-status').className).toBe('sync-warn');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// One request at a time
+// ---------------------------------------------------------------------------
+
+describe('an edit on top of a push that has not landed', () => {
+  it('still sends an edit made while a slow PUT was in the air', async () => {
+    linkedSession();
+    handler = serverHolding(() => null);
+    await boot();
+
+    // A PUT that hangs about, and an edit made on top of it long enough later
+    // that the page would otherwise stop to read the server first.
+    putDelayMs = 10 * 60_000;
+    requests = [];
+    openStopsTab();
+    clickStop('Camp One');
+    await settle();
+    expect(putsOf()).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(6 * 60_000);
+    clickStop('Salida');
+    await settle();
+
+    putDelayMs = 0;
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    const puts = putsOf();
+    expect((puts[puts.length - 1].body as PlanDocument).stops.map(stop => stop.name)).toEqual([
+      'Camp One',
+      'Salida',
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// What comes off the wire
+// ---------------------------------------------------------------------------
+
+describe('a server document this page cannot read', () => {
+  it('is ignored whole, and said so', async () => {
+    linkedSession();
+    const broken = { ...serverDoc(), stops: 'all of them' };
+    handler = req => {
+      if (req.method === 'GET') {
+        return {
+          status: 200,
+          body: {
+            plans: [
+              {
+                id: 'plan-server',
+                trailId: TRAIL_ID,
+                document: broken,
+                shareId: null,
+                updatedAt: '2099-01-01T00:00:00.000Z',
+              },
+            ],
+            nextCursor: null,
+            syncedAt: 'now',
+          },
+        };
+      }
+      throw new Error('nothing should be pushed over a reply we could not read');
+    };
+
+    await boot();
+
+    expect(($('plan-name-input') as HTMLInputElement).value).toBe('My Fixture plan');
+    expect($('days-list').textContent).not.toContain('High Hut');
+    expect($('sync-status').textContent).toMatch(/cannot read/);
+    expect($('sync-status').className).toBe('sync-warn');
+    expect(putsOf()).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Refusals
+// ---------------------------------------------------------------------------
+
+describe('a refusal the server might take back', () => {
+  it('is tried again on a backoff, and then let go', async () => {
+    linkedSession();
+    let failing = true;
+    handler = req => {
+      if (req.method === 'GET') {
+        return { status: 200, body: { plans: [], nextCursor: null, syncedAt: 'now' } };
+      }
+      return failing
+        ? { status: 503, body: { error: { code: 'unavailable', message: 'later' } } }
+        : { status: 200, body: entryFor(req.body as PlanDocument, '2026-07-01T10:00:00.000Z') };
+    };
+
+    await boot();
+    expect(putsOf()).toHaveLength(1);
+    expect($('sync-status').textContent).toBe('Sync failed: unavailable');
+
+    // Nothing at all for the first half minute: no retry storm.
+    await vi.advanceTimersByTimeAsync(29_000);
+    expect(putsOf()).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(putsOf()).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(2 * 60_000);
+    expect(putsOf()).toHaveLength(3);
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(putsOf()).toHaveLength(4);
+    expect($('sync-status').textContent).toBe('Sync failed: unavailable');
+
+    // Four attempts is the lot: a page left open overnight stops knocking.
+    failing = false;
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(putsOf()).toHaveLength(4);
+  });
+
+  it('stops for a refusal that will never change its mind', async () => {
+    linkedSession();
+    handler = req =>
+      req.method === 'GET'
+        ? { status: 200, body: { plans: [], nextCursor: null, syncedAt: 'now' } }
+        : { status: 400, body: { error: { code: 'duplicate_stop_km', message: 'twice' } } };
+
+    await boot();
+    expect($('sync-status').textContent).toBe('Sync failed: duplicate_stop_km');
+    expect(putsOf()).toHaveLength(1);
+
+    // A 400 is about this document, not this moment: asking again is noise.
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(putsOf()).toHaveLength(1);
+  });
+
+  it('points a banned account at nothing it can press', async () => {
+    linkedSession();
+    handler = req =>
+      req.method === 'GET'
+        ? { status: 200, body: { plans: [], nextCursor: null, syncedAt: 'now' } }
+        : { status: 403, body: { error: { code: 'banned', message: 'no' } } };
+
+    await boot();
+    expect($('sync-status').textContent).toBe('Sync failed: banned');
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(putsOf()).toHaveLength(1);
+  });
+
+  it('sends the reader to their phone for what only the phone may do', async () => {
+    linkedSession();
+    handler = req =>
+      req.method === 'GET'
+        ? { status: 200, body: { plans: [], nextCursor: null, syncedAt: 'now' } }
+        : {
+            status: 403,
+            body: { error: { code: 'primary_token_required', message: 'phone only' } },
+          };
+
+    await boot();
+    expect($('sync-status').textContent).toMatch(/phone/i);
+    expect($('sync-status').className).toBe('sync-warn');
+  });
+
+  it('lets the next 409 adopt an id too, when the first re-PUT never landed', async () => {
+    linkedSession();
+    let networkDown = true;
+    handler = req => {
+      if (req.method === 'GET') {
+        return { status: 200, body: { plans: [], nextCursor: null, syncedAt: 'now' } };
+      }
+      const exists = (existingId: string): Reply => ({
+        status: 409,
+        body: { error: { code: 'plan_exists', message: 'taken' }, existingId },
+      });
+      if (req.path === '/v1/plans/plan-other') {
+        return { status: 200, body: entryFor(req.body as PlanDocument, '2026-07-01T10:00:00.000Z') };
+      }
+      // The id adopted on the first go is refused in turn, once the plan it
+      // named has itself been replaced on the phone.
+      if (req.path === '/v1/plans/plan-server') return networkDown ? null : exists('plan-other');
+      return exists('plan-server');
+    };
+
+    await boot();
+    expect($('sync-status').textContent).toBe('Offline, will retry');
+
+    networkDown = false;
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    const puts = putsOf();
+    expect(puts[puts.length - 1].path).toBe('/v1/plans/plan-other');
+    expect(storedPlan().id).toBe('plan-other');
+    expect($('sync-status').textContent).toMatch(/^Synced /);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sharing
+// ---------------------------------------------------------------------------
+
+describe('the Share button', () => {
+  it('waits for the plan in the air to land before asking for a link', async () => {
+    linkedSession();
+    handler = req => {
+      if (req.path.endsWith('/share') && req.method === 'POST') {
+        return {
+          status: 200,
+          body: { shareId: 'abc123', url: 'https://site.test/shared-plan.html?s=abc123' },
+        };
+      }
+      return plainServer()(req);
+    };
+
+    await boot();
+    // A PUT that takes its time: the edit is in the air when Share is pressed.
+    putDelayMs = 5_000;
+    requests = [];
+    openStopsTab();
+    clickStop('Salida');
+    await vi.advanceTimersByTimeAsync(900);
+    expect(putsOf()).toHaveLength(1);
+    expect(requests.some(req => req.path.endsWith('/share'))).toBe(false);
+
+    $('share-btn').click();
+    await vi.advanceTimersByTimeAsync(0);
+    // Still nothing: the server has not stored this plan yet.
+    expect(requests.some(req => req.path.endsWith('/share'))).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(requests[requests.length - 1]).toMatchObject({ method: 'POST' });
+    expect(requests[requests.length - 1].path).toMatch(/\/share$/);
+    expect(($('share-url') as HTMLInputElement).value).toBe(
+      'https://site.test/shared-plan.html?s=abc123',
+    );
   });
 });
 

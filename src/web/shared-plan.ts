@@ -24,6 +24,7 @@ import { getQueryParam } from './web-utils';
 import { ApiError, getApiBase } from './api/client';
 import { loadSession } from './api/session';
 import { fetchMyPlan, fetchSharedPlan, putPlan } from './api/plans';
+import { isPlanDocument } from '@lib/plan-editor';
 import type { SharedPlanResponse } from '@lib/comments-api-types';
 import type { PlanDocument } from '@lib/plan-types';
 
@@ -153,6 +154,18 @@ async function init(): Promise<void> {
       err instanceof ApiError && err.status === 404
         ? 'This link is no longer shared, or it was never valid.'
         : 'Could not reach the server. Try again in a moment.',
+    );
+    return;
+  }
+
+  // Everything in that response is a stranger's data, the shape included. The
+  // viewer takes the document on trust once it is handed over — it sorts its
+  // stops, measures them along the track and draws them — so it is checked
+  // here, whole, before any of that starts.
+  if (!isPlanDocument(shared.document)) {
+    showMissing(
+      'Plan not found',
+      'This plan is not in a shape this page can read. Ask whoever sent it for a new link.',
     );
     return;
   }

@@ -7,6 +7,7 @@ import { HttpError } from './http';
 import type { ReportReason, WaterStatus } from '../../../src/lib/comments-api-types';
 import { PLAN_LIMITS } from '../../../src/lib/plan-types';
 import type { PlanDocument, PlanStop } from '../../../src/lib/plan-types';
+import { KM_EPSILON } from '../../../src/lib/plan-direction';
 import type { PlanDirection } from '../../../src/lib/plan-direction';
 
 /**
@@ -350,6 +351,26 @@ export function validatePlanDocument(
     if (stops[i].km < stops[i - 1].km) {
       throw planError('stops_unsorted', 'stops must be sorted by km ascending');
     }
+    // The document's own rule (plans/day-planner.md): one stop per place. The
+    // list is ascending by here, so neighbours are the only pair that can
+    // collide, and `KM_EPSILON` is the same tolerance the editor matches with —
+    // two stops closer than that are one stop the client counted twice.
+    if (stops[i].km - stops[i - 1].km < KM_EPSILON) {
+      throw planError(
+        'duplicate_stop_km',
+        `stops[${i}].km is the same place as stops[${i - 1}].km (within ${KM_EPSILON} km)`
+      );
+    }
+  }
+
+  const seenWaypoints = new Set<string>();
+  for (let i = 0; i < stops.length; i++) {
+    const waypointId = stops[i].waypointId;
+    if (waypointId === undefined) continue;
+    if (seenWaypoints.has(waypointId)) {
+      throw planError('duplicate_stop_waypoint', `stops[${i}].waypointId appears twice`);
+    }
+    seenWaypoints.add(waypointId);
   }
 
   if (body.version !== 1) {

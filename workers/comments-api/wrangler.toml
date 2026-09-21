@@ -32,6 +32,8 @@ bucket_name = "aus-map-data"
 # returns full URLs built from this + the object key. Tests override it.
 PHOTOS_PUBLIC_BASE = "https://data.contour-map-tiles.net"
 
-# Origin of the deployed web site (the Vercel deploy, per docs/privacy-policy.md).
-# Share links are `SITE_BASE/shared-plan.html?s=<shareId>`. Tests override it.
+# Origin of the deployed web site: the Vercel deploy, verified 2026-09-21 as the
+# site that serves shared-plan.html. Share links are built as
+# `SITE_BASE/shared-plan.html?s=<shareId>`, so this must change the day the site
+# moves or every link minted after the move is dead. Tests override it.
 SITE_BASE = "https://trail-maps.vercel.app"

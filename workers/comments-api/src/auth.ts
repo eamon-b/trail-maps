@@ -15,8 +15,9 @@
  * without recomputation. Revoked or expired rows authenticate nothing.
  *
  * `users.token_hash` is still written by `POST /v1/devices` and `DELETE /v1/me`
- * for one release so a rollback to the pre-0004 worker keeps working; nothing
- * reads it any more.
+ * for one release so a rollback to the pre-0004 worker keeps working. The only
+ * thing that still reads it is `healMissingPrimaryToken`, which adopts an
+ * account the 0004 backfill could not have seen.
  */
 
 import { HttpError } from './http';
@@ -92,6 +93,57 @@ export function parseBearer(request: Request): string | null {
   return token.length > 0 ? token : null;
 }
 
+/** The `device_tokens` row joined to its account, as the lookup returns it. */
+type TokenLookupRow = UserRow & {
+  token_kind: TokenKind;
+  token_expires_at: string | null;
+  token_revoked_at: string | null;
+};
+
+/** The one authenticating query: a token row joined to the account it belongs to. */
+async function lookupToken(env: Env, tokenHash: string): Promise<TokenLookupRow | null> {
+  return env.DB.prepare(
+    `SELECT u.id, u.display_name, u.token_hash, u.is_admin, u.is_banned, u.created_at,
+            u.last_seen_at, t.kind AS token_kind, t.expires_at AS token_expires_at,
+            t.revoked_at AS token_revoked_at
+       FROM device_tokens t JOIN users u ON u.id = t.user_id
+      WHERE t.token_hash = ?`
+  )
+    .bind(tokenHash)
+    .first<TokenLookupRow>();
+}
+
+/**
+ * Adopt a pre-0004 account that the migration's backfill missed.
+ *
+ * `0004`'s `INSERT … SELECT … FROM users` is a one-shot snapshot, so a phone
+ * that registered against the old worker between `migrate:remote` and `deploy`
+ * has a `users` row and no `device_tokens` row — and would then be refused
+ * forever, since nothing else reads `users.token_hash` any more. Mint the row
+ * the backfill would have written (same shape: `primary`, no label, no expiry)
+ * the first time such a token is presented.
+ *
+ * Only reached on a lookup miss, so an ordinary request never pays for it, and
+ * `INSERT OR IGNORE` makes two simultaneous first requests idempotent — both
+ * then read the one row back. A revoked or expired token is not a miss — its
+ * row exists — so nothing here can undo a revocation, and a banned (or
+ * deleted, which is banned + anonymised) account is excluded by the SELECT.
+ */
+async function healMissingPrimaryToken(
+  env: Env,
+  tokenHash: string
+): Promise<TokenLookupRow | null> {
+  await env.DB.prepare(
+    `INSERT OR IGNORE INTO device_tokens
+       (token_hash, user_id, kind, label, created_at, last_seen_at, expires_at, revoked_at)
+     SELECT token_hash, id, 'primary', NULL, created_at, last_seen_at, NULL, NULL
+       FROM users WHERE token_hash = ? AND is_banned = 0`
+  )
+    .bind(tokenHash)
+    .run();
+  return lookupToken(env, tokenHash);
+}
+
 /**
  * Look up the authenticated user for this request, or null if unauthenticated,
  * revoked or expired.
@@ -109,21 +161,12 @@ export async function getUser(
   if (!token) return null;
 
   const tokenHash = await sha256Hex(token);
-  const row = await env.DB.prepare(
-    `SELECT u.id, u.display_name, u.token_hash, u.is_admin, u.is_banned, u.created_at,
-            u.last_seen_at, t.kind AS token_kind, t.expires_at AS token_expires_at,
-            t.revoked_at AS token_revoked_at
-       FROM device_tokens t JOIN users u ON u.id = t.user_id
-      WHERE t.token_hash = ?`
-  )
-    .bind(tokenHash)
-    .first<
-      UserRow & {
-        token_kind: TokenKind;
-        token_expires_at: string | null;
-        token_revoked_at: string | null;
-      }
-    >();
+  let row = await lookupToken(env, tokenHash);
+
+  // Only on the miss: an account whose `device_tokens` row was never written.
+  if (!row) {
+    row = await healMissingPrimaryToken(env, tokenHash);
+  }
 
   if (!row) return null;
 
@@ -168,6 +211,30 @@ export async function requireUser(
   const user = await getUser(request, env, ctx);
   if (!user) {
     throw new HttpError(401, 'unauthorized', 'A valid bearer token is required');
+  }
+  return user;
+}
+
+/**
+ * Require the account's own `primary` token (the phone) or throw 401/403.
+ *
+ * A `linked` browser token is a convenience for reading and editing plans, not
+ * the account itself: it must not be able to mint further link codes or delete
+ * the account behind the phone's back. Anything that changes who can reach the
+ * account goes through here.
+ */
+export async function requirePrimaryUser(
+  request: Request,
+  env: Env,
+  ctx?: ExecutionContext
+): Promise<AuthUser> {
+  const user = await requireUser(request, env, ctx);
+  if (user.auth_token_kind !== 'primary') {
+    throw new HttpError(
+      403,
+      'primary_token_required',
+      'This action is only available on the device that owns the account'
+    );
   }
   return user;
 }

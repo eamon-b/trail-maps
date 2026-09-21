@@ -16,6 +16,7 @@ import {
   LINKED_TOKEN_TTL_MS,
   deviceIdFromHash,
   generateToken,
+  requirePrimaryUser,
   requireUser,
   sha256Hex,
 } from './auth';
@@ -35,6 +36,12 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 /** Live (unused, unexpired) codes one account may hold at once. */
 const MAX_LIVE_CODES = 5;
 const MAX_LABEL_LEN = 60;
+/**
+ * How long a dead code lingers before the next mint sweeps it up. A code is
+ * only good for 10 minutes, so a day is far past any use; the lag just keeps
+ * the sweep clear of the row a request is using.
+ */
+const CODE_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 /** Random code from the ambiguity-free alphabet (32 symbols = no modulo bias). */
 function generateCode(): string {
@@ -81,7 +88,8 @@ export async function createLinkCode(
   env: Env,
   ctx: ExecutionContext
 ): Promise<Response> {
-  const user = await requireUser(request, env, ctx);
+  // The phone only: a linked browser must not be able to link further browsers.
+  const user = await requirePrimaryUser(request, env, ctx);
 
   const now = new Date();
   const nowIso = now.toISOString();
@@ -114,12 +122,31 @@ export async function createLinkCode(
       .bind(code, user.id, nowIso, expiresAt)
       .first<{ code: string }>();
     if (inserted) {
+      pruneExpiredCodes(env, now.getTime(), ctx);
       const payload: LinkCodeResponse = { code, expiresAt };
       return json(payload, 201);
     }
   }
 
   throw new HttpError(500, 'code_unavailable', 'Could not mint a link code, try again');
+}
+
+/**
+ * Sweep long-dead codes off the whole table, not just this user's.
+ *
+ * Minting is the only thing that adds rows, so doing it here keeps the table
+ * proportional to how much linking actually happens. Used and expired rows are
+ * equally dead: `expires_at` is 10 minutes after the mint either way.
+ */
+function pruneExpiredCodes(env: Env, nowMs: number, ctx?: ExecutionContext): void {
+  const cutoff = new Date(nowMs - CODE_RETENTION_MS).toISOString();
+  const prune = env.DB.prepare(`DELETE FROM link_codes WHERE expires_at < ?`)
+    .bind(cutoff)
+    .run()
+    .catch(() => {
+      /* housekeeping; never fail a mint over it */
+    });
+  if (ctx) ctx.waitUntil(prune);
 }
 
 // ---------------------------------------------------------------------------

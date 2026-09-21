@@ -48,6 +48,27 @@ async function tokenRow(userId: string, kind: 'primary' | 'linked') {
     }>();
 }
 
+/** A users row with no device_tokens row: an account the 0004 backfill missed. */
+async function legacyUser(
+  displayName: string,
+  { banned = false }: { banned?: boolean } = {}
+): Promise<{ userId: string; token: string }> {
+  const token = `legacy-${crypto.randomUUID()}`;
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+  const tokenHash = [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  const userId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO users (id, display_name, token_hash, is_admin, is_banned, created_at, last_seen_at)
+     VALUES (?, ?, ?, 0, ?, ?, ?)`
+  )
+    .bind(userId, displayName, tokenHash, banned ? 1 : 0, now, now)
+    .run();
+  return { userId, token };
+}
+
 describe('migrated primary tokens', () => {
   it('registers a device_tokens row and still authenticates', async () => {
     const device = await registerDevice('Phone');
@@ -60,40 +81,53 @@ describe('migrated primary tokens', () => {
     expect(me.status).toBe(200);
   });
 
-  it('authenticates a pre-0004 account once the backfill has run', async () => {
-    // A row shaped like an account created before device_tokens existed: users
-    // only, no token row. The same INSERT…SELECT the migration runs gives it one.
-    const token = 'legacy-token-for-the-backfill-test';
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
-    const tokenHash = [...new Uint8Array(digest)]
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    const userId = crypto.randomUUID();
-    const now = new Date().toISOString();
-    await env.DB.prepare(
-      `INSERT INTO users (id, display_name, token_hash, is_admin, is_banned, created_at, last_seen_at)
-       VALUES (?, 'Legacy', ?, 0, 0, ?, ?)`
-    )
-      .bind(userId, tokenHash, now, now)
-      .run();
-
-    // Unmigrated: the token authenticates nothing.
-    expect(
-      (await SELF.fetch(url('/v1/me'), { headers: { Authorization: `Bearer ${token}` } })).status
-    ).toBe(401);
-
-    await env.DB.prepare(
-      `INSERT INTO device_tokens (token_hash, user_id, kind, label, created_at, last_seen_at, expires_at, revoked_at)
-       SELECT token_hash, id, 'primary', NULL, created_at, last_seen_at, NULL, NULL FROM users WHERE id = ?`
-    )
-      .bind(userId)
-      .run();
+  it('adopts a pre-0004 account the backfill never saw', async () => {
+    // A phone that registered against the old worker between `migrate:remote`
+    // and `deploy`: a users row, no device_tokens row. The one-shot backfill
+    // cannot reach it, so auth mints the missing primary row on first use.
+    const { userId, token } = await legacyUser('Between the deploys');
 
     const me = await SELF.fetch(url('/v1/me'), {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(me.status).toBe(200);
     expect(((await me.json()) as MeResponse).userId).toBe(userId);
+
+    const row = await tokenRow(userId, 'primary');
+    expect(row?.label).toBeNull();
+    expect(row?.expires_at).toBeNull();
+    expect(row?.revoked_at).toBeNull();
+
+    // Idempotent: a second request reuses the row rather than minting another.
+    expect(
+      (await SELF.fetch(url('/v1/me'), { headers: { Authorization: `Bearer ${token}` } })).status
+    ).toBe(200);
+    const { results } = await env.DB.prepare(
+      `SELECT token_hash FROM device_tokens WHERE user_id = ?`
+    )
+      .bind(userId)
+      .all();
+    expect(results).toHaveLength(1);
+  });
+
+  it('does not adopt a banned legacy account', async () => {
+    const { userId, token } = await legacyUser('Banned legacy', { banned: true });
+    expect(
+      (await SELF.fetch(url('/v1/me'), { headers: { Authorization: `Bearer ${token}` } })).status
+    ).toBe(401);
+    expect(await tokenRow(userId, 'primary')).toBeNull();
+  });
+
+  it('never revives a revoked primary token', async () => {
+    // `users.token_hash` still matches this token, so only the revoked row
+    // standing in the way keeps the adoption path from undoing a revocation.
+    const device = await registerDevice('Revoked but remembered');
+    await env.DB.prepare(`UPDATE device_tokens SET revoked_at = ? WHERE user_id = ?`)
+      .bind(new Date().toISOString(), device.userId)
+      .run();
+
+    expect((await SELF.fetch(url('/v1/me'), { headers: authHeaders(device) })).status).toBe(401);
+    expect((await tokenRow(device.userId, 'primary'))?.revoked_at).not.toBeNull();
   });
 
   it('rejects a token whose row has been revoked', async () => {
@@ -399,5 +433,67 @@ describe('DELETE /v1/me — token cascade', () => {
       .all<{ revoked_at: string | null }>();
     expect(results).toHaveLength(2);
     expect(results.every((r) => r.revoked_at !== null)).toBe(true);
+  });
+});
+
+describe('a linked token is not the account', () => {
+  it('cannot mint further link codes', async () => {
+    const phone = await registerDevice('No chaining');
+    const browser = await link(phone);
+
+    const res = await createLinkCode(browser);
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+      'primary_token_required'
+    );
+
+    // The phone itself is unaffected.
+    expect((await createLinkCode(phone)).status).toBe(201);
+  });
+
+  it('cannot delete the account', async () => {
+    const phone = await registerDevice('No self destruct');
+    const browser = await link(phone);
+
+    const res = await deleteMe(browser);
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+      'primary_token_required'
+    );
+
+    // Both tokens still work; the phone can still do it itself.
+    expect((await SELF.fetch(url('/v1/me'), { headers: authHeaders(phone) })).status).toBe(200);
+    expect((await SELF.fetch(url('/v1/me'), { headers: authHeaders(browser) })).status).toBe(200);
+    expect((await deleteMe(phone)).status).toBe(204);
+  });
+});
+
+describe('link code housekeeping', () => {
+  it('sweeps long-dead codes off the table when a code is minted', async () => {
+    const phone = await registerDevice('Sweeper');
+    const stale = 'STALE123';
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    await env.DB.prepare(
+      `INSERT INTO link_codes (code, user_id, created_at, expires_at, used_at)
+       VALUES (?, ?, ?, ?, NULL)`
+    )
+      .bind(stale, phone.userId, twoDaysAgo, twoDaysAgo)
+      .run();
+
+    const { code } = await linkCode(phone);
+
+    // The sweep runs in ctx.waitUntil — poll briefly for it to land.
+    let gone = false;
+    for (let i = 0; i < 20 && !gone; i++) {
+      const row = await env.DB.prepare(`SELECT code FROM link_codes WHERE code = ?`)
+        .bind(stale)
+        .first();
+      gone = row === null;
+      if (!gone) await new Promise((r) => setTimeout(r, 25));
+    }
+    expect(gone).toBe(true);
+
+    // The code just minted is still there to be exchanged.
+    expect((await linkDevice({ code })).status).toBe(201);
   });
 });

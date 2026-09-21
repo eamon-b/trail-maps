@@ -1,7 +1,8 @@
-import { SELF, env } from 'cloudflare:test';
+import { SELF, createExecutionContext, env, waitOnExecutionContext } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import {
   authHeaders,
+  banUser,
   createPlan,
   deleteMe,
   listPlans,
@@ -10,6 +11,8 @@ import {
   registerDevice,
   url,
 } from './helpers';
+import { isUniqueConstraintError, putPlan as putPlanHandler } from '../src/plans';
+import type { Env } from '../src/http';
 import type { Device } from './helpers';
 import type {
   PlanSyncEntry,
@@ -226,6 +229,150 @@ describe('PUT /v1/plans/:id', () => {
     }
   });
 
+  it('answers the lost race for a trail with plan_exists, never a 500', async () => {
+    // Two ids for one trail at once: both can pass the read-only pre-check, so
+    // the partial unique index is what stops the second — and it must come back
+    // as the documented 409, whichever way the two requests interleave.
+    const device = await registerDevice('Racer');
+    const first = crypto.randomUUID();
+    const second = crypto.randomUUID();
+
+    const [a, b] = await Promise.all([
+      putPlan(device, first, planBody(first)),
+      putPlan(device, second, planBody(second)),
+    ]);
+
+    const created = a.status === 201 ? a : b;
+    const refused = a.status === 201 ? b : a;
+    expect(created.status).toBe(201);
+    expect(refused.status).toBe(409);
+
+    const winner = (await created.json()) as PlanSyncEntry;
+    const body = (await refused.json()) as { error: { code: string }; existingId: string };
+    expect(body.error.code).toBe('plan_exists');
+    expect(body.existingId).toBe(winner.id);
+
+    // Exactly one live plan for the trail, and it is the winner.
+    const { results } = await env.DB.prepare(
+      `SELECT id FROM plans WHERE user_id = ? AND trail_id = 'heysen' AND deleted_at IS NULL`
+    )
+      .bind(device.userId)
+      .all<{ id: string }>();
+    expect(results.map((r) => r.id)).toEqual([winner.id]);
+  });
+
+  it('maps a lost index race to plan_exists rather than a 500', async () => {
+    // The race the pre-check cannot close: another device's plan for this trail
+    // lands between the check and the INSERT. Drive the handler with a DB that
+    // slips that row in at exactly that point, since two real requests are
+    // served one after the other here.
+    const device = await registerDevice('Interleaved');
+    const sneaked = crypto.randomUUID();
+    const mine = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    let injected = false;
+    const racingDb = {
+      prepare(query: string) {
+        const statement = env.DB.prepare(query);
+        if (injected || !/INSERT INTO plans/.test(query)) return statement;
+        injected = true;
+        const bind = statement.bind.bind(statement);
+        return {
+          bind: (...args: unknown[]) => {
+            const bound = bind(...args);
+            return {
+              first: async () => {
+                await env.DB.prepare(
+                  `INSERT INTO plans (id, user_id, trail_id, document_json, share_id, created_at, updated_at, deleted_at)
+                   VALUES (?, ?, 'heysen', '{}', NULL, ?, ?, NULL)`
+                )
+                  .bind(sneaked, device.userId, now, now)
+                  .run();
+                return bound.first();
+              },
+            };
+          },
+        };
+      },
+      batch: (statements: unknown[]) => env.DB.batch(statements as never),
+    };
+
+    const request = new Request(url(`/v1/plans/${mine}`), {
+      method: 'PUT',
+      headers: authHeaders(device),
+      body: JSON.stringify(planBody(mine)),
+    });
+    const ctx = createExecutionContext();
+    const racingEnv = { ...env, DB: racingDb } as unknown as Env;
+    const res = await putPlanHandler(request, racingEnv, ctx, mine);
+    await waitOnExecutionContext(ctx);
+
+    expect(injected).toBe(true);
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: { code: string }; existingId: string };
+    expect(body.error.code).toBe('plan_exists');
+    expect(body.existingId).toBe(sneaked);
+    expect(await planRow(mine)).toBeNull();
+  });
+
+  it('rejects two stops at the same place', async () => {
+    const device = await registerDevice('Doubled up');
+    const cases: Array<[Partial<Omit<PlanDocument, 'updatedAt'>>, string]> = [
+      [
+        {
+          stops: [
+            { km: 10, name: 'Creek', nights: 1 },
+            { km: 10.005, name: 'Creek again', nights: 1 },
+          ],
+        },
+        'duplicate_stop_km',
+      ],
+      [
+        {
+          stops: [
+            { km: 10, name: 'Hut', nights: 1, waypointId: 'heysen-camp-01' },
+            { km: 20, name: 'Same hut', nights: 1, waypointId: 'heysen-camp-01' },
+          ],
+        },
+        'duplicate_stop_waypoint',
+      ],
+    ];
+
+    for (const [overrides, code] of cases) {
+      const id = crypto.randomUUID();
+      const res = await putPlan(device, id, planBody(id, overrides));
+      expect(res.status, code).toBe(400);
+      expect(((await res.json()) as { error: { code: string } }).error.code).toBe(code);
+      expect(await planRow(id)).toBeNull();
+    }
+
+    // A pair 20 m apart on different waypoints is two real stops.
+    const ok = crypto.randomUUID();
+    expect(
+      (
+        await putPlan(
+          device,
+          ok,
+          planBody(ok, {
+            stops: [
+              { km: 10, name: 'Creek', nights: 1 },
+              { km: 10.02, name: 'Camp', nights: 1 },
+            ],
+          })
+        )
+      ).status
+    ).toBe(201);
+  });
+
+  it('accepts an empty plan name — the mobile client mints plans unnamed', async () => {
+    const device = await registerDevice('Unnamed');
+    const id = crypto.randomUUID();
+    const res = await putPlan(device, id, planBody(id, { name: '' }));
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as PlanSyncEntry).document.name).toBe('');
+  });
+
   it('rate limits plan writes at 240 a day', async () => {
     const device = await registerDevice('Busy');
     const { id } = await createPlan(device);
@@ -295,6 +442,19 @@ describe('GET /v1/plans', () => {
     expect(entry && 'deleted' in entry ? entry.deleted : false).toBe(true);
     expect(entry && 'document' in entry).toBe(false);
     expect(entry?.updatedAt).not.toBe(created.updatedAt);
+  });
+
+  it('delivers a row stamped exactly at `since`', async () => {
+    // `syncedAt` is taken before the SELECT, so a write that commits in the
+    // same millisecond just after it would fall through a strict `>`.
+    const device = await registerDevice('Boundary');
+    const { id, res } = await createPlan(device);
+    const created = (await res.json()) as PlanSyncEntry;
+
+    const delta = (await (
+      await listPlans(device, `?since=${encodeURIComponent(created.updatedAt)}`)
+    ).json()) as PlansSyncResponse;
+    expect(delta.plans.map((p) => p.id)).toContain(id);
   });
 
   it('pages with a keyset cursor', async () => {
@@ -413,6 +573,24 @@ describe('plan sharing', () => {
     expect((await share(device, id)).status).toBe(404);
   });
 
+  it('does not revive the old link when a deleted plan is put back', async () => {
+    const device = await registerDevice('Undeleter');
+    const { id } = await createPlan(device);
+    const { shareId } = (await (await share(device, id)).json()) as SharePlanResponse;
+
+    expect((await deletePlan(device, id)).status).toBe(204);
+    expect((await planRow(id))?.share_id).toBeNull();
+
+    // A PUT undeletes the same id (a plan rebuilt on another device).
+    expect((await putPlan(device, id, planBody(id))).status).toBe(200);
+    expect((await planRow(id))?.deleted_at).toBeNull();
+
+    // The link the owner threw away stays dead; sharing again mints a new one.
+    expect((await SELF.fetch(url(`/v1/shared/plans/${shareId}`))).status).toBe(404);
+    const next = (await (await share(device, id)).json()) as SharePlanResponse;
+    expect(next.shareId).not.toBe(shareId);
+  });
+
   it('404s for an unknown share id and refuses another user’s plan', async () => {
     const owner = await registerDevice('Owner share');
     const other = await registerDevice('Other share');
@@ -456,5 +634,83 @@ describe('plan route methods', () => {
         })
       ).status
     ).toBe(405);
+  });
+});
+
+describe('a banned account is read-only', () => {
+  it('refuses plan writes, deletes and shares but still serves reads', async () => {
+    const device = await registerDevice('Naughty');
+    const { id } = await createPlan(device);
+    const { shareId } = (await (await share(device, id)).json()) as SharePlanResponse;
+    await banUser(device.userId);
+
+    for (const res of [
+      await putPlan(device, id, planBody(id, { name: 'Still editing' })),
+      await deletePlan(device, id),
+      await share(device, crypto.randomUUID()),
+    ]) {
+      expect(res.status).toBe(403);
+      expect(((await res.json()) as { error: { code: string } }).error.code).toBe('banned');
+    }
+
+    // A fresh plan is refused before it is even validated.
+    const fresh = crypto.randomUUID();
+    expect((await putPlan(device, fresh, planBody(fresh, { trailId: 'larapinta' }))).status).toBe(
+      403
+    );
+    expect(await planRow(fresh)).toBeNull();
+
+    // Reading still works, and the plan is untouched.
+    expect((await listPlans(device)).status).toBe(200);
+    expect((await planRow(id))?.deleted_at).toBeNull();
+
+    // Taking the share down is always allowed — that is not the abuse.
+    expect((await unshare(device, id)).status).toBe(204);
+    expect((await SELF.fetch(url(`/v1/shared/plans/${shareId}`))).status).toBe(404);
+  });
+});
+
+describe('isUniqueConstraintError', () => {
+  it('recognises only the index refusing a duplicate', () => {
+    expect(
+      isUniqueConstraintError(
+        new Error('D1_ERROR: UNIQUE constraint failed: plans.user_id, plans.trail_id: SQLITE_CONSTRAINT')
+      )
+    ).toBe(true);
+    expect(isUniqueConstraintError(new Error('D1_ERROR: no such table: plans'))).toBe(false);
+    expect(isUniqueConstraintError(new Error('NOT NULL constraint failed: plans.id'))).toBe(false);
+    expect(isUniqueConstraintError('network blip')).toBe(false);
+  });
+});
+
+describe('rate event housekeeping', () => {
+  it('sweeps events older than the longest window, whatever bucket they are in', async () => {
+    const device = await registerDevice('Housekeeper');
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const stale = `stale-${crypto.randomUUID()}`;
+    await env.DB.prepare(`INSERT INTO rate_events (bucket, key, created_at) VALUES (?, ?, ?)`)
+      .bind('device_link', stale, twoDaysAgo)
+      .run();
+
+    // Any recorded event triggers the sweep; a plan PUT is the cheapest one.
+    const { res } = await createPlan(device);
+    expect(res.status).toBe(201);
+
+    // The sweep runs in ctx.waitUntil — poll briefly for it to land.
+    let remaining = 1;
+    for (let i = 0; i < 20 && remaining > 0; i++) {
+      const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM rate_events WHERE key = ?`)
+        .bind(stale)
+        .first<{ n: number }>();
+      remaining = row?.n ?? 0;
+      if (remaining > 0) await new Promise((r) => setTimeout(r, 25));
+    }
+    expect(remaining).toBe(0);
+
+    // The event this request logged is inside its window and stays.
+    const mine = await env.DB.prepare(`SELECT COUNT(*) AS n FROM rate_events WHERE key = ?`)
+      .bind(device.userId)
+      .first<{ n: number }>();
+    expect(mine?.n).toBe(1);
   });
 });

@@ -11,6 +11,7 @@
 import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { requireUser } from './auth';
+import type { AuthUser } from './auth';
 import { decodeCursor, encodeCursor } from './cursor';
 import { RATE_BUCKETS, assertUnderRateLimit, recordRateEvent } from './rate-limit';
 import {
@@ -74,6 +75,46 @@ function shareUrl(env: Env, shareId: string): string {
   return `${base}/shared-plan.html?s=${shareId}`;
 }
 
+/**
+ * A banned account is read-only, exactly as it is for comments: it may still
+ * pull its plans down to the devices it already has, but it may not write one
+ * or put a new one in front of the public. Revoking a share is deliberately
+ * still allowed — taking something down is never the abuse we banned for.
+ */
+function assertNotBanned(user: AuthUser): void {
+  if (user.is_banned === 1) {
+    throw new HttpError(403, 'banned', 'This account may not change plans');
+  }
+}
+
+/**
+ * The 409 for "this trail already has a plan on this account", with the id the
+ * client should adopt. Both the pre-check and the race that slips past it
+ * answer with exactly this, so a client only ever has one shape to handle.
+ */
+function planExistsResponse(existingId: string): Response {
+  return json(
+    {
+      error: {
+        code: 'plan_exists',
+        message: 'This trail already has a plan on this account',
+      },
+      existingId,
+    },
+    409
+  );
+}
+
+/**
+ * True for a D1 failure that is the unique index refusing a duplicate. D1
+ * surfaces it as a message rather than a code, hence the string match — kept
+ * narrow, so anything else still surfaces as the 500 it is.
+ */
+export function isUniqueConstraintError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /UNIQUE constraint failed/i.test(message);
+}
+
 /** Load a plan the caller owns, or 404 — a plan of someone else's is not theirs to see. */
 async function requireOwnPlan(env: Env, id: string, userId: string): Promise<PlanRow> {
   const row = await env.DB.prepare(`SELECT * FROM plans WHERE id = ?`).bind(id).first<PlanRow>();
@@ -104,7 +145,11 @@ export async function listPlans(
 
   if (since) {
     // Delta mode: everything touched after `since`, tombstones included.
-    conditions.push('updated_at > ?');
+    // `>=`, not `>`: `syncedAt` is stamped before this SELECT runs, so a write
+    // that commits in the same millisecond just after it would never be
+    // delivered. Clients are last-writer-wins and treat an equal `updatedAt`
+    // as a no-op, so re-delivering the boundary row costs nothing.
+    conditions.push('updated_at >= ?');
     binds.push(since);
   } else {
     // Snapshot mode: only live rows.
@@ -155,6 +200,7 @@ export async function putPlan(
 ): Promise<Response> {
   assertClientPlanId(id);
   const user = await requireUser(request, env, ctx);
+  assertNotBanned(user);
 
   const body = await readJson(request);
   const nowMs = Date.now();
@@ -178,16 +224,7 @@ export async function putPlan(
     .bind(user.id, document.trailId, id)
     .first<{ id: string }>();
   if (clash) {
-    return json(
-      {
-        error: {
-          code: 'plan_exists',
-          message: 'This trail already has a plan on this account',
-        },
-        existingId: clash.id,
-      },
-      409
-    );
+    return planExistsResponse(clash.id);
   }
 
   await assertUnderRateLimit(
@@ -211,13 +248,31 @@ export async function putPlan(
       .bind(document.trailId, documentJson, now, id)
       .first<PlanRow>();
   } else {
-    row = await env.DB.prepare(
-      `INSERT INTO plans (id, user_id, trail_id, document_json, share_id, created_at, updated_at, deleted_at)
-       VALUES (?, ?, ?, ?, NULL, ?, ?, NULL)
-       RETURNING *`
-    )
-      .bind(id, user.id, document.trailId, documentJson, now, now)
-      .first<PlanRow>();
+    // The check above is a read, so two PUTs of different ids for one trail can
+    // both pass it; the partial unique index is what actually holds the line.
+    // Losing that race is the same situation the pre-check catches, so it gets
+    // the same answer rather than a 500.
+    try {
+      row = await env.DB.prepare(
+        `INSERT INTO plans (id, user_id, trail_id, document_json, share_id, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, NULL, ?, ?, NULL)
+         RETURNING *`
+      )
+        .bind(id, user.id, document.trailId, documentJson, now, now)
+        .first<PlanRow>();
+    } catch (err) {
+      if (!isUniqueConstraintError(err)) throw err;
+      const winner = await env.DB.prepare(
+        `SELECT id FROM plans
+          WHERE user_id = ? AND trail_id = ? AND deleted_at IS NULL AND id != ?`
+      )
+        .bind(user.id, document.trailId, id)
+        .first<{ id: string }>();
+      // No live sibling means some other uniqueness was violated (the id
+      // itself, say): not ours to relabel.
+      if (!winner) throw err;
+      return planExistsResponse(winner.id);
+    }
   }
 
   if (!row) {
@@ -240,6 +295,7 @@ export async function deletePlan(
   id: string
 ): Promise<Response> {
   const user = await requireUser(request, env, ctx);
+  assertNotBanned(user);
   const row = await requireOwnPlan(env, id, user.id);
 
   // Idempotent: already tombstoned → 204 without re-stamping it.
@@ -247,8 +303,13 @@ export async function deletePlan(
     return noContent();
   }
 
+  // The share id goes with it: a PUT may undelete this row (that is how a plan
+  // rebuilt on another device lands on the same id), and the link the owner
+  // deleted must not come back to life with it.
   const now = new Date().toISOString();
-  await env.DB.prepare(`UPDATE plans SET deleted_at = ?, updated_at = ? WHERE id = ?`)
+  await env.DB.prepare(
+    `UPDATE plans SET deleted_at = ?, updated_at = ?, share_id = NULL WHERE id = ?`
+  )
     .bind(now, now, id)
     .run();
 
@@ -277,6 +338,7 @@ export async function sharePlan(
   id: string
 ): Promise<Response> {
   const user = await requireUser(request, env, ctx);
+  assertNotBanned(user);
   const row = await requireOwnPlan(env, id, user.id);
   if (row.deleted_at !== null) {
     throw new HttpError(404, 'not_found', 'Plan not found');

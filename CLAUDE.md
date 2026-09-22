@@ -188,8 +188,10 @@ npx expo export                              # Bundle JS/assets for production
 eas build --non-interactive --platform ios    # Cloud build (non-interactive)
 eas build --non-interactive --platform android
 
-# OTA updates (JS-only changes, no app store review needed)
-eas update --branch production --message "description"
+# Installable test APK (preview profile; runbook: docs/mobile-test-build.md)
+eas build --non-interactive --profile preview --platform android
+
+# OTA updates are NOT available: expo-updates is not installed (see the runbook)
 
 # Dev server (INTERACTIVE — requires human at terminal)
 npx expo start --dev-client      # Start Metro + connect to dev client
@@ -215,8 +217,8 @@ npx expo start --dev-client      # Start Metro + connect to dev client
 - **Continuous Native Generation (CNG)**: `ios/` and `android/` are generated from `app.json` + config plugins via `npx expo prebuild`. They are build artifacts, not source files. Regenerate with `--clean` after config changes.
 - **Config plugins**: Declared in `app.json` `"plugins"` array. They modify native project files during prebuild (e.g. MapLibre adds location permissions automatically).
 - **Development builds**: Custom debug apps built via EAS that include your native dependencies. Rebuild only when native deps change; JS changes hot-reload.
-- **EAS Build profiles** (`eas.json`): `base` (shared env), `development` (dev client), `development-device` (dev client on a physical device), `preview` (internal testers), `production` (app store).
-- **EAS Update**: OTA JavaScript updates. Only works for JS/styling/image changes — native changes need a new binary build.
+- **EAS Build profiles** (`eas.json`): `base` (shared env), `development` (dev client), `development-device` (dev client on a physical device), `preview` (internal testers — a standalone `.apk` you can sideload; how to build and install one is `docs/mobile-test-build.md`), `production` (app store — an `.aab`).
+- **EAS Update**: OTA JavaScript updates. Not available in this app yet — `expo-updates` is not installed and `app.json` has no `updates`/`runtimeVersion` — so every change, JS included, ships as a new build.
 - **Expo Router**: File-based routing where files in `app/` become navigation routes. `_layout.tsx` defines navigators, `(groups)/` organize without adding URL segments, `[param].tsx` for dynamic routes.
 
 ### Verification After Dependency Changes

@@ -493,5 +493,6 @@ Vercel dashboard or a Vercel token for the site variable.
    (and iOS, which may need an interactive Apple sign-in the first time). EAS Update is not an
    option until `expo-updates` is installed and `app.json` carries `updates` + `runtimeVersion` —
    itself a native change and a new build. Nothing in this feature changed native code, so a
-   development client already installed keeps working against Metro.
+   development client already installed keeps working against Metro. A sideloadable `.apk` for
+   testing comes from the `preview` profile instead; `docs/mobile-test-build.md` is the runbook.
 

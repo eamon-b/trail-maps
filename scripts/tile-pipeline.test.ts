@@ -14,6 +14,8 @@ import {
   MAX_ZOOM,
   CONTOUR_ZOOM_EXPECTATION,
   BASE_ZOOM_EXPECTATION,
+  projectedEpsgFor,
+  isWithinAustralia,
 } from './tile-pipeline';
 
 /**
@@ -80,6 +82,32 @@ const contourZooms = Array.from(
   { length: MAX_ZOOM - CONTOUR_MIN_ZOOM + 1 },
   (_, i) => CONTOUR_MIN_ZOOM + i
 );
+
+describe('projectedEpsgFor', () => {
+  it('keeps MGA for Australian trails', () => {
+    expect(projectedEpsgFor(138.5, -33.4)).toBe(28354); // Heysen
+    expect(projectedEpsgFor(116.0, -33.0)).toBe(28350); // Bibbulmun
+  });
+
+  it('uses the southern-hemisphere UTM zone in New Zealand', () => {
+    expect(projectedEpsgFor(172.6, -41.0)).toBe(32759);
+  });
+
+  it('uses the northern-hemisphere UTM zone in the US', () => {
+    expect(projectedEpsgFor(-108.5, 40.0)).toBe(32612); // CDT
+  });
+
+  it('clamps the antimeridian to zone 60', () => {
+    expect(projectedEpsgFor(180, -40)).toBe(32760);
+  });
+});
+
+describe('isWithinAustralia', () => {
+  it('is true for an Australian trail and false for Te Araroa', () => {
+    expect(isWithinAustralia({ west: 137.9, south: -35.7, east: 139.1, north: -31.1 })).toBe(true);
+    expect(isWithinAustralia({ west: 167.8, south: -46.6, east: 175.7, north: -34.4 })).toBe(false);
+  });
+});
 
 describe('validateMbtilesArtifact', () => {
   it('accepts a well-formed contour artifact against the contour expectation', () => {

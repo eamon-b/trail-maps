@@ -133,6 +133,54 @@ read_manifest_entries() {
   ' "$manifest_file"
 }
 
+# wrangler `r2 object put` rejects uploads over ~300MiB. Te Araroa's contours
+# (~850MB) and the Australia contour PMTiles are both past it, so anything
+# that large goes through an S3-compatible multipart client. RCLONE_REMOTE
+# selects the Cloudflare S3 remote (defaults to "r2").
+RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
+WRANGLER_MAX_BYTES="${WRANGLER_MAX_BYTES:-$((300 * 1024 * 1024))}"
+
+has_rclone_remote() {
+  command -v rclone &> /dev/null && rclone listremotes | grep -q "^${RCLONE_REMOTE}:"
+}
+
+print_rclone_setup() {
+  cat <<EOF
+No rclone remote named "${RCLONE_REMOTE}" found. To upload files this large:
+  1. Create an R2 API token (S3 credentials) in the Cloudflare dashboard:
+     R2 > Manage R2 API Tokens > Create (Object Read & Write on $BUCKET)
+  2. Run "rclone config" and create a uniquely named S3 remote using:
+       provider: Cloudflare
+       endpoint: https://<owning-account-id>.r2.cloudflarestorage.com
+       advanced option no_check_bucket: true
+  3. Re-run with that remote name:
+       RCLONE_REMOTE=<remote-name> ./scripts/upload-tiles.sh <same arguments>
+EOF
+}
+
+# A manifest payload file: wrangler when it fits, rclone multipart when it
+# doesn't, with the same Cache-Control either way.
+upload_payload_file() {
+  local src="$1"
+  local dest="$2"
+  local cache_control="public, max-age=2592000"
+
+  if [ "$(wc -c < "$src")" -le "$WRANGLER_MAX_BYTES" ]; then
+    upload_file "$src" "$dest" "application/octet-stream" "$cache_control"
+    return
+  fi
+  if ! has_rclone_remote; then
+    print_rclone_setup
+    exit 1
+  fi
+  echo "  Uploading $dest via rclone (multipart, $(( $(wc -c < "$src") / 1024 / 1024 ))MB)"
+  rclone copyto --progress --s3-no-check-bucket \
+    --s3-upload-cutoff 64M --s3-chunk-size 64M \
+    --header-upload "Cache-Control: $cache_control" \
+    --header-upload "Content-Type: application/octet-stream" \
+    "$src" "${RCLONE_REMOTE}:$BUCKET/$dest"
+}
+
 # Upload every file a manifest lists, then the manifest itself.
 #
 # The manifest is uploaded LAST and is the atomic commit point of the whole
@@ -165,6 +213,17 @@ upload_manifest_dir() {
     exit 1
   fi
 
+  # Fail before uploading anything when a file is too big for wrangler and
+  # there is no rclone remote to take it.
+  while IFS=$'\t' read -r name key; do
+    [ -n "$name" ] && [ -f "$src_dir/$name" ] || continue
+    if [ "$(wc -c < "$src_dir/$name")" -gt "$WRANGLER_MAX_BYTES" ] && ! has_rclone_remote; then
+      echo "Error: $name is over wrangler's $((WRANGLER_MAX_BYTES / 1024 / 1024))MiB limit."
+      print_rclone_setup
+      exit 1
+    fi
+  done <<< "$entries"
+
   # Here-string keeps the loop in the current shell so a failure exits the script.
   while IFS=$'\t' read -r name key; do
     [ -n "$name" ] || continue
@@ -176,9 +235,7 @@ upload_manifest_dir() {
     case "$name" in
       *.mbtiles) validate_mbtiles "$src" ;;
     esac
-    upload_file "$src" "$remote_prefix/$key" \
-      "application/octet-stream" \
-      "public, max-age=2592000"
+    upload_payload_file "$src" "$remote_prefix/$key"
   done <<< "$entries"
 
   # Last: publishing the manifest is what makes the new objects live.
@@ -268,11 +325,8 @@ upload_grid() {
 
 # --- Contour PMTiles upload ---
 
-# wrangler `r2 object put` rejects uploads over ~300MiB; the Australia contour
-# PMTiles is several GB, so it must go through an S3-compatible multipart
-# client. RCLONE_REMOTE selects the Cloudflare S3 remote (defaults to "r2").
-RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
-WRANGLER_MAX_BYTES="${WRANGLER_MAX_BYTES:-$((300 * 1024 * 1024))}"
+# The Australia contour PMTiles is several GB, over wrangler's limit (see
+# WRANGLER_MAX_BYTES above), so it normally goes through rclone.
 
 validate_contour_archive() {
   local pmtiles_file="$1"

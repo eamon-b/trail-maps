@@ -8,6 +8,7 @@ import {
   MIN_DAILY_HOURS,
   MAX_DAILY_HOURS,
 } from '../plan-inputs-store';
+import { defaultSuggestPrefs } from '../plan-suggest';
 
 /**
  * Seed a legacy selection the way a build before the plan document wrote one.
@@ -146,6 +147,77 @@ describe('plan-inputs-store', () => {
 
     it('is dropped with the whole entry by clearTrail', () => {
       seedLegacySelection('cdt', ['w_a']);
+      usePlanInputsStore.getState().clearTrail('cdt');
+      expect(usePlanInputsStore.getState().byTrail.cdt).toBeUndefined();
+    });
+  });
+
+  describe('the "Next days" suggest prefs', () => {
+    it('is absent until the card first saves it', () => {
+      usePlanInputsStore.getState().setPace('aawt', 'fast');
+      expect(selectPrefs('aawt')(usePlanInputsStore.getState()).suggest).toBeUndefined();
+    });
+
+    it('persists per trail, alongside pace and hours', () => {
+      const { setPace, setDailyHours, setSuggestPrefs } = usePlanInputsStore.getState();
+      setPace('aawt', 'fast');
+      setDailyHours('aawt', 10);
+      const suggest = { ...defaultSuggestPrefs(10, 5), mode: 'ranges' as const, days: 5 };
+      setSuggestPrefs('aawt', suggest);
+
+      const aawt = selectPrefs('aawt')(usePlanInputsStore.getState());
+      expect(aawt.suggest).toEqual(suggest);
+      expect(aawt.pace).toBe('fast');
+      expect(aawt.dailyHours).toBe(10);
+      // Another trail is untouched.
+      expect(selectPrefs('heysen')(usePlanInputsStore.getState()).suggest).toBeUndefined();
+    });
+
+    it('starts a fresh trail from DEFAULT_PREFS', () => {
+      const suggest = defaultSuggestPrefs(8, 4);
+      usePlanInputsStore.getState().setSuggestPrefs('heysen', suggest);
+      expect(selectPrefs('heysen')(usePlanInputsStore.getState())).toEqual({
+        ...DEFAULT_PREFS,
+        suggest,
+      });
+    });
+
+    it('replaces the whole object on a second save', () => {
+      const { setSuggestPrefs } = usePlanInputsStore.getState();
+      setSuggestPrefs('aawt', defaultSuggestPrefs(8, 4));
+      const next = { ...defaultSuggestPrefs(8, 4), alternatives: 1 };
+      setSuggestPrefs('aawt', next);
+      expect(selectPrefs('aawt')(usePlanInputsStore.getState()).suggest).toEqual(next);
+    });
+
+    it('drops a malformed value and keeps the rest of the entry', () => {
+      const good = defaultSuggestPrefs(8, 4);
+      const malformed: unknown[] = [
+        'ranges',
+        { ...good, mode: 'fast' },
+        { ...good, days: '3' },
+        { ...good, distance: { on: true, min: 20 } },
+        { ...good, ascent: { on: 'yes', min: 0, max: 1000 } },
+        { ...good, hours: { on: true, min: Number.NaN, max: 9 } },
+      ];
+      for (const suggest of malformed) {
+        usePlanInputsStore.setState({
+          byTrail: { cdt: { dailyHours: 10, pace: 'slow', suggest } as never },
+        });
+        const prefs = selectPrefs('cdt')(usePlanInputsStore.getState());
+        expect(prefs.suggest).toBeUndefined();
+        expect(prefs.dailyHours).toBe(10);
+        expect(prefs.pace).toBe('slow');
+      }
+    });
+
+    it('survives clearResupplyStops and goes with clearTrail', () => {
+      const suggest = defaultSuggestPrefs(8, 4);
+      usePlanInputsStore.getState().setSuggestPrefs('cdt', suggest);
+      seedLegacySelection('cdt', ['w_a']);
+      usePlanInputsStore.getState().clearResupplyStops('cdt');
+      expect(selectPrefs('cdt')(usePlanInputsStore.getState()).suggest).toEqual(suggest);
+
       usePlanInputsStore.getState().clearTrail('cdt');
       expect(usePlanInputsStore.getState().byTrail.cdt).toBeUndefined();
     });

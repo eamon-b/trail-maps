@@ -154,6 +154,7 @@ export function NextDaysCard(props: NextDaysCardProps) {
             label="Hours"
             range={prefs.hours}
             step={0.5}
+            ceiling={24}
             format={formatHours}
             onChange={(hours) => set({ hours })}
           />
@@ -209,7 +210,7 @@ function Results({
     <View style={styles.results}>
       {result.shortOf !== undefined && (
         <Text style={[styles.hint, { color: colors.warning }]}>
-          {`Only ${result.shortOf} day${result.shortOf === 1 ? '' : 's'} fit these settings from here. Nothing is in range after that.`}
+          {`Only ${result.shortOf} day${result.shortOf === 1 ? '' : 's'} fit these settings from this start. Nothing is in range after that.`}
         </Text>
       )}
       {result.plans.map((plan, i) => (
@@ -252,12 +253,15 @@ function RangeRow({
   label,
   range,
   step,
+  ceiling = Infinity,
   format,
   onChange,
 }: {
   label: string;
   range: RangePref;
   step: number;
+  /** The most the maximum can be stepped to (24 for hours in a day). */
+  ceiling?: number;
   format: (value: number) => string;
   onChange: (range: RangePref) => void;
 }) {
@@ -290,7 +294,7 @@ function RangeRow({
             label={`Maximum ${label.toLowerCase()}`}
             value={format(range.max)}
             canDown={range.max - step >= range.min - 1e-9}
-            canUp
+            canUp={range.max + step <= ceiling + 1e-9}
             onDown={() => onChange({ ...range, max: snap(range.max - step) })}
             onUp={() => onChange({ ...range, max: snap(range.max + step) })}
           />

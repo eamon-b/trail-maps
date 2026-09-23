@@ -204,4 +204,89 @@ describe('StopsSection', () => {
     act(() => (more.props.onPress as () => void)());
     expect(rows(tree)).toHaveLength(100);
   });
+
+  describe('the "You are here" divider', () => {
+    /** Labels of the rows and the divider, in render order. */
+    function order(tree: ReactTestRenderer): string[] {
+      return tree.root
+        .findAll(
+          (n) =>
+            isHost(n) &&
+            ((n.props.accessibilityRole === 'checkbox' && n.props.accessibilityLabel !== 'Booked') ||
+              n.props.accessibilityLabel === 'You are here'),
+        )
+        .map((n) => n.props.accessibilityLabel as string);
+    }
+
+    it('sits before the first place at or past the current km', () => {
+      expect(order(render({ currentKm: 20 }))).toEqual([
+        'Ellery Creek',
+        'You are here',
+        'Serpentine Chalet',
+      ]);
+      // A place exactly at the hiker's km is still ahead of them.
+      expect(order(render({ currentKm: 10 }))).toEqual([
+        'You are here',
+        'Ellery Creek',
+        'Serpentine Chalet',
+      ]);
+    });
+
+    it('goes after the last place when the hiker is past them all', () => {
+      expect(order(render({ currentKm: 99 }))).toEqual([
+        'Ellery Creek',
+        'Serpentine Chalet',
+        'You are here',
+      ]);
+    });
+
+    it('is not drawn without a position', () => {
+      expect(hostByLabel(render({ currentKm: null }), 'You are here')).toHaveLength(0);
+      expect(hostByLabel(render(), 'You are here')).toHaveLength(0);
+    });
+
+    it('is not drawn for a trail with no places', () => {
+      expect(hostByLabel(render({ candidates: [], currentKm: 5 }), 'You are here')).toHaveLength(0);
+    });
+
+    it('reveals rows beyond the first page to reach the divider', () => {
+      const many: StopCandidate[] = Array.from({ length: 120 }, (_, i) => ({
+        key: `w_${i}`,
+        waypointId: `w_${i}`,
+        name: `Camp ${i}`,
+        type: 'campsite',
+        activeKm: i,
+        noboKm: i,
+      }));
+      const tree = render({ candidates: many, currentKm: 79.5 });
+      const labels = order(tree);
+      const here = labels.indexOf('You are here');
+      expect(here).toBeGreaterThan(-1);
+      expect(labels[here - 1]).toBe('Camp 79');
+      expect(labels[here + 1]).toBe('Camp 80');
+      // A few places past the divider are shown too, and the rest stay paged.
+      expect(rows(tree).length).toBeGreaterThan(80);
+      expect(rows(tree).length).toBeLessThan(120);
+
+      const more = (n: TestInstance) =>
+        typeof n.props.accessibilityLabel === 'string' &&
+        n.props.accessibilityLabel.startsWith('Show more places');
+      expect(tree.root.findAll((n) => isHost(n) && more(n))).toHaveLength(1);
+      act(() => (tree.root.findAll(more)[0].props.onPress as () => void)());
+      expect(rows(tree)).toHaveLength(120);
+    });
+
+    it('hands the laid-out divider to onHereLayout', () => {
+      const onHereLayout = jest.fn();
+      const tree = render({ currentKm: 20, onHereLayout });
+      act(() => (one(tree, 'You are here').props.onLayout as () => void)());
+      expect(onHereLayout).toHaveBeenCalledTimes(1);
+    });
+  });
 });
+
+function one(tree: ReactTestRenderer, label: string): TestInstance {
+  const found = hostByLabel(tree, label);
+  expect(found).toHaveLength(1);
+  return found[0];
+}

@@ -379,6 +379,55 @@ export function setStopBooked(
   );
 }
 
+/**
+ * Replace the stops strictly between two km with `targets` — what applying a
+ * suggested few days does.
+ *
+ * Stops at or outside the bounds are kept: the one the suggestion starts from,
+ * and everything planned beyond the window. A target that is already a stop
+ * keeps that stop as it stands (nights, note, booked), so re-applying the same
+ * suggestion is a no-op and returns the same document.
+ *
+ * @param range NOBO-absolute km, either order (convert active km with
+ *   `toNoboKm`; a SOBO window comes out reversed).
+ * @param targets the places to stop at, NOBO-absolute like `toggleStop`'s.
+ * @throws when a target km is not finite, or the result exceeds `PLAN_LIMITS.stopsMax`.
+ */
+export function replaceStopsInRange(
+  plan: PlanDocument,
+  range: { fromKm: number; toKm: number },
+  targets: readonly ToggleTarget[],
+  opts?: PlanEditOptions,
+): PlanDocument {
+  const lo = Math.min(range.fromKm, range.toKm);
+  const hi = Math.max(range.fromKm, range.toKm);
+  const inside = (km: number) => km > lo + KM_EPSILON && km < hi - KM_EPSILON;
+
+  const next: PlanStop[] = plan.stops.filter(stop => !inside(stop.km));
+  for (const target of targets) {
+    if (!Number.isFinite(target.km)) {
+      throw new Error(`plan-editor: stop km must be a finite number, got ${String(target.km)}`);
+    }
+    const existing = findStop(plan, { waypointId: target.id, km: target.km });
+    const stop: PlanStop = existing ?? {
+      ...(target.id ? { waypointId: target.id } : {}),
+      km: target.km,
+      name: target.name,
+      nights: 1,
+    };
+    if (next.some(kept => kept === stop || collidesWith(kept, stop))) continue;
+    next.push(stop);
+  }
+  if (next.length > PLAN_LIMITS.stopsMax) {
+    throw new Error(`plan-editor: a plan may hold at most ${PLAN_LIMITS.stopsMax} stops`);
+  }
+  const sorted = sortStops(next);
+  if (sorted.length === plan.stops.length && sorted.every((stop, i) => stop === plan.stops[i])) {
+    return plan;
+  }
+  return withStops(plan, sorted, opts);
+}
+
 // ---------------------------------------------------------------------------
 // Resupply selection
 // ---------------------------------------------------------------------------
@@ -638,6 +687,35 @@ export function computePlanDays(
     restBefore += restDays;
     return dated;
   });
+}
+
+/** `splitUnplannedTail`'s answer: the days walked to a stop, and what is left. */
+export interface PlannedDays {
+  days: ComputedDay[];
+  /**
+   * The stretch from the last stop to the range end, when it is too long to be
+   * a day: not a day card, just the part of the trail not planned yet.
+   * `null` when the last day fits.
+   */
+  unplanned: ComputedDay | null;
+}
+
+/**
+ * Split off the tail of a plan that is not a day yet.
+ *
+ * `computePlanDays` always runs its last day to the range end, so a plan with
+ * two stops near the start reads as two days and one enormous third. Most
+ * plans are made a few days at a time, and the stretch after the last stop is
+ * *unplanned*, not a day. It becomes a day again once it fits in one, and
+ * `maxFinalHours` is the hiker's own figure for what fits (the phone passes
+ * its daily hours plus the splitter's final-day allowance).
+ *
+ * `unplanned.dayNumber` is the number the next day would take.
+ */
+export function splitUnplannedTail(days: readonly ComputedDay[], maxFinalHours: number): PlannedDays {
+  const last = days[days.length - 1];
+  if (!last || !(last.estimatedHours > maxFinalHours)) return { days: [...days], unplanned: null };
+  return { days: days.slice(0, -1), unplanned: last };
 }
 
 // ---------------------------------------------------------------------------

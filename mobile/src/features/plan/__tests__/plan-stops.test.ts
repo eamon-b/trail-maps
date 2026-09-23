@@ -1,7 +1,6 @@
 /**
  * The Stops list's data layer: which places are offered, the NOBO ↔ active km
- * conversion that keeps a plan stable across a direction flip, and what
- * "Suggest stops" actually hands the plan.
+ * conversion that keeps a plan stable across a direction flip.
  *
  * The last test is the one that matters most end to end: ticking a stop must
  * split the day cards, since that is the entire premise of the planner.
@@ -12,13 +11,11 @@ import type { PlanTrail } from '@lib/day-calculator';
 import type { PlanDocument } from '@lib/plan-types';
 import { resolveGuideTrail } from '../../guide/guide-trail';
 import type { TrailJson } from '../../../services/trail-assets';
-import { fullTrailSection } from '../plan-adapters';
 import {
   planDirectionOf,
   stopCandidateOf,
   stopCandidates,
   stopKeyOf,
-  suggestedStops,
   toggleTargetOf,
 } from '../plan-stops';
 
@@ -108,24 +105,6 @@ describe('stopCandidates', () => {
     expect(candidate.waypointId).toBeUndefined();
     expect(candidate.key).toBe('km:12.500');
     expect(stopKeyOf(candidate)).toEqual({ waypointId: undefined, km: 12.5 });
-  });
-});
-
-describe('suggestedStops', () => {
-  it('returns the camps the splitter snapped to, as candidates', () => {
-    const t = trail();
-    // 5 h/day at 4 km/h = 20 km days over 100 km: the splitter wants boundaries
-    // near 20/40/60/80 and only camps qualify (a town is not in its set).
-    const picked = suggestedStops(t, fullTrailSection(t), 5, 4, 'NOBO');
-    expect(picked.map((c) => c.name)).toEqual(['Camp A', 'Camp B']);
-    expect(picked.map((c) => c.waypointId)).toEqual(['c1', 'c2']);
-  });
-
-  it('drops the splitter’s wild camps — a plan stop is a place', () => {
-    const t = trail();
-    t.waypoints = t.waypoints.filter((w) => w.type !== 'campsite');
-    const picked = suggestedStops(t, fullTrailSection(t), 5, 4, 'NOBO');
-    expect(picked).toEqual([]);
   });
 });
 

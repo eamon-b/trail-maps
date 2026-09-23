@@ -19,7 +19,7 @@
  * screen turns into `plans-store.apply` calls.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { formatDistance } from '@lib/format-distance';
 import { findStop, servicesAtStop, type StopServices } from '@lib/plan-editor';
@@ -58,6 +58,14 @@ export interface StopsSectionProps {
   onNights: (candidate: StopCandidate, nights: number) => void;
   onNote: (candidate: StopCandidate, note: string) => void;
   onBooked: (candidate: StopCandidate, booked: boolean) => void;
+  /**
+   * The hiker's km (active), or null with no on-trail fix. A "You are here"
+   * divider is drawn before the first place at or past it, and the rows up to
+   * it are revealed however far down the trail it is.
+   */
+  currentKm?: number | null;
+  /** Called with the divider once it is laid out, so the screen can scroll to it. */
+  onHereLayout?: (marker: View) => void;
 }
 
 export function StopsSection(props: StopsSectionProps) {
@@ -75,7 +83,17 @@ export function StopsSection(props: StopsSectionProps) {
     return map;
   }, [candidates, pois]);
 
-  const visible = candidates.slice(0, visibleCount);
+  const currentKm = props.currentKm ?? null;
+  const hereIndex = useMemo(() => {
+    if (currentKm === null) return -1;
+    const idx = candidates.findIndex((c) => c.activeKm >= currentKm);
+    return idx === -1 ? candidates.length : idx;
+  }, [candidates, currentKm]);
+  const markerRef = useRef<View>(null);
+
+  // The divider is always inside the revealed rows, with a few places after it.
+  const shown = Math.max(visibleCount, hereIndex + 10);
+  const visible = candidates.slice(0, shown);
   const remaining = candidates.length - visible.length;
 
   return (
@@ -95,24 +113,37 @@ export function StopsSection(props: StopsSectionProps) {
           This trail has no places listed to stop at.
         </Text>
       ) : (
-        visible.map((candidate) => (
-          <StopRow
-            key={candidate.key}
-            candidate={candidate}
-            stop={plan ? findStop(plan, stopKeyOf(candidate)) : undefined}
-            services={services.get(candidate.key)}
-            units={units}
-            onToggle={() => props.onToggle(candidate)}
-            onNights={(nights) => props.onNights(candidate, nights)}
-            onNote={(note) => props.onNote(candidate, note)}
-            onBooked={(booked) => props.onBooked(candidate, booked)}
-          />
+        visible.map((candidate, i) => (
+          <React.Fragment key={candidate.key}>
+            {i === hereIndex && (
+              <HereMarker
+                ref={markerRef}
+                onLayout={() => markerRef.current && props.onHereLayout?.(markerRef.current)}
+              />
+            )}
+            <StopRow
+              candidate={candidate}
+              stop={plan ? findStop(plan, stopKeyOf(candidate)) : undefined}
+              services={services.get(candidate.key)}
+              units={units}
+              onToggle={() => props.onToggle(candidate)}
+              onNights={(nights) => props.onNights(candidate, nights)}
+              onNote={(note) => props.onNote(candidate, note)}
+              onBooked={(booked) => props.onBooked(candidate, booked)}
+            />
+          </React.Fragment>
         ))
+      )}
+      {candidates.length > 0 && hereIndex === candidates.length && (
+        <HereMarker
+          ref={markerRef}
+          onLayout={() => markerRef.current && props.onHereLayout?.(markerRef.current)}
+        />
       )}
 
       {remaining > 0 && (
         <Pressable
-          onPress={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          onPress={() => setVisibleCount(shown + PAGE_SIZE)}
           accessibilityRole="button"
           accessibilityLabel={`Show more places, ${remaining} remaining`}
           hitSlop={spacing.xs}
@@ -131,6 +162,21 @@ export function StopsSection(props: StopsSectionProps) {
     </View>
   );
 }
+
+/** The "You are here" divider between the places behind and ahead of the hiker. */
+const HereMarker = React.forwardRef<View, { onLayout: () => void }>(function HereMarker(
+  { onLayout },
+  ref,
+) {
+  const { colors } = useTheme();
+  return (
+    <View ref={ref} onLayout={onLayout} style={styles.here} accessibilityLabel="You are here">
+      <View style={[styles.hereRule, { backgroundColor: colors.accent }]} />
+      <Text style={[styles.hereLabel, { color: colors.accent }]}>You are here</Text>
+      <View style={[styles.hereRule, { backgroundColor: colors.accent }]} />
+    </View>
+  );
+});
 
 function StopRow({
   candidate,
@@ -212,7 +258,11 @@ function ServicesStrip({ services }: { services: StopServices }) {
           <Text
             key={key}
             accessibilityLabel={present ? label : `No ${label.toLowerCase()}`}
-            style={[styles.serviceGlyph, !present && styles.serviceAbsent, { color: colors.textPrimary }]}
+            style={[
+              styles.serviceGlyph,
+              !present && styles.serviceAbsent,
+              { color: colors.textPrimary },
+            ]}
           >
             {glyph}
           </Text>
@@ -256,6 +306,9 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     padding: spacing.md,
   },
+  here: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  hereRule: { flex: 1, height: 2 },
+  hereLabel: { ...typography.caption, fontWeight: '700' },
   more: { ...typography.bodySmall, fontWeight: '700', paddingVertical: spacing.xs },
   footer: { ...typography.caption },
   pressed: { opacity: 0.6 },

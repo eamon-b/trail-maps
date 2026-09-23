@@ -137,27 +137,6 @@ describe('PlanInputsCard', () => {
     expect(findByLabel(tree, 'Reset to full trail')).toHaveLength(0);
   });
 
-  it('renders no Suggest stops button unless a handler is given', () => {
-    const tree = render({});
-    expect(findByLabel(tree, 'Suggest stops')).toHaveLength(0);
-  });
-
-  it('suggests stops when the plan is empty', () => {
-    const onSuggestStops = jest.fn();
-    const tree = render({ onSuggestStops, canSuggestStops: true });
-    expect(isDisabled(tree, 'Suggest stops')).toBe(false);
-    expect(allText(tree)).toContain('Fills the empty list once');
-    press(tree, 'Suggest stops');
-    expect(onSuggestStops).toHaveBeenCalledTimes(1);
-  });
-
-  it('disables Suggest stops once the plan has stops, and says why', () => {
-    const onSuggestStops = jest.fn();
-    const tree = render({ onSuggestStops, canSuggestStops: false });
-    expect(isDisabled(tree, 'Suggest stops')).toBe(true);
-    expect(allText(tree)).toContain('Clear your stops to suggest a fresh set.');
-  });
-
   it('hides the reset chip for a degenerate option set (< 2 options)', () => {
     const single: WaypointOption[] = [{ id: 'only', name: 'Only', km: 0, type: 'trailhead' }];
     const tree = render({ options: single, startIdx: 0, endIdx: 0 });

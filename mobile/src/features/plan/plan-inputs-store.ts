@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { PACE_KMH, type Pace } from './plan-adapters';
+import { isSuggestPrefs, type SuggestPrefs } from './plan-suggest';
 
 /** Persisted, direction-independent plan preferences. */
 export interface PlanPrefs {
@@ -39,6 +40,13 @@ export interface PlanPrefs {
    * deliberately missing from DEFAULT_PREFS rather than defaulting to a list.
    */
   resupplyStops?: string[];
+  /**
+   * How the "Next days" card suggests stops. Absent until the hiker first
+   * changes one of its inputs; the card derives its initial values from the
+   * pace and hours above (`plan-suggest.ts` `defaultSuggestPrefs`), so every
+   * figure it starts from is one the hiker already chose.
+   */
+  suggest?: SuggestPrefs;
 }
 
 export const DEFAULT_PREFS: PlanPrefs = { dailyHours: 8, pace: 'average' };
@@ -52,6 +60,8 @@ export interface PlanInputsState {
   byTrail: Record<string, PlanPrefs>;
   setDailyHours: (trailId: string, hours: number) => void;
   setPace: (trailId: string, pace: Pace) => void;
+  /** Store the "Next days" card's inputs (the whole object — the card owns its shape). */
+  setSuggestPrefs: (trailId: string, suggest: SuggestPrefs) => void;
   /**
    * Drop the legacy selection (see PlanPrefs.resupplyStops). Called by the
    * picker's Reset alongside clearing the document's own field, so a
@@ -102,6 +112,13 @@ export const usePlanInputsStore = create<PlanInputsState>()(
           byTrail: {
             ...s.byTrail,
             [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), pace },
+          },
+        })),
+      setSuggestPrefs: (trailId, suggest) =>
+        set((s) => ({
+          byTrail: {
+            ...s.byTrail,
+            [trailId]: { ...(s.byTrail[trailId] ?? DEFAULT_PREFS), suggest },
           },
         })),
       clearResupplyStops: (trailId) =>
@@ -175,6 +192,9 @@ export function selectPrefs(trailId: string) {
       merged = { ...DEFAULT_PREFS, ...stored };
       if (merged.resupplyStops !== undefined && !isStringArray(merged.resupplyStops)) {
         delete merged.resupplyStops;
+      }
+      if (merged.suggest !== undefined && !isSuggestPrefs(merged.suggest)) {
+        delete merged.suggest;
       }
       mergedPrefsCache.set(stored, merged);
     }

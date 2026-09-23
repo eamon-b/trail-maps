@@ -92,7 +92,9 @@ export function isSuggestPrefs(value: unknown): value is SuggestPrefs {
   return (
     (p.mode === 'hours' || p.mode === 'ranges') &&
     typeof p.days === 'number' &&
+    Number.isFinite(p.days) &&
     typeof p.alternatives === 'number' &&
+    Number.isFinite(p.alternatives) &&
     isRangePref(p.distance) &&
     isRangePref(p.ascent) &&
     isRangePref(p.hours)

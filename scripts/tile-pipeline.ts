@@ -203,6 +203,34 @@ export function mgaEpsgForLon(lonCenter: number): number {
   return 28356;                        // Zone 56
 }
 
+/**
+ * Rough lon/lat box of mainland Australia and Tasmania: the area the SRTM
+ * cache in data/dem covers and MGA (EPSG:283xx) is defined for.
+ */
+export const AUSTRALIA_BOUNDS = { west: 112, south: -44, east: 154, north: -10 };
+
+export function isWithinAustralia(bounds: { west: number; south: number; east: number; north: number }): boolean {
+  return bounds.west >= AUSTRALIA_BOUNDS.west && bounds.east <= AUSTRALIA_BOUNDS.east
+    && bounds.south >= AUSTRALIA_BOUNDS.south && bounds.north <= AUSTRALIA_BOUNDS.north;
+}
+
+/**
+ * Metric CRS to buffer a track in: MGA inside Australia, otherwise the WGS84
+ * UTM zone of the centroid (EPSG:326xx north, 327xx south). MGA is only
+ * defined for Australia — a New Zealand or US trail buffered in MGA zone 56
+ * gets a corridor that is badly out of shape. A trail spanning several UTM
+ * zones is still close enough for a 20 km buffer; one that needs better can
+ * set its own EPSG in build-tiles.ts's TRAIL_TILE_CONFIGS.
+ */
+export function projectedEpsgFor(lonCenter: number, latCenter: number): number {
+  if (lonCenter >= AUSTRALIA_BOUNDS.west && lonCenter <= AUSTRALIA_BOUNDS.east
+    && latCenter >= AUSTRALIA_BOUNDS.south && latCenter <= AUSTRALIA_BOUNDS.north) {
+    return mgaEpsgForLon(lonCenter);
+  }
+  const zone = Math.min(60, Math.floor((lonCenter + 180) / 6) + 1);
+  return (latCenter < 0 ? 32700 : 32600) + zone;
+}
+
 // --- Grid cell enumeration ---
 
 export const CELL_SIZE_DEG = 2;
@@ -323,7 +351,9 @@ export function checkDependencies(opts: {
 
   if (!opts.skipContours) {
     deps.push({ name: 'GDAL (gdalwarp)', command: 'gdalwarp --version' });
-    deps.push({ name: 'GDAL (gdal_contour)', command: 'gdal_contour --version' });
+    // gdal_contour only gained --version in GDAL 3.9 (3.8 is Ubuntu 24.04's);
+    // before that every flag-only call exits non-zero, so check it exists.
+    deps.push({ name: 'GDAL (gdal_contour)', command: 'which gdal_contour' });
     deps.push({ name: 'tippecanoe', command: 'tippecanoe --version' });
   }
 
@@ -358,28 +388,39 @@ export function checkDependencies(opts: {
 export function clipDem(
   regionPath: string,
   demOutputPath: string,
-  verbose: boolean
+  verbose: boolean,
+  /**
+   * Absolute paths of the DEM tiles to mosaic. Omitted, every tile in the
+   * SRTM cache (data/dem) is used — the Australian builds' behaviour.
+   */
+  demFilePaths?: string[]
 ): void {
   console.log('  Clipping DEM to region...');
 
-  // Check for cached DEM tiles
-  if (!fs.existsSync(DEM_CACHE_DIR)) {
-    console.error(`    ✗ DEM cache directory not found: ${DEM_CACHE_DIR}`);
-    console.error('    Download SRTM DEM tiles first.');
-    throw new Error('DEM tiles not found');
-  }
+  let demPathList = demFilePaths;
+  if (!demPathList) {
+    // Check for cached DEM tiles
+    if (!fs.existsSync(DEM_CACHE_DIR)) {
+      console.error(`    ✗ DEM cache directory not found: ${DEM_CACHE_DIR}`);
+      console.error('    Download SRTM DEM tiles first.');
+      throw new Error('DEM tiles not found');
+    }
 
-  const demExtensions = ['.tif', '.tiff', '.hgt'];
-  const demFiles = fs.readdirSync(DEM_CACHE_DIR).filter(f =>
-    demExtensions.some(ext => f.toLowerCase().endsWith(ext))
-  );
-  if (demFiles.length === 0) {
-    throw new Error(`No DEM files (.tif, .hgt) found in ${DEM_CACHE_DIR}`);
+    const demExtensions = ['.tif', '.tiff', '.hgt'];
+    demPathList = fs.readdirSync(DEM_CACHE_DIR)
+      .filter(f => demExtensions.some(ext => f.toLowerCase().endsWith(ext)))
+      .map(f => path.join(DEM_CACHE_DIR, f));
+    if (demPathList.length === 0) {
+      throw new Error(`No DEM files (.tif, .hgt) found in ${DEM_CACHE_DIR}`);
+    }
+  }
+  if (demPathList.length === 0) {
+    throw new Error('No DEM tiles given to clip');
   }
 
   // Build VRT mosaic from all DEM tiles
   const vrtPath = path.join(path.dirname(demOutputPath), 'dem_mosaic.vrt');
-  const demPaths = demFiles.map(f => `"${path.join(DEM_CACHE_DIR, f)}"`).join(' ');
+  const demPaths = demPathList.map(f => `"${f}"`).join(' ');
   run(`gdalbuildvrt -vrtnodata -9999 "${vrtPath}" ${demPaths}`, { verbose });
 
   // Clip to region polygon (overwrite if re-running)

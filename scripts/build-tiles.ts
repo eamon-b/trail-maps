@@ -3,7 +3,8 @@
  *
  * Generates MBTiles files for each trail from open data:
  *   1. Creates corridor polygon from GPX track (buffered 20km)
- *   2. Downloads/clips SRTM DEM to corridor
+ *   2. Clips the DEM to the corridor (SRTM cache in Australia, Copernicus
+ *      GLO-30 elsewhere — fetch it first with fetch-dem-copernicus.ts)
  *   3. Generates contour line vector tiles
  *   4. Extracts base map vector tiles from Protomaps
  *   5. Writes tile manifest JSON
@@ -35,10 +36,13 @@ import {
   extractBaseTiles,
   writeManifest,
   validateMbtilesArtifact,
-  mgaEpsgForLon,
+  projectedEpsgFor,
+  isWithinAustralia,
   BASE_ZOOM_EXPECTATION,
   CONTOUR_ZOOM_EXPECTATION,
 } from './tile-pipeline.js';
+import { DEFAULT_DEM_DIR as GLO30_DEM_DIR, demTilePath, tileListCachePath } from './fetch-dem-copernicus.js';
+import { demTileName, parseTileListNames, type DemTile } from './lib/world-grid.js';
 
 // --- Path setup ---
 
@@ -46,18 +50,21 @@ const TRAILS_DATA_DIR = path.join(PROJECT_ROOT, 'data/trails');
 const TILES_WORK_DIR = path.join(PROJECT_ROOT, 'data/tiles');
 const TILES_OUTPUT_DIR = path.join(PROJECT_ROOT, 'public/data/tiles');
 
-// --- MGA Zone mapping for Australian trails ---
-// Optional overrides for trails where auto-detection from centroid longitude
-// isn't suitable. Auto-detection uses mgaEpsgForLon() from tile-pipeline.ts.
-// MGA (Map Grid of Australia) zones use EPSG:283XX where XX is the zone number.
+// --- Projection per trail ---
+// Optional overrides for trails where auto-detection from the track centroid
+// isn't suitable. Auto-detection uses projectedEpsgFor() from tile-pipeline.ts:
+// MGA (EPSG:283XX, XX = zone) in Australia, UTM elsewhere.
 
 const TRAIL_TILE_CONFIGS: Record<string, TrailTileConfig> = {
-  'bibbulmun':       { mgaZone: 50, epsg: 28350 },
-  'cape_to_cape':    { mgaZone: 50, epsg: 28350 },
-  'heysen':          { mgaZone: 54, epsg: 28354 },
-  'larapinta':       { mgaZone: 53, epsg: 28353 },
-  'aawt':            { mgaZone: 55, epsg: 28355 },
-  'hume-and-hovell': { mgaZone: 55, epsg: 28355 },
+  'bibbulmun':       { epsg: 28350 },
+  'cape_to_cape':    { epsg: 28350 },
+  'heysen':          { epsg: 28354 },
+  'larapinta':       { epsg: 28353 },
+  'aawt':            { epsg: 28355 },
+  'hume-and-hovell': { epsg: 28355 },
+  // NZTM2000: one transverse Mercator for all of New Zealand. The route spans
+  // UTM zones 58-60, so the centroid's UTM zone would stretch both ends.
+  'te_araroa':       { epsg: 2193 },
 };
 
 const BUFFER_DISTANCE_METERS = 20_000; // 20km corridor buffer
@@ -165,6 +172,42 @@ function computeBounds(points: TrackPoint[]): { west: number; south: number; eas
   return { west, south, east, north };
 }
 
+/**
+ * Copernicus GLO-30 tiles covering `bounds` plus the corridor buffer, for a
+ * trail outside the SRTM cache's Australian coverage.
+ *
+ * The bucket's land mask (the tileList.txt fetch-dem-copernicus caches) says
+ * which 1° tiles exist; a land tile missing on disk fails the build with the
+ * command that fetches it, rather than tracing contours with a hole in them.
+ */
+function glo30TilesForBounds(bounds: { west: number; south: number; east: number; north: number }): string[] {
+  // 20 km is < 0.25° of latitude anywhere, and of longitude below ~45°;
+  // 0.5° is generous enough at the latitudes the trails reach.
+  const pad = 0.5;
+  const fetchHint = `npx tsx scripts/fetch-dem-copernicus.ts --bbox ${Math.floor(bounds.west - pad)} ${Math.floor(bounds.south - pad)} ${Math.ceil(bounds.east + pad)} ${Math.ceil(bounds.north + pad)}`;
+
+  const listPath = tileListCachePath(GLO30_DEM_DIR);
+  if (!fs.existsSync(listPath)) {
+    throw new Error(`Copernicus DEM not fetched (no ${listPath}). Run: ${fetchHint}`);
+  }
+  const land = parseTileListNames(fs.readFileSync(listPath, 'utf-8'));
+
+  const tiles: DemTile[] = [];
+  for (let lon = Math.floor(bounds.west - pad); lon < Math.ceil(bounds.east + pad); lon++) {
+    for (let lat = Math.floor(bounds.south - pad); lat < Math.ceil(bounds.north + pad); lat++) {
+      tiles.push({ lon, lat });
+    }
+  }
+  const needed = tiles.filter(t => land.has(demTileName(t)));
+  const missing = needed.filter(t => !fs.existsSync(demTilePath(GLO30_DEM_DIR, t)));
+  if (missing.length > 0) {
+    throw new Error(
+      `${missing.length} Copernicus DEM tile(s) missing (${missing.slice(0, 5).map(demTileName).join(', ')}${missing.length > 5 ? ', …' : ''}). Run: ${fetchHint}`
+    );
+  }
+  return needed.map(t => demTilePath(GLO30_DEM_DIR, t));
+}
+
 // --- Pipeline step functions ---
 
 /**
@@ -240,17 +283,17 @@ async function processTrail(
   // Get tile config: use explicit override if available, otherwise auto-detect from centroid
   let tileConfig = TRAIL_TILE_CONFIGS[trailId];
   if (!tileConfig) {
-    // Read GPX to compute centroid longitude for MGA zone auto-detection
+    // Read GPX to compute the centroid for projection auto-detection
     const gpxPath_ = path.join(trailDir, config.gpxFile);
     const pts = readGpxTrackPoints(gpxPath_);
     if (pts.length === 0) {
       throw new Error(`No track points found in GPX for trail: ${trailId}`);
     }
     const lonCenter = pts.reduce((sum, p) => sum + p.lon, 0) / pts.length;
-    const epsg = mgaEpsgForLon(lonCenter);
-    const mgaZone = epsg - 28300;
-    tileConfig = { mgaZone, epsg };
-    console.log(`  MGA zone auto-detected: zone ${mgaZone} (EPSG:${epsg}) from centroid lon ${lonCenter.toFixed(2)}`);
+    const latCenter = pts.reduce((sum, p) => sum + p.lat, 0) / pts.length;
+    const epsg = projectedEpsgFor(lonCenter, latCenter);
+    tileConfig = { epsg };
+    console.log(`  Projection auto-detected: EPSG:${epsg} from centroid ${lonCenter.toFixed(2)}, ${latCenter.toFixed(2)}`);
   }
 
   // Set up working directories
@@ -288,9 +331,13 @@ async function processTrail(
   // Step 1: Generate corridor polygon
   generateCorridor(gpxPath, corridorPath, tileConfig.epsg, args.verbose);
 
-  // Step 2: Clip DEM (needed for contours)
+  // Step 2: Clip DEM (needed for contours). The SRTM cache only covers
+  // Australia; anywhere else the contours come from Copernicus GLO-30, the
+  // same source as the world contour archive.
   if (!args.skipContours) {
-    clipDem(corridorPath, demPath, args.verbose);
+    const demFiles = isWithinAustralia(bounds) ? undefined : glo30TilesForBounds(bounds);
+    if (demFiles) console.log(`  DEM: ${demFiles.length} Copernicus GLO-30 tile(s)`);
+    clipDem(corridorPath, demPath, args.verbose, demFiles);
   }
 
   // Step 3-4: Generate contour tiles

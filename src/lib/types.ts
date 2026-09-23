@@ -394,8 +394,8 @@ export interface TileManifest {
 }
 
 export interface TrailTileConfig {
-  mgaZone: number;  // MGA zone number (50-56)
-  epsg: number;     // Full EPSG code (28350-28356)
+  /** Metric CRS the corridor is buffered in (MGA 28349-28356 in Australia, NZTM 2193, UTM 326xx/327xx). */
+  epsg: number;
 }
 
 // Grid Tile Types

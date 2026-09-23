@@ -15,6 +15,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { formatDistance, formatElevation } from '@lib/format-distance';
+import type { ComputedDay } from '@lib/plan-types';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import type { ThemeColors } from '../../tokens/themes';
@@ -52,10 +53,17 @@ function endColor(day: PlanDay, colors: ThemeColors): string {
 
 export function DaySplitList({
   days,
+  unplanned = null,
   targetHours,
   units,
 }: {
   days: PlanDay[];
+  /**
+   * The stretch after the last stop, when it is too long to be a day
+   * (`@lib/plan-editor` `splitUnplannedTail`). Shown as one muted line rather
+   * than a day card: a plan made a few days at a time has not decided it yet.
+   */
+  unplanned?: ComputedDay | null;
   targetHours: number;
   units: Units;
 }) {
@@ -72,7 +80,7 @@ export function DaySplitList({
   const allowanceFor = (day: PlanDay) =>
     targetHours + (day.endKind === 'finish' ? finishAllowanceH : windowH);
 
-  if (days.length === 0) {
+  if (days.length === 0 && unplanned === null) {
     return (
       <Text style={[styles.empty, { color: colors.textSecondary }]}>
         Choose a section with some distance to see day splits.
@@ -88,7 +96,9 @@ export function DaySplitList({
           style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
           <View style={styles.head}>
-            <Text style={[styles.dayNum, { color: colors.accentText, backgroundColor: colors.accent }]}>
+            <Text
+              style={[styles.dayNum, { color: colors.accentText, backgroundColor: colors.accent }]}
+            >
               Day {day.dayNumber}
             </Text>
             <Text style={[styles.route, { color: colors.textPrimary }]} numberOfLines={1}>
@@ -108,9 +118,7 @@ export function DaySplitList({
           </View>
 
           <View style={styles.footer}>
-            <Text style={[styles.camp, { color: endColor(day, colors) }]}>
-              {endLabel(day)}
-            </Text>
+            <Text style={[styles.camp, { color: endColor(day, colors) }]}>{endLabel(day)}</Text>
             <Text style={[styles.water, { color: colors.textSecondary }]}>
               {day.waterSources} water source{day.waterSources === 1 ? '' : 's'}
             </Text>
@@ -129,6 +137,19 @@ export function DaySplitList({
           )}
         </View>
       ))}
+      {unplanned !== null && (
+        <View
+          style={[styles.card, styles.unplanned, { borderColor: colors.border }]}
+          accessibilityLabel="Not planned yet"
+        >
+          <Text style={[styles.route, { color: colors.textSecondary }]} numberOfLines={1}>
+            {`Not planned yet: ${unplanned.startName} → ${unplanned.endName}`}
+          </Text>
+          <Text style={[styles.date, { color: colors.textSecondary }]}>
+            {`${formatDistance(unplanned.distanceKm, units)} · ↑ ${formatElevation(unplanned.ascentM, units)} · ${formatHours(unplanned.estimatedHours)} of walking`}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -152,6 +173,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
+  unplanned: { borderStyle: 'dashed', borderWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   dayNum: {
     ...typography.caption,

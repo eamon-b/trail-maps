@@ -24,6 +24,7 @@
 import type { PlanDirection } from '@lib/plan-direction';
 import type { Pace, PlanDocument, PlanState, PlanWaypoint } from '@lib/plan-types';
 import { isPace } from '@lib/plan-types';
+import { isSuggestPrefs, type SuggestPrefs } from '@lib/plan-suggest';
 import {
   assertPlanDocumentWithinLimits,
   isPlanDocument,
@@ -281,6 +282,12 @@ export interface PlanUiPrefs {
    */
   pace?: Pace;
   dailyHours?: number;
+  /**
+   * The "Plan the next few days" inputs (`@lib/plan-suggest`). Absent until
+   * the hiker changes one; the section starts from values derived from the
+   * pace and hours above. Per browser, like pace and hours.
+   */
+  suggest?: SuggestPrefs;
 }
 
 const DEFAULT_UI_PREFS: PlanUiPrefs = { showAllWaypoints: false };
@@ -311,6 +318,7 @@ export function loadPlanUiPrefs(trailId: string): PlanUiPrefs {
     if (pace !== undefined) prefs.pace = pace;
     const hours = usableHours(obj.dailyHours);
     if (hours !== undefined) prefs.dailyHours = hours;
+    if (isSuggestPrefs(obj.suggest)) prefs.suggest = obj.suggest;
     return prefs;
   } catch {
     return { ...DEFAULT_UI_PREFS };

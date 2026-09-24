@@ -25,7 +25,7 @@
  * in step with the guide's — flipping direction never moves a stop.
  *
  * The section steppers, pace and daily hours stay. Pace and hours drive the
- * Naismith estimates on the day cards and the "Suggest stops" split; the
+ * Naismith estimates on the day cards and the Next days suggestions; the
  * section scopes the whole screen, including the resupply and water cards,
  * which are unchanged apart from taking the realized km/day of the *planned*
  * split rather than a generated one.
@@ -38,6 +38,7 @@ import { formatDistance } from '@lib/format-distance';
 import { resupplySummaryText } from '@lib/resupply-display';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { getDirectionLabel, KM_EPSILON } from '@lib/plan-direction';
+import { finalDayMaxHours } from '@lib/plan-suggest';
 import type { PlanTrail } from '@lib/day-calculator';
 import { isSearchable, type SuggestDaysResult, type SuggestedPlan } from '@lib/day-suggest';
 import type { PlanDocument, SectionConfig } from '@lib/plan-types';
@@ -62,7 +63,6 @@ import {
   computePlanExtras,
   overnightWaypoints,
   PACE_KMH,
-  planFloorHours,
   type PlanDay,
   type PlanExtras,
 } from '../../../src/features/plan/plan-adapters';
@@ -215,7 +215,7 @@ export default function PlanScreen() {
   // The last stop onwards is a day only once it fits in one — the hiker's own
   // hours plus the same final-day allowance the splitter always granted.
   const { days: plannedDays, unplanned } = useMemo(
-    () => splitUnplannedTail(days, prefs.dailyHours + planFloorHours(prefs.dailyHours)),
+    () => splitUnplannedTail(days, finalDayMaxHours(prefs.dailyHours)),
     [days, prefs.dailyHours],
   ) as { days: PlanDay[]; unplanned: PlanDay | null };
   const plannedKm = plannedDays.reduce((sum, day) => sum + (day.endKm - day.startKm), 0);
@@ -399,6 +399,10 @@ export default function PlanScreen() {
               onPrefs={(next) => setSuggestPrefs(trailId, next)}
               start={start}
               hasFix={currentKm !== null}
+              hasLastStop={
+                suggestionStart(displayPlan, sectionConfig, trail.track.totalDistance, null, true)
+                  .kind === 'stop'
+              }
               onUseLocation={position.isTracking ? undefined : () => void position.start()}
               preferLastStop={preferLastStop}
               onPreferLastStop={setPreferLastStop}

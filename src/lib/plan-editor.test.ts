@@ -8,6 +8,7 @@ import {
   newPlan,
   overnightCandidates,
   planDocumentBytes,
+  replaceStopsInRange,
   servicesAtStop,
   setDirection,
   setNights,
@@ -16,6 +17,7 @@ import {
   setStartDate,
   setStopBooked,
   setStopNote,
+  splitUnplannedTail,
   toggleStop,
 } from './plan-editor';
 import { toNoboKm } from './plan-direction';
@@ -690,5 +692,73 @@ describe('thrown messages', () => {
     expect(() => setStartDate(emptyPlan(), '1/10/2026', opts)).toThrow(
       'plan-editor: startDate must be YYYY-MM-DD, got "1/10/2026"',
     );
+  });
+});
+
+describe('replaceStopsInRange', () => {
+  const a = { id: 'w_a', km: 20, name: 'Camp A' };
+  const b = { id: 'w_b', km: 50, name: 'Camp B' };
+  const c = { id: 'w_c', km: 70, name: 'Camp C' };
+  const d = { id: 'w_d', km: 90, name: 'Camp D' };
+
+  function planWith(...targets: { id: string; km: number; name: string }[]): PlanDocument {
+    return targets.reduce((p, t) => toggleStop(p, t, opts), newPlan('t', 'Plan', 'NOBO', opts));
+  }
+
+  it('replaces only the stops strictly inside the window', () => {
+    const plan = planWith(a, b, d);
+    const next = replaceStopsInRange(plan, { fromKm: 20, toKm: 80 }, [c], opts);
+    expect(next.stops.map(s => s.waypointId)).toEqual(['w_a', 'w_c', 'w_d']);
+  });
+
+  it('keeps a surviving stop as it stands, notes and nights included', () => {
+    let plan = planWith(a, b);
+    plan = setNights(plan, { waypointId: 'w_b', km: 50 }, 2, opts);
+    plan = setStopNote(plan, { waypointId: 'w_b', km: 50 }, 'resupply', opts);
+    const next = replaceStopsInRange(plan, { fromKm: 20, toKm: 100 }, [b, c], opts);
+    const kept = findStop(next, { waypointId: 'w_b', km: 50 });
+    expect(kept?.nights).toBe(2);
+    expect(kept?.note).toBe('resupply');
+  });
+
+  it('returns the same document when nothing changes', () => {
+    const plan = planWith(a, b);
+    expect(replaceStopsInRange(plan, { fromKm: 0, toKm: 60 }, [a, b], opts)).toBe(plan);
+  });
+
+  it('accepts a reversed (SOBO) window', () => {
+    const plan = planWith(a, b, c);
+    const next = replaceStopsInRange(plan, { fromKm: 80, toKm: 30 }, [], opts);
+    expect(next.stops.map(s => s.waypointId)).toEqual(['w_a']);
+  });
+
+  it('rejects a non-finite target km', () => {
+    expect(() =>
+      replaceStopsInRange(newPlan('t', 'P', 'NOBO', opts), { fromKm: 0, toKm: 10 }, [{ km: NaN, name: 'x' }], opts),
+    ).toThrow(/plan-editor:/);
+  });
+});
+
+describe('splitUnplannedTail', () => {
+  it('leaves a plan whose last day fits alone', () => {
+    const trail = flatTrail();
+    const days = computePlanDays(trail, toggleStop(newPlan('t', 'P', 'NOBO', opts), { id: 'w_b', km: 50, name: 'Camp B' }, opts));
+    // 50 km flat at 4 km/h = 12.5 h
+    expect(splitUnplannedTail(days, 13)).toEqual({ days, unplanned: null });
+  });
+
+  it('turns an over-long last day into the unplanned rest of the trail', () => {
+    const trail = flatTrail();
+    const plan = toggleStop(newPlan('t', 'P', 'NOBO', opts), { id: 'w_a', km: 20, name: 'Camp A' }, opts);
+    const days = computePlanDays(trail, plan);
+    const split = splitUnplannedTail(days, 10);
+    expect(split.days).toHaveLength(1);
+    expect(split.unplanned).toMatchObject({ startKm: 20, endKm: 100, dayNumber: 2 });
+  });
+
+  it('treats an empty plan over a long trail as wholly unplanned', () => {
+    const split = splitUnplannedTail(computePlanDays(flatTrail(), newPlan('t', 'P', 'NOBO', opts)), 10);
+    expect(split.days).toEqual([]);
+    expect(split.unplanned?.distanceKm).toBe(100);
   });
 });

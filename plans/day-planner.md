@@ -117,9 +117,31 @@ by anyone you send a link to.
 - **[decided] v1 scope includes** start date and rest days (nights per stop), services at each
   stop from OSM POIs, and a note plus booked flag per stop. **One plan per trail per user**
   (multiple named plans were offered and not chosen).
-- **[decided] Suggest, never generate.** The phone's hours-and-pace splitter survives only as
-  an explicit "Suggest stops" button that fills an *empty* stop list you then edit. It never
-  runs on its own, never on open, never after an edit.
+- **[decided] Suggest, never generate.** Nothing writes stops into the plan on its own, never
+  on open, never after an edit. *Revised by issue 81:* the one-shot "Suggest stops" button (empty
+  list only) is replaced by the phone's **Next days** card. From the GPS km (else the last stop,
+  else the section start) it offers the N best alternative plans for the next K nights (default 3
+  and 3). The hiker picks one ("Use this plan"). Applying it replaces only the stops strictly
+  inside that plan's window; stops before it and beyond it are untouched, and a stop it keeps
+  keeps its nights, note and booked flag (`replaceStopsInRange`).
+  - Two modes feed one engine (`src/lib/day-suggest.ts`): *Hours & pace* (days aimed at the
+    daily hours, ± the old splitter's snap window) and *Distance & climb* (km, ascent and hours
+    ranges, each switchable; at least one maximum required).
+  - Plans are ranked by mean squared, range-scaled deviation from each target. The search is a
+    k-best dynamic programme over the Stops list's places (camps, huts, towns), with no wild
+    camps.
+  - Near-duplicates (every night within 1 km) only fill a slot when nothing distinct is left.
+- **[decided] The tail after the last stop is "not planned yet"** (issue 81), not one huge final
+  day. It becomes the final day again once it fits in the hiker's daily hours plus the final-day
+  allowance (`splitUnplannedTail`). The summary counts planned days and km only. Both planners do
+  this, and so do both shared-plan views.
+- **[decided] The web gets the same Next days section** (issue 81). It sits at the top of the Days tab
+  (`plan-next-days.ts`), over the same `@lib/plan-suggest` inputs, modes and apply rule. The
+  start is the last stop or trail start, or the browser's location on request. The best option
+  is previewed on the map, and any option can be.
+- **[decided] The Plan screen opens at the hiker** (issue 81): with an on-trail GPS fix, the
+  Stops list shows a "You are here" divider and the screen scrolls to it once per visit. GPS is
+  never started by the screen itself; the card offers "Use my location".
 - **[decided] Rest days are nights at a stop.** "Stay two nights in Salida" is `nights: 2` on
   that stop; there are no free-floating zero-day entries.
 - **[decided] Services radius is 1 km** along the trail either side of the stop, with no extra
@@ -394,10 +416,10 @@ Files: `mobile/app/guide/[trailId]/plan.tsx`, `mobile/src/features/plan/*`, `db/
   planned for the resupply list, an "All waypoints" switch, and a services strip from
   `servicesAtStop` (icons from `features/map` POI category set). Tapping toggles through the
   store. A ticked row expands to nights stepper, note, booked.
-- Inputs card: daily hours and pace stay (they drive ETA text); the generator becomes a
-  "Suggest stops" button, enabled only while the stop list is empty, that fills it once. Nothing
-  ever regenerates the list on its own.
-- Summary strip: days, total, average per walking day.
+- Inputs card: daily hours and pace stay (they drive ETA text and the Hours & pace mode).
+- Next days card (issue 81, see the decision above): the start, days and options steppers, the
+  mode switch, range rows, and the ranked alternatives, each with "Use this plan".
+- Summary strip: planned days, planned distance, average per planned day, and km not yet planned.
 
 ### Waypoint detail
 

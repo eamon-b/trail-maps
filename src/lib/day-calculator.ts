@@ -160,15 +160,31 @@ export function hoursBetweenIndexed(
   toKm: number,
   baseKmh = 4,
 ): number {
+  if (index.points.length === 0) return 0;
+  const { gain, loss } = climbBetweenIndexed(index, fromKm, toKm);
+  return estimateHikingHoursRaw(Math.abs(toKm - fromKm), gain, loss, baseKmh);
+}
+
+/**
+ * Ascent and descent over [fromKm, toKm] using the prefix index, in whole
+ * metres — the same figures `calculateElevationBetween` walks the track for,
+ * in O(log n). Zero for an empty index.
+ */
+export function climbBetweenIndexed(
+  index: TimeIndex,
+  fromKm: number,
+  toKm: number,
+): { gain: number; loss: number } {
   const { points, ascent, descent } = index;
-  if (points.length === 0) return 0;
+  if (points.length === 0) return { gain: 0, loss: 0 };
   const startIdx = findNearestByDistance(points, fromKm);
   const endIdx = findNearestByDistance(points, toKm);
   const lo = Math.min(startIdx, endIdx);
   const hi = Math.max(startIdx, endIdx);
-  const gain = Math.round(ascent[hi] - ascent[lo]);
-  const loss = Math.round(descent[hi] - descent[lo]);
-  return estimateHikingHoursRaw(Math.abs(toKm - fromKm), gain, loss, baseKmh);
+  return {
+    gain: Math.round(ascent[hi] - ascent[lo]),
+    loss: Math.round(descent[hi] - descent[lo]),
+  };
 }
 
 /**

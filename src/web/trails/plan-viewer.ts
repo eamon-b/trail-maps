@@ -29,6 +29,7 @@ import {
   setStartDate as editStartDate,
   setStopBooked as editStopBooked,
   setStopNote as editStopNote,
+  splitUnplannedTail,
   toggleStop as editToggleStop,
   findStop,
   isStopSelected,
@@ -69,6 +70,8 @@ import {
   type PlanUiPrefs,
 } from './plan-state';
 import { initPlanSync, type PlanSyncController, type PlanSyncHost } from './plan-sync';
+import { finalDayMaxHours } from '@lib/plan-suggest';
+import { initNextDays, type NextDaysController, type NextDaysPlan, type NextDaysTrail } from './plan-next-days';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
 // `title="…"` and `class="…"`, and an imported GPX supplies both.
@@ -132,6 +135,17 @@ let reversedTrail: Trail | null = null;
  */
 let plan: PlanDocument;
 let currentDays: ComputedDay[] = [];
+/**
+ * The stretch after the last stop when it is too long to be a day — "not
+ * planned yet" rather than one enormous final day (`splitUnplannedTail`).
+ */
+let unplannedDay: ComputedDay | null = null;
+/** The "Plan the next few days" section; null on a read-only page. */
+let nextDays: NextDaysController | null = null;
+/** A suggested plan drawn on the map while the hiker compares options. */
+let previewLayer: L.LayerGroup | null = null;
+/** Scroll the Stops list to the "You are here" divider once per location. */
+let scrollStopsToHere = false;
 let selectedDayIndex: number | null = null;
 type PlanTab = 'days' | 'stops' | 'resupply';
 let activeTab: PlanTab = 'days';
@@ -588,6 +602,7 @@ function initMap(): void {
   L.control.scale({ metric: true, imperial: false }).addTo(map);
 
   stopMarkers = L.layerGroup().addTo(map);
+  previewLayer = L.layerGroup().addTo(map);
 
   // Base trail polyline (always visible, muted). One line per walkable stretch,
   // so a route break is not drawn as trail; each crossing gets the trail page's
@@ -956,8 +971,20 @@ function renderDayList(): void {
     ? ''
     : `<p class="days-empty">Distance-only estimate — this trail has no elevation data, so climbing time isn't included.</p>`;
 
-  if (days.length === 1 && plan.stops.length === 0) {
-    container.innerHTML = `${elevationNote}<p class="days-empty">Add stops in the Stops tab to split the trail into days.</p>`;
+  const unplanned = unplannedDay
+    ? `<div class="day-card is-unplanned">
+        <div class="day-card-header"><span class="day-card-number">Not planned yet</span></div>
+        <div class="day-card-route">${escapeHtml(unplannedDay.startName)} → ${escapeHtml(unplannedDay.endName)}</div>
+        <div class="day-card-stats">
+          <span>${unplannedDay.distanceKm.toFixed(1)} km</span>
+          <span>+${unplannedDay.ascentM} m</span>
+          <span>~${unplannedDay.estimatedHours}h of walking</span>
+        </div>
+      </div>`
+    : '';
+
+  if (days.length === 0 || (days.length === 1 && plan.stops.length === 0)) {
+    container.innerHTML = `${elevationNote}<p class="days-empty">Tick stops in the Stops tab, or suggest the next few days above.</p>${unplanned}`;
     renderResupplySection();
     renderWaterCarrySection();
     return;
@@ -999,9 +1026,9 @@ function renderDayList(): void {
         ${restLine}
         ${stopFooterHtml(stopAtActiveKm(day.endKm))}
       </div>`;
-  }).join('');
+  }).join('') + unplanned;
 
-  container.querySelectorAll('.day-card').forEach(card => {
+  container.querySelectorAll('.day-card[data-day-index]').forEach(card => {
     card.addEventListener('click', () => {
       const idx = Number((card as HTMLElement).dataset.dayIndex);
       selectDay(selectedDayIndex === idx ? null : idx);
@@ -1143,6 +1170,17 @@ function renderStopList(): void {
     return;
   }
 
+  // "You are here", once the Next days section has located the hiker: before
+  // the first row at or past them, or after the last.
+  const hereKm = nextDays?.hereKm() ?? null;
+  const hereIndex = hereKm === null
+    ? -1
+    : (() => {
+      const idx = waypoints.findIndex(wp => (wp.totalDistance ?? 0) >= hereKm);
+      return idx === -1 ? waypoints.length : idx;
+    })();
+  const hereDivider = '<div class="stops-here" id="stops-here">You are here</div>';
+
   container.innerHTML = waypoints.map((wp, i) => {
     const km = wp.totalDistance ?? 0;
     const stop = findStop(plan, stopKeyFor({ id: wp.id, km }));
@@ -1156,7 +1194,7 @@ function renderStopList(): void {
     const planned = isPlannedResupply(wp);
     const idAttr = wp.id ? ` data-id="${escapeHtml(wp.id)}"` : '';
     const rowClass = `stop-row${selected ? ' is-stop' : ''}${planned ? ' planned-resupply' : ''}`;
-    return `<div class="stop-item${selected ? ' is-stop' : ''}" data-km="${km}"${idAttr}>
+    return `${i === hereIndex ? hereDivider : ''}<div class="stop-item${selected ? ' is-stop' : ''}" data-km="${km}"${idAttr}>
       <div class="${rowClass}" data-km="${km}"${idAttr}>
         <div class="stop-line">
           <span class="stop-check">${checkmark}</span>
@@ -1170,7 +1208,15 @@ function renderStopList(): void {
       </div>
       ${stop ? stopEditorHtml(stop) : ''}
     </div>`;
-  }).join('');
+  }).join('') + (hereIndex === waypoints.length ? hereDivider : '');
+
+  if (scrollStopsToHere) {
+    const divider = document.getElementById('stops-here');
+    if (divider) {
+      scrollStopsToHere = false;
+      divider.scrollIntoView?.({ block: 'center' });
+    }
+  }
 }
 
 /**
@@ -1712,12 +1758,20 @@ function renderAll(): void {
   // computePlanDays, not computeDays: it converts the document's NOBO stops
   // into the active km of the trail it is handed and pushes each day's date
   // along by the rest days taken before it.
-  currentDays = computePlanDays(activeTrail(), plan, { baseKmh: baseKmh() });
+  // The stretch after the last stop is a day only once it fits in one at the
+  // hiker's own hours; until then it is the part of the trail not planned yet.
+  const split = splitUnplannedTail(
+    computePlanDays(activeTrail(), plan, { baseKmh: baseKmh() }),
+    finalDayMaxHours(dailyHours()),
+  );
+  currentDays = split.days;
+  unplannedDay = split.unplanned;
   // Clamp selectedDayIndex in case stops were removed
   if (selectedDayIndex !== null && selectedDayIndex >= currentDays.length) {
     selectedDayIndex = null;
   }
   renderDayList();
+  nextDays?.render();
   if (activeTab === 'stops') renderStopList();
   if (activeTab === 'resupply') renderResupplyList();
 
@@ -1841,6 +1895,8 @@ function refreshHeaderInputs(): void {
  * editor, so it goes entirely rather than sitting there inert.
  */
 function applyReadOnlyChrome(): void {
+  // Suggesting days is editing; a shared plan is read-only.
+  document.getElementById('next-days-section')?.remove();
   document.querySelector('.tab-btn[data-tab="stops"]')?.setAttribute('hidden', '');
   document.getElementById('tab-stops')?.setAttribute('hidden', '');
   document.getElementById('plan-shell')?.classList.add('is-readonly');
@@ -1985,6 +2041,66 @@ function planSyncHost(trailId: string): PlanSyncHost {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Plan the next few days
+// ---------------------------------------------------------------------------
+
+/** What `plan-next-days.ts` reads and does through the viewer. */
+function nextDaysHost() {
+  return {
+    trail: () => activeTrail() as unknown as NextDaysTrail,
+    plan: () => plan,
+    baseKmh,
+    dailyHours,
+    prefs: () => uiPrefs.suggest,
+    savePrefs: (suggest: NonNullable<PlanUiPrefs['suggest']>) => setUiPrefs({ suggest }),
+    edit: (edit: () => PlanDocument) => tryEdit(edit),
+    preview: drawSuggestionPreview,
+    onHere: (km: number | null) => {
+      if (km === null) return;
+      // Show where that is among the places to stop, on the Stops tab.
+      scrollStopsToHere = true;
+      if (activeTab === 'stops') renderStopList();
+    },
+  };
+}
+
+/**
+ * Draw one suggested plan over the route: each day a dashed line in the day
+ * colours, each night a numbered flag, and the map fitted to it. Cleared on
+ * apply, on a new search, and whenever the inputs make the result stale.
+ */
+function drawSuggestionPreview(suggested: NextDaysPlan | null): void {
+  if (!map || !previewLayer) return;
+  previewLayer.clearLayers();
+  if (!suggested) return;
+  const { points, breaks } = activeTrail().track;
+  const breakStarts = routeBreakStarts(breaks, 'points');
+  const colors = getDayColors(suggested.days.length);
+  const bounds: Array<[number, number]> = [];
+  suggested.days.forEach((day, i) => {
+    const startIdx = findNearestByDistance(points, day.startKm);
+    const endIdx = findNearestByDistance(points, day.endKm);
+    const latLngs = sliceAcrossRouteBreaks(points, startIdx, endIdx, breakStarts)
+      .filter(piece => piece.length >= 2)
+      .map(piece => piece.map(p => [p.lat, p.lon] as [number, number]));
+    latLngs.forEach(piece => bounds.push(...piece));
+    L.polyline(latLngs, { color: colors[i], weight: 5, opacity: 0.9, dashArray: '8 6' }).addTo(previewLayer!);
+    const end = day.end?.waypoint;
+    if (end && end.lat !== undefined && end.lon !== undefined) {
+      L.marker([end.lat, end.lon], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div class="suggest-flag-icon" title="${escapeHtml(end.name ?? '')}">${i + 1}</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      }).addTo(previewLayer!);
+    }
+  });
+  if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
+}
+
 /** How this boot of the planner differs from the ordinary editable one. */
 export interface PlanViewerOptions {
   /**
@@ -2062,6 +2178,8 @@ export async function initPlanViewer(
   initResupplyControls();
   initCollapsibles();
   setupElevationHover();
+  const nextDaysBody = document.getElementById('next-days-body');
+  nextDays = readOnly || !nextDaysBody ? null : initNextDays(nextDaysBody, nextDaysHost());
 
   renderAll();
 

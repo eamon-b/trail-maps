@@ -10,6 +10,7 @@ import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { DaySplitList } from '../DaySplitList';
 import { planFloorHours, planWindowHours } from '../plan-adapters';
 import type { PlanDay } from '../plan-adapters';
+import type { ComputedDay } from '@lib/plan-types';
 
 jest.mock('../../../theme', () => ({
   useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
@@ -45,10 +46,16 @@ function day(overrides: Partial<PlanDay>): PlanDay {
   };
 }
 
-function render(days: PlanDay[], targetHours: number): ReactTestRenderer {
+function render(
+  days: PlanDay[],
+  targetHours: number,
+  unplanned?: ComputedDay | null,
+): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
-    tree = TestRenderer.create(<DaySplitList days={days} targetHours={targetHours} units="km" />);
+    tree = TestRenderer.create(
+      <DaySplitList days={days} unplanned={unplanned} targetHours={targetHours} units="km" />,
+    );
   });
   return tree;
 }
@@ -115,5 +122,53 @@ describe('DaySplitList', () => {
   it('renders the empty state for no days', () => {
     const tree = render([], 8);
     expect(allText(tree)).toContain('Choose a section');
+  });
+
+  describe('the unplanned tail', () => {
+    function tail(): ComputedDay {
+      return day({
+        dayNumber: 3,
+        startName: 'Serpentine Chalet',
+        endName: 'Redbank Gorge',
+        startKm: 60,
+        endKm: 145,
+        distanceKm: 85,
+        ascentM: 2100,
+        estimatedHours: 29,
+      });
+    }
+
+    function unplannedCards(tree: ReactTestRenderer) {
+      return tree.root.findAll(
+        (n) =>
+          typeof (n as unknown as { type?: unknown }).type === 'string' &&
+          n.props.accessibilityLabel === 'Not planned yet',
+      );
+    }
+
+    it('renders a muted card after the planned days', () => {
+      const tree = render([day({})], 8, tail());
+      expect(unplannedCards(tree)).toHaveLength(1);
+      const text = allText(tree);
+      expect(text).toContain('Day 1');
+      expect(text).toContain('Not planned yet: Serpentine Chalet → Redbank Gorge');
+      expect(text).toContain('85.0 km');
+      expect(text).toContain('29.0 h of walking');
+      // Not a day card, so no day number and no over-target hint for it.
+      expect(text).not.toContain('Day 3');
+      expect(text).not.toContain('over target');
+    });
+
+    it('shows the card instead of the empty state when no day is planned', () => {
+      const tree = render([], 8, tail());
+      expect(unplannedCards(tree)).toHaveLength(1);
+      expect(allText(tree)).not.toContain('Choose a section');
+    });
+
+    it('is absent by default and for null', () => {
+      expect(unplannedCards(render([day({})], 8))).toHaveLength(0);
+      expect(unplannedCards(render([day({})], 8, null))).toHaveLength(0);
+      expect(allText(render([], 8, null))).toContain('Choose a section');
+    });
   });
 });

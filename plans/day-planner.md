@@ -133,8 +133,12 @@ by anyone you send a link to.
   - Near-duplicates (every night within 1 km) only fill a slot when nothing distinct is left.
 - **[decided] The tail after the last stop is "not planned yet"** (issue 81), not one huge final
   day. It becomes the final day again once it fits in the hiker's daily hours plus the final-day
-  allowance (`splitUnplannedTail`). The summary counts planned days and km only. Phone only for
-  now: the web still runs its last day to the trail end.
+  allowance (`splitUnplannedTail`). The summary counts planned days and km only. Both planners do
+  this, and so do both shared-plan views.
+- **[decided] The web gets the same Next days section** (issue 81). It sits at the top of the Days tab
+  (`plan-next-days.ts`), over the same `@lib/plan-suggest` inputs, modes and apply rule. The
+  start is the last stop or trail start, or the browser's location on request. The best option
+  is previewed on the map, and any option can be.
 - **[decided] The Plan screen opens at the hiker** (issue 81): with an on-trail GPS fix, the
   Stops list shows a "You are here" divider and the screen scrolls to it once per visit. GPS is
   never started by the screen itself; the card offers "Use my location".

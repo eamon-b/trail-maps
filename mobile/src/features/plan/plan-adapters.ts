@@ -53,6 +53,7 @@ import {
 } from '@lib/plan-types';
 import type { TrailJson } from '../../services/trail-assets';
 import { overnightCandidates } from '@lib/plan-editor';
+import { planFloorHours, planWindowHours } from '@lib/plan-suggest';
 import { routeBreakStarts } from '@lib/route-breaks';
 
 /**
@@ -199,26 +200,12 @@ export function sectionFromWaypoints(start: WaypointOption, end: WaypointOption)
 }
 
 /**
- * Camp-snap time window (± hours) around a day's naive boundary, as a function
- * of the daily hours target: `clamp(0.35 · targetHours, 0.75, 2.5)`. Exported so
- * the plan screen can render the over-target hint against the exact same bound
- * the splitter snaps within — one formula, one source of truth (Decision 8).
+ * The camp-snap window (± hours around the target) and the final-day
+ * allowance. They live in `@lib/plan-suggest` now, because the web plan page
+ * and the suggestion search judge days against the same bands; re-exported so
+ * the splitter, the over-target hint and their tests keep one import.
  */
-export function planWindowHours(targetHours: number): number {
-  return Math.min(2.5, Math.max(0.75, 0.35 * targetHours));
-}
-
-/**
- * The splitter's final-day tolerance: the remainder is absorbed into the last
- * day while it stays within `targetHours + planFloorHours(targetHours)`, and no
- * final day is left shorter than this. Exported for the same reason as
- * `planWindowHours` — the over-target hint must judge the final day against the
- * allowance the splitter actually grants it (which exceeds the snap window once
- * targetHours > 10).
- */
-export function planFloorHours(targetHours: number): number {
-  return Math.max(0.75, 0.25 * targetHours);
-}
+export { planFloorHours, planWindowHours };
 
 /**
  * Generate the interior overnight-stop boundaries for a section, greedily
@@ -373,7 +360,12 @@ export function computePlan(trail: TrailJson, inputs: PlanInputs): PlanResult {
 /** The parts of a plan that do not come from WHERE the day boundaries fall. */
 export type PlanExtras = Pick<
   PlanResult,
-  'resupplyGroups' | 'resupplyStops' | 'resupplyLegs' | 'resupplySummary' | 'water' | 'topWaterCarries'
+  | 'resupplyGroups'
+  | 'resupplyStops'
+  | 'resupplyLegs'
+  | 'resupplySummary'
+  | 'water'
+  | 'topWaterCarries'
 >;
 
 /** What the resupply legs need beyond the section: the hiker's pace, hours, days and ticks. */

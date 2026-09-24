@@ -897,3 +897,93 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   #plan-shell { display: none; }
   #small-screen-msg { display: block; }
 }
+
+/* ---- Plan the next few days (plan-next-days.ts) ---- */
+#next-days-section { border-top: none; border-bottom: 1px solid var(--border-color); }
+/* Its own scroll, so a long list of options never pushes the day cards away. */
+#next-days-body.open { max-height: 45vh; overflow-y: auto; }
+.next-days { display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8rem; }
+.nd-from { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.nd-label { color: var(--text-secondary); }
+.nd-from-name { font-weight: 600; flex: 1; min-width: 0; }
+.nd-row { display: flex; gap: 0.75rem; }
+.nd-field { display: flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); }
+.nd-input {
+  width: 4.5rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text);
+  font: inherit;
+}
+.nd-input:disabled { opacity: 0.45; }
+.nd-modes { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.nd-ranges { display: flex; flex-direction: column; gap: 0.35rem; }
+.nd-range { display: flex; align-items: center; gap: 0.35rem; }
+.nd-range-on { width: 5.5rem; }
+.nd-to, .nd-unit { color: var(--text-secondary); }
+.nd-hint { margin: 0; color: var(--text-secondary); font-size: 0.75rem; }
+.nd-warn { color: var(--tint-warn-text); }
+.nd-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nd-link:disabled { color: var(--text-secondary); cursor: default; }
+.nd-suggest { align-self: flex-start; }
+.nd-option {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.nd-option.is-previewed { border-color: var(--select); background: var(--tint-accent); }
+.nd-option-head { font-weight: 700; }
+.nd-day { display: flex; justify-content: space-between; gap: 0.5rem; }
+.nd-day-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nd-day-stats { color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nd-option-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 0.2rem; }
+.suggest-flag-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--select);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* The rest of the trail after the last stop, while it is too long to be a day. */
+.day-card.is-unplanned { border-style: dashed; cursor: default; opacity: 0.8; }
+.day-card.is-unplanned:hover { background: none; }
+
+/* Stops tab: where the hiker is, once located. */
+.stops-here {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0;
+  color: var(--accent-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.stops-here::before, .stops-here::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--accent-color);
+}

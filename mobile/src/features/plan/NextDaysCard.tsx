@@ -45,8 +45,13 @@ export interface NextDaysCardProps {
   prefs: SuggestPrefs;
   onPrefs: (prefs: SuggestPrefs) => void;
   start: SuggestStart;
-  /** Whether a GPS fix could be used as the start (shows the Here/Last stop switch). */
+  /** Whether a GPS fix could be used as the start. */
   hasFix: boolean;
+  /**
+   * Whether the plan has a stop to start from instead. The Here/Last stop
+   * switch shows only when both exist, since otherwise there is no choice.
+   */
+  hasLastStop: boolean;
   /** GPS not started yet: offer to start it. */
   onUseLocation?: () => void;
   preferLastStop: boolean;
@@ -80,31 +85,31 @@ export function NextDaysCard(props: NextDaysCardProps) {
             {`${startLabel(start)} · ${formatDistance(start.km, units)}`}
           </Text>
         </View>
-        {props.hasFix ? (
-          <Pressable
-            onPress={() => props.onPreferLastStop(!props.preferLastStop)}
-            accessibilityRole="button"
-            accessibilityLabel={
-              props.preferLastStop ? 'Start from my location' : 'Start from my last stop'
-            }
-            hitSlop={spacing.sm}
-          >
-            <Text style={[styles.link, { color: colors.accent }]}>
-              {props.preferLastStop ? 'From here' : 'From last stop'}
-            </Text>
-          </Pressable>
-        ) : (
-          props.onUseLocation && (
-            <Pressable
-              onPress={props.onUseLocation}
-              accessibilityRole="button"
-              accessibilityLabel="Use my location"
-              hitSlop={spacing.sm}
-            >
-              <Text style={[styles.link, { color: colors.accent }]}>Use my location</Text>
-            </Pressable>
-          )
-        )}
+        {props.hasFix
+          ? props.hasLastStop && (
+              <Pressable
+                onPress={() => props.onPreferLastStop(!props.preferLastStop)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  props.preferLastStop ? 'Start from my location' : 'Start from my last stop'
+                }
+                hitSlop={spacing.sm}
+              >
+                <Text style={[styles.link, { color: colors.accent }]}>
+                  {props.preferLastStop ? 'From here' : 'From last stop'}
+                </Text>
+              </Pressable>
+            )
+          : props.onUseLocation && (
+              <Pressable
+                onPress={props.onUseLocation}
+                accessibilityRole="button"
+                accessibilityLabel="Use my location"
+                hitSlop={spacing.sm}
+              >
+                <Text style={[styles.link, { color: colors.accent }]}>Use my location</Text>
+              </Pressable>
+            )}
       </View>
 
       <Stepper

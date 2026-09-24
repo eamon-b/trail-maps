@@ -18,9 +18,18 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { computePlanDays } from '@lib/plan-editor';
+import { computePlanDays, splitUnplannedTail } from '@lib/plan-editor';
+import { finalDayMaxHours } from '@lib/plan-suggest';
 import type { PlanTrail } from '@lib/day-calculator';
 import type { PlanDocument } from '@lib/plan-types';
 import { useTheme } from '../../src/theme';
@@ -33,11 +42,12 @@ import { getTrailIndexEntry, getTrailJson, type TrailJson } from '../../src/serv
 import { resolveGuideTrail } from '../../src/features/guide/guide-trail';
 import { useSettingsStore } from '../../src/state/settings-store';
 import { usePlansStore } from '../../src/state/plans-store';
-import { DEFAULT_PREFS } from '../../src/features/plan/plan-inputs-store';
+import { selectPrefs, usePlanInputsStore } from '../../src/features/plan/plan-inputs-store';
 import { PACE_KMH, type PlanDay } from '../../src/features/plan/plan-adapters';
 import { DaySplitList } from '../../src/features/plan/DaySplitList';
 
-export const LOAD_FAILED_MESSAGE = "Couldn't open that shared plan. The link may have been revoked.";
+export const LOAD_FAILED_MESSAGE =
+  "Couldn't open that shared plan. The link may have been revoked.";
 export const SAVE_FAILED_MESSAGE = "Couldn't save the plan. Please try again.";
 export const UNKNOWN_TRAIL_MESSAGE = 'This plan is for a trail this app does not have.';
 export const UNCONFIGURED_MESSAGE =
@@ -100,17 +110,30 @@ export default function SharedPlanScreen() {
     return resolveGuideTrail(raw, shared.document.direction === 'SOBO' ? 'reversed' : 'default');
   }, [shared]);
 
-  const days = useMemo<PlanDay[]>(() => {
-    if (!shared || !trail) return [];
+  // Estimated at the reader's own pace and hours for this trail (defaults
+  // until they set some): the estimates are for whoever is reading the plan.
+  const prefs = usePlanInputsStore(selectPrefs(sharedTrailId ?? ''));
+
+  // Like the Plan screen, the stretch after the last stop is "not planned
+  // yet" unless it fits in a day — a plan shared a few days in is not one
+  // enormous final day.
+  const { days, unplanned } = useMemo<{ days: PlanDay[]; unplanned: PlanDay | null }>(() => {
+    if (!shared || !trail) return { days: [], unplanned: null };
     const computed = computePlanDays(trail as unknown as PlanTrail, shared.document, {
-      baseKmh: PACE_KMH[DEFAULT_PREFS.pace],
+      baseKmh: PACE_KMH[prefs.pace],
     });
-    return computed.map((day, i) => ({
+    const split = splitUnplannedTail(computed, finalDayMaxHours(prefs.dailyHours));
+    const total = trail.track.totalDistance;
+    const toPlanDay = (day: (typeof computed)[number]): PlanDay => ({
       ...day,
-      endKind: i === computed.length - 1 ? ('finish' as const) : ('stop' as const),
+      endKind: day.endKm >= total - 0.01 ? 'finish' : 'stop',
       snappedToCamp: false,
-    }));
-  }, [shared, trail]);
+    });
+    return {
+      days: split.days.map(toPlanDay),
+      unplanned: split.unplanned ? toPlanDay(split.unplanned) : null,
+    };
+  }, [shared, trail, prefs.pace, prefs.dailyHours]);
 
   const save = useCallback(
     async (doc: PlanDocument, trailId: string) => {
@@ -211,7 +234,12 @@ export default function SharedPlanScreen() {
           </Text>
         </View>
 
-        <DaySplitList days={days} targetHours={DEFAULT_PREFS.dailyHours} units={units} />
+        <DaySplitList
+          days={days}
+          unplanned={unplanned}
+          targetHours={prefs.dailyHours}
+          units={units}
+        />
 
         <Pressable
           onPress={() => void onSave()}
@@ -219,11 +247,7 @@ export default function SharedPlanScreen() {
           accessibilityRole="button"
           accessibilityLabel="Save as my plan"
           accessibilityState={{ disabled: saving }}
-          style={[
-            styles.action,
-            { backgroundColor: colors.accent },
-            saving && styles.disabled,
-          ]}
+          style={[styles.action, { backgroundColor: colors.accent }, saving && styles.disabled]}
         >
           {saving ? (
             <ActivityIndicator color={colors.accentText} />

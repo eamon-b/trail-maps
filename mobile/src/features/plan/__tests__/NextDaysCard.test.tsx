@@ -86,7 +86,14 @@ function prefs(overrides: Partial<SuggestPrefs> = {}): SuggestPrefs {
 function candidate(name: string, km: number): SearchCandidate {
   return {
     km,
-    candidate: { key: `w_${name}`, waypointId: `w_${name}`, name, type: 'campsite', activeKm: km, noboKm: km },
+    candidate: {
+      key: `w_${name}`,
+      waypointId: `w_${name}`,
+      name,
+      type: 'campsite',
+      activeKm: km,
+      noboKm: km,
+    },
   };
 }
 
@@ -117,6 +124,7 @@ function render(overrides: Partial<React.ComponentProps<typeof NextDaysCard>> = 
     onPrefs: noop,
     start: { kind: 'stop', km: 42, name: 'Ellery Creek' },
     hasFix: false,
+    hasLastStop: true,
     preferLastStop: false,
     onPreferLastStop: noop,
     dailyHours: 8,
@@ -224,9 +232,11 @@ describe('NextDaysCard', () => {
       const onPrefs = jest.fn();
       const tree = render({ prefs: prefs({ mode: 'ranges' }), onPrefs });
       act(() =>
-        (handler(tree, 'Use ascent range', 'onValueChange').props.onValueChange as (
-          v: boolean,
-        ) => void)(true),
+        (
+          handler(tree, 'Use ascent range', 'onValueChange').props.onValueChange as (
+            v: boolean,
+          ) => void
+        )(true),
       );
       expect(onPrefs).toHaveBeenCalledWith({
         ...prefs({ mode: 'ranges' }),
@@ -240,9 +250,15 @@ describe('NextDaysCard', () => {
       const tree = render({ prefs: base, onPrefs });
 
       press(tree, 'More minimum distance');
-      expect(onPrefs).toHaveBeenLastCalledWith({ ...base, distance: { on: true, min: 21, max: 30 } });
+      expect(onPrefs).toHaveBeenLastCalledWith({
+        ...base,
+        distance: { on: true, min: 21, max: 30 },
+      });
       press(tree, 'More maximum distance');
-      expect(onPrefs).toHaveBeenLastCalledWith({ ...base, distance: { on: true, min: 20, max: 31 } });
+      expect(onPrefs).toHaveBeenLastCalledWith({
+        ...base,
+        distance: { on: true, min: 20, max: 31 },
+      });
 
       const tight = render({
         prefs: prefs({ mode: 'ranges', distance: { on: true, min: 25, max: 25 } }),
@@ -261,7 +277,10 @@ describe('NextDaysCard', () => {
       const base = prefs({ mode: 'ranges', ascent: { on: true, min: 200, max: 800 } });
       const tree = render({ prefs: base, onPrefs });
       press(tree, 'Less maximum ascent');
-      expect(onPrefs).toHaveBeenLastCalledWith({ ...base, ascent: { on: true, min: 200, max: 700 } });
+      expect(onPrefs).toHaveBeenLastCalledWith({
+        ...base,
+        ascent: { on: true, min: 200, max: 700 },
+      });
     });
   });
 
@@ -361,7 +380,12 @@ describe('NextDaysCard', () => {
 
     it('toggles between here and the last stop with a fix', () => {
       const onPreferLastStop = jest.fn();
-      const here = render({ hasFix: true, preferLastStop: false, onPreferLastStop, onUseLocation: noop });
+      const here = render({
+        hasFix: true,
+        preferLastStop: false,
+        onPreferLastStop,
+        onUseLocation: noop,
+      });
       expect(hostByLabel(here, 'Use my location')).toHaveLength(0);
       expect(allText(here)).toContain('From last stop');
       press(here, 'Start from my last stop');
@@ -371,6 +395,12 @@ describe('NextDaysCard', () => {
       expect(allText(last)).toContain('From here');
       press(last, 'Start from my location');
       expect(onPreferLastStop).toHaveBeenLastCalledWith(false);
+    });
+
+    it('offers no last-stop switch when the plan has no stop to start from', () => {
+      const tree = render({ hasFix: true, hasLastStop: false, onUseLocation: noop });
+      expect(hostByLabel(tree, 'Start from my last stop')).toHaveLength(0);
+      expect(hostByLabel(tree, 'Use my location')).toHaveLength(0);
     });
   });
 });

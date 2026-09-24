@@ -135,7 +135,8 @@ const servicesOn = (name: string): string[] =>
     .filter(el => !el.classList.contains('is-off'))
     .map(el => el.title);
 
-const dayCards = (): HTMLElement[] => [...$('days-list').querySelectorAll<HTMLElement>('.day-card')];
+/** The walked days — not the dashed "Not planned yet" card after them. */
+const dayCards = (): HTMLElement[] => [...$('days-list').querySelectorAll<HTMLElement>('.day-card[data-day-index]')];
 
 const dayText = (selector: string): string[] =>
   dayCards().map(card => (card.querySelector(selector)?.textContent ?? '').trim());
@@ -328,7 +329,9 @@ describe('the services strip', () => {
 describe('ticking a stop', () => {
   it('splits the trail into days and stores the waypoint id', async () => {
     await boot();
-    expect($('days-list').textContent).toContain('Add stops in the Stops tab');
+    expect($('days-list').textContent).toContain('Tick stops in the Stops tab');
+    // 70 km flat is 17.5 h: not a day at 8 h/day, so the whole trail is unplanned.
+    expect($('days-list').querySelector('.day-card.is-unplanned')?.textContent).toContain('Trailhead → Trail End');
 
     clickRow('Salida');
 

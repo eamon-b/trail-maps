@@ -32,7 +32,7 @@
     "name": "Continental Divide Trail",
     "shortName": "CDT",
     "lengthKm": 4823.2,
-    "dataVersion": "2026-09-20"
+    "dataVersion": "2026-09-30"
   },
   {
     "id": "heysen",
@@ -53,6 +53,6 @@
     "name": "Te Araroa",
     "shortName": "Te Araroa",
     "lengthKm": 3056.8,
-    "dataVersion": "2026-09-20"
+    "dataVersion": "2026-09-30"
   }
 ]

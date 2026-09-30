@@ -252451,6 +252451,425 @@
       "distanceFromTrail": 0.13588867657908751
     },
     {
+      "id": 2246888372,
+      "type": "node",
+      "category": "resupply",
+      "lat": -43.8210086,
+      "lon": 171.4217206,
+      "name": "Caltex",
+      "tags": {
+        "addr:city": "Mayfield",
+        "addr:street": "Arundel Rakaia Gorge Road",
+        "amenity": "fuel",
+        "branch": "Mayfield",
+        "brand": "Caltex",
+        "brand:wikidata": "Q277470",
+        "brand:wikipedia": "en:Caltex",
+        "compressed_air": "yes",
+        "fuel:diesel": "yes",
+        "fuel:octane_91": "yes",
+        "name": "Caltex",
+        "opening_hours": "24/7",
+        "operator": "Caltex"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.023879894116606768
+    },
+    {
+      "id": 2246890570,
+      "type": "node",
+      "category": "resupply",
+      "lat": -43.820847,
+      "lon": 171.4224569,
+      "name": "Udder Dairy Cafe and Gift Shop",
+      "tags": {
+        "name": "Udder Dairy Cafe and Gift Shop",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.02063784423553916
+    },
+    {
+      "id": 7039379523,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -43.8198682,
+      "lon": 171.4233036,
+      "name": "Panthers Rock Bar & Cafe",
+      "tags": {
+        "addr:city": "Mayfield",
+        "addr:housenumber": "2006",
+        "addr:postcode": "7778",
+        "addr:street": "Arundel Rakaia Gorge Road",
+        "amenity": "cafe",
+        "name": "Panthers Rock Bar & Cafe",
+        "opening_hours": "We-Th 16:00-17:00; Fr-Su 11:00-21:00"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.03187805620293217
+    },
+    {
+      "id": 8930627817,
+      "type": "node",
+      "category": "resupply",
+      "lat": -43.8153424,
+      "lon": 171.4184261,
+      "name": "Allied Petroleum Mayfield",
+      "tags": {
+        "addr:postcode": "7778",
+        "amenity": "fuel",
+        "brand": "Allied Petroluem",
+        "check_date": "2025-07-05",
+        "compressed_air": "yes",
+        "fuel:adblue": "yes",
+        "fuel:diesel": "yes",
+        "fuel:octane_91": "yes",
+        "fuel:petrol": "yes",
+        "name": "Allied Petroleum Mayfield",
+        "opening_hours": "24/7",
+        "operator": "Allied Petroleum",
+        "payment:cash": "no",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "payment:fuel_cards": "yes",
+        "self_service": "yes",
+        "source": "local knowledge"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.5450264175639301
+    },
+    {
+      "id": 8930627819,
+      "type": "node",
+      "category": "emergency",
+      "lat": -43.8223761,
+      "lon": 171.4205752,
+      "name": "Mayfield Fire Station",
+      "tags": {
+        "addr:city": "Mayfield",
+        "addr:housenumber": "1971",
+        "addr:street": "Arundel Rakaia Gorge Road",
+        "amenity": "fire_station",
+        "check_date": "2025-12-12",
+        "name": "Mayfield Fire Station",
+        "operator": "Fire and Emergency New Zealand",
+        "operator:wikidata": "Q28180518",
+        "phone": "+64 3 303 6552",
+        "website": "https://www.fireandemergency.nz/stations/show/mayfield-volunteer-fire-brigade"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.03689764149821497
+    },
+    {
+      "id": 8944712235,
+      "type": "node",
+      "category": "transport",
+      "lat": -43.8207204,
+      "lon": 171.4221233,
+      "name": null,
+      "tags": {
+        "bench": "yes",
+        "bin": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.009599694488352314
+    },
+    {
+      "id": 1137177727,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.8095338,
+      "lon": 171.4305584,
+      "name": "Hinds River",
+      "tags": {
+        "caravans": "yes",
+        "drinking_water": "no",
+        "flood_prone": "yes",
+        "name": "Hinds River",
+        "name:de": "Hinds River",
+        "name:en": "Hinds River",
+        "power_supply": "no",
+        "sanitary_dump_station": "no",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.012500189240165896
+    },
+    {
+      "id": 402588013,
+      "type": "way",
+      "category": "resupply",
+      "lat": -43.8207721,
+      "lon": 171.422447,
+      "name": null,
+      "tags": {
+        "building": "yes",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 2324.998883185366,
+      "distanceFromTrail": 0.016156060406568737
+    },
+    {
+      "id": 13419377819,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.8930753,
+      "lon": 171.2615639,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.03384386769331814
+    },
+    {
+      "id": 13963857007,
+      "type": "node",
+      "category": "emergency",
+      "lat": -43.9139459,
+      "lon": 171.2618662,
+      "name": "Peel Forest Fire Station",
+      "tags": {
+        "addr:city": "Peel Forest",
+        "addr:housenumber": "1166",
+        "addr:street": "Peel Forest Road",
+        "amenity": "fire_station",
+        "name": "Peel Forest Fire Station",
+        "operator": "Fire and Emergency New Zealand",
+        "operator:wikidata": "Q28180518",
+        "website": "https://www.fireandemergency.nz/stations/show/peel-forest-volunteer-fire-brigade"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.02095176989470822
+    },
+    {
+      "id": 1967514662,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.8897908,
+      "lon": 171.2663934,
+      "name": "Peel Forest Campground",
+      "tags": {
+        "cabins": "yes",
+        "capacity:caravans": "34",
+        "capacity:tents": "47",
+        "caravans": "yes",
+        "description": "Peel Forest is a remnant of a magnificent podocarp forest that once covered this area.",
+        "dog": "no",
+        "drinking_water": "yes",
+        "dryer": "yes",
+        "fee": "yes",
+        "internet_access": "no",
+        "kitchen": "yes",
+        "name": "Peel Forest Campground",
+        "operator": "Department of Conservation",
+        "operator:wikidata": "Q1191417",
+        "operator:wikipedia": "en:Department of Conservation (New Zealand)",
+        "payment:online_booking": "yes",
+        "power_supply": "yes",
+        "ref:doc": "100043670",
+        "reservation": "required",
+        "shelter": "yes",
+        "shower": "hot",
+        "tents": "yes",
+        "toilets": "yes",
+        "toilets:disposal": "pitlatrine",
+        "tourism": "camp_site",
+        "washing_machine": "yes",
+        "website": "https://doc.govt.nz/link/f8912a8f305b4d6d9202de2ae3bd9da0",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.1641984793742271
+    },
+    {
+      "id": 2246888384,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.8933819,
+      "lon": 171.2678232,
+      "name": "Clarkes Flat",
+      "tags": {
+        "cabins": "no",
+        "caravans": "yes",
+        "name": "Clarkes Flat",
+        "note": "open only in winter",
+        "operator": "Department of Conservation",
+        "payment:cash": "yes",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.4438893638939675
+    },
+    {
+      "id": 2246888426,
+      "type": "node",
+      "category": "resupply",
+      "lat": -43.9104817,
+      "lon": 171.2610157,
+      "name": "Peel Forest General Store",
+      "tags": {
+        "name": "Peel Forest General Store",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.012498667009133801
+    },
+    {
+      "id": 4560930312,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.9736616,
+      "lon": 171.297917,
+      "name": "Arundel Bridge campsite",
+      "tags": {
+        "access": "yes",
+        "caravans": "yes",
+        "check_in": "16:00",
+        "check_out": "10:00",
+        "fee": "no",
+        "name": "Arundel Bridge campsite",
+        "name:en": "Arundel Bridge campsite",
+        "openfire": "no",
+        "reservation": "no",
+        "tents": "yes",
+        "toilets": "separate",
+        "tourism": "camp_site",
+        "website": "https://www.timaru.govt.nz/community/facilities/camping/arundel-bridge"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.0776162563960974
+    },
+    {
+      "id": 7297546620,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.8884192,
+      "lon": 171.2660183,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bin": "yes"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.04602144117325658
+    },
+    {
+      "id": 1136471777,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.8896375,
+      "lon": 171.2661283,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.13696200505436515
+    },
+    {
+      "id": 1257243673,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.8934041,
+      "lon": 171.2677015,
+      "name": "Clarkes Flat",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Clarkes Flat"
+      },
+      "distanceAlongTrail": 2335.380358327894,
+      "distanceFromTrail": 0.4362670952864125
+    },
+    {
+      "id": 5458006932,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.6129264,
+      "lon": 171.0569691,
+      "name": "Freedom Camping for Self Contained Vehicles",
+      "tags": {
+        "name": "Freedom Camping for Self Contained Vehicles",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 2346.5438477251028,
+      "distanceFromTrail": 0.05946009240804486
+    },
+    {
+      "id": 1136462494,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.6130632,
+      "lon": 171.0568166,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 2346.5438477251028,
+      "distanceFromTrail": 0.07612064638018287
+    },
+    {
+      "id": 13963857008,
+      "type": "node",
+      "category": "emergency",
+      "lat": -43.6104845,
+      "lon": 171.0450695,
+      "name": "Lake Clearwater Fire Station",
+      "tags": {
+        "addr:city": "Ashburton Lakes",
+        "addr:street": "Mount Jollie Street",
+        "amenity": "fire_station",
+        "name": "Lake Clearwater Fire Station",
+        "operator": "Fire and Emergency New Zealand",
+        "operator:wikidata": "Q28180518",
+        "website": "https://www.fireandemergency.nz/stations/show/lake-clearwater-volunteer-fire-brigade"
+      },
+      "distanceAlongTrail": 2347.0819885809383,
+      "distanceFromTrail": 0.009780615651326095
+    },
+    {
+      "id": 539390424,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.6083704,
+      "lon": 171.0458956,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 2347.0819885809383,
+      "distanceFromTrail": 0.2538320581260258
+    },
+    {
+      "id": 13963857034,
+      "type": "node",
+      "category": "emergency",
+      "lat": -43.6996272,
+      "lon": 171.0126583,
+      "name": "Rangitata Gorge Fire Station",
+      "tags": {
+        "addr:city": "Peel Forest",
+        "addr:housenumber": "4349",
+        "addr:street": "Rangitata Gorge Road",
+        "amenity": "fire_station",
+        "name": "Rangitata Gorge Fire Station",
+        "operator": "Fire and Emergency New Zealand",
+        "operator:wikidata": "Q28180518",
+        "website": "https://www.fireandemergency.nz/stations/show/rangitata-gorge-volunteer-fire-brigade"
+      },
+      "distanceAlongTrail": 2347.769258002614,
+      "distanceFromTrail": 0.041861894856047806
+    },
+    {
       "id": 908718088,
       "type": "way",
       "category": "camping",
@@ -270205,425 +270624,6 @@
       },
       "distanceAlongTrail": 3056.73120910357,
       "distanceFromTrail": 0.05177360515731245
-    },
-    {
-      "id": 5458006932,
-      "type": "node",
-      "category": "camping",
-      "lat": -43.6129264,
-      "lon": 171.0569691,
-      "name": "Freedom Camping for Self Contained Vehicles",
-      "tags": {
-        "name": "Freedom Camping for Self Contained Vehicles",
-        "tourism": "camp_site"
-      },
-      "distanceAlongTrail": 3463.5334482274097,
-      "distanceFromTrail": 0.05946009240804486
-    },
-    {
-      "id": 1136462494,
-      "type": "way",
-      "category": "camping",
-      "lat": -43.6130632,
-      "lon": 171.0568166,
-      "name": null,
-      "tags": {
-        "tourism": "camp_site"
-      },
-      "distanceAlongTrail": 3463.543673105754,
-      "distanceFromTrail": 0.07612064638018287
-    },
-    {
-      "id": 539390424,
-      "type": "way",
-      "category": "camping",
-      "lat": -43.6083704,
-      "lon": 171.0458956,
-      "name": null,
-      "tags": {
-        "tourism": "camp_site"
-      },
-      "distanceAlongTrail": 3464.5136553189013,
-      "distanceFromTrail": 0.2538320581260258
-    },
-    {
-      "id": 13963857008,
-      "type": "node",
-      "category": "emergency",
-      "lat": -43.6104845,
-      "lon": 171.0450695,
-      "name": "Lake Clearwater Fire Station",
-      "tags": {
-        "addr:city": "Ashburton Lakes",
-        "addr:street": "Mount Jollie Street",
-        "amenity": "fire_station",
-        "name": "Lake Clearwater Fire Station",
-        "operator": "Fire and Emergency New Zealand",
-        "operator:wikidata": "Q28180518",
-        "website": "https://www.fireandemergency.nz/stations/show/lake-clearwater-volunteer-fire-brigade"
-      },
-      "distanceAlongTrail": 3464.5247911333163,
-      "distanceFromTrail": 0.009780615651326095
-    },
-    {
-      "id": 13963857034,
-      "type": "node",
-      "category": "emergency",
-      "lat": -43.6996272,
-      "lon": 171.0126583,
-      "name": "Rangitata Gorge Fire Station",
-      "tags": {
-        "addr:city": "Peel Forest",
-        "addr:housenumber": "4349",
-        "addr:street": "Rangitata Gorge Road",
-        "amenity": "fire_station",
-        "name": "Rangitata Gorge Fire Station",
-        "operator": "Fire and Emergency New Zealand",
-        "operator:wikidata": "Q28180518",
-        "website": "https://www.fireandemergency.nz/stations/show/rangitata-gorge-volunteer-fire-brigade"
-      },
-      "distanceAlongTrail": 3494.245367025875,
-      "distanceFromTrail": 0.041861894856047806
-    },
-    {
-      "id": 7297546620,
-      "type": "node",
-      "category": "camping",
-      "lat": -43.8884192,
-      "lon": 171.2660183,
-      "name": null,
-      "tags": {
-        "amenity": "shelter",
-        "bin": "yes"
-      },
-      "distanceAlongTrail": 3528.9036753200294,
-      "distanceFromTrail": 0.04602144117325658
-    },
-    {
-      "id": 1136471777,
-      "type": "way",
-      "category": "camping",
-      "lat": -43.8896375,
-      "lon": 171.2661283,
-      "name": null,
-      "tags": {
-        "tourism": "camp_site"
-      },
-      "distanceAlongTrail": 3529.0044695788943,
-      "distanceFromTrail": 0.13696200505436515
-    },
-    {
-      "id": 1967514662,
-      "type": "node",
-      "category": "camping",
-      "lat": -43.8897908,
-      "lon": 171.2663934,
-      "name": "Peel Forest Campground",
-      "tags": {
-        "cabins": "yes",
-        "capacity:caravans": "34",
-        "capacity:tents": "47",
-        "caravans": "yes",
-        "description": "Peel Forest is a remnant of a magnificent podocarp forest that once covered this area.",
-        "dog": "no",
-        "drinking_water": "yes",
-        "dryer": "yes",
-        "fee": "yes",
-        "internet_access": "no",
-        "kitchen": "yes",
-        "name": "Peel Forest Campground",
-        "operator": "Department of Conservation",
-        "operator:wikidata": "Q1191417",
-        "operator:wikipedia": "en:Department of Conservation (New Zealand)",
-        "payment:online_booking": "yes",
-        "power_supply": "yes",
-        "ref:doc": "100043670",
-        "reservation": "required",
-        "shelter": "yes",
-        "shower": "hot",
-        "tents": "yes",
-        "toilets": "yes",
-        "toilets:disposal": "pitlatrine",
-        "tourism": "camp_site",
-        "washing_machine": "yes",
-        "website": "https://doc.govt.nz/link/f8912a8f305b4d6d9202de2ae3bd9da0",
-        "wheelchair": "yes"
-      },
-      "distanceAlongTrail": 3529.004663945508,
-      "distanceFromTrail": 0.1641984793742271
-    },
-    {
-      "id": 2246888384,
-      "type": "node",
-      "category": "camping",
-      "lat": -43.8933819,
-      "lon": 171.2678232,
-      "name": "Clarkes Flat",
-      "tags": {
-        "cabins": "no",
-        "caravans": "yes",
-        "name": "Clarkes Flat",
-        "note": "open only in winter",
-        "operator": "Department of Conservation",
-        "payment:cash": "yes",
-        "tents": "yes",
-        "tourism": "camp_site"
-      },
-      "distanceAlongTrail": 3529.3499779856415,
-      "distanceFromTrail": 0.4438893638939675
-    },
-    {
-      "id": 1257243673,
-      "type": "way",
-      "category": "camping",
-      "lat": -43.8934041,
-      "lon": 171.2677015,
-      "name": "Clarkes Flat",
-      "tags": {
-        "amenity": "shelter",
-        "building": "yes",
-        "name": "Clarkes Flat"
-      },
-      "distanceAlongTrail": 3529.3565429057817,
-      "distanceFromTrail": 0.4362670952864125
-    },
-    {
-      "id": 13419377819,
-      "type": "node",
-      "category": "camping",
-      "lat": -43.8930753,
-      "lon": 171.2615639,
-      "name": null,
-      "tags": {
-        "amenity": "shelter",
-        "shelter_type": "weather_shelter"
-      },
-      "distanceAlongTrail": 3529.5412953646664,
-      "distanceFromTrail": 0.03384386769331814
-    },
-    {
-      "id": 2246888426,
-      "type": "node",
-      "category": "resupply",
-      "lat": -43.9104817,
-      "lon": 171.2610157,
-      "name": "Peel Forest General Store",
-      "tags": {
-        "name": "Peel Forest General Store",
-        "shop": "convenience"
-      },
-      "distanceAlongTrail": 3531.6199891890733,
-      "distanceFromTrail": 0.012498667009133801
-    },
-    {
-      "id": 13963857007,
-      "type": "node",
-      "category": "emergency",
-      "lat": -43.9139459,
-      "lon": 171.2618662,
-      "name": "Peel Forest Fire Station",
-      "tags": {
-        "addr:city": "Peel Forest",
-        "addr:housenumber": "1166",
-        "addr:street": "Peel Forest Road",
-        "amenity": "fire_station",
-        "name": "Peel Forest Fire Station",
-        "operator": "Fire and Emergency New Zealand",
-        "operator:wikidata": "Q28180518",
-        "website": "https://www.fireandemergency.nz/stations/show/peel-forest-volunteer-fire-brigade"
-      },
-      "distanceAlongTrail": 3532.0110768444656,
-      "distanceFromTrail": 0.02095176989470822
-    },
-    {
-      "id": 4560930312,
-      "type": "node",
-      "category": "camping",
-      "lat": -43.9736616,
-      "lon": 171.297917,
-      "name": "Arundel Bridge campsite",
-      "tags": {
-        "access": "yes",
-        "caravans": "yes",
-        "check_in": "16:00",
-        "check_out": "10:00",
-        "fee": "no",
-        "name": "Arundel Bridge campsite",
-        "name:en": "Arundel Bridge campsite",
-        "openfire": "no",
-        "reservation": "no",
-        "tents": "yes",
-        "toilets": "separate",
-        "tourism": "camp_site",
-        "website": "https://www.timaru.govt.nz/community/facilities/camping/arundel-bridge"
-      },
-      "distanceAlongTrail": 3540.0854080044837,
-      "distanceFromTrail": 0.0776162563960974
-    },
-    {
-      "id": 8930627819,
-      "type": "node",
-      "category": "emergency",
-      "lat": -43.8223761,
-      "lon": 171.4205752,
-      "name": "Mayfield Fire Station",
-      "tags": {
-        "addr:city": "Mayfield",
-        "addr:housenumber": "1971",
-        "addr:street": "Arundel Rakaia Gorge Road",
-        "amenity": "fire_station",
-        "check_date": "2025-12-12",
-        "name": "Mayfield Fire Station",
-        "operator": "Fire and Emergency New Zealand",
-        "operator:wikidata": "Q28180518",
-        "phone": "+64 3 303 6552",
-        "website": "https://www.fireandemergency.nz/stations/show/mayfield-volunteer-fire-brigade"
-      },
-      "distanceAlongTrail": 3560.116541521344,
-      "distanceFromTrail": 0.03689764149821497
-    },
-    {
-      "id": 2246888372,
-      "type": "node",
-      "category": "resupply",
-      "lat": -43.8210086,
-      "lon": 171.4217206,
-      "name": "Caltex",
-      "tags": {
-        "addr:city": "Mayfield",
-        "addr:street": "Arundel Rakaia Gorge Road",
-        "amenity": "fuel",
-        "branch": "Mayfield",
-        "brand": "Caltex",
-        "brand:wikidata": "Q277470",
-        "brand:wikipedia": "en:Caltex",
-        "compressed_air": "yes",
-        "fuel:diesel": "yes",
-        "fuel:octane_91": "yes",
-        "name": "Caltex",
-        "opening_hours": "24/7",
-        "operator": "Caltex"
-      },
-      "distanceAlongTrail": 3560.293701643191,
-      "distanceFromTrail": 0.023879894116606768
-    },
-    {
-      "id": 2246890570,
-      "type": "node",
-      "category": "resupply",
-      "lat": -43.820847,
-      "lon": 171.4224569,
-      "name": "Udder Dairy Cafe and Gift Shop",
-      "tags": {
-        "name": "Udder Dairy Cafe and Gift Shop",
-        "shop": "convenience"
-      },
-      "distanceAlongTrail": 3560.3364790720307,
-      "distanceFromTrail": 0.02063784423553916
-    },
-    {
-      "id": 8944712235,
-      "type": "node",
-      "category": "transport",
-      "lat": -43.8207204,
-      "lon": 171.4221233,
-      "name": null,
-      "tags": {
-        "bench": "yes",
-        "bin": "yes",
-        "bus": "yes",
-        "highway": "bus_stop",
-        "public_transport": "platform",
-        "shelter": "yes"
-      },
-      "distanceAlongTrail": 3560.3369010409997,
-      "distanceFromTrail": 0.009599694488352314
-    },
-    {
-      "id": 402588013,
-      "type": "way",
-      "category": "resupply",
-      "lat": -43.8207721,
-      "lon": 171.422447,
-      "name": null,
-      "tags": {
-        "building": "yes",
-        "shop": "convenience"
-      },
-      "distanceAlongTrail": 3560.34354243941,
-      "distanceFromTrail": 0.016156060406568737
-    },
-    {
-      "id": 7039379523,
-      "type": "node",
-      "category": "restaurant",
-      "lat": -43.8198682,
-      "lon": 171.4233036,
-      "name": "Panthers Rock Bar & Cafe",
-      "tags": {
-        "addr:city": "Mayfield",
-        "addr:housenumber": "2006",
-        "addr:postcode": "7778",
-        "addr:street": "Arundel Rakaia Gorge Road",
-        "amenity": "cafe",
-        "name": "Panthers Rock Bar & Cafe",
-        "opening_hours": "We-Th 16:00-17:00; Fr-Su 11:00-21:00"
-      },
-      "distanceAlongTrail": 3560.464260519314,
-      "distanceFromTrail": 0.03187805620293217
-    },
-    {
-      "id": 8930627817,
-      "type": "node",
-      "category": "resupply",
-      "lat": -43.8153424,
-      "lon": 171.4184261,
-      "name": "Allied Petroleum Mayfield",
-      "tags": {
-        "addr:postcode": "7778",
-        "amenity": "fuel",
-        "brand": "Allied Petroluem",
-        "check_date": "2025-07-05",
-        "compressed_air": "yes",
-        "fuel:adblue": "yes",
-        "fuel:diesel": "yes",
-        "fuel:octane_91": "yes",
-        "fuel:petrol": "yes",
-        "name": "Allied Petroleum Mayfield",
-        "opening_hours": "24/7",
-        "operator": "Allied Petroleum",
-        "payment:cash": "no",
-        "payment:credit_cards": "yes",
-        "payment:debit_cards": "yes",
-        "payment:fuel_cards": "yes",
-        "self_service": "yes",
-        "source": "local knowledge"
-      },
-      "distanceAlongTrail": 3560.735483569599,
-      "distanceFromTrail": 0.5450264175639301
-    },
-    {
-      "id": 1137177727,
-      "type": "way",
-      "category": "camping",
-      "lat": -43.8095338,
-      "lon": 171.4305584,
-      "name": "Hinds River",
-      "tags": {
-        "caravans": "yes",
-        "drinking_water": "no",
-        "flood_prone": "yes",
-        "name": "Hinds River",
-        "name:de": "Hinds River",
-        "name:en": "Hinds River",
-        "power_supply": "no",
-        "sanitary_dump_station": "no",
-        "shower": "no",
-        "tents": "yes",
-        "tourism": "camp_site"
-      },
-      "distanceAlongTrail": 3561.752887069383,
-      "distanceFromTrail": 0.012500189240165896
     }
   ]
 }

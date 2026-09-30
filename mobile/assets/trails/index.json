@@ -11,14 +11,14 @@
     "name": "Hume and Hovell Track",
     "shortName": "H&H",
     "lengthKm": 426,
-    "dataVersion": "2026-09-20"
+    "dataVersion": "2026-09-30"
   },
   {
     "id": "bibbulmun",
     "name": "Bibbulmun Track",
     "shortName": "Bibb",
     "lengthKm": 981.6,
-    "dataVersion": "2026-09-20"
+    "dataVersion": "2026-09-30"
   },
   {
     "id": "cape_to_cape",

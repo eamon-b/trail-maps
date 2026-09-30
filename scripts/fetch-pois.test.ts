@@ -195,6 +195,45 @@ describe('processTrailData', () => {
     expect(result.pois[0].distanceAlongTrail).toBeLessThan(22);
   });
 
+  it('places a POI beside an unattached variant at the nearest main-track km', async () => {
+    // No startDistance: buildTrail could not find the junction (Te Araroa's
+    // Rangitata bypass). The library's along-route fallback would measure
+    // along the whole flattened route and land past the end of the trail.
+    const loose: RouteVariant = {
+      name: 'Loose bypass',
+      type: 'alternate',
+      points: [0, 1, 2].map(i => ({ lat: START_LAT + (5 + i) * LAT_STEP, lon: LON + 0.01, ele: 0 })),
+      distance: 2.2,
+      elevation: { ascent: 0, descent: 0 },
+    };
+    // On the variant's middle point, level with main-track point 6 (km 60).
+    const beside = node(6, START_LAT + 6 * LAT_STEP, LON + 0.01, { amenity: 'drinking_water' });
+
+    const result = await processTrailData(makeTrail([loose]), fixedFetcher([beside]));
+
+    expect(result.pois).toHaveLength(1);
+    expect(result.pois[0].distanceAlongTrail).toBeCloseTo(60, 6);
+  });
+
+  it('reaches an unattached variant with a km window', async () => {
+    const loose: RouteVariant = {
+      name: 'Loose bypass',
+      type: 'alternate',
+      points: [0, 1].map(i => ({ lat: START_LAT + (5 + i) * LAT_STEP, lon: LON + 0.01, ele: 0 })),
+      distance: 1.1,
+      elevation: { ascent: 0, descent: 0 },
+    };
+    const seen = { areas: [] as OverpassArea[], types: [] as POIType[][] };
+    const trail = makeTrail([loose]);
+    trail.track.points = [];
+
+    // Without a main track there is no km to borrow, so there is nothing to window.
+    expect((await processTrailData(trail, fixedFetcher([], seen), 300, { fromKm: 0, toKm: 1000 })).queryChunks).toBe(0);
+
+    const withMain = await processTrailData(makeTrail([loose]), fixedFetcher([], seen), 300, { fromKm: 45, toKm: 65 });
+    expect(withMain.queryChunks).toBe(1);
+  });
+
   it('queries a corridor for all six POI types', async () => {
     const seen = { areas: [] as OverpassArea[], types: [] as POIType[][] };
     const result = await processTrailData(makeTrail(), fixedFetcher([], seen));

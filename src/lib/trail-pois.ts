@@ -16,6 +16,7 @@
  */
 
 import { haversineDistance } from './distance';
+import { buildPointIndex, type PointIndex } from './point-index';
 import type { ProcessedTrail, RouteVariant, TrackPoint, TrailPOI, TrailPOICategory } from './trail-types';
 
 export interface LatLon {
@@ -72,9 +73,15 @@ export function cumulativeKm(points: LatLon[]): number[] {
  *
  * Main-track points carry their own cumulative `dist`. A variant has no km of
  * its own, so its points are placed at `startDistance + km along the variant` —
- * the same convention `VariantWaypoint.totalDistance` already uses. A variant
- * with no junction km gets NaN, which falls back to the library's own
- * along-route distance.
+ * the same convention `VariantWaypoint.totalDistance` already uses.
+ *
+ * A variant with no junction km (one `buildTrail` could not attach, such as
+ * Te Araroa's Rangitata hazard bypass) takes, point by point, the km of the
+ * nearest main-track point. The alternative, the library's along-route
+ * distance, is measured along the whole flattened route, main track included,
+ * so it files those POIs past the end of the trail (km 3,463-3,562 on a
+ * 3,057 km Te Araroa). Nearest-point km also puts the variant on the scale a
+ * `--from-km` window clips by, so windowed fetches reach it.
  */
 export function buildRouteScale(
   trail: Pick<ProcessedTrail, 'track' | 'alternates' | 'sideTrips'>
@@ -100,6 +107,13 @@ export function buildRouteScale(
     trackPoints.map(p => (Number.isFinite(p.dist) ? p.dist : NaN))
   );
 
+  // Built only if some variant needs it: the index is not free on a 100k-point track.
+  let mainIndex: PointIndex<TrackPoint> | null = null;
+  const nearestMainKm = (point: LatLon): number => {
+    mainIndex ??= buildPointIndex(trackPoints.filter(p => Number.isFinite(p.dist)));
+    return mainIndex.nearest(point.lat, point.lon)?.dist ?? NaN;
+  };
+
   const variants: RouteVariant[] = [...(trail.alternates ?? []), ...(trail.sideTrips ?? [])];
   for (const variant of variants) {
     const points = (variant.points ?? []).filter(isFinitePoint).map(p => ({ lat: p.lat, lon: p.lon }));
@@ -110,7 +124,7 @@ export function buildRouteScale(
     const cumulative = cumulativeKm(points);
     addPolyline(
       points,
-      Number.isFinite(base) ? cumulative.map(km => (base as number) + km) : cumulative.map(() => NaN)
+      Number.isFinite(base) ? cumulative.map(km => (base as number) + km) : points.map(nearestMainKm)
     );
   }
 

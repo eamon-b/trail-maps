@@ -38,6 +38,18 @@
  *   npm run fetch:pois -- cape_to_cape \
  *     --endpoint https://overpass.private.coffee/api/interpreter --timeout 120
  *
+ * By 2026-09-30 that one timed out too (from a cloud session, where
+ * `overpass-api.de` reset the connection and kumi.systems timed out).
+ * `maps.mail.ru` answered, but its gateway drops anything over about 60 s, so
+ * it wants small, cheap queries:
+ *
+ *   npm run fetch:pois -- cdt --from-km 0 --max-vertices 60 --timeout 55 \
+ *     --endpoint https://maps.mail.ru/osm/tools/overpass/api/interpreter
+ *
+ * `--from-km 0` is the whole trail, but through the merge path: whatever
+ * succeeds is added to the existing file and nothing is lost to a failed
+ * chunk, so re-running it until no chunk fails fills the file in.
+ *
  * Two different failures look identical in the output, and they want opposite
  * responses. Tell them apart by whether the same chunk fails twice.
  *

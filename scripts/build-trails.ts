@@ -25,6 +25,7 @@ import {
 } from './lib/waypoint-descriptions.js';
 import { countDuplicatePois, markDuplicatePois } from '../src/lib/poi-dedup.js';
 import { countNoiseByReason, dropNoisePois } from '../src/lib/poi-noise.js';
+import { findDenseStretches, thinUrbanPois } from '../src/lib/poi-urban.js';
 import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
 import { BUNDLED_PLAN_FILLS, inlinePlanShell } from './lib/plan-shell.js';
 
@@ -625,10 +626,14 @@ async function main() {
       // pois.json. See plans/poi-waypoint-dedup.md.
       // Noise is dropped before duplicates are marked, so the duplicate count
       // describes what actually ships. See @lib/poi-noise for why filtering
-      // lives here rather than in the fetch.
+      // lives here rather than in the fetch. City stretches are thinned last,
+      // after duplicates are marked, so a POI standing in for a curated
+      // waypoint is never thinned away (@lib/poi-urban).
       const fetched = readTrailPOIsForBuild(trailDir) ?? undefined;
       const noise = countNoiseByReason(fetched);
-      const pois = markDuplicatePois(dropNoisePois(fetched), processed.waypoints);
+      const unthinned = markDuplicatePois(dropNoisePois(fetched), processed.waypoints);
+      const cities = findDenseStretches(unthinned ?? []);
+      const pois = thinUrbanPois(unthinned);
       if (pois) {
         processed.pois = pois;
       }
@@ -648,6 +653,11 @@ async function main() {
         if (dropped.length > 0) {
           const detail = dropped.map(([reason, n]) => `${n} ${reason}`).join(', ');
           console.log(`      filtered as noise: ${detail}`);
+        }
+        const thinned = (unthinned?.length ?? 0) - pois.length;
+        if (thinned > 0) {
+          const where = cities.map(c => `km ${c.fromKm}-${c.toKm}`).join(', ');
+          console.log(`      thinned in cities: ${thinned} (${where})`);
         }
       }
 

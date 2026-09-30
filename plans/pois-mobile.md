@@ -325,7 +325,7 @@ interest" on. The sketch, so this PR's store shape does not have to change later
   but this is the unverified step.
 - Port `src/web/poi-enrich.ts` to `features/import/poi-enrich.ts`: same
   corridor query, same 2 km radius, same `buildRouteScale`/`toTrailPOIs`,
-  then `dropNoisePois` + `markDuplicatePois` + `slimPoi`, then
+  then `dropNoisePois` + `markDuplicatePois` + `thinUrbanPois` + `slimPoi`, then
   `saveImportedTrail` (file first, row second — the existing ordering). Progress
   and cancel on a small screen reached from the guide header; wifi-only by
   default (`expo-network`), since a Bibbulmun search is ~30 Overpass queries.

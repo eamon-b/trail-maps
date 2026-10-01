@@ -135,6 +135,7 @@ export function detectSelfRetraces(
   // For each j, the earliest i that is both physically near and far enough
   // along the track to constitute a doubling back.
   const pairs: { start: number; end: number }[] = [];
+  const paired = new Array<boolean>(points.length).fill(false);
   for (let j = 0; j < points.length; j++) {
     const p = points[j];
     const latBucket = Math.floor(p.lat / latCell);
@@ -157,7 +158,10 @@ export function detectSelfRetraces(
       }
     }
 
-    if (earliest !== -1) pairs.push({ start: earliest, end: j });
+    if (earliest !== -1) {
+      pairs.push({ start: earliest, end: j });
+      paired[j] = true;
+    }
   }
 
   if (pairs.length === 0) return [];
@@ -192,6 +196,22 @@ export function detectSelfRetraces(
     const backLegKm = km[episode.end] - km[turnaroundIndex];
     const retraceLengthKm = Math.min(outLegKm, backLegKm);
     if (retraceLengthKm < minRetraceKm) continue;
+
+    // A loop finishes where it started, so its last points pair with its
+    // first ones and the whole loop reads as one out-and-back from the
+    // trailhead (the Great South West Walk, out of Portland and back, came
+    // out as a 120 km "terminal spur"). Nothing is walked twice there unless
+    // the paired points themselves add up to a leg - a loop that also walks
+    // its access track out and back still reports that.
+    const spansTrack =
+      km[episode.start] <= terminalToleranceKm && totalKm - km[episode.end] <= terminalToleranceKm;
+    if (spansTrack) {
+      let pairedKm = 0;
+      for (let k = episode.start + 1; k <= episode.end; k++) {
+        if (paired[k] && paired[k - 1]) pairedKm += km[k] - km[k - 1];
+      }
+      if (pairedKm < minRetraceKm) continue;
+    }
 
     retraces.push({
       startKm: km[episode.start],

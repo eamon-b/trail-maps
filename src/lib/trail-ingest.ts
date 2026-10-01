@@ -783,8 +783,28 @@ export function findWaypointVisits(
     }
   }
 
+  // A loop ends where it started, so a waypoint at the trailhead is still in
+  // range when the track finishes. That last pass is the visit at km 0 seen
+  // again, not a second visit: recording it put the Great South West Walk's
+  // Portland visitor centre at km 0 *and* km 253.7, which the duplicate-id
+  // check in buildTrail rightly refuses.
+  const first = trackPoints[0];
+  const last = trackPoints[trackPoints.length - 1];
+  const closedLoop =
+    trackPoints.length > 1 &&
+    haversineDistanceMeters(first.lat, first.lon, last.lat, last.lon) <= maxDistanceMeters;
+  const recorded = new Set(visits.map(v => v.waypoint));
+
   // Handle waypoints still inside at end of track
   for (const [wpIdx, data] of activeProximity.entries()) {
+    const waypoint = waypoints[wpIdx];
+    if (
+      closedLoop &&
+      recorded.has(waypoint) &&
+      haversineDistanceMeters(waypoint.lat, waypoint.lon, first.lat, first.lon) <= maxDistanceMeters
+    ) {
+      continue;
+    }
     visits.push({
       waypoint: waypoints[wpIdx],
       trackIndex: data.bestTrackIndex,

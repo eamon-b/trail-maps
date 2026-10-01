@@ -4,41 +4,41 @@
  * Fetches an OpenFreeMap basemap style and injects contour tile layers so users
  * see terrain contours on online maps without downloading offline tiles.
  *
- * Two base styles, one per app theme: Liberty (cream, topographic-ish) for
- * light, and OpenFreeMap's `dark` for dark. Both are served from the same host,
- * ship the same Noto Sans glyph endpoint, and carry the same OpenMapTiles
- * schema, so only the palette differs — `labelFontForSource` stays correct for
- * either one, which is why the dark map did not need its own font stack.
+ * One base style for both app themes: OpenFreeMap's Liberty (cream,
+ * topographic-ish). The dark theme is Liberty repainted by `applyNightPalette`
+ * (services/night-style) rather than a second, separately designed style — the
+ * night map keeps every layer the day map has (forest, parks, relief, paths),
+ * because those are what a hiker reads the map for. It replaced OpenFreeMap's
+ * Dark-Matter `dark` style, which dropped all of them and read as a black
+ * rectangle with a red line on it.
  */
 
 import type { MapTheme } from '../features/map/map-style';
+import { applyNightPalette } from './night-style';
 
-const STYLE_URLS: Record<MapTheme, string> = {
-  light: 'https://tiles.openfreemap.org/styles/liberty',
-  dark: 'https://tiles.openfreemap.org/styles/dark',
-};
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 function getContourTileUrl(): string | undefined {
   return process.env.EXPO_PUBLIC_CONTOUR_TILE_URL;
 }
 
-// Cache each theme's style for 24h. Keyed by theme, because a device that flips
-// to dark at sunset must not be served the cream style it fetched at noon.
-const cachedStyles: Partial<Record<MapTheme, { style: object; fetchedAt: number }>> = {};
+// Cache the fetched base style for 24h. It is the light document as served; the
+// night palette is applied to a clone on every call (see prepareBaseStyle).
+let cachedStyle: { style: object; fetchedAt: number } | undefined;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CONTOUR_HEALTH_TIMEOUT_MS = 2500;
 
-// Font served by both OpenFreeMap styles
+// Font served by the OpenFreeMap style
 const OFM_FONT = 'Noto Sans Regular';
 
 /**
  * Warm tan contour ink, per theme.
  *
  * The hue is the same brown in both — a contour line should look like a contour
- * line — but on the dark basemap it lifts in value and opacity, because brown on
- * near-black has none of the contrast brown on cream gets for free. These match
- * the offline dark palette (assets/topo-style-dark.json) so the two base maps
- * agree about what a 200 m index line looks like.
+ * line — but on the night basemap it lifts in value and opacity, because brown
+ * on a dark ground has none of the contrast brown on cream gets for free. These
+ * match the offline dark palette (assets/topo-style-dark.json) so the two base
+ * maps agree about what a 200 m index line looks like.
  */
 const CONTOUR_INK: Record<MapTheme, {
   regular: string;
@@ -207,9 +207,8 @@ function getContourLayers(theme: MapTheme): object[] {
  * they never bury a road line or strike through a place name.
  *
  * The first road-like layer is the anchor in Liberty, where labels come last.
- * The dark style orders `water_name` before its road layers, so a symbol layer
- * ends the search too — otherwise contour lines would be drawn over lake and
- * river names on the dark map only.
+ * A symbol layer ends the search too, so a base style that orders a label
+ * layer ahead of its roads never has contour lines drawn through its names.
  */
 function findContourInsertIndex(layers: { id: string; type?: string }[]): number {
   for (let i = 0; i < layers.length; i++) {
@@ -224,59 +223,23 @@ function findContourInsertIndex(layers: { id: string; type?: string }[]): number
 }
 
 /**
- * Fetch a theme's base style JSON from OpenFreeMap.
+ * Fetch the base style JSON from OpenFreeMap.
  * Returns the cached version if available and fresh.
  */
-async function fetchBaseStyle(theme: MapTheme): Promise<Record<string, unknown>> {
-  const cached = cachedStyles[theme];
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-    return cached.style as Record<string, unknown>;
+async function fetchBaseStyle(): Promise<Record<string, unknown>> {
+  if (cachedStyle && Date.now() - cachedStyle.fetchedAt < CACHE_TTL_MS) {
+    return cachedStyle.style as Record<string, unknown>;
   }
 
-  const response = await fetch(STYLE_URLS[theme]);
+  const response = await fetch(STYLE_URL);
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${theme} base style: ${response.status}`);
+    throw new Error(`Failed to fetch base style: ${response.status}`);
   }
 
   const style = await response.json();
-  cachedStyles[theme] = { style, fetchedAt: Date.now() };
+  cachedStyle = { style, fetchedAt: Date.now() };
   return style as Record<string, unknown>;
 }
-
-/**
- * Lift the dark style's place labels.
- *
- * OpenFreeMap's dark style is a Dark-Matter derivative: it paints every place
- * name at rgb(101,101,101) on a near-black ground (~3:1), which is a reasonable
- * choice for a dashboard backdrop and the wrong one for a hiking guide, where
- * the town names are half of what the map is for. Only `text-color` and the halo
- * move; placement, sizing and filters are left to the style.
- *
- * Layers are matched by id prefix, so a rename upstream degrades to "no patch"
- * rather than an error — a legibility tweak must never be able to break the map.
- */
-function brightenPlaceLabels(style: Record<string, unknown>): void {
-  const layers = style.layers as { id: string; type?: string; paint?: Record<string, unknown> }[];
-  for (let i = 0; i < layers.length; i++) {
-    const layer = layers[i];
-    if (layer.type !== 'symbol' || !layer.id.startsWith('place_')) continue;
-    layers[i] = {
-      ...layer,
-      paint: {
-        ...(layer.paint ?? {}),
-        'text-color': PLACE_LABEL_DARK.text,
-        'text-halo-color': PLACE_LABEL_DARK.halo,
-        'text-halo-width': 1.2,
-      },
-    };
-  }
-}
-
-/** Ink for the dark style's patched place labels (see brightenPlaceLabels). */
-const PLACE_LABEL_DARK = {
-  text: 'rgb(198, 205, 214)',
-  halo: 'rgba(0, 0, 0, 0.85)',
-};
 
 function cloneStyle(style: Record<string, unknown>): Record<string, unknown> {
   return {
@@ -337,14 +300,15 @@ function injectContours(
 }
 
 /**
- * The base style for a theme, cloned and made ready to mount: the dark one also
- * gets its place labels lifted (see brightenPlaceLabels). Every path that
- * returns a style to the map goes through here, so the patch cannot be missed
- * by the no-contours or unhealthy-archive branches.
+ * The base style for a theme, cloned and made ready to mount: the dark one is
+ * repainted with the night palette (see services/night-style). Every path that
+ * returns a style to the map goes through here, so the repaint cannot be missed
+ * by the no-contours or unhealthy-archive branches. Contours are injected after
+ * this, in their own per-theme ink, so the palette never touches them.
  */
 function prepareBaseStyle(style: Record<string, unknown>, theme: MapTheme): Record<string, unknown> {
   const cloned = cloneStyle(style);
-  if (theme === 'dark') brightenPlaceLabels(cloned);
+  if (theme === 'dark') applyNightPalette(cloned as { layers: { id: string }[] });
   return cloned;
 }
 
@@ -355,8 +319,8 @@ function prepareBaseStyle(style: Record<string, unknown>, theme: MapTheme): Reco
  * renderer on some devices. This function also returns the plain base style
  * when contours are not configured.
  *
- * `theme` picks the base style (Liberty when light, OpenFreeMap dark when dark)
- * and the ink the contour layers are drawn in.
+ * `theme` picks the palette (Liberty as served when light, the night repaint of
+ * it when dark) and the ink the contour layers are drawn in.
  */
 export async function getOnlineMapStyle(theme: MapTheme = 'light'): Promise<object> {
   const contourTileUrl = getContourTileUrl();
@@ -368,7 +332,7 @@ export async function getOnlineMapStyle(theme: MapTheme = 'light'): Promise<obje
   }
 
   const [style, contoursHealthy] = await Promise.all([
-    fetchBaseStyle(theme),
+    fetchBaseStyle(),
     contourTileUrl ? isContourServiceHealthy(contourTileUrl) : Promise.resolve(false),
   ]);
 
@@ -394,15 +358,13 @@ export async function getOnlineStyleWithContours(theme: MapTheme = 'light'): Pro
     return null;
   }
 
-  const base = prepareBaseStyle(await fetchBaseStyle(theme), theme);
+  const base = prepareBaseStyle(await fetchBaseStyle(), theme);
   return injectContours(base, contourTileUrl, theme);
 }
 
 /**
- * Clear every theme's cached style (useful for testing or force-refresh).
+ * Clear the cached base style (useful for testing or force-refresh).
  */
 export function clearStyleCache(): void {
-  for (const theme of Object.keys(cachedStyles) as MapTheme[]) {
-    delete cachedStyles[theme];
-  }
+  cachedStyle = undefined;
 }

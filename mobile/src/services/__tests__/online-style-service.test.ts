@@ -15,11 +15,18 @@ const MOCK_LIBERTY_STYLE = {
     openmaptiles: { type: 'vector', url: 'https://example.com/tiles.json' },
   },
   layers: [
-    { id: 'background', type: 'background', paint: {} },
-    { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water', paint: {} },
-    { id: 'road_minor', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', paint: {} },
-    { id: 'road_major', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', paint: {} },
-    { id: 'place_label', type: 'symbol', source: 'openmaptiles', 'source-layer': 'place', layout: {} },
+    { id: 'background', type: 'background', paint: { 'background-color': '#f8f4f0' } },
+    { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water', paint: { 'fill-color': 'rgb(158,189,255)' } },
+    { id: 'road_minor', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', paint: { 'line-color': '#fff' } },
+    { id: 'road_major', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation', paint: { 'line-color': '#fea' } },
+    {
+      id: 'place_label',
+      type: 'symbol',
+      source: 'openmaptiles',
+      'source-layer': 'place',
+      layout: {},
+      paint: { 'text-color': '#333', 'text-halo-color': '#fff' },
+    },
   ],
 };
 
@@ -397,21 +404,31 @@ const layersOf = (style: unknown): PaintedLayer[] =>
 const contourLayer = (style: unknown, id: string): PaintedLayer =>
   layersOf(style).find((l) => l.id === id)!;
 
+/** HSL lightness (0-1) of a colour the night palette wrote. */
+const lightnessOf = (color: unknown): number => {
+  const m = /^hsla?\([\d.]+,[\d.]+%,([\d.]+)%/.exec(String(color));
+  if (!m) throw new Error(`not an hsl colour: ${String(color)}`);
+  return Number(m[1]) / 100;
+};
+
+const paintOf = (style: unknown, id: string) => layersOf(style).find((l) => l.id === id)!.paint!;
+
 describe('dark theme', () => {
-  it('fetches the dark base style, not Liberty', async () => {
+  it('repaints Liberty rather than fetching a second style', async () => {
+    // The dark map used to be OpenFreeMap's Dark-Matter style, which drops
+    // landcover, parks and relief. It is now the same layers, repainted.
     await getOnlineMapStyle('dark');
-    expect(global.fetch).toHaveBeenCalledWith('https://tiles.openfreemap.org/styles/dark');
-    expect(global.fetch).not.toHaveBeenCalledWith(
-      'https://tiles.openfreemap.org/styles/liberty',
-    );
-  });
-
-  it('defaults to the light style when no theme is passed', async () => {
-    await getOnlineMapStyle();
     expect(global.fetch).toHaveBeenCalledWith('https://tiles.openfreemap.org/styles/liberty');
+    expect(global.fetch).not.toHaveBeenCalledWith('https://tiles.openfreemap.org/styles/dark');
   });
 
-  it('caches each theme separately, so a sunset flip is not served the cream style', async () => {
+  it('keeps every Liberty layer, in order', async () => {
+    const light = await getOnlineMapStyle('light');
+    const dark = await getOnlineMapStyle('dark');
+    expect(layersOf(dark).map((l) => l.id)).toEqual(layersOf(light).map((l) => l.id));
+  });
+
+  it('fetches once for both themes', async () => {
     const styleFetches = () =>
       (global.fetch as jest.Mock).mock.calls.filter(([url]) =>
         String(url).includes('/styles/'),
@@ -419,12 +436,25 @@ describe('dark theme', () => {
 
     await getOnlineMapStyle('light');
     await getOnlineMapStyle('dark');
-    expect(styleFetches()).toBe(2);
-
-    // Second round is served from each theme's cache.
     await getOnlineMapStyle('light');
+    expect(styleFetches()).toBe(1);
+  });
+
+  it('serves the light theme as fetched, after serving the dark one', async () => {
+    // The repaint works on a clone; the cached document must stay cream.
     await getOnlineMapStyle('dark');
-    expect(styleFetches()).toBe(2);
+    const light = await getOnlineMapStyle('light');
+    expect(paintOf(light, 'background')['background-color']).toBe('#f8f4f0');
+    expect(paintOf(light, 'place_label')['text-color']).toBe('#333');
+  });
+
+  it('darkens the ground, keeps roads lighter than it, and lifts labels', async () => {
+    const dark = await getOnlineMapStyle('dark');
+    const ground = lightnessOf(paintOf(dark, 'background')['background-color']);
+    expect(ground).toBeLessThan(0.25);
+    expect(lightnessOf(paintOf(dark, 'road_minor')['line-color'])).toBeGreaterThan(ground + 0.3);
+    expect(lightnessOf(paintOf(dark, 'place_label')['text-color'])).toBeGreaterThan(0.8);
+    expect(lightnessOf(paintOf(dark, 'place_label')['text-halo-color'])).toBeLessThan(0.15);
   });
 
   it('draws contours in lighter tan ink with a dark label halo', async () => {
@@ -471,33 +501,17 @@ describe('dark theme', () => {
     );
   });
 
-  it('lifts the dark style place labels off a near-black ground', async () => {
-    // Dark Matter paints place names at ~3:1 against its background — fine for a
-    // backdrop, not for a map whose towns are half the point.
+  it('repaints the dark map even when contours are unavailable', async () => {
+    delete process.env.EXPO_PUBLIC_CONTOUR_TILE_URL;
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     const dark = await getOnlineMapStyle('dark');
-    const place = layersOf(dark).find((l) => l.id === 'place_label')!;
-    expect(place.paint!['text-color']).toBe('rgb(198, 205, 214)');
-    expect(place.paint!['text-halo-color']).toBe('rgba(0, 0, 0, 0.85)');
-  });
-
-  it('leaves the light style labels to Liberty', async () => {
-    const light = await getOnlineMapStyle('light');
-    const place = layersOf(light).find((l) => l.id === 'place_label')!;
-    expect(place.paint?.['text-color']).toBeUndefined();
-  });
-
-  it('does not mutate the cached document when patching labels', async () => {
-    const first = await getOnlineMapStyle('dark');
-    const second = await getOnlineMapStyle('dark');
-    expect(layersOf(first).map((l) => l.id)).toEqual(layersOf(second).map((l) => l.id));
-    expect(layersOf(second).filter((l) => l.id.startsWith('contour-'))).toHaveLength(4);
+    expect(paintOf(dark, 'background')['background-color']).not.toBe('#f8f4f0');
   });
 
   it('inserts contours below a style that puts a label layer before its roads', async () => {
-    // OpenFreeMap's dark style orders water_name ahead of every road layer. The
-    // insert anchor has to stop at the first symbol layer too, or contour lines
-    // are drawn straight through lake and river names.
-    const DARK_ORDERED = {
+    // The insert anchor has to stop at the first symbol layer too, or contour
+    // lines are drawn straight through lake and river names.
+    const LABEL_FIRST = {
       version: 8,
       sources: { openmaptiles: { type: 'vector', url: 'https://example.com/tiles.json' } },
       layers: [
@@ -511,7 +525,7 @@ describe('dark theme', () => {
       Promise.resolve(
         url === `${CONTOUR_URL}/health`
           ? { ok: true, json: () => Promise.resolve({ ok: true }) }
-          : { ok: true, json: () => Promise.resolve(JSON.parse(JSON.stringify(DARK_ORDERED))) },
+          : { ok: true, json: () => Promise.resolve(JSON.parse(JSON.stringify(LABEL_FIRST))) },
       ),
     );
 

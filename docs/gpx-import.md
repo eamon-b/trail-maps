@@ -120,12 +120,17 @@ If the section is really a side trip, move those points into their own
 `<trk>` named `Side trip: …` and re-import; step 3 will then lift it off the
 main route.
 
+A loop that finishes where it started is not doubling back: meeting your own
+start again is how a circuit ends, so it is not reported unless you also walk
+part of the way out and back (an access track to the loop, say).
+
 ### 8. Waypoints are placed on the route
 
 Each waypoint is snapped to the nearest point of the main route. Waypoints
 within 500 m of the route get a km position and show in the list and on the
 profile; anything further away is kept as "off-trail" (on the map, not in the
-distance list). The report gives both counts.
+distance list). The report gives both counts. On a loop, a waypoint at the
+trailhead is listed once, at km 0, not again at the finish.
 
 ### 9. Waypoints are given a type
 

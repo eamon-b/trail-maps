@@ -49,6 +49,15 @@ function eastSpur(atKm: number, spurKm: number, stepKm = 0.1): SpurPoint[] {
   return points;
 }
 
+/** A run of points heading east (or west) at `atKm` up the meridian, from `fromKmEast` to `toKmEast`. */
+function eastSpurLeg(atKm: number, fromKmEast: number, toKmEast: number, stepKm = 0.1): SpurPoint[] {
+  const lat = BASE_LAT + atKm * LAT_DEG_PER_KM;
+  return leg(fromKmEast, toKmEast, stepKm).map(p => ({
+    lat,
+    lon: BASE_LON + ((p.lat - BASE_LAT) / LAT_DEG_PER_KM) * LON_DEG_PER_KM,
+  }));
+}
+
 describe('cumulativeKm', () => {
   it('starts at zero and accumulates along the track', () => {
     const km = cumulativeKm(leg(0, 10));
@@ -124,6 +133,34 @@ describe('detectSelfRetraces', () => {
     expect(retraces[0].retraceLengthKm).toBeCloseTo(5, 0);
     expect(retraces[1].retraceLengthKm).toBeCloseTo(8, 0);
     expect(retraces[0].startKm).toBeLessThan(retraces[1].startKm);
+  });
+
+  it('does not report a loop that ends where it started', () => {
+    // A 40 km square loop back to its own first point: the tail meets the
+    // head, but no leg of it is walked twice.
+    const square = [
+      ...leg(0, 10),
+      ...eastSpurLeg(10, 0, 10).slice(1),
+      ...leg(10, 0).map(p => ({ ...p, lon: BASE_LON + 10 * LON_DEG_PER_KM })).slice(1),
+      ...eastSpurLeg(0, 10, 0).slice(1),
+    ];
+    expect(detectSelfRetraces(square)).toEqual([]);
+  });
+
+  it('still reports the access track of a loop that walks it out and back', () => {
+    // 3 km in from the trailhead, a 40 km loop, the same 3 km back out.
+    const access = leg(0, 3);
+    const loop = [
+      ...leg(3, 13).slice(1),
+      ...eastSpurLeg(13, 0, 10).slice(1),
+      ...leg(13, 3).map(p => ({ ...p, lon: BASE_LON + 10 * LON_DEG_PER_KM })).slice(1),
+      ...eastSpurLeg(3, 10, 0).slice(1),
+    ];
+    const points = [...access, ...loop, ...leg(3, 0).slice(1)];
+    const retraces = detectSelfRetraces(points);
+
+    expect(retraces).toHaveLength(1);
+    expect(retraces[0].terminal).toBe(true);
   });
 
   it('ignores retraces shorter than minRetraceKm', () => {

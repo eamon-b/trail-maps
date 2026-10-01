@@ -507,6 +507,54 @@ describe('buildTrail with route breaks', () => {
   });
 });
 
+describe('a loop that ends where it started', () => {
+  /** A square loop of 4 x 0.05 deg sides, closed back on its first point. */
+  function loopRoute(): ParsedGpxResult {
+    const corners = [
+      [-34.0, 138.0],
+      [-34.0, 138.05],
+      [-34.05, 138.05],
+      [-34.05, 138.0],
+      [-34.0, 138.0],
+    ];
+    const points = [];
+    for (let c = 0; c < corners.length - 1; c++) {
+      for (let i = 0; i < 10; i++) {
+        const t = i / 10;
+        points.push({
+          lat: corners[c][0] + (corners[c + 1][0] - corners[c][0]) * t,
+          lon: corners[c][1] + (corners[c + 1][1] - corners[c][1]) * t,
+          ele: 100,
+          time: null,
+        });
+      }
+    }
+    points.push({ lat: -34.0, lon: 138.0, ele: 100, time: null });
+    return {
+      tracks: [{ name: 'Loop', points }],
+      waypoints: [
+        { name: 'Trailhead', lat: -34.0001, lon: 138.0001, type: 'trailhead' },
+        { name: 'Far corner', lat: -34.05, lon: 138.05, type: 'campsite' },
+      ],
+      name: null,
+    };
+  }
+
+  it('lists the trailhead once, at km 0', () => {
+    const trail = buildTrail(loopRoute(), { config: config() });
+
+    expect(trail.waypoints.map(w => w.name)).toEqual(['Trailhead', 'Far corner']);
+    expect(trail.waypoints[0].totalDistance).toBe(0);
+  });
+
+  it('does not report the loop as a retrace', () => {
+    let diagnostics: BuildTrailDiagnostics | undefined;
+    buildTrail(loopRoute(), { config: config(), onDiagnostics: d => (diagnostics = d) });
+
+    expect(diagnostics?.selfRetraces).toEqual([]);
+  });
+});
+
 describe('waypoint km across a route break', () => {
   /** Same two stretches as above, with a waypoint either side of the break. */
   function brokenRoute(): ParsedGpxResult {

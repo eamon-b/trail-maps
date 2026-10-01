@@ -9155,6 +9155,589 @@
       "lon": 132.98086
     }
   ],
+  "shikoku": [
+    {
+      "id": "w_003e81d7",
+      "name": "Roadside station Onsen-no-sato Kamiyama",
+      "type": "hut",
+      "lat": 33.973568,
+      "lon": 134.367684
+    },
+    {
+      "id": "w_048baec1",
+      "name": "Yottene Market",
+      "type": "hut",
+      "lat": 33.932046,
+      "lon": 134.522549
+    },
+    {
+      "id": "w_051ae01a",
+      "name": "Anrakuji Tsuyado",
+      "type": "accommodation",
+      "lat": 34.11808,
+      "lon": 134.388518
+    },
+    {
+      "id": "w_0dc9094b",
+      "name": "No.17 Idoji",
+      "type": "poi",
+      "lat": 34.085241,
+      "lon": 134.485488
+    },
+    {
+      "id": "w_0f019df0",
+      "name": "Ido-ji Temple Tsuyado",
+      "type": "accommodation",
+      "lat": 34.08509,
+      "lon": 134.485524
+    },
+    {
+      "id": "w_104b2e26",
+      "name": "Henro House HOTEL MORIMOTOYA",
+      "type": "accommodation",
+      "lat": 34.132415,
+      "lon": 134.426462
+    },
+    {
+      "id": "w_138f7741",
+      "name": "No.9 Horinji",
+      "type": "poi",
+      "lat": 34.1040985,
+      "lon": 134.3336021
+    },
+    {
+      "id": "w_143b398b",
+      "name": "No.7 Jurakuji",
+      "type": "poi",
+      "lat": 34.1206876,
+      "lon": 134.3780307
+    },
+    {
+      "id": "w_157d741e",
+      "name": "Pilgrim Hut No.57 Donari",
+      "type": "hut",
+      "lat": 34.117731,
+      "lon": 134.348104
+    },
+    {
+      "id": "w_17e8de14",
+      "name": "Tainohama Station Azumaya",
+      "type": "campsite",
+      "lat": 33.772771,
+      "lon": 134.583838
+    },
+    {
+      "id": "w_1a186903",
+      "name": "No.6 Anrakuji",
+      "type": "poi",
+      "lat": 34.1181096,
+      "lon": 134.3884768
+    },
+    {
+      "id": "w_1cc049dd",
+      "name": "Ebisuhama Camp Village",
+      "type": "campsite",
+      "lat": 33.742121,
+      "lon": 134.555647
+    },
+    {
+      "id": "w_1e9aaab7",
+      "name": "Henro House Okudaya",
+      "type": "accommodation",
+      "lat": 34.12122,
+      "lon": 134.35851
+    },
+    {
+      "id": "w_24c36f7d",
+      "name": "No.21 Tairyuji",
+      "type": "poi",
+      "lat": 33.882512,
+      "lon": 134.521848
+    },
+    {
+      "id": "w_30828a19",
+      "name": "Henro House Guest House Sakura-an",
+      "type": "accommodation",
+      "lat": 33.73211,
+      "lon": 134.53216
+    },
+    {
+      "id": "w_3341701b",
+      "name": "Ebisuhama Ohenro Rest Hut",
+      "type": "campsite",
+      "lat": 33.74407,
+      "lon": 134.556272
+    },
+    {
+      "id": "w_38fcb6e3",
+      "name": "Karuizawa Camp",
+      "type": "campsite",
+      "lat": 34.03411,
+      "lon": 134.40632
+    },
+    {
+      "id": "w_393e1c00",
+      "name": "Hyper inn Tokushima Ryogokubashi",
+      "type": "accommodation",
+      "lat": 34.068108,
+      "lon": 134.550785
+    },
+    {
+      "id": "w_3e784129",
+      "name": "No.12 Shosanji",
+      "type": "poi",
+      "lat": 33.985093,
+      "lon": 134.310265
+    },
+    {
+      "id": "w_3ef7b3fe",
+      "name": "Route check (T17 to Tokushima)",
+      "type": "waypoint",
+      "lat": 34.07212,
+      "lon": 134.50145
+    },
+    {
+      "id": "w_44bd565d",
+      "name": "Natural Hot Spring Goshonokyō",
+      "type": "poi",
+      "lat": 34.1238,
+      "lon": 134.35366
+    },
+    {
+      "id": "w_4a4b0fc6",
+      "name": "Kawashima Bridge Pilgrim Rest Area",
+      "type": "hut",
+      "lat": 34.067298,
+      "lon": 134.318565
+    },
+    {
+      "id": "w_594eb1e9",
+      "name": "Pilgrim Hut No.48 Kyotsukaan",
+      "type": "hut",
+      "lat": 33.970368,
+      "lon": 134.598009
+    },
+    {
+      "id": "w_5ad45412",
+      "name": "Pilgrim Hut No.12 Bizan",
+      "type": "hut",
+      "lat": 34.07018,
+      "lon": 134.545489
+    },
+    {
+      "id": "w_5d829354",
+      "name": "Yoshinogawa Super Public Bath",
+      "type": "poi",
+      "lat": 34.11942,
+      "lon": 134.43199
+    },
+    {
+      "id": "w_5f12784f",
+      "name": "Henro House Fun Farm",
+      "type": "accommodation",
+      "lat": 33.961689,
+      "lon": 134.586758
+    },
+    {
+      "id": "w_601597ba",
+      "name": "No.4 Dainichiji",
+      "type": "poi",
+      "lat": 34.1515688,
+      "lon": 134.4308846
+    },
+    {
+      "id": "w_634d45a0",
+      "name": "Henro House Yado Bizan",
+      "type": "accommodation",
+      "lat": 34.07867,
+      "lon": 134.52989
+    },
+    {
+      "id": "w_6988cc53",
+      "name": "No.10 Kirihataji",
+      "type": "poi",
+      "lat": 34.107754,
+      "lon": 134.304342
+    },
+    {
+      "id": "w_6a622147",
+      "name": "No.23 Yakuoji",
+      "type": "poi",
+      "lat": 33.731764,
+      "lon": 134.527931
+    },
+    {
+      "id": "w_6b6e64a8",
+      "name": "Mizobuchi Kogyo Zenkonyado",
+      "type": "accommodation",
+      "lat": 34.132254,
+      "lon": 134.420597
+    },
+    {
+      "id": "w_6b8934a7",
+      "name": "Tai no Hama Pilgrim Rest Hut",
+      "type": "hut",
+      "lat": 33.770981,
+      "lon": 134.580497
+    },
+    {
+      "id": "w_6ed03d9f",
+      "name": "Pilgrim Hut No.45 Kukaian ⸱ Kirihata",
+      "type": "hut",
+      "lat": 34.094105,
+      "lon": 134.308092
+    },
+    {
+      "id": "w_7b359365",
+      "name": "No.8 Kumadaniji",
+      "type": "poi",
+      "lat": 34.1227308,
+      "lon": 134.3400517
+    },
+    {
+      "id": "w_80c5feba",
+      "name": "Iyadani Kanon Rest Stop",
+      "type": "hut",
+      "lat": 33.806974,
+      "lon": 134.586117
+    },
+    {
+      "id": "w_81e5b33a",
+      "name": "No.19 Tatsueji",
+      "type": "poi",
+      "lat": 33.967922,
+      "lon": 134.605672
+    },
+    {
+      "id": "w_82326bbe",
+      "name": "No.2 Gokurakuji",
+      "type": "poi",
+      "lat": 34.155657,
+      "lon": 134.490359
+    },
+    {
+      "id": "w_855b61ce",
+      "name": "Henro House Sakuraya",
+      "type": "accommodation",
+      "lat": 34.092484,
+      "lon": 134.302789
+    },
+    {
+      "id": "w_871bb8d4",
+      "name": "Kamiyama hot spring",
+      "type": "poi",
+      "lat": 33.97178,
+      "lon": 134.36982
+    },
+    {
+      "id": "w_891b096b",
+      "name": "Oi Pilgrim Rest Area",
+      "type": "hut",
+      "lat": 33.908096,
+      "lon": 134.518354
+    },
+    {
+      "id": "w_8ad53fb3",
+      "name": "Roadside Station Hiwasa",
+      "type": "hut",
+      "lat": 33.73029,
+      "lon": 134.530247
+    },
+    {
+      "id": "w_8fa57d6f",
+      "name": "No.1 Ryozenji",
+      "type": "poi",
+      "lat": 34.159421,
+      "lon": 134.502944
+    },
+    {
+      "id": "w_8fd22daa",
+      "name": "Shosanji Okunoin",
+      "type": "mountain",
+      "lat": 33.9820924,
+      "lon": 134.3040326
+    },
+    {
+      "id": "w_93c9cf6b",
+      "name": "Pilgrim Hut No.52 Hiwasa Kaizokubune",
+      "type": "hut",
+      "lat": 33.752011,
+      "lon": 134.532736
+    },
+    {
+      "id": "w_972e812d",
+      "name": "Henro House Guest house RAKUFU",
+      "type": "accommodation",
+      "lat": 33.923667,
+      "lon": 134.557102
+    },
+    {
+      "id": "w_97be02be",
+      "name": "Pilgrim Hut No.3 Asebi",
+      "type": "hut",
+      "lat": 33.869812,
+      "lon": 134.556972
+    },
+    {
+      "id": "w_99dd45b6",
+      "name": "Motomachiyu",
+      "type": "poi",
+      "lat": 34.07873,
+      "lon": 134.5208
+    },
+    {
+      "id": "w_9d3c8cee",
+      "name": "No.5 Jizoji",
+      "type": "poi",
+      "lat": 34.1371936,
+      "lon": 134.4319428
+    },
+    {
+      "id": "w_9e826bff",
+      "name": "No.16 Kan-onji",
+      "type": "poi",
+      "lat": 34.068505,
+      "lon": 134.474349
+    },
+    {
+      "id": "w_9eb2986a",
+      "name": "Maekama Campground",
+      "type": "campsite",
+      "lat": 33.9245,
+      "lon": 134.49647
+    },
+    {
+      "id": "w_9efe3613",
+      "name": "Yakuoji Onsen",
+      "type": "poi",
+      "lat": 33.73148,
+      "lon": 134.52847
+    },
+    {
+      "id": "w_a21fbed9",
+      "name": "Pilgrim Hut No.44 Kanyake",
+      "type": "hut",
+      "lat": 34.133467,
+      "lon": 134.414676
+    },
+    {
+      "id": "w_a50701c5",
+      "name": "No.20 Kakurinji",
+      "type": "poi",
+      "lat": 33.913796,
+      "lon": 134.505583
+    },
+    {
+      "id": "w_a6c1f2f4",
+      "name": "Hashimoto Drive-In",
+      "type": "accommodation",
+      "lat": 33.72887,
+      "lon": 134.530409
+    },
+    {
+      "id": "w_a7180b97",
+      "name": "Jizoin Ikerikuchi Rest Area",
+      "type": "hut",
+      "lat": 34.059146,
+      "lon": 134.503199
+    },
+    {
+      "id": "w_a9ca76de",
+      "name": "Pilgrim Hut No.11 Katsuura",
+      "type": "hut",
+      "lat": 33.932422,
+      "lon": 134.522667
+    },
+    {
+      "id": "w_aa9e9802",
+      "name": "No.13 Dainichiji",
+      "type": "poi",
+      "lat": 34.038162,
+      "lon": 134.462662
+    },
+    {
+      "id": "w_ac6e4a13",
+      "name": "Pilgrim Hut No.4 Kaneuchi",
+      "type": "hut",
+      "lat": 33.809574,
+      "lon": 134.591525
+    },
+    {
+      "id": "w_ad8153ab",
+      "name": "Henro House Guest House Channel-kan",
+      "type": "accommodation",
+      "lat": 34.08002,
+      "lon": 134.34938
+    },
+    {
+      "id": "w_b3f929a0",
+      "name": "No.18 Onzanji",
+      "type": "poi",
+      "lat": 33.985954,
+      "lon": 134.578268
+    },
+    {
+      "id": "w_b49d6731",
+      "name": "Kamojima Hot Spring",
+      "type": "poi",
+      "lat": 34.06949,
+      "lon": 134.36377
+    },
+    {
+      "id": "w_bb9f161d",
+      "name": "Kamojima Onsen Iyashi-no-Ya",
+      "type": "accommodation",
+      "lat": 34.063032,
+      "lon": 134.361536
+    },
+    {
+      "id": "w_bd04349f",
+      "name": "Pilgrim Hut No.47 Oone",
+      "type": "hut",
+      "lat": 33.851922,
+      "lon": 134.567683
+    },
+    {
+      "id": "w_be98c6e1",
+      "name": "Kayabuki (Thatch Roof) Pilgrim Hut",
+      "type": "hut",
+      "lat": 33.925307,
+      "lon": 134.5152
+    },
+    {
+      "id": "w_c1ccd707",
+      "name": "Henro House Pine house",
+      "type": "accommodation",
+      "lat": 34.080466,
+      "lon": 134.345292
+    },
+    {
+      "id": "w_c491b372",
+      "name": "Guest House OGaGa",
+      "type": "accommodation",
+      "lat": 34.080281,
+      "lon": 134.532251
+    },
+    {
+      "id": "w_c5c7ba41",
+      "name": "No.11 Fujiidera",
+      "type": "poi",
+      "lat": 34.051735,
+      "lon": 134.348502
+    },
+    {
+      "id": "w_ce8cd67c",
+      "name": "Seifu Business Hotel",
+      "type": "accommodation",
+      "lat": 34.071569,
+      "lon": 134.550519
+    },
+    {
+      "id": "w_da2a513e",
+      "name": "No.14 Jorakuji",
+      "type": "poi",
+      "lat": 34.050393,
+      "lon": 134.47565
+    },
+    {
+      "id": "w_da4119a5",
+      "name": "Shinmachi Onsen",
+      "type": "poi",
+      "lat": 34.06859,
+      "lon": 134.5467
+    },
+    {
+      "id": "w_dab90f88",
+      "name": "Henro House NISHIMURA",
+      "type": "accommodation",
+      "lat": 33.9413,
+      "lon": 134.57648
+    },
+    {
+      "id": "w_de1f7976",
+      "name": "Pilgrim Hut No.36 Kamiyama",
+      "type": "hut",
+      "lat": 33.993373,
+      "lon": 134.353391
+    },
+    {
+      "id": "w_e347fcd5",
+      "name": "Henro House Ichiban-monzen-dori",
+      "type": "accommodation",
+      "lat": 34.15669,
+      "lon": 134.50205
+    },
+    {
+      "id": "w_e388cb25",
+      "name": "Henro House Oyado Eleven",
+      "type": "accommodation",
+      "lat": 34.053055,
+      "lon": 134.35032
+    },
+    {
+      "id": "w_e5307c6a",
+      "name": "Inariyu",
+      "type": "poi",
+      "lat": 34.01364,
+      "lon": 134.57456
+    },
+    {
+      "id": "w_e84d6ac9",
+      "name": "No.15 Kokubunji",
+      "type": "poi",
+      "lat": 34.055613,
+      "lon": 134.473614
+    },
+    {
+      "id": "w_e88822fb",
+      "name": "No.22 Byodoji",
+      "type": "poi",
+      "lat": 33.85192,
+      "lon": 134.58282
+    },
+    {
+      "id": "w_eee3785e",
+      "name": "Ryusuian Rest Area",
+      "type": "hut",
+      "lat": 34.015431,
+      "lon": 134.330376
+    },
+    {
+      "id": "w_efe474f1",
+      "name": "Sumi Fertilizer Warehouse Pilgrim Hut",
+      "type": "hut",
+      "lat": 34.08702,
+      "lon": 134.314314
+    },
+    {
+      "id": "w_f7226c4b",
+      "name": "Henro House HS JAPAN AWA",
+      "type": "accommodation",
+      "lat": 34.08888,
+      "lon": 134.29868
+    },
+    {
+      "id": "w_f75725bd",
+      "name": "Henro House Morimotoya",
+      "type": "accommodation",
+      "lat": 34.13569,
+      "lon": 134.43204
+    },
+    {
+      "id": "w_fcc7e296",
+      "name": "Spa Bizan no Yu",
+      "type": "poi",
+      "lat": 34.07321,
+      "lon": 134.55062
+    },
+    {
+      "id": "w_fce8d4db",
+      "name": "No.3 Konsenji",
+      "type": "poi",
+      "lat": 34.147453,
+      "lon": 134.4685024
+    }
+  ],
   "te_araroa": [
     {
       "id": "w_015898c1",

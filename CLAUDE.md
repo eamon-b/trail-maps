@@ -84,6 +84,7 @@ Shared processing modules (used by both web and mobile):
 - `build-grid-tiles.ts` - Builds grid-based map tiles
 - `tile-pipeline.ts` - Orchestrates the full tile generation pipeline
 - `process-heysen-waypoints.ts` - Trail-specific waypoint data processing
+- `process-shikoku-caltopo.ts` - Builds `data/trails/shikoku/shikoku-t1-t23.gpx` (Shikoku Henro, Temples 1-23) from a CalTopo GeoJSON export of the whole island: keeps the purple "88 Temple Pilgrimage" line and every marker within 3 km, types each by its folder, and adds Temples 3-9 and the Shosanji Okunoin from OpenStreetMap. The export itself is not committed — a GeoJSON in the trail directory would be read as a category source keyed by folder names the classifier does not know. The Okunoin out-and-back is lifted off the route by `extractSpurs`, and `waypointMaxDistance` is 3000 m so pilgrim lodgings a short walk off the line stay on the datasheet and plan page
 - `upload-descriptions.ts` - PUTs curated waypoint descriptions to the comments API (`npm run upload:descriptions`, admin token in `$TRACKNOTES_ADMIN_TOKEN`; `--dry-run` prints the requests)
 
 ### Web UI (`src/web/`)

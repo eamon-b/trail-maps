@@ -35,6 +35,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
+import { routeBreakStarts } from '@lib/route-breaks';
 import { resupplySummaryText } from '@lib/resupply-display';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { getDirectionLabel, KM_EPSILON } from '@lib/plan-direction';
@@ -70,6 +71,7 @@ import {
   planDirectionOf,
   stopCandidates,
   stopKeyOf,
+  stopLegs,
   toggleTargetOf,
 } from '../../../src/features/plan/plan-stops';
 import {
@@ -251,6 +253,19 @@ export default function PlanScreen() {
   const candidates = useMemo(
     () => stopCandidates(trail, planDirection, { all: showAllWaypoints }),
     [trail, planDirection, showAllWaypoints],
+  );
+
+  // Each row's day so far: from the stop before it, resetting at every stop.
+  const legs = useMemo(
+    () =>
+      stopLegs(candidates, displayPlan, {
+        direction: planDirection,
+        totalDistance: trail.track.totalDistance,
+        sectionStartKm: sectionConfig.startKm,
+        points: trail.track.points,
+        breakStarts: routeBreakStarts(trail.track.breaks, 'points'),
+      }),
+    [candidates, displayPlan, planDirection, trail, sectionConfig.startKm],
   );
 
   // Naismith's climbing term is silently zero for a trail with no profile, so
@@ -445,6 +460,8 @@ export default function PlanScreen() {
                 plan={plan}
                 pois={trail.pois}
                 units={units}
+                legs={legs}
+                showClimb={!distanceOnly}
                 showAll={showAllWaypoints}
                 onShowAll={setShowAllWaypoints}
                 onToggle={(c) => edit((p) => toggleStop(p, toggleTargetOf(c)))}

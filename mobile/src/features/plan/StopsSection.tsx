@@ -21,7 +21,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { formatDistance } from '@lib/format-distance';
+import { formatDistance, formatElevation } from '@lib/format-distance';
 import { findStop, servicesAtStop, type StopServices } from '@lib/plan-editor';
 import { OSM_ATTRIBUTION } from '@lib/poi-display';
 import type { PlanDocument, PlanStop } from '@lib/plan-types';
@@ -30,7 +30,7 @@ import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import type { Units } from '../../state/settings-store';
 import { StopEditor } from './StopEditor';
-import { stopKeyOf, type StopCandidate } from './plan-stops';
+import { stopKeyOf, type StopCandidate, type StopLeg } from './plan-stops';
 
 /** Rows revealed at a time — a long trail's "All waypoints" list is thousands. */
 const PAGE_SIZE = 50;
@@ -52,6 +52,14 @@ export interface StopsSectionProps {
   /** The guide trail's POIs — `undefined` for a trail never enriched. */
   pois: TrailPOI[] | undefined;
   units: Units;
+  /**
+   * Each row's walk from the stop before it (`plan-stops.stopLegs`), keyed by
+   * candidate key. The row shows this — the day so far — rather than its km
+   * along the whole trail, because the list is for cutting the trail into days.
+   */
+  legs: Map<string, StopLeg>;
+  /** False for a trail with no usable profile: the climb figures would be zeros. */
+  showClimb: boolean;
   showAll: boolean;
   onShowAll: (showAll: boolean) => void;
   onToggle: (candidate: StopCandidate) => void;
@@ -125,6 +133,8 @@ export function StopsSection(props: StopsSectionProps) {
               candidate={candidate}
               stop={plan ? findStop(plan, stopKeyOf(candidate)) : undefined}
               services={services.get(candidate.key)}
+              leg={props.legs.get(candidate.key)}
+              showClimb={props.showClimb}
               units={units}
               onToggle={() => props.onToggle(candidate)}
               onNights={(nights) => props.onNights(candidate, nights)}
@@ -182,6 +192,8 @@ function StopRow({
   candidate,
   stop,
   services,
+  leg,
+  showClimb,
   units,
   onToggle,
   onNights,
@@ -191,6 +203,8 @@ function StopRow({
   candidate: StopCandidate;
   stop: PlanStop | undefined;
   services: StopServices | undefined;
+  leg: StopLeg | undefined;
+  showClimb: boolean;
   units: Units;
   onToggle: () => void;
   onNights: (nights: number) => void;
@@ -232,7 +246,7 @@ function StopRow({
             {candidate.name}
           </Text>
           <Text style={[styles.km, { color: colors.textSecondary }]}>
-            {formatDistance(candidate.activeKm, units)}
+            {leg ? legText(leg, units, showClimb) : formatDistance(candidate.activeKm, units)}
           </Text>
           {services && <ServicesStrip services={services} />}
         </View>
@@ -245,6 +259,13 @@ function StopRow({
       )}
     </View>
   );
+}
+
+/** "12.4 km · ↑ 540 m · ↓ 320 m" — the day so far, from the previous stop. */
+function legText(leg: StopLeg, units: Units, showClimb: boolean): string {
+  const distance = formatDistance(leg.distanceKm, units);
+  if (!showClimb) return distance;
+  return `${distance} · ↑ ${formatElevation(leg.ascentM, units)} · ↓ ${formatElevation(leg.descentM, units)}`;
 }
 
 /** ⛺ 🛏 🛒 🍽 💧 🚌 — lit for what OSM knows is here, greyed for what it does not. */

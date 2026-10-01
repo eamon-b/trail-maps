@@ -16,7 +16,9 @@ import {
   stopCandidateOf,
   stopCandidates,
   stopKeyOf,
+  stopLegs,
   toggleTargetOf,
+  type StopCandidate,
 } from '../plan-stops';
 
 /** Flat 100 km trail: Naismith hours are distance / pace, so splits are exact. */
@@ -143,5 +145,59 @@ describe('ticking a stop splits the days', () => {
     expect(days.map((d) => d.date)).toEqual(['2026-10-01', '2026-10-03']);
     expect(days[0].restDays).toBe(1);
     expect(days[1].restDays).toBe(0);
+  });
+});
+
+describe('stopLegs', () => {
+  // 100 km, climbing 10 m/km to km 50 and descending 10 m/km after it.
+  const points = Array.from({ length: 101 }, (_, i) => ({
+    dist: i,
+    ele: i <= 50 ? i * 10 : 1000 - i * 10,
+  }));
+  const place = (km: number, key = `p${km}`): StopCandidate => ({
+    key,
+    waypointId: key,
+    name: key,
+    type: 'campsite',
+    activeKm: km,
+    noboKm: km,
+  });
+  const candidates = [place(20), place(40), place(60), place(80)];
+  const withStops = (...kms: number[]): PlanDocument => ({
+    ...emptyPlan(),
+    stops: kms.map((km) => ({ km, waypointId: `p${km}`, name: `p${km}`, nights: 1 })),
+  });
+  const opts = { direction: 'NOBO' as const, totalDistance: 100, sectionStartKm: 0, points };
+
+  it('counts from the section start while nothing is ticked', () => {
+    const legs = stopLegs(candidates, undefined, opts);
+    expect(legs.get('p20')).toEqual({ distanceKm: 20, ascentM: 200, descentM: 0 });
+    expect(legs.get('p80')).toEqual({ distanceKm: 80, ascentM: 500, descentM: 300 });
+  });
+
+  it('resets to zero after each ticked stop; a ticked row shows its whole day', () => {
+    const legs = stopLegs(candidates, withStops(40), opts);
+    expect(legs.get('p40')).toEqual({ distanceKm: 40, ascentM: 400, descentM: 0 });
+    expect(legs.get('p60')).toEqual({ distanceKm: 20, ascentM: 100, descentM: 100 });
+    expect(legs.get('p80')).toEqual({ distanceKm: 40, ascentM: 100, descentM: 300 });
+  });
+
+  it('counts from the chosen section start', () => {
+    const legs = stopLegs(candidates, undefined, { ...opts, sectionStartKm: 50 });
+    expect(legs.get('p60')).toEqual({ distanceKm: 10, ascentM: 0, descentM: 100 });
+    // Behind the section start: measured from the trail start.
+    expect(legs.get('p20')?.distanceKm).toBe(20);
+  });
+
+  it('mirrors NOBO-stored stops onto a reversed guide', () => {
+    // Walking SOBO, active km 40 is NOBO km 60 — where the stop is stored.
+    const sobo = candidates.map((c) => ({ ...c, noboKm: 100 - c.activeKm }));
+    const plan: PlanDocument = {
+      ...emptyPlan('SOBO'),
+      stops: [{ km: 60, waypointId: 'p40', name: 'p40', nights: 1 }],
+    };
+    const legs = stopLegs(sobo, plan, { ...opts, direction: 'SOBO' });
+    expect(legs.get('p40')?.distanceKm).toBe(40);
+    expect(legs.get('p60')?.distanceKm).toBe(20);
   });
 });

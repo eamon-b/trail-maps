@@ -547,6 +547,30 @@ describe('a loop that ends where it started', () => {
     expect(trail.waypoints[0].totalDistance).toBe(0);
   });
 
+  it('still lists the junction again at the end of an out-and-back side trip', () => {
+    // 2 km of main route, and a side trip that leaves at its start, goes 1 km
+    // east and comes back. The return to the junction is a datasheet row on
+    // purpose; only the main route merges a closing pass into km 0.
+    const main = [0, 1, 2, 3, 4].map(i => ({ lat: -34.0 - i * 0.0045, lon: 138.0, ele: 100, time: null }));
+    const out = [0, 1, 2, 3, 4].map(i => ({ lat: -34.0, lon: 138.0 + i * 0.0027, ele: 100, time: null }));
+    const trail = buildTrail(
+      {
+        tracks: [
+          { name: 'Main', points: main },
+          { name: 'Side trip: Lookout', points: [...out, ...out.slice(0, -1).reverse()] },
+        ],
+        waypoints: [
+          { name: 'Junction', lat: -34.0, lon: 138.0, type: 'junction' },
+          { name: 'Lookout', lat: -34.0, lon: 138.0108, type: 'poi' },
+        ],
+        name: null,
+      },
+      { config: config() }
+    );
+
+    expect(trail.sideTrips[0].waypoints?.map(w => w.name)).toEqual(['Junction', 'Lookout', 'Junction']);
+  });
+
   it('does not report the loop as a retrace', () => {
     let diagnostics: BuildTrailDiagnostics | undefined;
     buildTrail(loopRoute(), { config: config(), onDiagnostics: d => (diagnostics = d) });

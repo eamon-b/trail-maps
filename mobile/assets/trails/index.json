@@ -35,11 +35,46 @@
     "dataVersion": "2026-09-30"
   },
   {
+    "id": "grampians_peaks",
+    "name": "Grampians Peaks Trail",
+    "shortName": "GPT",
+    "lengthKm": 157.4,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "great_north_walk",
+    "name": "Great North Walk",
+    "shortName": "GNW",
+    "lengthKm": 257,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "great_ocean_walk",
+    "name": "Great Ocean Walk",
+    "shortName": "GOW",
+    "lengthKm": 96.6,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "great_south_west_walk",
+    "name": "Great South West Walk",
+    "shortName": "GSWW",
+    "lengthKm": 253.7,
+    "dataVersion": "2026-10-01"
+  },
+  {
     "id": "heysen",
     "name": "Heysen Trail",
     "shortName": "Heysen",
     "lengthKm": 1098.9,
     "dataVersion": "2026-09-20"
+  },
+  {
+    "id": "kep_track",
+    "name": "Kep Track",
+    "shortName": "Kep",
+    "lengthKm": 72.5,
+    "dataVersion": "2026-10-01"
   },
   {
     "id": "larapinta",
@@ -49,10 +84,38 @@
     "dataVersion": "2026-09-20"
   },
   {
+    "id": "overland",
+    "name": "Overland Track",
+    "shortName": "Overland",
+    "lengthKm": 62.1,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "royal_coast_track",
+    "name": "The Coast Track",
+    "shortName": "Coast Track",
+    "lengthKm": 25.3,
+    "dataVersion": "2026-10-01"
+  },
+  {
     "id": "shikoku",
     "name": "Shikoku Henro: Temples 1-23",
     "shortName": "Shikoku T1-23",
     "lengthKm": 154.1,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "six_foot_track",
+    "name": "Six Foot Track",
+    "shortName": "Six Foot",
+    "lengthKm": 44.5,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "south_coast_track",
+    "name": "South Coast Track",
+    "shortName": "South Coast",
+    "lengthKm": 85.5,
     "dataVersion": "2026-10-01"
   },
   {
@@ -61,5 +124,19 @@
     "shortName": "Te Araroa",
     "lengthKm": 3056.8,
     "dataVersion": "2026-09-30"
+  },
+  {
+    "id": "thorsborne",
+    "name": "Thorsborne Trail",
+    "shortName": "Thorsborne",
+    "lengthKm": 28.8,
+    "dataVersion": "2026-10-01"
+  },
+  {
+    "id": "three_capes",
+    "name": "Three Capes Track",
+    "shortName": "Three Capes",
+    "lengthKm": 22.7,
+    "dataVersion": "2026-10-01"
   }
 ]

@@ -26,11 +26,22 @@ export const ALLOWED_TRAILS: readonly string[] = [
   'bibbulmun',
   'cape_to_cape',
   'cdt',
+  'grampians_peaks',
+  'great_north_walk',
+  'great_ocean_walk',
+  'great_south_west_walk',
   'heysen',
   'hume-and-hovell',
+  'kep_track',
   'larapinta',
+  'overland',
+  'royal_coast_track',
   'shikoku',
+  'six_foot_track',
+  'south_coast_track',
   'te_araroa',
+  'thorsborne',
+  'three_capes',
 ];
 
 const WAYPOINT_ID_RE = /^[a-z0-9_-]{4,64}$/;

@@ -1,0 +1,1636 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:56:13.978Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 8422046144,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7017566,
+      "lon": 150.3067376,
+      "name": "Twynam St at Mort St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780149",
+        "highway": "bus_stop",
+        "name": "Twynam St at Mort St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780149"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.6703415989866237
+    },
+    {
+      "id": 8422046176,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7031903,
+      "lon": 150.3090681,
+      "name": "Albion St at Rupert St",
+      "tags": {
+        "abandoned:highway": "bus_stop",
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2780266",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Albion St at Rupert St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780266",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.8727187391108615
+    },
+    {
+      "id": 8422046180,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7025372,
+      "lon": 150.3061837,
+      "name": "Mort St at Rupert St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780150",
+        "highway": "bus_stop",
+        "name": "Mort St at Rupert St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780150"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.6102493122317305
+    },
+    {
+      "id": 8422046181,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7043037,
+      "lon": 150.3095638,
+      "name": "Fitzgerald St opp Jubilee St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780147",
+        "highway": "bus_stop",
+        "name": "Fitzgerald St opp Jubilee St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780147"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.9188656570044267
+    },
+    {
+      "id": 8422046192,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.704141,
+      "lon": 150.3055457,
+      "name": "Mort St opp Melrose Ln",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780267",
+        "highway": "bus_stop",
+        "name": "Mort St opp Melrose Ln",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780267"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.546779430244941
+    },
+    {
+      "id": 8422046211,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7023295,
+      "lon": 150.30924,
+      "name": "Albion St at Twynam St",
+      "tags": {
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2780148",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Albion St at Twynam St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780148",
+        "shelter": "yes",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.8939225753031492
+    },
+    {
+      "id": 8422046212,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7053843,
+      "lon": 150.2930941,
+      "name": "Bonnie Doon Reserve, Great Western Hwy",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780272",
+        "highway": "bus_stop",
+        "name": "Bonnie Doon Reserve, Great Western Hwy",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780272"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.4363972036497855
+    },
+    {
+      "id": 866517483,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.7052044,
+      "lon": 150.3025497,
+      "name": null,
+      "tags": {
+        "access": "private",
+        "amenity": "shelter",
+        "building": "yes",
+        "shelter_type": "gazebo"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.2798219249948797
+    },
+    {
+      "id": 886084471,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.6986854,
+      "lon": 150.3053978,
+      "name": null,
+      "tags": {
+        "access": "private",
+        "amenity": "shelter",
+        "building": "yes",
+        "shelter_type": "gazebo"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.6307114955427737
+    },
+    {
+      "id": 1327465610,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.7039505,
+      "lon": 150.2884163,
+      "name": "Six Foot Track Information Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Six Foot Track Information Shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 0.04769103784455975,
+      "distanceFromTrail": 0.007238334421816165
+    },
+    {
+      "id": 4230081860,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7066252,
+      "lon": 150.2995981,
+      "name": "Great Western Hwy After Bathurst Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278065",
+        "highway": "bus_stop",
+        "name": "Great Western Hwy After Bathurst Rd",
+        "public_transport": "platform",
+        "ref": "278065"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 0.9915588165430137
+    },
+    {
+      "id": 4230081861,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7068187,
+      "lon": 150.2994251,
+      "name": "Great Western Hwy Opp Bathurst Rd",
+      "tags": {
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2780180",
+        "highway": "bus_stop",
+        "name": "Great Western Hwy Opp Bathurst Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780180",
+        "shelter": "yes",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 0.9726791957513461
+    },
+    {
+      "id": 8422046157,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7057391,
+      "lon": 150.3051109,
+      "name": "Mort St at Dantes Av",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780163",
+        "highway": "bus_stop",
+        "name": "Mort St at Dantes Av",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780163"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 1.5106816052560874
+    },
+    {
+      "id": 8422046158,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7075014,
+      "lon": 150.3076267,
+      "name": "Great Western Hwy after Albion St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2780283",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Great Western Hwy after Albion St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780283",
+        "shelter": "no",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 1.7236769004659722
+    },
+    {
+      "id": 8422046199,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7054367,
+      "lon": 150.3052935,
+      "name": "Mort St at Camp St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780151",
+        "highway": "bus_stop",
+        "name": "Mort St at Camp St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780151"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 1.53316694792871
+    },
+    {
+      "id": 397769504,
+      "type": "way",
+      "category": "resupply",
+      "lat": -33.7069207,
+      "lon": 150.3067484,
+      "name": "EG Ampol",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Ampol",
+        "brand:wikidata": "Q4748528",
+        "fuel:discount": "Woolworths",
+        "landuse": "retail",
+        "name": "EG Ampol",
+        "operator": "EG Australia",
+        "operator:wikidata": "Q5023980",
+        "website": "https://www.eg-australia.com/"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 1.64578860803256
+    },
+    {
+      "id": 397769505,
+      "type": "way",
+      "category": "resupply",
+      "lat": -33.7069919,
+      "lon": 150.3068129,
+      "name": "EG Australia",
+      "tags": {
+        "brand": "EG Australia",
+        "brand:wikidata": "Q5023980",
+        "brand:wikipedia": "en:EG Australia",
+        "building": "yes",
+        "name": "EG Australia",
+        "shop": "convenience",
+        "website": "https://www.eg-australia.com/"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 1.651199398252638
+    },
+    {
+      "id": 866593244,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.7056602,
+      "lon": 150.3076975,
+      "name": null,
+      "tags": {
+        "access": "private",
+        "amenity": "shelter",
+        "building": "yes",
+        "shelter_type": "gazebo"
+      },
+      "distanceAlongTrail": 0.5520568410334444,
+      "distanceFromTrail": 1.7484163140685802
+    },
+    {
+      "id": 8422048218,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7080203,
+      "lon": 150.3047454,
+      "name": "Bathurst Rd Opp Gundar St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780270",
+        "highway": "bus_stop",
+        "name": "Bathurst Rd Opp Gundar St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780270"
+      },
+      "distanceAlongTrail": 0.5578723356969678,
+      "distanceFromTrail": 1.4563639345566033
+    },
+    {
+      "id": 8422046148,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7080785,
+      "lon": 150.3055997,
+      "name": "Bathurst Rd Before Gundar St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780271",
+        "highway": "bus_stop",
+        "name": "Bathurst Rd Before Gundar St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780271"
+      },
+      "distanceAlongTrail": 0.5643438804274598,
+      "distanceFromTrail": 1.5353860203761933
+    },
+    {
+      "id": 6403957822,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.710814,
+      "lon": 150.2895872,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "rock_shelter"
+      },
+      "distanceAlongTrail": 1.0611140087996287,
+      "distanceFromTrail": 0.058281625594547
+    },
+    {
+      "id": 8422046206,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7084646,
+      "lon": 150.3031115,
+      "name": "272 Bathurst Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278064",
+        "highway": "bus_stop",
+        "name": "272 Bathurst Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278064"
+      },
+      "distanceAlongTrail": 1.0790585477685408,
+      "distanceFromTrail": 1.3017126224480415
+    },
+    {
+      "id": 8422046210,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7094299,
+      "lon": 150.3002374,
+      "name": "Valley Rd Opp Blue Mountains Emergency Centre",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278054",
+        "highway": "bus_stop",
+        "name": "Valley Rd Opp Blue Mountains Emergency Centre",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278054"
+      },
+      "distanceAlongTrail": 1.0790585477685408,
+      "distanceFromTrail": 1.018308517199009
+    },
+    {
+      "id": 12311157781,
+      "type": "node",
+      "category": "water",
+      "lat": -33.7109973,
+      "lon": 150.3107506,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.9657905438611913
+    },
+    {
+      "id": 4047416912,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.710196,
+      "lon": 150.3092416,
+      "name": "Todarello's",
+      "tags": {
+        "addr:housenumber": "170-180",
+        "addr:street": "Bathurst Road",
+        "email": "freshproduce@todarellos.com",
+        "name": "Todarello's",
+        "phone": "+61 2 4782 4972",
+        "shop": "greengrocer",
+        "website": "https://todarellos.com/"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.831054200080703
+    },
+    {
+      "id": 7040012378,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7100019,
+      "lon": 150.2999892,
+      "name": "Arjuna Indian Restaurant",
+      "tags": {
+        "addr:housenumber": "16",
+        "addr:street": "Valley Road",
+        "amenity": "restaurant",
+        "name": "Arjuna Indian Restaurant",
+        "opening_hours": "Th-Mo 18:00-21:00",
+        "phone": "+61 2 4782 4662"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 0.9834529213653467
+    },
+    {
+      "id": 8422046201,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7092763,
+      "lon": 150.3089592,
+      "name": "Bathurst Rd before Buti St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780269",
+        "highway": "bus_stop",
+        "name": "Bathurst Rd before Buti St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780269"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.8159662502474367
+    },
+    {
+      "id": 8422046208,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7097309,
+      "lon": 150.3003365,
+      "name": "Blue Mountains Emergency Centre, Valley Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780273",
+        "highway": "bus_stop",
+        "name": "Blue Mountains Emergency Centre, Valley Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780273"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.020447212777857
+    },
+    {
+      "id": 1524571760,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7097626,
+      "lon": 150.3009062,
+      "name": "Blue Mountains Fire Control Centre",
+      "tags": {
+        "addr:postcode": "2780",
+        "addr:state": "NSW",
+        "addr:street": "Valley Road",
+        "addr:suburb": "Katoomba",
+        "amenity": "fire_station",
+        "description": "Fire Control Centre",
+        "government": "emergency",
+        "name": "Blue Mountains Fire Control Centre",
+        "operator": "NSW Rural Fire Service",
+        "operator:wikidata": "Q7011777",
+        "phone": "+61 2 4784 7444"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.0715948487674016
+    },
+    {
+      "id": 683127359,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7096326,
+      "lon": 150.3006805,
+      "name": "Blue Mountains Support Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "building": "yes",
+        "name": "Blue Mountains Support Brigade",
+        "operator": "NSW Rural Fire Service",
+        "operator:wikidata": "Q7011777",
+        "ref": "BM GSB"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.0537767076325235
+    },
+    {
+      "id": 683127364,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7098043,
+      "lon": 150.3010675,
+      "name": "Emergency Operations Centre",
+      "tags": {
+        "addr:postcode": "2780",
+        "addr:state": "NSW",
+        "addr:street": "Valley Road",
+        "addr:suburb": "Katoomba",
+        "amenity": "fire_station",
+        "building": "yes",
+        "emergency": "disaster_response",
+        "name": "Emergency Operations Centre",
+        "operator": "Blue Mountains City Council",
+        "operator:wikidata": "Q113950677",
+        "ref": "BM EOC"
+      },
+      "distanceAlongTrail": 1.0931608400522412,
+      "distanceFromTrail": 1.085475489108545
+    },
+    {
+      "id": 12475599264,
+      "type": "node",
+      "category": "water",
+      "lat": -33.7147015,
+      "lon": 150.3040336,
+      "name": null,
+      "tags": {
+        "access": "customers",
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.3835699393844414
+    },
+    {
+      "id": 12475599265,
+      "type": "node",
+      "category": "water",
+      "lat": -33.7149176,
+      "lon": 150.3035003,
+      "name": null,
+      "tags": {
+        "access": "customers",
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.3418774070972923
+    },
+    {
+      "id": 12996773590,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7164593,
+      "lon": 150.30947,
+      "name": "Parke St before Waratah St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Parke St before Waratah St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780209"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9197758604318271
+    },
+    {
+      "id": 20973583,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7118258,
+      "lon": 150.3100333,
+      "name": "Blackburn's Family Hotel",
+      "tags": {
+        "amenity": "pub",
+        "name": "Blackburn's Family Hotel",
+        "restaurant": "yes",
+        "toilets:wheelchair": "yes",
+        "wheelchair": "limited"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.8984550988766073
+    },
+    {
+      "id": 2763942902,
+      "type": "node",
+      "category": "resupply",
+      "lat": -33.716617,
+      "lon": 150.3097851,
+      "name": "Woolworths",
+      "tags": {
+        "branch": "Katoomba",
+        "brand": "Woolworths",
+        "brand:wikidata": "Q3249145",
+        "brand:wikipedia": "en:Woolworths Supermarkets",
+        "name": "Woolworths",
+        "opening_hours": "Mo-Su 07:00-22:00",
+        "operator": "Woolworths Group",
+        "operator:ref": "88 000 014 675",
+        "operator:wikidata": "Q607272",
+        "phone": "+61 2 4345 4503",
+        "ref": "1787",
+        "shop": "supermarket",
+        "source": "voice",
+        "website": "https://www.woolworths.com.au/shop/storelocator/nsw-katoomba-1787",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.952627543058326
+    },
+    {
+      "id": 5237464923,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7119006,
+      "lon": 150.3104362,
+      "name": "Smokey Bundits",
+      "tags": {
+        "addr:housenumber": "2",
+        "addr:postcode": "2780",
+        "addr:street": "Parke Street",
+        "amenity": "cafe",
+        "cuisine": "burger",
+        "name": "Smokey Bundits",
+        "opening_hours": "We-Su 12:00-18:00",
+        "outdoor_seating": "no",
+        "wheelchair": "limited"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9357851149065985
+    },
+    {
+      "id": 6930021593,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7122143,
+      "lon": 150.3100149,
+      "name": "Mountain Culture Beer Company",
+      "tags": {
+        "addr:housenumber": "23-25",
+        "addr:street": "Parke Street",
+        "addr:suburb": "Katoomba",
+        "amenity": "pub",
+        "contact:facebook": "https://www.facebook.com/mountainculturebeerco/",
+        "microbrewery": "yes",
+        "name": "Mountain Culture Beer Company"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.8974891544477526
+    },
+    {
+      "id": 7872135713,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7122618,
+      "lon": 150.310306,
+      "name": "Parke St opp Fire Station",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278066",
+        "highway": "bus_stop",
+        "name": "Parke St opp Fire Station",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278066"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9245590477363448
+    },
+    {
+      "id": 7872135714,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7140518,
+      "lon": 150.309951,
+      "name": "Parke St after College Lane",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278067",
+        "highway": "bus_stop",
+        "name": "Parke St after College Lane",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278067"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9083659904636756
+    },
+    {
+      "id": 7872135715,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7152851,
+      "lon": 150.3097002,
+      "name": "Parke St after Pryor Pl",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2780282",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Parke St after Pryor Pl",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780282",
+        "shelter": "no",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9090089509604709
+    },
+    {
+      "id": 8083356229,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.7138973,
+      "lon": 150.3046792,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.4237744421792242
+    },
+    {
+      "id": 8326535943,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.714219,
+      "lon": 150.3104296,
+      "name": "Tokyo Sushi",
+      "tags": {
+        "addr:unit": "K1",
+        "amenity": "fast_food",
+        "cuisine": "japanese",
+        "indoor_seating": "yes",
+        "level": "0",
+        "name": "Tokyo Sushi",
+        "outdoor_seating": "no"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9547804701048228
+    },
+    {
+      "id": 8326535946,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7138127,
+      "lon": 150.3104573,
+      "name": null,
+      "tags": {
+        "amenity": "cafe",
+        "level": "1"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9514398465744713
+    },
+    {
+      "id": 8422046172,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7160407,
+      "lon": 150.3085045,
+      "name": "Cascade St at Gates Av",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780240",
+        "highway": "bus_stop",
+        "name": "Cascade St at Gates Av",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780240"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.8212572403561995
+    },
+    {
+      "id": 8791558114,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7122385,
+      "lon": 150.3106462,
+      "name": "Cafe Del Ra",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Cafe Del Ra"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9559346345077233
+    },
+    {
+      "id": 1145009863,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7120417,
+      "lon": 150.309825,
+      "name": "Katoomba Fire Station",
+      "tags": {
+        "addr:housenumber": "14",
+        "addr:postcode": "2780",
+        "addr:state": "NSW",
+        "addr:street": "Cascade Street",
+        "addr:suburb": "Katoomba",
+        "amenity": "fire_station",
+        "branch": "Katoomba",
+        "contact:facebook": "https://www.facebook.com/Fire-and-Rescue-NSW-Station-343-Katoomba-244770999236820/",
+        "name": "Katoomba Fire Station",
+        "operator": "Fire and Rescue NSW",
+        "operator:wikidata": "Q5451532",
+        "operator:wikipedia": "en:Fire and Rescue New South Wales",
+        "phone": "+61 2 4782 6733",
+        "website": "https://www.fire.nsw.gov.au/page.php?id=9210&station=154",
+        "wikidata": "Q116190946"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.8794788129280666
+    },
+    {
+      "id": 1369162051,
+      "type": "way",
+      "category": "resupply",
+      "lat": -33.7138611,
+      "lon": 150.310503,
+      "name": "Coles",
+      "tags": {
+        "branch": "Katoomba",
+        "brand": "Coles",
+        "brand:wikidata": "Q1108172",
+        "brand:wikipedia": "en:Coles Supermarkets",
+        "indoor": "room",
+        "level": "0",
+        "name": "Coles",
+        "note": "North side is underground",
+        "opening_hours": "Mo-Su,PH 06:00-24:00",
+        "operator": "Coles Group",
+        "operator:wikidata": "Q131937428",
+        "shop": "supermarket",
+        "website": "https://www.coles.com.au/",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.9562816605395876
+    },
+    {
+      "id": 1369162057,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7143132,
+      "lon": 150.31005,
+      "name": "Blue Mountains Pharmacy",
+      "tags": {
+        "addr:housenumber": "30-40",
+        "addr:street": "Parke Street",
+        "addr:unit": "7-8",
+        "amenity": "pharmacy",
+        "dispensing": "yes",
+        "healthcare": "pharmacy",
+        "indoor": "room",
+        "level": "0",
+        "name": "Blue Mountains Pharmacy",
+        "website": "https://www.bluemountainspharmacy.com/"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.921569311093753
+    },
+    {
+      "id": 592213893,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7151023,
+      "lon": 150.3093706,
+      "name": "Parke Street Specialist Centre",
+      "tags": {
+        "addr:housenumber": "61",
+        "addr:street": "Parke Street",
+        "amenity": "doctors",
+        "building": "yes",
+        "healthcare": "doctor",
+        "name": "Parke Street Specialist Centre",
+        "source:addr": "LPI Base Map May 2018",
+        "source:building": "LPI Imagery May 2018"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.8750247227943095
+    },
+    {
+      "id": 822115602,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7143501,
+      "lon": 150.3010091,
+      "name": "South Katoomba Rural Fire Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "branch": "South Katoomba",
+        "name": "South Katoomba Rural Fire Brigade",
+        "operator": "NSW Rural Fire Service",
+        "operator:wikidata": "Q7011777",
+        "operator:wikipedia": "en:New South Wales Rural Fire Service",
+        "source": "NSW RURAL FIRE SURVICE"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.1029810226179322
+    },
+    {
+      "id": 866913150,
+      "type": "way",
+      "category": "emergency",
+      "lat": -33.7159614,
+      "lon": 150.309286,
+      "name": "Katoomba Skin Cancer Clinic",
+      "tags": {
+        "addr:housenumber": "71",
+        "addr:street": "Parke Street",
+        "amenity": "doctors",
+        "building": "yes",
+        "healthcare": "doctor",
+        "healthcare:speciality": "dermatology;oncology",
+        "name": "Katoomba Skin Cancer Clinic",
+        "opening_hours": "Apr Su[1]-Oct Su[1] Mo-We 09:00-15:00 open \"AEST\" || 09:00-17:00 open \"ADST\"; Th-Fr 09:00-17:00",
+        "phone": "+61 2 4782 7877"
+      },
+      "distanceAlongTrail": 1.12084976727894,
+      "distanceFromTrail": 1.8888661446378592
+    },
+    {
+      "id": 12475599270,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -33.7151505,
+      "lon": 150.3033254,
+      "name": "Catalina Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Catalina Cafe"
+      },
+      "distanceAlongTrail": 1.1284421443807404,
+      "distanceFromTrail": 1.333421504274707
+    },
+    {
+      "id": 12634660577,
+      "type": "node",
+      "category": "emergency",
+      "lat": -33.7166704,
+      "lon": 150.3091699,
+      "name": "Katoomba Diagnostic Imaging",
+      "tags": {
+        "addr:housenumber": "77",
+        "addr:street": "Parke Street",
+        "amenity": "doctors",
+        "email": "reception@katoombadi.com.au",
+        "fax": "+61 2 4782 1388",
+        "healthcare": "doctor",
+        "healthcare:speciality": "radiology;obstetric_ultrasonography",
+        "name": "Katoomba Diagnostic Imaging",
+        "opening_hours": "Mo-Fr 08:00-17:00",
+        "operator": "Alpenglow",
+        "phone": "+61 2 4780 8300",
+        "website": "https://www.alpenglow.com.au/locations/katoomba-diagnostic-imaging",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 1.1392823320212269,
+      "distanceFromTrail": 1.8996641338627378
+    },
+    {
+      "id": 7872135716,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7170309,
+      "lon": 150.3098895,
+      "name": "Waratah St after Parke St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278053",
+        "highway": "bus_stop",
+        "name": "Waratah St after Parke St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278053"
+      },
+      "distanceAlongTrail": 1.1591254740331125,
+      "distanceFromTrail": 1.9747769408158207
+    },
+    {
+      "id": 12475599268,
+      "type": "node",
+      "category": "water",
+      "lat": -33.7154569,
+      "lon": 150.3032094,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 1.1641563760629292,
+      "distanceFromTrail": 1.3326606849847196
+    },
+    {
+      "id": 2329057497,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7156767,
+      "lon": 150.3033042,
+      "name": "Katoomba Sports And Aquatic Centre, Catalina Av",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780254",
+        "highway": "bus_stop",
+        "name": "Katoomba Sports And Aquatic Centre, Catalina Av",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780254",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 1.165097630148927,
+      "distanceFromTrail": 1.3480700854173862
+    },
+    {
+      "id": 8422046182,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7146333,
+      "lon": 150.298198,
+      "name": "Farnells Rd Before Narrow Neck Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278022",
+        "highway": "bus_stop",
+        "name": "Farnells Rd Before Narrow Neck Rd",
+        "public_transport": "platform",
+        "ref": "278022"
+      },
+      "distanceAlongTrail": 1.165097630148927,
+      "distanceFromTrail": 0.8630276994986829
+    },
+    {
+      "id": 8422046205,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7145175,
+      "lon": 150.2980938,
+      "name": "Farnells Rd after Narrow Neck Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780274",
+        "highway": "bus_stop",
+        "name": "Farnells Rd after Narrow Neck Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780274"
+      },
+      "distanceAlongTrail": 1.165097630148927,
+      "distanceFromTrail": 0.8497738821474926
+    },
+    {
+      "id": 8422046214,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7157001,
+      "lon": 150.3026427,
+      "name": "Catalina Av opp Katoomba Sports And Aquatic Centre",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278021",
+        "highway": "bus_stop",
+        "name": "Catalina Av opp Katoomba Sports And Aquatic Centre",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278021"
+      },
+      "distanceAlongTrail": 1.165097630148927,
+      "distanceFromTrail": 1.2905256929279012
+    },
+    {
+      "id": 5237464925,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7261566,
+      "lon": 150.3036936,
+      "name": "Blue Mountains Tourist Park, Cliff Dr",
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "gtfs:stop_id": "278017",
+        "highway": "bus_stop",
+        "name": "Blue Mountains Tourist Park, Cliff Dr",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278017",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.990164594982921
+    },
+    {
+      "id": 8422046165,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7184981,
+      "lon": 150.3019006,
+      "name": "Wellington Rd at Carlton St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780276",
+        "highway": "bus_stop",
+        "name": "Wellington Rd at Carlton St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780276"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.343858991950227
+    },
+    {
+      "id": 8422046183,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7167624,
+      "lon": 150.2960205,
+      "name": "Narrow Neck Rd at Stuarts Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278023",
+        "highway": "bus_stop",
+        "name": "Narrow Neck Rd at Stuarts Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278023"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 0.773099247651261
+    },
+    {
+      "id": 8422046184,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7159539,
+      "lon": 150.2970481,
+      "name": "Narrow Neck Rd after Wellington Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780255",
+        "highway": "bus_stop",
+        "name": "Narrow Neck Rd after Wellington Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780255"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 0.8185834709778412
+    },
+    {
+      "id": 8422046187,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7228959,
+      "lon": 150.3052945,
+      "name": "Loftus St opp Dulhunty St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780258",
+        "highway": "bus_stop",
+        "name": "Loftus St opp Dulhunty St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780258"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.8647179569519707
+    },
+    {
+      "id": 8422046196,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7197017,
+      "lon": 150.3079396,
+      "name": "Cascade St at Frank Lane",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780257",
+        "highway": "bus_stop",
+        "name": "Cascade St at Frank Lane",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780257"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.9086597461753951
+    },
+    {
+      "id": 8422046204,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7217356,
+      "lon": 150.3075583,
+      "name": "Cascade St opp Sherman Av",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "2780152",
+        "highway": "bus_stop",
+        "name": "Cascade St opp Sherman Av",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780152"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.9741244576538186
+    },
+    {
+      "id": 8422046209,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7253303,
+      "lon": 150.3008897,
+      "name": "Kamillaroi Rd at Burrawang St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278025",
+        "highway": "bus_stop",
+        "name": "Kamillaroi Rd at Burrawang St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278025"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.7490855971014225
+    },
+    {
+      "id": 271446759,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.725204,
+      "lon": 150.3028193,
+      "name": "Katoomba Falls Tourist Park",
+      "tags": {
+        "drinking_water": "yes",
+        "fee": "yes",
+        "internet_access": "wlan",
+        "name": "Katoomba Falls Tourist Park",
+        "operator": "Blue Mountains City Council",
+        "phone": "+61 2 4782 1835",
+        "power_supply": "yes",
+        "sanitary_dump_station": "yes",
+        "toilets": "yes",
+        "tourism": "caravan_site",
+        "website": "https://www.bmtp.com.au/katoomba-falls.html"
+      },
+      "distanceAlongTrail": 1.300391061632465,
+      "distanceFromTrail": 1.8577810246904078
+    },
+    {
+      "id": 13971876634,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7218444,
+      "lon": 150.2928306,
+      "name": "Narrow Neck Rd opp Essendene Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278023",
+        "highway": "bus_stop",
+        "name": "Narrow Neck Rd opp Essendene Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2780213"
+      },
+      "distanceAlongTrail": 1.4464425494395583,
+      "distanceFromTrail": 0.987588324244073
+    },
+    {
+      "id": 13731605562,
+      "type": "node",
+      "category": "water",
+      "lat": -33.7288392,
+      "lon": 150.2960954,
+      "name": null,
+      "tags": {
+        "drinking_water": "yes",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 1.518092120957429,
+      "distanceFromTrail": 1.8129600579118612
+    },
+    {
+      "id": 8422046191,
+      "type": "node",
+      "category": "transport",
+      "lat": -33.7251594,
+      "lon": 150.293796,
+      "name": "Acacia St after The Escarpments",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "278024",
+        "highway": "bus_stop",
+        "name": "Acacia St after The Escarpments",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "278024"
+      },
+      "distanceAlongTrail": 1.518092120957429,
+      "distanceFromTrail": 1.3518454201876662
+    },
+    {
+      "id": 31297779,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.7299726,
+      "lon": 150.2976912,
+      "name": "KCC Camp Site",
+      "tags": {
+        "access": "permissive",
+        "bbq": "yes",
+        "caravans": "no",
+        "fee": "yes",
+        "name": "KCC Camp Site",
+        "shower": "yes",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.staykcc.com.au/campground-individuals"
+      },
+      "distanceAlongTrail": 1.518092120957429,
+      "distanceFromTrail": 1.994393796723362
+    },
+    {
+      "id": 8440383240,
+      "type": "node",
+      "category": "water",
+      "lat": -33.7205563,
+      "lon": 150.2901803,
+      "name": null,
+      "tags": {
+        "drinking_water": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 1.571282348090419,
+      "distanceFromTrail": 0.7435534788156701
+    },
+    {
+      "id": 6403165985,
+      "type": "node",
+      "category": "water",
+      "lat": -33.720943,
+      "lon": 150.2843525,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 2.467368939019878,
+      "distanceFromTrail": 0.5920920282946327
+    },
+    {
+      "id": 4174690916,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.7268031,
+      "lon": 150.2884685,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "description": "Camping overhang",
+        "shelter_type": "rock_shelter"
+      },
+      "distanceAlongTrail": 2.5686503657133195,
+      "distanceFromTrail": 1.298966320806207
+    },
+    {
+      "id": 8343703664,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.7313125,
+      "lon": 150.2854432,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bench": "no",
+        "bin": "no",
+        "description": "This rock overhang has signs of being inhabited - a mattress, kitchen caddy, cutlery and rock fireplace",
+        "shelter_type": "rock_shelter"
+      },
+      "distanceAlongTrail": 3.5509674327212593,
+      "distanceFromTrail": 1.2750641350109724
+    },
+    {
+      "id": 1811190996,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.73167,
+      "lon": 150.235,
+      "name": "Old Ford Reserve",
+      "tags": {
+        "name": "Old Ford Reserve",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 7.871305727335867,
+      "distanceFromTrail": 0.42932179058828196
+    },
+    {
+      "id": 955584801,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.7403876,
+      "lon": 150.1804664,
+      "name": null,
+      "tags": {
+        "building": "yes",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 14.918134360312585,
+      "distanceFromTrail": 0.02527152107429006
+    },
+    {
+      "id": 955584800,
+      "type": "way",
+      "category": "camping",
+      "lat": -33.7402932,
+      "lon": 150.180318,
+      "name": null,
+      "tags": {
+        "building": "yes",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 14.923855712517001,
+      "distanceFromTrail": 0.03556546825501255
+    },
+    {
+      "id": 298932847,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.7428278,
+      "lon": 150.1787794,
+      "name": "Coxs River Camp Area",
+      "tags": {
+        "fee": "no",
+        "name": "Coxs River Camp Area",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.nationalparks.nsw.gov.au/things-to-do/Walking-tracks/Six-Foot-walking-track"
+      },
+      "distanceAlongTrail": 15.255092971852397,
+      "distanceFromTrail": 0.017521098917245324
+    },
+    {
+      "id": 302466147,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.7576388,
+      "lon": 150.1393801,
+      "name": "Alum Creek Campground",
+      "tags": {
+        "fee": "no",
+        "name": "Alum Creek Campground",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "no",
+        "tourism": "camp_site",
+        "website": "https://www.nationalparks.nsw.gov.au/things-to-do/Walking-tracks/Six-Foot-walking-track"
+      },
+      "distanceAlongTrail": 21.401928437172423,
+      "distanceFromTrail": 0.030147454031529592
+    },
+    {
+      "id": 9395740354,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.767,
+      "lon": 150.1179736,
+      "name": "Snake and Nip Camping Ground",
+      "tags": {
+        "Facilities": "4WD dry weather access only;\nRunning water creek;\nNo toilets;",
+        "description": "Valley camping area beside Little Creek.",
+        "name": "Snake and Nip Camping Ground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 24.417382924063766,
+      "distanceFromTrail": 0.47699445545227065
+    },
+    {
+      "id": 5918602,
+      "type": "relation",
+      "category": "camping",
+      "lat": -33.7551179,
+      "lon": 150.047944,
+      "name": "Black Range Camp Ground",
+      "tags": {
+        "name": "Black Range Camp Ground",
+        "source": "NSW LPI Base Map",
+        "source:date": "2015-12",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "type": "multipolygon"
+      },
+      "distanceAlongTrail": 34.494633563411284,
+      "distanceFromTrail": 0.022773641028481006
+    },
+    {
+      "id": 2584843749,
+      "type": "node",
+      "category": "camping",
+      "lat": -33.8199421,
+      "lon": 150.0218473,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "source": "survey",
+        "source:location": "gps",
+        "tourism": "picnic_site"
+      },
+      "distanceAlongTrail": 44.37874659138432,
+      "distanceFromTrail": 0.04075503010726023
+    }
+  ]
+}

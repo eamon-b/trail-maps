@@ -1,0 +1,108 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:58:48.815Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 13540234500,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.3314989,
+      "lon": 146.2884542,
+      "name": "Nina Bay",
+      "tags": {
+        "name": "Nina Bay",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 3.7936260243012745,
+      "distanceFromTrail": 0.0017172918498426764
+    },
+    {
+      "id": 1430485013,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.34919,
+      "lon": 146.30078,
+      "name": "Little Ramsay Bay campsite",
+      "tags": {
+        "name": "Little Ramsay Bay campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 6.3424455059029246,
+      "distanceFromTrail": 0.011881159770482005
+    },
+    {
+      "id": 6026288539,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.3563254,
+      "lon": 146.3128225,
+      "name": "Banksia Bay campsite",
+      "tags": {
+        "name": "Banksia Bay campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 7.981899468786685,
+      "distanceFromTrail": 0.23655563076126135
+    },
+    {
+      "id": 12987038121,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.4028593,
+      "lon": 146.3251068,
+      "name": "Forest Campsites",
+      "tags": {
+        "name": "Forest Campsites",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 16.68145588144371,
+      "distanceFromTrail": 0.04368455547412213
+    },
+    {
+      "id": 1430485749,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.4342797,
+      "lon": 146.335464,
+      "name": "Sunken Reef Bay campsite",
+      "tags": {
+        "name": "Sunken Reef Bay campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 21.237753605508086,
+      "distanceFromTrail": 0.7699637671564541
+    },
+    {
+      "id": 1430485020,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.4413079,
+      "lon": 146.3246446,
+      "name": "Mulligan Falls campsite",
+      "tags": {
+        "name": "Mulligan Falls campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 22.522516967058962,
+      "distanceFromTrail": 0.05453651762798291
+    },
+    {
+      "id": 13540258801,
+      "type": "node",
+      "category": "camping",
+      "lat": -18.4849137,
+      "lon": 146.3252534,
+      "name": "George Point campsite",
+      "tags": {
+        "name": "George Point campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 28.76174637503931,
+      "distanceFromTrail": 0.0013421501028726154
+    }
+  ]
+}

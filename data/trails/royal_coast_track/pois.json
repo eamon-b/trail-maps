@@ -1,0 +1,1042 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:57:17.777Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 10588095495,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.0844992,
+      "lon": 151.1515548,
+      "name": "Earth Thingz",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2025-07-06",
+        "check_date:opening_hours": "2025-07-06",
+        "name": "Earth Thingz",
+        "opening_hours": "Mo-Su 06:00-15:00",
+        "outdoor_seating": "yes",
+        "website": "https://www.earththingz.com.au/"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9458955353070759
+    },
+    {
+      "id": 10588469536,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.0846424,
+      "lon": 151.1515374,
+      "name": "Double Dip Diner",
+      "tags": {
+        "amenity": "fast_food",
+        "check_date": "2025-07-06",
+        "name": "Double Dip Diner",
+        "opening_hours": "Sa-Su 12:00-18:00",
+        "outdoor_seating": "yes",
+        "website": "https://www.doubledipdiner.com/"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9333937607046232
+    },
+    {
+      "id": 10588469541,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.0851485,
+      "lon": 151.1513715,
+      "name": "Vinegar and Brown Paper",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2025-10-12",
+        "check_date:opening_hours": "2025-10-12",
+        "cuisine": "burger;fish_and_chips",
+        "name": "Vinegar and Brown Paper",
+        "opening_hours": "We-Su 11:00-16:00; Mo,Tu off",
+        "outdoor_seating": "yes",
+        "website": "https://vinegarandbrownpaper.com.au/"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.895723682124477
+    },
+    {
+      "id": 10588469542,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.0852109,
+      "lon": 151.1513583,
+      "name": "P&P Kitchen",
+      "tags": {
+        "amenity": "fast_food",
+        "check_date": "2023-01-28",
+        "cuisine": "burger;fish_and_chips;vietnamese",
+        "name": "P&P Kitchen",
+        "outdoor_seating": "yes"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.8908373110721733
+    },
+    {
+      "id": 10590375688,
+      "type": "node",
+      "category": "emergency",
+      "lat": -34.0845125,
+      "lon": 151.1518081,
+      "name": "Bundeena Family Practice",
+      "tags": {
+        "amenity": "doctors",
+        "healthcare": "doctor",
+        "healthcare:speciality": "general",
+        "name": "Bundeena Family Practice",
+        "website": "https://bundeena-family-practice.business.site/"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9322779771941707
+    },
+    {
+      "id": 11386508313,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0821621,
+      "lon": 151.1415926,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.775667756858723
+    },
+    {
+      "id": 11806273948,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0839768,
+      "lon": 151.1455084,
+      "name": "Bundeena Dr opp Bundeena Fire Station",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230200",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Bundeena Dr opp Bundeena Fire Station",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230200",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.3667643843733266
+    },
+    {
+      "id": 11806273949,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0840834,
+      "lon": 151.1454883,
+      "name": "Bundeena Fire Station, Bundeena Dr",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230170",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Bundeena Fire Station, Bundeena Dr",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230170",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.36083112445715
+    },
+    {
+      "id": 11806273950,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.08433,
+      "lon": 151.1483797,
+      "name": "Bundeena Dr opp Our Lady of The Way Catholic Church",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230190",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Bundeena Dr opp Our Lady of The Way Catholic Church",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230190",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.1438787141943414
+    },
+    {
+      "id": 11806273951,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0844422,
+      "lon": 151.1483488,
+      "name": "Our Lady of The Way Catholic Church, Bundeena Dr",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230184",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Our Lady of The Way Catholic Church, Bundeena Dr",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230184",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.1370254786825702
+    },
+    {
+      "id": 11806273956,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0841212,
+      "lon": 151.1515434,
+      "name": "Bundeena Shops, Brighton St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Bundeena Shops, Brighton St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "223011",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9821193685068546
+    },
+    {
+      "id": 11806273962,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0837663,
+      "lon": 151.1520577,
+      "name": "Loftus St at Brighton St",
+      "tags": {
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "223016",
+        "highway": "bus_stop",
+        "lit": "yes",
+        "name": "Loftus St at Brighton St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "223016",
+        "shelter": "yes",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9930921351443279
+    },
+    {
+      "id": 11806344275,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0839101,
+      "lon": 151.1529971,
+      "name": "Bundeena RSL, Loftus St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230223",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Bundeena RSL, Loftus St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230223",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9411445356803602
+    },
+    {
+      "id": 11806344288,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0818452,
+      "lon": 151.1576971,
+      "name": "Loftus St opp Eric St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230182",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Loftus St opp Eric St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230182",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.0935834715800712
+    },
+    {
+      "id": 11806344301,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.089844,
+      "lon": 151.1568932,
+      "name": "Eric St opp Bombora Ave",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230176",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Eric St opp Bombora Ave",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230176",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.20348438399969457
+    },
+    {
+      "id": 11806344304,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.08874,
+      "lon": 151.1551283,
+      "name": "Beachcomber Ave opp Reef St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230186",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Beachcomber Ave opp Reef St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230186",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.3720624968001428
+    },
+    {
+      "id": 11806344308,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0887322,
+      "lon": 151.1539857,
+      "name": "Reef St at Bournemouth St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "2230179",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Reef St at Bournemouth St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "2230179",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.43359611349539146
+    },
+    {
+      "id": 11806344310,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0861813,
+      "lon": 151.1524037,
+      "name": "Bundeena Public School, Scarborough St",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "223012",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Bundeena Public School, Scarborough St",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "223012",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.7470007143750739
+    },
+    {
+      "id": 12894246701,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.0845819,
+      "lon": 151.1515043,
+      "name": "Salty Pearl",
+      "tags": {
+        "amenity": "bar",
+        "contact:instagram": "saltypearlbar",
+        "name": "Salty Pearl",
+        "opening_hours": "Th-Fr 16:00-22:00; Sa-Su 12:00-22:00"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9406930764792664
+    },
+    {
+      "id": 12895905047,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0850386,
+      "lon": 151.1461737,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.246249718582201
+    },
+    {
+      "id": 12896182844,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.0834258,
+      "lon": 151.1526167,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.0045711343612667
+    },
+    {
+      "id": 2384091522,
+      "type": "node",
+      "category": "resupply",
+      "lat": -34.0838314,
+      "lon": 151.1453486,
+      "name": "Bundeena Service Station",
+      "tags": {
+        "amenity": "fuel",
+        "compressed_air": "yes",
+        "name": "Bundeena Service Station"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.3883657736265924
+    },
+    {
+      "id": 290310235,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.0827153,
+      "lon": 151.1506701,
+      "name": "Bundeena",
+      "tags": {
+        "amenity": "ferry_terminal",
+        "ferry": "yes",
+        "name": "Bundeena",
+        "public_transport": "station"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.1575482577372944
+    },
+    {
+      "id": 3135939487,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0829512,
+      "lon": 151.1398712,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "source": "survey",
+        "source:location": "digitalglobe"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.8581501046806248
+    },
+    {
+      "id": 4297258292,
+      "type": "node",
+      "category": "resupply",
+      "lat": -34.0845113,
+      "lon": 151.1516798,
+      "name": "Bundeena Post Office",
+      "tags": {
+        "addr:housenumber": "22-30",
+        "addr:street": "Brighton Street",
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "check_date": "2025-07-06",
+        "check_date:opening_hours": "2025-07-06",
+        "name": "Bundeena Post Office",
+        "opening_hours": "Mo-Fr 09:00-17:00; Sa,Su off",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936",
+        "source": "NSW LPI Base Map",
+        "source:date": "2016-06"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9386054610831244
+    },
+    {
+      "id": 833627572,
+      "type": "node",
+      "category": "emergency",
+      "lat": -34.0847747,
+      "lon": 151.1514554,
+      "name": "Bundeena Pharmacy",
+      "tags": {
+        "amenity": "pharmacy",
+        "check_date": "2023-01-28",
+        "healthcare": "pharmacy",
+        "name": "Bundeena Pharmacy"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9253282625561485
+    },
+    {
+      "id": 833627581,
+      "type": "node",
+      "category": "resupply",
+      "lat": -34.084019,
+      "lon": 151.1517013,
+      "name": "IGA",
+      "tags": {
+        "air_conditioning": "yes",
+        "brand": "IGA",
+        "brand:wikidata": "Q5970945",
+        "check_date": "2025-07-06",
+        "check_date:opening_hours": "2025-07-06",
+        "level": "0",
+        "name": "IGA",
+        "opening_hours": "Mo-Su 08:00-20:00",
+        "payment:mastercard": "yes",
+        "payment:visa": "yes",
+        "shop": "supermarket",
+        "website": "https://www.iga.com.au/stores/#view=storedetail&storeId=14243"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9844413681759585
+    },
+    {
+      "id": 8445640728,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0827213,
+      "lon": 151.147278,
+      "name": null,
+      "tags": {
+        "dog": "yes",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.3436337932757103
+    },
+    {
+      "id": 9480182152,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0846675,
+      "lon": 151.1511067,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "dog": "no",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9534047372557098
+    },
+    {
+      "id": 1227718193,
+      "type": "way",
+      "category": "camping",
+      "lat": -34.0876718,
+      "lon": 151.1557418,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "sun_shelter"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.4611698578387257
+    },
+    {
+      "id": 329309048,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -34.0836889,
+      "lon": 151.1530369,
+      "name": "Bundeena Community & Services Club",
+      "tags": {
+        "amenity": "pub",
+        "building": "yes",
+        "building:levels": "2",
+        "name": "Bundeena Community & Services Club",
+        "outdoor_seating": "no",
+        "website": "https://bundeenacsc.com.au/"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.9623106345343179
+    },
+    {
+      "id": 763297026,
+      "type": "way",
+      "category": "emergency",
+      "lat": -34.0842542,
+      "lon": 151.1451822,
+      "name": "Bundeena Fire Station",
+      "tags": {
+        "addr:housenumber": "48",
+        "addr:postcode": "2230",
+        "addr:state": "NSW",
+        "addr:street": "Bundeena Drive",
+        "addr:suburb": "Bundeena",
+        "alt_name": "Fire and Rescue NSW Station 080 Bundeena",
+        "amenity": "fire_station",
+        "branch": "Bundeena",
+        "check_date": "2026-03-15",
+        "name": "Bundeena Fire Station",
+        "operator": "Fire and Rescue NSW",
+        "operator:wikidata": "Q5451532",
+        "operator:wikipedia": "en:Fire and Rescue New South Wales",
+        "phone": "+61 2 9523 8585",
+        "website": "https://www.fire.nsw.gov.au/page.php?id=9210&station=57"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.3715680297367117
+    },
+    {
+      "id": 763297027,
+      "type": "way",
+      "category": "emergency",
+      "lat": -34.0842272,
+      "lon": 151.1450038,
+      "name": "Bundeena Rural Fire Brigade",
+      "tags": {
+        "addr:housenumber": "50",
+        "addr:postcode": "2230",
+        "addr:state": "NSW",
+        "addr:street": "Bundeena Drive",
+        "addr:suburb": "Bundeena",
+        "alt_name": "NSW Rural Fire Service Bundeena",
+        "amenity": "fire_station",
+        "branch": "Bundeena",
+        "check_date": "2026-03-15",
+        "contact:facebook": "https://www.facebook.com/BundeenaRuralFireBrigade/",
+        "name": "Bundeena Rural Fire Brigade",
+        "operator": "NSW Rural Fire Service",
+        "operator:wikidata": "Q7011777",
+        "operator:wikipedia": "en:New South Wales Rural Fire Service",
+        "phone": "+61 2 9527 2351"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.386524344843728
+    },
+    {
+      "id": 5061193939,
+      "type": "node",
+      "category": "water",
+      "lat": -34.0919746,
+      "lon": 151.1573229,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "dog": "no",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 0.04146699980495043,
+      "distanceFromTrail": 0.005209812254693843
+    },
+    {
+      "id": 12898858381,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.1373631,
+      "lon": 151.1142318,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 8.922089788465973,
+      "distanceFromTrail": 0.019093229506846852
+    },
+    {
+      "id": 12898858373,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.1375342,
+      "lon": 151.1142853,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 8.961125677891888,
+      "distanceFromTrail": 0.019782234691431807
+    },
+    {
+      "id": 12898858372,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.1377018,
+      "lon": 151.1143285,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 8.97092053707347,
+      "distanceFromTrail": 0.013865612447769278
+    },
+    {
+      "id": 12898858375,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.137874,
+      "lon": 151.1143783,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 9.003467009426124,
+      "distanceFromTrail": 0.012410256802173537
+    },
+    {
+      "id": 1638868522,
+      "type": "node",
+      "category": "emergency",
+      "lat": -34.1379654,
+      "lon": 151.1144352,
+      "name": null,
+      "tags": {
+        "emergency": "phone"
+      },
+      "distanceAlongTrail": 9.007701262384186,
+      "distanceFromTrail": 0.004646435642579823
+    },
+    {
+      "id": 9873598490,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.1703619,
+      "lon": 151.0662154,
+      "name": null,
+      "tags": {
+        "amenity": "cafe",
+        "operator": "Garie Surf Living Saving Club"
+      },
+      "distanceAlongTrail": 16.60043468974091,
+      "distanceFromTrail": 0.012175337577551416
+    },
+    {
+      "id": 13544791333,
+      "type": "node",
+      "category": "emergency",
+      "lat": -34.1705469,
+      "lon": 151.0665028,
+      "name": null,
+      "tags": {
+        "emergency": "phone"
+      },
+      "distanceAlongTrail": 16.629441463360482,
+      "distanceFromTrail": 0.001899721951755584
+    },
+    {
+      "id": 2376871415,
+      "type": "node",
+      "category": "camping",
+      "lat": -34.1769725,
+      "lon": 151.0564532,
+      "name": "North Era Beach Campground",
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "36",
+        "caravans": "no",
+        "fee": "yes",
+        "internet_access": "no",
+        "motor_vehicle": "no",
+        "name": "North Era Beach Campground",
+        "operator": "NSW National Parks and Wildlife Service",
+        "operator:wikidata": "Q108872274",
+        "reservation": "required",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.nationalparks.nsw.gov.au/camping-and-accommodation/campgrounds/north-era-campground"
+      },
+      "distanceAlongTrail": 18.222175926218494,
+      "distanceFromTrail": 0.03845519329481964
+    },
+    {
+      "id": 11725882566,
+      "type": "node",
+      "category": "water",
+      "lat": -34.2230573,
+      "lon": 150.9981362,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "no",
+        "fee": "no",
+        "fountain": "bubbler",
+        "survey:date": "2024-03-09",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 25.260208170509962,
+      "distanceFromTrail": 1.7484810790237506
+    },
+    {
+      "id": 11815813164,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.2228425,
+      "lon": 150.9942345,
+      "name": "Lawrence Hargrave Dr after Otford Rd",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "250827",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Lawrence Hargrave Dr after Otford Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "250827",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 25.260208170509962,
+      "distanceFromTrail": 1.9896757974721662
+    },
+    {
+      "id": 11815832677,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.222939,
+      "lon": 150.9945805,
+      "name": "Lawrence Hargrave Dr before Otford Rd",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "gtfs:stop_id": "250888",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Lawrence Hargrave Dr before Otford Rd",
+        "network": "Transport Buses",
+        "network:wikidata": "Q5001345",
+        "public_transport": "platform",
+        "ref": "250888",
+        "shelter": "no",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 25.260208170509962,
+      "distanceFromTrail": 1.9724566415422793
+    },
+    {
+      "id": 13154739701,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -34.2231696,
+      "lon": 150.9983439,
+      "name": "Flying High Cafe",
+      "tags": {
+        "air_conditioning": "no",
+        "amenity": "cafe",
+        "changing_table": "no",
+        "cuisine": "coffee_shop",
+        "level": "0",
+        "name": "Flying High Cafe",
+        "opening_hours": "Mo-Fr 09:00-15:00; Sa-Su 08:00-18:00",
+        "outdoor_seating": "yes",
+        "smoking": "no",
+        "website": "http://www.flyinghighcafe.com.au/",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 25.260208170509962,
+      "distanceFromTrail": 1.7452411696756636
+    },
+    {
+      "id": 668392346,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -34.2146158,
+      "lon": 151.0060964,
+      "name": "Otford Pantry",
+      "tags": {
+        "addr:housenumber": "22",
+        "addr:street": "Lady Wakehurst Drive",
+        "amenity": "cafe",
+        "building": "retail",
+        "contact:facebook": "https://www.facebook.com/The-Otford-Pantry-972683326129050/",
+        "internet_access": "wlan",
+        "name": "Otford Pantry",
+        "opening_hours": "Mo-Fr off; Sa-Su 08:00-16:30",
+        "phone": "+61 2 4294 1243",
+        "source": "survey",
+        "source:addr": "LPI Base Map Feb 2019",
+        "website": "https://the-otford-pantry.business.site/"
+      },
+      "distanceAlongTrail": 25.260208170509962,
+      "distanceFromTrail": 0.5662592788193024
+    },
+    {
+      "id": 1886174964,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.2106925,
+      "lon": 151.005819,
+      "name": "Otford",
+      "tags": {
+        "fare_gates": "no",
+        "name": "Otford",
+        "network": "Sydney Trains",
+        "network:wikidata": "Q7660181",
+        "platforms": "2",
+        "public_transport": "station",
+        "railway": "station",
+        "railway:ref": "OTF",
+        "ref": "250830",
+        "train": "yes",
+        "wheelchair": "no",
+        "wikidata": "Q7108543"
+      },
+      "distanceAlongTrail": 25.267104838378234,
+      "distanceFromTrail": 0.4596999196895395
+    },
+    {
+      "id": 3138195920,
+      "type": "node",
+      "category": "water",
+      "lat": -34.2108106,
+      "lon": 151.0054973,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "check_date": "2023-04-10",
+        "man_made": "water_tap",
+        "source": "survey",
+        "source:location": "extrapolation"
+      },
+      "distanceAlongTrail": 25.267104838378234,
+      "distanceFromTrail": 0.4875014709145735
+    },
+    {
+      "id": 992549501,
+      "type": "node",
+      "category": "transport",
+      "lat": -34.2130268,
+      "lon": 150.9995986,
+      "name": null,
+      "tags": {
+        "highway": "bus_stop",
+        "source": "survey",
+        "source:location": "nearmap"
+      },
+      "distanceAlongTrail": 25.267104838378234,
+      "distanceFromTrail": 1.0459720039140348
+    },
+    {
+      "id": 9946696946,
+      "type": "node",
+      "category": "emergency",
+      "lat": -34.2107735,
+      "lon": 151.0056061,
+      "name": null,
+      "tags": {
+        "emergency": "phone",
+        "level": "0"
+      },
+      "distanceAlongTrail": 25.267104838378234,
+      "distanceFromTrail": 0.47799881851994835
+    },
+    {
+      "id": 9946696951,
+      "type": "node",
+      "category": "emergency",
+      "lat": -34.2106227,
+      "lon": 151.0060322,
+      "name": null,
+      "tags": {
+        "emergency": "phone",
+        "level": "0"
+      },
+      "distanceAlongTrail": 25.267104838378234,
+      "distanceFromTrail": 0.4414657479386361
+    },
+    {
+      "id": 1151371966,
+      "type": "way",
+      "category": "emergency",
+      "lat": -34.2132545,
+      "lon": 150.9994465,
+      "name": "Otford Rural Fire Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "branch": "Otford",
+        "name": "Otford Rural Fire Brigade",
+        "operator": "NSW Rural Fire Service",
+        "operator:wikidata": "Q7011777",
+        "ref": "12",
+        "source": "survey",
+        "source:location": "nearmap"
+      },
+      "distanceAlongTrail": 25.267104838378234,
+      "distanceFromTrail": 1.0646966291727264
+    }
+  ]
+}

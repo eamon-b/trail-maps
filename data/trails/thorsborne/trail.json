@@ -1,0 +1,52 @@
+{
+  "id": "thorsborne",
+  "name": "Thorsborne Trail",
+  "shortName": "Thorsborne",
+  "region": "Hinchinbrook Island (QLD)",
+  "lengthKm": 28.8,
+  "gpxFile": "Thorsborne_Trail.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "The east coast of Hinchinbrook Island, from Ramsay Bay to George Point, over headlands and along beaches between rainforest creeks. Both ends are reached by boat.",
+  "dataSource": {
+    "text": "Route and waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.openstreetmap.org/relation/19347052",
+    "linkText": "OpenStreetMap route relation"
+  },
+  "direction": {
+    "default": "Southbound",
+    "reversed": "Northbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Ramsay Bay",
+      "lat": -18.31,
+      "lon": 146.27
+    },
+    {
+      "name": "Zoe Bay",
+      "lat": -18.4,
+      "lon": 146.31
+    },
+    {
+      "name": "George Point",
+      "lat": -18.48,
+      "lon": 146.32
+    }
+  ],
+  "climateFile": "climate.json"
+}

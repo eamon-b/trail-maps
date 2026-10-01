@@ -1,0 +1,47 @@
+{
+  "id": "three_capes",
+  "name": "Three Capes Track",
+  "shortName": "Three Capes",
+  "region": "Tasman National Park (TAS)",
+  "lengthKm": 22.7,
+  "gpxFile": "Three_Capes_Track.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "A booked hut walk on the Tasman Peninsula, from Denmans Cove (reached by boat from Port Arthur) past Surveyors, Munro and Retakunna cabins to Fortescue Bay. The out-and-back walks to Cape Pillar and Cape Hauy are carried as side trips; Munro Cabin is 2 km along the Cape Pillar track, so it sits on that side trip rather than on the main line.",
+  "dataSource": {
+    "text": "Track geometry from the LIST Transport Segments layer (© State of Tasmania, NRE Tasmania, CC BY 3.0 AU). Huts, campsites and other waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.thelist.tas.gov.au/app/content/data/geo-meta-data-record?detailRecordUID=1ab7e34f-811c-4521-a549-212f295acc97",
+    "linkText": "LIST Transport Segments metadata"
+  },
+  "direction": {
+    "default": "Eastbound",
+    "reversed": "Westbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Port Arthur",
+      "lat": -43.14,
+      "lon": 147.85
+    },
+    {
+      "name": "Fortescue Bay",
+      "lat": -43.13,
+      "lon": 147.96
+    }
+  ],
+  "climateFile": "climate.json"
+}

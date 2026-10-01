@@ -1,0 +1,65 @@
+{
+  "id": "great_north_walk",
+  "name": "Great North Walk",
+  "shortName": "GNW",
+  "region": "Sydney to Newcastle (NSW)",
+  "lengthKm": 257,
+  "gpxFile": "Great_North_Walk.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route \\d+/\\d+$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false,
+    "stretches": {
+      "minGapMeters": 250
+    }
+  },
+  "description": "From the obelisk in Macquarie Place, Sydney, to Queens Wharf, Newcastle, through the Lane Cove valley, Berowra, the Hawkesbury, the Watagan Mountains and Lake Macquarie. Two water crossings are route breaks here: the harbour ferries from Circular Quay to Woolwich, and the Hawkesbury from Brooklyn to Patonga. The Pokolbin spur is carried as a side trip.",
+  "dataSource": {
+    "text": "Route and waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.openstreetmap.org/relation/1388126",
+    "linkText": "OpenStreetMap route relation"
+  },
+  "direction": {
+    "default": "Northbound",
+    "reversed": "Southbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Hornsby",
+      "lat": -33.7,
+      "lon": 151.1
+    },
+    {
+      "name": "Brooklyn",
+      "lat": -33.55,
+      "lon": 151.23
+    },
+    {
+      "name": "Yarramalong",
+      "lat": -33.22,
+      "lon": 151.28
+    },
+    {
+      "name": "Watagans",
+      "lat": -33.0,
+      "lon": 151.4
+    },
+    {
+      "name": "Newcastle",
+      "lat": -32.93,
+      "lon": 151.78
+    }
+  ],
+  "climateFile": "climate.json"
+}

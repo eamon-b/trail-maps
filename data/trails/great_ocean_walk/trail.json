@@ -1,0 +1,52 @@
+{
+  "id": "great_ocean_walk",
+  "name": "Great Ocean Walk",
+  "shortName": "GOW",
+  "region": "Otway coast (VIC)",
+  "lengthKm": 96.6,
+  "gpxFile": "Great_Ocean_Walk.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "From Apollo Bay along the Otway coast past Cape Otway to the Twelve Apostles, with hike-in campgrounds. Beach sections that depend on the tide are carried as alternates, each named after the nearest numbered decision point.",
+  "dataSource": {
+    "text": "Track and waypoints from the Great Trails Victoria – Great Ocean Walk dataset (© State of Victoria, DEECA, CC BY 4.0). Towns from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://discover.data.vic.gov.au/dataset/great-trails-victoria-great-ocean-walk",
+    "linkText": "Great Trails Victoria – Great Ocean Walk"
+  },
+  "direction": {
+    "default": "Westbound",
+    "reversed": "Eastbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Apollo Bay",
+      "lat": -38.76,
+      "lon": 143.67
+    },
+    {
+      "name": "Cape Otway",
+      "lat": -38.86,
+      "lon": 143.51
+    },
+    {
+      "name": "Twelve Apostles",
+      "lat": -38.66,
+      "lon": 143.1
+    }
+  ],
+  "climateFile": "climate.json"
+}

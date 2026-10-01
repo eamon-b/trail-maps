@@ -140,6 +140,8 @@ Changing a bundled waypoint's `type` re-keys it in `data/waypoint-ids.json`, whi
 
 **Te Araroa is not curated here.** Its route, waypoints and resupply points are built in [te-araroa-data](https://github.com/eamon-b/te-araroa-data), which commits its outputs; this repo takes them as a devDependency pinned by `package-lock.json`. `npm run sync:te-araroa` copies `te-araroa-sobo.gpx` out of `node_modules` into `data/trails/te_araroa/`, where it is gitignored — only `trail.json` and `climate.json` are committed. `npm run build` runs the sync first, so a fresh clone (or Vercel) builds without a manual step. `npm update te-araroa-data` takes a newer build. Do not hand-edit the GPX: it will be overwritten, and the fix belongs upstream.
 
+**Open-data trails.** Eleven Australian trails come from open data rather than a guidebook, and each `trail.json` `dataSource` names its dataset and licence: the Great Ocean Walk and Great South West Walk from Great Trails Victoria (CC BY 4.0, waypoints included); the Overland, Three Capes and South Coast tracks from the Tasmanian LIST Transport Segments layer (CC BY 3.0 AU) with OSM waypoints; the Great North Walk, Six Foot Track, The Coast Track, Grampians Peaks Trail, Kep Track and Thorsborne Trail from OSM route relations (ODbL). Their `<ele>` is Copernicus GLO-30 sampled every 30 m and smoothed over five samples before it was written, because the build sums every delta and raw surface-model samples read forest canopy as climb (the Great South West Walk read +6,220 m raw, +3,400 m smoothed). The GPX files were generated once and are the source of truth here. A refresh means regenerating them, not hand-editing.
+
 ### Generated Data (`public/data/generated/`)
 
 Built at build time:

@@ -1,0 +1,52 @@
+{
+  "id": "six_foot_track",
+  "name": "Six Foot Track",
+  "shortName": "Six Foot",
+  "region": "Blue Mountains (NSW)",
+  "lengthKm": 44.5,
+  "gpxFile": "Six_Foot_Track.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "Historic bridle trail from Katoomba down the Megalong Valley, across the Coxs River and over the Black Range to Jenolan Caves.",
+  "dataSource": {
+    "text": "Route and waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.openstreetmap.org/relation/3735948",
+    "linkText": "OpenStreetMap route relation"
+  },
+  "direction": {
+    "default": "Westbound",
+    "reversed": "Eastbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Katoomba",
+      "lat": -33.71,
+      "lon": 150.31
+    },
+    {
+      "name": "Coxs River",
+      "lat": -33.75,
+      "lon": 150.17
+    },
+    {
+      "name": "Jenolan Caves",
+      "lat": -33.82,
+      "lon": 150.02
+    }
+  ],
+  "climateFile": "climate.json"
+}

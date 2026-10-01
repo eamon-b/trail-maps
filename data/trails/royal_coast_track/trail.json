@@ -1,0 +1,47 @@
+{
+  "id": "royal_coast_track",
+  "name": "The Coast Track",
+  "shortName": "Coast Track",
+  "region": "Royal National Park (NSW)",
+  "lengthKm": 25.3,
+  "gpxFile": "Royal_Coast_Track.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "Clifftop and beach walk the length of Royal National Park's coast, from Bundeena to Otford, past Marley, Wattamolla, Curracurrong and Garie.",
+  "dataSource": {
+    "text": "Route and waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.openstreetmap.org/relation/4609482",
+    "linkText": "OpenStreetMap route relation"
+  },
+  "direction": {
+    "default": "Southbound",
+    "reversed": "Northbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Bundeena",
+      "lat": -34.09,
+      "lon": 151.15
+    },
+    {
+      "name": "Otford",
+      "lat": -34.21,
+      "lon": 151.0
+    }
+  ],
+  "climateFile": "climate.json"
+}

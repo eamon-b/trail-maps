@@ -1,0 +1,52 @@
+{
+  "id": "overland",
+  "name": "Overland Track",
+  "shortName": "Overland",
+  "region": "Cradle Mountain–Lake St Clair National Park (TAS)",
+  "lengthKm": 62.1,
+  "gpxFile": "Overland_Track.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "Tasmania's alpine walk from Ronny Creek in Cradle Valley to Narcissus Hut at the head of Lake St Clair, past Barn Bluff, Mount Ossa and the Du Cane Range. From Narcissus most walkers take the ferry to Cynthia Bay; the lakeside track there is carried as an alternative finish. Side trips to Cradle Mountain, Barn Bluff, Lake Will, Mount Pelion East, Mount Ossa, Pine Valley, and Hartnett and Fergusson Falls are included. Between 1 October and 31 May the track is booked, and walked north to south.",
+  "dataSource": {
+    "text": "Track geometry from the LIST Transport Segments layer (© State of Tasmania, NRE Tasmania, CC BY 3.0 AU). Huts, campsites and other waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.thelist.tas.gov.au/app/content/data/geo-meta-data-record?detailRecordUID=1ab7e34f-811c-4521-a549-212f295acc97",
+    "linkText": "LIST Transport Segments metadata"
+  },
+  "direction": {
+    "default": "Southbound",
+    "reversed": "Northbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Cradle Valley",
+      "lat": -41.64,
+      "lon": 145.95
+    },
+    {
+      "name": "Pelion Plains",
+      "lat": -41.83,
+      "lon": 146.05
+    },
+    {
+      "name": "Lake St Clair",
+      "lat": -42.11,
+      "lon": 146.17
+    }
+  ],
+  "climateFile": "climate.json"
+}

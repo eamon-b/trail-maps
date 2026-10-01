@@ -1,0 +1,2544 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:53:45.749Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 12960076121,
+      "type": "node",
+      "category": "water",
+      "lat": -36.8910542,
+      "lon": 142.3760894,
+      "name": "water tank",
+      "tags": {
+        "amenity": "drinking_water",
+        "name": "water tank"
+      },
+      "distanceAlongTrail": 0.020482089635234065,
+      "distanceFromTrail": 0.021309763099768435
+    },
+    {
+      "id": 11914706494,
+      "type": "node",
+      "category": "camping",
+      "lat": -36.8980525,
+      "lon": 142.3750395,
+      "name": "Camp Sandy",
+      "tags": {
+        "name": "Camp Sandy",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 0.38123262972895083,
+      "distanceFromTrail": 0.5363021547277023
+    },
+    {
+      "id": 12960060687,
+      "type": "node",
+      "category": "camping",
+      "lat": -36.9117995,
+      "lon": 142.4074588,
+      "name": "Rock shelter",
+      "tags": {
+        "amenity": "shelter",
+        "name": "Rock shelter"
+      },
+      "distanceAlongTrail": 4.490420416049374,
+      "distanceFromTrail": 0.005044313632998628
+    },
+    {
+      "id": 12960077045,
+      "type": "node",
+      "category": "water",
+      "lat": -36.9255513,
+      "lon": 142.415396,
+      "name": "Water tank",
+      "tags": {
+        "amenity": "drinking_water",
+        "man_made": "water_tap",
+        "name": "Water tank"
+      },
+      "distanceAlongTrail": 6.533896614597374,
+      "distanceFromTrail": 0.0005198697087506385
+    },
+    {
+      "id": 1513482674,
+      "type": "way",
+      "category": "camping",
+      "lat": -36.9534956,
+      "lon": 142.4358108,
+      "name": "Communal Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "bin": "no",
+        "building": "yes",
+        "name": "Communal Shelter",
+        "operator": "Parks Victoria",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 11.62622012214051,
+      "distanceFromTrail": 0.005486384808452428
+    },
+    {
+      "id": 13827550709,
+      "type": "node",
+      "category": "water",
+      "lat": -36.9534707,
+      "lon": 142.435867,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "description": "Rainwater tank fed by shelter roof. Treat before use and tank may be empty.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "man_made": "water_tap",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 11.62801322192596,
+      "distanceFromTrail": 0.011069971148060258
+    },
+    {
+      "id": 1513482676,
+      "type": "way",
+      "category": "camping",
+      "lat": -36.9536171,
+      "lon": 142.4362158,
+      "name": "Barigar Hike-in Campground",
+      "tags": {
+        "access": "permit",
+        "backcountry": "yes",
+        "caravans": "no",
+        "fee": "yes",
+        "name": "Barigar Hike-in Campground",
+        "openfire": "no",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "shower": "no",
+        "static_caravans": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 11.65465690470875,
+      "distanceFromTrail": 0.02768775325397342
+    },
+    {
+      "id": 13827550716,
+      "type": "node",
+      "category": "water",
+      "lat": -36.9538785,
+      "lon": 142.4366972,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "man_made": "water_tap",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 11.69062902740705,
+      "distanceFromTrail": 0.0549263155008513
+    },
+    {
+      "id": 12960058026,
+      "type": "node",
+      "category": "water",
+      "lat": -36.9828315,
+      "lon": 142.4317704,
+      "name": "Water tank",
+      "tags": {
+        "amenity": "drinking_water",
+        "name": "Water tank"
+      },
+      "distanceAlongTrail": 15.552709877575062,
+      "distanceFromTrail": 0.001684759002391547
+    },
+    {
+      "id": 11592875431,
+      "type": "node",
+      "category": "water",
+      "lat": -36.9866446,
+      "lon": 142.4305879,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 16.024582623572847,
+      "distanceFromTrail": 0.17358730083716345
+    },
+    {
+      "id": 951339115,
+      "type": "way",
+      "category": "camping",
+      "lat": -36.9866721,
+      "lon": 142.4305921,
+      "name": "Troopers Creek Campground",
+      "tags": {
+        "capacity": "13",
+        "capacity:caravan": "6",
+        "capacity:tents": "7",
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Troopers Creek Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 16.024582623572847,
+      "distanceFromTrail": 0.17313069729144703
+    },
+    {
+      "id": 12996636248,
+      "type": "node",
+      "category": "camping",
+      "lat": -36.9878768,
+      "lon": 142.4500385,
+      "name": "Overhanging rock shelter",
+      "tags": {
+        "amenity": "shelter",
+        "name": "Overhanging rock shelter"
+      },
+      "distanceAlongTrail": 20.086114018594245,
+      "distanceFromTrail": 0.0047644426396546485
+    },
+    {
+      "id": 2241434690,
+      "type": "node",
+      "category": "camping",
+      "lat": -36.9873136,
+      "lon": 142.4545826,
+      "name": "Mud Creek bush campsite",
+      "tags": {
+        "name": "Mud Creek bush campsite",
+        "source": "survey",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 20.66435487125795,
+      "distanceFromTrail": 0.0011268551134486948
+    },
+    {
+      "id": 11592875432,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0012129,
+      "lon": 142.4485247,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fountain": "drinking",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 22.65715179282107,
+      "distanceFromTrail": 0.0019900031933338955
+    },
+    {
+      "id": 11592875433,
+      "type": "node",
+      "category": "water",
+      "lat": -37.001731,
+      "lon": 142.4482972,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fountain": "drinking",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 22.719696861834915,
+      "distanceFromTrail": 0.0030858164448979777
+    },
+    {
+      "id": 1417972308,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.0017351,
+      "lon": 142.4482201,
+      "name": "Communal Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "fixme": "size approximate",
+        "name": "Communal Shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 22.723059329298348,
+      "distanceFromTrail": 0.009067309448189696
+    },
+    {
+      "id": 1417972307,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.0019417,
+      "lon": 142.4480134,
+      "name": "Gar Hike-in Campground",
+      "tags": {
+        "cabins": "yes",
+        "capacity:cabins": "3",
+        "capacity:tents": "9",
+        "caravans": "no",
+        "drinking_water": "yes",
+        "fee": "yes",
+        "name": "Gar Hike-in Campground",
+        "operator": "Parks Victoria",
+        "power_supply": "yes",
+        "reservation": "required",
+        "shower": "no",
+        "source": "survey",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 22.751060360533774,
+      "distanceFromTrail": 0.014496043957525106
+    },
+    {
+      "id": 13030698669,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0147187,
+      "lon": 142.4537442,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 23.684873553703806,
+      "distanceFromTrail": 1.091250382552186
+    },
+    {
+      "id": 6329905987,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.0150536,
+      "lon": 142.4536719,
+      "name": "Longpoint West",
+      "tags": {
+        "backcountry": "yes",
+        "name": "Longpoint West",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 23.684873553703806,
+      "distanceFromTrail": 1.1083319883265885
+    },
+    {
+      "id": 8805692240,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.0140781,
+      "lon": 142.4680987,
+      "name": "Longpoint East",
+      "tags": {
+        "name": "Longpoint East",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 27.01049810134365,
+      "distanceFromTrail": 0.714493869108784
+    },
+    {
+      "id": 10307857370,
+      "type": "node",
+      "category": "water",
+      "lat": -37.058472,
+      "lon": 142.516475,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "material": "metal"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.5394873040787005
+    },
+    {
+      "id": 11634111559,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0598889,
+      "lon": 142.514833,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Source:Bore",
+        "operator": "Parks Victoria",
+        "pump": "powered"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.4072660638773495
+    },
+    {
+      "id": 11634215111,
+      "type": "node",
+      "category": "water",
+      "lat": -37.058429,
+      "lon": 142.5165111,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Source:Bore",
+        "operator": "Parks Victoria",
+        "pump": "powered"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.542571343603634
+    },
+    {
+      "id": 11634215113,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0592837,
+      "lon": 142.5153683,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "material": "metal"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.4466762693661648
+    },
+    {
+      "id": 11634215114,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0593398,
+      "lon": 142.5152652,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Source:Bore",
+        "operator": "Parks Victoria",
+        "pump": "powered"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.4381466557265916
+    },
+    {
+      "id": 11634229911,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0586975,
+      "lon": 142.515967,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Source:Bore",
+        "operator": "Parks Victoria",
+        "pump": "powered"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.4953161625895506
+    },
+    {
+      "id": 1251553943,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.0590013,
+      "lon": 142.5157617,
+      "name": "Plantation Campground",
+      "tags": {
+        "access": "yes",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Plantation Campground",
+        "operator": "Parks Victoria",
+        "static_caravans": "yes",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "wikidata": "Q3365478",
+        "wikipedia": "en:Parks Victoria"
+      },
+      "distanceAlongTrail": 33.2010008578382,
+      "distanceFromTrail": 1.4790025374170026
+    },
+    {
+      "id": 13427721601,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0678201,
+      "lon": 142.4939869,
+      "name": "Water Tank",
+      "tags": {
+        "amenity": "drinking_water",
+        "name": "Water Tank"
+      },
+      "distanceAlongTrail": 35.16664262541592,
+      "distanceFromTrail": 0.0018427601087758786
+    },
+    {
+      "id": 1389551377,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.0660082,
+      "lon": 142.4851337,
+      "name": "Communal Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Communal Shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 36.3834225150928,
+      "distanceFromTrail": 0.15481099253914918
+    },
+    {
+      "id": 1389551378,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.0661541,
+      "lon": 142.484882,
+      "name": "Werdug Hike-in Campground",
+      "tags": {
+        "cabins": "yes",
+        "camp_site": "basic",
+        "capacity:cabins": "3",
+        "caravans": "no",
+        "drinking_water": "yes",
+        "name": "Werdug Hike-in Campground",
+        "opening_hours": "24/7",
+        "operator": "Parks Victoria",
+        "power_supply": "yes",
+        "reservation": "required",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "wheelchair": "no"
+      },
+      "distanceAlongTrail": 36.38380958344306,
+      "distanceFromTrail": 0.18241134329739317
+    },
+    {
+      "id": 12862584032,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0660713,
+      "lon": 142.4851299,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fountain": "drinking",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 36.38896221546532,
+      "distanceFromTrail": 0.15913026234346142
+    },
+    {
+      "id": 12862584033,
+      "type": "node",
+      "category": "water",
+      "lat": -37.0663371,
+      "lon": 142.4850362,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fountain": "drinking",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 36.492338294437786,
+      "distanceFromTrail": 0.17375620948756906
+    },
+    {
+      "id": 5365661721,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1162908,
+      "lon": 142.5319442,
+      "name": null,
+      "tags": {
+        "fee": "no",
+        "reservation": "no",
+        "shower": "no",
+        "toilets": "no",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 47.03871442676276,
+      "distanceFromTrail": 1.811251089450157
+    },
+    {
+      "id": 241387990,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1283693,
+      "lon": 142.5253781,
+      "name": "Halls Gap Holiday Park",
+      "tags": {
+        "addr:housenumber": "2372",
+        "addr:postcode": "3381",
+        "addr:street": "Grampians Road",
+        "addr:suburb": "Halls Gap",
+        "brand": "Big4;NRMA",
+        "name": "Halls Gap Holiday Park",
+        "opening_hours": "Mo-Su 08:00-18:00",
+        "phone": "+61 3 5356 4215",
+        "tourism": "caravan_site",
+        "website": "https://www.nrmaparksandresorts.com.au/halls-gap/"
+      },
+      "distanceAlongTrail": 47.11392963929837,
+      "distanceFromTrail": 0.6495846981982705
+    },
+    {
+      "id": 13427488626,
+      "type": "node",
+      "category": "transport",
+      "lat": -37.1286402,
+      "lon": 142.5385239,
+      "name": null,
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 47.58145127476807,
+      "distanceFromTrail": 1.8129396702513367
+    },
+    {
+      "id": 672990485,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1301757,
+      "lon": 142.5340854,
+      "name": "Halls Gap Hotel",
+      "tags": {
+        "addr:housenumber": "2262",
+        "addr:postcode": "3381",
+        "addr:street": "Grampians Road",
+        "addr:suburb": "Halls Gap",
+        "amenity": "pub",
+        "name": "Halls Gap Hotel",
+        "website": "https://www.hallsgaphotel.com.au/"
+      },
+      "distanceAlongTrail": 47.59627407145652,
+      "distanceFromTrail": 1.3902582083541615
+    },
+    {
+      "id": 8805670082,
+      "type": "node",
+      "category": "emergency",
+      "lat": -37.1325293,
+      "lon": 142.521472,
+      "name": "Budja Budja Medical Centre",
+      "tags": {
+        "amenity": "doctors",
+        "name": "Budja Budja Medical Centre",
+        "opening_hours": "Mo-Fr 08:30-17:00",
+        "operator": "Budja Budja Aboriginal Co-operative Ltd",
+        "website": "https://budjabudjacoop.org.au/"
+      },
+      "distanceAlongTrail": 47.598406319977514,
+      "distanceFromTrail": 0.2419858702113861
+    },
+    {
+      "id": 729925216,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1299849,
+      "lon": 142.5400054,
+      "name": "Breeze Holiday Parks - Grampians",
+      "tags": {
+        "name": "Breeze Holiday Parks - Grampians",
+        "tourism": "caravan_site",
+        "website": "https://breezeholidayparks.com.au/parks/grampians/"
+      },
+      "distanceAlongTrail": 47.62695039063086,
+      "distanceFromTrail": 1.9083845076843955
+    },
+    {
+      "id": 214237135,
+      "type": "node",
+      "category": "transport",
+      "lat": -37.134467,
+      "lon": 142.5215535,
+      "name": "Tim's Place",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Tim's Place",
+        "network": "V/line",
+        "ref": "Recreation Reserve",
+        "shelter": "no",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 47.743611566195945,
+      "distanceFromTrail": 0.24739987189606036
+    },
+    {
+      "id": 1346979536,
+      "type": "way",
+      "category": "emergency",
+      "lat": -37.1364089,
+      "lon": 142.5192756,
+      "name": null,
+      "tags": {
+        "amenity": "police",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 48.02300874790419,
+      "distanceFromTrail": 0.04117576544663807
+    },
+    {
+      "id": 8805686971,
+      "type": "node",
+      "category": "emergency",
+      "lat": -37.1363825,
+      "lon": 142.519408,
+      "name": null,
+      "tags": {
+        "amenity": "police"
+      },
+      "distanceAlongTrail": 48.0294318350255,
+      "distanceFromTrail": 0.030923548331627655
+    },
+    {
+      "id": 595573010,
+      "type": "node",
+      "category": "emergency",
+      "lat": -37.1366182,
+      "lon": 142.5187684,
+      "name": "Halls Gap CFA",
+      "tags": {
+        "amenity": "fire_station",
+        "name": "Halls Gap CFA"
+      },
+      "distanceAlongTrail": 48.15885787555026,
+      "distanceFromTrail": 0.06208599295747265
+    },
+    {
+      "id": 2495579164,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1388695,
+      "lon": 142.5199068,
+      "name": "Black Panther Cafe Bar",
+      "tags": {
+        "amenity": "cafe",
+        "indoor_seating": "yes",
+        "name": "Black Panther Cafe Bar",
+        "outdoor_seating": "yes"
+      },
+      "distanceAlongTrail": 48.192704111640516,
+      "distanceFromTrail": 0.19490131449462283
+    },
+    {
+      "id": 2495583336,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1388905,
+      "lon": 142.5197188,
+      "name": "Livefast Cafe",
+      "tags": {
+        "addr:housenumber": "97",
+        "addr:street": "Grampians Road",
+        "addr:unit": "5",
+        "amenity": "cafe",
+        "bar": "yes",
+        "name": "Livefast Cafe",
+        "outdoor_seating": "yes",
+        "phone": "+61 3 5356 4400",
+        "website": "https://www.livefast.com.au/"
+      },
+      "distanceAlongTrail": 48.192704111640516,
+      "distanceFromTrail": 0.19178812959682948
+    },
+    {
+      "id": 313107437,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -37.1383729,
+      "lon": 142.5198434,
+      "name": "Flame Brothers",
+      "tags": {
+        "addr:postcode": "3381",
+        "addr:street": "Grampians Road",
+        "addr:suburb": "Halls Gap",
+        "amenity": "restaurant",
+        "building": "yes",
+        "cuisine": "regional",
+        "name": "Flame Brothers",
+        "website": "https://www.flamebrothers.com.au/",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 48.192704111640516,
+      "distanceFromTrail": 0.1421095852753309
+    },
+    {
+      "id": 298169480,
+      "type": "way",
+      "category": "emergency",
+      "lat": -37.1366295,
+      "lon": 142.5186357,
+      "name": null,
+      "tags": {
+        "amenity": "fire_station",
+        "building": "yes",
+        "emergency": "ambulance_station"
+      },
+      "distanceAlongTrail": 48.2334844420837,
+      "distanceFromTrail": 0.06856116833562156
+    },
+    {
+      "id": 11778297789,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1398781,
+      "lon": 142.5192781,
+      "name": "Town Fryer Fish&Chips",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "fish_and_chips",
+        "name": "Town Fryer Fish&Chips"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.2282889632196357
+    },
+    {
+      "id": 13315509870,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1390353,
+      "lon": 142.5191388,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.1599407927904619
+    },
+    {
+      "id": 13321298999,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1397507,
+      "lon": 142.5192572,
+      "name": "Hungry Hikers",
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Hungry Hikers"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.2167084111592316
+    },
+    {
+      "id": 13323407820,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1396798,
+      "lon": 142.5185371,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.17118634147984535
+    },
+    {
+      "id": 13323510470,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1398004,
+      "lon": 142.5180036,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.16541541836316337
+    },
+    {
+      "id": 13323533915,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1403665,
+      "lon": 142.5186528,
+      "name": null,
+      "tags": {
+        "drinking_water:signed": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.24389768147728227
+    },
+    {
+      "id": 13323548494,
+      "type": "node",
+      "category": "water",
+      "lat": -37.139895,
+      "lon": 142.5182814,
+      "name": null,
+      "tags": {
+        "drinking_water:signed": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.18288457541536657
+    },
+    {
+      "id": 13323550046,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1394165,
+      "lon": 142.5188787,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.16669580113185217
+    },
+    {
+      "id": 13426096101,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1413272,
+      "lon": 142.5196686,
+      "name": "Raccolto",
+      "tags": {
+        "addr:housenumber": "2",
+        "addr:street": "Heath Street",
+        "amenity": "restaurant",
+        "cuisine": "italian_pizza",
+        "name": "Raccolto",
+        "opening_hours": "Mo-Tu, Th-Fr 15:00-20:00; Sa-Su 10:00-20:00",
+        "phone": "+61 3 5356 4782",
+        "website": "https://www.raccoltopizza.com.au/",
+        "website:menu": "https://www.raccoltopizza.com.au/menu/"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.3799615309035078
+    },
+    {
+      "id": 13427425252,
+      "type": "node",
+      "category": "transport",
+      "lat": -37.1403995,
+      "lon": 142.5189612,
+      "name": "Halls Gap Information Centre",
+      "tags": {
+        "bench": "yes",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Halls Gap Information Centre",
+        "public_transport": "platform",
+        "ref:signed": "no",
+        "shelter": "yes",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.2593160318319107
+    },
+    {
+      "id": 13427446289,
+      "type": "node",
+      "category": "transport",
+      "lat": -37.1404424,
+      "lon": 142.5191512,
+      "name": "Halls Gap Information Centre",
+      "tags": {
+        "bench": "no",
+        "bin": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Halls Gap Information Centre",
+        "public_transport": "platform",
+        "ref:signed": "no",
+        "shelter": "yes",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.271917748309205
+    },
+    {
+      "id": 13589606950,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1397582,
+      "lon": 142.5183605,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.1715829715417368
+    },
+    {
+      "id": 2495583339,
+      "type": "node",
+      "category": "resupply",
+      "lat": -37.1388938,
+      "lon": 142.5195102,
+      "name": "Halls Gap Bakery",
+      "tags": {
+        "name": "Halls Gap Bakery",
+        "name:en": "Halls Gap Bakery",
+        "opening_hours": "Mo-Su 07:00-16:00",
+        "shop": "bakery",
+        "website": "https://hallsgapbakery.com.au/"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.18393757968747676
+    },
+    {
+      "id": 2495583344,
+      "type": "node",
+      "category": "resupply",
+      "lat": -37.1393918,
+      "lon": 142.5192998,
+      "name": "Halls Gap General Store",
+      "tags": {
+        "name": "Halls Gap General Store",
+        "opening_hours": "Mo-Su 08:00-20:00",
+        "shop": "supermarket",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.19327226078844406
+    },
+    {
+      "id": 2808070001,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.143765,
+      "lon": 142.521032,
+      "name": "Darcy",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Darcy"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.6759406468463054
+    },
+    {
+      "id": 4719781198,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1396454,
+      "lon": 142.5185363,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.16787659569504984
+    },
+    {
+      "id": 4719845189,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1396265,
+      "lon": 142.518507,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.16473165519827512
+    },
+    {
+      "id": 5365136522,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1395351,
+      "lon": 142.5189257,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "check_date": "2025-11-22",
+        "fee": "no",
+        "fountain": "bubbler",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.17907168694799397
+    },
+    {
+      "id": 595572866,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1452594,
+      "lon": 142.521999,
+      "name": "Spirit Of Punjab",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "indian",
+        "name": "Spirit Of Punjab"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.8629094862604245
+    },
+    {
+      "id": 595572941,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.142227,
+      "lon": 142.5193497,
+      "name": "Kookaburra Bar & Bistro",
+      "tags": {
+        "addr:housenumber": "125-127",
+        "addr:postcode": "3381",
+        "addr:street": "Grampians Road",
+        "addr:suburb": "Halls Gap",
+        "amenity": "pub",
+        "name": "Kookaburra Bar & Bistro",
+        "opening_hours": "Tu-Fr 15:00-21:00; Sa,Su 12:00-21:00",
+        "website": "https://www.kookaburrahotel.com.au/",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.4589285243752495
+    },
+    {
+      "id": 595572962,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1412361,
+      "lon": 142.5185052,
+      "name": "Halls Gap Caravan Park",
+      "tags": {
+        "drinking_water": "yes",
+        "fee": "yes",
+        "name": "Halls Gap Caravan Park",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.3311088049383288
+    },
+    {
+      "id": 7012936058,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1407597,
+      "lon": 142.519278,
+      "name": "paper scissors rock brew co.",
+      "tags": {
+        "addr:housenumber": "119",
+        "addr:postcode": "3381",
+        "addr:street": "Grampians Road",
+        "addr:suburb": "Halls Gap",
+        "amenity": "restaurant",
+        "name": "paper scissors rock brew co.",
+        "opening_hours": "Mo-Su 12:00-20:00; Tu off",
+        "website": "https://paperscissorsrock.beer/",
+        "website:menu": "https://paperscissorsrock.beer/menu/"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.3079962355205318
+    },
+    {
+      "id": 746326822,
+      "type": "node",
+      "category": "resupply",
+      "lat": -37.1395886,
+      "lon": 142.5192917,
+      "name": "Halls Gap Post Office",
+      "tags": {
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "name": "Halls Gap Post Office"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.20649795402057888
+    },
+    {
+      "id": 9773901452,
+      "type": "node",
+      "category": "resupply",
+      "lat": -37.1395444,
+      "lon": 142.5192753,
+      "name": "Absolute Outdoors Australia",
+      "tags": {
+        "name": "Absolute Outdoors Australia",
+        "shop": "outdoor"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.20217074681609418
+    },
+    {
+      "id": 12810646,
+      "type": "relation",
+      "category": "camping",
+      "lat": -37.139454,
+      "lon": 142.5172286,
+      "name": "Halls Gap Caravan Park",
+      "tags": {
+        "name": "Halls Gap Caravan Park",
+        "tourism": "camp_site",
+        "type": "multipolygon",
+        "website": "https://hallsgapcaravanpark.com.au/"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.1250950231306146
+    },
+    {
+      "id": 298169507,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -37.1437698,
+      "lon": 142.5210351,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.6765409486156533
+    },
+    {
+      "id": 298169509,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -37.1452177,
+      "lon": 142.5221772,
+      "name": "Spirit of Punjab",
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes",
+        "cuisine": "indian",
+        "name": "Spirit of Punjab"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.8661595932837359
+    },
+    {
+      "id": 305408943,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1488548,
+      "lon": 142.5225643,
+      "name": "Silverband Lodge",
+      "tags": {
+        "building": "yes",
+        "group_only": "yes",
+        "name": "Silverband Lodge",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 1.249030874044714
+    },
+    {
+      "id": 320480056,
+      "type": "way",
+      "category": "resupply",
+      "lat": -37.140247,
+      "lon": 142.5194576,
+      "name": "Grampians Camping and Convenience Store",
+      "tags": {
+        "building": "retail",
+        "name": "Grampians Camping and Convenience Store",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.26981705561573915
+    },
+    {
+      "id": 478832519,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1403917,
+      "lon": 142.5185494,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.242966670873513
+    },
+    {
+      "id": 675575577,
+      "type": "way",
+      "category": "resupply",
+      "lat": -37.1401731,
+      "lon": 142.5194502,
+      "name": "Ampol Halls Gap",
+      "tags": {
+        "addr:postcode": "3381",
+        "addr:state": "VIC",
+        "addr:street": "Grampians Road",
+        "addr:suburb": "Halls Gap",
+        "amenity": "fuel",
+        "brand": "Caltex",
+        "brand:wikidata": "Q277470",
+        "brand:wikipedia": "en:Caltex",
+        "fuel:diesel": "yes",
+        "fuel:octane_91": "yes",
+        "fuel:octane_98": "yes",
+        "name": "Ampol Halls Gap",
+        "phone": "+61 3 5356 4206",
+        "website": "https://www.bonneyenergy.com.au/"
+      },
+      "distanceAlongTrail": 48.409501464091484,
+      "distanceFromTrail": 0.26304949296171654
+    },
+    {
+      "id": 1346979534,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1376811,
+      "lon": 142.5164155,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 48.52465269129664,
+      "distanceFromTrail": 0.044027747667431276
+    },
+    {
+      "id": 13321482026,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1380505,
+      "lon": 142.5159246,
+      "name": null,
+      "tags": {
+        "drinking_water:signed": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 48.558547699836375,
+      "distanceFromTrail": 0.0020135502678289346
+    },
+    {
+      "id": 11668421365,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1386638,
+      "lon": 142.5157748,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "fee": "no"
+      },
+      "distanceAlongTrail": 48.57716309382607,
+      "distanceFromTrail": 0.06492273732868784
+    },
+    {
+      "id": 13321491397,
+      "type": "node",
+      "category": "water",
+      "lat": -37.138063,
+      "lon": 142.5157006,
+      "name": null,
+      "tags": {
+        "drinking_water:signed": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 48.57845143542416,
+      "distanceFromTrail": 0.0021938041082269996
+    },
+    {
+      "id": 13321489316,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1380263,
+      "lon": 142.5152985,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 48.61359166398037,
+      "distanceFromTrail": 0.00981023066896839
+    },
+    {
+      "id": 11639982338,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1501179,
+      "lon": 142.5024082,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "description": "Dispenses rainwater",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fixme": "Properly reflect that this is a rain water tap",
+        "man_made": "water_tap",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 51.13511237801972,
+      "distanceFromTrail": 0.14285032618077073
+    },
+    {
+      "id": 305408944,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.149502,
+      "lon": 142.5232202,
+      "name": "Norval Lodge and House",
+      "tags": {
+        "building": "yes",
+        "group_only": "yes",
+        "name": "Norval Lodge and House",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 52.73105173336079,
+      "distanceFromTrail": 1.3364856368489606
+    },
+    {
+      "id": 305408945,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1495565,
+      "lon": 142.5231248,
+      "name": "Norval Lodge and House",
+      "tags": {
+        "building": "yes",
+        "group_only": "yes",
+        "name": "Norval Lodge and House",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 52.73105173336079,
+      "distanceFromTrail": 1.3263470662301415
+    },
+    {
+      "id": 2271271839,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1574088,
+      "lon": 142.5303765,
+      "name": "Brambuk Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "cuisine": "coffee_shop",
+        "name": "Brambuk Cafe",
+        "opening_hours": "Mo-Su 09:00-17:00",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 53.03192169526254,
+      "distanceFromTrail": 1.3618566909269263
+    },
+    {
+      "id": 2495575443,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.1651749,
+      "lon": 142.5312785,
+      "name": "Grampians Motel Bar",
+      "tags": {
+        "amenity": "pub",
+        "name": "Grampians Motel Bar"
+      },
+      "distanceAlongTrail": 54.14198428190484,
+      "distanceFromTrail": 1.2787825374685284
+    },
+    {
+      "id": 11601891222,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1724716,
+      "lon": 142.5147922,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 55.320321195706484,
+      "distanceFromTrail": 0.03687879172262789
+    },
+    {
+      "id": 13852598229,
+      "type": "node",
+      "category": "water",
+      "lat": -37.1804069,
+      "lon": 142.5090421,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 57.12224236624584,
+      "distanceFromTrail": 0.03298420325768471
+    },
+    {
+      "id": 1286784369,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1808238,
+      "lon": 142.508845,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 57.12224236624584,
+      "distanceFromTrail": 0.06211001310970217
+    },
+    {
+      "id": 1372198889,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.1807273,
+      "lon": 142.5088179,
+      "name": "Bugiga Hike-in Campground",
+      "tags": {
+        "access": "permit",
+        "capacity": "24",
+        "description": "12 elevated camping platforms, 4m diameter suitable for 2-3 person tents, weather shelter, two non-flush toilets",
+        "fee": "yes",
+        "internet_access": "no",
+        "name": "Bugiga Hike-in Campground",
+        "operator": "Parks Victoria, Victoria State Government",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 57.12224236624584,
+      "distanceFromTrail": 0.05111806454330423
+    },
+    {
+      "id": 10307805625,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1779049,
+      "lon": 142.4973886,
+      "name": "Stoney Creek Group Camping Area",
+      "tags": {
+        "name": "Stoney Creek Group Camping Area",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 58.43235956096419,
+      "distanceFromTrail": 0.33766515158162186
+    },
+    {
+      "id": 4571048539,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1786461,
+      "lon": 142.4806168,
+      "name": "Stony Creek #2",
+      "tags": {
+        "capacity": "4",
+        "fee": "no",
+        "internet_access": "no",
+        "name": "Stony Creek #2",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 59.30859583308416,
+      "distanceFromTrail": 0.8407896030992844
+    },
+    {
+      "id": 4571049211,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.1800162,
+      "lon": 142.4848,
+      "name": "Stony Creek Group Campground",
+      "tags": {
+        "fee": "yes",
+        "internet_access": "no",
+        "name": "Stony Creek Group Campground",
+        "operator": "Stony Creek Group Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 59.30859583308416,
+      "distanceFromTrail": 0.4468837519373129
+    },
+    {
+      "id": 35604271,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.2240506,
+      "lon": 142.5396895,
+      "name": "Borough Huts Campground",
+      "tags": {
+        "capacity": "21",
+        "capacity:caravan": "4",
+        "capacity:tents": "17",
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Borough Huts Campground",
+        "operator": "Parks Victoria",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 70.58276618225493,
+      "distanceFromTrail": 0.13961759133723586
+    },
+    {
+      "id": 11648860928,
+      "type": "node",
+      "category": "water",
+      "lat": -37.2254625,
+      "lon": 142.5501848,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Ranger Serviced Tank",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 71.74696664622655,
+      "distanceFromTrail": 0.005109263927665313
+    },
+    {
+      "id": 1337339282,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.2234749,
+      "lon": 142.5530531,
+      "name": "Barri Yalug Hike-in Campground",
+      "tags": {
+        "capacity:tents": "10",
+        "caravans": "no",
+        "fee": "yes",
+        "name": "Barri Yalug Hike-in Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 71.74843345633013,
+      "distanceFromTrail": 0.3416915412437668
+    },
+    {
+      "id": 12369374771,
+      "type": "node",
+      "category": "water",
+      "lat": -37.2236614,
+      "lon": 142.5534266,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "intermittent": "yes",
+        "note": "Rainwater tank fed by shelter roof. Treat before use.",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 71.84512345873833,
+      "distanceFromTrail": 0.344756064395487
+    },
+    {
+      "id": 1282697096,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.2723457,
+      "lon": 142.6132803,
+      "name": "Bomjinna",
+      "tags": {
+        "name": "Bomjinna",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 79.62936874703469,
+      "distanceFromTrail": 1.7976752447885058
+    },
+    {
+      "id": 12023886119,
+      "type": "node",
+      "category": "water",
+      "lat": -37.2768813,
+      "lon": 142.585474,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Ranger Serviced Tank",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 82.86611673127481,
+      "distanceFromTrail": 0.0013098589898026508
+    },
+    {
+      "id": 13852804730,
+      "type": "node",
+      "category": "water",
+      "lat": -37.2810162,
+      "lon": 142.5895651,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "man_made": "water_tap",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 83.57075668593725,
+      "distanceFromTrail": 0.014386390275033417
+    },
+    {
+      "id": 1517558267,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.2813378,
+      "lon": 142.5897825,
+      "name": "Duwul Hike-in Campground",
+      "tags": {
+        "access": "permit",
+        "backcountry": "yes",
+        "fee": "yes",
+        "name": "Duwul Hike-in Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 83.62805678238553,
+      "distanceFromTrail": 0.026234648647266465
+    },
+    {
+      "id": 11665000275,
+      "type": "node",
+      "category": "water",
+      "lat": -37.2952897,
+      "lon": 142.6034819,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Ranger Serviced Tank",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 86.92236163125229,
+      "distanceFromTrail": 0.0038254796344152284
+    },
+    {
+      "id": 1282697048,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.3136439,
+      "lon": 142.5936817,
+      "name": "Boundry Gap",
+      "tags": {
+        "backcountry": "yes",
+        "fee": "no",
+        "name": "Boundry Gap",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 89.53879403083201,
+      "distanceFromTrail": 0.002923048279237383
+    },
+    {
+      "id": 1282698058,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.3204195,
+      "lon": 142.5882466,
+      "name": "First Wannon Camp",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "First Wannon Camp",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 90.83520643138351,
+      "distanceFromTrail": 0.011890357146931237
+    },
+    {
+      "id": 11352852135,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.3538407,
+      "lon": 142.5552611,
+      "name": "Durd Durd Hike-in Campground",
+      "tags": {
+        "name": "Durd Durd Hike-in Campground",
+        "operator": "Parks Victoria",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 98.07019184256401,
+      "distanceFromTrail": 0.04141208310204096
+    },
+    {
+      "id": 951339061,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.3717319,
+      "lon": 142.5034864,
+      "name": "Jimmy Creek Campground",
+      "tags": {
+        "capacity": "21",
+        "capacity:caravan": "8",
+        "capacity:tents": "13",
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Jimmy Creek Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 104.71609444499428,
+      "distanceFromTrail": 0.15700678179958139
+    },
+    {
+      "id": 13763542492,
+      "type": "node",
+      "category": "water",
+      "lat": -37.4151368,
+      "lon": 142.5023434,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fountain": "drinking",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 109.70011706074835,
+      "distanceFromTrail": 0.0022836401895509804
+    },
+    {
+      "id": 1504011260,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.4153118,
+      "lon": 142.5021582,
+      "name": "Yarram Hike-in Campground",
+      "tags": {
+        "capacity:tents": "10",
+        "caravans": "no",
+        "fee": "yes",
+        "name": "Yarram Hike-in Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "shower": "no",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 109.72222969475047,
+      "distanceFromTrail": 0.006629312239785081
+    },
+    {
+      "id": 13763542498,
+      "type": "node",
+      "category": "water",
+      "lat": -37.4152311,
+      "lon": 142.5019811,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "fountain": "drinking",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 109.73176859765837,
+      "distanceFromTrail": 0.00863395072734534
+    },
+    {
+      "id": 1504011252,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.4152706,
+      "lon": 142.5019681,
+      "name": "Communal Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Communal Shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 109.73538855246309,
+      "distanceFromTrail": 0.005455109874162765
+    },
+    {
+      "id": 1010039365,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.433754,
+      "lon": 142.4756502,
+      "name": "Wannon Crossing Campground",
+      "tags": {
+        "capacity": "7",
+        "capacity:caravan": "1",
+        "capacity:tents": "6",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Wannon Crossing Campground",
+        "operator": "Parks Victoria",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.parks.vic.gov.au/places-to-see/sites/wannon-crossing-campground"
+      },
+      "distanceAlongTrail": 113.170980309697,
+      "distanceFromTrail": 1.05046702455149
+    },
+    {
+      "id": 13431691004,
+      "type": "node",
+      "category": "water",
+      "lat": -37.4450616,
+      "lon": 142.481958,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Ranger Serviced Tank",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 114.2187487785003,
+      "distanceFromTrail": 0.0008294316132400442
+    },
+    {
+      "id": 13839662140,
+      "type": "node",
+      "category": "water",
+      "lat": -37.4818522,
+      "lon": 142.4457216,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "man_made": "water_tap",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 120.69282083820823,
+      "distanceFromTrail": 0.21222230522155142
+    },
+    {
+      "id": 1504013800,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.4825565,
+      "lon": 142.4460133,
+      "name": "Wannon Hike-in Campground",
+      "tags": {
+        "access": "permit",
+        "backcountry": "yes",
+        "fee": "yes",
+        "name": "Wannon Hike-in Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 120.75533622137752,
+      "distanceFromTrail": 0.14373539090804788
+    },
+    {
+      "id": 14232978887,
+      "type": "node",
+      "category": "water",
+      "lat": -37.5616908,
+      "lon": 142.3687476,
+      "name": "Water Tank",
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "content": "rainwater",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "man_made": "storage_tank;water_tap",
+        "name": "Water Tank",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 136.52919959803523,
+      "distanceFromTrail": 0.01947856711933177
+    },
+    {
+      "id": 1513994249,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.5612666,
+      "lon": 142.3693035,
+      "name": "Djardji-djawara Hike-in Campground",
+      "tags": {
+        "access": "permit",
+        "backcountry": "yes",
+        "capacity": "24",
+        "name": "Djardji-djawara Hike-in Campground",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478",
+        "power_supply": "no",
+        "reservation": "required",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 136.55083243067423,
+      "distanceFromTrail": 0.04033419088820745
+    },
+    {
+      "id": 1513994252,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.5615273,
+      "lon": 142.3693641,
+      "name": "Communal Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Communal Shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 136.56307994279734,
+      "distanceFromTrail": 0.02604984700054854
+    },
+    {
+      "id": 13830899700,
+      "type": "node",
+      "category": "water",
+      "lat": -37.561581,
+      "lon": 142.369383,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional",
+        "drinking_water:legal": "no",
+        "man_made": "water_tap",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 136.56917480524586,
+      "distanceFromTrail": 0.024917321032156273
+    },
+    {
+      "id": 12219614366,
+      "type": "node",
+      "category": "water",
+      "lat": -37.6032615,
+      "lon": 142.3506515,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 144.26298216624983,
+      "distanceFromTrail": 0.12789880522377353
+    },
+    {
+      "id": 13830252007,
+      "type": "node",
+      "category": "water",
+      "lat": -37.6033281,
+      "lon": 142.3503582,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "description": "Rainwater tank fed by shelter roof. Treat before use.",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "operator": "Parks Victoria",
+        "operator:wikidata": "Q3365478"
+      },
+      "distanceAlongTrail": 144.26298216624983,
+      "distanceFromTrail": 0.10850860973551596
+    },
+    {
+      "id": 1320493994,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.6033139,
+      "lon": 142.3506668,
+      "name": "Communal Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Communal Shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 144.26298216624983,
+      "distanceFromTrail": 0.1315453007562059
+    },
+    {
+      "id": 1513906906,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.6032508,
+      "lon": 142.3507651,
+      "name": "Mud-Dadjug Hike-in Campground",
+      "tags": {
+        "access": "permit",
+        "backcountry": "yes",
+        "caravans": "no",
+        "fee": "yes",
+        "name": "Mud-Dadjug Hike-in Campground",
+        "operator": "Parks Victoria",
+        "reservation": "required",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 144.26298216624983,
+      "distanceFromTrail": 0.13669709161126378
+    },
+    {
+      "id": 3768714641,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.6146712,
+      "lon": 142.3551754,
+      "name": "Grampians Retreat",
+      "tags": {
+        "name": "Grampians Retreat",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 147.0450906805404,
+      "distanceFromTrail": 1.1112176447515842
+    },
+    {
+      "id": 12218126582,
+      "type": "node",
+      "category": "water",
+      "lat": -37.6164801,
+      "lon": 142.3411867,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Ranger Serviced Tank",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 147.49841045051423,
+      "distanceFromTrail": 0.003511800860470256
+    },
+    {
+      "id": 12218717244,
+      "type": "node",
+      "category": "water",
+      "lat": -37.6217516,
+      "lon": 142.3267098,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "drinking_water": "conditional;untreated",
+        "drinking_water:legal": "no",
+        "fee": "no",
+        "note": "Ranger Serviced Tank",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 149.67193232217255,
+      "distanceFromTrail": 0.001992527973394073
+    },
+    {
+      "id": 1808393879,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.654108,
+      "lon": 142.3198826,
+      "name": "Mt Sturgeon Rest Area",
+      "tags": {
+        "name": "Mt Sturgeon Rest Area",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 156.20256319402765,
+      "distanceFromTrail": 0.9124593254982553
+    },
+    {
+      "id": 11827306397,
+      "type": "node",
+      "category": "transport",
+      "lat": -37.6496553,
+      "lon": 142.3429601,
+      "name": null,
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "departures_board": "timetable",
+        "highway": "bus_stop",
+        "network": "Vline",
+        "operator": "Vline",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.540686070000505
+    },
+    {
+      "id": 11827306398,
+      "type": "node",
+      "category": "transport",
+      "lat": -37.6494453,
+      "lon": 142.3431932,
+      "name": null,
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "departures_board": "timetable",
+        "highway": "bus_stop",
+        "network": "Vline",
+        "operator": "Vline",
+        "public_transport": "platform",
+        "shelter": "yes"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.551099844746816
+    },
+    {
+      "id": 11827306411,
+      "type": "node",
+      "category": "water",
+      "lat": -37.6497596,
+      "lon": 142.3424375,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "fee": "no",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.5038350297518931
+    },
+    {
+      "id": 12218708313,
+      "type": "node",
+      "category": "water",
+      "lat": -37.6492633,
+      "lon": 142.3426751,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "fee": "no"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.501314751720466
+    },
+    {
+      "id": 4719390863,
+      "type": "node",
+      "category": "resupply",
+      "lat": -37.6495682,
+      "lon": 142.3417565,
+      "name": "Dunkeld General Store",
+      "tags": {
+        "level": "0",
+        "name": "Dunkeld General Store",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.4407617530543262
+    },
+    {
+      "id": 4719390865,
+      "type": "node",
+      "category": "emergency",
+      "lat": -37.6496214,
+      "lon": 142.3419843,
+      "name": "Dunkeld Pharmacy",
+      "tags": {
+        "amenity": "pharmacy",
+        "healthcare": "pharmacy",
+        "level": "0",
+        "name": "Dunkeld Pharmacy",
+        "phone": "+61 3 5577 2355"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.46129453005870746
+    },
+    {
+      "id": 5400734522,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.646292,
+      "lon": 142.3422072,
+      "name": "Dunkeld Delights Garden Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Dunkeld Delights Garden Cafe"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.45923552979583904
+    },
+    {
+      "id": 595590572,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.6489108,
+      "lon": 142.3402089,
+      "name": "Royal Mail Hotel",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Royal Mail Hotel"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.2861570692767499
+    },
+    {
+      "id": 595590579,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -37.6491997,
+      "lon": 142.3419965,
+      "name": "Izzy’s Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Izzy’s Cafe",
+        "opening_hours": "Mo-Th 09:00-18:30; Fr-Su 09:00-19:30",
+        "website": "https://izzys.com.au/dunkeld"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.44292714167964475
+    },
+    {
+      "id": 1175816349,
+      "type": "way",
+      "category": "resupply",
+      "lat": -37.6499843,
+      "lon": 142.3442811,
+      "name": "Mobil",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Mobil",
+        "brand:wikidata": "Q109676002",
+        "landuse": "retail",
+        "name": "Mobil"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.6620881773267305
+    },
+    {
+      "id": 1273633740,
+      "type": "way",
+      "category": "emergency",
+      "lat": -37.6499111,
+      "lon": 142.3451011,
+      "name": null,
+      "tags": {
+        "amenity": "police",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.7266797175446557
+    },
+    {
+      "id": 1273633745,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -37.6495972,
+      "lon": 142.3412086,
+      "name": "Little Brick House Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "name": "Little Brick House Cafe",
+        "outdoor_seating": "yes"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.4002923007264949
+    },
+    {
+      "id": 1273648786,
+      "type": "way",
+      "category": "resupply",
+      "lat": -37.6520012,
+      "lon": 142.3411309,
+      "name": "Dunkeld Old Bakery",
+      "tags": {
+        "building": "yes",
+        "name": "Dunkeld Old Bakery",
+        "shop": "bakery",
+        "source": "microsoft/BuildingFootprints",
+        "website": "https://www.dunkeldoldbakery.com.au/"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.5812629720741602
+    },
+    {
+      "id": 1273651658,
+      "type": "way",
+      "category": "resupply",
+      "lat": -37.6508846,
+      "lon": 142.3423069,
+      "name": "Dunkeld Post Office",
+      "tags": {
+        "addr:postcode": "3294",
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "building": "yes",
+        "name": "Dunkeld Post Office",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936",
+        "source": "microsoft/BuildingFootprints"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.5618197229727596
+    },
+    {
+      "id": 296096469,
+      "type": "way",
+      "category": "emergency",
+      "lat": -37.6502187,
+      "lon": 142.3447941,
+      "name": "Dunkeld CFA",
+      "tags": {
+        "amenity": "fire_station",
+        "building": "yes",
+        "name": "Dunkeld CFA",
+        "operator": "Country Fire Authority",
+        "operator:wikidata": "Q13632973"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.7137873329642266
+    },
+    {
+      "id": 675559514,
+      "type": "way",
+      "category": "camping",
+      "lat": -37.649062,
+      "lon": 142.3455254,
+      "name": "Dunkeld Caravan Park",
+      "tags": {
+        "addr:housenumber": "58-68",
+        "addr:postcode": "3294",
+        "addr:state": "VIC",
+        "addr:street": "Parker Street",
+        "addr:suburb": "Dunkeld",
+        "cabins": "yes",
+        "fee": "yes",
+        "internet_access": "yes",
+        "name": "Dunkeld Caravan Park",
+        "phone": "+61 409 942 578",
+        "power_supply": "yes",
+        "sanitary_dump_station": "yes",
+        "tents": "yes",
+        "tourism": "caravan_site",
+        "website": "https://dunkeldcaravanpark.com"
+      },
+      "distanceAlongTrail": 157.3668567443905,
+      "distanceFromTrail": 0.7374535425492125
+    }
+  ]
+}

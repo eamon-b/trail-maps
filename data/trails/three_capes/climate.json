@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-10-01T04:04:32.491Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Fortescue Bay",
+      "lat": -43.13,
+      "lon": 147.96,
+      "elevation": 0,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 13.6,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 55.8,
+          "avgRainyDays": 8.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": 13.9,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 47.2,
+          "avgRainyDays": 7.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.2,
+          "avgTempMax": 17.5,
+          "avgPrecipitation": 54.1,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 11.7,
+          "avgTempMax": 15.7,
+          "avgPrecipitation": 49.4,
+          "avgRainyDays": 8.7
+        },
+        {
+          "month": 5,
+          "avgTempMin": 10.2,
+          "avgTempMax": 13.7,
+          "avgPrecipitation": 49,
+          "avgRainyDays": 9.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9,
+          "avgTempMax": 12.1,
+          "avgPrecipitation": 51.2,
+          "avgRainyDays": 9.3
+        },
+        {
+          "month": 7,
+          "avgTempMin": 8.4,
+          "avgTempMax": 11.6,
+          "avgPrecipitation": 45.9,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8.2,
+          "avgTempMax": 12,
+          "avgPrecipitation": 56.5,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 8.7,
+          "avgTempMax": 13,
+          "avgPrecipitation": 51.8,
+          "avgRainyDays": 10.4
+        },
+        {
+          "month": 10,
+          "avgTempMin": 9.5,
+          "avgTempMax": 13.9,
+          "avgPrecipitation": 62.4,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 10.8,
+          "avgTempMax": 15.1,
+          "avgPrecipitation": 59.1,
+          "avgRainyDays": 9.8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 12.1,
+          "avgTempMax": 16.6,
+          "avgPrecipitation": 55.5,
+          "avgRainyDays": 9.3
+        }
+      ]
+    }
+  ]
+}

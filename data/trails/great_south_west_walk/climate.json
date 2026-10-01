@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-10-01T04:10:57.406Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Portland",
+      "lat": -38.34,
+      "lon": 141.6,
+      "elevation": 14,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 14.7,
+          "avgTempMax": 20.6,
+          "avgPrecipitation": 37.2,
+          "avgRainyDays": 5.5
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15.3,
+          "avgTempMax": 20.7,
+          "avgPrecipitation": 30.6,
+          "avgRainyDays": 4.5
+        },
+        {
+          "month": 3,
+          "avgTempMin": 14.4,
+          "avgTempMax": 19.6,
+          "avgPrecipitation": 37.6,
+          "avgRainyDays": 6.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 12.6,
+          "avgTempMax": 17.6,
+          "avgPrecipitation": 45.8,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 5,
+          "avgTempMin": 11.3,
+          "avgTempMax": 15.4,
+          "avgPrecipitation": 67.3,
+          "avgRainyDays": 11.1
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9.8,
+          "avgTempMax": 13.5,
+          "avgPrecipitation": 84.3,
+          "avgRainyDays": 12.7
+        },
+        {
+          "month": 7,
+          "avgTempMin": 9.2,
+          "avgTempMax": 12.8,
+          "avgPrecipitation": 98.4,
+          "avgRainyDays": 14.1
+        },
+        {
+          "month": 8,
+          "avgTempMin": 9.2,
+          "avgTempMax": 13.4,
+          "avgPrecipitation": 94,
+          "avgRainyDays": 14.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 9.8,
+          "avgTempMax": 14.7,
+          "avgPrecipitation": 76.3,
+          "avgRainyDays": 12.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.6,
+          "avgTempMax": 16,
+          "avgPrecipitation": 61.9,
+          "avgRainyDays": 10.3
+        },
+        {
+          "month": 11,
+          "avgTempMin": 12,
+          "avgTempMax": 17.4,
+          "avgPrecipitation": 51.3,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 13.2,
+          "avgTempMax": 18.8,
+          "avgPrecipitation": 47.2,
+          "avgRainyDays": 7.1
+        }
+      ]
+    },
+    {
+      "name": "Nelson",
+      "lat": -38.05,
+      "lon": 141.01,
+      "elevation": 9,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 14.4,
+          "avgTempMax": 21.8,
+          "avgPrecipitation": 36.6,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 2,
+          "avgTempMin": 14.9,
+          "avgTempMax": 21.9,
+          "avgPrecipitation": 32.2,
+          "avgRainyDays": 4.4
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.9,
+          "avgTempMax": 20.5,
+          "avgPrecipitation": 37.8,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 4,
+          "avgTempMin": 12.3,
+          "avgTempMax": 18.2,
+          "avgPrecipitation": 51.4,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 5,
+          "avgTempMin": 11,
+          "avgTempMax": 15.6,
+          "avgPrecipitation": 79.4,
+          "avgRainyDays": 12.6
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9.5,
+          "avgTempMax": 13.6,
+          "avgPrecipitation": 102.4,
+          "avgRainyDays": 14.3
+        },
+        {
+          "month": 7,
+          "avgTempMin": 8.9,
+          "avgTempMax": 13,
+          "avgPrecipitation": 115.2,
+          "avgRainyDays": 15.2
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8.9,
+          "avgTempMax": 13.6,
+          "avgPrecipitation": 106.4,
+          "avgRainyDays": 15.6
+        },
+        {
+          "month": 9,
+          "avgTempMin": 9.5,
+          "avgTempMax": 15.1,
+          "avgPrecipitation": 86.7,
+          "avgRainyDays": 13.4
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.3,
+          "avgTempMax": 16.7,
+          "avgPrecipitation": 66.2,
+          "avgRainyDays": 11
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11.7,
+          "avgTempMax": 18.4,
+          "avgPrecipitation": 52.8,
+          "avgRainyDays": 8.4
+        },
+        {
+          "month": 12,
+          "avgTempMin": 12.9,
+          "avgTempMax": 19.9,
+          "avgPrecipitation": 48.7,
+          "avgRainyDays": 7.3
+        }
+      ]
+    },
+    {
+      "name": "Cape Bridgewater",
+      "lat": -38.31,
+      "lon": 141.41,
+      "elevation": 90,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 14.2,
+          "avgTempMax": 20,
+          "avgPrecipitation": 38.2,
+          "avgRainyDays": 5.7
+        },
+        {
+          "month": 2,
+          "avgTempMin": 14.8,
+          "avgTempMax": 20.1,
+          "avgPrecipitation": 31.4,
+          "avgRainyDays": 4.6
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.9,
+          "avgTempMax": 19,
+          "avgPrecipitation": 38.4,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 4,
+          "avgTempMin": 12.3,
+          "avgTempMax": 17,
+          "avgPrecipitation": 46.7,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 10.9,
+          "avgTempMax": 14.8,
+          "avgPrecipitation": 71.5,
+          "avgRainyDays": 11.6
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9.5,
+          "avgTempMax": 13,
+          "avgPrecipitation": 85.1,
+          "avgRainyDays": 12.9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 8.9,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 100.8,
+          "avgRainyDays": 14.4
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8.8,
+          "avgTempMax": 12.8,
+          "avgPrecipitation": 95.1,
+          "avgRainyDays": 15
+        },
+        {
+          "month": 9,
+          "avgTempMin": 9.4,
+          "avgTempMax": 14.1,
+          "avgPrecipitation": 78.1,
+          "avgRainyDays": 12.8
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.1,
+          "avgTempMax": 15.4,
+          "avgPrecipitation": 62.6,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11.5,
+          "avgTempMax": 16.8,
+          "avgPrecipitation": 52.6,
+          "avgRainyDays": 8.4
+        },
+        {
+          "month": 12,
+          "avgTempMin": 12.8,
+          "avgTempMax": 18.2,
+          "avgPrecipitation": 48.1,
+          "avgRainyDays": 7.4
+        }
+      ]
+    }
+  ]
+}

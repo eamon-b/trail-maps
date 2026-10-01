@@ -1,0 +1,250 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:48:59.357Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 623592463,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.1683594,
+      "lon": 147.8994608,
+      "name": "Surveyors Cabin",
+      "tags": {
+        "access": "customers",
+        "building": "yes",
+        "check_date": "2025-04-24",
+        "name": "Surveyors Cabin",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 4.294283986507201,
+      "distanceFromTrail": 0.013196838238184325
+    },
+    {
+      "id": 623592452,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.1802018,
+      "lon": 147.9499306,
+      "name": "Retakunna Cabin",
+      "tags": {
+        "access": "customers",
+        "building": "yes",
+        "description": "Three Capes Walk accommodation precinct day 3",
+        "name": "Retakunna Cabin",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 12.88510233148323,
+      "distanceFromTrail": 0.017461219412517003
+    },
+    {
+      "id": 6183519176,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.1900474,
+      "lon": 147.9533904,
+      "name": "Bare Knoll Campground",
+      "tags": {
+        "access": "yes",
+        "backcountry": "yes",
+        "capacity": "8",
+        "caravans": "no",
+        "drinking_water": "yes",
+        "drinking_water:type": "tap",
+        "name": "Bare Knoll Campground",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 13.277534898844387,
+      "distanceFromTrail": 0.07578869032375943
+    },
+    {
+      "id": 11888148095,
+      "type": "node",
+      "category": "water",
+      "lat": -43.1992483,
+      "lon": 147.9651609,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "indoor": "yes"
+      },
+      "distanceAlongTrail": 15.01311036856339,
+      "distanceFromTrail": 0.0010594850090411873
+    },
+    {
+      "id": 623592458,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.199276,
+      "lon": 147.9652328,
+      "name": "Munro Cabin",
+      "tags": {
+        "access": "customers",
+        "building": "yes",
+        "building:levels": "1",
+        "description": "Three Capes Accommodation precinct Day 2",
+        "height": "3",
+        "name": "Munro Cabin",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 15.019264931846624,
+      "distanceFromTrail": 0.001296384483963715
+    },
+    {
+      "id": 357841607,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.1190251,
+      "lon": 147.974017,
+      "name": "Bivouac Bay",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Bivouac Bay",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 21.7750303050179,
+      "distanceFromTrail": 1.8307739430714498
+    },
+    {
+      "id": 450971112,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.142695,
+      "lon": 147.9677415,
+      "name": "Mill Creek Campsite",
+      "tags": {
+        "caravans": "yes",
+        "name": "Mill Creek Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "yes",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "website": "https://parks.tas.gov.au/explore-our-parks/tasman-national-park/fortescue-bay-camping"
+      },
+      "distanceAlongTrail": 22.663099164925583,
+      "distanceFromTrail": 0.09118813404759302
+    },
+    {
+      "id": 1811175327,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.1421734,
+      "lon": 147.9673783,
+      "name": "Fortescue Bay Campground",
+      "tags": {
+        "name": "Fortescue Bay Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 22.66987646951231,
+      "distanceFromTrail": 0.027464147999024024
+    },
+    {
+      "id": 14098067201,
+      "type": "node",
+      "category": "water",
+      "lat": -43.1430599,
+      "lon": 147.9630074,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.3697092535443946
+    },
+    {
+      "id": 4057672460,
+      "type": "node",
+      "category": "transport",
+      "lat": -43.1437435,
+      "lon": 147.9617011,
+      "name": "Three Capes Walk pickup",
+      "tags": {
+        "highway": "bus_stop",
+        "name": "Three Capes Walk pickup",
+        "operator": "Pennicott Wilderness Journeys"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.4964479535079106
+    },
+    {
+      "id": 7150955832,
+      "type": "node",
+      "category": "water",
+      "lat": -43.1429951,
+      "lon": 147.9636298,
+      "name": null,
+      "tags": {
+        "amenity": "water_point"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.3199221469513448
+    },
+    {
+      "id": 7150955833,
+      "type": "node",
+      "category": "water",
+      "lat": -43.1430553,
+      "lon": 147.9636439,
+      "name": null,
+      "tags": {
+        "amenity": "water_point"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.32139597890082294
+    },
+    {
+      "id": 31976127,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.1429564,
+      "lon": 147.9610799,
+      "name": "Banksia Campground",
+      "tags": {
+        "name": "Banksia Campground",
+        "operator": "Parks and Wildlife",
+        "shower": "yes",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "website": "https://parks.tas.gov.au/explore-our-parks/tasman-national-park/fortescue-bay-camping"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.5169085379011801
+    },
+    {
+      "id": 450965083,
+      "type": "way",
+      "category": "resupply",
+      "lat": -43.1439688,
+      "lon": 147.9617149,
+      "name": "Kiosk and Campground Booking Office",
+      "tags": {
+        "building": "yes",
+        "name": "Kiosk and Campground Booking Office",
+        "shop": "kiosk"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.5061156244093646
+    },
+    {
+      "id": 450965832,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.143018,
+      "lon": 147.9636554,
+      "name": "BBQ Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "name": "BBQ Shelter"
+      },
+      "distanceAlongTrail": 22.67003682859617,
+      "distanceFromTrail": 0.3189459463006193
+    }
+  ]
+}

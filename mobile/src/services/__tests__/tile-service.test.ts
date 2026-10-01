@@ -235,9 +235,9 @@ describe('buildTopoStyle', () => {
   });
 
   // --- dark palette -------------------------------------------------------
-  // The dark theme is a paint patch over the same template (see
-  // assets/topo-style-dark.json): structure single-sourced, colours stated once
-  // per theme.
+  // The dark theme is the same template repainted by the night palette
+  // (services/night-style), plus a paint patch for the contours (see
+  // assets/topo-style-dark.json): structure single-sourced.
   describe('dark theme', () => {
     const layersOf = (theme?: 'light' | 'dark') =>
       (buildTopoStyle(TRAIL_ID, GLYPHS_PATH, theme ? { theme } : undefined) as {
@@ -256,8 +256,8 @@ describe('buildTopoStyle', () => {
       expect(dark.map((l) => l.type)).toEqual(light.map((l) => l.type));
 
       const background = dark.find((l) => l.id === 'background');
-      expect(background?.paint?.['background-color']).toBe('#14161a');
-      expect(dark.find((l) => l.id === 'earth')?.paint?.['fill-color']).toBe('#14161a');
+      expect(background?.paint?.['background-color']).toBe('hsl(30,25%,16.1%)');
+      expect(dark.find((l) => l.id === 'earth')?.paint?.['fill-color']).toBe('hsl(30,25%,16.1%)');
     });
 
     it('leaves filters and zoom ranges to the light template', () => {
@@ -270,7 +270,16 @@ describe('buildTopoStyle', () => {
       expect(layersOf('dark').map(strip)).toEqual(layersOf('light').map(strip));
     });
 
-    it('patches every layer of the template, so nothing is left light on a dark map', () => {
+    it('paints contours in the hand-tuned ink, not the generic repaint', () => {
+      const palette = require('../../../assets/topo-style-dark.json') as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const major = layersOf('dark').find((l) => l.id === 'contour-major-index');
+      expect(major?.paint?.['line-color']).toBe(palette['contour-major-index']['line-color']);
+    });
+
+    it('repaints every layer of the template, so nothing is left light on a dark map', () => {
       const light = layersOf('light');
       const dark = layersOf('dark');
       light.forEach((layer, i) => {

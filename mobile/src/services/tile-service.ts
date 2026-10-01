@@ -12,6 +12,7 @@ import type { TileManifest } from '@lib/types';
 // Type-only (erased at build): the map's palette vocabulary lives with the rest
 // of the map cartography, and map-style already takes TileStatusState from here.
 import type { MapTheme } from '../features/map/map-style';
+import { applyNightPalette } from './night-style';
 import {
   TILE_FILES,
   type TileFileName,
@@ -830,11 +831,12 @@ export function deleteTrailTiles(trailId: string): void {
 // Single source of truth: scripts/topo-style.json, copied to mobile/assets/
 const TOPO_STYLE_TEMPLATE = require('../../assets/topo-style.json');
 /**
- * Dark palette for that template: `{ [layerId]: paintOverrides }`, merged over
- * the matching layer's paint block. It carries no structure of its own — no
- * sources, no filters, no layer order — so contour tiers and layer ordering stay
- * single-sourced in topo-style.json and only the colours are stated twice.
- * A layer with no entry keeps its light paint (see `topo-style-dark.json`).
+ * Dark-theme overrides for that template: `{ [layerId]: paintOverrides }`,
+ * merged over the matching layer's paint block after the night palette
+ * (services/night-style) has repainted every layer. Only the layers the generic
+ * repaint does not suit get an entry — today the contours, whose ink matches
+ * the online map's (see `topo-style-dark.json`). It carries no structure of its
+ * own, so contour tiers and layer ordering stay single-sourced in topo-style.json.
  */
 const TOPO_STYLE_DARK_PALETTE = require('../../assets/topo-style-dark.json');
 
@@ -853,7 +855,8 @@ export interface TopoStyleOptions {
 }
 
 /**
- * Merge the dark palette's paint overrides into an already-cloned style.
+ * Repaint an already-cloned style for the dark theme: the night palette over
+ * every layer, then the hand-tuned overrides on top.
  *
  * Unknown layer ids are ignored rather than throwing: the palette is data, and
  * a stale entry must not be able to blank the offline map on a device. A test
@@ -861,6 +864,7 @@ export interface TopoStyleOptions {
  * drift is meant to be caught.
  */
 function applyDarkPalette(style: { layers: { id: string; paint?: Record<string, unknown> }[] }): void {
+  applyNightPalette(style);
   for (const layer of style.layers) {
     const overrides = (TOPO_STYLE_DARK_PALETTE as Record<string, Record<string, unknown>>)[layer.id];
     if (!overrides) continue;

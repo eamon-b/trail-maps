@@ -23,11 +23,12 @@ export type MapStyleSource = 'offline' | 'online';
  *
  * This tracks the app theme (see the guide map's `useTheme().isDark`) rather
  * than being its own setting: before it existed the map pane stayed a bright
- * rectangle in an otherwise dark app (issue #33). Both base maps have a dark
- * counterpart — OpenFreeMap's `dark` style online, the dark palette patch in
- * `assets/topo-style-dark.json` offline — and every overlay colour below has a
- * dark variant, because violet alternates and teal side trips tuned for a cream
- * basemap are dark-on-dark once the ground drops to #14.
+ * rectangle in an otherwise dark app (issue #33). Dark is a *night topo*: both
+ * base maps (Liberty online, the topo template offline) are repainted by
+ * `services/night-style`, keeping their forest, parks, water and relief on a
+ * dark ground, rather than swapped for a near-black style that drops them. Every
+ * overlay colour below has a dark variant, because violet alternates and teal
+ * side trips tuned for a cream basemap are dark-on-dark once the ground drops.
  */
 export type MapTheme = 'light' | 'dark';
 
@@ -370,7 +371,9 @@ export function fallbackMapStyle(theme: MapTheme) {
         id: 'fallback-background',
         type: 'background' as const,
         // MapLibre paint value (neutral map backdrop), not an RN style color.
-        paint: { 'background-color': theme === 'dark' ? '#14161A' : '#E8ECE6' },
+        // Dark is the night ground the cream base maps are repainted to
+        // (services/night-style).
+        paint: { 'background-color': theme === 'dark' ? '#33291F' : '#E8ECE6' },
       },
     ],
   };

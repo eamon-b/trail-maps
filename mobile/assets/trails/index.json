@@ -49,6 +49,13 @@
     "dataVersion": "2026-09-20"
   },
   {
+    "id": "shikoku",
+    "name": "Shikoku Henro: Temples 1-23",
+    "shortName": "Shikoku T1-23",
+    "lengthKm": 154.1,
+    "dataVersion": "2026-10-01"
+  },
+  {
     "id": "te_araroa",
     "name": "Te Araroa",
     "shortName": "Te Araroa",

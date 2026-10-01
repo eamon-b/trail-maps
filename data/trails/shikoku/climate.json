@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-10-01T03:45:02.110Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Tokushima",
+      "lat": 34.07,
+      "lon": 134.55,
+      "elevation": 7,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 3.1,
+          "avgTempMax": 9.1,
+          "avgPrecipitation": 67.1,
+          "avgRainyDays": 6.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 3.3,
+          "avgTempMax": 10.1,
+          "avgPrecipitation": 79.6,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 3,
+          "avgTempMin": 5.8,
+          "avgTempMax": 13.6,
+          "avgPrecipitation": 122.1,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 4,
+          "avgTempMin": 10.1,
+          "avgTempMax": 18,
+          "avgPrecipitation": 144.5,
+          "avgRainyDays": 11
+        },
+        {
+          "month": 5,
+          "avgTempMin": 14.9,
+          "avgTempMax": 22.1,
+          "avgPrecipitation": 196.5,
+          "avgRainyDays": 12.5
+        },
+        {
+          "month": 6,
+          "avgTempMin": 19.3,
+          "avgTempMax": 25,
+          "avgPrecipitation": 253.9,
+          "avgRainyDays": 15.9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 23.6,
+          "avgTempMax": 28.8,
+          "avgPrecipitation": 238.3,
+          "avgRainyDays": 16.2
+        },
+        {
+          "month": 8,
+          "avgTempMin": 24.7,
+          "avgTempMax": 30,
+          "avgPrecipitation": 190.4,
+          "avgRainyDays": 15
+        },
+        {
+          "month": 9,
+          "avgTempMin": 21.6,
+          "avgTempMax": 26.6,
+          "avgPrecipitation": 259.8,
+          "avgRainyDays": 15
+        },
+        {
+          "month": 10,
+          "avgTempMin": 16,
+          "avgTempMax": 21.6,
+          "avgPrecipitation": 216.5,
+          "avgRainyDays": 11
+        },
+        {
+          "month": 11,
+          "avgTempMin": 10.4,
+          "avgTempMax": 16.6,
+          "avgPrecipitation": 109.4,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 5.3,
+          "avgTempMax": 11.4,
+          "avgPrecipitation": 74.9,
+          "avgRainyDays": 6.8
+        }
+      ]
+    },
+    {
+      "name": "Kamiyama",
+      "lat": 33.97,
+      "lon": 134.35,
+      "elevation": 177,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 1.9,
+          "avgTempMax": 8.5,
+          "avgPrecipitation": 67.5,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": 2.2,
+          "avgTempMax": 9.6,
+          "avgPrecipitation": 78.8,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 3,
+          "avgTempMin": 4.9,
+          "avgTempMax": 13.5,
+          "avgPrecipitation": 123.9,
+          "avgRainyDays": 11.4
+        },
+        {
+          "month": 4,
+          "avgTempMin": 9.4,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 146.5,
+          "avgRainyDays": 11.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 14.4,
+          "avgTempMax": 22.5,
+          "avgPrecipitation": 196.6,
+          "avgRainyDays": 12.9
+        },
+        {
+          "month": 6,
+          "avgTempMin": 18.6,
+          "avgTempMax": 25.4,
+          "avgPrecipitation": 264.2,
+          "avgRainyDays": 17.2
+        },
+        {
+          "month": 7,
+          "avgTempMin": 23,
+          "avgTempMax": 29.3,
+          "avgPrecipitation": 259.7,
+          "avgRainyDays": 17.9
+        },
+        {
+          "month": 8,
+          "avgTempMin": 23.9,
+          "avgTempMax": 30.1,
+          "avgPrecipitation": 220.3,
+          "avgRainyDays": 17.4
+        },
+        {
+          "month": 9,
+          "avgTempMin": 20.6,
+          "avgTempMax": 26.4,
+          "avgPrecipitation": 279.1,
+          "avgRainyDays": 16
+        },
+        {
+          "month": 10,
+          "avgTempMin": 14.9,
+          "avgTempMax": 21.2,
+          "avgPrecipitation": 210,
+          "avgRainyDays": 11.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 9.3,
+          "avgTempMax": 16.1,
+          "avgPrecipitation": 104.7,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 12,
+          "avgTempMin": 4.2,
+          "avgTempMax": 10.8,
+          "avgPrecipitation": 73.8,
+          "avgRainyDays": 7.1
+        }
+      ]
+    },
+    {
+      "name": "Hiwasa",
+      "lat": 33.73,
+      "lon": 134.53,
+      "elevation": 2,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 4.9,
+          "avgTempMax": 10.4,
+          "avgPrecipitation": 75.1,
+          "avgRainyDays": 6.2
+        },
+        {
+          "month": 2,
+          "avgTempMin": 5.1,
+          "avgTempMax": 11.1,
+          "avgPrecipitation": 91.4,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 3,
+          "avgTempMin": 7.6,
+          "avgTempMax": 14.1,
+          "avgPrecipitation": 144.8,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 4,
+          "avgTempMin": 11.8,
+          "avgTempMax": 17.9,
+          "avgPrecipitation": 171.8,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": 16.1,
+          "avgTempMax": 21.5,
+          "avgPrecipitation": 225.9,
+          "avgRainyDays": 13.2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 19.8,
+          "avgTempMax": 24.3,
+          "avgPrecipitation": 297.8,
+          "avgRainyDays": 16.9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 23.8,
+          "avgTempMax": 27.9,
+          "avgPrecipitation": 273.4,
+          "avgRainyDays": 16.6
+        },
+        {
+          "month": 8,
+          "avgTempMin": 24.9,
+          "avgTempMax": 28.9,
+          "avgPrecipitation": 238.9,
+          "avgRainyDays": 16.3
+        },
+        {
+          "month": 9,
+          "avgTempMin": 22.2,
+          "avgTempMax": 26.4,
+          "avgPrecipitation": 311.3,
+          "avgRainyDays": 16.3
+        },
+        {
+          "month": 10,
+          "avgTempMin": 17.3,
+          "avgTempMax": 22,
+          "avgPrecipitation": 240.6,
+          "avgRainyDays": 11.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": 12.1,
+          "avgTempMax": 17.4,
+          "avgPrecipitation": 124.5,
+          "avgRainyDays": 8.2
+        },
+        {
+          "month": 12,
+          "avgTempMin": 7.2,
+          "avgTempMax": 12.6,
+          "avgPrecipitation": 84.5,
+          "avgRainyDays": 6.3
+        }
+      ]
+    }
+  ]
+}

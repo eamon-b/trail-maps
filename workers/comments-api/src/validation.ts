@@ -29,6 +29,7 @@ export const ALLOWED_TRAILS: readonly string[] = [
   'heysen',
   'hume-and-hovell',
   'larapinta',
+  'shikoku',
   'te_araroa',
 ];
 

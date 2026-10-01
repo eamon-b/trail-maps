@@ -1,0 +1,1539 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:51:51.069Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 2484523692,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.754611,
+      "lon": 143.6688332,
+      "name": "Masala Bay",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "indian",
+        "name": "Masala Bay",
+        "opening_hours": "We-Su 15:00-20:00",
+        "phone": "+61 3 5237 7188",
+        "website": "https://masalabay.com.au/"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.05045041660056859
+    },
+    {
+      "id": 4159704739,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.7544363,
+      "lon": 143.6691917,
+      "name": "Visitor Information Centre/Great Ocean Rd",
+      "tags": {
+        "bench": "yes",
+        "bin": "yes",
+        "bus": "yes",
+        "check_date:shelter": "2026-01-12",
+        "departures_board": "timetable",
+        "gtfs:stop_code": "17720",
+        "gtfs:stop_id": "17720",
+        "highway": "bus_stop",
+        "lit": "no",
+        "name": "Visitor Information Centre/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "17720",
+        "shelter": "yes",
+        "tactile_paving": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.03651344210491039
+    },
+    {
+      "id": 7797912602,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.7417077,
+      "lon": 143.6754079,
+      "name": "Pisces Holiday Park/Great Ocean Rd",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "departures_board": "timetable",
+        "gtfs:stop_code": "17718",
+        "gtfs:stop_id": "17718",
+        "highway": "bus_stop",
+        "name": "Pisces Holiday Park/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "17718",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.5382670930003859
+    },
+    {
+      "id": 7797912603,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.7416702,
+      "lon": 143.6753385,
+      "name": "Pisces Holiday Park/Great Ocean Rd",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "departures_board": "timetable",
+        "gtfs:stop_code": "17719",
+        "gtfs:stop_id": "17719",
+        "highway": "bus_stop",
+        "name": "Pisces Holiday Park/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "17719",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.5401666346293654
+    },
+    {
+      "id": 197451477,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.7505216,
+      "lon": 143.6667081,
+      "name": "Apollo Bay Holiday Park",
+      "tags": {
+        "addr:housenumber": "27",
+        "addr:postcode": "3233",
+        "addr:state": "VIC",
+        "addr:street": "Cawood Street",
+        "addr:suburb": "Apollo Bay",
+        "contact:phone": "+61 3 5237 7111",
+        "contact:website": "http://www.apollobayholidaypark.com.au/",
+        "drinking_water": "yes",
+        "fee": "yes",
+        "name": "Apollo Bay Holiday Park",
+        "power_supply": "yes",
+        "source": "Bing",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.5221337527692334
+    },
+    {
+      "id": 197462323,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.7405167,
+      "lon": 143.6751798,
+      "name": "Big4 Pisces Holiday Park",
+      "tags": {
+        "addr:housenumber": "311",
+        "addr:street": "Great Ocean Road",
+        "brand": "Big 4 Holiday Parks",
+        "brand:short": "Big4",
+        "brand:wikidata": "Q18636678",
+        "internet_access": "wlan",
+        "internet_access:fee": "customers",
+        "name": "Big4 Pisces Holiday Park",
+        "phone": "+61 3 5237 6749",
+        "power_supply": "yes",
+        "sanitary_dump_station": "yes",
+        "short_name": "Big4",
+        "tourism": "caravan_site",
+        "website": "https://www.big4.com.au/caravan-parks/vic/great-ocean-road/apollo-bay-pisces"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.6573778402347343
+    },
+    {
+      "id": 494771394,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.752615,
+      "lon": 143.6688042,
+      "name": "Ampol Foodary Apollo Bay",
+      "tags": {
+        "addr:housenumber": "177",
+        "addr:street": "Great Ocean Road",
+        "amenity": "fuel",
+        "branch": "Apollo Bay",
+        "brand": "Ampol",
+        "brand:wikidata": "Q4748528",
+        "fuel:diesel": "yes",
+        "fuel:octane_91": "yes",
+        "fuel:octane_95": "yes",
+        "fuel:octane_98": "yes",
+        "name": "Ampol Foodary Apollo Bay",
+        "opening_hours": "Mo-Su 06:00-20:00",
+        "self_service": "yes"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.239969471652518
+    },
+    {
+      "id": 2108872739,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.754813,
+      "lon": 143.668025,
+      "name": "Foodworks",
+      "tags": {
+        "addr:suburb": "Apollo Bay",
+        "brand": "Foodworks",
+        "brand:wikidata": "Q5465579",
+        "check_date:opening_hours": "2025-03-04",
+        "name": "Foodworks",
+        "opening_hours": "Mo-Su 08:00-20:00",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 0.04110966471123777,
+      "distanceFromTrail": 0.10764700172029919
+    },
+    {
+      "id": 2882847199,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.7547775,
+      "lon": 143.6687203,
+      "name": "Apollo Bay LPO",
+      "tags": {
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "facebook": "https://www.facebook.com/apollobaylpo/",
+        "name": "Apollo Bay LPO",
+        "opening_hours": "Mo-Fr 09:00-17:00",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936",
+        "phone": "+61 3 5237 6205"
+      },
+      "distanceAlongTrail": 0.04110966471123777,
+      "distanceFromTrail": 0.05381202588886604
+    },
+    {
+      "id": 3613788815,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7549325,
+      "lon": 143.6679311,
+      "name": "Dragon Bay Inn",
+      "tags": {
+        "addr:housenumber": "4A",
+        "addr:street": "Hardy Street",
+        "amenity": "restaurant",
+        "cuisine": "chinese",
+        "name": "Dragon Bay Inn",
+        "phone": "+61 3 5237 6400",
+        "website": "https://www.dragonbayinn.com/"
+      },
+      "distanceAlongTrail": 0.04110966471123777,
+      "distanceFromTrail": 0.113148780663468
+    },
+    {
+      "id": 197451936,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.7538618,
+      "lon": 143.6640055,
+      "name": "Otway Health & Community Services Apollo Bay",
+      "tags": {
+        "addr:housenumber": "37-43",
+        "addr:postcode": "3233",
+        "addr:state": "VIC",
+        "addr:street": "McLachlan Street",
+        "addr:suburb": "Apollo Bay",
+        "alt_name": "Apollo Bay Hospital",
+        "amenity": "hospital",
+        "contact:phone": "+61 3 5237 8500",
+        "name": "Otway Health & Community Services Apollo Bay",
+        "operator": "South West Alliance of Rural Health",
+        "source": "Bing"
+      },
+      "distanceAlongTrail": 0.04110966471123777,
+      "distanceFromTrail": 0.471829472517227
+    },
+    {
+      "id": 2484520825,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.755101,
+      "lon": 143.6689371,
+      "name": "Tiki Bar, Cafe 153",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Tiki Bar, Cafe 153",
+        "opening_hours": "Th-Tu 08:00-14:00; We off"
+      },
+      "distanceAlongTrail": 0.04656924517139445,
+      "distanceFromTrail": 0.024713541162097518
+    },
+    {
+      "id": 2484519783,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.755141,
+      "lon": 143.668965,
+      "name": "Chopstix Noodle bar",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Chopstix Noodle bar",
+        "opening_hours": "Mo-Su 11:30-22:30"
+      },
+      "distanceAlongTrail": 0.04661285370151118,
+      "distanceFromTrail": 0.022603598511049747
+    },
+    {
+      "id": 2484518606,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7551981,
+      "lon": 143.6689814,
+      "name": "Chopstick Noodle Bar",
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Chopstick Noodle Bar"
+      },
+      "distanceAlongTrail": 0.053109836974545625,
+      "distanceFromTrail": 0.022250942481669797
+    },
+    {
+      "id": 6997549985,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7555283,
+      "lon": 143.6690642,
+      "name": "Waves",
+      "tags": {
+        "amenity": "cafe",
+        "cuisine": "donut;breakfast;coffee_shop",
+        "name": "Waves",
+        "opening_hours": "Mo-Su 09:00-15:00"
+      },
+      "distanceAlongTrail": 0.08673796942337589,
+      "distanceFromTrail": 0.022807970331074137
+    },
+    {
+      "id": 2484515571,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.755621,
+      "lon": 143.669105,
+      "name": "Sandy Feet",
+      "tags": {
+        "addr:housenumber": "139",
+        "addr:street": "Great Ocean Road",
+        "amenity": "cafe",
+        "internet_access": "wlan",
+        "name": "Sandy Feet",
+        "opening_hours": "Fr-Tu 18:00-21:00; We,Th off"
+      },
+      "distanceAlongTrail": 0.09323856143733691,
+      "distanceFromTrail": 0.02342908176135308
+    },
+    {
+      "id": 12560332700,
+      "type": "node",
+      "category": "water",
+      "lat": -38.7554983,
+      "lon": 143.6693932,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "lit": "no",
+        "wheelchair": "limited"
+      },
+      "distanceAlongTrail": 0.09621100138610338,
+      "distanceFromTrail": 0.004193435594361258
+    },
+    {
+      "id": 11850279767,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.7559739,
+      "lon": 143.66917,
+      "name": "Apollo Bay Bakery",
+      "tags": {
+        "addr:housenumber": "125",
+        "addr:street": "Great Ocean Road",
+        "check_date": "2026-04-13",
+        "name": "Apollo Bay Bakery",
+        "opening_hours": "Mo-Sa 06:00-16:00, Su 06:00-15:00",
+        "phone": "+61 3 5237 6440",
+        "shop": "bakery",
+        "website": "https://www.apollobaybakery.com.au/"
+      },
+      "distanceAlongTrail": 0.1420193747410782,
+      "distanceFromTrail": 0.02204372987590148
+    },
+    {
+      "id": 13733856415,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7559408,
+      "lon": 143.6691371,
+      "name": "Coco Cafe & Restaurant",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-04-13",
+        "cuisine": "asian;indonesian;french",
+        "name": "Coco Cafe & Restaurant",
+        "opening_hours": "Mo,Th-Su 08:00-14:00,17:30-20:30; Tu-We off",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "payment:mastercard": "yes",
+        "payment:visa": "yes",
+        "phone": "+61 3 5237 7411"
+      },
+      "distanceAlongTrail": 0.1420193747410782,
+      "distanceFromTrail": 0.02419762838823943
+    },
+    {
+      "id": 13917110709,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.7561994,
+      "lon": 143.6677336,
+      "name": "Montrose Ave/Pascoe St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "44248",
+        "gtfs:stop_id": "44248",
+        "highway": "bus_stop",
+        "name": "Montrose Ave/Pascoe St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "44248"
+      },
+      "distanceAlongTrail": 0.1420193747410782,
+      "distanceFromTrail": 0.149047238928656
+    },
+    {
+      "id": 2484506997,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.7560239,
+      "lon": 143.669181,
+      "name": "Apollo Bay Pharmacy",
+      "tags": {
+        "amenity": "pharmacy",
+        "check_date": "2026-04-13",
+        "dispensing": "yes",
+        "drive_through": "no",
+        "healthcare": "pharmacy",
+        "name": "Apollo Bay Pharmacy",
+        "phone": "+61 3 5237 6312"
+      },
+      "distanceAlongTrail": 0.14747427838763844,
+      "distanceFromTrail": 0.022646634669910116
+    },
+    {
+      "id": 2484506324,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7561741,
+      "lon": 143.6692014,
+      "name": "Apollo Bay Seafood Cafe",
+      "tags": {
+        "addr:housenumber": "119",
+        "addr:street": "Great Ocean Road",
+        "amenity": "fast_food",
+        "check_date": "2026-04-13",
+        "drive_through": "no",
+        "name": "Apollo Bay Seafood Cafe",
+        "opening_hours": "Mo-Fr 11:00-20:30; Sa-Su 11:00-20:30",
+        "phone": "+61 3 5237 6008",
+        "website": "https://www.apollobayseafood.com.au/"
+      },
+      "distanceAlongTrail": 0.1637129571466614,
+      "distanceFromTrail": 0.025540563206945456
+    },
+    {
+      "id": 2695757543,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7563014,
+      "lon": 143.6692176,
+      "name": "George's",
+      "tags": {
+        "addr:housenumber": "111-117",
+        "addr:postcode": "3233",
+        "addr:state": "VIC",
+        "addr:street": "Great Ocean Road",
+        "amenity": "restaurant",
+        "check_date": "2026-04-13",
+        "cuisine": "seafood",
+        "internet_access": "wlan",
+        "internet_access:fee": "no",
+        "name": "George's",
+        "opening_hours": "Th-Tu 11:00-20:00; We 11:00-19:00",
+        "outdoor_seating": "yes",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "phone": "+61 3 5237 6823",
+        "takeaway": "yes",
+        "toilets": "yes"
+      },
+      "distanceAlongTrail": 0.17768082853008432,
+      "distanceFromTrail": 0.028231213178365484
+    },
+    {
+      "id": 835766370,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.7565754,
+      "lon": 143.6683261,
+      "name": "Apollo Bay Fire & Rescue",
+      "tags": {
+        "amenity": "fire_station",
+        "building": "yes",
+        "name": "Apollo Bay Fire & Rescue",
+        "operator": "Country Fire Authority",
+        "operator:wikidata": "Q13632973"
+      },
+      "distanceAlongTrail": 0.18483595574962103,
+      "distanceFromTrail": 0.11101292723949173
+    },
+    {
+      "id": 2883032123,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.7564448,
+      "lon": 143.66925,
+      "name": "IGA Apollo Bay Plus Liquor",
+      "tags": {
+        "addr:housenumber": "103-109",
+        "addr:street": "Great Ocean Road",
+        "check_date": "2026-04-13",
+        "name": "IGA Apollo Bay Plus Liquor",
+        "not:brand:wikidata": "Q5970945",
+        "opening_hours": "Mo-Th 08:00-19:30; Fr-Sa 08:00-20:00; Su 08:00-19:30",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "phone": "+61 3 5237 6251",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 0.19040690408972819,
+      "distanceFromTrail": 0.03050131645454881
+    },
+    {
+      "id": 6943838309,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7574875,
+      "lon": 143.6686153,
+      "name": "Icaro whole foods",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Icaro whole foods",
+        "opening_hours": "Su-Fr 07:00-15:00; Sa 07:00-16:00"
+      },
+      "distanceAlongTrail": 0.2697768561375125,
+      "distanceFromTrail": 0.11362434638917843
+    },
+    {
+      "id": 3613788814,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7573936,
+      "lon": 143.6688527,
+      "name": "Casalingo",
+      "tags": {
+        "addr:housenumber": "1",
+        "addr:street": "Moore Street",
+        "amenity": "restaurant",
+        "cuisine": "italian",
+        "name": "Casalingo",
+        "opening_hours": "Fr-Su 17:30-21:00; Mo-Th 17:30-20:30"
+      },
+      "distanceAlongTrail": 0.269991401620385,
+      "distanceFromTrail": 0.09054384260006836
+    },
+    {
+      "id": 3613788817,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7578726,
+      "lon": 143.6686883,
+      "name": "Fresh Seafood",
+      "tags": {
+        "addr:housenumber": "18",
+        "addr:street": "Pascoe Street",
+        "amenity": "restaurant",
+        "name": "Fresh Seafood",
+        "opening_hours": "Su,Mo 09:00-14:00; Tu-Sa 09:00-17:00"
+      },
+      "distanceAlongTrail": 0.29059779617139436,
+      "distanceFromTrail": 0.12930269846595108
+    },
+    {
+      "id": 4555157291,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7574083,
+      "lon": 143.6696488,
+      "name": "Dooley's Premium Ice Cream",
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Dooley's Premium Ice Cream",
+        "name:en": "Dooley's Premium Ice Cream",
+        "name:fr": "Dooley's Glaces"
+      },
+      "distanceAlongTrail": 0.2945840262509824,
+      "distanceFromTrail": 0.03233450786542738
+    },
+    {
+      "id": 2484557522,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.757575,
+      "lon": 143.670056,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 0.3377073641518596,
+      "distanceFromTrail": 0.010179095613230302
+    },
+    {
+      "id": 2484504053,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.75768,
+      "lon": 143.669812,
+      "name": "Iluka",
+      "tags": {
+        "amenity": "fast_food",
+        "name": "Iluka"
+      },
+      "distanceAlongTrail": 0.3408995786402265,
+      "distanceFromTrail": 0.0341322412978592
+    },
+    {
+      "id": 2484502854,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7577708,
+      "lon": 143.6697964,
+      "name": "Iluka",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Iluka"
+      },
+      "distanceAlongTrail": 0.34981500183276826,
+      "distanceFromTrail": 0.03906016672778765
+    },
+    {
+      "id": 7024840285,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7578704,
+      "lon": 143.6698941,
+      "name": "Rawr Bar",
+      "tags": {
+        "amenity": "cafe",
+        "diet:vegan": "yes",
+        "name": "Rawr Bar"
+      },
+      "distanceAlongTrail": 0.3617000433815997,
+      "distanceFromTrail": 0.03533418472151136
+    },
+    {
+      "id": 3613788813,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7587806,
+      "lon": 143.6703707,
+      "name": "Brewhouse",
+      "tags": {
+        "addr:housenumber": "29",
+        "addr:street": "Great Ocean Road",
+        "amenity": "restaurant",
+        "check_date": "2023-10-30",
+        "name": "Brewhouse",
+        "phone": "+61 3 5237 6240"
+      },
+      "distanceAlongTrail": 0.48112211241589176,
+      "distanceFromTrail": 0.035318168807513976
+    },
+    {
+      "id": 434880629,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.7589138,
+      "lon": 143.6699038,
+      "name": "Taste of the region",
+      "tags": {
+        "building": "yes",
+        "check_date:opening_hours": "2023-10-30",
+        "name": "Taste of the region",
+        "opening_hours:signed": "no",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 0.48842191738447555,
+      "distanceFromTrail": 0.07780397522278244
+    },
+    {
+      "id": 8386621382,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7590583,
+      "lon": 143.6705411,
+      "name": "Apollo Bay Distillery",
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "pizza",
+        "drive_through": "no",
+        "name": "Apollo Bay Distillery",
+        "opening_hours": "Mo-Su 11:00-20:00"
+      },
+      "distanceAlongTrail": 0.5094918340307295,
+      "distanceFromTrail": 0.029088520287660072
+    },
+    {
+      "id": 434880639,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.7591152,
+      "lon": 143.6705643,
+      "name": "Apollo Bay Distillery",
+      "tags": {
+        "amenity": "bar",
+        "building": "yes",
+        "cuisine": "pizza",
+        "name": "Apollo Bay Distillery",
+        "opening_hours": "Mo-Su 11:00-20:00",
+        "website": "https://www.apollobaydistillery.com.au/"
+      },
+      "distanceAlongTrail": 0.5161254823288681,
+      "distanceFromTrail": 0.029357559686094267
+    },
+    {
+      "id": 8386621381,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7591746,
+      "lon": 143.6706012,
+      "name": "Hello Coffee",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Hello Coffee",
+        "opening_hours": "Mo-Su 11:00-20:00",
+        "website": "https://hellocoffee.com.au/"
+      },
+      "distanceAlongTrail": 0.523425933792716,
+      "distanceFromTrail": 0.028604952470145405
+    },
+    {
+      "id": 2077033600,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.7597055,
+      "lon": 143.6702759,
+      "name": "Apollo Bay Police Station",
+      "tags": {
+        "addr:housenumber": "31",
+        "addr:street": "Nelson Street",
+        "amenity": "police",
+        "contact:website": "http://www.police.vic.gov.au/",
+        "name": "Apollo Bay Police Station",
+        "operator": "Victoria Police",
+        "operator:wikidata": "Q1406658",
+        "phone": "+61 3 5237 6750",
+        "source": "data.gov.au",
+        "wikidata": "Q28926850"
+      },
+      "distanceAlongTrail": 0.552874553656229,
+      "distanceFromTrail": 0.08020970770334235
+    },
+    {
+      "id": 2484523032,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7595122,
+      "lon": 143.674931,
+      "name": "The Harbour Fish Shop",
+      "tags": {
+        "addr:street": "Breakwater Road",
+        "amenity": "fast_food",
+        "cuisine": "fish_and_chips",
+        "name": "The Harbour Fish Shop",
+        "name:en": "The Harbour Fish Shop",
+        "opening_hours": "Tu-Su 11:00-19:00; Mo off",
+        "phone": "+61 3 5237 1067"
+      },
+      "distanceAlongTrail": 0.6425165430329393,
+      "distanceFromTrail": 0.25078502235845523
+    },
+    {
+      "id": 8379777395,
+      "type": "node",
+      "category": "water",
+      "lat": -38.7595985,
+      "lon": 143.6772061,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 0.6425165430329393,
+      "distanceFromTrail": 0.44806600775863736
+    },
+    {
+      "id": 13917110710,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.7637528,
+      "lon": 143.668848,
+      "name": "Apollo Bay Recreation Reserve/Great Ocean Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "44249",
+        "gtfs:stop_id": "44249",
+        "highway": "bus_stop",
+        "name": "Apollo Bay Recreation Reserve/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "44249"
+      },
+      "distanceAlongTrail": 1.2380013562909074,
+      "distanceFromTrail": 0.006527354905101869
+    },
+    {
+      "id": 2005938578,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.7639512,
+      "lon": 143.6672595,
+      "name": "Apollo Bay Recreational Reserve",
+      "tags": {
+        "name": "Apollo Bay Recreational Reserve",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 1.3256359283131336,
+      "distanceFromTrail": 0.11509736953239551
+    },
+    {
+      "id": 13917110711,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.7771639,
+      "lon": 143.6632461,
+      "name": "Harrison St/Marengo Cres",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "7009",
+        "gtfs:stop_id": "7009",
+        "highway": "bus_stop",
+        "name": "Harrison St/Marengo Cres",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "7009"
+      },
+      "distanceAlongTrail": 2.8100093867515783,
+      "distanceFromTrail": 0.06658267702713014
+    },
+    {
+      "id": 148452770,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.7787231,
+      "lon": 143.664834,
+      "name": "Marengo Holiday Park",
+      "tags": {
+        "name": "Marengo Holiday Park",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 3.0150311046826257,
+      "distanceFromTrail": 0.018984180199752853
+    },
+    {
+      "id": 12751676891,
+      "type": "node",
+      "category": "water",
+      "lat": -38.7913412,
+      "lon": 143.6128762,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 9.642619044309606,
+      "distanceFromTrail": 0.05633248868662928
+    },
+    {
+      "id": 12751676890,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.7913015,
+      "lon": 143.6128749,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 9.645256292188797,
+      "distanceFromTrail": 0.05279059459588734
+    },
+    {
+      "id": 12751676892,
+      "type": "node",
+      "category": "water",
+      "lat": -38.7911899,
+      "lon": 143.6126653,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 9.645370952182375,
+      "distanceFromTrail": 0.05745530546923688
+    },
+    {
+      "id": 487235566,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.7912154,
+      "lon": 143.612825,
+      "name": "Elliot Ridge Great Ocean Walk Campsite",
+      "tags": {
+        "fee": "yes",
+        "name": "Elliot Ridge Great Ocean Walk Campsite",
+        "operator": "Parks Victoria",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 9.645370952182375,
+      "distanceFromTrail": 0.048296059944532496
+    },
+    {
+      "id": 4797451612,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.8264875,
+      "lon": 143.5824626,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bin": "no",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 21.40245769840215,
+      "distanceFromTrail": 0.020751565375248162
+    },
+    {
+      "id": 130361198,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8264542,
+      "lon": 143.5823552,
+      "name": "Blanket Bay Great Ocean Walk Campsite",
+      "tags": {
+        "name": "Blanket Bay Great Ocean Walk Campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 21.40245769840215,
+      "distanceFromTrail": 0.0306663512542176
+    },
+    {
+      "id": 11794139252,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.8275444,
+      "lon": 143.5828783,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 21.524282034687566,
+      "distanceFromTrail": 0.008910292232023392
+    },
+    {
+      "id": 130361193,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8276709,
+      "lon": 143.5826419,
+      "name": "Blanket Bay Campsite",
+      "tags": {
+        "name": "Blanket Bay Campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 21.56348639795852,
+      "distanceFromTrail": 0.020529672516525228
+    },
+    {
+      "id": 1808392654,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.82806,
+      "lon": 143.58278,
+      "name": "Blanket Bay Campground",
+      "tags": {
+        "name": "Blanket Bay Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 21.599508889048625,
+      "distanceFromTrail": 0.0024203779820616863
+    },
+    {
+      "id": 11794372667,
+      "type": "node",
+      "category": "water",
+      "lat": -38.8280547,
+      "lon": 143.5826527,
+      "name": null,
+      "tags": {
+        "drinking_water": "no",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 21.60250609593279,
+      "distanceFromTrail": 0.008157891670371821
+    },
+    {
+      "id": 130361873,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8469171,
+      "lon": 143.558309,
+      "name": "Parker Hill Campground",
+      "tags": {
+        "internet_access": "no",
+        "name": "Parker Hill Campground",
+        "tourism": "camp_site",
+        "website": "https://www.parks.vic.gov.au/places-to-see/parks/great-otway-national-park/where-to-stay/parker-hill-campground",
+        "wheelchair": "no"
+      },
+      "distanceAlongTrail": 26.20277932347632,
+      "distanceFromTrail": 0.038755161933731595
+    },
+    {
+      "id": 2201069258,
+      "type": "node",
+      "category": "water",
+      "lat": -38.8471676,
+      "lon": 143.5580248,
+      "name": "rain water tap",
+      "tags": {
+        "man_made": "water_tap",
+        "name": "rain water tap",
+        "note": "probably not safe to drink, so I'm not giving this amenity=drinking_water",
+        "source": "survey"
+      },
+      "distanceAlongTrail": 26.204684313241163,
+      "distanceFromTrail": 0.07587633591104073
+    },
+    {
+      "id": 1297601810,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8472328,
+      "lon": 143.5588671,
+      "name": "Parker Hill Campground",
+      "tags": {
+        "capacity:persons": "60",
+        "capacity:tents": "10",
+        "caravans": "no",
+        "description": "No direct vehicle access to sites. Car parks available a short walk away.",
+        "fee": "yes",
+        "name": "Parker Hill Campground",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 26.264802186583488,
+      "distanceFromTrail": 0.030286543725428175
+    },
+    {
+      "id": 2884660389,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.8553595,
+      "lon": 143.5123404,
+      "name": null,
+      "tags": {
+        "amenity": "cafe"
+      },
+      "distanceAlongTrail": 31.465181660593846,
+      "distanceFromTrail": 0.29650944175263544
+    },
+    {
+      "id": 2157350493,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.8496898,
+      "lon": 143.5144739,
+      "name": "GOW Cape Otway Hikers Camp",
+      "tags": {
+        "backcountry": "yes",
+        "name": "GOW Cape Otway Hikers Camp",
+        "name:en": "GOW Cape Otway Hikers Camp",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 31.99856508858407,
+      "distanceFromTrail": 0.05689644942824901
+    },
+    {
+      "id": 1031541993,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8497071,
+      "lon": 143.514273,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 32.00043534119302,
+      "distanceFromTrail": 0.0394930840839682
+    },
+    {
+      "id": 373175797,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8348457,
+      "lon": 143.5138221,
+      "name": "Bimbi Park",
+      "tags": {
+        "addr:housenumber": "90",
+        "addr:postcode": "3233",
+        "addr:state": "VIC",
+        "addr:street": "Manna Gum Drive",
+        "addr:suburb": "Cape Otway",
+        "capacity": "500",
+        "description": "Camping, Caravan, Cabins, Self Contained Cabins, Backpackers, family activities, bush setting, camping under koalas",
+        "ele": "105",
+        "email": "admin@bimbipark.com.au",
+        "fee": "yes",
+        "internet_access": "wlan",
+        "name": "Bimbi Park",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:mastercard": "yes",
+        "payment:visa": "yes",
+        "phone": "+61 3 5237 9246",
+        "power_supply": "yes",
+        "sanitary_dump_station": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.bimbipark.com.au/"
+      },
+      "distanceAlongTrail": 34.15218158422427,
+      "distanceFromTrail": 1.517076216109114
+    },
+    {
+      "id": 12779816244,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.8327288,
+      "lon": 143.5125741,
+      "name": null,
+      "tags": {
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 34.22370497194317,
+      "distanceFromTrail": 1.5489813660324838
+    },
+    {
+      "id": 562981262,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8002046,
+      "lon": 143.4818738,
+      "name": "Aire River East Campground",
+      "tags": {
+        "name": "Aire River East Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 41.257501694989074,
+      "distanceFromTrail": 0.371607846202441
+    },
+    {
+      "id": 562979579,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.8020223,
+      "lon": 143.4766584,
+      "name": "Aire River West Campground - Otway NP",
+      "tags": {
+        "name": "Aire River West Campground - Otway NP",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 41.45550749440974,
+      "distanceFromTrail": 0.018158062410554652
+    },
+    {
+      "id": 7023039272,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.801533,
+      "lon": 143.4761977,
+      "name": "GOW Aire River Campground",
+      "tags": {
+        "name": "GOW Aire River Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 41.50023437061136,
+      "distanceFromTrail": 0.019183946494650637
+    },
+    {
+      "id": 9503956642,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.8015629,
+      "lon": 143.4761677,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 41.503427524422364,
+      "distanceFromTrail": 0.017567187866140935
+    },
+    {
+      "id": 2476551216,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7800685,
+      "lon": 143.4313886,
+      "name": "The Bend Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "name": "The Bend Cafe",
+        "source": "survey"
+      },
+      "distanceAlongTrail": 47.36568218244038,
+      "distanceFromTrail": 0.32038102284460884
+    },
+    {
+      "id": 5251894264,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.7790461,
+      "lon": 143.430772,
+      "name": "Chi Medicinal Farm",
+      "tags": {
+        "addr:full": "3225 Great Ocean Road,Glenaire, Victoria, 3238，Australia",
+        "amenity": "restaurant",
+        "name": "Chi Medicinal Farm"
+      },
+      "distanceAlongTrail": 47.385663504834135,
+      "distanceFromTrail": 0.38310094650596865
+    },
+    {
+      "id": 132188749,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.7612175,
+      "lon": 143.3793794,
+      "name": "Johanna Beach Campground",
+      "tags": {
+        "name": "Johanna Beach Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 53.789920717584835,
+      "distanceFromTrail": 0.04809833911226233
+    },
+    {
+      "id": 1238561425,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.7580472,
+      "lon": 143.3702722,
+      "name": "Johanna (GOW)",
+      "tags": {
+        "backcountry": "yes",
+        "maxstay": "1 night",
+        "maxtents": "8",
+        "name": "Johanna (GOW)",
+        "openfire": "no",
+        "operator": "Parks Victoria",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.greatoceanwalk.com.au/"
+      },
+      "distanceAlongTrail": 54.88753906035874,
+      "distanceFromTrail": 0.08991250675719964
+    },
+    {
+      "id": 1252466764,
+      "type": "node",
+      "category": "water",
+      "lat": -38.7595656,
+      "lon": 143.2778216,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 68.41404496256068,
+      "distanceFromTrail": 0.011060297036517121
+    },
+    {
+      "id": 9403984184,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.7595384,
+      "lon": 143.2776689,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 68.42424031193862,
+      "distanceFromTrail": 0.0051031297202423645
+    },
+    {
+      "id": 9403984189,
+      "type": "node",
+      "category": "water",
+      "lat": -38.759533,
+      "lon": 143.2776571,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 68.42528090741006,
+      "distanceFromTrail": 0.004533444368705255
+    },
+    {
+      "id": 563606240,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.7595228,
+      "lon": 143.2775648,
+      "name": "Ryans Den (GOW)",
+      "tags": {
+        "backcountry": "yes",
+        "maxstay": "1 night",
+        "maxtents": "8",
+        "name": "Ryans Den (GOW)",
+        "openfire": "no",
+        "operator": "Parks Victoria",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.greatoceanwalk.com.au/"
+      },
+      "distanceAlongTrail": 68.43331427892481,
+      "distanceFromTrail": 0.003638335306819927
+    },
+    {
+      "id": 3958688847,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.7444283,
+      "lon": 143.2046774,
+      "name": "Devil's Kitchen Campsite",
+      "tags": {
+        "fixme": "Approx location - from Note",
+        "name": "Devil's Kitchen Campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 81.37027130764972,
+      "distanceFromTrail": 0.01654961598366712
+    },
+    {
+      "id": 1076282243,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.744306,
+      "lon": 143.2047143,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "area": "yes",
+        "building": "yes",
+        "drinking_water": "yes",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 81.37167451543529,
+      "distanceFromTrail": 0.0026496588219959093
+    },
+    {
+      "id": 559730291,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.6991463,
+      "lon": 143.1597844,
+      "name": "Princetown Camping Reserve",
+      "tags": {
+        "name": "Princetown Camping Reserve",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 89.12641411462414,
+      "distanceFromTrail": 0.061631736014252786
+    },
+    {
+      "id": 13365282280,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.6985813,
+      "lon": 143.1595608,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 89.22560624555528,
+      "distanceFromTrail": 0.06718082464630255
+    },
+    {
+      "id": 7814605087,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.6912295,
+      "lon": 143.1555542,
+      "name": "Old Ocean Rd/Great Ocean Rd",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "gtfs:stop_code": "17722",
+        "gtfs:stop_id": "17722",
+        "highway": "bus_stop",
+        "name": "Old Ocean Rd/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "17722",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 89.63524339216264,
+      "distanceFromTrail": 0.6511678075753157
+    },
+    {
+      "id": 7814605088,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.6912944,
+      "lon": 143.1558171,
+      "name": "Old Ocean Rd/Great Ocean Rd",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "gtfs:stop_code": "17723",
+        "gtfs:stop_id": "17723",
+        "highway": "bus_stop",
+        "name": "Old Ocean Rd/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "17723",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 89.63524339216264,
+      "distanceFromTrail": 0.6465796176612787
+    },
+    {
+      "id": 200857339,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.6941731,
+      "lon": 143.1555974,
+      "name": "Apostles Camping Park and Cabins",
+      "tags": {
+        "fee": "yes",
+        "name": "Apostles Camping Park and Cabins",
+        "phone": "+61 3 5598 8119",
+        "power_supply": "yes",
+        "tents": "yes",
+        "tourism": "caravan_site",
+        "website": "https://www.aposlescampingpark.com.au"
+      },
+      "distanceAlongTrail": 89.63524339216264,
+      "distanceFromTrail": 0.3275605616473384
+    },
+    {
+      "id": 252829417,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.6938603,
+      "lon": 143.1560524,
+      "name": "Princetown Store",
+      "tags": {
+        "building": "yes",
+        "name": "Princetown Store",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 89.63524339216264,
+      "distanceFromTrail": 0.3709166448211829
+    },
+    {
+      "id": 252829424,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.6934933,
+      "lon": 143.1560875,
+      "name": "12 Apostles Tavern",
+      "tags": {
+        "amenity": "pub",
+        "building": "yes",
+        "name": "12 Apostles Tavern"
+      },
+      "distanceAlongTrail": 89.63524339216264,
+      "distanceFromTrail": 0.41100419371435776
+    },
+    {
+      "id": 5382155770,
+      "type": "node",
+      "category": "water",
+      "lat": -38.6620662,
+      "lon": 143.1052952,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "check_date": "2024-03-15",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 96.55050858796662,
+      "distanceFromTrail": 0.02088798837515139
+    },
+    {
+      "id": 13783937903,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.6621352,
+      "lon": 143.1051723,
+      "name": null,
+      "tags": {
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 96.5524002347011,
+      "distanceFromTrail": 0.007881970824905321
+    },
+    {
+      "id": 5139091593,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.6621405,
+      "lon": 143.1044797,
+      "name": "Twelve Apostles/Great Ocean Rd",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "gtfs:stop_code": "20907",
+        "gtfs:stop_id": "20907",
+        "highway": "bus_stop",
+        "name": "Twelve Apostles/Great Ocean Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "20907",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 96.55864943399308,
+      "distanceFromTrail": 0.05012605811083619
+    },
+    {
+      "id": 5382155769,
+      "type": "node",
+      "category": "water",
+      "lat": -38.6620084,
+      "lon": 143.1050386,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "check_date": "2024-03-15",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 96.55864943399308,
+      "distanceFromTrail": 0.015162432859230673
+    }
+  ]
+}

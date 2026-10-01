@@ -1,0 +1,544 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:50:41.735Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 1107895839,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.4181162,
+      "lon": 146.1640115,
+      "name": "Melaleuca Campground",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "description": "Park entry fees apply",
+        "fee": "no",
+        "name": "Melaleuca Campground",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.48132001851105377
+    },
+    {
+      "id": 451481485,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.4184723,
+      "lon": 146.1642307,
+      "name": "Walkers Hut",
+      "tags": {
+        "amenity": "shelter",
+        "bench": "yes",
+        "bin": "no",
+        "building": "yes",
+        "capacity": "12",
+        "description": "Park entry fees apply",
+        "name": "Walkers Hut",
+        "operator": "Parks and Wildlife Service",
+        "shelter_type": "basic_hut"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.445477050653093
+    },
+    {
+      "id": 451481486,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.4183112,
+      "lon": 146.1639907,
+      "name": "Charles King Memorial Hut",
+      "tags": {
+        "amenity": "shelter",
+        "bench": "yes",
+        "bin": "no",
+        "building": "yes",
+        "description": "Park entry fees apply",
+        "name": "Charles King Memorial Hut",
+        "operator": "Parks and Wildlife Service",
+        "shelter_type": "basic_hut"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.45963522380802574
+    },
+    {
+      "id": 1727781858,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.491028,
+      "lon": 146.2251203,
+      "name": "Freney Lagoon Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Freney Lagoon Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 11.398294384168326,
+      "distanceFromTrail": 0.03283132983997981
+    },
+    {
+      "id": 1727781894,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.4915557,
+      "lon": 146.2430138,
+      "name": "Point Eric Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Point Eric Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 12.95225287006839,
+      "distanceFromTrail": 0.014416259890845193
+    },
+    {
+      "id": 5599361821,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.4979819,
+      "lon": 146.2734814,
+      "name": "Buoy Creek camp site",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Buoy Creek camp site",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 15.787511636351663,
+      "distanceFromTrail": 0.013755180117034483
+    },
+    {
+      "id": 6439885030,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.4804476,
+      "lon": 146.3493556,
+      "name": "Louisa Creek Campground",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "fee": "no",
+        "name": "Louisa Creek Campground",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 23.334749225093088,
+      "distanceFromTrail": 0.006875516458826037
+    },
+    {
+      "id": 1727781890,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.4853302,
+      "lon": 146.4098708,
+      "name": "Louisa River Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Louisa River Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 29.635829403232695,
+      "distanceFromTrail": 0.010362626517726807
+    },
+    {
+      "id": 10941363799,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.4862958,
+      "lon": 146.4098433,
+      "name": "Louisa River Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Louisa River Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 29.74143939132195,
+      "distanceFromTrail": 0.006531545322072267
+    },
+    {
+      "id": 6444731116,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5071405,
+      "lon": 146.4674449,
+      "name": "Ironbound high campground",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "fee": "no",
+        "name": "Ironbound high campground",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 36.149251769479086,
+      "distanceFromTrail": 0.008056970917760583
+    },
+    {
+      "id": 1727781891,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.530423,
+      "lon": 146.4967095,
+      "name": "Little Deadmans Bay Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Little Deadmans Bay Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 42.14684534874233,
+      "distanceFromTrail": 0.0012249642010953483
+    },
+    {
+      "id": 3789923279,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5233057,
+      "lon": 146.5127135,
+      "name": "Turua Beach West Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Turua Beach West Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 43.89789975983946,
+      "distanceFromTrail": 0.0347556879928298
+    },
+    {
+      "id": 3789915105,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5364248,
+      "lon": 146.5901805,
+      "name": "New River Lagoon Boat Crossing Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "New River Lagoon Boat Crossing Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 51.94938269167446,
+      "distanceFromTrail": 0.011406032370863807
+    },
+    {
+      "id": 1727781892,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5615527,
+      "lon": 146.6244207,
+      "name": "Osmiridium Beach Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Osmiridium Beach Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 56.73397720549605,
+      "distanceFromTrail": 0.27271977600730496
+    },
+    {
+      "id": 3789914159,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.584406,
+      "lon": 146.6585951,
+      "name": "Surprise Bay Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Surprise Bay Campsite",
+        "operator": "Parks and Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 61.691000928763984,
+      "distanceFromTrail": 0.019155836988073806
+    },
+    {
+      "id": 1727781863,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5966676,
+      "lon": 146.6863315,
+      "name": "Granite Beach (east) Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Granite Beach (east) Campsite",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 64.61867243294692,
+      "distanceFromTrail": 0.0067888222200852355
+    },
+    {
+      "id": 10941375606,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5954099,
+      "lon": 146.7216905,
+      "name": "Trackcutters Camp",
+      "tags": {
+        "backcountry": "yes",
+        "name": "Trackcutters Camp",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 67.80340935019558,
+      "distanceFromTrail": 0.006602128885865585
+    },
+    {
+      "id": 1727781889,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5996512,
+      "lon": 146.7862331,
+      "name": "South Cape Rivulet Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "South Cape Rivulet Campsite",
+        "operator": "Parks and Wildlife",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 74.22945858450075,
+      "distanceFromTrail": 0.12227861894720383
+    },
+    {
+      "id": 5321208870,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.6056583,
+      "lon": 146.8171746,
+      "name": "South Cape Bay Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "South Cape Bay Campsite",
+        "operator": "Parks and Wildlife",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 77.33347787318523,
+      "distanceFromTrail": 0.07466570533960097
+    },
+    {
+      "id": 10267070181,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.6180821,
+      "lon": 146.8345401,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "backcountry": "yes",
+        "camp_site": "basic",
+        "capacity:persons": "3 - 6",
+        "capacity:tents": "3",
+        "caravans": "no",
+        "drinking_water": "yes",
+        "fee": "no",
+        "shower": "no",
+        "static_caravans": "no",
+        "tents": "yes",
+        "toilets": "no",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 79.40745010970241,
+      "distanceFromTrail": 0.9429971253215609
+    },
+    {
+      "id": 1492937113,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.5787634,
+      "lon": 146.886683,
+      "name": "Ramsgate Campground",
+      "tags": {
+        "access": "yes",
+        "camp_site": "standard",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Ramsgate Campground",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.06204017007946,
+      "distanceFromTrail": 0.5642845360202907
+    },
+    {
+      "id": 11775037743,
+      "type": "node",
+      "category": "camping",
+      "lat": -43.5832398,
+      "lon": 146.8902943,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "board_type": "hiking",
+        "information": "board",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 85.17221362095687,
+      "distanceFromTrail": 0.0032234107107025566
+    },
+    {
+      "id": 1492937145,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.5819119,
+      "lon": 146.8903278,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "camp_site": "standard",
+        "caravans": "yes",
+        "fee": "no",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.18579858249458,
+      "distanceFromTrail": 0.14688341014506234
+    },
+    {
+      "id": 9237140848,
+      "type": "node",
+      "category": "water",
+      "lat": -43.582743,
+      "lon": 146.8956405,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 85.52617496373328,
+      "distanceFromTrail": 0.19188588277633292
+    },
+    {
+      "id": 1492948018,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.5829755,
+      "lon": 146.8951973,
+      "name": "Boltons Green Campground",
+      "tags": {
+        "access": "yes",
+        "camp_site": "standard",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Boltons Green Campground",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "static_caravans": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.52617496373328,
+      "distanceFromTrail": 0.15298890545968608
+    },
+    {
+      "id": 1492948023,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.5825832,
+      "lon": 146.8958315,
+      "name": "Boltons Green Campground",
+      "tags": {
+        "access": "yes",
+        "camp_site": "standard",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Boltons Green Campground",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.52617496373328,
+      "distanceFromTrail": 0.21090734769742694
+    },
+    {
+      "id": 1492948024,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.5826572,
+      "lon": 146.8961301,
+      "name": "Boltons Green Campground",
+      "tags": {
+        "access": "yes",
+        "camp_site": "standard",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Boltons Green Campground",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.52617496373328,
+      "distanceFromTrail": 0.23242859079988512
+    },
+    {
+      "id": 1492948027,
+      "type": "way",
+      "category": "camping",
+      "lat": -43.5813681,
+      "lon": 146.8975215,
+      "name": "Boltons Green Campground",
+      "tags": {
+        "access": "yes",
+        "camp_site": "standard",
+        "caravans": "yes",
+        "fee": "no",
+        "name": "Boltons Green Campground",
+        "operator": "Tasmania Parks and Wildlife Service",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 85.52617496373328,
+      "distanceFromTrail": 0.3892653518247028
+    }
+  ]
+}

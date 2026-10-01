@@ -1,0 +1,52 @@
+{
+  "id": "great_south_west_walk",
+  "name": "Great South West Walk",
+  "shortName": "GSWW",
+  "region": "Portland to Nelson (VIC)",
+  "lengthKm": 253.7,
+  "gpxFile": "Great_South_West_Walk.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "A loop from Portland: inland through the Cobboboonee forest and along the Glenelg River to Nelson, then back along Discovery Bay and over Cape Bridgewater and Cape Nelson. The Great Trails Victoria dataset this is built from was last updated in 2019.",
+  "dataSource": {
+    "text": "Track and waypoints from the Great Trails Victoria – Great South West Walk dataset (© State of Victoria, DEECA, CC BY 4.0). Towns from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://discover.data.vic.gov.au/dataset/great-trails-victoria-great-south-west-walk",
+    "linkText": "Great Trails Victoria – Great South West Walk"
+  },
+  "direction": {
+    "default": "Anticlockwise",
+    "reversed": "Clockwise"
+  },
+  "climateLocations": [
+    {
+      "name": "Portland",
+      "lat": -38.34,
+      "lon": 141.6
+    },
+    {
+      "name": "Nelson",
+      "lat": -38.05,
+      "lon": 141.01
+    },
+    {
+      "name": "Cape Bridgewater",
+      "lat": -38.31,
+      "lon": 141.41
+    }
+  ],
+  "climateFile": "climate.json"
+}

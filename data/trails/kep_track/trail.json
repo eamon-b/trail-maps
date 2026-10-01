@@ -1,0 +1,52 @@
+{
+  "id": "kep_track",
+  "name": "Kep Track",
+  "shortName": "Kep",
+  "region": "Mundaring to Northam (WA)",
+  "lengthKm": 72.5,
+  "gpxFile": "Kep_Track.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "Shared walking, cycling and riding trail from Mundaring Weir, along the Golden Pipeline and the old Eastern Railway formation through the Perth Hills and the Avon Valley to Northam.",
+  "dataSource": {
+    "text": "Route and waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.openstreetmap.org/relation/915471",
+    "linkText": "OpenStreetMap route relation"
+  },
+  "direction": {
+    "default": "Eastbound",
+    "reversed": "Westbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Mundaring",
+      "lat": -31.9,
+      "lon": 116.17
+    },
+    {
+      "name": "Wooroloo",
+      "lat": -31.8,
+      "lon": 116.31
+    },
+    {
+      "name": "Northam",
+      "lat": -31.65,
+      "lon": 116.67
+    }
+  ],
+  "climateFile": "climate.json"
+}

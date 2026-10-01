@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-10-01T04:01:23.379Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Cradle Valley",
+      "lat": -41.64,
+      "lon": 145.95,
+      "elevation": 875,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 7.5,
+          "avgTempMax": 17.2,
+          "avgPrecipitation": 90.1,
+          "avgRainyDays": 12.2
+        },
+        {
+          "month": 2,
+          "avgTempMin": 7.6,
+          "avgTempMax": 16.8,
+          "avgPrecipitation": 74.9,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 3,
+          "avgTempMin": 6.3,
+          "avgTempMax": 14.5,
+          "avgPrecipitation": 100.4,
+          "avgRainyDays": 12.5
+        },
+        {
+          "month": 4,
+          "avgTempMin": 4.2,
+          "avgTempMax": 11.2,
+          "avgPrecipitation": 109.1,
+          "avgRainyDays": 13.3
+        },
+        {
+          "month": 5,
+          "avgTempMin": 2.7,
+          "avgTempMax": 8.4,
+          "avgPrecipitation": 154.7,
+          "avgRainyDays": 15.8
+        },
+        {
+          "month": 6,
+          "avgTempMin": 1.5,
+          "avgTempMax": 6.5,
+          "avgPrecipitation": 136.5,
+          "avgRainyDays": 14.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 0.7,
+          "avgTempMax": 5.8,
+          "avgPrecipitation": 174.5,
+          "avgRainyDays": 17.5
+        },
+        {
+          "month": 8,
+          "avgTempMin": 0.5,
+          "avgTempMax": 6.4,
+          "avgPrecipitation": 198.8,
+          "avgRainyDays": 18.5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 1.3,
+          "avgTempMax": 8.1,
+          "avgPrecipitation": 177.8,
+          "avgRainyDays": 18.7
+        },
+        {
+          "month": 10,
+          "avgTempMin": 2.2,
+          "avgTempMax": 10.6,
+          "avgPrecipitation": 153.7,
+          "avgRainyDays": 17.1
+        },
+        {
+          "month": 11,
+          "avgTempMin": 4.3,
+          "avgTempMax": 13.3,
+          "avgPrecipitation": 116.8,
+          "avgRainyDays": 14.3
+        },
+        {
+          "month": 12,
+          "avgTempMin": 5.5,
+          "avgTempMax": 15,
+          "avgPrecipitation": 118.3,
+          "avgRainyDays": 14.5
+        }
+      ]
+    },
+    {
+      "name": "Pelion Plains",
+      "lat": -41.83,
+      "lon": 146.05,
+      "elevation": 864,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 7.5,
+          "avgTempMax": 17,
+          "avgPrecipitation": 89.7,
+          "avgRainyDays": 11.8
+        },
+        {
+          "month": 2,
+          "avgTempMin": 7.5,
+          "avgTempMax": 16.6,
+          "avgPrecipitation": 75.1,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 3,
+          "avgTempMin": 6.2,
+          "avgTempMax": 14.3,
+          "avgPrecipitation": 98.8,
+          "avgRainyDays": 12.1
+        },
+        {
+          "month": 4,
+          "avgTempMin": 4.2,
+          "avgTempMax": 11,
+          "avgPrecipitation": 109.7,
+          "avgRainyDays": 13
+        },
+        {
+          "month": 5,
+          "avgTempMin": 2.7,
+          "avgTempMax": 8.2,
+          "avgPrecipitation": 156,
+          "avgRainyDays": 15.8
+        },
+        {
+          "month": 6,
+          "avgTempMin": 1.4,
+          "avgTempMax": 6.3,
+          "avgPrecipitation": 135.3,
+          "avgRainyDays": 14.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 0.6,
+          "avgTempMax": 5.6,
+          "avgPrecipitation": 177.8,
+          "avgRainyDays": 17.3
+        },
+        {
+          "month": 8,
+          "avgTempMin": 0.4,
+          "avgTempMax": 6.1,
+          "avgPrecipitation": 203.4,
+          "avgRainyDays": 18.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 1.2,
+          "avgTempMax": 7.9,
+          "avgPrecipitation": 178.7,
+          "avgRainyDays": 18.6
+        },
+        {
+          "month": 10,
+          "avgTempMin": 2.2,
+          "avgTempMax": 10.5,
+          "avgPrecipitation": 149.4,
+          "avgRainyDays": 16.8
+        },
+        {
+          "month": 11,
+          "avgTempMin": 4.2,
+          "avgTempMax": 13.1,
+          "avgPrecipitation": 115,
+          "avgRainyDays": 13.9
+        },
+        {
+          "month": 12,
+          "avgTempMin": 5.5,
+          "avgTempMax": 14.8,
+          "avgPrecipitation": 116.5,
+          "avgRainyDays": 14.1
+        }
+      ]
+    },
+    {
+      "name": "Lake St Clair",
+      "lat": -42.11,
+      "lon": 146.17,
+      "elevation": 735,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 8.3,
+          "avgTempMax": 18,
+          "avgPrecipitation": 80.1,
+          "avgRainyDays": 11.3
+        },
+        {
+          "month": 2,
+          "avgTempMin": 8.4,
+          "avgTempMax": 17.6,
+          "avgPrecipitation": 68.8,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 3,
+          "avgTempMin": 7.1,
+          "avgTempMax": 15.2,
+          "avgPrecipitation": 89.4,
+          "avgRainyDays": 11.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 5.2,
+          "avgTempMax": 11.9,
+          "avgPrecipitation": 94,
+          "avgRainyDays": 12.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 3.7,
+          "avgTempMax": 9.2,
+          "avgPrecipitation": 123.6,
+          "avgRainyDays": 15.4
+        },
+        {
+          "month": 6,
+          "avgTempMin": 2.4,
+          "avgTempMax": 7.2,
+          "avgPrecipitation": 110.7,
+          "avgRainyDays": 14.2
+        },
+        {
+          "month": 7,
+          "avgTempMin": 1.6,
+          "avgTempMax": 6.4,
+          "avgPrecipitation": 145.6,
+          "avgRainyDays": 16.5
+        },
+        {
+          "month": 8,
+          "avgTempMin": 1.5,
+          "avgTempMax": 7,
+          "avgPrecipitation": 172.6,
+          "avgRainyDays": 18.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 2.1,
+          "avgTempMax": 8.8,
+          "avgPrecipitation": 159.1,
+          "avgRainyDays": 17.9
+        },
+        {
+          "month": 10,
+          "avgTempMin": 3.2,
+          "avgTempMax": 11.3,
+          "avgPrecipitation": 140.4,
+          "avgRainyDays": 17.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 5,
+          "avgTempMax": 13.9,
+          "avgPrecipitation": 106.2,
+          "avgRainyDays": 14
+        },
+        {
+          "month": 12,
+          "avgTempMin": 6.3,
+          "avgTempMax": 15.7,
+          "avgPrecipitation": 106.8,
+          "avgRainyDays": 13.5
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2914 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:53:53.831Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 7130873246,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.345507,
+      "lon": 141.6039862,
+      "name": "Bakers Delight",
+      "tags": {
+        "brand": "Bakers Delight",
+        "brand:wikidata": "Q4849261",
+        "brand:wikipedia": "en:Bakers Delight",
+        "name": "Bakers Delight",
+        "shop": "bakery"
+      },
+      "distanceAlongTrail": 0.09369267348782326,
+      "distanceFromTrail": 0.2892516289234771
+    },
+    {
+      "id": 596136746,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3453039,
+      "lon": 141.6032498,
+      "name": "Woolworths",
+      "tags": {
+        "brand": "Woolworths",
+        "brand:wikidata": "Q3249145",
+        "brand:wikipedia": "en:Woolworths Supermarkets",
+        "name": "Woolworths",
+        "operator": "Woolworths Group",
+        "operator:wikidata": "Q607272",
+        "shop": "supermarket",
+        "website": "https://www.woolworths.com.au/"
+      },
+      "distanceAlongTrail": 0.09730820464952084,
+      "distanceFromTrail": 0.35074995357341
+    },
+    {
+      "id": 7130873232,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.3452545,
+      "lon": 141.6040063,
+      "name": "Hearing Australia",
+      "tags": {
+        "amenity": "clinic",
+        "healthcare": "clinic",
+        "name": "Hearing Australia"
+      },
+      "distanceAlongTrail": 0.09730820464952084,
+      "distanceFromTrail": 0.28456639863353034
+    },
+    {
+      "id": 7130873245,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3454302,
+      "lon": 141.6039902,
+      "name": "Admellas Fruit 'n' Veg",
+      "tags": {
+        "name": "Admellas Fruit 'n' Veg",
+        "shop": "greengrocer"
+      },
+      "distanceAlongTrail": 0.09730820464952084,
+      "distanceFromTrail": 0.2877422556324531
+    },
+    {
+      "id": 7130873240,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3451273,
+      "lon": 141.6040023,
+      "name": "Fresh Fish",
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "fish_and_chips",
+        "name": "Fresh Fish",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 0.10762607586176283,
+      "distanceFromTrail": 0.2842699949152663
+    },
+    {
+      "id": 7130873236,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3449947,
+      "lon": 141.6040519,
+      "name": "Portland Post Office",
+      "tags": {
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "brand:wikidata": "Q1142936",
+        "brand:wikipedia": "en:Australia Post",
+        "name": "Portland Post Office",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936",
+        "operator:wikipedia": "en:Australia Post",
+        "wheelchair": "yes",
+        "wikidata": "Q28928843"
+      },
+      "distanceAlongTrail": 0.12216690607685195,
+      "distanceFromTrail": 0.27930313730423617
+    },
+    {
+      "id": 7130873231,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3444415,
+      "lon": 141.6036348,
+      "name": "Royal Hotel",
+      "tags": {
+        "amenity": "pub",
+        "name": "Royal Hotel"
+      },
+      "distanceAlongTrail": 0.14906353842468828,
+      "distanceFromTrail": 0.3150316674850431
+    },
+    {
+      "id": 450185008,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.3444752,
+      "lon": 141.6023189,
+      "name": "EG Australia",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Ampol",
+        "brand:wikidata": "Q4748528",
+        "brand:wikipedia": "en:Caltex Woolworths",
+        "fuel:discount": "Woolworths",
+        "landuse": "retail",
+        "name": "EG Australia",
+        "operator": "EG Australia",
+        "operator:wikidata": "Q5023980",
+        "website": "https://www.woolworthspetrol.com.au/"
+      },
+      "distanceAlongTrail": 0.14906353842468828,
+      "distanceFromTrail": 0.42939845944517735
+    },
+    {
+      "id": 450269391,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.3446014,
+      "lon": 141.6023173,
+      "name": "EG Australia",
+      "tags": {
+        "brand": "EG Australia",
+        "brand:wikidata": "Q5023980",
+        "brand:wikipedia": "en:Caltex Woolworths",
+        "building": "yes",
+        "name": "EG Australia",
+        "shop": "convenience",
+        "website": "https://www.woolworthspetrol.com.au/"
+      },
+      "distanceAlongTrail": 0.14906353842468828,
+      "distanceFromTrail": 0.429156604716361
+    },
+    {
+      "id": 13743974203,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.34378,
+      "lon": 141.6012551,
+      "name": "Tyers St/Hurd St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40463",
+        "gtfs:stop_id": "40463",
+        "highway": "bus_stop",
+        "name": "Tyers St/Hurd St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40463"
+      },
+      "distanceAlongTrail": 0.1876728506022096,
+      "distanceFromTrail": 0.5291156519350051
+    },
+    {
+      "id": 7130873227,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3438987,
+      "lon": 141.6036026,
+      "name": "Dragon Palace Chinese Restaurant",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "chinese",
+        "name": "Dragon Palace Chinese Restaurant",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 0.1968319625827788,
+      "distanceFromTrail": 0.32416808435614464
+    },
+    {
+      "id": 761387437,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.3434673,
+      "lon": 141.6045173,
+      "name": "Fire Station No. 71",
+      "tags": {
+        "addr:housenumber": "130",
+        "addr:postcode": "3305",
+        "addr:state": "VIC",
+        "addr:street": "Percy Street",
+        "addr:suburb": "Portland",
+        "alt_name": "Portland Fire Station",
+        "amenity": "fire_station",
+        "building": "no",
+        "name": "Fire Station No. 71",
+        "operator": "Fire Rescue Victoria",
+        "operator:wikidata": "Q30640483",
+        "ref": "71"
+      },
+      "distanceAlongTrail": 0.24978250536792534,
+      "distanceFromTrail": 0.25075688147263103
+    },
+    {
+      "id": 13743866683,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3428896,
+      "lon": 141.6064293,
+      "name": "Otway Ct/Bentinck St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40456",
+        "gtfs:stop_id": "40456",
+        "highway": "bus_stop",
+        "name": "Otway Ct/Bentinck St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40456"
+      },
+      "distanceAlongTrail": 0.344470462444212,
+      "distanceFromTrail": 0.09005614713377676
+    },
+    {
+      "id": 770309198,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3421402,
+      "lon": 141.5988525,
+      "name": "The Big O",
+      "tags": {
+        "addr:housenumber": "45",
+        "addr:postcode": "3305",
+        "addr:state": "VIC",
+        "addr:street": "Otway Street",
+        "addr:suburb": "Portland",
+        "amenity": "fast_food",
+        "building": "yes",
+        "contact:facebook": "https://facebook.com/TheBigOTakeAway/",
+        "name": "The Big O",
+        "opening_hours": "Mo-Fr 06:00-19:00; Sa 07:00-19:00",
+        "phone": "+61 3 5523 6353"
+      },
+      "distanceAlongTrail": 0.3584665764977641,
+      "distanceFromTrail": 0.7544387262367206
+    },
+    {
+      "id": 13743974202,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3419547,
+      "lon": 141.6006266,
+      "name": "Community Health Centre/Otway St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36357",
+        "gtfs:stop_id": "36357",
+        "highway": "bus_stop",
+        "name": "Community Health Centre/Otway St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36357"
+      },
+      "distanceAlongTrail": 0.3933819402464369,
+      "distanceFromTrail": 0.6023029953051171
+    },
+    {
+      "id": 10038541612,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3418959,
+      "lon": 141.6043094,
+      "name": "OTR",
+      "tags": {
+        "brand": "OTR",
+        "brand:wikidata": "Q116394019",
+        "name": "OTR",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 0.40947054354703066,
+      "distanceFromTrail": 0.28383849447137294
+    },
+    {
+      "id": 1096188105,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.3418338,
+      "lon": 141.6043904,
+      "name": "OTR",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "OTR",
+        "brand:wikidata": "Q116394019",
+        "landuse": "retail",
+        "name": "OTR"
+      },
+      "distanceAlongTrail": 0.40947054354703066,
+      "distanceFromTrail": 0.2781151109359414
+    },
+    {
+      "id": 13743974201,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3418484,
+      "lon": 141.5961426,
+      "name": "Mitchell Cres/Otway St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36356",
+        "gtfs:stop_id": "36356",
+        "highway": "bus_stop",
+        "name": "Mitchell Cres/Otway St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36356"
+      },
+      "distanceAlongTrail": 0.7242790921386751,
+      "distanceFromTrail": 0.9895545395626822
+    },
+    {
+      "id": 1136937006,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.341363,
+      "lon": 141.6033906,
+      "name": null,
+      "tags": {
+        "amenity": "fuel",
+        "landuse": "retail"
+      },
+      "distanceAlongTrail": 0.7242790921386751,
+      "distanceFromTrail": 0.3617054887007275
+    },
+    {
+      "id": 1136937007,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.341257,
+      "lon": 141.6036166,
+      "name": null,
+      "tags": {
+        "building": "yes",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 0.7242790921386751,
+      "distanceFromTrail": 0.33930350919159263
+    },
+    {
+      "id": 450185203,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.3411647,
+      "lon": 141.6055578,
+      "name": "Portland District Hospital",
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Portland District Hospital",
+        "website": "https://swarh.com.au/pdh"
+      },
+      "distanceAlongTrail": 0.7242790921386751,
+      "distanceFromTrail": 0.1798614547525126
+    },
+    {
+      "id": 450185206,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3404355,
+      "lon": 141.6044026,
+      "name": "McDonald's",
+      "tags": {
+        "amenity": "fast_food",
+        "brand": "McDonald's",
+        "brand:wikidata": "Q38076",
+        "brand:wikipedia": "en:McDonald's",
+        "building": "yes",
+        "cuisine": "burger",
+        "name": "McDonald's",
+        "takeaway": "yes",
+        "website": "https://www.mcdonalds.com.au/"
+      },
+      "distanceAlongTrail": 0.7242790921386751,
+      "distanceFromTrail": 0.25489966605195685
+    },
+    {
+      "id": 13743866700,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.340052,
+      "lon": 141.5971204,
+      "name": "Oswald St/Rundell Ave",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40462",
+        "gtfs:stop_id": "40462",
+        "highway": "bus_stop",
+        "name": "Oswald St/Rundell Ave",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40462"
+      },
+      "distanceAlongTrail": 0.7368846093468306,
+      "distanceFromTrail": 0.890168144195172
+    },
+    {
+      "id": 13056024308,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.3398936,
+      "lon": 141.6060296,
+      "name": "Seaport Medical Centre",
+      "tags": {
+        "amenity": "doctors",
+        "healthcare": "doctor",
+        "name": "Seaport Medical Centre",
+        "source": "note"
+      },
+      "distanceAlongTrail": 0.7701849876323141,
+      "distanceFromTrail": 0.11366703677896785
+    },
+    {
+      "id": 13743866698,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3374598,
+      "lon": 141.5942488,
+      "name": "Salthouse Pl/Francis St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40460",
+        "gtfs:stop_id": "40460",
+        "highway": "bus_stop",
+        "name": "Salthouse Pl/Francis St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40460"
+      },
+      "distanceAlongTrail": 0.7761064960996691,
+      "distanceFromTrail": 1.1720826137420586
+    },
+    {
+      "id": 13743866699,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.338652,
+      "lon": 141.5953991,
+      "name": "Sheville Ct/Salthouse Pl",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40461",
+        "gtfs:stop_id": "40461",
+        "highway": "bus_stop",
+        "name": "Sheville Ct/Salthouse Pl",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40461"
+      },
+      "distanceAlongTrail": 0.7761064960996691,
+      "distanceFromTrail": 1.0495670675848914
+    },
+    {
+      "id": 13743866684,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3393077,
+      "lon": 141.6065938,
+      "name": "Portland Hospital/Bentinck St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36343",
+        "gtfs:stop_id": "36343",
+        "highway": "bus_stop",
+        "name": "Portland Hospital/Bentinck St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36343"
+      },
+      "distanceAlongTrail": 0.819091355281826,
+      "distanceFromTrail": 0.07813546388224771
+    },
+    {
+      "id": 1662269577,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3384911,
+      "lon": 141.6068327,
+      "name": "Portland Bay Holiday Park",
+      "tags": {
+        "name": "Portland Bay Holiday Park",
+        "operator": "Portland Cable Trams",
+        "public_transport": "stop_position",
+        "railway": "tram_stop",
+        "ref": "5",
+        "tram": "yes"
+      },
+      "distanceAlongTrail": 0.9319802989261299,
+      "distanceFromTrail": 0.10598715068896902
+    },
+    {
+      "id": 13743866685,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.338084,
+      "lon": 141.6063687,
+      "name": "Bentinck St/Townsend St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40457",
+        "gtfs:stop_id": "40457",
+        "highway": "bus_stop",
+        "name": "Bentinck St/Townsend St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40457"
+      },
+      "distanceAlongTrail": 0.9330090425770278,
+      "distanceFromTrail": 0.157501980454819
+    },
+    {
+      "id": 450269701,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3373439,
+      "lon": 141.6045151,
+      "name": "KFC",
+      "tags": {
+        "alt_name": "Kentucky Fried Chicken",
+        "amenity": "fast_food",
+        "brand": "KFC",
+        "brand:wikidata": "Q524757",
+        "brand:wikipedia": "en:KFC",
+        "building": "yes",
+        "cuisine": "chicken",
+        "name": "KFC",
+        "takeaway": "yes",
+        "website": "https://www.kfc.com.au/"
+      },
+      "distanceAlongTrail": 0.9330090425770278,
+      "distanceFromTrail": 0.33867367344415306
+    },
+    {
+      "id": 152977879,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.3377244,
+      "lon": 141.6079031,
+      "name": "Portland Bay Holiday Park",
+      "tags": {
+        "addr:housenumber": "184",
+        "addr:postcode": "3305",
+        "addr:street": "Bentinck Street",
+        "addr:suburb": "Portland",
+        "email": "info@victorbhp.com.au",
+        "fax": "+61 3 8552 8307",
+        "fee": "yes",
+        "internet_access": "yes",
+        "name": "Portland Bay Holiday Park",
+        "phone": "+61 3 5523 1487",
+        "power_supply": "yes",
+        "stars": "3",
+        "tents": "yes",
+        "tourism": "caravan_site",
+        "website": "https://www.victorbhp.com.au/"
+      },
+      "distanceAlongTrail": 1.0199379504753603,
+      "distanceFromTrail": 0.056039860113850905
+    },
+    {
+      "id": 13743866686,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3366886,
+      "lon": 141.6054485,
+      "name": "Kennedy St/Milbanke St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40458",
+        "gtfs:stop_id": "40458",
+        "highway": "bus_stop",
+        "name": "Kennedy St/Milbanke St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40458"
+      },
+      "distanceAlongTrail": 1.2615444527736421,
+      "distanceFromTrail": 0.284596249766047
+    },
+    {
+      "id": 4997772404,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3338118,
+      "lon": 141.6078226,
+      "name": "World War II Memorial Lookout",
+      "tags": {
+        "name": "World War II Memorial Lookout",
+        "operator": "Portland Cable Trams",
+        "public_transport": "stop_position",
+        "railway": "tram_stop",
+        "ref": "6",
+        "tram": "yes"
+      },
+      "distanceAlongTrail": 1.5612766047515183,
+      "distanceFromTrail": 0.005970925815035399
+    },
+    {
+      "id": 13743866687,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3345787,
+      "lon": 141.6055476,
+      "name": "Jubilee Ct/Milbanke St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40459",
+        "gtfs:stop_id": "40459",
+        "highway": "bus_stop",
+        "name": "Jubilee Ct/Milbanke St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40459"
+      },
+      "distanceAlongTrail": 1.6473297698255052,
+      "distanceFromTrail": 0.16295709890238774
+    },
+    {
+      "id": 13743866688,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3310733,
+      "lon": 141.6059062,
+      "name": "Hanlon Pde/Dutton St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36344",
+        "gtfs:stop_id": "36344",
+        "highway": "bus_stop",
+        "name": "Hanlon Pde/Dutton St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36344"
+      },
+      "distanceAlongTrail": 1.9310673756128747,
+      "distanceFromTrail": 0.06397677658238117
+    },
+    {
+      "id": 13743866689,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3310733,
+      "lon": 141.6037709,
+      "name": "Flinders St/Dutton St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36346",
+        "gtfs:stop_id": "36346",
+        "highway": "bus_stop",
+        "name": "Flinders St/Dutton St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36346"
+      },
+      "distanceAlongTrail": 2.1798800279475357,
+      "distanceFromTrail": 0.2276932757687145
+    },
+    {
+      "id": 189986743,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.3303873,
+      "lon": 141.5999731,
+      "name": "Portland Claremont Tourist Park",
+      "tags": {
+        "name": "Portland Claremont Tourist Park",
+        "tourism": "caravan_site",
+        "website": "https://www.toptouristparks.com.au/parks/victoria/portland/73-portland-tourist-park"
+      },
+      "distanceAlongTrail": 2.419468096077233,
+      "distanceFromTrail": 0.39423887902590504
+    },
+    {
+      "id": 13743866690,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3276546,
+      "lon": 141.6022372,
+      "name": "Learmonth St/Hurd St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36347",
+        "gtfs:stop_id": "36347",
+        "highway": "bus_stop",
+        "name": "Learmonth St/Hurd St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36347"
+      },
+      "distanceAlongTrail": 2.508836717401359,
+      "distanceFromTrail": 0.038017252842522865
+    },
+    {
+      "id": 13743866692,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3285838,
+      "lon": 141.5974806,
+      "name": "Moodie St/Richardson St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36349",
+        "gtfs:stop_id": "36349",
+        "highway": "bus_stop",
+        "name": "Moodie St/Richardson St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36349"
+      },
+      "distanceAlongTrail": 2.5373583371625474,
+      "distanceFromTrail": 0.4373010208899683
+    },
+    {
+      "id": 13743866693,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3302663,
+      "lon": 141.5974735,
+      "name": "Athalie St/Richardson St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36350",
+        "gtfs:stop_id": "36350",
+        "highway": "bus_stop",
+        "name": "Athalie St/Richardson St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36350"
+      },
+      "distanceAlongTrail": 2.5373583371625474,
+      "distanceFromTrail": 0.5320731908051008
+    },
+    {
+      "id": 13743866694,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3320269,
+      "lon": 141.596763,
+      "name": "Osbourne St/Garden St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36351",
+        "gtfs:stop_id": "36351",
+        "highway": "bus_stop",
+        "name": "Osbourne St/Garden St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36351"
+      },
+      "distanceAlongTrail": 2.5373583371625474,
+      "distanceFromTrail": 0.7130596842530577
+    },
+    {
+      "id": 13743866695,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3320253,
+      "lon": 141.5935956,
+      "name": "Stewart St/Garden St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36352",
+        "gtfs:stop_id": "36352",
+        "highway": "bus_stop",
+        "name": "Stewart St/Garden St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36352"
+      },
+      "distanceAlongTrail": 2.5373583371625474,
+      "distanceFromTrail": 0.9197866448768387
+    },
+    {
+      "id": 13743866696,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.332623,
+      "lon": 141.5925173,
+      "name": "Marriott Ct/Browning St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36353",
+        "gtfs:stop_id": "36353",
+        "highway": "bus_stop",
+        "name": "Marriott Ct/Browning St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36353"
+      },
+      "distanceAlongTrail": 2.5373583371625474,
+      "distanceFromTrail": 1.0349468153180617
+    },
+    {
+      "id": 13743866697,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3358019,
+      "lon": 141.5924865,
+      "name": "Kennedy St/Browning St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36354",
+        "gtfs:stop_id": "36354",
+        "highway": "bus_stop",
+        "name": "Kennedy St/Browning St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36354"
+      },
+      "distanceAlongTrail": 2.5373583371625474,
+      "distanceFromTrail": 1.274581816250628
+    },
+    {
+      "id": 13743866691,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3273104,
+      "lon": 141.6004629,
+      "name": "New St/Learmonth St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36348",
+        "gtfs:stop_id": "36348",
+        "highway": "bus_stop",
+        "name": "New St/Learmonth St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36348"
+      },
+      "distanceAlongTrail": 2.554528383324729,
+      "distanceFromTrail": 0.1496843138450203
+    },
+    {
+      "id": 11738316991,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3312744,
+      "lon": 141.5864993,
+      "name": "BP",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "BP",
+        "brand:wikidata": "Q152057",
+        "name": "BP",
+        "website": "https://map.bp.com/en-AU/AU/gas-station/portland/bp-opt-portland-wilsons-rd/7486"
+      },
+      "distanceAlongTrail": 2.9262770889536074,
+      "distanceFromTrail": 1.4115114416870103
+    },
+    {
+      "id": 5255140849,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3213272,
+      "lon": 141.5965729,
+      "name": "Shell",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Shell",
+        "brand:wikidata": "Q110716465",
+        "compressed_air": "yes",
+        "name": "Shell",
+        "opening_hours": "Mo-Fr 06:30-20:00; Sa 07:00-20:00; Su 08:00-20:00"
+      },
+      "distanceAlongTrail": 3.4040295059766668,
+      "distanceFromTrail": 0.13221167622984123
+    },
+    {
+      "id": 192882236,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.2998781,
+      "lon": 141.6203949,
+      "name": "Henty Bay Holiday Park",
+      "tags": {
+        "name": "Henty Bay Holiday Park",
+        "source": "Bing",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 7.239907772402027,
+      "distanceFromTrail": 0.08003346460484109
+    },
+    {
+      "id": 1808392132,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.18389,
+      "lon": 141.50417,
+      "name": "Surrey Ridge Campground",
+      "tags": {
+        "name": "Surrey Ridge Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 33.58977631960265,
+      "distanceFromTrail": 0.2959757341856871
+    },
+    {
+      "id": 316599378,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0748152,
+      "lon": 141.4256401,
+      "name": "Jackass Fern Gully Campground",
+      "tags": {
+        "name": "Jackass Fern Gully Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 57.17889592304801,
+      "distanceFromTrail": 0.7268602904591863
+    },
+    {
+      "id": 1808391998,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0544297,
+      "lon": 141.2712044,
+      "name": "Moleside Creek Picnic Area",
+      "tags": {
+        "name": "Moleside Creek Picnic Area",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 76.006001562953,
+      "distanceFromTrail": 0.005192979308540202
+    },
+    {
+      "id": 3582035493,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0544209,
+      "lon": 141.2687057,
+      "name": "Moleside Canoe Camp",
+      "tags": {
+        "fee": "yes",
+        "name": "Moleside Canoe Camp",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 76.50999108330474,
+      "distanceFromTrail": 0.014181138219949369
+    },
+    {
+      "id": 316599373,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0563554,
+      "lon": 141.2186404,
+      "name": "Pritchards Campground - Lower Glenelg NP",
+      "tags": {
+        "name": "Pritchards Campground - Lower Glenelg NP",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 88.23333959580643,
+      "distanceFromTrail": 0.06696764163080929
+    },
+    {
+      "id": 9633304659,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0523255,
+      "lon": 141.1902388,
+      "name": "Skipworth Springs Canoe Camp",
+      "tags": {
+        "name": "Skipworth Springs Canoe Camp",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 91.57535576975087,
+      "distanceFromTrail": 0.23963793140778178
+    },
+    {
+      "id": 10168559445,
+      "type": "node",
+      "category": "water",
+      "lat": -38.052391,
+      "lon": 141.1900865,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 91.57770661281674,
+      "distanceFromTrail": 0.23205696277184373
+    },
+    {
+      "id": 599201326,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0464651,
+      "lon": 141.1609269,
+      "name": "Site 2",
+      "tags": {
+        "name": "Site 2",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 95.24255663945745,
+      "distanceFromTrail": 0.02039491286937107
+    },
+    {
+      "id": 46949845,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.046336,
+      "lon": 141.1609721,
+      "name": "Battersbys",
+      "tags": {
+        "name": "Battersbys",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 95.24343037921166,
+      "distanceFromTrail": 0.00552964210398851
+    },
+    {
+      "id": 599201325,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0463972,
+      "lon": 141.160793,
+      "name": "Site 1",
+      "tags": {
+        "name": "Site 1",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 95.25975984207199,
+      "distanceFromTrail": 0.017705119084855624
+    },
+    {
+      "id": 3582034047,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0459461,
+      "lon": 141.1599212,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 95.31446713825302,
+      "distanceFromTrail": 0.0664928111565708
+    },
+    {
+      "id": 1382894524,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0345097,
+      "lon": 141.1553026,
+      "name": "Red Gum Landing",
+      "tags": {
+        "name": "Red Gum Landing",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 97.27011084111581,
+      "distanceFromTrail": 0.26529213531537477
+    },
+    {
+      "id": 1382891277,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0298618,
+      "lon": 141.1403492,
+      "name": "Forest Camp North",
+      "tags": {
+        "name": "Forest Camp North",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 98.6205742743144,
+      "distanceFromTrail": 0.39355997967895207
+    },
+    {
+      "id": 599198047,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0308907,
+      "lon": 141.1390745,
+      "name": "Forest Camp",
+      "tags": {
+        "name": "Forest Camp",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 98.632378063329,
+      "distanceFromTrail": 0.2919256394092805
+    },
+    {
+      "id": 1382904277,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0220104,
+      "lon": 141.1056361,
+      "name": "Wilson Hall",
+      "tags": {
+        "name": "Wilson Hall",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 102.94349893993726,
+      "distanceFromTrail": 0.19039709409683656
+    },
+    {
+      "id": 9633308060,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.9935694,
+      "lon": 141.0161305,
+      "name": "Lasletts Canoe Camp",
+      "tags": {
+        "name": "Lasletts Canoe Camp",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 113.51780551882757,
+      "distanceFromTrail": 0.13144335436189655
+    },
+    {
+      "id": 46875930,
+      "type": "way",
+      "category": "resupply",
+      "lat": -37.9890675,
+      "lon": 140.9906448,
+      "name": "Princess Margaret Rose Cave Information",
+      "tags": {
+        "building": "yes",
+        "name": "Princess Margaret Rose Cave Information",
+        "shop": "kiosk"
+      },
+      "distanceAlongTrail": 116.40378853718897,
+      "distanceFromTrail": 0.25058691102612857
+    },
+    {
+      "id": 316599357,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.9868781,
+      "lon": 140.9918458,
+      "name": "Princess Margaret Rose Caves - Lower Glenelg NP",
+      "tags": {
+        "name": "Princess Margaret Rose Caves - Lower Glenelg NP",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 116.45423770619804,
+      "distanceFromTrail": 0.45204929764008894
+    },
+    {
+      "id": 11280806431,
+      "type": "node",
+      "category": "camping",
+      "lat": -37.9935923,
+      "lon": 140.9659651,
+      "name": "Dry Creek",
+      "tags": {
+        "name": "Dry Creek",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 118.42927122258354,
+      "distanceFromTrail": 0.2931514049663816
+    },
+    {
+      "id": 13398830557,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.0124205,
+      "lon": 140.9591146,
+      "name": "Donovans CFS",
+      "tags": {
+        "amenity": "fire_station",
+        "name": "Donovans CFS"
+      },
+      "distanceAlongTrail": 121.33547179144477,
+      "distanceFromTrail": 0.3573100948167371
+    },
+    {
+      "id": 234989152,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.0388007,
+      "lon": 141.010269,
+      "name": "Kywong Caravan Park",
+      "tags": {
+        "name": "Kywong Caravan Park",
+        "source": "Bing",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 127.36723393395773,
+      "distanceFromTrail": 0.39290290503373737
+    },
+    {
+      "id": 1532108263,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.0440588,
+      "lon": 141.0077602,
+      "name": "Nelson Fire Station",
+      "tags": {
+        "addr:housenumber": "28",
+        "addr:postcode": "3292",
+        "addr:state": "VIC",
+        "addr:street": "North Nelson Road",
+        "addr:suburb": "Nelson",
+        "amenity": "fire_station",
+        "building": "fire_station",
+        "name": "Nelson Fire Station",
+        "operator": "Country Fire Authority",
+        "operator:wikidata": "Q13632973"
+      },
+      "distanceAlongTrail": 128.1901620380117,
+      "distanceFromTrail": 0.28052016852674705
+    },
+    {
+      "id": 1382927411,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0471927,
+      "lon": 141.0061208,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 128.44580492769416,
+      "distanceFromTrail": 0.012845281457090506
+    },
+    {
+      "id": 516001018,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.0475926,
+      "lon": 141.0081829,
+      "name": null,
+      "tags": {
+        "amenity": "fuel"
+      },
+      "distanceAlongTrail": 128.49237909959905,
+      "distanceFromTrail": 0.18872218725707887
+    },
+    {
+      "id": 271289442,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.0485561,
+      "lon": 141.0070577,
+      "name": "Nelson Hotel",
+      "tags": {
+        "amenity": "pub",
+        "building": "commercial",
+        "name": "Nelson Hotel",
+        "tourism": "hotel"
+      },
+      "distanceAlongTrail": 128.6595207069985,
+      "distanceFromTrail": 0.06731634336488067
+    },
+    {
+      "id": 5472432421,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0492915,
+      "lon": 141.0074972,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 128.86766902724335,
+      "distanceFromTrail": 0.059891321631132796
+    },
+    {
+      "id": 8042117285,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0467939,
+      "lon": 141.011506,
+      "name": "Karnkendi Campsite",
+      "tags": {
+        "addr:housenumber": "37-47",
+        "addr:postcode": "3292",
+        "addr:street": "Wade Street",
+        "addr:suburb": "Nelson",
+        "name": "Karnkendi Campsite",
+        "note": "Camp and Conference Centre",
+        "tourism": "camp_site",
+        "website": "http://www.karnkendi.pcsa.org.au/"
+      },
+      "distanceAlongTrail": 129.08852215874626,
+      "distanceFromTrail": 0.38028094366351517
+    },
+    {
+      "id": 2429187718,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.0933608,
+      "lon": 141.0794603,
+      "name": "White Sands",
+      "tags": {
+        "name": "White Sands",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 138.01847120642682,
+      "distanceFromTrail": 0.032842386010680236
+    },
+    {
+      "id": 1808391940,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.1338124,
+      "lon": 141.1854978,
+      "name": "Lake Monibeong Campground",
+      "tags": {
+        "name": "Lake Monibeong Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 150.90227615543537,
+      "distanceFromTrail": 0.010844019595478174
+    },
+    {
+      "id": 47033920,
+      "type": "way",
+      "category": "camping",
+      "lat": -38.1345419,
+      "lon": 141.1851392,
+      "name": "Lake Mombeong Campsite",
+      "tags": {
+        "name": "Lake Mombeong Campsite",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 150.97688339018478,
+      "distanceFromTrail": 0.015301506646658152
+    },
+    {
+      "id": 1793905717,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.2153612,
+      "lon": 141.310192,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.3135627074404,
+      "distanceFromTrail": 0.12795210214910058
+    },
+    {
+      "id": 1793905725,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.2148744,
+      "lon": 141.3107686,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.494543621404,
+      "distanceFromTrail": 0.1289154747771696
+    },
+    {
+      "id": 1382949355,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.2141325,
+      "lon": 141.3119395,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.64677328425853,
+      "distanceFromTrail": 0.012271540183310474
+    },
+    {
+      "id": 1793905751,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.2146636,
+      "lon": 141.3112058,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.6738234778441,
+      "distanceFromTrail": 0.0932887274074207
+    },
+    {
+      "id": 1793905754,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.2143875,
+      "lon": 141.3112139,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.69017573833983,
+      "distanceFromTrail": 0.0656176432977375
+    },
+    {
+      "id": 1808392134,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.21361,
+      "lon": 141.31111,
+      "name": "Swan Lake Campground",
+      "tags": {
+        "name": "Swan Lake Campground",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 167.71347374012922,
+      "distanceFromTrail": 0.029876227312348114
+    },
+    {
+      "id": 7199811485,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.3099573,
+      "lon": 141.4476161,
+      "name": "Tarragal Bushcamp",
+      "tags": {
+        "name": "Tarragal Bushcamp",
+        "operator": "Great South West Walk Volunteers",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 189.44966260351637,
+      "distanceFromTrail": 0.019127469617741397
+    },
+    {
+      "id": 559349306,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.3417552,
+      "lon": 141.4294117,
+      "name": "Cape Bridgewater CFA",
+      "tags": {
+        "addr:housenumber": "8",
+        "addr:postcode": "3305",
+        "addr:state": "VIC",
+        "addr:street": "Bridgewater Fire Station Road",
+        "addr:suburb": "Cape Bridgewater",
+        "amenity": "fire_station",
+        "building": "fire_station",
+        "name": "Cape Bridgewater CFA",
+        "operator": "Country Fire Authority",
+        "operator:wikidata": "Q13632973"
+      },
+      "distanceAlongTrail": 192.23320142791974,
+      "distanceFromTrail": 1.8617444940863663
+    },
+    {
+      "id": 9687187841,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.3621578,
+      "lon": 141.370826,
+      "name": "GSWW The Springs Camp",
+      "tags": {
+        "name": "GSWW The Springs Camp",
+        "operator": "Parks Victoria",
+        "tourism": "camp_site",
+        "website": "https://www.parks.vic.gov.au/places-to-see/sites/great-south-west-walk---springs-camping-area"
+      },
+      "distanceAlongTrail": 201.63378597182944,
+      "distanceFromTrail": 0.1062006366539847
+    },
+    {
+      "id": 9687187844,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.3621862,
+      "lon": 141.3705794,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bench": "yes"
+      },
+      "distanceAlongTrail": 201.63378597182944,
+      "distanceFromTrail": 0.08767429217953147
+    },
+    {
+      "id": 2426819059,
+      "type": "node",
+      "category": "water",
+      "lat": -38.365211,
+      "lon": 141.3663743,
+      "name": "Cape Bridgewater Springs",
+      "tags": {
+        "name": "Cape Bridgewater Springs",
+        "natural": "spring",
+        "source": "Bing"
+      },
+      "distanceAlongTrail": 202.1115307372157,
+      "distanceFromTrail": 0.03978950201027447
+    },
+    {
+      "id": 47058641,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3687344,
+      "lon": 141.4072234,
+      "name": "Bridgewater Bay Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "name": "Bridgewater Bay Cafe",
+        "source": "Bing"
+      },
+      "distanceAlongTrail": 212.44036888944822,
+      "distanceFromTrail": 0.018961936526788806
+    },
+    {
+      "id": 9687219940,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.3603322,
+      "lon": 141.4629724,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bench": "yes",
+        "bin": "no"
+      },
+      "distanceAlongTrail": 218.16029771690108,
+      "distanceFromTrail": 0.024240337387522147
+    },
+    {
+      "id": 9687219942,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.3602853,
+      "lon": 141.462984,
+      "name": "GSWW Trewalla Camp",
+      "tags": {
+        "name": "GSWW Trewalla Camp",
+        "operator": "Parks Victoria",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 218.16029771690108,
+      "distanceFromTrail": 0.025598179503120634
+    },
+    {
+      "id": 47035272,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.4304978,
+      "lon": 141.5433951,
+      "name": "Isabella's Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "check_date": "2025-09-16",
+        "name": "Isabella's Cafe"
+      },
+      "distanceAlongTrail": 231.77634198159612,
+      "distanceFromTrail": 0.05007068654251255
+    },
+    {
+      "id": 8543395225,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.4266178,
+      "lon": 141.549925,
+      "name": "GSWW Mallee Hike-In Camp",
+      "tags": {
+        "name": "GSWW Mallee Hike-In Camp",
+        "operator": "Parks Victoria",
+        "source": "survey",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 233.01981123588052,
+      "distanceFromTrail": 0.16761212975233322
+    },
+    {
+      "id": 9687526773,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.4266589,
+      "lon": 141.549837,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bench": "yes",
+        "bin": "no",
+        "operator": "Parks Victoria"
+      },
+      "distanceAlongTrail": 233.01981123588052,
+      "distanceFromTrail": 0.16895890448249665
+    },
+    {
+      "id": 13863828511,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3648859,
+      "lon": 141.6188955,
+      "name": "Barkly St/George St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40446",
+        "gtfs:stop_id": "40446",
+        "highway": "bus_stop",
+        "name": "Barkly St/George St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40446"
+      },
+      "distanceAlongTrail": 250.83870309236278,
+      "distanceFromTrail": 0.5512162481433335
+    },
+    {
+      "id": 13863828510,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3657316,
+      "lon": 141.6168082,
+      "name": "Bennett St/George St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40445",
+        "gtfs:stop_id": "40445",
+        "highway": "bus_stop",
+        "name": "Bennett St/George St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40445"
+      },
+      "distanceAlongTrail": 250.8394201453587,
+      "distanceFromTrail": 0.7560500909352024
+    },
+    {
+      "id": 13863828509,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3665539,
+      "lon": 141.6140707,
+      "name": "George St/Wellington Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_id": "40444",
+        "highway": "bus_stop",
+        "name": "George St/Wellington Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40444"
+      },
+      "distanceAlongTrail": 250.9612300459877,
+      "distanceFromTrail": 1.0050334676736208
+    },
+    {
+      "id": 13863828512,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3636374,
+      "lon": 141.6187681,
+      "name": "King St/Barkly St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40447",
+        "gtfs:stop_id": "40447",
+        "highway": "bus_stop",
+        "name": "King St/Barkly St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40447"
+      },
+      "distanceAlongTrail": 250.9612300459877,
+      "distanceFromTrail": 0.4878535097326174
+    },
+    {
+      "id": 13863828508,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3648061,
+      "lon": 141.6134447,
+      "name": "Wellington Rd/Edgar St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36372",
+        "gtfs:stop_id": "36372",
+        "highway": "bus_stop",
+        "name": "Wellington Rd/Edgar St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36372"
+      },
+      "distanceAlongTrail": 251.09431807379272,
+      "distanceFromTrail": 0.9620086651297639
+    },
+    {
+      "id": 13863828513,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3614899,
+      "lon": 141.6173628,
+      "name": "Peter St/Barkly St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36375",
+        "gtfs:stop_id": "36375",
+        "highway": "bus_stop",
+        "name": "Peter St/Barkly St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36375"
+      },
+      "distanceAlongTrail": 251.43586719164006,
+      "distanceFromTrail": 0.4864456983942518
+    },
+    {
+      "id": 13863828514,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3599598,
+      "lon": 141.6163099,
+      "name": "Findlay St/Barkly St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40448",
+        "gtfs:stop_id": "40448",
+        "highway": "bus_stop",
+        "name": "Findlay St/Barkly St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40448"
+      },
+      "distanceAlongTrail": 251.46257287255042,
+      "distanceFromTrail": 0.45319112998104477
+    },
+    {
+      "id": 13863828517,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3592723,
+      "lon": 141.618119,
+      "name": "Findlay St/Silvester St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36377",
+        "gtfs:stop_id": "36377",
+        "highway": "bus_stop",
+        "name": "Findlay St/Silvester St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36377"
+      },
+      "distanceAlongTrail": 251.46257287255042,
+      "distanceFromTrail": 0.27815893503794287
+    },
+    {
+      "id": 13863828518,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3600671,
+      "lon": 141.6174008,
+      "name": "Barkly St/Findlay St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36376",
+        "gtfs:stop_id": "36376",
+        "highway": "bus_stop",
+        "name": "Barkly St/Findlay St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36376"
+      },
+      "distanceAlongTrail": 251.46257287255042,
+      "distanceFromTrail": 0.3791526256988654
+    },
+    {
+      "id": 13863828516,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3575072,
+      "lon": 141.6169455,
+      "name": "Rossdell St/Silvester St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40449",
+        "gtfs:stop_id": "40449",
+        "highway": "bus_stop",
+        "name": "Rossdell St/Silvester St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40449"
+      },
+      "distanceAlongTrail": 252.03817340979217,
+      "distanceFromTrail": 0.25217002821820655
+    },
+    {
+      "id": 13863828515,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3572012,
+      "lon": 141.6151174,
+      "name": "Barkly St/Bancroft St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36378",
+        "gtfs:stop_id": "36378",
+        "highway": "bus_stop",
+        "name": "Barkly St/Bancroft St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36378"
+      },
+      "distanceAlongTrail": 252.19237928288302,
+      "distanceFromTrail": 0.22136697161284496
+    },
+    {
+      "id": 13863814395,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3592108,
+      "lon": 141.6056357,
+      "name": "Portland RSL/Cape Nelson Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40454",
+        "gtfs:stop_id": "40454",
+        "highway": "bus_stop",
+        "name": "Portland RSL/Cape Nelson Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40454"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 0.7732102859559478
+    },
+    {
+      "id": 13863814396,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3598055,
+      "lon": 141.6043669,
+      "name": "Poland St/Must St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36361",
+        "gtfs:stop_id": "36361",
+        "highway": "bus_stop",
+        "name": "Poland St/Must St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36361"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 0.9020825487420852
+    },
+    {
+      "id": 13863828502,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3667271,
+      "lon": 141.5966312,
+      "name": "Banyan Cres/Kauri Cres",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36367",
+        "gtfs:stop_id": "36367",
+        "highway": "bus_stop",
+        "name": "Banyan Cres/Kauri Cres",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36367"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 1.9003887109429378
+    },
+    {
+      "id": 13863828503,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3664934,
+      "lon": 141.5985501,
+      "name": "Nelson Park/Cape Nelson Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40443",
+        "gtfs:stop_id": "40443",
+        "highway": "bus_stop",
+        "name": "Nelson Park/Cape Nelson Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40443"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 1.7578957446564705
+    },
+    {
+      "id": 13863828504,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3642057,
+      "lon": 141.6009447,
+      "name": "Edgar St/Cape Nelson Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36368",
+        "gtfs:stop_id": "36368",
+        "highway": "bus_stop",
+        "name": "Edgar St/Cape Nelson Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36368"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 1.4324411395422838
+    },
+    {
+      "id": 13863828505,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3639157,
+      "lon": 141.604296,
+      "name": "Cape Nelson Rd/Edgar St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36369",
+        "gtfs:stop_id": "36369",
+        "highway": "bus_stop",
+        "name": "Cape Nelson Rd/Edgar St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36369"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 1.2032403125931224
+    },
+    {
+      "id": 13863828506,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3642036,
+      "lon": 141.6071621,
+      "name": "Karinya Cres/Edgar St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36370",
+        "gtfs:stop_id": "36370",
+        "highway": "bus_stop",
+        "name": "Karinya Cres/Edgar St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36370"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 1.084970048689074
+    },
+    {
+      "id": 13863828507,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3646191,
+      "lon": 141.6115529,
+      "name": "Portland South Primary School/Edgar St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36371",
+        "gtfs:stop_id": "36371",
+        "highway": "bus_stop",
+        "name": "Portland South Primary School/Edgar St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36371"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 1.0015592697266922
+    },
+    {
+      "id": 13863828519,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.361135,
+      "lon": 141.6148219,
+      "name": "Lorna Ct/Findlay St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40450",
+        "gtfs:stop_id": "40450",
+        "highway": "bus_stop",
+        "name": "Lorna Ct/Findlay St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40450"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 0.6168381102164392
+    },
+    {
+      "id": 13863828520,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3612402,
+      "lon": 141.6135305,
+      "name": "Must St/Wellington Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40451",
+        "gtfs:stop_id": "40451",
+        "highway": "bus_stop",
+        "name": "Must St/Wellington Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40451"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 0.6144720559344184
+    },
+    {
+      "id": 13863828521,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.358216,
+      "lon": 141.6133258,
+      "name": "Home for the Aged/Wellington Rd",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40452",
+        "gtfs:stop_id": "40452",
+        "highway": "bus_stop",
+        "name": "Home for the Aged/Wellington Rd",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40452"
+      },
+      "distanceAlongTrail": 252.3577614799679,
+      "distanceFromTrail": 0.2778832329516721
+    },
+    {
+      "id": 1662269685,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3529036,
+      "lon": 141.6107749,
+      "name": "Botanical Gardens",
+      "tags": {
+        "name": "Botanical Gardens",
+        "operator": "Portland Cable Trams",
+        "public_transport": "stop_position",
+        "railway": "tram_stop",
+        "ref": "3",
+        "tram": "yes"
+      },
+      "distanceAlongTrail": 252.80695670169382,
+      "distanceFromTrail": 0.00967675709424578
+    },
+    {
+      "id": 6339186777,
+      "type": "node",
+      "category": "water",
+      "lat": -38.3517661,
+      "lon": 141.6102273,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 252.90870190191043,
+      "distanceFromTrail": 0.06934856321945049
+    },
+    {
+      "id": 13863828522,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3527996,
+      "lon": 141.6081353,
+      "name": "Portland Police Station/Glenelg St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40453",
+        "gtfs:stop_id": "40453",
+        "highway": "bus_stop",
+        "name": "Portland Police Station/Glenelg St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40453"
+      },
+      "distanceAlongTrail": 253.00105045886139,
+      "distanceFromTrail": 0.10372769310931124
+    },
+    {
+      "id": 4997772393,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3547916,
+      "lon": 141.606665,
+      "name": "Cable Tram Museum and Depot",
+      "tags": {
+        "name": "Cable Tram Museum and Depot",
+        "operator": "Portland Cable Trams",
+        "public_transport": "stop_position",
+        "railway": "tram_stop",
+        "ref": "1",
+        "tram": "yes"
+      },
+      "distanceAlongTrail": 253.00105045886139,
+      "distanceFromTrail": 0.35933739700006057
+    },
+    {
+      "id": 5076512721,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.3547622,
+      "lon": 141.6070691,
+      "name": null,
+      "tags": {
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 253.00105045886139,
+      "distanceFromTrail": 0.33927474941434377
+    },
+    {
+      "id": 13863814394,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3548055,
+      "lon": 141.6060515,
+      "name": "Cable Tram Depot/Bentinck St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36360",
+        "gtfs:stop_id": "36360",
+        "highway": "bus_stop",
+        "name": "Cable Tram Depot/Bentinck St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36360"
+      },
+      "distanceAlongTrail": 253.01963143322283,
+      "distanceFromTrail": 0.39080736676394506
+    },
+    {
+      "id": 2481828518,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.352461,
+      "lon": 141.6081185,
+      "name": "Portland Police Station",
+      "tags": {
+        "amenity": "police",
+        "name": "Portland Police Station",
+        "wikidata": "Q28926942"
+      },
+      "distanceAlongTrail": 253.02396253006498,
+      "distanceFromTrail": 0.07390257147471162
+    },
+    {
+      "id": 833164775,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.3524383,
+      "lon": 141.608117,
+      "name": null,
+      "tags": {
+        "amenity": "police",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 253.02406215980366,
+      "distanceFromTrail": 0.07193700281510904
+    },
+    {
+      "id": 13863814397,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3594342,
+      "lon": 141.6006758,
+      "name": "Adamson Ct/Must St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36362",
+        "gtfs:stop_id": "36362",
+        "highway": "bus_stop",
+        "name": "Adamson Ct/Must St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36362"
+      },
+      "distanceAlongTrail": 253.05275359533778,
+      "distanceFromTrail": 1.0836850852805668
+    },
+    {
+      "id": 13863814400,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3645825,
+      "lon": 141.5934538,
+      "name": "Fawthrop St/Warratah Cres",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36365",
+        "gtfs:stop_id": "36365",
+        "highway": "bus_stop",
+        "name": "Fawthrop St/Warratah Cres",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36365"
+      },
+      "distanceAlongTrail": 253.05275359533778,
+      "distanceFromTrail": 1.92792191139378
+    },
+    {
+      "id": 13863828501,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3651966,
+      "lon": 141.5953293,
+      "name": "Kauri Cres/Acacia St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36366",
+        "gtfs:stop_id": "36366",
+        "highway": "bus_stop",
+        "name": "Kauri Cres/Acacia St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36366"
+      },
+      "distanceAlongTrail": 253.05275359533778,
+      "distanceFromTrail": 1.8757188572596002
+    },
+    {
+      "id": 2580602936,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3632555,
+      "lon": 141.5948008,
+      "name": "Edgar Street General Store",
+      "tags": {
+        "name": "Edgar Street General Store",
+        "opening_hours": "Mo-Su 07:00-18:00",
+        "phone": "+61 3 5523 4350",
+        "shop": "convenience",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 253.05275359533778,
+      "distanceFromTrail": 1.7398141845649833
+    },
+    {
+      "id": 13863814398,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.359257,
+      "lon": 141.5968112,
+      "name": "Portland Secondary College/Must St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36363",
+        "gtfs:stop_id": "36363",
+        "highway": "bus_stop",
+        "name": "Portland Secondary College/Must St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36363"
+      },
+      "distanceAlongTrail": 253.14471948288028,
+      "distanceFromTrail": 1.299622928550409
+    },
+    {
+      "id": 13863814399,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3608499,
+      "lon": 141.5934467,
+      "name": "Bundarra Primary School/Fawthrop St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36364",
+        "gtfs:stop_id": "36364",
+        "highway": "bus_stop",
+        "name": "Bundarra Primary School/Fawthrop St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36364"
+      },
+      "distanceAlongTrail": 253.14471948288028,
+      "distanceFromTrail": 1.6357908049340428
+    },
+    {
+      "id": 833161803,
+      "type": "way",
+      "category": "emergency",
+      "lat": -38.3523222,
+      "lon": 141.6055349,
+      "name": null,
+      "tags": {
+        "amenity": "police",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 253.14891051374946,
+      "distanceFromTrail": 0.21936533702511804
+    },
+    {
+      "id": 1662269702,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3537687,
+      "lon": 141.6029386,
+      "name": "Powerhouse Museum",
+      "tags": {
+        "name": "Powerhouse Museum",
+        "operator": "Portland Cable Trams",
+        "public_transport": "stop_position",
+        "railway": "tram_stop",
+        "ref": "2",
+        "tram": "yes"
+      },
+      "distanceAlongTrail": 253.15307124109196,
+      "distanceFromTrail": 0.4970443236220133
+    },
+    {
+      "id": 13018231262,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3592241,
+      "lon": 141.5934286,
+      "name": null,
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "public_transport": "platform",
+        "ref": "54184"
+      },
+      "distanceAlongTrail": 253.15413813390833,
+      "distanceFromTrail": 1.5244155484224067
+    },
+    {
+      "id": 13863814393,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3516566,
+      "lon": 141.6062667,
+      "name": "Portland Library/Bentinck St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "40455",
+        "gtfs:stop_id": "40455",
+        "highway": "bus_stop",
+        "name": "Portland Library/Bentinck St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "40455"
+      },
+      "distanceAlongTrail": 253.17086095621826,
+      "distanceFromTrail": 0.12413992024439341
+    },
+    {
+      "id": 833170708,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3509478,
+      "lon": 141.607044,
+      "name": "Bahloo Portland",
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "check_date": "2025-09-16",
+        "name": "Bahloo Portland"
+      },
+      "distanceAlongTrail": 253.18996218588302,
+      "distanceFromTrail": 0.025680562906881865
+    },
+    {
+      "id": 13863828523,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3513005,
+      "lon": 141.6060789,
+      "name": "Portland Library/Bentinck St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36359",
+        "gtfs:stop_id": "36359",
+        "highway": "bus_stop",
+        "name": "Portland Library/Bentinck St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36359"
+      },
+      "distanceAlongTrail": 253.19153213344623,
+      "distanceFromTrail": 0.11851474717039392
+    },
+    {
+      "id": 623060061,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3508713,
+      "lon": 141.6069246,
+      "name": "Watch House Lounge Bar",
+      "tags": {
+        "amenity": "pub",
+        "name": "Watch House Lounge Bar"
+      },
+      "distanceAlongTrail": 253.19450340454463,
+      "distanceFromTrail": 0.03224348616496093
+    },
+    {
+      "id": 833161797,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3509202,
+      "lon": 141.6058192,
+      "name": "Mac's Hotel",
+      "tags": {
+        "addr:housenumber": "39-41",
+        "addr:postcode": "3305",
+        "addr:state": "VIC",
+        "addr:street": "Bentinck Street",
+        "addr:suburb": "Portland",
+        "amenity": "bar",
+        "building": "yes",
+        "name": "Mac's Hotel"
+      },
+      "distanceAlongTrail": 253.19450340454463,
+      "distanceFromTrail": 0.1284933178614513
+    },
+    {
+      "id": 13863814392,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3501972,
+      "lon": 141.6036583,
+      "name": "IGA Supermarket/Percy St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "48854",
+        "gtfs:stop_id": "48854",
+        "highway": "bus_stop",
+        "name": "IGA Supermarket/Percy St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "48854"
+      },
+      "distanceAlongTrail": 253.2005306828664,
+      "distanceFromTrail": 0.3218765074497826
+    },
+    {
+      "id": 833170707,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3507978,
+      "lon": 141.6065161,
+      "name": "Clock By The Bay",
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes",
+        "name": "Clock By The Bay"
+      },
+      "distanceAlongTrail": 253.2005306828664,
+      "distanceFromTrail": 0.06677557801050776
+    },
+    {
+      "id": 599960241,
+      "type": "node",
+      "category": "water",
+      "lat": -38.3502857,
+      "lon": 141.6064094,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 253.21695509715354,
+      "distanceFromTrail": 0.09161193073925927
+    },
+    {
+      "id": 4429116592,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3498232,
+      "lon": 141.603926,
+      "name": "IGA",
+      "tags": {
+        "addr:postcode": "3305",
+        "addr:street": "Percy Street",
+        "addr:suburb": "Portland",
+        "brand": "IGA",
+        "brand:wikidata": "Q5970945",
+        "brand:wikipedia": "en:IGA (supermarkets)",
+        "name": "IGA",
+        "opening_hours": "08:00-22:00",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 253.33311247094,
+      "distanceFromTrail": 0.29995415622515925
+    },
+    {
+      "id": 5820021489,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3497156,
+      "lon": 141.6060142,
+      "name": "Maggie Lou’s",
+      "tags": {
+        "addr:housenumber": "57",
+        "addr:street": "Bentinck Street",
+        "amenity": "cafe",
+        "cuisine": "fish_and_chips;australian;pizza;burger;cafe",
+        "name": "Maggie Lou’s",
+        "opening_hours": "Su-Th 05:00-22:00, Fr-Sa 05:00-23:59",
+        "phone": "+61 3 5500 9499",
+        "website": "maggielousportland.com"
+      },
+      "distanceAlongTrail": 253.33311247094,
+      "distanceFromTrail": 0.11750484232953506
+    },
+    {
+      "id": 599960246,
+      "type": "node",
+      "category": "water",
+      "lat": -38.3496806,
+      "lon": 141.6064312,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 253.33456565963058,
+      "distanceFromTrail": 0.08106881156671215
+    },
+    {
+      "id": 599960251,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3493083,
+      "lon": 141.605986,
+      "name": "Beach House Pizzas",
+      "tags": {
+        "addr:housenumber": "71",
+        "addr:street": "Bentinck Street",
+        "amenity": "fast_food",
+        "cuisine": "pizza",
+        "name": "Beach House Pizzas"
+      },
+      "distanceAlongTrail": 253.3876267796325,
+      "distanceFromTrail": 0.11770532813679506
+    },
+    {
+      "id": 2480848495,
+      "type": "node",
+      "category": "camping",
+      "lat": -38.349376,
+      "lon": 141.602254,
+      "name": "Portland Holiday Village",
+      "tags": {
+        "name": "Portland Holiday Village",
+        "tourism": "caravan_site"
+      },
+      "distanceAlongTrail": 253.44917111817722,
+      "distanceFromTrail": 0.4407843052912977
+    },
+    {
+      "id": 615474903,
+      "type": "way",
+      "category": "resupply",
+      "lat": -38.3486652,
+      "lon": 141.6053302,
+      "name": "Portland Disposals Camping & Hardware",
+      "tags": {
+        "addr:housenumber": "13",
+        "addr:street": "Julia Street",
+        "building": "yes",
+        "contact:facebook": "https://www.facebook.com/profile.php?id=100057091074189",
+        "name": "Portland Disposals Camping & Hardware",
+        "opening_hours": "Mo-Fr 08:30-17:30, Sa 08:30-12:30",
+        "phone": "+61 3 5523 1441",
+        "shop": "outdoor"
+      },
+      "distanceAlongTrail": 253.47744741470055,
+      "distanceFromTrail": 0.16256160650596044
+    },
+    {
+      "id": 13863828524,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3481638,
+      "lon": 141.5979578,
+      "name": "Portland Child and Family Complex/Julia St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "46768",
+        "gtfs:stop_id": "46768",
+        "highway": "bus_stop",
+        "name": "Portland Child and Family Complex/Julia St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "46768"
+      },
+      "distanceAlongTrail": 253.52642436287857,
+      "distanceFromTrail": 0.7939858642827868
+    },
+    {
+      "id": 13863828525,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3474532,
+      "lon": 141.600939,
+      "name": "Julia St/Hurd St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36380",
+        "gtfs:stop_id": "36380",
+        "highway": "bus_stop",
+        "name": "Julia St/Hurd St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36380"
+      },
+      "distanceAlongTrail": 253.5848035414786,
+      "distanceFromTrail": 0.5335185566057299
+    },
+    {
+      "id": 11526476352,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3471445,
+      "lon": 141.6021559,
+      "name": "ALDI",
+      "tags": {
+        "addr:housenumber": "29",
+        "addr:street": "Henty Street",
+        "branch": "Portland",
+        "brand": "ALDI",
+        "brand:wikidata": "Q41171672",
+        "name": "ALDI",
+        "opening_hours": "Mo-Fr 08:30-20:00; Sa, Su 08:30-19:00",
+        "shop": "supermarket",
+        "website": "https://store.aldi.com.au/vic/portland/29-henty-street"
+      },
+      "distanceAlongTrail": 253.60893141322552,
+      "distanceFromTrail": 0.42740481309567746
+    },
+    {
+      "id": 4997772403,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3469494,
+      "lon": 141.6067509,
+      "name": "Maritime Discovery Centre",
+      "tags": {
+        "name": "Maritime Discovery Centre",
+        "operator": "Portland Cable Trams",
+        "public_transport": "stop_position",
+        "railway": "tram_stop",
+        "ref": "4",
+        "tram": "yes"
+      },
+      "distanceAlongTrail": 253.63972263584495,
+      "distanceFromTrail": 0.031577559350375276
+    },
+    {
+      "id": 7130873223,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.3466955,
+      "lon": 141.6035034,
+      "name": "Amcal",
+      "tags": {
+        "amenity": "pharmacy",
+        "brand": "Amcal",
+        "brand:wikidata": "Q63367373",
+        "dispensing": "yes",
+        "healthcare": "pharmacy",
+        "name": "Amcal"
+      },
+      "distanceAlongTrail": 253.66396582500832,
+      "distanceFromTrail": 0.31445817725233105
+    },
+    {
+      "id": 7130873224,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3466071,
+      "lon": 141.6035061,
+      "name": "Noodle Canteen",
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "noodle",
+        "name": "Noodle Canteen",
+        "phone": "+61 3 5521 7828",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 253.66396582500832,
+      "distanceFromTrail": 0.3145002296895737
+    },
+    {
+      "id": 7130873266,
+      "type": "node",
+      "category": "resupply",
+      "lat": -38.3465609,
+      "lon": 141.6035061,
+      "name": "Portland French Hot Bread",
+      "tags": {
+        "name": "Portland French Hot Bread",
+        "phone": "+61 3 5521 1519",
+        "shop": "bakery"
+      },
+      "distanceAlongTrail": 253.66396582500832,
+      "distanceFromTrail": 0.314767314680123
+    },
+    {
+      "id": 844515858,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3465371,
+      "lon": 141.6025466,
+      "name": "Sysy Bread Rolls",
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes",
+        "name": "Sysy Bread Rolls"
+      },
+      "distanceAlongTrail": 253.66396582500832,
+      "distanceFromTrail": 0.3984576420649462
+    },
+    {
+      "id": 844515872,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -38.3465664,
+      "lon": 141.6034784,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes",
+        "cuisine": "noodle"
+      },
+      "distanceAlongTrail": 253.66396582500832,
+      "distanceFromTrail": 0.3171427137696206
+    },
+    {
+      "id": 13660336687,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3462002,
+      "lon": 141.6024914,
+      "name": "Henty Street Bus Interchange/Henty St",
+      "tags": {
+        "bus": "yes",
+        "gtfs:stop_code": "36341",
+        "gtfs:stop_id": "36341",
+        "highway": "bus_stop",
+        "name": "Henty Street Bus Interchange/Henty St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36341"
+      },
+      "distanceAlongTrail": 253.67656181110226,
+      "distanceFromTrail": 0.4067970964012703
+    },
+    {
+      "id": 11088324012,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3461806,
+      "lon": 141.6046752,
+      "name": "Twelvefold Portland",
+      "tags": {
+        "addr:street": "12 Henty Street",
+        "amenity": "cafe",
+        "name": "Twelvefold Portland"
+      },
+      "distanceAlongTrail": 253.6845607328665,
+      "distanceFromTrail": 0.21843357984467016
+    },
+    {
+      "id": 3139679522,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3460868,
+      "lon": 141.6035295,
+      "name": "Nonna's Pizza & Pasta",
+      "tags": {
+        "addr:housenumber": "83a",
+        "addr:street": "Percy Street",
+        "amenity": "fast_food",
+        "cuisine": "pizza",
+        "name": "Nonna's Pizza & Pasta",
+        "phone": "+61 3 5523 1318",
+        "takeaway": "yes",
+        "website": "https://www.dominos.com.au/store/vic/portland/98877"
+      },
+      "distanceAlongTrail": 253.6845607328665,
+      "distanceFromTrail": 0.31865020511605185
+    },
+    {
+      "id": 7130873251,
+      "type": "node",
+      "category": "emergency",
+      "lat": -38.345893,
+      "lon": 141.6035342,
+      "name": "Amcal",
+      "tags": {
+        "addr:housenumber": "87",
+        "addr:postcode": "3305",
+        "addr:state": "VIC",
+        "addr:street": "Percy Street",
+        "addr:suburb": "Portland",
+        "amenity": "pharmacy",
+        "brand": "Amcal",
+        "brand:wikidata": "Q63367373",
+        "dispensing": "yes",
+        "email": "portland@amcal.net.au",
+        "healthcare": "pharmacy",
+        "name": "Amcal",
+        "opening_hours": "Mo-Fr 08:30-18:00; Sa 08:30-15:00; Su 10:00-14:00",
+        "phone": "+61 3 5523 1035",
+        "website": "https://amcal.com.au/store/1517/VIC/amcal-pharmacy-portland/",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 253.687661959185,
+      "distanceFromTrail": 0.32239891074766636
+    },
+    {
+      "id": 7130873257,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3459676,
+      "lon": 141.6039862,
+      "name": "Natural Soy Creations",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Natural Soy Creations"
+      },
+      "distanceAlongTrail": 253.68808413563872,
+      "distanceFromTrail": 0.2821195020095262
+    },
+    {
+      "id": 7114195667,
+      "type": "node",
+      "category": "transport",
+      "lat": -38.3462779,
+      "lon": 141.6058356,
+      "name": "All Saints Catholic Church/Henty St",
+      "tags": {
+        "bench": "yes",
+        "bin": "yes",
+        "bus": "yes",
+        "gtfs:stop_code": "36342",
+        "gtfs:stop_id": "36342",
+        "highway": "bus_stop",
+        "name": "All Saints Catholic Church/Henty St",
+        "network": "Transport Victoria",
+        "public_transport": "platform",
+        "ref": "36342",
+        "shelter": "yes",
+        "tactile_paving": "yes"
+      },
+      "distanceAlongTrail": 253.68926102738772,
+      "distanceFromTrail": 0.11719157442862455
+    },
+    {
+      "id": 3139648307,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3458236,
+      "lon": 141.6035381,
+      "name": "Subway",
+      "tags": {
+        "amenity": "fast_food",
+        "brand": "Subway",
+        "brand:wikidata": "Q244457",
+        "brand:wikipedia": "en:Subway (restaurant)",
+        "cuisine": "sandwich",
+        "name": "Subway",
+        "takeaway": "yes",
+        "website": "https://www.subway.com.au/"
+      },
+      "distanceAlongTrail": 253.6952698123127,
+      "distanceFromTrail": 0.3237353202664961
+    },
+    {
+      "id": 7130873249,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3456868,
+      "lon": 141.6035436,
+      "name": "Spuds Portland",
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "hot_dog",
+        "name": "Spuds Portland",
+        "outdoor_seating": "yes",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 253.71022502813173,
+      "distanceFromTrail": 0.32655589961298104
+    },
+    {
+      "id": 7130873255,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -38.3457299,
+      "lon": 141.6040157,
+      "name": "Duck Inn Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Duck Inn Cafe"
+      },
+      "distanceAlongTrail": 253.71444594677024,
+      "distanceFromTrail": 0.2853222335071525
+    }
+  ]
+}

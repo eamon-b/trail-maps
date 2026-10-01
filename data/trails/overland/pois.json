@@ -1,0 +1,1534 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:50:00.179Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 2349983182,
+      "type": "node",
+      "category": "transport",
+      "lat": -41.6208362,
+      "lon": 145.9434806,
+      "name": "Snake Hill - Cradle Shuttle Bus",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Snake Hill - Cradle Shuttle Bus",
+        "opening_hours": "Oct-Mar 08:00-18:00; Apr-Sep 08:30-16:30",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 1.7456202943470414
+    },
+    {
+      "id": 647771445,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.6358043,
+      "lon": 145.9492042,
+      "name": "Ronny Creek Registration Booth",
+      "tags": {
+        "amenity": "shelter",
+        "name": "Ronny Creek Registration Booth",
+        "source": "gps",
+        "tourism": "information"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.01920561334917191
+    },
+    {
+      "id": 1483453680,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.6354235,
+      "lon": 145.9506976,
+      "name": "Mt Kate House",
+      "tags": {
+        "access": "private",
+        "building": "hut",
+        "name": "Mt Kate House",
+        "operator": "Parks & Wildlife Service",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.14507161236457303
+    },
+    {
+      "id": 1483454824,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.6354046,
+      "lon": 145.9519242,
+      "name": "Blandfordia Alpine Club Lodge",
+      "tags": {
+        "access": "private",
+        "building": "hut",
+        "name": "Blandfordia Alpine Club Lodge",
+        "operator": "Blandfordia Alpine Club",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.24216208139775597
+    },
+    {
+      "id": 1505008229,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.635955,
+      "lon": 145.949271,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.013645541260764976
+    },
+    {
+      "id": 362295717,
+      "type": "node",
+      "category": "transport",
+      "lat": -41.6360017,
+      "lon": 145.9491248,
+      "name": "Ronny Creek - Cradle Shuttle Bus",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Ronny Creek - Cradle Shuttle Bus",
+        "opening_hours": "Oct-Mar 08:00-18:00; Apr-Sep 08:30-16:30",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 0.001448712258703576,
+      "distanceFromTrail": 0.004535507284155555
+    },
+    {
+      "id": 543401220,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.6378521,
+      "lon": 145.9451015,
+      "name": null,
+      "tags": {
+        "building": "yes",
+        "source": "bing",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 0.36127824502104994,
+      "distanceFromTrail": 0.2150110860552338
+    },
+    {
+      "id": 647626410,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.6536289,
+      "lon": 145.9443809,
+      "name": "Crater Lake Hut",
+      "tags": {
+        "amenity": "shelter",
+        "building": "boathouse",
+        "name": "Crater Lake Hut",
+        "source": "gps"
+      },
+      "distanceAlongTrail": 2.2924930768677836,
+      "distanceFromTrail": 0.0032680760053045797
+    },
+    {
+      "id": 14225561354,
+      "type": "node",
+      "category": "water",
+      "lat": -41.650207,
+      "lon": 145.961067,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "covered": "yes",
+        "dog": "no",
+        "fee": "no",
+        "indoor": "no",
+        "level": "ground"
+      },
+      "distanceAlongTrail": 3.09029076009592,
+      "distanceFromTrail": 1.2211500662808201
+    },
+    {
+      "id": 1964283434,
+      "type": "node",
+      "category": "transport",
+      "lat": -41.6500559,
+      "lon": 145.9615192,
+      "name": "Dove Lake - Cradle Shuttle Bus",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Dove Lake - Cradle Shuttle Bus",
+        "opening_hours": "Oct-Mar 08:00-18:00; Apr-Sep 08:30-16:30",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 3.09029076009592,
+      "distanceFromTrail": 1.2592550616795455
+    },
+    {
+      "id": 647640983,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.6536134,
+      "lon": 145.9594663,
+      "name": "Dove Lake Boatshed",
+      "tags": {
+        "amenity": "shelter",
+        "name": "Dove Lake Boatshed",
+        "source": "gps"
+      },
+      "distanceAlongTrail": 3.09029076009592,
+      "distanceFromTrail": 0.8697893742974308
+    },
+    {
+      "id": 1864095835,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.6757044,
+      "lon": 145.9461372,
+      "name": "Kitchen Hut",
+      "tags": {
+        "alt_name": "Kitchen Hut Emergency Shelter",
+        "amenity": "shelter",
+        "description": "Small day use building. Overnight use in emergencies only.",
+        "name": "Kitchen Hut",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 5.356997112039986,
+      "distanceFromTrail": 0.004882592921994195
+    },
+    {
+      "id": 590035412,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.6724566,
+      "lon": 145.9655221,
+      "name": "Rangers Hut",
+      "tags": {
+        "alt_name": "Rangers Hut Emergency Shelter",
+        "amenity": "shelter",
+        "description": "Small day use building. Overnight use in emergnacies only.",
+        "name": "Rangers Hut",
+        "shelter_type": "basic_hut"
+      },
+      "distanceAlongTrail": 5.911549219088897,
+      "distanceFromTrail": 1.4614587010458804
+    },
+    {
+      "id": 668103790,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.6922695,
+      "lon": 145.9649496,
+      "name": "Scott-Kilvert Hut Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "5",
+        "caravans": "no",
+        "name": "Scott-Kilvert Hut Campsite",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes"
+      },
+      "distanceAlongTrail": 7.847978604701579,
+      "distanceFromTrail": 1.3609864779642913
+    },
+    {
+      "id": 185967149,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.6925119,
+      "lon": 145.9653427,
+      "name": "Scott-Kilvert Memorial Hut",
+      "tags": {
+        "building": "yes",
+        "name": "Scott-Kilvert Memorial Hut",
+        "source": "GPS",
+        "tourism": "wilderness_hut",
+        "wikidata": "Q60754153"
+      },
+      "distanceAlongTrail": 7.8504549436616555,
+      "distanceFromTrail": 1.3883304543494495
+    },
+    {
+      "id": 1483455078,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.700295,
+      "lon": 145.9499156,
+      "name": "Emergency Shelter",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Emergency Shelter",
+        "shelter_type": "weather_shelter"
+      },
+      "distanceAlongTrail": 8.499253486512487,
+      "distanceFromTrail": 0.01704127837293331
+    },
+    {
+      "id": 1236553865,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7148479,
+      "lon": 145.9472724,
+      "name": "Waterfall Valley Ranger Hut",
+      "tags": {
+        "building": "yes;hut",
+        "name": "Waterfall Valley Ranger Hut",
+        "source": "gps",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 10.836693276901809,
+      "distanceFromTrail": 0.01629483463967164
+    },
+    {
+      "id": 543401219,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7146761,
+      "lon": 145.9469001,
+      "name": "Waterfall Valley Hut",
+      "tags": {
+        "building": "yes",
+        "name": "Waterfall Valley Hut",
+        "source": "gps +bing",
+        "tourism": "wilderness_hut",
+        "wikidata": "Q7973965"
+      },
+      "distanceAlongTrail": 10.877338171937689,
+      "distanceFromTrail": 0.011705590383581982
+    },
+    {
+      "id": 673014675,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.714446,
+      "lon": 145.9467934,
+      "name": "Waterfall Valley Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Waterfall Valley Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 10.8894509577753,
+      "distanceFromTrail": 0.03267740185232669
+    },
+    {
+      "id": 1236552758,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7144742,
+      "lon": 145.945364,
+      "name": "Old Waterfall Valley Hut",
+      "tags": {
+        "amenity": "shelter",
+        "bin": "no",
+        "building": "hut",
+        "name": "Old Waterfall Valley Hut",
+        "operator": "Parks and Wildlife",
+        "shelter_type": "basic_hut",
+        "source": "gps",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 10.93278015562143,
+      "distanceFromTrail": 0.08904064134008846
+    },
+    {
+      "id": 673014676,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7142224,
+      "lon": 145.9452969,
+      "name": "Waterfall Valley Group Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "group_only": "yes",
+        "name": "Waterfall Valley Group Camping Platform",
+        "reservation": "yes",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 10.93278015562143,
+      "distanceFromTrail": 0.10991362379461182
+    },
+    {
+      "id": 673014677,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7145958,
+      "lon": 145.9451901,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "surface": "grass",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 10.956005108652057,
+      "distanceFromTrail": 0.09636354792301006
+    },
+    {
+      "id": 638668178,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7220741,
+      "lon": 145.9379732,
+      "name": "Waterfall Valley Hut (Cradle Mountain Huts)",
+      "tags": {
+        "access": "customers",
+        "building": "cabin",
+        "name": "Waterfall Valley Hut (Cradle Mountain Huts)",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 12.236577636797309,
+      "distanceFromTrail": 0.49519808581113756
+    },
+    {
+      "id": 673014674,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7711271,
+      "lon": 145.9556988,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "description": "Windermere Group Camping Platforms",
+        "group_only": "yes",
+        "reservation": "yes",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.378021201759783,
+      "distanceFromTrail": 0.03777392710710655
+    },
+    {
+      "id": 762436557,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.7710649,
+      "lon": 145.9565035,
+      "name": "Windermere Hut",
+      "tags": {
+        "building": "hut",
+        "name": "Windermere Hut",
+        "source": "gps",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 18.388036946572615,
+      "distanceFromTrail": 0.02798724188579384
+    },
+    {
+      "id": 2340467868,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7714072,
+      "lon": 145.9565295,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.42263242769591,
+      "distanceFromTrail": 0.005274786665562127
+    },
+    {
+      "id": 2340467869,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.77142,
+      "lon": 145.9566803,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.4288881879842,
+      "distanceFromTrail": 0.01565764038373573
+    },
+    {
+      "id": 2340467870,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7714407,
+      "lon": 145.9566366,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.429450548168962,
+      "distanceFromTrail": 0.011401413774869406
+    },
+    {
+      "id": 1307620764,
+      "type": "way",
+      "category": "emergency",
+      "lat": -41.7716584,
+      "lon": 145.9562866,
+      "name": "Windermere Ranger Hut",
+      "tags": {
+        "amenity": "ranger_station",
+        "building": "hut",
+        "name": "Windermere Ranger Hut",
+        "wheelchair": "no"
+      },
+      "distanceAlongTrail": 18.43596607037742,
+      "distanceFromTrail": 0.025326455745739874
+    },
+    {
+      "id": 2340467872,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7715118,
+      "lon": 145.9566088,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.437423084433473,
+      "distanceFromTrail": 0.0058071436244381104
+    },
+    {
+      "id": 2340467871,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7715099,
+      "lon": 145.9566489,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.441188302440416,
+      "distanceFromTrail": 0.00841312106883329
+    },
+    {
+      "id": 2340465049,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7717907,
+      "lon": 145.9573351,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.508358703975638,
+      "distanceFromTrail": 0.012712610065023031
+    },
+    {
+      "id": 2340465050,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7718673,
+      "lon": 145.9574301,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.518997548133864,
+      "distanceFromTrail": 0.023046384191544138
+    },
+    {
+      "id": 2340465048,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7717228,
+      "lon": 145.9577048,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.541543213405753,
+      "distanceFromTrail": 0.011635356437084233
+    },
+    {
+      "id": 2340465047,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.771707,
+      "lon": 145.9577951,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.54922808920537,
+      "distanceFromTrail": 0.01196392346912403
+    },
+    {
+      "id": 2340457922,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7716577,
+      "lon": 145.9580243,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.570056881838866,
+      "distanceFromTrail": 0.01073983838232649
+    },
+    {
+      "id": 2340457923,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.7717519,
+      "lon": 145.9581737,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 18.579279543878098,
+      "distanceFromTrail": 0.023510111927271222
+    },
+    {
+      "id": 543785897,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8055789,
+      "lon": 145.9899952,
+      "name": "Pine Forest Moor Private Hut (Cradle Mountain Huts)",
+      "tags": {
+        "access": "customers",
+        "building": "hut",
+        "name": "Pine Forest Moor Private Hut (Cradle Mountain Huts)",
+        "source": "bing",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 23.77728451990143,
+      "distanceFromTrail": 0.15821870340931582
+    },
+    {
+      "id": 884007929,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8262141,
+      "lon": 146.0359229,
+      "name": "Old Pelion Hut",
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "name": "Old Pelion Hut",
+        "source": "gps",
+        "tourism": "attraction",
+        "wikidata": "Q7084709"
+      },
+      "distanceAlongTrail": 32.74873125448546,
+      "distanceFromTrail": 0.4209094882232068
+    },
+    {
+      "id": 206187438,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8295194,
+      "lon": 146.0464435,
+      "name": "New Pelion Hut",
+      "tags": {
+        "building": "hut",
+        "name": "New Pelion Hut",
+        "source": "gps",
+        "tourism": "wilderness_hut",
+        "wikidata": "Q7010946"
+      },
+      "distanceAlongTrail": 33.494009112280565,
+      "distanceFromTrail": 0.11480198443883187
+    },
+    {
+      "id": 884007930,
+      "type": "way",
+      "category": "water",
+      "lat": -41.8296488,
+      "lon": 146.0464036,
+      "name": null,
+      "tags": {
+        "content": "water",
+        "drinking_water": "yes",
+        "man_made": "storage_tank",
+        "source": "bing"
+      },
+      "distanceAlongTrail": 33.494009112280565,
+      "distanceFromTrail": 0.1001309129559404
+    },
+    {
+      "id": 668095757,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8305347,
+      "lon": 146.0464726,
+      "name": "New Pelion Hut Public Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "New Pelion Hut Public Campsite",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 33.535020171037274,
+      "distanceFromTrail": 0.002209814876677051
+    },
+    {
+      "id": 2338959363,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8302939,
+      "lon": 146.0467766,
+      "name": "New Pelion Hut Group Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "group_only": "yes",
+        "name": "New Pelion Hut Group Campsite",
+        "reservation": "yes",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 33.53645483572351,
+      "distanceFromTrail": 0.037559637238112425
+    },
+    {
+      "id": 638668176,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8358666,
+      "lon": 146.0446958,
+      "name": "Pelion Hut (Cradle Mountain Huts)",
+      "tags": {
+        "access": "customers",
+        "building": "yes",
+        "name": "Pelion Hut (Cradle Mountain Huts)",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 34.15184971919443,
+      "distanceFromTrail": 0.12429944672506231
+    },
+    {
+      "id": 638668173,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8892569,
+      "lon": 146.0799323,
+      "name": "Kia Ora Hut (Cradle Mountain Huts)",
+      "tags": {
+        "access": "customers",
+        "building": "yes",
+        "name": "Kia Ora Hut (Cradle Mountain Huts)",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 41.588737775516734,
+      "distanceFromTrail": 0.06851232723672201
+    },
+    {
+      "id": 1865318048,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8917873,
+      "lon": 146.0813293,
+      "name": "Kia Ora Hut Group Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "group_only": "yes",
+        "name": "Kia Ora Hut Group Camping Platform",
+        "reservation": "yes",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.94901332719471,
+      "distanceFromTrail": 0.015284239824119543
+    },
+    {
+      "id": 2338817485,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8918453,
+      "lon": 146.0816851,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.972317978092036,
+      "distanceFromTrail": 0.025055378152060704
+    },
+    {
+      "id": 2338817484,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8917858,
+      "lon": 146.0817604,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.9736509518293,
+      "distanceFromTrail": 0.03404677605485923
+    },
+    {
+      "id": 2338817490,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8920304,
+      "lon": 146.0815607,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.9749338724564,
+      "distanceFromTrail": 0.0025848239171623096
+    },
+    {
+      "id": 1210646834,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.8928531,
+      "lon": 146.0806366,
+      "name": "Kia Ora Hut",
+      "tags": {
+        "capacity": "28",
+        "name": "Kia Ora Hut",
+        "source": "bing + past OSM entry",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 41.9824675525182,
+      "distanceFromTrail": 0.11539834319509853
+    },
+    {
+      "id": 884007931,
+      "type": "way",
+      "category": "water",
+      "lat": -41.8922021,
+      "lon": 146.0815164,
+      "name": null,
+      "tags": {
+        "content": "water",
+        "drinking_water": "yes",
+        "man_made": "storage_tank",
+        "source": "bing"
+      },
+      "distanceAlongTrail": 41.9824675525182,
+      "distanceFromTrail": 0.013198154041750051
+    },
+    {
+      "id": 543203155,
+      "type": "way",
+      "category": "emergency",
+      "lat": -41.8921761,
+      "lon": 146.0815679,
+      "name": "Kia Ora Ranger Hut",
+      "tags": {
+        "amenity": "ranger_station",
+        "building": "yes",
+        "name": "Kia Ora Ranger Hut",
+        "source": "bing + past OSM entry"
+      },
+      "distanceAlongTrail": 41.983734198405095,
+      "distanceFromTrail": 0.008839095314114568
+    },
+    {
+      "id": 2338817493,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8922402,
+      "lon": 146.0816794,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.992646426572584,
+      "distanceFromTrail": 0.012872529528352359
+    },
+    {
+      "id": 2338817487,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.891957,
+      "lon": 146.0817695,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.993901360310296,
+      "distanceFromTrail": 0.01946462233361293
+    },
+    {
+      "id": 2338817489,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8920253,
+      "lon": 146.0817707,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.99546115310289,
+      "distanceFromTrail": 0.012031248526376371
+    },
+    {
+      "id": 2338817486,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8918605,
+      "lon": 146.0818448,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 41.998805474291935,
+      "distanceFromTrail": 0.031154306092967144
+    },
+    {
+      "id": 2338817488,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8920049,
+      "lon": 146.0818973,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 42.00168441245252,
+      "distanceFromTrail": 0.01704959508110078
+    },
+    {
+      "id": 2338817491,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.8920406,
+      "lon": 146.0819076,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 42.00405157448536,
+      "distanceFromTrail": 0.013750872042509315
+    },
+    {
+      "id": 2338817492,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.892205,
+      "lon": 146.0819333,
+      "name": "Kia Ora Hut Public Camping Platform",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Kia Ora Hut Public Camping Platform",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 42.013250852111675,
+      "distanceFromTrail": 0.0021658814523967005
+    },
+    {
+      "id": 543586696,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.9045697,
+      "lon": 146.1022212,
+      "name": "Du Cane Hut",
+      "tags": {
+        "alt_name": "Windsor Castle",
+        "amenity": "shelter",
+        "building": "hut",
+        "description": "Emergency use only",
+        "name": "Du Cane Hut",
+        "source": "Bing"
+      },
+      "distanceAlongTrail": 44.69250355307276,
+      "distanceFromTrail": 0.0002946058094646458
+    },
+    {
+      "id": 2340111413,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9309519,
+      "lon": 146.0894197,
+      "name": "Windy Ridge Group Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "group_only": "yes",
+        "name": "Windy Ridge Group Campsite",
+        "reservation": "yes",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 51.54034305602892,
+      "distanceFromTrail": 0.014030920813283958
+    },
+    {
+      "id": 2340111414,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9309785,
+      "lon": 146.0894459,
+      "name": "Windy Ridge Group Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "group_only": "yes",
+        "name": "Windy Ridge Group Campsite",
+        "reservation": "yes",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 51.543203287868614,
+      "distanceFromTrail": 0.015495603330583894
+    },
+    {
+      "id": 2340111415,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9313738,
+      "lon": 146.0889325,
+      "name": "Windy Ridge Group Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Windy Ridge Group Campsite",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 51.599324994716866,
+      "distanceFromTrail": 0.02617967697892977
+    },
+    {
+      "id": 2340107127,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9315203,
+      "lon": 146.0878094,
+      "name": "Windy Ridge Private Hut (Cradle Mountain Huts)",
+      "tags": {
+        "access": "customers",
+        "name": "Windy Ridge Private Hut (Cradle Mountain Huts)",
+        "source": "gps",
+        "tourism": "alpine_hut"
+      },
+      "distanceAlongTrail": 51.63688672377618,
+      "distanceFromTrail": 0.11568024936584355
+    },
+    {
+      "id": 2340107156,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9318847,
+      "lon": 146.0887443,
+      "name": null,
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "reservation": "yes @ Oct-May",
+        "shower": "no",
+        "source": "gps",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 51.653867062130075,
+      "distanceFromTrail": 0.03098902360830558
+    },
+    {
+      "id": 884007933,
+      "type": "way",
+      "category": "water",
+      "lat": -41.931954,
+      "lon": 146.0889458,
+      "name": null,
+      "tags": {
+        "content": "water",
+        "drinking_water": "yes",
+        "man_made": "storage_tank",
+        "source": "bing"
+      },
+      "distanceAlongTrail": 51.65807484977561,
+      "distanceFromTrail": 0.013209060782050372
+    },
+    {
+      "id": 1236554621,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.9320124,
+      "lon": 146.0892993,
+      "name": "Windy Ridge Ranger Hut",
+      "tags": {
+        "building": "hut",
+        "name": "Windy Ridge Ranger Hut",
+        "operator": "Parks and Wildlife",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 51.65923746705209,
+      "distanceFromTrail": 0.016723020301998997
+    },
+    {
+      "id": 543586692,
+      "type": "way",
+      "category": "camping",
+      "lat": -41.9320917,
+      "lon": 146.0889126,
+      "name": "Bert Nichols Hut",
+      "tags": {
+        "alt_name": "Windy Ridge Hut",
+        "building": "yes",
+        "name": "Bert Nichols Hut",
+        "source": "bing",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 51.68035473702114,
+      "distanceFromTrail": 0.01144752325737352
+    },
+    {
+      "id": 543586688,
+      "type": "way",
+      "category": "water",
+      "lat": -41.9321908,
+      "lon": 146.0887834,
+      "name": null,
+      "tags": {
+        "content": "water",
+        "drinking_water": "yes",
+        "man_made": "storage_tank",
+        "source": "bing"
+      },
+      "distanceAlongTrail": 51.69204215570561,
+      "distanceFromTrail": 0.015110882651103
+    },
+    {
+      "id": 884007936,
+      "type": "way",
+      "category": "camping",
+      "lat": -42.0125352,
+      "lon": 146.1017339,
+      "name": "Narcissus Hut",
+      "tags": {
+        "building": "yes",
+        "capacity": "18",
+        "name": "Narcissus Hut",
+        "source": "Maxar;survey",
+        "tourism": "wilderness_hut",
+        "wikidata": "Q6965656"
+      },
+      "distanceAlongTrail": 61.74983443995026,
+      "distanceFromTrail": 0.0030578163536744882
+    },
+    {
+      "id": 647751806,
+      "type": "node",
+      "category": "camping",
+      "lat": -42.0127483,
+      "lon": 146.1020477,
+      "name": "Narcissus Hut Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Narcissus Hut Campsite",
+        "shower": "no",
+        "source": "survey",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.parks.tas.gov.au/file.aspx?id=36845"
+      },
+      "distanceAlongTrail": 61.78024908085329,
+      "distanceFromTrail": 0.008792131690003393
+    },
+    {
+      "id": 647729865,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9585339,
+      "lon": 146.0634783,
+      "name": "Pine Valley Hut",
+      "tags": {
+        "capacity": "24",
+        "name": "Pine Valley Hut",
+        "source": "gps",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 62.317097946539256,
+      "distanceFromTrail": 0.006814686546371318
+    },
+    {
+      "id": 7036902837,
+      "type": "node",
+      "category": "camping",
+      "lat": -41.9585148,
+      "lon": 146.0633578,
+      "name": "Pine Valley Hut Tent Platforms",
+      "tags": {
+        "backcountry": "yes",
+        "capacity": "6",
+        "caravans": "no",
+        "name": "Pine Valley Hut Tent Platforms",
+        "operator": "Parks and Wildlife Service",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 62.32704611129023,
+      "distanceFromTrail": 0.009010878590403497
+    },
+    {
+      "id": 6753052841,
+      "type": "node",
+      "category": "camping",
+      "lat": -42.0433993,
+      "lon": 146.1379039,
+      "name": "Echo Point Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "fee": "no",
+        "name": "Echo Point Campsite",
+        "shower": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 68.18042227117171,
+      "distanceFromTrail": 0.0004450489692163258
+    },
+    {
+      "id": 647776155,
+      "type": "node",
+      "category": "camping",
+      "lat": -42.0434411,
+      "lon": 146.1380112,
+      "name": "Echo Point Hut",
+      "tags": {
+        "capacity": "8",
+        "name": "Echo Point Hut",
+        "source": "gps",
+        "tourism": "wilderness_hut"
+      },
+      "distanceAlongTrail": 68.1849922829655,
+      "distanceFromTrail": 0.0074386220361449575
+    },
+    {
+      "id": 1260944022,
+      "type": "node",
+      "category": "camping",
+      "lat": -42.1143392,
+      "lon": 146.1683276,
+      "name": "Fergy's Paddock Camp Site",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "name": "Fergy's Paddock Camp Site",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 78.16439284324478,
+      "distanceFromTrail": 0.09717886708230353
+    },
+    {
+      "id": 14188386772,
+      "type": "node",
+      "category": "water",
+      "lat": -42.1161672,
+      "lon": 146.1744002,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "covered": "yes",
+        "dog": "no",
+        "fee": "no"
+      },
+      "distanceAlongTrail": 78.62764248176514,
+      "distanceFromTrail": 0.16069290604823852
+    },
+    {
+      "id": 8639825004,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -42.1159657,
+      "lon": 146.1743381,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant"
+      },
+      "distanceAlongTrail": 78.62764248176514,
+      "distanceFromTrail": 0.16951757940934278
+    },
+    {
+      "id": 931963744,
+      "type": "way",
+      "category": "camping",
+      "lat": -42.1152933,
+      "lon": 146.177436,
+      "name": "Lake St Clair Lodge",
+      "tags": {
+        "access": "customers",
+        "cabins": "yes",
+        "camp_site": "serviced",
+        "caravans": "yes",
+        "fee": "yes",
+        "name": "Lake St Clair Lodge",
+        "nudism": "no",
+        "sanitary_dump_station": "yes",
+        "shower": "yes",
+        "static_caravans": "yes",
+        "swimming_pool": "no",
+        "tents": "yes",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 78.62764248176514,
+      "distanceFromTrail": 0.42760335387591764
+    }
+  ]
+}

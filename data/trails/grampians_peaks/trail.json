@@ -1,0 +1,57 @@
+{
+  "id": "grampians_peaks",
+  "name": "Grampians Peaks Trail",
+  "shortName": "GPT",
+  "region": "Grampians (Gariwerd) National Park (VIC)",
+  "lengthKm": 157.4,
+  "gpxFile": "Grampians_Peaks_Trail.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "The length of Gariwerd from Mount Zero in the north to Dunkeld in the south, through Halls Gap and over the Major Mitchell Plateau, with hike-in campgrounds along the way.",
+  "dataSource": {
+    "text": "Route and waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.openstreetmap.org/relation/11370594",
+    "linkText": "OpenStreetMap route relation"
+  },
+  "direction": {
+    "default": "Southbound",
+    "reversed": "Northbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Mount Zero",
+      "lat": -36.89,
+      "lon": 142.37
+    },
+    {
+      "name": "Halls Gap",
+      "lat": -37.14,
+      "lon": 142.52
+    },
+    {
+      "name": "Major Mitchell Plateau",
+      "lat": -37.38,
+      "lon": 142.43
+    },
+    {
+      "name": "Dunkeld",
+      "lat": -37.65,
+      "lon": 142.34
+    }
+  ],
+  "climateFile": "climate.json"
+}

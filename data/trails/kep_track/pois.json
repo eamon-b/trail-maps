@@ -1,0 +1,4403 @@
+{
+  "source": "OpenStreetMap",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetchedAt": "2026-10-01T04:57:41.303Z",
+  "searchRadiusKm": 2,
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "rejected": [],
+  "pois": [
+    {
+      "id": 3928119557,
+      "type": "node",
+      "category": "water",
+      "lat": -31.9543969,
+      "lon": 116.1663521,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.28539374487447833
+    },
+    {
+      "id": 425420852,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9522235,
+      "lon": 116.1670822,
+      "name": "Mundaring Weir Hotel",
+      "tags": {
+        "addr:housenumber": "Lot 502",
+        "addr:street": "Hall Road",
+        "amenity": "pub",
+        "name": "Mundaring Weir Hotel",
+        "opening_hours": "Mo-Fr 08:00-17:30; Sa 08:00-21:30; Su 08:00-18:30",
+        "phone": "+61 8 9295 1106",
+        "website": "https://mundaringweirhotel.com.au/",
+        "wikidata": "Q39086540",
+        "wikipedia": "en:Mundaring Weir Hotel"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.050293906255859784
+    },
+    {
+      "id": 551609129,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.9566313,
+      "lon": 116.1624656,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.7013474671851294
+    },
+    {
+      "id": 551609130,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.9567448,
+      "lon": 116.1639735,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.6229155769840683
+    },
+    {
+      "id": 551609131,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.9568742,
+      "lon": 116.1642395,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 0,
+      "distanceFromTrail": 0.6219626350662554
+    },
+    {
+      "id": 2520625493,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.9542348,
+      "lon": 116.1765558,
+      "name": "Perth Hills Centre",
+      "tags": {
+        "caravans": "no",
+        "fee": "yes",
+        "name": "Perth Hills Centre",
+        "shower": "yes",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "website": "https://exploreparks.dbca.wa.gov.au/site/perth-hills-discovery-centre-campground"
+      },
+      "distanceAlongTrail": 0.6631729273014493,
+      "distanceFromTrail": 0.4707344772470804
+    },
+    {
+      "id": 1443909284,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.9501894,
+      "lon": 116.1984579,
+      "name": "Ball Creek Campsite",
+      "tags": {
+        "backcountry": "yes",
+        "caravans": "no",
+        "fee": "no",
+        "name": "Ball Creek Campsite",
+        "operator": "Department of Parks & Wildlife",
+        "shower": "no",
+        "tents": "yes",
+        "toilets": "yes",
+        "tourism": "camp_site",
+        "water": "yes",
+        "website": "https://www.bibbulmuntrack.org.au"
+      },
+      "distanceAlongTrail": 1.3309782126531409,
+      "distanceFromTrail": 1.797797848563985
+    },
+    {
+      "id": 13159029883,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9011464,
+      "lon": 116.1531548,
+      "name": "Great Eastern Hwy Before Coppin Rd",
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy Before Coppin Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14581",
+        "shelter": "yes",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14581"
+      },
+      "distanceAlongTrail": 6.970365360425343,
+      "distanceFromTrail": 1.563763121416325
+    },
+    {
+      "id": 10062798811,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8912459,
+      "lon": 116.1691687,
+      "name": "Stoneville Rd Before Breckler Dr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stoneville Rd Before Breckler Dr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15115",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15115"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 1.5866289432100493
+    },
+    {
+      "id": 10062798812,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9008968,
+      "lon": 116.1682692,
+      "name": "Stoneville Rd After Hartung St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stoneville Rd After Hartung St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "22791",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=22791"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5167623416675626
+    },
+    {
+      "id": 10062798813,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9028833,
+      "lon": 116.1666224,
+      "name": "Craig St After Nichol St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Craig St After Nichol St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15056",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15056"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.3630567128524234
+    },
+    {
+      "id": 10062798814,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9027571,
+      "lon": 116.168099,
+      "name": "Mundaring Weir Rd After Craig St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Mundaring Weir Rd After Craig St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15058",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15058"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.31567816556001693
+    },
+    {
+      "id": 10062798815,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9008529,
+      "lon": 116.1681618,
+      "name": "Stoneville Road after Great Eastern Highway",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stoneville Road after Great Eastern Highway",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "26282",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=26282"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5228695042929538
+    },
+    {
+      "id": 10062798816,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8914181,
+      "lon": 116.1689965,
+      "name": "Stoneville Rd After Hillcrest Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stoneville Rd After Hillcrest Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15108",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15108"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 1.5673067649392036
+    },
+    {
+      "id": 11722083407,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9006413,
+      "lon": 116.152423,
+      "name": "U-Go",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "U-Go",
+        "check_date": "2025-12-25",
+        "name": "U-Go",
+        "self_service": "yes"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 1.6472489915704254
+    },
+    {
+      "id": 13159029855,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9019691,
+      "lon": 116.1659019,
+      "name": "Great Eastern Hwy After Nichol St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Nichol St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14578",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14578"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.48527583914877387
+    },
+    {
+      "id": 13159029880,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.901476,
+      "lon": 116.1566521,
+      "name": "Great Eastern Hwy After Grancey Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Grancey Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14580",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14580"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 1.2404596259519596
+    },
+    {
+      "id": 13159073548,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9008932,
+      "lon": 116.1530555,
+      "name": "Great Eastern Hwy After Coppin Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Coppin Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14566",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14566"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 1.581661092820064
+    },
+    {
+      "id": 13159073574,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9011868,
+      "lon": 116.1590897,
+      "name": "Great Eastern Hwy After Grancey Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Grancey Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14568",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14568"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 1.0437478462313676
+    },
+    {
+      "id": 13159073577,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9016295,
+      "lon": 116.1643428,
+      "name": "Great Eastern Hwy After Mann St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Mann St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14569",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14569"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.6096771458945061
+    },
+    {
+      "id": 1323185265,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9009292,
+      "lon": 116.1672379,
+      "name": "Murphy's Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Murphy's Cafe",
+        "source": "survey"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5333545755537017
+    },
+    {
+      "id": 13404003580,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.9015029,
+      "lon": 116.1674593,
+      "name": "Priceline Pharmacy",
+      "tags": {
+        "amenity": "pharmacy",
+        "brand": "Priceline Pharmacy",
+        "brand:wikidata": "Q7242652",
+        "check_date": "2025-12-25",
+        "healthcare": "pharmacy",
+        "name": "Priceline Pharmacy"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.4662372395169751
+    },
+    {
+      "id": 13404013107,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9025363,
+      "lon": 116.1686229,
+      "name": "Dôme",
+      "tags": {
+        "amenity": "cafe",
+        "brand": "Dôme",
+        "brand:wikidata": "Q5289995",
+        "check_date": "2025-12-25",
+        "cuisine": "coffee_shop",
+        "name": "Dôme",
+        "payment:cash": "yes",
+        "payment:credit_cards": "yes",
+        "payment:debit_cards": "yes",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.33204086363335006
+    },
+    {
+      "id": 13515483488,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.9029129,
+      "lon": 116.1684156,
+      "name": "Mundaring GP Super Clinic",
+      "tags": {
+        "amenity": "doctors",
+        "check_date": "2026-02-01",
+        "healthcare": "doctor",
+        "name": "Mundaring GP Super Clinic",
+        "phone": "+61 8 9295 1144"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.2927411776647847
+    },
+    {
+      "id": 13997951257,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9012472,
+      "lon": 116.1674722,
+      "name": "Breadwinner Bakehouse",
+      "tags": {
+        "check_date": "2026-07-09",
+        "name": "Breadwinner Bakehouse",
+        "shop": "bakery"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.4931650457596485
+    },
+    {
+      "id": 1646919571,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.9036753,
+      "lon": 116.1639068,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "fireplace": "yes",
+        "shelter_type": "picnic_shelter",
+        "source": "survey"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5139076418757149
+    },
+    {
+      "id": 1646919633,
+      "type": "node",
+      "category": "water",
+      "lat": -31.9043017,
+      "lon": 116.1665967,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water",
+        "source": "survey"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.2559238829684748
+    },
+    {
+      "id": 4619794967,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9005494,
+      "lon": 116.1650102,
+      "name": "Aldi",
+      "tags": {
+        "access": "customers",
+        "addr:housenumber": "22-24",
+        "addr:state": "WA",
+        "addr:street": "Hartung Street",
+        "brand": "Aldi",
+        "brand:wikidata": "Q41171672",
+        "brand:wikipedia": "en:Aldi",
+        "check_date:opening_hours": "2023-05-05",
+        "full_name": "ALDI Mundaring",
+        "name": "Aldi",
+        "opening_hours": "Mo-We,Fr 08:30-20:00; Th 08:30-21:00; Sa 08:30-17:00; Su 11:00-17:00",
+        "operator": "Aldi Australia",
+        "shop": "supermarket",
+        "website": "https://store.aldi.com.au/wa/mundaring/22-24-hartung-street",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.663022030820976
+    },
+    {
+      "id": 567374741,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9024472,
+      "lon": 116.1677442,
+      "name": "Hungry Jack's",
+      "tags": {
+        "amenity": "fast_food",
+        "brand": "Hungry Jack's",
+        "brand:wikidata": "Q3036373",
+        "check_date": "2025-12-25",
+        "cuisine": "burger",
+        "drive_through": "yes",
+        "name": "Hungry Jack's",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.35799323923189985
+    },
+    {
+      "id": 567374742,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9016168,
+      "lon": 116.1677938,
+      "name": "KFC",
+      "tags": {
+        "amenity": "fast_food",
+        "brand": "KFC",
+        "check_date": "2025-12-25",
+        "cuisine": "chicken",
+        "name": "KFC"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.44568925776869983
+    },
+    {
+      "id": 567374901,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9018558,
+      "lon": 116.1698967,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.41736207002555675
+    },
+    {
+      "id": 567374922,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9022348,
+      "lon": 116.1646524,
+      "name": null,
+      "tags": {
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5420352072042687
+    },
+    {
+      "id": 567375048,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9006681,
+      "lon": 116.1667639,
+      "name": "Coles",
+      "tags": {
+        "addr:housenumber": "7295",
+        "addr:state": "WA",
+        "addr:street": "Great Eastern Highway",
+        "brand": "Coles",
+        "brand:wikidata": "Q1108172",
+        "brand:wikipedia": "en:Coles Supermarkets",
+        "name": "Coles",
+        "operator": "Coles Group",
+        "operator:wikidata": "Q1339055",
+        "shop": "supermarket",
+        "website": "https://www.coles.com.au/"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5752971229379251
+    },
+    {
+      "id": 567375140,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.9006973,
+      "lon": 116.1657511,
+      "name": null,
+      "tags": {
+        "amenity": "pharmacy",
+        "healthcare": "pharmacy"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.6125479757460365
+    },
+    {
+      "id": 567375240,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9016445,
+      "lon": 116.1654678,
+      "name": null,
+      "tags": {
+        "amenity": "fast_food"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5386399049685263
+    },
+    {
+      "id": 6515731573,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9015863,
+      "lon": 116.1653516,
+      "name": "Little Caesars",
+      "tags": {
+        "addr:housenumber": "7125",
+        "addr:postcode": "6073",
+        "addr:state": "WA",
+        "addr:street": "Great Eastern Highway",
+        "addr:suburb": "Mundaring",
+        "amenity": "fast_food",
+        "brand": "Little Caesars",
+        "brand:wikidata": "Q1393809",
+        "cuisine": "pizza",
+        "name": "Little Caesars",
+        "phone": "+61 8 9295 6611",
+        "takeaway": "yes",
+        "website": "https://littlecaesarspizzeria.com.au"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5504316844475969
+    },
+    {
+      "id": 667755410,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.901306,
+      "lon": 116.162554,
+      "name": "Two Sisters and a Chef",
+      "tags": {
+        "addr:housenumber": "6825",
+        "addr:postcode": "6073",
+        "addr:state": "WA",
+        "addr:street": "Great Eastern Highway",
+        "addr:suburb": "Mundaring",
+        "amenity": "restaurant",
+        "name": "Two Sisters and a Chef",
+        "phone": "+61 8 9295 1787"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.7602211032026174
+    },
+    {
+      "id": 9840473186,
+      "type": "node",
+      "category": "water",
+      "lat": -31.9042436,
+      "lon": 116.165765,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "fountain": "bubbler"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.3280436048925883
+    },
+    {
+      "id": 1265944942,
+      "type": "way",
+      "category": "emergency",
+      "lat": -31.9022509,
+      "lon": 116.1667311,
+      "name": "Mundaring Police Station",
+      "tags": {
+        "addr:housenumber": "7250",
+        "addr:postcode": "6073",
+        "addr:state": "WA",
+        "addr:street": "Great Eastern Highway",
+        "addr:suburb": "Mundaring",
+        "amenity": "police",
+        "branch": "Mundaring",
+        "building": "yes",
+        "name": "Mundaring Police Station",
+        "opening_hours": "Mo-Fr 08:00-16:00",
+        "operator": "Western Australia Police Force",
+        "operator:wikidata": "Q7987488"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.41661608973009295
+    },
+    {
+      "id": 1282142126,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.9009759,
+      "lon": 116.1634668,
+      "name": "McDonald's",
+      "tags": {
+        "addr:housenumber": "7",
+        "addr:postcode": "6073",
+        "addr:state": "WA",
+        "addr:street": "Mann Street",
+        "addr:suburb": "Mundaring",
+        "amenity": "fast_food",
+        "brand": "McDonald's",
+        "brand:wikidata": "Q38076",
+        "building": "yes",
+        "cuisine": "burger",
+        "drive_through": "yes",
+        "name": "McDonald's",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.7195684351121323
+    },
+    {
+      "id": 1365106169,
+      "type": "way",
+      "category": "resupply",
+      "lat": -31.9012591,
+      "lon": 116.1643292,
+      "name": "Woolworths",
+      "tags": {
+        "addr:state": "WA",
+        "brand": "Woolworths",
+        "brand:wikidata": "Q3249145",
+        "brand:wikipedia": "en:Woolworths Supermarkets",
+        "building": "yes",
+        "name": "Woolworths",
+        "operator": "Woolworths Group",
+        "operator:wikidata": "Q607272",
+        "shop": "supermarket",
+        "website": "https://www.woolworths.com.au/"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.6403761764088935
+    },
+    {
+      "id": 1499096202,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.900617,
+      "lon": 116.1675492,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.5591880544819063
+    },
+    {
+      "id": 808634724,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.9035243,
+      "lon": 116.1658603,
+      "name": "The Mundaring Hotel",
+      "tags": {
+        "addr:postcode": "6073",
+        "addr:state": "WA",
+        "addr:street": "Jacoby Street",
+        "addr:suburb": "Mundaring",
+        "amenity": "pub",
+        "building": "yes",
+        "name": "The Mundaring Hotel",
+        "toilets": "yes",
+        "wikidata": "Q39055924"
+      },
+      "distanceAlongTrail": 6.976824055709708,
+      "distanceFromTrail": 0.3624132334805654
+    },
+    {
+      "id": 13159029850,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9024017,
+      "lon": 116.1704841,
+      "name": "Great Eastern Hwy Before Hodgson St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy Before Hodgson St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14576",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14576"
+      },
+      "distanceAlongTrail": 6.993376678126294,
+      "distanceFromTrail": 0.37645692695361194
+    },
+    {
+      "id": 13159073613,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9022132,
+      "lon": 116.1706761,
+      "name": "Great Eastern Hwy After Chipper St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Chipper St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14571",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14571"
+      },
+      "distanceAlongTrail": 7.002862716462337,
+      "distanceFromTrail": 0.40249263148428077
+    },
+    {
+      "id": 13159073614,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.902503,
+      "lon": 116.1736963,
+      "name": "Great Eastern Hwy Before Helena St",
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy Before Helena St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14572",
+        "shelter": "yes",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14572"
+      },
+      "distanceAlongTrail": 7.2461189879706325,
+      "distanceFromTrail": 0.4818762198842817
+    },
+    {
+      "id": 13159073642,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9026903,
+      "lon": 116.1735103,
+      "name": "Great Eastern Hwy After Helena St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Helena St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14575",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14575"
+      },
+      "distanceAlongTrail": 7.2461189879706325,
+      "distanceFromTrail": 0.45563734080003415
+    },
+    {
+      "id": 567374642,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.9046903,
+      "lon": 116.1779219,
+      "name": null,
+      "tags": {
+        "amenity": "fire_station"
+      },
+      "distanceAlongTrail": 7.991420095414668,
+      "distanceFromTrail": 0.11933164076204905
+    },
+    {
+      "id": 567374645,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9038961,
+      "lon": 116.1780249,
+      "name": "Red Tails Coffee Shack",
+      "tags": {
+        "addr:housenumber": "4",
+        "addr:postcode": "6073",
+        "addr:state": "WA",
+        "addr:street": "Wandeara Crescent",
+        "addr:suburb": "Mundaring",
+        "amenity": "cafe",
+        "name": "Red Tails Coffee Shack"
+      },
+      "distanceAlongTrail": 8.044435982591514,
+      "distanceFromTrail": 0.18619228739410568
+    },
+    {
+      "id": 13159073638,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9034462,
+      "lon": 116.1779094,
+      "name": "Great Eastern Hwy After Wanderra Cr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy After Wanderra Cr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "22072",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=22072"
+      },
+      "distanceAlongTrail": 8.063091483998226,
+      "distanceFromTrail": 0.233873450290045
+    },
+    {
+      "id": 4422318991,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9043345,
+      "lon": 116.1788112,
+      "name": "Mundaring Little Loads",
+      "tags": {
+        "name": "Mundaring Little Loads",
+        "shop": "outdoor"
+      },
+      "distanceAlongTrail": 8.07919075830341,
+      "distanceFromTrail": 0.10447454582639353
+    },
+    {
+      "id": 13159073615,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9032119,
+      "lon": 116.1780064,
+      "name": "Great Eastern Hwy Before Wanderra Cr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy Before Wanderra Cr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "22071",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=22071"
+      },
+      "distanceAlongTrail": 8.137762230850614,
+      "distanceFromTrail": 0.2458099180144092
+    },
+    {
+      "id": 13159073617,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9037637,
+      "lon": 116.1806126,
+      "name": "Railway Tce After Great Eastern Hwy",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Great Eastern Hwy",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15063",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15063"
+      },
+      "distanceAlongTrail": 8.370870486767874,
+      "distanceFromTrail": 0.04037219156194716
+    },
+    {
+      "id": 13159073636,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9036374,
+      "lon": 116.1809481,
+      "name": "Railway Tce Before Eagle St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce Before Eagle St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15074",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15074"
+      },
+      "distanceAlongTrail": 8.403200045701759,
+      "distanceFromTrail": 0.03228979182524819
+    },
+    {
+      "id": 13159073635,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9017616,
+      "lon": 116.1858441,
+      "name": "Railway Tce After Lemmey Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Lemmey Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15073",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15073"
+      },
+      "distanceAlongTrail": 8.90745165288753,
+      "distanceFromTrail": 0.03898375859356916
+    },
+    {
+      "id": 13159073618,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9016119,
+      "lon": 116.1862944,
+      "name": "Railway Tce Before Lemmey Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce Before Lemmey Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15064",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15064"
+      },
+      "distanceAlongTrail": 8.954374360802383,
+      "distanceFromTrail": 0.0486328850486501
+    },
+    {
+      "id": 13159073619,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9012749,
+      "lon": 116.1893629,
+      "name": "Railway Tce Before Lee Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce Before Lee Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15065",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15065"
+      },
+      "distanceAlongTrail": 9.243679562068884,
+      "distanceFromTrail": 0.044029793774801734
+    },
+    {
+      "id": 13159073634,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9013614,
+      "lon": 116.1894454,
+      "name": "Railway Tce After Lee Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Lee Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15072",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15072"
+      },
+      "distanceAlongTrail": 9.250052631418148,
+      "distanceFromTrail": 0.03342085265221115
+    },
+    {
+      "id": 13159073633,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9011842,
+      "lon": 116.1925316,
+      "name": "Railway Tce After Forrest St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Forrest St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15071",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15071"
+      },
+      "distanceAlongTrail": 9.533600061610397,
+      "distanceFromTrail": 0.03487402937144629
+    },
+    {
+      "id": 13159073624,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.901199,
+      "lon": 116.193177,
+      "name": "Railway Tce After Lee Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Lee Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15066",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15066"
+      },
+      "distanceAlongTrail": 9.591474079568192,
+      "distanceFromTrail": 0.04262949546894709
+    },
+    {
+      "id": 13159073632,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9019854,
+      "lon": 116.1974127,
+      "name": "Railway Tce After Sexton St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Sexton St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15070",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15070"
+      },
+      "distanceAlongTrail": 10.000690867006531,
+      "distanceFromTrail": 0.03336984180473142
+    },
+    {
+      "id": 698595527,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.9035622,
+      "lon": 116.1970558,
+      "name": "Sawyers Valley Volunteer Bush Fire Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "designation": "Bush fire Brigade Fire Station",
+        "ele": "310",
+        "name": "Sawyers Valley Volunteer Bush Fire Brigade",
+        "website": "http://sawyersvalley.bfb.asn.au/"
+      },
+      "distanceAlongTrail": 10.002290902909467,
+      "distanceFromTrail": 0.14516269267600004
+    },
+    {
+      "id": 13159073628,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9018986,
+      "lon": 116.1977075,
+      "name": "Railway Tce After Forrest St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Forrest St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15067",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15067"
+      },
+      "distanceAlongTrail": 10.025167643403107,
+      "distanceFromTrail": 0.0483573724853248
+    },
+    {
+      "id": 13159073629,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9023118,
+      "lon": 116.1998858,
+      "name": "Railway Tce After Sexton St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Sexton St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15068",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15068"
+      },
+      "distanceAlongTrail": 10.23693824086565,
+      "distanceFromTrail": 0.04341757683034183
+    },
+    {
+      "id": 13159073631,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9024882,
+      "lon": 116.2001119,
+      "name": "Railway Tce After Barlow St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Railway Tce After Barlow St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15069",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15069"
+      },
+      "distanceAlongTrail": 10.261792877452736,
+      "distanceFromTrail": 0.028500136844284433
+    },
+    {
+      "id": 10062805629,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9036002,
+      "lon": 116.2037685,
+      "name": "Great Eastern Hwy Before Leather Grn",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy Before Leather Grn",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14573",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14573"
+      },
+      "distanceAlongTrail": 10.610394471265149,
+      "distanceFromTrail": 0.053428507399900495
+    },
+    {
+      "id": 10062805630,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9021057,
+      "lon": 116.2040394,
+      "name": "Sawyers Road after Great Eastern Highway",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road after Great Eastern Highway",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 10.667854711469376,
+      "distanceFromTrail": 0.09713477297673954
+    },
+    {
+      "id": 10062805627,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9030232,
+      "lon": 116.2043527,
+      "name": "Sawyers Road before Great Eastern Highway",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road before Great Eastern Highway",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15148",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15148"
+      },
+      "distanceAlongTrail": 10.674506761225796,
+      "distanceFromTrail": 0.008766344914753236
+    },
+    {
+      "id": 567366840,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9037795,
+      "lon": 116.2047869,
+      "name": null,
+      "tags": {
+        "amenity": "pub"
+      },
+      "distanceAlongTrail": 10.695449505748911,
+      "distanceFromTrail": 0.09946297842403198
+    },
+    {
+      "id": 567368770,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.9037722,
+      "lon": 116.2049671,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant"
+      },
+      "distanceAlongTrail": 10.70892643629133,
+      "distanceFromTrail": 0.10225194309066021
+    },
+    {
+      "id": 6634470775,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9032849,
+      "lon": 116.2049273,
+      "name": "BP",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "BP",
+        "brand:wikidata": "Q152057",
+        "name": "BP",
+        "operator": "BP"
+      },
+      "distanceAlongTrail": 10.711541327410597,
+      "distanceFromTrail": 0.04987844300855196
+    },
+    {
+      "id": 777235938,
+      "type": "way",
+      "category": "resupply",
+      "lat": -31.9031551,
+      "lon": 116.2052303,
+      "name": "BP Sawyers Valley",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "BP",
+        "brand:wikidata": "Q152057",
+        "building": "commercial",
+        "name": "BP Sawyers Valley",
+        "shop": "gas"
+      },
+      "distanceAlongTrail": 10.741571419246393,
+      "distanceFromTrail": 0.048655325228644325
+    },
+    {
+      "id": 665934833,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9035688,
+      "lon": 116.2057633,
+      "name": "Great Eastern Hwy Before Sawyers Rd",
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Hwy Before Sawyers Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "14574",
+        "shelter": "yes",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=14574"
+      },
+      "distanceAlongTrail": 10.759482659056136,
+      "distanceFromTrail": 0.11293881727371899
+    },
+    {
+      "id": 652391220,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.9031104,
+      "lon": 116.2071343,
+      "name": null,
+      "tags": {
+        "amenity": "fuel",
+        "operator": "Peak Petroleum"
+      },
+      "distanceAlongTrail": 10.862368009048485,
+      "distanceFromTrail": 0.15045099583453173
+    },
+    {
+      "id": 10062805628,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.9032393,
+      "lon": 116.2073019,
+      "name": "Great Eastern Highway - Sawyers Valley",
+      "tags": {
+        "bench": "no",
+        "bin": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Great Eastern Highway - Sawyers Valley",
+        "network": "Transwa",
+        "public_transport": "platform",
+        "ref": "95268",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 10.863996090855712,
+      "distanceFromTrail": 0.1717368494664524
+    },
+    {
+      "id": 10062805631,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8977085,
+      "lon": 116.2041093,
+      "name": "Sawyers Road before Old Sawyers Road",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road before Old Sawyers Road",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15140",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15140"
+      },
+      "distanceAlongTrail": 11.168533215096184,
+      "distanceFromTrail": 0.4324184961200665
+    },
+    {
+      "id": 10062805626,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8966022,
+      "lon": 116.204512,
+      "name": "Sawyers Road before Old Sawyers Road",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road before Old Sawyers Road",
+        "network": "Trsnaperth",
+        "public_transport": "platform",
+        "ref": "15147"
+      },
+      "distanceAlongTrail": 11.297052042321491,
+      "distanceFromTrail": 0.47003197698117255
+    },
+    {
+      "id": 10062805625,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8904966,
+      "lon": 116.2052961,
+      "name": "Sawyers Road after Railway Terrace",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road after Railway Terrace",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15146",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15146"
+      },
+      "distanceAlongTrail": 12.488873198335297,
+      "distanceFromTrail": 0.17264579170633298
+    },
+    {
+      "id": 10062805632,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8904496,
+      "lon": 116.2051866,
+      "name": "Sawyers Road before Railway Terrace",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road before Railway Terrace",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15141",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15141"
+      },
+      "distanceAlongTrail": 12.488873198335297,
+      "distanceFromTrail": 0.17874315727500195
+    },
+    {
+      "id": 1646919520,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8808288,
+      "lon": 116.199046,
+      "name": "Sexton Street after Keane Street",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sexton Street after Keane Street",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15167",
+        "shelter": "no",
+        "source": "survey",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15167"
+      },
+      "distanceAlongTrail": 13.207630058789112,
+      "distanceFromTrail": 0.8845221969607254
+    },
+    {
+      "id": 1646919507,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8805187,
+      "lon": 116.1989301,
+      "name": "Sexton Street after Riley Road",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sexton Street after Riley Road",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15160",
+        "shelter": "no",
+        "source": "survey",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15160"
+      },
+      "distanceAlongTrail": 13.266058774831537,
+      "distanceFromTrail": 0.9061237244357185
+    },
+    {
+      "id": 10062805635,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8792327,
+      "lon": 116.1988043,
+      "name": "Stretch Rd Before Binder St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stretch Rd Before Binder St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15157",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15157"
+      },
+      "distanceAlongTrail": 13.39959141715997,
+      "distanceFromTrail": 0.9606748647680231
+    },
+    {
+      "id": 10062805634,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8791784,
+      "lon": 116.198723,
+      "name": "Stretch Rd After Binder St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stretch Rd After Binder St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15158",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15158"
+      },
+      "distanceAlongTrail": 13.403003612954633,
+      "distanceFromTrail": 0.9698263519201967
+    },
+    {
+      "id": 10062798806,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8791206,
+      "lon": 116.2070723,
+      "name": "Keane St Before Marquis St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St Before Marquis St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15165",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15165"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 0.22055862537389148
+    },
+    {
+      "id": 10062798807,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8790191,
+      "lon": 116.2034186,
+      "name": "Keane St After Ilich Ct",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After Ilich Ct",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15166",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15166"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 0.5517739311691787
+    },
+    {
+      "id": 10062805620,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8789091,
+      "lon": 116.2033747,
+      "name": "Keane St After Alice Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After Alice Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15161",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15161"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 0.558487532147486
+    },
+    {
+      "id": 10062805621,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8788847,
+      "lon": 116.2061099,
+      "name": "Keane St After Ilich Ct",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After Ilich Ct",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15162",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15162"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 0.31370696499044753
+    },
+    {
+      "id": 559381440,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8727495,
+      "lon": 116.1948134,
+      "name": "Stretch Rd After Traylen Rd",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stretch Rd After Traylen Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15159",
+        "shelter": "no",
+        "source": "survey",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15159"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 1.5774023061670361
+    },
+    {
+      "id": 559381454,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8728461,
+      "lon": 116.1949562,
+      "name": "Stretch Rd After Bedford St",
+      "tags": {
+        "bench": "no",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Stretch Rd After Bedford St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15156",
+        "shelter": "no",
+        "source": "survey",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15156"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 1.5603125477784927
+    },
+    {
+      "id": 642829920,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.8797859,
+      "lon": 116.2080873,
+      "name": "Mount Helena Tavern",
+      "tags": {
+        "amenity": "pub",
+        "building": "yes",
+        "name": "Mount Helena Tavern",
+        "wikidata": "Q39055838"
+      },
+      "distanceAlongTrail": 13.610908051617322,
+      "distanceFromTrail": 0.10319777599694192
+    },
+    {
+      "id": 567363532,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.8782903,
+      "lon": 116.2092633,
+      "name": null,
+      "tags": {
+        "fixme": "From memory, this is now a fuel station with convenience store. Long wing of the building is a hardware store. Need to update based on ground survey.",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 13.619653236717046,
+      "distanceFromTrail": 0.19618835417130304
+    },
+    {
+      "id": 10062805622,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8794155,
+      "lon": 116.2093471,
+      "name": "Keane St After McVicar Pl",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After McVicar Pl",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15163",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15163"
+      },
+      "distanceAlongTrail": 13.630244735219652,
+      "distanceFromTrail": 0.07122967351781259
+    },
+    {
+      "id": 10062798805,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8795473,
+      "lon": 116.2093833,
+      "name": "Keane St After Sawyers Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After Sawyers Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15164",
+        "shelter": "yes",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15164"
+      },
+      "distanceAlongTrail": 13.6338246365721,
+      "distanceFromTrail": 0.056612871582014244
+    },
+    {
+      "id": 10062798804,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8784526,
+      "lon": 116.2103985,
+      "name": "Sawyers Rd After Keane St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Rd After Keane St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15143",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15143"
+      },
+      "distanceAlongTrail": 13.670430881943654,
+      "distanceFromTrail": 0.1917928593364287
+    },
+    {
+      "id": 10062805623,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8784793,
+      "lon": 116.2104801,
+      "name": "Sawyers Rd After Keane St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Rd After Keane St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15144",
+        "shelter": "yes",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15144"
+      },
+      "distanceAlongTrail": 13.670430881943654,
+      "distanceFromTrail": 0.19157408996840175
+    },
+    {
+      "id": 10062805624,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8814885,
+      "lon": 116.2094005,
+      "name": "Sawyers Road after Johnston St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road after Johnston St",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 13.814851280678226,
+      "distanceFromTrail": 0.037796147703818096
+    },
+    {
+      "id": 10062805633,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.881573,
+      "lon": 116.2092422,
+      "name": "Sawyers Road before Johnston Street",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Sawyers Road before Johnston Street",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15142",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15142"
+      },
+      "distanceAlongTrail": 13.814851280678226,
+      "distanceFromTrail": 0.05512423225294065
+    },
+    {
+      "id": 567362639,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.8752631,
+      "lon": 116.2148119,
+      "name": "Mount Helena VBFB",
+      "tags": {
+        "amenity": "fire_station",
+        "name": "Mount Helena VBFB"
+      },
+      "distanceAlongTrail": 14.615207193021288,
+      "distanceFromTrail": 0.35988614821296966
+    },
+    {
+      "id": 13161993067,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8767174,
+      "lon": 116.2159031,
+      "name": "Keane St After Blair Pl",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After Blair Pl",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15188",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15188"
+      },
+      "distanceAlongTrail": 14.617718823268024,
+      "distanceFromTrail": 0.1681538394876883
+    },
+    {
+      "id": 13161800361,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8765759,
+      "lon": 116.2159453,
+      "name": "Keane St After Chidlow St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Keane St After Chidlow St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15187",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15187"
+      },
+      "distanceAlongTrail": 14.629387323835864,
+      "distanceFromTrail": 0.17943559422830063
+    },
+    {
+      "id": 567363519,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.8761086,
+      "lon": 116.2171722,
+      "name": "Mount Helena Deli",
+      "tags": {
+        "addr:housenumber": "1825",
+        "addr:street": "Keane Street East",
+        "amenity": "fast_food",
+        "contact:facebook": "https://www.facebook.com/MtHelenaDeli/",
+        "drive_through": "no",
+        "name": "Mount Helena Deli",
+        "opening_hours": "Sa-Th 06:30-20:30; Fr 06:30-21:00",
+        "phone": "+61 8 9572 1164",
+        "website": "https://www.mthelenadeli.com.au/"
+      },
+      "distanceAlongTrail": 14.753083923613628,
+      "distanceFromTrail": 0.16416690418568572
+    },
+    {
+      "id": 13161993064,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8770367,
+      "lon": 116.2196352,
+      "name": "Elliott Rd Before Lion St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Lion St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15203",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15203"
+      },
+      "distanceAlongTrail": 14.898337767959323,
+      "distanceFromTrail": 0.045801172263416796
+    },
+    {
+      "id": 13161800366,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8768128,
+      "lon": 116.2197416,
+      "name": "Elliott Rd After Lion St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Lion St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15190",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15190"
+      },
+      "distanceAlongTrail": 14.92010899950522,
+      "distanceFromTrail": 0.0300914842520375
+    },
+    {
+      "id": 1183679293,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8740689,
+      "lon": 116.2207394,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 15.134640306843563,
+      "distanceFromTrail": 0.18986520497197362
+    },
+    {
+      "id": 13161993063,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8756938,
+      "lon": 116.2225201,
+      "name": "Elliott Rd After Bernard St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Bernard St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15202",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15202"
+      },
+      "distanceAlongTrail": 15.220374236066904,
+      "distanceFromTrail": 0.036732634782950926
+    },
+    {
+      "id": 13161800367,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8755293,
+      "lon": 116.2227617,
+      "name": "Elliott Rd Before Bernard St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Bernard St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "23002",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=23002"
+      },
+      "distanceAlongTrail": 15.247664270843078,
+      "distanceFromTrail": 0.026230602782170164
+    },
+    {
+      "id": 13161800368,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8746939,
+      "lon": 116.2260712,
+      "name": "Elliott Rd After Bernard St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Bernard St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "23182",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=23182"
+      },
+      "distanceAlongTrail": 15.574402268549472,
+      "distanceFromTrail": 0.023900564294402286
+    },
+    {
+      "id": 13161993061,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.874766,
+      "lon": 116.2261697,
+      "name": "Elliott Rd Before Bernard St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Bernard St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15201",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15201"
+      },
+      "distanceAlongTrail": 15.581111530250055,
+      "distanceFromTrail": 0.034185057412235605
+    },
+    {
+      "id": 13161993059,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8738184,
+      "lon": 116.230026,
+      "name": "Elliott Rd After Wilkins Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Wilkins Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15200",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15200"
+      },
+      "distanceAlongTrail": 15.959932333612292,
+      "distanceFromTrail": 0.03261006857682345
+    },
+    {
+      "id": 13161800369,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.873593,
+      "lon": 116.2304782,
+      "name": "Elliott Rd After Wilkins Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Wilkins Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15191",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15191"
+      },
+      "distanceAlongTrail": 16.008013749887347,
+      "distanceFromTrail": 0.020790788035930378
+    },
+    {
+      "id": 13161800370,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8724085,
+      "lon": 116.2352214,
+      "name": "Elliott Rd After Silia Rtt",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Silia Rtt",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "26358",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=26358"
+      },
+      "distanceAlongTrail": 16.47469481706797,
+      "distanceFromTrail": 0.021180848037737142
+    },
+    {
+      "id": 13161993056,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.872504,
+      "lon": 116.2352598,
+      "name": "Elliott Rd Before Silia Rtt",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Silia Rtt",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "26357",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=26357"
+      },
+      "distanceAlongTrail": 16.475012024561927,
+      "distanceFromTrail": 0.03239750978232165
+    },
+    {
+      "id": 13161993053,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8701796,
+      "lon": 116.2433249,
+      "name": "Elliott Rd After Sime Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Sime Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15199",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15199"
+      },
+      "distanceAlongTrail": 17.277965587822784,
+      "distanceFromTrail": 0.035951559480142364
+    },
+    {
+      "id": 13161800371,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8699769,
+      "lon": 116.243584,
+      "name": "Elliott Rd Before Sime Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Sime Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15192",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15192"
+      },
+      "distanceAlongTrail": 17.308719908891252,
+      "distanceFromTrail": 0.02326916177893274
+    },
+    {
+      "id": 13161993051,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8679929,
+      "lon": 116.2507814,
+      "name": "Elliott Rd After Mathieson Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Mathieson Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15198",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15198"
+      },
+      "distanceAlongTrail": 18.023607169325917,
+      "distanceFromTrail": 0.03891194663559682
+    },
+    {
+      "id": 13161800372,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8678801,
+      "lon": 116.2507442,
+      "name": "Elliott Rd Before Mathieson Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Mathieson Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15193",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15193"
+      },
+      "distanceAlongTrail": 18.02443697849693,
+      "distanceFromTrail": 0.02591295770128313
+    },
+    {
+      "id": 13161993050,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8664585,
+      "lon": 116.255996,
+      "name": "Elliott Rd After Thomas St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd After Thomas St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15196",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15196"
+      },
+      "distanceAlongTrail": 18.54610220209512,
+      "distanceFromTrail": 0.0362370008826106
+    },
+    {
+      "id": 13161800373,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8663188,
+      "lon": 116.2559513,
+      "name": "Elliott Rd Before Thomas St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Elliott Rd Before Thomas St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15195",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15195"
+      },
+      "distanceAlongTrail": 18.546693255792665,
+      "distanceFromTrail": 0.02015058456467256
+    },
+    {
+      "id": 10763044425,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.8512478,
+      "lon": 116.2509305,
+      "name": "picnic shelter",
+      "tags": {
+        "amenity": "shelter",
+        "bench": "yes",
+        "bin": "yes",
+        "colour": "brown",
+        "covered": "yes",
+        "leisure": "picnic_table",
+        "material": "wood",
+        "name": "picnic shelter",
+        "shelter_type": "picnic_shelter",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 18.69674800004307,
+      "distanceFromTrail": 1.7124174059833108
+    },
+    {
+      "id": 10762926975,
+      "type": "node",
+      "category": "water",
+      "lat": -31.8509244,
+      "lon": 116.2511156,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "no",
+        "fee": "no",
+        "wheelchair": "limited"
+      },
+      "distanceAlongTrail": 18.704873202671607,
+      "distanceFromTrail": 1.7400708047069466
+    },
+    {
+      "id": 10762926973,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.8506988,
+      "lon": 116.2512051,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bench": "no",
+        "shelter_type": "gazebo"
+      },
+      "distanceAlongTrail": 18.721416834002277,
+      "distanceFromTrail": 1.7607325301286416
+    },
+    {
+      "id": 10762923438,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.8526443,
+      "lon": 116.2544434,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.4670597039508886
+    },
+    {
+      "id": 10762923439,
+      "type": "node",
+      "category": "water",
+      "lat": -31.8524026,
+      "lon": 116.2539386,
+      "name": null,
+      "tags": {
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.503830015565939
+    },
+    {
+      "id": 10762930608,
+      "type": "node",
+      "category": "water",
+      "lat": -31.8515954,
+      "lon": 116.2532516,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "no",
+        "fee": "no",
+        "survey:date": "2023-03-26",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.6068599953356504
+    },
+    {
+      "id": 10762934415,
+      "type": "node",
+      "category": "water",
+      "lat": -31.85058,
+      "lon": 116.2521838,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "drinking_water": "yes",
+        "man_made": "water_tap"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.7434402690601898
+    },
+    {
+      "id": 5170796423,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.8508203,
+      "lon": 116.2543811,
+      "name": "Lake Lechenaultia",
+      "tags": {
+        "addr:street": "Leschenaultia Place",
+        "name": "Lake Lechenaultia",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.6670627278785517
+    },
+    {
+      "id": 1175551806,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8514612,
+      "lon": 116.2533116,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bin": "yes",
+        "shelter_type": "picnic_shelter",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.619822239532884
+    },
+    {
+      "id": 1175551807,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8511644,
+      "lon": 116.253474,
+      "name": "picnic shelter",
+      "tags": {
+        "amenity": "shelter",
+        "bin": "no",
+        "name": "picnic shelter",
+        "shelter_type": "picnic_shelter",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.6479988770102414
+    },
+    {
+      "id": 1175551809,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8508646,
+      "lon": 116.2531443,
+      "name": "picnic shelter",
+      "tags": {
+        "amenity": "shelter",
+        "bin": "yes",
+        "name": "picnic shelter",
+        "shelter_type": "picnic_shelter",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.6879997855445983
+    },
+    {
+      "id": 1175551819,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8511514,
+      "lon": 116.2528335,
+      "name": "picnic shelter",
+      "tags": {
+        "amenity": "shelter",
+        "bin": "no",
+        "name": "picnic shelter",
+        "shelter_type": "picnic_shelter",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.6649944290428458
+    },
+    {
+      "id": 1175551820,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8521546,
+      "lon": 116.2538615,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.5323455686659138
+    },
+    {
+      "id": 1175551826,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8519652,
+      "lon": 116.2536611,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.5573240044819519
+    },
+    {
+      "id": 526420021,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8516213,
+      "lon": 116.25335,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.601683191837487
+    },
+    {
+      "id": 719481809,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.8512468,
+      "lon": 116.2537797,
+      "name": "Reflections Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "building": "yes",
+        "name": "Reflections Cafe"
+      },
+      "distanceAlongTrail": 18.728821587150183,
+      "distanceFromTrail": 1.6323565641039959
+    },
+    {
+      "id": 13161993049,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8644365,
+      "lon": 116.2609355,
+      "name": "Thomas St After Pennell St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Thomas St After Pennell St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15208",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15208"
+      },
+      "distanceAlongTrail": 19.068048380434423,
+      "distanceFromTrail": 0.039555746062637225
+    },
+    {
+      "id": 13161800374,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8642898,
+      "lon": 116.2609167,
+      "name": "Thomas St After Reservoir St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Thomas St After Reservoir St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15204",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15204"
+      },
+      "distanceAlongTrail": 19.071860691188732,
+      "distanceFromTrail": 0.05551535787961192
+    },
+    {
+      "id": 13161800378,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.863014,
+      "lon": 116.2652014,
+      "name": "Thomas St After Pennell St",
+      "tags": {
+        "bench": "yes",
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Thomas St After Pennell St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15205",
+        "shelter": "no",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15205"
+      },
+      "distanceAlongTrail": 19.499063298466048,
+      "distanceFromTrail": 0.05524478743780727
+    },
+    {
+      "id": 13161876610,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8628294,
+      "lon": 116.2663965,
+      "name": "Thomas St After Old Northam Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Thomas St After Old Northam Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15206",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15206"
+      },
+      "distanceAlongTrail": 19.614964127345665,
+      "distanceFromTrail": 0.03538713683569802
+    },
+    {
+      "id": 1538963764,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8631622,
+      "lon": 116.2676072,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 19.7090188506583,
+      "distanceFromTrail": 0.03982638128687304
+    },
+    {
+      "id": 1538963765,
+      "type": "way",
+      "category": "camping",
+      "lat": -31.8630204,
+      "lon": 116.2675904,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 19.71293086436558,
+      "distanceFromTrail": 0.024469763738523935
+    },
+    {
+      "id": 13161800380,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8619147,
+      "lon": 116.267218,
+      "name": "Memorial Av After Thomas St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Memorial Av After Thomas St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15209",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15209"
+      },
+      "distanceAlongTrail": 19.720608839523123,
+      "distanceFromTrail": 0.10309616425886327
+    },
+    {
+      "id": 10762941633,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.8620897,
+      "lon": 116.2676782,
+      "name": "Cafe Chidlow",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2023-03-26",
+        "name": "Cafe Chidlow",
+        "opening_hours": "Mo 06:30-16:30; Tu-Fr 06:30-14:00; Sa-Su 08:00-14:00",
+        "payment:mastercard": "yes",
+        "payment:visa": "yes",
+        "website": "https://cafechidlow.com.au",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 19.736995415642244,
+      "distanceFromTrail": 0.07369253738103927
+    },
+    {
+      "id": 10762943971,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.86217,
+      "lon": 116.2677473,
+      "name": "Chidlow Medical Centre",
+      "tags": {
+        "amenity": "clinic",
+        "check_date": "2023-03-26",
+        "healthcare": "clinic",
+        "name": "Chidlow Medical Centre",
+        "website": "https://chidlowmedical.com.au"
+      },
+      "distanceAlongTrail": 19.741500806876697,
+      "distanceFromTrail": 0.06433585966167672
+    },
+    {
+      "id": 808284586,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.8622675,
+      "lon": 116.2680134,
+      "name": "Chidlow Tavern",
+      "tags": {
+        "addr:housenumber": "4",
+        "addr:postcode": "6556",
+        "addr:state": "WA",
+        "addr:street": "Thomas Street",
+        "addr:suburb": "Chidlow",
+        "amenity": "pub",
+        "building": "yes",
+        "name": "Chidlow Tavern"
+      },
+      "distanceAlongTrail": 19.781677771944704,
+      "distanceFromTrail": 0.04901964111677691
+    },
+    {
+      "id": 13161800381,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8612146,
+      "lon": 116.2691133,
+      "name": "Willcox St After Lilydale Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Willcox St After Lilydale Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15210",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15210"
+      },
+      "distanceAlongTrail": 19.854859730595123,
+      "distanceFromTrail": 0.15228394738474552
+    },
+    {
+      "id": 13161876609,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8607162,
+      "lon": 116.2702271,
+      "name": "Old Northam Rd After Tottenham St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Tottenham St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15219",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15219"
+      },
+      "distanceAlongTrail": 19.93439968675465,
+      "distanceFromTrail": 0.21882750468748116
+    },
+    {
+      "id": 13161800382,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.858532,
+      "lon": 116.2712817,
+      "name": "Old Northam Rd After Clifton St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Clifton St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15211",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15211"
+      },
+      "distanceAlongTrail": 19.956574123502598,
+      "distanceFromTrail": 0.476945859854585
+    },
+    {
+      "id": 13161876608,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8577734,
+      "lon": 116.2719589,
+      "name": "Old Northam Rd Before Northcote St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd Before Northcote St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15218",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15218"
+      },
+      "distanceAlongTrail": 19.956574123502598,
+      "distanceFromTrail": 0.5759979478998943
+    },
+    {
+      "id": 13161876607,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8528623,
+      "lon": 116.2830791,
+      "name": "Old Northam Rd After Thronwick Cr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Thronwick Cr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "23017",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=23017"
+      },
+      "distanceAlongTrail": 20.494105638722075,
+      "distanceFromTrail": 1.4476110197831888
+    },
+    {
+      "id": 13161800383,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.852404,
+      "lon": 116.2854283,
+      "name": "Old Northam Rd After Stone St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Stone St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15212",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15212"
+      },
+      "distanceAlongTrail": 22.29533702714273,
+      "distanceFromTrail": 1.4795235642282414
+    },
+    {
+      "id": 13161800384,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8480649,
+      "lon": 116.2917198,
+      "name": "Old Northam Rd Before Forge Dr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd Before Forge Dr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15213",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15213"
+      },
+      "distanceAlongTrail": 24.467061787661212,
+      "distanceFromTrail": 1.403030025914437
+    },
+    {
+      "id": 13161876606,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8481213,
+      "lon": 116.2918652,
+      "name": "Old Northam Rd After Forge Dr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Forge Dr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15217",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15217"
+      },
+      "distanceAlongTrail": 24.467061787661212,
+      "distanceFromTrail": 1.3879376614204741
+    },
+    {
+      "id": 13161800388,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8454152,
+      "lon": 116.2948626,
+      "name": "Old Northam Rd Before Haigh Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd Before Haigh Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "28776",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=28776"
+      },
+      "distanceAlongTrail": 24.536019357170197,
+      "distanceFromTrail": 1.3102334836195935
+    },
+    {
+      "id": 13161876605,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8453953,
+      "lon": 116.2951675,
+      "name": "Old Northam Rd After Haigh Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Haigh Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "28775",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=28775"
+      },
+      "distanceAlongTrail": 24.55633699342082,
+      "distanceFromTrail": 1.289807317030738
+    },
+    {
+      "id": 13161876604,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8442923,
+      "lon": 116.2999869,
+      "name": "Old Northam Rd Before Haigh Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd Before Haigh Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "28213",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=28213"
+      },
+      "distanceAlongTrail": 24.744280757577872,
+      "distanceFromTrail": 1.061952521574219
+    },
+    {
+      "id": 13161800389,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8441286,
+      "lon": 116.2999608,
+      "name": "Old Northam Rd After Haigh Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Haigh Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15214",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15214"
+      },
+      "distanceAlongTrail": 24.7444985282179,
+      "distanceFromTrail": 1.077793941740508
+    },
+    {
+      "id": 13161876603,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8441934,
+      "lon": 116.3100861,
+      "name": "Old Northam Rd Before Doconing Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd Before Doconing Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15216",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15216"
+      },
+      "distanceAlongTrail": 25.60279084242517,
+      "distanceFromTrail": 0.47251515975114217
+    },
+    {
+      "id": 13161800390,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.843947,
+      "lon": 116.310175,
+      "name": "Old Northam Rd After Doconing Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Doconing Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "23183",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=23183"
+      },
+      "distanceAlongTrail": 25.629322327742546,
+      "distanceFromTrail": 0.48334124523178723
+    },
+    {
+      "id": 13161876602,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8361861,
+      "lon": 116.3206,
+      "name": "Old Northam Rd Before Hinkler Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd Before Hinkler Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "23018",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=23018"
+      },
+      "distanceAlongTrail": 26.99045566356,
+      "distanceFromTrail": 0.29439309788000395
+    },
+    {
+      "id": 13161800391,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8361303,
+      "lon": 116.3205176,
+      "name": "Old Northam Rd After Hinkler Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Old Northam Rd After Hinkler Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15215",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15215"
+      },
+      "distanceAlongTrail": 26.993756161388553,
+      "distanceFromTrail": 0.2850019239427223
+    },
+    {
+      "id": 13161800393,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8203131,
+      "lon": 116.3187982,
+      "name": "Government Rd Before Jason St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Government Rd Before Jason St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15220",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15220"
+      },
+      "distanceAlongTrail": 29.375954440994878,
+      "distanceFromTrail": 0.04999027358668803
+    },
+    {
+      "id": 13161876601,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.811932,
+      "lon": 116.3149844,
+      "name": "Government Rd Before Jason St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Government Rd Before Jason St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15224",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15224"
+      },
+      "distanceAlongTrail": 30.36961764714474,
+      "distanceFromTrail": 0.028655154406304156
+    },
+    {
+      "id": 13161800394,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8115729,
+      "lon": 116.3146166,
+      "name": "Government Rd After Jason St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Government Rd After Jason St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15221",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15221"
+      },
+      "distanceAlongTrail": 30.419720644927335,
+      "distanceFromTrail": 0.04574192925113926
+    },
+    {
+      "id": 3294442829,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.8058831,
+      "lon": 116.3129741,
+      "name": "Wooroloo Volunteer Bush Fire Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "name": "Wooroloo Volunteer Bush Fire Brigade"
+      },
+      "distanceAlongTrail": 31.05423237621539,
+      "distanceFromTrail": 0.0657005074354676
+    },
+    {
+      "id": 13161800396,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8054103,
+      "lon": 116.3118238,
+      "name": "Wilson St After Needham Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Wilson St After Needham Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15225",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15225"
+      },
+      "distanceAlongTrail": 31.098320587825054,
+      "distanceFromTrail": 0.17767755891164955
+    },
+    {
+      "id": 13161800398,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8038955,
+      "lon": 116.3118037,
+      "name": "Wilson St After Wishart St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Wilson St After Wishart St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15226",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15226"
+      },
+      "distanceAlongTrail": 31.237809759042488,
+      "distanceFromTrail": 0.20562008467187207
+    },
+    {
+      "id": 13161800399,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8036174,
+      "lon": 116.3133303,
+      "name": "Bailup Rd Before Government Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Bailup Rd Before Government Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15227",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15227"
+      },
+      "distanceAlongTrail": 31.254604389677812,
+      "distanceFromTrail": 0.0921406713109821
+    },
+    {
+      "id": 6132592459,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.8017261,
+      "lon": 116.3165738,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 31.62033865469146,
+      "distanceFromTrail": 0.002872784709549267
+    },
+    {
+      "id": 13161800400,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.800875,
+      "lon": 116.3169981,
+      "name": "Government Rd After Orchard Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Government Rd After Orchard Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15222",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15222"
+      },
+      "distanceAlongTrail": 31.7158119806203,
+      "distanceFromTrail": 0.03274363694656947
+    },
+    {
+      "id": 13161801701,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.8007362,
+      "lon": 116.3174027,
+      "name": "Government Rd After Linley Valley Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Government Rd After Linley Valley Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15223",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15223"
+      },
+      "distanceAlongTrail": 31.75389909410576,
+      "distanceFromTrail": 0.016946427832230736
+    },
+    {
+      "id": 13161871400,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7879873,
+      "lon": 116.332171,
+      "name": "Werribee Rd After Allen St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Allen St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "17751",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=17751"
+      },
+      "distanceAlongTrail": 33.92416192165514,
+      "distanceFromTrail": 0.031113983225304724
+    },
+    {
+      "id": 13161801702,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7876328,
+      "lon": 116.3337353,
+      "name": "Werribee Rd After Allen St",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Allen St",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15228",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15228"
+      },
+      "distanceAlongTrail": 34.08076558962511,
+      "distanceFromTrail": 0.04503934280765337
+    },
+    {
+      "id": 13161871399,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7866151,
+      "lon": 116.3524776,
+      "name": "Werribee Rd After Chedaring Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Chedaring Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15238",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15238"
+      },
+      "distanceAlongTrail": 35.92309337313721,
+      "distanceFromTrail": 0.024794173658305857
+    },
+    {
+      "id": 13161801703,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.786443,
+      "lon": 116.3523159,
+      "name": "Werribee Rd Before Chedaring Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd Before Chedaring Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15229",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15229"
+      },
+      "distanceAlongTrail": 35.924193681646535,
+      "distanceFromTrail": 0.04926020692095848
+    },
+    {
+      "id": 13161801705,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7757066,
+      "lon": 116.3618533,
+      "name": "Werribee Rd Before Doys Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd Before Doys Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15237",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15237"
+      },
+      "distanceAlongTrail": 37.45783773620545,
+      "distanceFromTrail": 0.06280508964679928
+    },
+    {
+      "id": 13161801704,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7754518,
+      "lon": 116.3618769,
+      "name": "Werribee Rd After Doys Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Doys Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15230",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15230"
+      },
+      "distanceAlongTrail": 37.4805993022281,
+      "distanceFromTrail": 0.07982295865127896
+    },
+    {
+      "id": 13161871398,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7729616,
+      "lon": 116.3682529,
+      "name": "Werribee Rd After Retort Cl",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Retort Cl",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "28251",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=28251"
+      },
+      "distanceAlongTrail": 38.11835854664335,
+      "distanceFromTrail": 0.02014342666110742
+    },
+    {
+      "id": 13161801706,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7726918,
+      "lon": 116.3684728,
+      "name": "Werribee Rd Before Retort Cl",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd Before Retort Cl",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "28250",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=28250"
+      },
+      "distanceAlongTrail": 38.14984159633086,
+      "distanceFromTrail": 0.03860816709829055
+    },
+    {
+      "id": 13161871397,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7702284,
+      "lon": 116.3766736,
+      "name": "Werribee Rd After McMullen Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After McMullen Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15236",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15236"
+      },
+      "distanceAlongTrail": 39.01348143217689,
+      "distanceFromTrail": 0.03950544693841875
+    },
+    {
+      "id": 13161801707,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7697664,
+      "lon": 116.3773661,
+      "name": "Werribee Rd After Mcmullen Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Mcmullen Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15231",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15231"
+      },
+      "distanceAlongTrail": 39.13167449012628,
+      "distanceFromTrail": 0.008658097721007472
+    },
+    {
+      "id": 13161801708,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7678803,
+      "lon": 116.3824942,
+      "name": "Werribee Rd Before Vineyard Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd Before Vineyard Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15232",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15232"
+      },
+      "distanceAlongTrail": 39.66036822838874,
+      "distanceFromTrail": 0.00584233644716143
+    },
+    {
+      "id": 13161871396,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7677876,
+      "lon": 116.383647,
+      "name": "Werribee Rd Before Vineyard Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd Before Vineyard Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15235",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15235"
+      },
+      "distanceAlongTrail": 39.768446285102456,
+      "distanceFromTrail": 0.008761706588915437
+    },
+    {
+      "id": 13161801716,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7620302,
+      "lon": 116.3829591,
+      "name": "Hawke Av Before Boronia Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Hawke Av Before Boronia Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15240",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15240"
+      },
+      "distanceAlongTrail": 39.99959429386651,
+      "distanceFromTrail": 0.6146403366193199
+    },
+    {
+      "id": 13161801709,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7662632,
+      "lon": 116.3878459,
+      "name": "Werribee Rd After Hawke Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd After Hawke Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15234",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15234"
+      },
+      "distanceAlongTrail": 40.19922217789343,
+      "distanceFromTrail": 0.013966251130027486
+    },
+    {
+      "id": 13161801710,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7659847,
+      "lon": 116.3880308,
+      "name": "Werribee Rd Before Hawke Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Werribee Rd Before Hawke Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15233",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15233"
+      },
+      "distanceAlongTrail": 40.228804095274356,
+      "distanceFromTrail": 0.00576851960685592
+    },
+    {
+      "id": 13161801711,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7636167,
+      "lon": 116.3876474,
+      "name": "Hawke Av After Werribee Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Hawke Av After Werribee Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15239",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15239"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.17325209264748753
+    },
+    {
+      "id": 13161801712,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7601069,
+      "lon": 116.3861795,
+      "name": "Banksia Av After Kingia Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Banksia Av After Kingia Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15245",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15245"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.580110607830171
+    },
+    {
+      "id": 13161801713,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7583391,
+      "lon": 116.3838866,
+      "name": "Zamia Tce After Boronia Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Zamia Tce After Boronia Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15248",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15248"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.8579690690449093
+    },
+    {
+      "id": 13161801714,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.758229,
+      "lon": 116.3824878,
+      "name": "Hovea Cr After Zamia Tce",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Hovea Cr After Zamia Tce",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15246",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15246"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.9458291078047363
+    },
+    {
+      "id": 13161801715,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7602367,
+      "lon": 116.3828473,
+      "name": "Boronia Av After Banksia Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Boronia Av After Banksia Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15243",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15243"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.7600933026044658
+    },
+    {
+      "id": 13161871386,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7601901,
+      "lon": 116.3827257,
+      "name": "Boronia Av After Wandoo Pde",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Boronia Av After Wandoo Pde",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15242",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15242"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.7721077120082033
+    },
+    {
+      "id": 13161871392,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7580406,
+      "lon": 116.3825027,
+      "name": "Hovea Cr After Banksia Av",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Hovea Cr After Banksia Av",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15247",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15247"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.9612762583305776
+    },
+    {
+      "id": 13161871393,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7583576,
+      "lon": 116.3840709,
+      "name": "Zamia Tce After Hovea Cr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Zamia Tce After Hovea Cr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15249",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15249"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.846889716037875
+    },
+    {
+      "id": 13161871394,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7599616,
+      "lon": 116.3863347,
+      "name": "Banksia Av After Hovea Cr",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Banksia Av After Hovea Cr",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15244",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15244"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.5887520037608125
+    },
+    {
+      "id": 13161871395,
+      "type": "node",
+      "category": "transport",
+      "lat": -31.7635117,
+      "lon": 116.3878352,
+      "name": "Hawke Av Before Coates Rd",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "Hawke Av Before Coates Rd",
+        "network": "Transperth",
+        "network:wikidata": "Q1503488",
+        "public_transport": "platform",
+        "ref": "15241",
+        "website": "https://136213.mobi/RealTime/RealTimeStopResults.aspx?SN=15241"
+      },
+      "distanceAlongTrail": 40.3949966929485,
+      "distanceFromTrail": 0.17226894145436755
+    },
+    {
+      "id": 11393875652,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7476334,
+      "lon": 116.4551904,
+      "name": "Summer Creek Farm Camping Bakers Hill",
+      "tags": {
+        "access": "customers",
+        "caravans": "yes",
+        "dog": "no",
+        "fee": "yes",
+        "name": "Summer Creek Farm Camping Bakers Hill",
+        "payment:cash": "yes",
+        "tents": "yes",
+        "tourism": "camp_site",
+        "website": "https://www.summercreekrestaurantbrewery.com.au/accommodation"
+      },
+      "distanceAlongTrail": 47.91263494609569,
+      "distanceFromTrail": 0.13391254046194334
+    },
+    {
+      "id": 12196386440,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7490005,
+      "lon": 116.4569704,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 47.95705113998554,
+      "distanceFromTrail": 0.08932496607649576
+    },
+    {
+      "id": 1312534474,
+      "type": "way",
+      "category": "emergency",
+      "lat": -31.7537442,
+      "lon": 116.4614828,
+      "name": "Bakers Hill Bush Fire Brigade",
+      "tags": {
+        "amenity": "fire_station",
+        "name": "Bakers Hill Bush Fire Brigade"
+      },
+      "distanceAlongTrail": 47.962127021538656,
+      "distanceFromTrail": 0.7677227006100215
+    },
+    {
+      "id": 10578042071,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7486301,
+      "lon": 116.4569379,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 47.97525844765033,
+      "distanceFromTrail": 0.05655756951920421
+    },
+    {
+      "id": 6343004361,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.7477698,
+      "lon": 116.4559935,
+      "name": "Summer Creek Restaurant & Brewery",
+      "tags": {
+        "addr:housenumber": "9",
+        "addr:postcode": "6562",
+        "addr:street": "Yates Street",
+        "amenity": "restaurant",
+        "email": "poult.r.a@bigpond.com",
+        "name": "Summer Creek Restaurant & Brewery",
+        "opening_hours": "Fr-Su 10:00-21:00",
+        "phone": "+61 8 9574 1387",
+        "website": "https://www.summercreekrestaurantbrewery.com.au/"
+      },
+      "distanceAlongTrail": 47.97649943628882,
+      "distanceFromTrail": 0.07430062875899598
+    },
+    {
+      "id": 1228615383,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.7477715,
+      "lon": 116.4560192,
+      "name": null,
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes"
+      },
+      "distanceAlongTrail": 47.97812973943808,
+      "distanceFromTrail": 0.07248863785418444
+    },
+    {
+      "id": 10294913598,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.7485093,
+      "lon": 116.4579023,
+      "name": "Bakers Hill Post Office",
+      "tags": {
+        "amenity": "post_office",
+        "name": "Bakers Hill Post Office",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936"
+      },
+      "distanceAlongTrail": 48.05590427464566,
+      "distanceFromTrail": 0.10304736842033
+    },
+    {
+      "id": 4409503692,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.747441,
+      "lon": 116.45934,
+      "name": "Baker's Hill Pie Shop",
+      "tags": {
+        "name": "Baker's Hill Pie Shop",
+        "name:en": "Baker's Hill Pie Shop",
+        "shop": "bakery"
+      },
+      "distanceAlongTrail": 48.242239159619125,
+      "distanceFromTrail": 0.10460431971736646
+    },
+    {
+      "id": 808640672,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.7470997,
+      "lon": 116.45974,
+      "name": "Bakers Hill Tavern & Restaurant",
+      "tags": {
+        "addr:housenumber": "4625",
+        "addr:postcode": "6562",
+        "addr:state": "WA",
+        "addr:street": "Great Eastern Highway",
+        "addr:suburb": "Bakers Hill",
+        "amenity": "pub",
+        "building": "yes",
+        "name": "Bakers Hill Tavern & Restaurant"
+      },
+      "distanceAlongTrail": 48.292750801175835,
+      "distanceFromTrail": 0.10241449205602118
+    },
+    {
+      "id": 10294913597,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.7461715,
+      "lon": 116.4612205,
+      "name": "Route 94 Service Station",
+      "tags": {
+        "addr:postcode": "6562",
+        "addr:street": "Great Eastern Highway",
+        "addr:suburb": "Bakers Hill",
+        "amenity": "fuel",
+        "brand": "United",
+        "brand:wikidata": "Q28224393",
+        "compressed_air": "yes",
+        "fuel:diesel": "yes",
+        "fuel:octane_91": "yes",
+        "fuel:octane_98": "yes",
+        "name": "Route 94 Service Station",
+        "opening_hours": "sunrise-sunset",
+        "operator": "Private",
+        "self_service": "yes",
+        "website": "https://servicestations.unitedpetroleum.com.au/location/united-route-94-bakers-hill"
+      },
+      "distanceAlongTrail": 48.46736743097115,
+      "distanceFromTrail": 0.10828043551746551
+    },
+    {
+      "id": 10578042066,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7204293,
+      "lon": 116.5181347,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bin": "yes",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 54.894946140162325,
+      "distanceFromTrail": 0.0652865415816857
+    },
+    {
+      "id": 10578042062,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.7208262,
+      "lon": 116.5185987,
+      "name": "Clackline CPA",
+      "tags": {
+        "amenity": "post_office",
+        "name": "Clackline CPA",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936"
+      },
+      "distanceAlongTrail": 55.04586876378299,
+      "distanceFromTrail": 0.06541260379564537
+    },
+    {
+      "id": 6033743785,
+      "type": "node",
+      "category": "water",
+      "lat": -31.7202133,
+      "lon": 116.5232653,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 55.450820176568904,
+      "distanceFromTrail": 0.004319345239250543
+    },
+    {
+      "id": 10578392901,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7200863,
+      "lon": 116.5234551,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 55.47161708050169,
+      "distanceFromTrail": 0.013822724082219264
+    },
+    {
+      "id": 10578042059,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7201301,
+      "lon": 116.5235235,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "bin": "yes",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 55.47674648570036,
+      "distanceFromTrail": 0.007556496339454708
+    },
+    {
+      "id": 10578042054,
+      "type": "node",
+      "category": "water",
+      "lat": -31.7203289,
+      "lon": 116.5237777,
+      "name": null,
+      "tags": {
+        "amenity": "water_point"
+      },
+      "distanceAlongTrail": 55.49485891020723,
+      "distanceFromTrail": 0.01962233257094955
+    },
+    {
+      "id": 11011451196,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7129287,
+      "lon": 116.5377559,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 58.66442115278273,
+      "distanceFromTrail": 0.5247343904126315
+    },
+    {
+      "id": 11011451195,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7130405,
+      "lon": 116.5377693,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 58.6752215629474,
+      "distanceFromTrail": 0.5310202964759893
+    },
+    {
+      "id": 11011451194,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7136155,
+      "lon": 116.538071,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 58.68913376275415,
+      "distanceFromTrail": 0.5482648552768711
+    },
+    {
+      "id": 1811172711,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.7125667,
+      "lon": 116.5395674,
+      "name": "Eadine Springs Picnic Area",
+      "tags": {
+        "caravans": "yes",
+        "drinking_water": "no",
+        "name": "Eadine Springs Picnic Area",
+        "power_supply": "no",
+        "shower": "no",
+        "tents": "no",
+        "toilets": "yes",
+        "toilets:wheelchair": "limited",
+        "tourism": "camp_site",
+        "wheelchair": "limited"
+      },
+      "distanceAlongTrail": 58.68913376275415,
+      "distanceFromTrail": 0.36507837420227107
+    },
+    {
+      "id": 12273508070,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6550493,
+      "lon": 116.6715574,
+      "name": null,
+      "tags": {
+        "amenity": "fuel"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.3762305245581723
+    },
+    {
+      "id": 3925389687,
+      "type": "node",
+      "category": "emergency",
+      "lat": -31.6572337,
+      "lon": 116.6689181,
+      "name": "Northam Police Station",
+      "tags": {
+        "addr:housenumber": "7",
+        "addr:postcode": "6401",
+        "addr:street": "Gairdner Street",
+        "addr:suburb": "Northam",
+        "amenity": "police",
+        "brand": "Western Australia Police Force",
+        "brand:wikidata": "Q7987488",
+        "brand:wikipedia": "en:Western Australia Police",
+        "name": "Northam Police Station",
+        "operator": "Western Australia Police Force",
+        "operator:wikidata": "Q7987488",
+        "website": "https://www.police.wa.gov.au/",
+        "wikidata": "Q139381286"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.0628709596214063
+    },
+    {
+      "id": 3925392588,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.654019,
+      "lon": 116.6722548,
+      "name": "Boulevard Shopping Centre",
+      "tags": {
+        "name": "Boulevard Shopping Centre",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.4821247867395013
+    },
+    {
+      "id": 3925399930,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6580097,
+      "lon": 116.6707607,
+      "name": "Coles",
+      "tags": {
+        "addr:housenumber": "10",
+        "addr:state": "WA",
+        "addr:street": "Beamish Avenue",
+        "brand": "Coles",
+        "brand:wikidata": "Q1108172",
+        "brand:wikipedia": "en:Coles Supermarkets",
+        "name": "Coles",
+        "operator": "Coles Group",
+        "operator:wikidata": "Q1339055",
+        "shop": "supermarket",
+        "website": "https://www.coles.com.au/"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.2169376663702163
+    },
+    {
+      "id": 3925423514,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6550539,
+      "lon": 116.6702263,
+      "name": "Northam Post Office",
+      "tags": {
+        "amenity": "post_office",
+        "brand": "Australia Post",
+        "name": "Northam Post Office",
+        "operator": "Australia Post",
+        "operator:wikidata": "Q1142936",
+        "wikidata": "Q38161313"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.2597682940358577
+    },
+    {
+      "id": 4684563989,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6541494,
+      "lon": 116.6725477,
+      "name": "Woolworths",
+      "tags": {
+        "addr:state": "WA",
+        "brand": "Woolworths",
+        "brand:wikidata": "Q3249145",
+        "brand:wikipedia": "en:Woolworths Supermarkets",
+        "name": "Woolworths",
+        "operator": "Woolworths Group",
+        "operator:wikidata": "Q607272",
+        "shop": "supermarket",
+        "website": "https://www.woolworths.com.au/"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.501406508200646
+    },
+    {
+      "id": 5843968839,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.6633125,
+      "lon": 116.6666365,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 0.9115152939888506
+    },
+    {
+      "id": 6284639586,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6574402,
+      "lon": 116.670516,
+      "name": "Aldi",
+      "tags": {
+        "access": "customers",
+        "addr:housenumber": "10",
+        "addr:postcode": "6401",
+        "addr:state": "WA",
+        "addr:street": "Beamish Avenue",
+        "brand": "Aldi",
+        "brand:wikidata": "Q41171672",
+        "brand:wikipedia": "en:Aldi",
+        "check_date:opening_hours": "2023-05-05",
+        "full_name": "Aldi Northam",
+        "name": "Aldi",
+        "opening_hours": "Mo-Fr 08:30-19:00; Sa-Su 08:30-17:00",
+        "operator": "Aldi Australia",
+        "shop": "supermarket",
+        "website": "https://store.aldi.com.au/wa/northam/10-beamish-avenue",
+        "wheelchair": "yes"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.2051217477038054
+    },
+    {
+      "id": 9131180805,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6577244,
+      "lon": 116.669508,
+      "name": "Coles Express",
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Coles Express",
+        "brand:wikidata": "Q5144653",
+        "name": "Coles Express",
+        "operator": "Coles Group",
+        "operator:wikidata": "Q1339055"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 1.1053768329099456
+    },
+    {
+      "id": 1499790596,
+      "type": "way",
+      "category": "transport",
+      "lat": -31.6609753,
+      "lon": 116.6623688,
+      "name": "Old Northam Railway Station",
+      "tags": {
+        "closed": "1966",
+        "name": "Old Northam Railway Station",
+        "opening_date": "1900",
+        "public_transport": "station",
+        "railway": "station",
+        "train": "yes",
+        "wikidata": "Q66975765"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 0.43663164549183997
+    },
+    {
+      "id": 808640674,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.6568879,
+      "lon": 116.6676065,
+      "name": "Riverside Hotel",
+      "tags": {
+        "addr:housenumber": "322",
+        "addr:postcode": "6401",
+        "addr:state": "WA",
+        "addr:street": "Fitzgerald Street",
+        "addr:suburb": "Northam",
+        "amenity": "pub",
+        "building": "yes",
+        "name": "Riverside Hotel"
+      },
+      "distanceAlongTrail": 72.41708490372324,
+      "distanceFromTrail": 0.9546455169007939
+    },
+    {
+      "id": 11162107872,
+      "type": "node",
+      "category": "water",
+      "lat": -31.6511628,
+      "lon": 116.6716738,
+      "name": null,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "no",
+        "fee": "no"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.5877985044606617
+    },
+    {
+      "id": 11162107878,
+      "type": "node",
+      "category": "water",
+      "lat": -31.6517544,
+      "lon": 116.6714827,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.5372499409811093
+    },
+    {
+      "id": 11162197398,
+      "type": "node",
+      "category": "resupply",
+      "lat": -31.6516361,
+      "lon": 116.6743735,
+      "name": "Spud Shed",
+      "tags": {
+        "check_date": "2023-09-02",
+        "name": "Spud Shed",
+        "name:en": "Spud Shed",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.7821523753683834
+    },
+    {
+      "id": 12749473501,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.6575507,
+      "lon": 116.6600924,
+      "name": "Northam RV 48hr Stay",
+      "tags": {
+        "addr:housenumber": "55",
+        "addr:street": "Mitchell Avenue",
+        "name": "Northam RV 48hr Stay",
+        "tourism": "camp_site"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 0.2816517437955759
+    },
+    {
+      "id": 5297012150,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.6520469,
+      "lon": 116.6713393,
+      "name": "Rivers Edge Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2023-09-02",
+        "name": "Rivers Edge Cafe"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.5087914604338655
+    },
+    {
+      "id": 5843976243,
+      "type": "node",
+      "category": "camping",
+      "lat": -31.6546196,
+      "lon": 116.6662702,
+      "name": null,
+      "tags": {
+        "amenity": "shelter"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 0.9501500345274663
+    },
+    {
+      "id": 8856931629,
+      "type": "node",
+      "category": "restaurant",
+      "lat": -31.6519247,
+      "lon": 116.6731712,
+      "name": "Dome Cafe",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2023-09-02",
+        "name": "Dome Cafe"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.6664824814742594
+    },
+    {
+      "id": 1207178829,
+      "type": "way",
+      "category": "water",
+      "lat": -31.6579577,
+      "lon": 116.660162,
+      "name": "Northam 48hr RV Park",
+      "tags": {
+        "description": "Council-owned free 48hr RV stop. Caravans and Motorhomes only, no tents. All vehicles must be self contained. Dump point and potable water provided.",
+        "drinking_water": "yes",
+        "landuse": "campground",
+        "maxstay": "48 hours",
+        "name": "Northam 48hr RV Park",
+        "sanitary_dump_station": "yes",
+        "tents": "no"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 0.2644655607728327
+    },
+    {
+      "id": 248632372,
+      "type": "way",
+      "category": "emergency",
+      "lat": -31.6493656,
+      "lon": 116.6576575,
+      "name": "Northam Hospital",
+      "tags": {
+        "access": "yes",
+        "addr:postcode": "6401",
+        "addr:street": "Robinson Street",
+        "addr:suburb": "Northam",
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Northam Hospital",
+        "phone": "+61 8 9690 1300"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.0706296930425663
+    },
+    {
+      "id": 43993881,
+      "type": "way",
+      "category": "restaurant",
+      "lat": -31.6517929,
+      "lon": 116.6736624,
+      "name": "Red Rooster",
+      "tags": {
+        "amenity": "fast_food",
+        "brand": "Red Rooster",
+        "brand:wikidata": "Q376466",
+        "building": "yes",
+        "check_date": "2023-09-02",
+        "cuisine": "chicken",
+        "layer": "1",
+        "name": "Red Rooster",
+        "source": "nearmap",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 72.50030572307178,
+      "distanceFromTrail": 1.714418028791714
+    }
+  ]
+}

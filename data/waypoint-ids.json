@@ -6615,6 +6615,2317 @@
       "lon": -113.809895
     }
   ],
+  "grampians_peaks": [
+    {
+      "id": "w_009cd0cb",
+      "name": "Venus Baths",
+      "type": "poi",
+      "lat": -37.139289,
+      "lon": 142.508828
+    },
+    {
+      "id": "w_021d3c74",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.953471,
+      "lon": 142.435867
+    },
+    {
+      "id": "w_03e41d58",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.953879,
+      "lon": 142.436697
+    },
+    {
+      "id": "w_062bc20d",
+      "name": "Communal Shelter",
+      "type": "poi",
+      "lat": -37.561527,
+      "lon": 142.369364
+    },
+    {
+      "id": "w_06ce45df",
+      "name": "Rock shelter",
+      "type": "poi",
+      "lat": -36.9118,
+      "lon": 142.407459
+    },
+    {
+      "id": "w_07e05c50",
+      "name": "Communal Shelter",
+      "type": "poi",
+      "lat": -37.066008,
+      "lon": 142.485134
+    },
+    {
+      "id": "w_0bb9bb78",
+      "name": "High trail around Gar camp",
+      "type": "trailhead",
+      "lat": -36.988369,
+      "lon": 142.456564
+    },
+    {
+      "id": "w_11a49b65",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.225462,
+      "lon": 142.550185
+    },
+    {
+      "id": "w_16d04d2f",
+      "name": "Durd Durd Viewpoint",
+      "type": "poi",
+      "lat": -37.342146,
+      "lon": 142.576493
+    },
+    {
+      "id": "w_16f46ba4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.066071,
+      "lon": 142.48513
+    },
+    {
+      "id": "w_16ff04d5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.138664,
+      "lon": 142.515775
+    },
+    {
+      "id": "w_17bbe834",
+      "name": "Durd Durd Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.353841,
+      "lon": 142.555261
+    },
+    {
+      "id": "w_17d228ed",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.621752,
+      "lon": 142.32671
+    },
+    {
+      "id": "w_19b18b38",
+      "name": "Durd Durd",
+      "type": "mountain",
+      "lat": -37.339724,
+      "lon": 142.581429
+    },
+    {
+      "id": "w_1dc9a795",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.172472,
+      "lon": 142.514792
+    },
+    {
+      "id": "w_1e44a176",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.150118,
+      "lon": 142.502408
+    },
+    {
+      "id": "w_2342bab2",
+      "name": "Mount Sturgeon Lookout",
+      "type": "poi",
+      "lat": -37.63445,
+      "lon": 142.323829
+    },
+    {
+      "id": "w_253b5f70",
+      "name": "Communal Shelter",
+      "type": "poi",
+      "lat": -37.603314,
+      "lon": 142.350667
+    },
+    {
+      "id": "w_266c5034",
+      "name": "Dunkeld",
+      "type": "town",
+      "lat": -37.649447,
+      "lon": 142.344164
+    },
+    {
+      "id": "w_2787fb48",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.276881,
+      "lon": 142.585474
+    },
+    {
+      "id": "w_280676fb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.561581,
+      "lon": 142.369383
+    },
+    {
+      "id": "w_2dc44101",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -36.986645,
+      "lon": 142.430588
+    },
+    {
+      "id": "w_305499d6",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.13805,
+      "lon": 142.515925
+    },
+    {
+      "id": "w_344a91cc",
+      "name": "Mount Abrupt",
+      "type": "mountain",
+      "lat": -37.597792,
+      "lon": 142.353628
+    },
+    {
+      "id": "w_48efd3b2",
+      "name": "Mount Sturgeon",
+      "type": "mountain",
+      "lat": -37.633977,
+      "lon": 142.322986
+    },
+    {
+      "id": "w_4b4022c9",
+      "name": "Mud-Dadjug Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.603251,
+      "lon": 142.350765
+    },
+    {
+      "id": "w_4e8ad87e",
+      "name": "The Pinnacle",
+      "type": "mountain",
+      "lat": -37.160146,
+      "lon": 142.515692
+    },
+    {
+      "id": "w_4f412c1f",
+      "name": "water tank",
+      "type": "water-tank",
+      "lat": -36.891054,
+      "lon": 142.376089
+    },
+    {
+      "id": "w_4f787107",
+      "name": "4th Dial",
+      "type": "mountain",
+      "lat": -37.242871,
+      "lon": 142.585108
+    },
+    {
+      "id": "w_4fd4561f",
+      "name": "Water tank",
+      "type": "water-tank",
+      "lat": -36.925551,
+      "lon": 142.415396
+    },
+    {
+      "id": "w_52fc7f1a",
+      "name": "5th Dial",
+      "type": "mountain",
+      "lat": -37.247397,
+      "lon": 142.584159
+    },
+    {
+      "id": "w_537c722a",
+      "name": "Yarram Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.415312,
+      "lon": 142.502158
+    },
+    {
+      "id": "w_57cb3bb0",
+      "name": "Jimmy Creek Campground",
+      "type": "campsite",
+      "lat": -37.371732,
+      "lon": 142.503486
+    },
+    {
+      "id": "w_5d3f6875",
+      "name": "Bugiga Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.180727,
+      "lon": 142.508818
+    },
+    {
+      "id": "w_5e1f70d7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.29529,
+      "lon": 142.603482
+    },
+    {
+      "id": "w_5ea798e1",
+      "name": "Water tank",
+      "type": "water-tank",
+      "lat": -36.982832,
+      "lon": 142.43177
+    },
+    {
+      "id": "w_6044413a",
+      "name": "Borough Huts Campground",
+      "type": "campsite",
+      "lat": -37.224051,
+      "lon": 142.53969
+    },
+    {
+      "id": "w_63246697",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.603262,
+      "lon": 142.350651
+    },
+    {
+      "id": "w_640963f4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.001213,
+      "lon": 142.448525
+    },
+    {
+      "id": "w_7152f77b",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.415137,
+      "lon": 142.502343
+    },
+    {
+      "id": "w_7419e417",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.281016,
+      "lon": 142.589565
+    },
+    {
+      "id": "w_7509345a",
+      "name": "Barigar Hike-in Campground",
+      "type": "campsite",
+      "lat": -36.953617,
+      "lon": 142.436216
+    },
+    {
+      "id": "w_782fd786",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.139645,
+      "lon": 142.518536
+    },
+    {
+      "id": "w_7dd85aad",
+      "name": "Water Tank",
+      "type": "water-tank",
+      "lat": -37.06782,
+      "lon": 142.493987
+    },
+    {
+      "id": "w_7ed920ea",
+      "name": "Boundry Gap",
+      "type": "campsite",
+      "lat": -37.313644,
+      "lon": 142.593682
+    },
+    {
+      "id": "w_806b7033",
+      "name": "Communal Shelter",
+      "type": "poi",
+      "lat": -37.001735,
+      "lon": 142.44822
+    },
+    {
+      "id": "w_89f1af01",
+      "name": "Eagle Rock",
+      "type": "mountain",
+      "lat": -37.190865,
+      "lon": 142.503411
+    },
+    {
+      "id": "w_8ff5b5e7",
+      "name": "Halls Gap Caravan Park",
+      "type": "campsite",
+      "lat": -37.139454,
+      "lon": 142.517229
+    },
+    {
+      "id": "w_917b8a2c",
+      "name": "Werdug Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.066154,
+      "lon": 142.484882
+    },
+    {
+      "id": "w_931ad050",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.139035,
+      "lon": 142.519139
+    },
+    {
+      "id": "w_9444900a",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.140366,
+      "lon": 142.518653
+    },
+    {
+      "id": "w_944fc0e7",
+      "name": "Wannon Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.482557,
+      "lon": 142.446013
+    },
+    {
+      "id": "w_99b076df",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.445062,
+      "lon": 142.481958
+    },
+    {
+      "id": "w_9b5865e5",
+      "name": "Duwul Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.281338,
+      "lon": 142.589783
+    },
+    {
+      "id": "w_9bfa57d2",
+      "name": "Gate of the East Wind",
+      "type": "poi",
+      "lat": -37.191496,
+      "lon": 142.503746
+    },
+    {
+      "id": "w_9edb5f0f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.61648,
+      "lon": 142.341187
+    },
+    {
+      "id": "w_a25c9e1f",
+      "name": "Banksia Hill",
+      "type": "mountain",
+      "lat": -37.342999,
+      "lon": 142.562985
+    },
+    {
+      "id": "w_a8143a3b",
+      "name": "Water Tank",
+      "type": "water-tank",
+      "lat": -37.561691,
+      "lon": 142.368748
+    },
+    {
+      "id": "w_a97d6ea4",
+      "name": "Overhanging rock shelter",
+      "type": "poi",
+      "lat": -36.987877,
+      "lon": 142.450039
+    },
+    {
+      "id": "w_acfa54dd",
+      "name": "Communal Shelter",
+      "type": "poi",
+      "lat": -37.415271,
+      "lon": 142.501968
+    },
+    {
+      "id": "w_adc054a4",
+      "name": "Mud Creek bush campsite",
+      "type": "campsite",
+      "lat": -36.987314,
+      "lon": 142.454583
+    },
+    {
+      "id": "w_af5a34ba",
+      "name": "Mount Rosea",
+      "type": "mountain",
+      "lat": -37.196959,
+      "lon": 142.506573
+    },
+    {
+      "id": "w_b305399f",
+      "name": "Djardji-djawara Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.561267,
+      "lon": 142.369304
+    },
+    {
+      "id": "w_b33808a7",
+      "name": "Gar Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.001942,
+      "lon": 142.448013
+    },
+    {
+      "id": "w_c1cc30ea",
+      "name": "Halls Gap",
+      "type": "town",
+      "lat": -37.141769,
+      "lon": 142.520244
+    },
+    {
+      "id": "w_c724789f",
+      "name": "6th Dial",
+      "type": "mountain",
+      "lat": -37.249428,
+      "lon": 142.584012
+    },
+    {
+      "id": "w_cc75cbf9",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.481852,
+      "lon": 142.445722
+    },
+    {
+      "id": "w_d4dca3a5",
+      "name": "Victoria Valley Road Trailhead",
+      "type": "trailhead",
+      "lat": -37.621714,
+      "lon": 142.329111
+    },
+    {
+      "id": "w_d6ee7d59",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.001731,
+      "lon": 142.448297
+    },
+    {
+      "id": "w_d7df9255",
+      "name": "Cassidy Gap Road Trailhead",
+      "type": "trailhead",
+      "lat": -37.567521,
+      "lon": 142.367813
+    },
+    {
+      "id": "w_db5d7dd8",
+      "name": "3rd Dial",
+      "type": "mountain",
+      "lat": -37.239057,
+      "lon": 142.582508
+    },
+    {
+      "id": "w_dc8e8669",
+      "name": "Troopers Creek Campground",
+      "type": "campsite",
+      "lat": -36.986672,
+      "lon": 142.430592
+    },
+    {
+      "id": "w_dcd3f0d4",
+      "name": "Mount Stapylton (Gunigalk)",
+      "type": "mountain",
+      "lat": -36.898368,
+      "lon": 142.387243
+    },
+    {
+      "id": "w_de645cbc",
+      "name": "Wartook Lookout",
+      "type": "poi",
+      "lat": -37.079073,
+      "lon": 142.499136
+    },
+    {
+      "id": "w_e0b1adba",
+      "name": "Red Man Bluff",
+      "type": "mountain",
+      "lat": -37.262047,
+      "lon": 142.597543
+    },
+    {
+      "id": "w_e6fec0b2",
+      "name": "Bellfield Peak",
+      "type": "mountain",
+      "lat": -37.164382,
+      "lon": 142.51813
+    },
+    {
+      "id": "w_f3ff599e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -37.180407,
+      "lon": 142.509042
+    },
+    {
+      "id": "w_f5770aa4",
+      "name": "Communal Shelter",
+      "type": "poi",
+      "lat": -36.953496,
+      "lon": 142.435811
+    },
+    {
+      "id": "w_f87161ea",
+      "name": "Gate of the West Wind",
+      "type": "poi",
+      "lat": -37.158531,
+      "lon": 142.5143
+    },
+    {
+      "id": "w_fc015979",
+      "name": "First Wannon Camp",
+      "type": "campsite",
+      "lat": -37.320419,
+      "lon": 142.588247
+    }
+  ],
+  "great_north_walk": [
+    {
+      "id": "w_05c28d99",
+      "name": "Berowra Creek camp",
+      "type": "campsite",
+      "lat": -33.639029,
+      "lon": 151.103329
+    },
+    {
+      "id": "w_062bec0d",
+      "name": "Crosslands Reserve",
+      "type": "campsite",
+      "lat": -33.635993,
+      "lon": 151.108107
+    },
+    {
+      "id": "w_06d9d8c1",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.798282,
+      "lon": 151.157405
+    },
+    {
+      "id": "w_07508692",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.812959,
+      "lon": 151.143845
+    },
+    {
+      "id": "w_0991cc03",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.925638,
+      "lon": 151.783278
+    },
+    {
+      "id": "w_09ed1e08",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.625665,
+      "lon": 151.113004
+    },
+    {
+      "id": "w_0b67516f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.749058,
+      "lon": 151.101231
+    },
+    {
+      "id": "w_0ec73627",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.935657,
+      "lon": 151.777925
+    },
+    {
+      "id": "w_0f893262",
+      "name": "Glenrock Scout Training Camp",
+      "type": "campsite",
+      "lat": -32.962059,
+      "lon": 151.731889
+    },
+    {
+      "id": "w_113bdc34",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.862077,
+      "lon": 151.208405
+    },
+    {
+      "id": "w_15857c70",
+      "name": "Heaton Lookout",
+      "type": "poi",
+      "lat": -32.983765,
+      "lon": 151.454971
+    },
+    {
+      "id": "w_178fed67",
+      "name": "Flat Rock Lookout",
+      "type": "poi",
+      "lat": -33.003276,
+      "lon": 151.272017
+    },
+    {
+      "id": "w_17b52022",
+      "name": "Ridge Top Campground",
+      "type": "campsite",
+      "lat": -33.593883,
+      "lon": 151.135196
+    },
+    {
+      "id": "w_186c56a9",
+      "name": "The Step Lookout",
+      "type": "poi",
+      "lat": -33.753837,
+      "lon": 151.102916
+    },
+    {
+      "id": "w_18b42dc9",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.934763,
+      "lon": 151.778458
+    },
+    {
+      "id": "w_1918bd1e",
+      "name": "Mt Warrawolong Campsite",
+      "type": "campsite",
+      "lat": -33.029129,
+      "lon": 151.273438
+    },
+    {
+      "id": "w_1aa885e4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.938008,
+      "lon": 151.773503
+    },
+    {
+      "id": "w_1ce89839",
+      "name": "Tunks Ridge",
+      "type": "mountain",
+      "lat": -33.669078,
+      "lon": 151.081719
+    },
+    {
+      "id": "w_1dfdb412",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.860488,
+      "lon": 151.21095
+    },
+    {
+      "id": "w_1e338990",
+      "name": "Mt Bright Lookout",
+      "type": "poi",
+      "lat": -32.838718,
+      "lon": 151.281323
+    },
+    {
+      "id": "w_201838d6",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.935327,
+      "lon": 151.779906
+    },
+    {
+      "id": "w_2157c49f",
+      "name": "Crawford Hut",
+      "type": "hut",
+      "lat": -32.990297,
+      "lon": 151.302165
+    },
+    {
+      "id": "w_2190a384",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.547164,
+      "lon": 151.22624
+    },
+    {
+      "id": "w_23f79225",
+      "name": "Sydney",
+      "type": "town",
+      "lat": -33.869844,
+      "lon": 151.208285
+    },
+    {
+      "id": "w_2489fcae",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.748498,
+      "lon": 151.101063
+    },
+    {
+      "id": "w_249cb533",
+      "name": "Walkers Rest Campsite",
+      "type": "campsite",
+      "lat": -33.127796,
+      "lon": 151.255432
+    },
+    {
+      "id": "w_2679f612",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.631161,
+      "lon": 151.10898
+    },
+    {
+      "id": "w_2a5c9800",
+      "name": "Mooney Mooney (Upper)",
+      "type": "campsite",
+      "lat": -33.413728,
+      "lon": 151.243871
+    },
+    {
+      "id": "w_2ad8ca12",
+      "name": "Naa Badu Lookout",
+      "type": "poi",
+      "lat": -33.617972,
+      "lon": 151.128081
+    },
+    {
+      "id": "w_2e198d2f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.589641,
+      "lon": 151.171283
+    },
+    {
+      "id": "w_2e79260f",
+      "name": "The Narrow Place Lookout",
+      "type": "poi",
+      "lat": -32.976616,
+      "lon": 151.358729
+    },
+    {
+      "id": "w_33751288",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.839442,
+      "lon": 151.169411
+    },
+    {
+      "id": "w_3580aa19",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.926722,
+      "lon": 151.784014
+    },
+    {
+      "id": "w_370bfb58",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.928061,
+      "lon": 151.785905
+    },
+    {
+      "id": "w_3715cb03",
+      "name": "Watagan Headquarters Camping Area",
+      "type": "campsite",
+      "lat": -32.97591,
+      "lon": 151.412305
+    },
+    {
+      "id": "w_39e1f4ab",
+      "name": "Hunter Lookout",
+      "type": "poi",
+      "lat": -32.962421,
+      "lon": 151.413594
+    },
+    {
+      "id": "w_3a4e04a7",
+      "name": "Fishponds Lookout",
+      "type": "poi",
+      "lat": -33.692569,
+      "lon": 151.084145
+    },
+    {
+      "id": "w_3b65661e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.929033,
+      "lon": 151.78508
+    },
+    {
+      "id": "w_41b90b92",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.949294,
+      "lon": 151.756382
+    },
+    {
+      "id": "w_44b9f922",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.59338,
+      "lon": 151.17172
+    },
+    {
+      "id": "w_44c64b52",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.861424,
+      "lon": 151.210631
+    },
+    {
+      "id": "w_46088629",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.963842,
+      "lon": 151.620435
+    },
+    {
+      "id": "w_4689731c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.735398,
+      "lon": 151.086392
+    },
+    {
+      "id": "w_500fcf5e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.600542,
+      "lon": 151.126004
+    },
+    {
+      "id": "w_50dff573",
+      "name": "Blackbutt Rotunda 2",
+      "type": "poi",
+      "lat": -33.78997,
+      "lon": 151.14622
+    },
+    {
+      "id": "w_532ea1f6",
+      "name": "tap",
+      "type": "water",
+      "lat": -33.626833,
+      "lon": 151.110927
+    },
+    {
+      "id": "w_54383c5b",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.971418,
+      "lon": 151.639362
+    },
+    {
+      "id": "w_58164391",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.804164,
+      "lon": 151.142334
+    },
+    {
+      "id": "w_58ec6adb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.837983,
+      "lon": 151.176005
+    },
+    {
+      "id": "w_5d2a11ef",
+      "name": "Stringy Bark Point Campsite",
+      "type": "campsite",
+      "lat": -33.289398,
+      "lon": 151.267956
+    },
+    {
+      "id": "w_5d7db7ad",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.800364,
+      "lon": 151.146204
+    },
+    {
+      "id": "w_5e71df73",
+      "name": "Strzelecki Lookout",
+      "type": "poi",
+      "lat": -32.936809,
+      "lon": 151.776891
+    },
+    {
+      "id": "w_602f5fd8",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -33.442756,
+      "lon": 151.265662
+    },
+    {
+      "id": "w_61a302e5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.791916,
+      "lon": 151.147711
+    },
+    {
+      "id": "w_66997867",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.943046,
+      "lon": 151.764336
+    },
+    {
+      "id": "w_67f74c1f",
+      "name": "Quarter Sessions Road Lookout",
+      "type": "poi",
+      "lat": -33.69963,
+      "lon": 151.07681
+    },
+    {
+      "id": "w_68a9709f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.925627,
+      "lon": 151.779201
+    },
+    {
+      "id": "w_68e25d51",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.790863,
+      "lon": 151.15149
+    },
+    {
+      "id": "w_68f80f93",
+      "name": "Newcastle",
+      "type": "town",
+      "lat": -32.927288,
+      "lon": 151.781253
+    },
+    {
+      "id": "w_6cea030c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.840723,
+      "lon": 151.166189
+    },
+    {
+      "id": "w_724e1501",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.944756,
+      "lon": 151.761207
+    },
+    {
+      "id": "w_7688f47c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.834458,
+      "lon": 151.150113
+    },
+    {
+      "id": "w_7d28cfbb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.862562,
+      "lon": 151.210417
+    },
+    {
+      "id": "w_84b62fac",
+      "name": "Brooklyn Dam Campsite",
+      "type": "campsite",
+      "lat": -33.554862,
+      "lon": 151.208066
+    },
+    {
+      "id": "w_86918dab",
+      "name": "Cowan",
+      "type": "town",
+      "lat": -33.58883,
+      "lon": 151.169857
+    },
+    {
+      "id": "w_88752b13",
+      "name": "The Jungo",
+      "type": "campsite",
+      "lat": -33.719574,
+      "lon": 151.057905
+    },
+    {
+      "id": "w_8a7bdf58",
+      "name": "Cubby House Kukundi",
+      "type": "hut",
+      "lat": -33.790346,
+      "lon": 151.154747
+    },
+    {
+      "id": "w_8a7ec302",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.683591,
+      "lon": 151.091292
+    },
+    {
+      "id": "w_8df878f9",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.96504,
+      "lon": 151.62215
+    },
+    {
+      "id": "w_8f544acc",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -33.2615,
+      "lon": 151.26486
+    },
+    {
+      "id": "w_8fc006c7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.83124,
+      "lon": 151.147905
+    },
+    {
+      "id": "w_90196beb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.792142,
+      "lon": 151.155862
+    },
+    {
+      "id": "w_903ba84f",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.925667,
+      "lon": 151.781656
+    },
+    {
+      "id": "w_905bbceb",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.863391,
+      "lon": 151.212268
+    },
+    {
+      "id": "w_906c692e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.840229,
+      "lon": 151.167447
+    },
+    {
+      "id": "w_90e82365",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.930485,
+      "lon": 151.785019
+    },
+    {
+      "id": "w_91d8e537",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.945133,
+      "lon": 151.760682
+    },
+    {
+      "id": "w_93228ca5",
+      "name": "Heaton Lookout",
+      "type": "poi",
+      "lat": -32.981681,
+      "lon": 151.455274
+    },
+    {
+      "id": "w_94a67c72",
+      "name": "Shepherds Hill",
+      "type": "mountain",
+      "lat": -32.937884,
+      "lon": 151.773596
+    },
+    {
+      "id": "w_94f3433d",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.783205,
+      "lon": 151.145916
+    },
+    {
+      "id": "w_97113876",
+      "name": "Blue Hole",
+      "type": "poi",
+      "lat": -33.775969,
+      "lon": 151.137104
+    },
+    {
+      "id": "w_9844c362",
+      "name": "MacLeans Lookout",
+      "type": "poi",
+      "lat": -32.957465,
+      "lon": 151.417477
+    },
+    {
+      "id": "w_98e2e6e1",
+      "name": "Patonga Rest Area",
+      "type": "campsite",
+      "lat": -33.538104,
+      "lon": 151.279743
+    },
+    {
+      "id": "w_99211089",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.862795,
+      "lon": 151.213007
+    },
+    {
+      "id": "w_99d958d8",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.791063,
+      "lon": 151.152811
+    },
+    {
+      "id": "w_99f9bea5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.792735,
+      "lon": 151.148453
+    },
+    {
+      "id": "w_9afd3017",
+      "name": "Crosslands Youth Camp",
+      "type": "campsite",
+      "lat": -33.628386,
+      "lon": 151.107843
+    },
+    {
+      "id": "w_9ca4b9bf",
+      "name": "Commandment Rock Rotunda 2",
+      "type": "poi",
+      "lat": -33.78923,
+      "lon": 151.14654
+    },
+    {
+      "id": "w_9da96ed6",
+      "name": "Blue Wren Rotunda",
+      "type": "poi",
+      "lat": -33.791436,
+      "lon": 151.153026
+    },
+    {
+      "id": "w_9e3b14b8",
+      "name": "Bushrat's Camp",
+      "type": "campsite",
+      "lat": -32.962669,
+      "lon": 151.420841
+    },
+    {
+      "id": "w_a11e0059",
+      "name": "Mount Wondabyne",
+      "type": "mountain",
+      "lat": -33.493871,
+      "lon": 151.274972
+    },
+    {
+      "id": "w_a240c883",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.261333,
+      "lon": 151.265262
+    },
+    {
+      "id": "w_a4c554e0",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.61684,
+      "lon": 151.129461
+    },
+    {
+      "id": "w_ae3afb61",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.748911,
+      "lon": 151.102186
+    },
+    {
+      "id": "w_af0f77ae",
+      "name": "Tunks Ridge Campground",
+      "type": "campsite",
+      "lat": -33.678711,
+      "lon": 151.081147
+    },
+    {
+      "id": "w_afc56b37",
+      "name": "Brooklyn Dam campsite",
+      "type": "campsite",
+      "lat": -33.554507,
+      "lon": 151.207353
+    },
+    {
+      "id": "w_afe5e9ce",
+      "name": "Barraba Campsite",
+      "type": "campsite",
+      "lat": -32.966008,
+      "lon": 151.308454
+    },
+    {
+      "id": "w_b3f88b9e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.974764,
+      "lon": 151.644168
+    },
+    {
+      "id": "w_b65a9612",
+      "name": "Scopas Peak",
+      "type": "mountain",
+      "lat": -33.461514,
+      "lon": 151.252644
+    },
+    {
+      "id": "w_bca55fe7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.937151,
+      "lon": 151.775947
+    },
+    {
+      "id": "w_bdb8908d",
+      "name": "Sugarloaf Hill",
+      "type": "mountain",
+      "lat": -33.815688,
+      "lon": 151.141018
+    },
+    {
+      "id": "w_bf094fea",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.842967,
+      "lon": 151.16832
+    },
+    {
+      "id": "w_c64e633d",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.962237,
+      "lon": 151.616311
+    },
+    {
+      "id": "w_c70b6e77",
+      "name": "Shade Sail",
+      "type": "poi",
+      "lat": -33.790541,
+      "lon": 151.155023
+    },
+    {
+      "id": "w_c76faa39",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.862515,
+      "lon": 151.207578
+    },
+    {
+      "id": "w_cb23c782",
+      "name": "spring",
+      "type": "water",
+      "lat": -33.591575,
+      "lon": 151.186314
+    },
+    {
+      "id": "w_cbecb339",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.794812,
+      "lon": 151.157832
+    },
+    {
+      "id": "w_cf864ffd",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.966205,
+      "lon": 151.694014
+    },
+    {
+      "id": "w_d21e16b7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.861013,
+      "lon": 151.21265
+    },
+    {
+      "id": "w_d34c4e46",
+      "name": "Warrah Lookout",
+      "type": "poi",
+      "lat": -33.552807,
+      "lon": 151.288932
+    },
+    {
+      "id": "w_d475273c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.926171,
+      "lon": 151.779235
+    },
+    {
+      "id": "w_d798b25e",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.802287,
+      "lon": 151.146175
+    },
+    {
+      "id": "w_d818c4d7",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.859072,
+      "lon": 151.208076
+    },
+    {
+      "id": "w_d9b6ab2c",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.813937,
+      "lon": 151.145023
+    },
+    {
+      "id": "w_dd6c02f8",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -33.428244,
+      "lon": 151.249787
+    },
+    {
+      "id": "w_de32becf",
+      "name": "Mt Wondabyne Campsite",
+      "type": "campsite",
+      "lat": -33.496118,
+      "lon": 151.274543
+    },
+    {
+      "id": "w_dfff59b4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.971652,
+      "lon": 151.640233
+    },
+    {
+      "id": "w_e27fcd0a",
+      "name": "Elouera Lookout",
+      "type": "poi",
+      "lat": -33.713535,
+      "lon": 151.063702
+    },
+    {
+      "id": "w_e3ded842",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.973566,
+      "lon": 151.643189
+    },
+    {
+      "id": "w_e50102e5",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.931874,
+      "lon": 151.776525
+    },
+    {
+      "id": "w_e922c729",
+      "name": "Koonjeree Rotunda",
+      "type": "poi",
+      "lat": -33.791839,
+      "lon": 151.155674
+    },
+    {
+      "id": "w_ec7b08f1",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.816632,
+      "lon": 151.137361
+    },
+    {
+      "id": "w_ef1224b2",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.948066,
+      "lon": 151.756775
+    },
+    {
+      "id": "w_ef6d1f24",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.813505,
+      "lon": 151.144173
+    },
+    {
+      "id": "w_efa53436",
+      "name": "Bimbadeen Lookout",
+      "type": "poi",
+      "lat": -32.852605,
+      "lon": 151.28316
+    },
+    {
+      "id": "w_f2a7c108",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -32.962706,
+      "lon": 151.413787
+    },
+    {
+      "id": "w_f63c76d9",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.839826,
+      "lon": 151.166628
+    },
+    {
+      "id": "w_f6dc9108",
+      "name": "Barnett Lookout",
+      "type": "poi",
+      "lat": -33.616267,
+      "lon": 151.127806
+    },
+    {
+      "id": "w_f6e3bcd8",
+      "name": "King Edward Park Fountain",
+      "type": "water",
+      "lat": -32.93325,
+      "lon": 151.778681
+    },
+    {
+      "id": "w_f75cefdf",
+      "name": "Leichhardts Lookout",
+      "type": "poi",
+      "lat": -32.959107,
+      "lon": 151.726553
+    },
+    {
+      "id": "w_f75f6f13",
+      "name": "Merewether Lookout",
+      "type": "poi",
+      "lat": -32.952727,
+      "lon": 151.752184
+    },
+    {
+      "id": "w_f7ac8761",
+      "name": "Cahill Expressway Lookout",
+      "type": "poi",
+      "lat": -33.861255,
+      "lon": 151.210658
+    },
+    {
+      "id": "w_f92a28ae",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -33.704873,
+      "lon": 151.074539
+    },
+    {
+      "id": "w_fda5bda7",
+      "name": "Palm Grove camping area",
+      "type": "campsite",
+      "lat": -33.322995,
+      "lon": 151.299259
+    }
+  ],
+  "great_ocean_walk": [
+    {
+      "id": "w_003aa467",
+      "name": "Decision Point 10B Milanesia Beach",
+      "type": "junction",
+      "lat": -38.749444,
+      "lon": 143.3025
+    },
+    {
+      "id": "w_00f16744",
+      "name": "Castle Cove Lookout",
+      "type": "poi",
+      "lat": -38.782093,
+      "lon": 143.427763
+    },
+    {
+      "id": "w_0216e3ca",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.75789,
+      "lon": 143.36924
+    },
+    {
+      "id": "w_05ba9e18",
+      "name": "Parker Hill Campground",
+      "type": "campsite",
+      "lat": -38.846844,
+      "lon": 143.558545
+    },
+    {
+      "id": "w_08e4a7e0",
+      "name": "Aire River Bridge",
+      "type": "poi",
+      "lat": -38.80241,
+      "lon": 143.478462
+    },
+    {
+      "id": "w_0a80179a",
+      "name": "Decision Point 2 Bald Hill",
+      "type": "junction",
+      "lat": -38.788889,
+      "lon": 143.649444
+    },
+    {
+      "id": "w_0af46620",
+      "name": "Decision Point 7A Parker Inlet river crossing",
+      "type": "junction",
+      "lat": -38.844722,
+      "lon": 143.560278
+    },
+    {
+      "id": "w_0b101eab",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.79139,
+      "lon": 143.61234
+    },
+    {
+      "id": "w_0ff8fa6b",
+      "name": "Cape Otway Lighthouse Cemetery",
+      "type": "poi",
+      "lat": -38.849816,
+      "lon": 143.511213
+    },
+    {
+      "id": "w_1202fca9",
+      "name": "Decision Point 9B Johanna Beach",
+      "type": "junction",
+      "lat": -38.75947,
+      "lon": 143.374138
+    },
+    {
+      "id": "w_126350b0",
+      "name": "Elliot Ridge Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.791489,
+      "lon": 143.612741
+    },
+    {
+      "id": "w_133b0716",
+      "name": "Decision Point 6B Blanket Bay",
+      "type": "junction",
+      "lat": -38.828475,
+      "lon": 143.582738
+    },
+    {
+      "id": "w_1344cfec",
+      "name": "Decision Point 2A Bald Hill",
+      "type": "junction",
+      "lat": -38.791397,
+      "lon": 143.643417
+    },
+    {
+      "id": "w_16e1ad62",
+      "name": "Lookout",
+      "type": "poi",
+      "lat": -38.780592,
+      "lon": 143.41484
+    },
+    {
+      "id": "w_183f42e0",
+      "name": "Decision Point 9 Johanna Beach",
+      "type": "junction",
+      "lat": -38.772507,
+      "lon": 143.396944
+    },
+    {
+      "id": "w_1b2030df",
+      "name": "Decision Point 1B Storm Point",
+      "type": "junction",
+      "lat": -38.78834,
+      "lon": 143.651147
+    },
+    {
+      "id": "w_1ca90166",
+      "name": "Decision Point 5 Elliot River",
+      "type": "junction",
+      "lat": -38.793383,
+      "lon": 143.620089
+    },
+    {
+      "id": "w_1dd33401",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -38.661942,
+      "lon": 143.105012
+    },
+    {
+      "id": "w_1eef7ff1",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.828041,
+      "lon": 143.582892
+    },
+    {
+      "id": "w_2ce4389a",
+      "name": "'Fiji' Anchor",
+      "type": "poi",
+      "lat": -38.749444,
+      "lon": 143.205278
+    },
+    {
+      "id": "w_2d2cdf76",
+      "name": "Decision Point 6 Blanket Bay",
+      "type": "junction",
+      "lat": -38.825556,
+      "lon": 143.5825
+    },
+    {
+      "id": "w_36031f7b",
+      "name": "Johanna Beach Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.757911,
+      "lon": 143.369562
+    },
+    {
+      "id": "w_390f9329",
+      "name": "Johanna Lookout",
+      "type": "poi",
+      "lat": -38.762544,
+      "lon": 143.378522
+    },
+    {
+      "id": "w_3d6f5001",
+      "name": "Decision Point 6A Blanket Bay",
+      "type": "junction",
+      "lat": -38.826502,
+      "lon": 143.582694
+    },
+    {
+      "id": "w_440abb96",
+      "name": "Aire River East Campground",
+      "type": "campsite",
+      "lat": -38.800037,
+      "lon": 143.481508
+    },
+    {
+      "id": "w_4868941d",
+      "name": "Caravan Park",
+      "type": "caravan-park",
+      "lat": -38.778481,
+      "lon": 143.664814
+    },
+    {
+      "id": "w_4a5f2902",
+      "name": "Decision Point 8A Station Beach",
+      "type": "junction",
+      "lat": -38.820278,
+      "lon": 143.475
+    },
+    {
+      "id": "w_4c9394a1",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.759429,
+      "lon": 143.374823
+    },
+    {
+      "id": "w_58f10b0a",
+      "name": "Twelve Apostles",
+      "type": "poi",
+      "lat": -38.662053,
+      "lon": 143.104994
+    },
+    {
+      "id": "w_59e0e02c",
+      "name": "Princetown Campground",
+      "type": "campsite",
+      "lat": -38.698321,
+      "lon": 143.158638
+    },
+    {
+      "id": "w_5beb8c32",
+      "name": "Decision Point 10 Milanesia Beach",
+      "type": "junction",
+      "lat": -38.751389,
+      "lon": 143.313889
+    },
+    {
+      "id": "w_6415b3da",
+      "name": "Aire River West Campground",
+      "type": "campsite",
+      "lat": -38.801523,
+      "lon": 143.477717
+    },
+    {
+      "id": "w_6aa43df6",
+      "name": "Decision Point 1 Storm Point",
+      "type": "junction",
+      "lat": -38.785,
+      "lon": 143.656111
+    },
+    {
+      "id": "w_6ac620ed",
+      "name": "Rainbow Falls",
+      "type": "poi",
+      "lat": -38.841111,
+      "lon": 143.493611
+    },
+    {
+      "id": "w_6bc20b72",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.762073,
+      "lon": 143.379704
+    },
+    {
+      "id": "w_6e7b530d",
+      "name": "Blanket Bay Campground",
+      "type": "campsite",
+      "lat": -38.82758,
+      "lon": 143.582743
+    },
+    {
+      "id": "w_6f9f2335",
+      "name": "Decision Point 8 Station Beach",
+      "type": "junction",
+      "lat": -38.832222,
+      "lon": 143.488333
+    },
+    {
+      "id": "w_73bbce58",
+      "name": "Hayley Point Lookout",
+      "type": "poi",
+      "lat": -38.777596,
+      "lon": 143.664336
+    },
+    {
+      "id": "w_74a922a5",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.849372,
+      "lon": 143.514059
+    },
+    {
+      "id": "w_7d9e815a",
+      "name": "Great Ocean Road Visitor Information Centre",
+      "type": "poi",
+      "lat": -38.754737,
+      "lon": 143.669319
+    },
+    {
+      "id": "w_7eed157e",
+      "name": "Decision Point 2B Bald Hill",
+      "type": "junction",
+      "lat": -38.790788,
+      "lon": 143.639007
+    },
+    {
+      "id": "w_818bd667",
+      "name": "Escarpment Lookout",
+      "type": "poi",
+      "lat": -38.810347,
+      "lon": 143.467264
+    },
+    {
+      "id": "w_845c9017",
+      "name": "Ryans Den Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.759831,
+      "lon": 143.278056
+    },
+    {
+      "id": "w_89765503",
+      "name": "Cape Otway Lighthouse",
+      "type": "poi",
+      "lat": -38.854201,
+      "lon": 143.514855
+    },
+    {
+      "id": "w_8d541706",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.759562,
+      "lon": 143.277714
+    },
+    {
+      "id": "w_92364688",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.744317,
+      "lon": 143.204421
+    },
+    {
+      "id": "w_a544039e",
+      "name": "Gibson Steps",
+      "type": "poi",
+      "lat": -38.668635,
+      "lon": 143.112086
+    },
+    {
+      "id": "w_ab83f050",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -38.755554,
+      "lon": 143.669394
+    },
+    {
+      "id": "w_ad70bcac",
+      "name": "Cape Otway Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.849441,
+      "lon": 143.513769
+    },
+    {
+      "id": "w_afcdee54",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.801806,
+      "lon": 143.476671
+    },
+    {
+      "id": "w_b061df64",
+      "name": "Decision Point 4 Shelly Beach",
+      "type": "junction",
+      "lat": -38.792432,
+      "lon": 143.623443
+    },
+    {
+      "id": "w_b37cb2cf",
+      "name": "Decision Point 9A Johanna Beach",
+      "type": "junction",
+      "lat": -38.762778,
+      "lon": 143.378611
+    },
+    {
+      "id": "w_b69047f7",
+      "name": "Aire River Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.801624,
+      "lon": 143.476089
+    },
+    {
+      "id": "w_bbe7207b",
+      "name": "Decision Point 10A Milanesia Beach",
+      "type": "junction",
+      "lat": -38.751111,
+      "lon": 143.310556
+    },
+    {
+      "id": "w_c9f044c0",
+      "name": "Sentinel Rock Lookout",
+      "type": "poi",
+      "lat": -38.798844,
+      "lon": 143.449411
+    },
+    {
+      "id": "w_cb788440",
+      "name": "Glenample Homestead",
+      "type": "poi",
+      "lat": -38.668762,
+      "lon": 143.118893
+    },
+    {
+      "id": "w_d36901e9",
+      "name": "Decision Point 7 Parker Inlet river crossing",
+      "type": "junction",
+      "lat": -38.844167,
+      "lon": 143.561944
+    },
+    {
+      "id": "w_d42c2d4e",
+      "name": "Decision Point 11B Wreck Beach",
+      "type": "junction",
+      "lat": -38.745278,
+      "lon": 143.200556
+    },
+    {
+      "id": "w_d7a29ffc",
+      "name": "Johanna Beach Campground",
+      "type": "campsite",
+      "lat": -38.761802,
+      "lon": 143.37951
+    },
+    {
+      "id": "w_e9cafb91",
+      "name": "Decision Point 11A Wreck Beach",
+      "type": "junction",
+      "lat": -38.754722,
+      "lon": 143.215556
+    },
+    {
+      "id": "w_ea21c2ac",
+      "name": "Decision Point 1A Storm Point",
+      "type": "junction",
+      "lat": -38.785753,
+      "lon": 143.655034
+    },
+    {
+      "id": "w_f3344a6e",
+      "name": "Decision Point 3 Three Creeks",
+      "type": "junction",
+      "lat": -38.791337,
+      "lon": 143.631993
+    },
+    {
+      "id": "w_f48d06e5",
+      "name": "Cape Otway Lookout",
+      "type": "poi",
+      "lat": -38.851199,
+      "lon": 143.514189
+    },
+    {
+      "id": "w_f6271d4d",
+      "name": "Devils Kitchen Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.744383,
+      "lon": 143.2046
+    },
+    {
+      "id": "w_f9e0a45f",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -38.698824,
+      "lon": 143.158633
+    },
+    {
+      "id": "w_fb886c34",
+      "name": "Blanket Bay Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.826652,
+      "lon": 143.58257
+    },
+    {
+      "id": "w_ff6634f0",
+      "name": "Apollo Bay",
+      "type": "town",
+      "lat": -38.754744,
+      "lon": 143.669146
+    }
+  ],
+  "great_south_west_walk": [
+    {
+      "id": "w_05e1c9c3",
+      "name": "Pattersons Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.003079,
+      "lon": 141.061177
+    },
+    {
+      "id": "w_095605ee",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.148321,
+      "lon": 141.438833
+    },
+    {
+      "id": "w_0ca418a6",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.360531,
+      "lon": 141.46292
+    },
+    {
+      "id": "w_1a6fbf9b",
+      "name": "Swan Lake Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.21363,
+      "lon": 141.311387
+    },
+    {
+      "id": "w_1f9634c0",
+      "name": "Portland Visitor Information Centre",
+      "type": "poi",
+      "lat": -38.345962,
+      "lon": 141.607309
+    },
+    {
+      "id": "w_20ba9853",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.079473,
+      "lon": 141.419511
+    },
+    {
+      "id": "w_26fa1bff",
+      "name": "Cubby’s Camp Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.238038,
+      "lon": 141.59462
+    },
+    {
+      "id": "w_2f676d02",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -38.368887,
+      "lon": 141.407306
+    },
+    {
+      "id": "w_2f7b11a1",
+      "name": "Junction 1 Discovery Bay",
+      "type": "junction",
+      "lat": -38.324688,
+      "lon": 141.400635
+    },
+    {
+      "id": "w_364a310c",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.021163,
+      "lon": 141.100487
+    },
+    {
+      "id": "w_38d4d29f",
+      "name": "Bridgewater Lakes",
+      "type": "poi",
+      "lat": -38.319494,
+      "lon": 141.404643
+    },
+    {
+      "id": "w_3ac270ea",
+      "name": "Mallee Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.426439,
+      "lon": 141.549928
+    },
+    {
+      "id": "w_3d4cc9c1",
+      "name": "Lookout",
+      "type": "poi",
+      "lat": -37.994474,
+      "lon": 141.017863
+    },
+    {
+      "id": "w_3d808841",
+      "name": "Moleside Falls",
+      "type": "poi",
+      "lat": -38.054225,
+      "lon": 141.270998
+    },
+    {
+      "id": "w_459a3b33",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.134814,
+      "lon": 141.184705
+    },
+    {
+      "id": "w_46891900",
+      "name": "Petrified Forest",
+      "type": "poi",
+      "lat": -38.380833,
+      "lon": 141.368998
+    },
+    {
+      "id": "w_49b89287",
+      "name": "Junction Amos Road Car Park",
+      "type": "junction",
+      "lat": -38.34848,
+      "lon": 141.388543
+    },
+    {
+      "id": "w_5192945c",
+      "name": "Yellow Rock",
+      "type": "poi",
+      "lat": -38.386916,
+      "lon": 141.581546
+    },
+    {
+      "id": "w_5cf79135",
+      "name": "Tarragal Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.309925,
+      "lon": 141.447555
+    },
+    {
+      "id": "w_683fe4c2",
+      "name": "Sapling Creek",
+      "type": "poi",
+      "lat": -38.020493,
+      "lon": 141.099676
+    },
+    {
+      "id": "w_6f7849e7",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.046325,
+      "lon": 141.160623
+    },
+    {
+      "id": "w_72050072",
+      "name": "Trewalla Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.360327,
+      "lon": 141.463262
+    },
+    {
+      "id": "w_7752fd9b",
+      "name": "Cape Nelson Lighthouse",
+      "type": "poi",
+      "lat": -38.430249,
+      "lon": 141.543122
+    },
+    {
+      "id": "w_77c36be4",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -38.213475,
+      "lon": 141.311439
+    },
+    {
+      "id": "w_84828d97",
+      "name": "Blow Holes",
+      "type": "poi",
+      "lat": -38.378758,
+      "lon": 141.366793
+    },
+    {
+      "id": "w_8482bff9",
+      "name": "Train Crossing",
+      "type": "poi",
+      "lat": -38.274337,
+      "lon": 141.590364
+    },
+    {
+      "id": "w_8e75c8a2",
+      "name": "Enchanted Forest",
+      "type": "poi",
+      "lat": -38.397614,
+      "lon": 141.566979
+    },
+    {
+      "id": "w_987747b4",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.268385,
+      "lon": 141.417867
+    },
+    {
+      "id": "w_9b5e0099",
+      "name": "Cut-Out Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.184816,
+      "lon": 141.499126
+    },
+    {
+      "id": "w_9cd06c30",
+      "name": "Cobboboonee Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.148093,
+      "lon": 141.438547
+    },
+    {
+      "id": "w_a0831edb",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.36195,
+      "lon": 141.370509
+    },
+    {
+      "id": "w_b35cb9e9",
+      "name": "Battersbys Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.046282,
+      "lon": 141.160582
+    },
+    {
+      "id": "w_b38283ac",
+      "name": "Inkpot",
+      "type": "poi",
+      "lat": -38.058114,
+      "lon": 141.29632
+    },
+    {
+      "id": "w_b87f9222",
+      "name": "Cape Bridgewater",
+      "type": "poi",
+      "lat": -38.368571,
+      "lon": 141.407803
+    },
+    {
+      "id": "w_b9eafa53",
+      "name": "Fitzroy River Bridge",
+      "type": "poi",
+      "lat": -38.078229,
+      "lon": 141.415146
+    },
+    {
+      "id": "w_c373f71c",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.033708,
+      "lon": 140.99393
+    },
+    {
+      "id": "w_c5ea9c88",
+      "name": "Lake Monibeong Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.134516,
+      "lon": 141.18494
+    },
+    {
+      "id": "w_c9277fcd",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.184903,
+      "lon": 141.499133
+    },
+    {
+      "id": "w_cf3ef7a5",
+      "name": "Seal Colony",
+      "type": "poi",
+      "lat": -38.395019,
+      "lon": 141.412077
+    },
+    {
+      "id": "w_d6e8b58c",
+      "name": "Junction 1 Bridgewater Lakes",
+      "type": "junction",
+      "lat": -38.326319,
+      "lon": 141.395599
+    },
+    {
+      "id": "w_d79003c5",
+      "name": "Moleside Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.054531,
+      "lon": 141.268583
+    },
+    {
+      "id": "w_d95731e2",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.238239,
+      "lon": 141.594937
+    },
+    {
+      "id": "w_dc92d4b2",
+      "name": "Portland",
+      "type": "town",
+      "lat": -38.345623,
+      "lon": 141.60423
+    },
+    {
+      "id": "w_eb2f97b9",
+      "name": "Simsons Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.033622,
+      "lon": 140.994052
+    },
+    {
+      "id": "w_ebe70677",
+      "name": "Fitzroy Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.079371,
+      "lon": 141.419464
+    },
+    {
+      "id": "w_f00e1ab7",
+      "name": "The Springs Hike-in Campground",
+      "type": "campsite",
+      "lat": -38.362162,
+      "lon": 141.370437
+    },
+    {
+      "id": "w_fb74e1c3",
+      "name": "Water tap",
+      "type": "water",
+      "lat": -38.342218,
+      "lon": 141.60766
+    },
+    {
+      "id": "w_fe266414",
+      "name": "Water (unreliable)",
+      "type": "water",
+      "lat": -38.309676,
+      "lon": 141.447873
+    }
+  ],
   "heysen": [
     {
       "id": "w_00c67cb1",
@@ -8733,6 +11044,50 @@
       "lon": 148.76889
     }
   ],
+  "kep_track": [
+    {
+      "id": "w_01986ced",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.904302,
+      "lon": 116.166597
+    },
+    {
+      "id": "w_0616baae",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.954397,
+      "lon": 116.166352
+    },
+    {
+      "id": "w_77bfad1f",
+      "name": "Summer Creek Farm Camping Bakers Hill",
+      "type": "campsite",
+      "lat": -31.747633,
+      "lon": 116.45519
+    },
+    {
+      "id": "w_a23d013a",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -31.720213,
+      "lon": 116.523265
+    },
+    {
+      "id": "w_cf1eb062",
+      "name": "Mount Helena",
+      "type": "town",
+      "lat": -31.87788,
+      "lon": 116.209348
+    },
+    {
+      "id": "w_ef6ca162",
+      "name": "Northam RV 48hr Stay",
+      "type": "campsite",
+      "lat": -31.657551,
+      "lon": 116.660092
+    }
+  ],
   "larapinta": [
     {
       "id": "w_013ce1c7",
@@ -9153,6 +11508,374 @@
       "type": "campsite",
       "lat": -23.75484,
       "lon": 132.98086
+    }
+  ],
+  "overland": [
+    {
+      "id": "w_005d9e1d",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -41.771127,
+      "lon": 145.955699
+    },
+    {
+      "id": "w_09be7e66",
+      "name": "Pine Valley Hut Tent Platforms",
+      "type": "campsite",
+      "lat": -41.958515,
+      "lon": 146.063358
+    },
+    {
+      "id": "w_0c6a29f2",
+      "name": "Kia Ora Hut",
+      "type": "hut",
+      "lat": -41.892853,
+      "lon": 146.080637
+    },
+    {
+      "id": "w_102735c8",
+      "name": "Fergusson Falls",
+      "type": "poi",
+      "lat": -41.908477,
+      "lon": 146.122197
+    },
+    {
+      "id": "w_25663a03",
+      "name": "Du Cane Hut",
+      "type": "poi",
+      "lat": -41.90457,
+      "lon": 146.102221
+    },
+    {
+      "id": "w_258f9675",
+      "name": "Echo Point Hut",
+      "type": "hut",
+      "lat": -42.043441,
+      "lon": 146.138011
+    },
+    {
+      "id": "w_28a55803",
+      "name": "Old Waterfall Valley Hut",
+      "type": "hut",
+      "lat": -41.714474,
+      "lon": 145.945364
+    },
+    {
+      "id": "w_28d11af4",
+      "name": "Windy Ridge Group Campsite",
+      "type": "campsite",
+      "lat": -41.930952,
+      "lon": 146.08942
+    },
+    {
+      "id": "w_31900bfa",
+      "name": "Cradle Mountain",
+      "type": "mountain",
+      "lat": -41.684644,
+      "lon": 145.951304
+    },
+    {
+      "id": "w_31c02d2a",
+      "name": "Mount Doris",
+      "type": "mountain",
+      "lat": -41.866392,
+      "lon": 146.047498
+    },
+    {
+      "id": "w_33d3a852",
+      "name": "Pelion Gap",
+      "type": "poi",
+      "lat": -41.863984,
+      "lon": 146.058079
+    },
+    {
+      "id": "w_36a181e3",
+      "name": "Mount Ossa",
+      "type": "mountain",
+      "lat": -41.870716,
+      "lon": 146.032969
+    },
+    {
+      "id": "w_3d5c168a",
+      "name": "New Pelion Hut",
+      "type": "hut",
+      "lat": -41.829519,
+      "lon": 146.046444
+    },
+    {
+      "id": "w_41009bee",
+      "name": "Kia Ora Hut Public Camping Platform",
+      "type": "campsite",
+      "lat": -41.892205,
+      "lon": 146.081933
+    },
+    {
+      "id": "w_459b4063",
+      "name": "Kia Ora Hut (Cradle Mountain Huts)",
+      "type": "poi",
+      "lat": -41.889257,
+      "lon": 146.079932
+    },
+    {
+      "id": "w_48efc5aa",
+      "name": "Crater Lake Hut",
+      "type": "hut",
+      "lat": -41.653629,
+      "lon": 145.944381
+    },
+    {
+      "id": "w_49f79a32",
+      "name": "Mt Kate House",
+      "type": "poi",
+      "lat": -41.635424,
+      "lon": 145.950698
+    },
+    {
+      "id": "w_4da086ca",
+      "name": "Dalton Falls",
+      "type": "poi",
+      "lat": -41.908132,
+      "lon": 146.120157
+    },
+    {
+      "id": "w_54bed341",
+      "name": "Waterfall Valley Group Camping Platform",
+      "type": "campsite",
+      "lat": -41.714222,
+      "lon": 145.945297
+    },
+    {
+      "id": "w_55078e91",
+      "name": "Cynthia Bay",
+      "type": "endpoint",
+      "lat": -42.116927,
+      "lon": 146.172743
+    },
+    {
+      "id": "w_5e91e899",
+      "name": "Kitchen Hut",
+      "type": "poi",
+      "lat": -41.675704,
+      "lon": 145.946137
+    },
+    {
+      "id": "w_66ebb08a",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -41.931885,
+      "lon": 146.088744
+    },
+    {
+      "id": "w_680e4faa",
+      "name": "Marions Lookout",
+      "type": "mountain",
+      "lat": -41.66038,
+      "lon": 145.9527
+    },
+    {
+      "id": "w_75484c20",
+      "name": "Narcissus Hut",
+      "type": "hut",
+      "lat": -42.012535,
+      "lon": 146.101734
+    },
+    {
+      "id": "w_78ab9414",
+      "name": "Kia Ora Hut Group Camping Platform",
+      "type": "campsite",
+      "lat": -41.891787,
+      "lon": 146.081329
+    },
+    {
+      "id": "w_7b02aee3",
+      "name": "New Pelion Hut Group Campsite",
+      "type": "campsite",
+      "lat": -41.830294,
+      "lon": 146.046777
+    },
+    {
+      "id": "w_8b20ef71",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -41.771658,
+      "lon": 145.958024
+    },
+    {
+      "id": "w_9a56559b",
+      "name": "Waterfall Valley Public Camping Platform",
+      "type": "campsite",
+      "lat": -41.714446,
+      "lon": 145.946793
+    },
+    {
+      "id": "w_9a97dbaa",
+      "name": "Ronny Creek Registration Booth",
+      "type": "poi",
+      "lat": -41.635804,
+      "lon": 145.949204
+    },
+    {
+      "id": "w_9ef6dd0b",
+      "name": "Forth River Viewpoint",
+      "type": "poi",
+      "lat": -41.797494,
+      "lon": 145.98354
+    },
+    {
+      "id": "w_a4a3bbc5",
+      "name": "Mount Pelion East",
+      "type": "mountain",
+      "lat": -41.85723,
+      "lon": 146.06762
+    },
+    {
+      "id": "w_a835cad6",
+      "name": "Barn Bluff",
+      "type": "mountain",
+      "lat": -41.724037,
+      "lon": 145.923022
+    },
+    {
+      "id": "w_b0040229",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -41.771407,
+      "lon": 145.956529
+    },
+    {
+      "id": "w_b227e993",
+      "name": "Emergency Shelter",
+      "type": "poi",
+      "lat": -41.700295,
+      "lon": 145.949916
+    },
+    {
+      "id": "w_be3eb063",
+      "name": "Narcissus Hut Campsite",
+      "type": "campsite",
+      "lat": -42.012748,
+      "lon": 146.102048
+    },
+    {
+      "id": "w_bef66643",
+      "name": "Bert Nichols Hut",
+      "type": "hut",
+      "lat": -41.932092,
+      "lon": 146.088913
+    },
+    {
+      "id": "w_bf4db6de",
+      "name": "Waterfall Valley Hut",
+      "type": "hut",
+      "lat": -41.714676,
+      "lon": 145.9469
+    },
+    {
+      "id": "w_c2909936",
+      "name": "Pine Valley Hut",
+      "type": "hut",
+      "lat": -41.958534,
+      "lon": 146.063478
+    },
+    {
+      "id": "w_c2f70102",
+      "name": "Windermere Hut",
+      "type": "hut",
+      "lat": -41.771065,
+      "lon": 145.956503
+    },
+    {
+      "id": "w_c608352a",
+      "name": "Smithies Peak",
+      "type": "mountain",
+      "lat": -41.68191,
+      "lon": 145.95241
+    },
+    {
+      "id": "w_c6e9f53e",
+      "name": "Windermere Lake Viewpoint",
+      "type": "poi",
+      "lat": -41.7681,
+      "lon": 145.952667
+    },
+    {
+      "id": "w_d42f9c6d",
+      "name": "Windy Ridge Private Hut (Cradle Mountain Huts)",
+      "type": "poi",
+      "lat": -41.93152,
+      "lon": 146.087809
+    },
+    {
+      "id": "w_d900d596",
+      "name": "Echo Point Campsite",
+      "type": "campsite",
+      "lat": -42.043399,
+      "lon": 146.137904
+    },
+    {
+      "id": "w_da947d27",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -42.116167,
+      "lon": 146.1744
+    },
+    {
+      "id": "w_e7d82fed",
+      "name": "Fergy's Paddock Camp Site",
+      "type": "campsite",
+      "lat": -42.114339,
+      "lon": 146.168328
+    },
+    {
+      "id": "w_ebfb3b36",
+      "name": "Marion's Lookout",
+      "type": "poi",
+      "lat": -41.660333,
+      "lon": 145.952845
+    },
+    {
+      "id": "w_edfbe06b",
+      "name": "Wombat Peak",
+      "type": "mountain",
+      "lat": -41.65457,
+      "lon": 145.94721
+    },
+    {
+      "id": "w_ef558e9f",
+      "name": "Pelion Hut (Cradle Mountain Huts)",
+      "type": "poi",
+      "lat": -41.835867,
+      "lon": 146.044696
+    }
+  ],
+  "royal_coast_track": [
+    {
+      "id": "w_1ea85892",
+      "name": "Werrong Lookout",
+      "type": "poi",
+      "lat": -34.198796,
+      "lon": 151.022575
+    },
+    {
+      "id": "w_72be7bbf",
+      "name": "Otford Lookout",
+      "type": "poi",
+      "lat": -34.211467,
+      "lon": 151.010581
+    },
+    {
+      "id": "w_b6cd63ff",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -34.091975,
+      "lon": 151.157323
+    },
+    {
+      "id": "w_fcacbef4",
+      "name": "North Era Beach Campground",
+      "type": "campsite",
+      "lat": -34.176972,
+      "lon": 151.056453
     }
   ],
   "shikoku": [
@@ -9736,6 +12459,206 @@
       "type": "poi",
       "lat": 34.147453,
       "lon": 134.4685024
+    }
+  ],
+  "six_foot_track": [
+    {
+      "id": "w_08059283",
+      "name": "Six Foot Track Information Shelter",
+      "type": "poi",
+      "lat": -33.70395,
+      "lon": 150.288416
+    },
+    {
+      "id": "w_30f90ba1",
+      "name": "Therabulat Lookout",
+      "type": "poi",
+      "lat": -33.711296,
+      "lon": 150.291036
+    },
+    {
+      "id": "w_7a3dec9e",
+      "name": "Coxs River Camp Area",
+      "type": "campsite",
+      "lat": -33.742828,
+      "lon": 150.178779
+    },
+    {
+      "id": "w_9905d34a",
+      "name": "Mount George",
+      "type": "mountain",
+      "lat": -33.814838,
+      "lon": 150.028266
+    },
+    {
+      "id": "w_9efee08f",
+      "name": "Norths Lookout",
+      "type": "poi",
+      "lat": -33.709975,
+      "lon": 150.289258
+    },
+    {
+      "id": "w_9f949f0b",
+      "name": "Black Range Camp Ground",
+      "type": "campsite",
+      "lat": -33.755118,
+      "lon": 150.047944
+    },
+    {
+      "id": "w_d38267f2",
+      "name": "Alum Creek Campground",
+      "type": "campsite",
+      "lat": -33.757639,
+      "lon": 150.13938
+    },
+    {
+      "id": "w_e864dd52",
+      "name": "Pulpit Hill",
+      "type": "mountain",
+      "lat": -33.702528,
+      "lon": 150.289362
+    }
+  ],
+  "south_coast_track": [
+    {
+      "id": "w_037443cb",
+      "name": "Campsite",
+      "type": "campsite",
+      "lat": -43.581912,
+      "lon": 146.890328
+    },
+    {
+      "id": "w_0ff8e166",
+      "name": "Boltons Green Campground",
+      "type": "campsite",
+      "lat": -43.582583,
+      "lon": 146.895832
+    },
+    {
+      "id": "w_1112dafe",
+      "name": "New River Lagoon Boat Crossing Campsite",
+      "type": "campsite",
+      "lat": -43.536425,
+      "lon": 146.590181
+    },
+    {
+      "id": "w_3e96fe84",
+      "name": "Louisa River Campsite",
+      "type": "campsite",
+      "lat": -43.48533,
+      "lon": 146.409871
+    },
+    {
+      "id": "w_40718640",
+      "name": "Freney Lagoon Campsite",
+      "type": "campsite",
+      "lat": -43.491028,
+      "lon": 146.22512
+    },
+    {
+      "id": "w_53863551",
+      "name": "South Cape Rivulet Campsite",
+      "type": "campsite",
+      "lat": -43.599651,
+      "lon": 146.786233
+    },
+    {
+      "id": "w_56b93203",
+      "name": "Buoy Creek camp site",
+      "type": "campsite",
+      "lat": -43.497982,
+      "lon": 146.273481
+    },
+    {
+      "id": "w_66a3101e",
+      "name": "Point Eric Campsite",
+      "type": "campsite",
+      "lat": -43.491556,
+      "lon": 146.243014
+    },
+    {
+      "id": "w_77d67cb8",
+      "name": "South Cape Bay Campsite",
+      "type": "campsite",
+      "lat": -43.605658,
+      "lon": 146.817175
+    },
+    {
+      "id": "w_86cd15e0",
+      "name": "Granite Beach (east) Campsite",
+      "type": "campsite",
+      "lat": -43.596668,
+      "lon": 146.686331
+    },
+    {
+      "id": "w_b5794870",
+      "name": "Little Deadmans Bay Campsite",
+      "type": "campsite",
+      "lat": -43.530423,
+      "lon": 146.49671
+    },
+    {
+      "id": "w_bcfed5d5",
+      "name": "Louisa River Campsite",
+      "type": "campsite",
+      "lat": -43.486296,
+      "lon": 146.409843
+    },
+    {
+      "id": "w_becdb1ed",
+      "name": "Turua Beach West Campsite",
+      "type": "campsite",
+      "lat": -43.523306,
+      "lon": 146.512713
+    },
+    {
+      "id": "w_c0ac40e4",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -43.582743,
+      "lon": 146.895641
+    },
+    {
+      "id": "w_c7035d9d",
+      "name": "Ironbound high campground",
+      "type": "campsite",
+      "lat": -43.50714,
+      "lon": 146.467445
+    },
+    {
+      "id": "w_d4defacc",
+      "name": "Surprise Bay Campsite",
+      "type": "campsite",
+      "lat": -43.584406,
+      "lon": 146.658595
+    },
+    {
+      "id": "w_d65b6f04",
+      "name": "Osmiridium Beach Campsite",
+      "type": "campsite",
+      "lat": -43.561553,
+      "lon": 146.624421
+    },
+    {
+      "id": "w_e93e53c0",
+      "name": "Trackcutters Camp",
+      "type": "campsite",
+      "lat": -43.59541,
+      "lon": 146.72169
+    },
+    {
+      "id": "w_f4677628",
+      "name": "Louisa Creek Campground",
+      "type": "campsite",
+      "lat": -43.480448,
+      "lon": 146.349356
+    },
+    {
+      "id": "w_fe5e4f78",
+      "name": "Boltons Green Campground",
+      "type": "campsite",
+      "lat": -43.582976,
+      "lon": 146.895197
     }
   ],
   "te_araroa": [
@@ -14330,6 +17253,157 @@
       "type": "waypoint",
       "lat": -35.156621,
       "lon": 173.226284
+    }
+  ],
+  "thorsborne": [
+    {
+      "id": "w_14399866",
+      "name": "Thorsborne Trail High point",
+      "type": "poi",
+      "lat": -18.423737,
+      "lon": 146.32252
+    },
+    {
+      "id": "w_2053b158",
+      "name": "Mulligan Falls campsite",
+      "type": "campsite",
+      "lat": -18.441308,
+      "lon": 146.324645
+    },
+    {
+      "id": "w_360268e6",
+      "name": "Nina Bay",
+      "type": "campsite",
+      "lat": -18.331499,
+      "lon": 146.288454
+    },
+    {
+      "id": "w_43389253",
+      "name": "Little Ramsay Bay campsite",
+      "type": "campsite",
+      "lat": -18.34919,
+      "lon": 146.30078
+    },
+    {
+      "id": "w_9ac0c3d4",
+      "name": "Forest Campsites",
+      "type": "campsite",
+      "lat": -18.402859,
+      "lon": 146.325107
+    },
+    {
+      "id": "w_b47033ee",
+      "name": "Banksia Bay campsite",
+      "type": "campsite",
+      "lat": -18.356325,
+      "lon": 146.312823
+    },
+    {
+      "id": "w_fc1b14f4",
+      "name": "George Point campsite",
+      "type": "campsite",
+      "lat": -18.484914,
+      "lon": 146.325253
+    }
+  ],
+  "three_capes": [
+    {
+      "id": "w_00b86ed2",
+      "name": "Munro Cabin",
+      "type": "hut",
+      "lat": -43.199276,
+      "lon": 147.965233
+    },
+    {
+      "id": "w_09af2267",
+      "name": "Arthurs Peak",
+      "type": "mountain",
+      "lat": -43.18584,
+      "lon": 147.90485
+    },
+    {
+      "id": "w_22d363ee",
+      "name": "Drinking water",
+      "type": "water",
+      "lat": -43.199248,
+      "lon": 147.965161
+    },
+    {
+      "id": "w_30204345",
+      "name": "Fortescue Bay Campground",
+      "type": "campsite",
+      "lat": -43.142173,
+      "lon": 147.967378
+    },
+    {
+      "id": "w_4d8d56b6",
+      "name": "Monument Lookout",
+      "type": "poi",
+      "lat": -43.149546,
+      "lon": 147.993586
+    },
+    {
+      "id": "w_6a1244c7",
+      "name": "Retakunna Cabin",
+      "type": "hut",
+      "lat": -43.180202,
+      "lon": 147.949931
+    },
+    {
+      "id": "w_6b79b6ba",
+      "name": "Surveyors Cabin",
+      "type": "hut",
+      "lat": -43.168359,
+      "lon": 147.899461
+    },
+    {
+      "id": "w_73aabc3a",
+      "name": "The Blade",
+      "type": "mountain",
+      "lat": -43.22531,
+      "lon": 148.001384
+    },
+    {
+      "id": "w_8e70831b",
+      "name": "Where the ell are we?! (mid bench sign)",
+      "type": "poi",
+      "lat": -43.190734,
+      "lon": 147.927909
+    },
+    {
+      "id": "w_8f8ad897",
+      "name": "Seal spa",
+      "type": "poi",
+      "lat": -43.224091,
+      "lon": 148.002779
+    },
+    {
+      "id": "w_ba9b6188",
+      "name": "Mount Fortescue",
+      "type": "mountain",
+      "lat": -43.17191,
+      "lon": 147.96757
+    },
+    {
+      "id": "w_c198b5c8",
+      "name": "Mill Creek Campsite",
+      "type": "campsite",
+      "lat": -43.142695,
+      "lon": 147.967741
+    },
+    {
+      "id": "w_cd764254",
+      "name": "Pillars of the south",
+      "type": "poi",
+      "lat": -43.156232,
+      "lon": 147.980444
+    },
+    {
+      "id": "w_e2522cc4",
+      "name": "Bare Knoll Campground",
+      "type": "campsite",
+      "lat": -43.190047,
+      "lon": 147.95339
     }
   ]
 }

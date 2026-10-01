@@ -1,0 +1,52 @@
+{
+  "id": "south_coast_track",
+  "name": "South Coast Track",
+  "shortName": "South Coast",
+  "region": "Southwest National Park (TAS)",
+  "lengthKm": 85.5,
+  "gpxFile": "South_Coast_Track.gpx",
+  "dedupeWaypoints": true,
+  "trackClassification": {
+    "mainRoutePatterns": [
+      "^Main route$"
+    ],
+    "alternatePatterns": [
+      "^Alternate: "
+    ],
+    "sideTripPatterns": [
+      "^Side trip: "
+    ],
+    "terminusPatterns": [
+      "^Terminus: "
+    ],
+    "fallbackToLongest": false
+  },
+  "description": "Remote coastal walk from Melaleuca, reached by light plane, to Cockle Creek, over the Ironbound Range and along the beaches of the Southwest. New River Lagoon is crossed by rowing boat; the crossing is part of the line here.",
+  "dataSource": {
+    "text": "Track geometry from the LIST Transport Segments layer (© State of Tasmania, NRE Tasmania, CC BY 3.0 AU). Huts, campsites and other waypoints from OpenStreetMap (© OpenStreetMap contributors, ODbL). Elevation from the Copernicus GLO-30 DEM (© DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA).",
+    "url": "https://www.thelist.tas.gov.au/app/content/data/geo-meta-data-record?detailRecordUID=1ab7e34f-811c-4521-a549-212f295acc97",
+    "linkText": "LIST Transport Segments metadata"
+  },
+  "direction": {
+    "default": "Eastbound",
+    "reversed": "Westbound"
+  },
+  "climateLocations": [
+    {
+      "name": "Melaleuca",
+      "lat": -43.42,
+      "lon": 146.16
+    },
+    {
+      "name": "Ironbound Range",
+      "lat": -43.52,
+      "lon": 146.45
+    },
+    {
+      "name": "Cockle Creek",
+      "lat": -43.58,
+      "lon": 146.89
+    }
+  ],
+  "climateFile": "climate.json"
+}

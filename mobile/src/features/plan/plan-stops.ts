@@ -12,8 +12,15 @@
  * Pure and React-free, so the conversion can be tested without a renderer.
  */
 
-import { overnightCandidates, type ToggleTarget, type StopKey } from '@lib/plan-editor';
-import { toNoboKm, type PlanDirection } from '@lib/plan-direction';
+import {
+  isStopSelected,
+  overnightCandidates,
+  type ToggleTarget,
+  type StopKey,
+} from '@lib/plan-editor';
+import type { PlanDocument } from '@lib/plan-types';
+import { KM_EPSILON, toActiveKm, toNoboKm, type PlanDirection } from '@lib/plan-direction';
+import { calculateElevationBetween, type ElevationPoint } from '@lib/track-geometry';
 import type { TrailJson } from '../../services/trail-assets';
 import type { Direction } from '../../state/settings-store';
 
@@ -103,4 +110,65 @@ export function stopCandidates(
     ? [...trail.waypoints].sort((a, b) => (a.totalDistance ?? 0) - (b.totalDistance ?? 0))
     : overnightCandidates(trail.waypoints);
   return source.map((wp) => stopCandidateOf(wp, direction, total));
+}
+
+/** The walk to a place from the stop before it — the day so far, were you to stop there. */
+export interface StopLeg {
+  /** km from the previous stop (or the section start) to this place. */
+  distanceKm: number;
+  /** Metres climbed over that stretch. */
+  ascentM: number;
+  /** Metres descended over that stretch. */
+  descentM: number;
+}
+
+/**
+ * Each candidate's leg from the stop before it, so the Stops list reads as a
+ * day being built: figures count up from zero after every ticked stop.
+ *
+ * Measured on the direction-applied guide trail (`activeKm`), from the latest
+ * of the section start and the plan's stops behind the place. A ticked place
+ * measures from the stop before it (its row shows the whole day it ends); an
+ * unticked place measures from the last stop at or behind it. A place behind
+ * the section start counts from the trail start.
+ *
+ * `breakStarts` is `routeBreakStarts(track.breaks, 'points')`, so a ferry is
+ * never climbed (and is ignored when the points carry cumulative elevation).
+ */
+export function stopLegs(
+  candidates: StopCandidate[],
+  plan: PlanDocument | undefined,
+  opts: {
+    direction: PlanDirection;
+    /** The trail's `track.totalDistance` — the mirror for a reversed guide. */
+    totalDistance: number;
+    sectionStartKm: number;
+    points: ElevationPoint[];
+    breakStarts?: ReadonlySet<number>;
+  },
+): Map<string, StopLeg> {
+  const stopKms = (plan?.stops ?? []).map((s) =>
+    toActiveKm(s.km, opts.direction, opts.totalDistance),
+  );
+  const anchors = [opts.sectionStartKm, ...stopKms].sort((a, b) => a - b);
+
+  const legs = new Map<string, StopLeg>();
+  for (const candidate of candidates) {
+    const km = candidate.activeKm;
+    // The same test as the row's checkbox, so the figures and the tick agree.
+    const ticked = plan !== undefined && isStopSelected(plan, stopKeyOf(candidate));
+    let from = 0;
+    for (const anchor of anchors) {
+      const behind = ticked ? anchor < km - KM_EPSILON : anchor <= km + KM_EPSILON;
+      if (!behind) break;
+      from = anchor;
+    }
+    const distanceKm = Math.max(0, km - from);
+    const { gain, loss } =
+      distanceKm > 0
+        ? calculateElevationBetween(from, km, opts.points, opts.breakStarts)
+        : { gain: 0, loss: 0 };
+    legs.set(candidate.key, { distanceKm, ascentM: gain, descentM: loss });
+  }
+  return legs;
 }

@@ -105,6 +105,8 @@ function render(overrides: Partial<React.ComponentProps<typeof StopsSection>> = 
     plan: undefined,
     pois: undefined,
     units: 'km',
+    legs: new Map(),
+    showClimb: true,
     showAll: false,
     onShowAll: noop,
     onToggle: noop,
@@ -121,6 +123,24 @@ function render(overrides: Partial<React.ComponentProps<typeof StopsSection>> = 
 }
 
 describe('StopsSection', () => {
+  it("shows each row's day so far, with its climb, when given legs", () => {
+    const legs = new Map([
+      ['w_a', { distanceKm: 10, ascentM: 420, descentM: 130 }],
+      ['w_b', { distanceKm: 20, ascentM: 0, descentM: 610 }],
+    ]);
+    const text = allText(render({ legs }));
+    expect(text).toContain('10.0 km · ↑ 420 m · ↓ 130 m');
+    expect(text).toContain('20.0 km · ↑ 0 m · ↓ 610 m');
+    expect(text).not.toContain('30.0 km');
+  });
+
+  it('leaves the climb out for a trail with no usable profile', () => {
+    const legs = new Map([['w_a', { distanceKm: 10, ascentM: 0, descentM: 0 }]]);
+    const text = allText(render({ legs, showClimb: false }));
+    expect(text).toContain('10.0 km');
+    expect(text).not.toContain('↑');
+  });
+
   it('renders one unchecked checkbox row per candidate, with its km', () => {
     const tree = render();
     expect(rows(tree)).toHaveLength(2);

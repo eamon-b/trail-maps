@@ -731,11 +731,16 @@ export function attachVariantsToParents(
  * waypoint identity must guard against the fan-out - see the duplicate-id check
  * in buildTrail. `maxDistanceMeters` is required: variants and the main route
  * use deliberately different thresholds.
+ *
+ * `mergeLoopClosure` is for the main route only. A variant that ends where it
+ * started is an out-and-back side trip, and its datasheet lists the junction
+ * again on the way back on purpose (the Shikoku Henro's Okunoin return).
  */
 export function findWaypointVisits(
   waypoints: TrailWaypoint[],
   trackPoints: { lat: number; lon: number; ele: number }[],
-  maxDistanceMeters: number
+  maxDistanceMeters: number,
+  mergeLoopClosure = false
 ): WaypointVisit[] {
   if (trackPoints.length === 0 || waypoints.length === 0) {
     return [];
@@ -791,6 +796,7 @@ export function findWaypointVisits(
   const first = trackPoints[0];
   const last = trackPoints[trackPoints.length - 1];
   const closedLoop =
+    mergeLoopClosure &&
     trackPoints.length > 1 &&
     haversineDistanceMeters(first.lat, first.lon, last.lat, last.lon) <= maxDistanceMeters;
   const recorded = new Set(visits.map(v => v.waypoint));
@@ -864,7 +870,7 @@ export function enrichWaypoints(
     return [];
   }
 
-  const visits = findWaypointVisits(waypoints, trackPoints, maxDistanceMeters);
+  const visits = findWaypointVisits(waypoints, trackPoints, maxDistanceMeters, true);
 
   if (visits.length === 0) {
     return [];

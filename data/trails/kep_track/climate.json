@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-10-02T00:35:49.553Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Mundaring",
+      "lat": -31.9,
+      "lon": 116.17,
+      "elevation": 291,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 17.3,
+          "avgTempMax": 31.5,
+          "avgPrecipitation": 20.6,
+          "avgRainyDays": 2.3
+        },
+        {
+          "month": 2,
+          "avgTempMin": 17.7,
+          "avgTempMax": 31.2,
+          "avgPrecipitation": 14.3,
+          "avgRainyDays": 1.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 16.3,
+          "avgTempMax": 28.5,
+          "avgPrecipitation": 26,
+          "avgRainyDays": 3.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 13.5,
+          "avgTempMax": 24,
+          "avgPrecipitation": 29.3,
+          "avgRainyDays": 4.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": 10.6,
+          "avgTempMax": 19.7,
+          "avgPrecipitation": 65.8,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 6,
+          "avgTempMin": 8.5,
+          "avgTempMax": 16.3,
+          "avgPrecipitation": 87.7,
+          "avgRainyDays": 9.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 7.6,
+          "avgTempMax": 15.2,
+          "avgPrecipitation": 107.4,
+          "avgRainyDays": 11.7
+        },
+        {
+          "month": 8,
+          "avgTempMin": 7.5,
+          "avgTempMax": 15.9,
+          "avgPrecipitation": 89.7,
+          "avgRainyDays": 10.3
+        },
+        {
+          "month": 9,
+          "avgTempMin": 8.4,
+          "avgTempMax": 17.6,
+          "avgPrecipitation": 62.8,
+          "avgRainyDays": 8.4
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.3,
+          "avgTempMax": 21.3,
+          "avgPrecipitation": 36.1,
+          "avgRainyDays": 5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 13.1,
+          "avgTempMax": 25.5,
+          "avgPrecipitation": 22,
+          "avgRainyDays": 3.9
+        },
+        {
+          "month": 12,
+          "avgTempMin": 15.5,
+          "avgTempMax": 29.2,
+          "avgPrecipitation": 13.6,
+          "avgRainyDays": 2
+        }
+      ]
+    },
+    {
+      "name": "Wooroloo",
+      "lat": -31.8,
+      "lon": 116.31,
+      "elevation": 256,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 17.5,
+          "avgTempMax": 32.3,
+          "avgPrecipitation": 22.5,
+          "avgRainyDays": 2.3
+        },
+        {
+          "month": 2,
+          "avgTempMin": 17.8,
+          "avgTempMax": 31.9,
+          "avgPrecipitation": 13.7,
+          "avgRainyDays": 1.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 16.3,
+          "avgTempMax": 29.1,
+          "avgPrecipitation": 26.7,
+          "avgRainyDays": 3.7
+        },
+        {
+          "month": 4,
+          "avgTempMin": 13.2,
+          "avgTempMax": 24.6,
+          "avgPrecipitation": 28,
+          "avgRainyDays": 4
+        },
+        {
+          "month": 5,
+          "avgTempMin": 10.2,
+          "avgTempMax": 20.2,
+          "avgPrecipitation": 57,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 6,
+          "avgTempMin": 8.1,
+          "avgTempMax": 16.7,
+          "avgPrecipitation": 72.2,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 7,
+          "avgTempMin": 7.1,
+          "avgTempMax": 15.5,
+          "avgPrecipitation": 91.7,
+          "avgRainyDays": 11.3
+        },
+        {
+          "month": 8,
+          "avgTempMin": 7.1,
+          "avgTempMax": 16.2,
+          "avgPrecipitation": 75.5,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 9,
+          "avgTempMin": 8,
+          "avgTempMax": 18,
+          "avgPrecipitation": 51,
+          "avgRainyDays": 7.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.1,
+          "avgTempMax": 22,
+          "avgPrecipitation": 30.8,
+          "avgRainyDays": 4.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": 13.1,
+          "avgTempMax": 26.5,
+          "avgPrecipitation": 19.5,
+          "avgRainyDays": 3.8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 15.6,
+          "avgTempMax": 30.1,
+          "avgPrecipitation": 12.5,
+          "avgRainyDays": 1.9
+        }
+      ]
+    },
+    {
+      "name": "Northam",
+      "lat": -31.65,
+      "lon": 116.67,
+      "elevation": 152,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 18.5,
+          "avgTempMax": 33.2,
+          "avgPrecipitation": 21.7,
+          "avgRainyDays": 2.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": 18.7,
+          "avgTempMax": 32.7,
+          "avgPrecipitation": 13.1,
+          "avgRainyDays": 1.6
+        },
+        {
+          "month": 3,
+          "avgTempMin": 17,
+          "avgTempMax": 29.8,
+          "avgPrecipitation": 25.5,
+          "avgRainyDays": 3
+        },
+        {
+          "month": 4,
+          "avgTempMin": 13.8,
+          "avgTempMax": 25.5,
+          "avgPrecipitation": 20.1,
+          "avgRainyDays": 3.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": 10.4,
+          "avgTempMax": 21.2,
+          "avgPrecipitation": 37.9,
+          "avgRainyDays": 5.2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 8.1,
+          "avgTempMax": 17.6,
+          "avgPrecipitation": 45.3,
+          "avgRainyDays": 7
+        },
+        {
+          "month": 7,
+          "avgTempMin": 7.1,
+          "avgTempMax": 16.3,
+          "avgPrecipitation": 60.2,
+          "avgRainyDays": 9.2
+        },
+        {
+          "month": 8,
+          "avgTempMin": 7,
+          "avgTempMax": 17,
+          "avgPrecipitation": 45.7,
+          "avgRainyDays": 7.4
+        },
+        {
+          "month": 9,
+          "avgTempMin": 8.1,
+          "avgTempMax": 19.3,
+          "avgPrecipitation": 29.4,
+          "avgRainyDays": 5.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.8,
+          "avgTempMax": 23.9,
+          "avgPrecipitation": 20.5,
+          "avgRainyDays": 3.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 14.1,
+          "avgTempMax": 28.2,
+          "avgPrecipitation": 13.3,
+          "avgRainyDays": 2.3
+        },
+        {
+          "month": 12,
+          "avgTempMin": 16.6,
+          "avgTempMax": 31.4,
+          "avgPrecipitation": 10.8,
+          "avgRainyDays": 1.5
+        }
+      ]
+    }
+  ]
+}

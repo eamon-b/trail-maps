@@ -6,6 +6,98 @@
   },
   "locations": [
     {
+      "name": "Port Arthur",
+      "lat": -43.14,
+      "lon": 147.85,
+      "elevation": 35,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 13.3,
+          "avgTempMax": 18.4,
+          "avgPrecipitation": 55.2,
+          "avgRainyDays": 8.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": 13.6,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 48.7,
+          "avgRainyDays": 7.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": 12.9,
+          "avgTempMax": 17.4,
+          "avgPrecipitation": 53,
+          "avgRainyDays": 8.8
+        },
+        {
+          "month": 4,
+          "avgTempMin": 11.3,
+          "avgTempMax": 15.6,
+          "avgPrecipitation": 50,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 5,
+          "avgTempMin": 9.8,
+          "avgTempMax": 13.5,
+          "avgPrecipitation": 48.3,
+          "avgRainyDays": 9.4
+        },
+        {
+          "month": 6,
+          "avgTempMin": 8.6,
+          "avgTempMax": 11.9,
+          "avgPrecipitation": 50.5,
+          "avgRainyDays": 9.6
+        },
+        {
+          "month": 7,
+          "avgTempMin": 8,
+          "avgTempMax": 11.4,
+          "avgPrecipitation": 46.8,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 8,
+          "avgTempMin": 7.8,
+          "avgTempMax": 11.8,
+          "avgPrecipitation": 56.1,
+          "avgRainyDays": 11
+        },
+        {
+          "month": 9,
+          "avgTempMin": 8.4,
+          "avgTempMax": 12.9,
+          "avgPrecipitation": 53.2,
+          "avgRainyDays": 10.8
+        },
+        {
+          "month": 10,
+          "avgTempMin": 9.2,
+          "avgTempMax": 13.9,
+          "avgPrecipitation": 62.9,
+          "avgRainyDays": 11.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 10.5,
+          "avgTempMax": 15.2,
+          "avgPrecipitation": 60.6,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 12,
+          "avgTempMin": 11.8,
+          "avgTempMax": 16.7,
+          "avgPrecipitation": 56.8,
+          "avgRainyDays": 9.7
+        }
+      ]
+    },
+    {
       "name": "Fortescue Bay",
       "lat": -43.13,
       "lon": 147.96,

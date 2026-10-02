@@ -6,6 +6,98 @@
   },
   "locations": [
     {
+      "name": "Apollo Bay",
+      "lat": -38.76,
+      "lon": 143.67,
+      "elevation": 10,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 14.5,
+          "avgTempMax": 20.7,
+          "avgPrecipitation": 58.2,
+          "avgRainyDays": 7.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": 15,
+          "avgTempMax": 20.8,
+          "avgPrecipitation": 45.2,
+          "avgRainyDays": 6.9
+        },
+        {
+          "month": 3,
+          "avgTempMin": 14.3,
+          "avgTempMax": 19.5,
+          "avgPrecipitation": 59.8,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 12.6,
+          "avgTempMax": 17.3,
+          "avgPrecipitation": 62,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 5,
+          "avgTempMin": 11.1,
+          "avgTempMax": 14.9,
+          "avgPrecipitation": 82.6,
+          "avgRainyDays": 12.9
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9.6,
+          "avgTempMax": 12.9,
+          "avgPrecipitation": 83.2,
+          "avgRainyDays": 12.6
+        },
+        {
+          "month": 7,
+          "avgTempMin": 8.8,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 86.7,
+          "avgRainyDays": 14.9
+        },
+        {
+          "month": 8,
+          "avgTempMin": 8.7,
+          "avgTempMax": 12.9,
+          "avgPrecipitation": 109.8,
+          "avgRainyDays": 15.9
+        },
+        {
+          "month": 9,
+          "avgTempMin": 9.4,
+          "avgTempMax": 14.4,
+          "avgPrecipitation": 93,
+          "avgRainyDays": 14.8
+        },
+        {
+          "month": 10,
+          "avgTempMin": 10.2,
+          "avgTempMax": 15.8,
+          "avgPrecipitation": 87.4,
+          "avgRainyDays": 13.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 11.6,
+          "avgTempMax": 17.3,
+          "avgPrecipitation": 75.2,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 12.9,
+          "avgTempMax": 18.9,
+          "avgPrecipitation": 65.1,
+          "avgRainyDays": 9.4
+        }
+      ]
+    },
+    {
       "name": "Cape Otway",
       "lat": -38.86,
       "lon": 143.51,

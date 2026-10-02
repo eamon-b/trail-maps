@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-10-02T00:36:24.733Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Ramsay Bay",
+      "lat": -18.31,
+      "lon": 146.27,
+      "elevation": 5,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 24.7,
+          "avgTempMax": 29.2,
+          "avgPrecipitation": 295.1,
+          "avgRainyDays": 21.8
+        },
+        {
+          "month": 2,
+          "avgTempMin": 24.6,
+          "avgTempMax": 29.1,
+          "avgPrecipitation": 341.1,
+          "avgRainyDays": 21.3
+        },
+        {
+          "month": 3,
+          "avgTempMin": 24.1,
+          "avgTempMax": 28.3,
+          "avgPrecipitation": 270.2,
+          "avgRainyDays": 21
+        },
+        {
+          "month": 4,
+          "avgTempMin": 22.7,
+          "avgTempMax": 26.6,
+          "avgPrecipitation": 147.7,
+          "avgRainyDays": 19.7
+        },
+        {
+          "month": 5,
+          "avgTempMin": 20.5,
+          "avgTempMax": 24.6,
+          "avgPrecipitation": 80.3,
+          "avgRainyDays": 13.7
+        },
+        {
+          "month": 6,
+          "avgTempMin": 18.7,
+          "avgTempMax": 22.8,
+          "avgPrecipitation": 44.8,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 7,
+          "avgTempMin": 17.6,
+          "avgTempMax": 22.3,
+          "avgPrecipitation": 46.7,
+          "avgRainyDays": 7.8
+        },
+        {
+          "month": 8,
+          "avgTempMin": 18.1,
+          "avgTempMax": 23.1,
+          "avgPrecipitation": 33.5,
+          "avgRainyDays": 7.5
+        },
+        {
+          "month": 9,
+          "avgTempMin": 20,
+          "avgTempMax": 25.3,
+          "avgPrecipitation": 28.8,
+          "avgRainyDays": 7.8
+        },
+        {
+          "month": 10,
+          "avgTempMin": 22,
+          "avgTempMax": 27.1,
+          "avgPrecipitation": 51.2,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 23.4,
+          "avgTempMax": 28.3,
+          "avgPrecipitation": 93.5,
+          "avgRainyDays": 13.5
+        },
+        {
+          "month": 12,
+          "avgTempMin": 24.5,
+          "avgTempMax": 29.2,
+          "avgPrecipitation": 159.8,
+          "avgRainyDays": 18
+        }
+      ]
+    },
+    {
+      "name": "Zoe Bay",
+      "lat": -18.4,
+      "lon": 146.31,
+      "elevation": 37,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 24.7,
+          "avgTempMax": 29.1,
+          "avgPrecipitation": 302,
+          "avgRainyDays": 21.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 24.7,
+          "avgTempMax": 29,
+          "avgPrecipitation": 348.9,
+          "avgRainyDays": 21.5
+        },
+        {
+          "month": 3,
+          "avgTempMin": 24.2,
+          "avgTempMax": 28.1,
+          "avgPrecipitation": 272,
+          "avgRainyDays": 21.1
+        },
+        {
+          "month": 4,
+          "avgTempMin": 22.8,
+          "avgTempMax": 26.5,
+          "avgPrecipitation": 163.4,
+          "avgRainyDays": 19.9
+        },
+        {
+          "month": 5,
+          "avgTempMin": 20.7,
+          "avgTempMax": 24.4,
+          "avgPrecipitation": 92.7,
+          "avgRainyDays": 14.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 18.8,
+          "avgTempMax": 22.6,
+          "avgPrecipitation": 52.9,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 17.8,
+          "avgTempMax": 22,
+          "avgPrecipitation": 52.6,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 8,
+          "avgTempMin": 18.2,
+          "avgTempMax": 22.9,
+          "avgPrecipitation": 38.3,
+          "avgRainyDays": 8.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 20.1,
+          "avgTempMax": 25,
+          "avgPrecipitation": 32.1,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 22.2,
+          "avgTempMax": 26.9,
+          "avgPrecipitation": 53.2,
+          "avgRainyDays": 9.6
+        },
+        {
+          "month": 11,
+          "avgTempMin": 23.5,
+          "avgTempMax": 28.1,
+          "avgPrecipitation": 94.3,
+          "avgRainyDays": 13.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 24.6,
+          "avgTempMax": 29,
+          "avgPrecipitation": 161,
+          "avgRainyDays": 18
+        }
+      ]
+    },
+    {
+      "name": "George Point",
+      "lat": -18.48,
+      "lon": 146.32,
+      "elevation": 8,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 24.9,
+          "avgTempMax": 29.4,
+          "avgPrecipitation": 311.8,
+          "avgRainyDays": 21.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 24.9,
+          "avgTempMax": 29.4,
+          "avgPrecipitation": 351.4,
+          "avgRainyDays": 21.3
+        },
+        {
+          "month": 3,
+          "avgTempMin": 24.3,
+          "avgTempMax": 28.5,
+          "avgPrecipitation": 278.7,
+          "avgRainyDays": 21.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": 22.9,
+          "avgTempMax": 26.8,
+          "avgPrecipitation": 171.4,
+          "avgRainyDays": 20
+        },
+        {
+          "month": 5,
+          "avgTempMin": 20.8,
+          "avgTempMax": 24.7,
+          "avgPrecipitation": 97.7,
+          "avgRainyDays": 14.3
+        },
+        {
+          "month": 6,
+          "avgTempMin": 19,
+          "avgTempMax": 22.9,
+          "avgPrecipitation": 57.9,
+          "avgRainyDays": 10.1
+        },
+        {
+          "month": 7,
+          "avgTempMin": 17.9,
+          "avgTempMax": 22.3,
+          "avgPrecipitation": 55.4,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 8,
+          "avgTempMin": 18.3,
+          "avgTempMax": 23.2,
+          "avgPrecipitation": 41.5,
+          "avgRainyDays": 8.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 20.3,
+          "avgTempMax": 25.4,
+          "avgPrecipitation": 34.4,
+          "avgRainyDays": 8.7
+        },
+        {
+          "month": 10,
+          "avgTempMin": 22.3,
+          "avgTempMax": 27.4,
+          "avgPrecipitation": 53.7,
+          "avgRainyDays": 9.5
+        },
+        {
+          "month": 11,
+          "avgTempMin": 23.7,
+          "avgTempMax": 28.6,
+          "avgPrecipitation": 97.9,
+          "avgRainyDays": 13.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 24.8,
+          "avgTempMax": 29.4,
+          "avgPrecipitation": 165.4,
+          "avgRainyDays": 17.9
+        }
+      ]
+    }
+  ]
+}

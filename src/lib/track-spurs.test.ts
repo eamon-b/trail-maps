@@ -163,6 +163,25 @@ describe('detectSelfRetraces', () => {
     expect(retraces[0].terminal).toBe(true);
   });
 
+  it('reports a spur on a loop where it is, not as the whole loop', () => {
+    // A 40 km square loop with a 3 km out-and-back spur east at km 5. The
+    // loop's closing pair spans the whole track and must not swallow it.
+    const square = [
+      ...leg(0, 5),
+      ...eastSpur(5, 3),
+      ...leg(5, 10).slice(1),
+      ...eastSpurLeg(10, 0, 10).slice(1),
+      ...leg(10, 0).map(p => ({ ...p, lon: BASE_LON + 10 * LON_DEG_PER_KM })).slice(1),
+      ...eastSpurLeg(0, 10, 0).slice(1),
+    ];
+    const retraces = detectSelfRetraces(square);
+
+    expect(retraces).toHaveLength(1);
+    expect(retraces[0].terminal).toBe(false);
+    expect(retraces[0].retraceLengthKm).toBeCloseTo(3, 0);
+    expect(retraces[0].turnaroundKm).toBeCloseTo(8, 0);
+  });
+
   it('ignores retraces shorter than minRetraceKm', () => {
     const points = [...leg(0, 20), ...eastSpur(20, 1.5), ...leg(20, 40).slice(1)];
 

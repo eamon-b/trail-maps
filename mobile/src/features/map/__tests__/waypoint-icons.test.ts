@@ -99,6 +99,7 @@ describe('waypointIconName', () => {
     expect(waypointIconName('caravan-park')).toBe(waypointIconName('accommodation'));
     expect(waypointIconName('food')).toBe(waypointIconName('resupply'));
     expect(waypointIconName('summit')).toBe(waypointIconName('lookout'));
+    expect(waypointIconName('mountain')).toBe('summit');
   });
 
   it('falls back to the generic point-of-interest glyph for unknown types', () => {

@@ -1,0 +1,193 @@
+{
+  "generatedAt": "2026-10-02T00:35:14.266Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Bundeena",
+      "lat": -34.09,
+      "lon": 151.15,
+      "elevation": 10,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 19.5,
+          "avgTempMax": 25.8,
+          "avgPrecipitation": 76.4,
+          "avgRainyDays": 9.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": 19.5,
+          "avgTempMax": 25.2,
+          "avgPrecipitation": 96,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 3,
+          "avgTempMin": 18.3,
+          "avgTempMax": 23.9,
+          "avgPrecipitation": 97.8,
+          "avgRainyDays": 11.8
+        },
+        {
+          "month": 4,
+          "avgTempMin": 15.5,
+          "avgTempMax": 21.6,
+          "avgPrecipitation": 61.1,
+          "avgRainyDays": 8.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 12.6,
+          "avgTempMax": 18.8,
+          "avgPrecipitation": 53.9,
+          "avgRainyDays": 7.2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 10.5,
+          "avgTempMax": 16.4,
+          "avgPrecipitation": 63,
+          "avgRainyDays": 8.2
+        },
+        {
+          "month": 7,
+          "avgTempMin": 9.2,
+          "avgTempMax": 16,
+          "avgPrecipitation": 42.3,
+          "avgRainyDays": 5.9
+        },
+        {
+          "month": 8,
+          "avgTempMin": 9.5,
+          "avgTempMax": 17.3,
+          "avgPrecipitation": 44.5,
+          "avgRainyDays": 5.4
+        },
+        {
+          "month": 9,
+          "avgTempMin": 11.6,
+          "avgTempMax": 19.8,
+          "avgPrecipitation": 44.1,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 10,
+          "avgTempMin": 13.7,
+          "avgTempMax": 21.7,
+          "avgPrecipitation": 61.2,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 11,
+          "avgTempMin": 15.8,
+          "avgTempMax": 22.9,
+          "avgPrecipitation": 73.8,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 17.7,
+          "avgTempMax": 24.7,
+          "avgPrecipitation": 57.8,
+          "avgRainyDays": 8.8
+        }
+      ]
+    },
+    {
+      "name": "Otford",
+      "lat": -34.21,
+      "lon": 151,
+      "elevation": 161,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 18.7,
+          "avgTempMax": 25,
+          "avgPrecipitation": 85.8,
+          "avgRainyDays": 10.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": 18.8,
+          "avgTempMax": 24.4,
+          "avgPrecipitation": 112,
+          "avgRainyDays": 12.4
+        },
+        {
+          "month": 3,
+          "avgTempMin": 17.6,
+          "avgTempMax": 23,
+          "avgPrecipitation": 113.1,
+          "avgRainyDays": 13.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 15,
+          "avgTempMax": 20.7,
+          "avgPrecipitation": 76.4,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 5,
+          "avgTempMin": 12.2,
+          "avgTempMax": 18,
+          "avgPrecipitation": 73.3,
+          "avgRainyDays": 8.7
+        },
+        {
+          "month": 6,
+          "avgTempMin": 10.1,
+          "avgTempMax": 15.6,
+          "avgPrecipitation": 82.7,
+          "avgRainyDays": 9
+        },
+        {
+          "month": 7,
+          "avgTempMin": 8.9,
+          "avgTempMax": 15.2,
+          "avgPrecipitation": 53.3,
+          "avgRainyDays": 6.9
+        },
+        {
+          "month": 8,
+          "avgTempMin": 9.1,
+          "avgTempMax": 16.4,
+          "avgPrecipitation": 53,
+          "avgRainyDays": 6.1
+        },
+        {
+          "month": 9,
+          "avgTempMin": 11,
+          "avgTempMax": 18.9,
+          "avgPrecipitation": 53.1,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 13,
+          "avgTempMax": 20.8,
+          "avgPrecipitation": 67.5,
+          "avgRainyDays": 8.8
+        },
+        {
+          "month": 11,
+          "avgTempMin": 15.1,
+          "avgTempMax": 22,
+          "avgPrecipitation": 81.2,
+          "avgRainyDays": 10.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 17,
+          "avgTempMax": 23.8,
+          "avgPrecipitation": 64.1,
+          "avgRainyDays": 10.4
+        }
+      ]
+    }
+  ]
+}

@@ -280,6 +280,98 @@
           "avgRainyDays": 6.2
         }
       ]
+    },
+    {
+      "name": "Dunkeld",
+      "lat": -37.65,
+      "lon": 142.34,
+      "elevation": 253,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 12.6,
+          "avgTempMax": 25.5,
+          "avgPrecipitation": 37.3,
+          "avgRainyDays": 4.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 12.8,
+          "avgTempMax": 25.1,
+          "avgPrecipitation": 29.5,
+          "avgRainyDays": 4.5
+        },
+        {
+          "month": 3,
+          "avgTempMin": 11.5,
+          "avgTempMax": 22.3,
+          "avgPrecipitation": 28.9,
+          "avgRainyDays": 5.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 9.2,
+          "avgTempMax": 18.2,
+          "avgPrecipitation": 38.6,
+          "avgRainyDays": 6.7
+        },
+        {
+          "month": 5,
+          "avgTempMin": 7.4,
+          "avgTempMax": 14.4,
+          "avgPrecipitation": 46.5,
+          "avgRainyDays": 8.5
+        },
+        {
+          "month": 6,
+          "avgTempMin": 5.7,
+          "avgTempMax": 11.9,
+          "avgPrecipitation": 50.7,
+          "avgRainyDays": 9.8
+        },
+        {
+          "month": 7,
+          "avgTempMin": 5,
+          "avgTempMax": 11.2,
+          "avgPrecipitation": 56,
+          "avgRainyDays": 11.4
+        },
+        {
+          "month": 8,
+          "avgTempMin": 5.1,
+          "avgTempMax": 12.3,
+          "avgPrecipitation": 66,
+          "avgRainyDays": 12.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 6.2,
+          "avgTempMax": 14.5,
+          "avgPrecipitation": 66.9,
+          "avgRainyDays": 12.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 7.3,
+          "avgTempMax": 17.1,
+          "avgPrecipitation": 62.6,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 11,
+          "avgTempMin": 9.1,
+          "avgTempMax": 20.1,
+          "avgPrecipitation": 52.8,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 12,
+          "avgTempMin": 10.6,
+          "avgTempMax": 22.7,
+          "avgPrecipitation": 42.1,
+          "avgRainyDays": 7
+        }
+      ]
     }
   ]
 }

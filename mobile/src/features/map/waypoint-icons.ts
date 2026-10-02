@@ -140,6 +140,7 @@ const TYPE_TO_ICON: Record<string, WaypointIconName> = {
   lookout: 'summit',
   summit: 'summit',
   peak: 'summit',
+  mountain: 'summit',
   viewpoint: 'summit',
   view: 'summit',
 

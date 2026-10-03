@@ -64,6 +64,7 @@ import { useSettingsStore, type Units } from '../../../../src/state/settings-sto
 import type { TrailJsonWaypoint } from '../../../../src/services/trail-assets';
 import { useGuide } from '../../../../src/features/guide/GuideContext';
 import { useGuidePositionContext } from '../../../../src/features/guide/GuidePositionContext';
+import { LinkifiedText } from '../../../../src/features/guide/LinkifiedText';
 import { ShareIconButton } from '../../../../src/features/share/ShareIconButton';
 import { useCheckInShare } from '../../../../src/features/share/use-check-in-share';
 import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
@@ -368,9 +369,10 @@ export default function WaypointDetailScreen() {
           {/* Curated descriptions arrive over the sync channel; the bundled
               trail JSON is the fallback. */}
           {description ? (
-            <Text style={[styles.description, { color: colors.textSecondary }]}>
-              {description}
-            </Text>
+            <LinkifiedText
+              text={description}
+              style={[styles.description, { color: colors.textSecondary }]}
+            />
           ) : null}
           {/* How far off the route the place is, and how you get there — the
               same words the picker uses (@lib/resupply-display). */}

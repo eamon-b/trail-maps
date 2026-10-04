@@ -1,0 +1,51 @@
+name: Mobile build
+
+# Queues an EAS cloud build of the Tracknotes app (see docs/mobile-test-build.md).
+# The compile happens on EAS, not here: the job uploads the project and returns,
+# and the build page / install link appear on expo.dev.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      # Mobile imports the shared calculators through @lib
+      - 'src/lib/**'
+      - '.github/workflows/mobile-build.yml'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile (preview = installable .apk)'
+        type: choice
+        options: [preview, production, development-device]
+        default: preview
+
+concurrency:
+  group: mobile-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  eas-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      # eas resolves app.json through the project's own expo package
+      - run: npm ci
+      - name: Queue EAS build
+        run: >
+          eas build --non-interactive --no-wait --platform android
+          --profile ${{ inputs.profile || 'preview' }}
+          --message "${{ github.sha }} (${{ github.event_name }})"

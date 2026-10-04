@@ -4,14 +4,8 @@ name: Mobile build
 # The compile happens on EAS, not here: the job uploads the project and returns,
 # and the build page / install link appear on expo.dev.
 
+# Manual only (Actions → Mobile build → Run workflow), so each EAS build is a choice.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'mobile/**'
-      # Mobile imports the shared calculators through @lib
-      - 'src/lib/**'
-      - '.github/workflows/mobile-build.yml'
   workflow_dispatch:
     inputs:
       profile:
@@ -47,5 +41,5 @@ jobs:
       - name: Queue EAS build
         run: >
           eas build --non-interactive --no-wait --platform android
-          --profile ${{ inputs.profile || 'preview' }}
-          --message "${{ github.sha }} (${{ github.event_name }})"
+          --profile ${{ inputs.profile }}
+          --message "${{ github.ref_name }} @ ${{ github.sha }}"

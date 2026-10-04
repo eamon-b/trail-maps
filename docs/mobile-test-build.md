@@ -46,6 +46,16 @@ npx eas-cli@latest build --non-interactive --profile preview --platform android
   can reuse them freely, but a store upload needs a higher `versionCode` each time — see "Full
   release".
 
+### From CI
+
+`.github/workflows/mobile-build.yml` runs the same command with `--no-wait`:
+
+- **On push to `main`** that touches `mobile/**` or `src/lib/**`: a `preview` build.
+- **Manually**: Actions → *Mobile build* → *Run workflow*, with a choice of profile and branch.
+
+It needs an `EXPO_TOKEN` repository secret (Settings → Secrets and variables → Actions). The
+job finishes once the build is queued; the build itself, and its install link, are on expo.dev.
+
 ## Install it
 
 When the build finishes, `build:view` (or the build page at

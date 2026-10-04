@@ -48,10 +48,9 @@ npx eas-cli@latest build --non-interactive --profile preview --platform android
 
 ### From CI
 
-`.github/workflows/mobile-build.yml` runs the same command with `--no-wait`:
-
-- **On push to `main`** that touches `mobile/**` or `src/lib/**`: a `preview` build.
-- **Manually**: Actions → *Mobile build* → *Run workflow*, with a choice of profile and branch.
+`.github/workflows/mobile-build.yml` runs the same command with `--no-wait`. It is manual
+only, so nothing builds on push: Actions → *Mobile build* → *Run workflow*, with a choice of
+branch and profile (`preview` by default). This works from the GitHub mobile app too.
 
 It needs an `EXPO_TOKEN` repository secret (Settings → Secrets and variables → Actions). The
 job finishes once the build is queued; the build itself, and its install link, are on expo.dev.

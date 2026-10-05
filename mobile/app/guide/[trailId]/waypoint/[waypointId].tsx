@@ -39,10 +39,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -59,6 +57,7 @@ import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
 import { useTheme } from '../../../../src/theme';
+import { KeyboardAwareScrollView } from '../../../../src/navigation/KeyboardAwareScrollView';
 import { glyphSizes, radii, spacing, typography } from '../../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../../src/state/settings-store';
 import type { TrailJsonWaypoint } from '../../../../src/services/trail-assets';
@@ -297,15 +296,11 @@ export default function WaypointDetailScreen() {
     deltaKm != null && deltaKm > 0 ? formatEta(estimateEtaMinutes(deltaKm)) : null;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.flex}>
       <Stack.Screen options={{ title: waypoint.name }} />
-      <ScrollView
+      <KeyboardAwareScrollView
         style={[styles.flex, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Hero header */}
         <View style={styles.hero}>
@@ -511,7 +506,7 @@ export default function WaypointDetailScreen() {
             }}
           />
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {reportTarget && commentWaypointId && (
         <ReportDialog
@@ -541,7 +536,7 @@ export default function WaypointDetailScreen() {
       )}
 
       <PhotoViewer uri={viewerUri} onClose={() => setViewerUri(null)} />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

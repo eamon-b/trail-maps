@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import type { ReportReason } from '@lib/comments-api-types';
 import { useTheme } from '../../theme';
+import { KeyboardAvoidingModalContent } from '../../navigation/KeyboardAwareScrollView';
 import { radii, spacing, typography } from '../../tokens';
 import { apiErrorMessage } from '../../api/error-message';
 import { MAX_DISPLAY_NAME_LENGTH, validateDisplayName } from './display-name';
@@ -123,133 +124,135 @@ export function ReportDialog({
         if (!busy) onCancel();
       }}
     >
-      <View style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
-        <View style={[styles.card, { backgroundColor: colors.surfaceElevated }]}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Report this comment</Text>
+      <KeyboardAvoidingModalContent>
+        <View style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
+          <View style={[styles.card, { backgroundColor: colors.surfaceElevated }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Report this comment</Text>
 
-          {needsName ? (
-            <>
-              <Text style={[styles.hint, { color: colors.textSecondary }]}>
-                Choose a display name to report. It’s shown next to any comments you post.
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    color: colors.textPrimary,
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="e.g. Trail Ghost"
-                placeholderTextColor={colors.textSecondary}
-                value={nameDraft}
-                onChangeText={(next) => {
-                  setNameDraft(next);
-                  setError(null);
-                }}
-                autoFocus
-                editable={!busy}
-                maxLength={MAX_DISPLAY_NAME_LENGTH}
-              />
-            </>
-          ) : (
-            <>
-              <Text style={[styles.hint, { color: colors.textSecondary }]}>
-                Reports go to the moderators. The author isn’t told who reported them.
-              </Text>
-              {REPORT_REASONS.map((option) => {
-                const active = reason === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => {
-                      setReason(option);
-                      setError(null);
-                    }}
-                    disabled={busy}
-                    accessibilityRole="radio"
-                    accessibilityLabel={`Reason: ${reportReasonLabel(option)}`}
-                    accessibilityState={{ selected: active, checked: active }}
-                    style={[
-                      styles.reason,
-                      {
-                        // Filled, not just outlined: `surface` reads as a
-                        // recessed box against the card's `surfaceElevated`, so
-                        // each option looks tappable at a glance rather than
-                        // relying on the hairline alone. The accent border then
-                        // marks the chosen one.
-                        backgroundColor: active ? colors.accentSubtle : colors.surface,
-                        borderColor: active ? colors.accent : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
+            {needsName ? (
+              <>
+                <Text style={[styles.hint, { color: colors.textSecondary }]}>
+                  Choose a display name to report. It’s shown next to any comments you post.
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.textPrimary,
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  placeholder="e.g. Trail Ghost"
+                  placeholderTextColor={colors.textSecondary}
+                  value={nameDraft}
+                  onChangeText={(next) => {
+                    setNameDraft(next);
+                    setError(null);
+                  }}
+                  autoFocus
+                  editable={!busy}
+                  maxLength={MAX_DISPLAY_NAME_LENGTH}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={[styles.hint, { color: colors.textSecondary }]}>
+                  Reports go to the moderators. The author isn’t told who reported them.
+                </Text>
+                {REPORT_REASONS.map((option) => {
+                  const active = reason === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => {
+                        setReason(option);
+                        setError(null);
+                      }}
+                      disabled={busy}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Reason: ${reportReasonLabel(option)}`}
+                      accessibilityState={{ selected: active, checked: active }}
                       style={[
-                        styles.reasonText,
-                        { color: active ? colors.textPrimary : colors.textSecondary },
+                        styles.reason,
+                        {
+                          // Filled, not just outlined: `surface` reads as a
+                          // recessed box against the card's `surfaceElevated`, so
+                          // each option looks tappable at a glance rather than
+                          // relying on the hairline alone. The accent border then
+                          // marks the chosen one.
+                          backgroundColor: active ? colors.accentSubtle : colors.surface,
+                          borderColor: active ? colors.accent : colors.border,
+                        },
                       ]}
                     >
-                      {reportReasonLabel(option)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    color: colors.textPrimary,
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-                placeholder="Anything else we should know? (optional)"
-                placeholderTextColor={colors.textSecondary}
-                value={detail}
-                onChangeText={(next) => {
-                  setDetail(next);
-                  setError(null);
-                }}
-                multiline
-                editable={!busy}
-                maxLength={MAX_REPORT_DETAIL_LENGTH}
-              />
-            </>
-          )}
+                      <Text
+                        style={[
+                          styles.reasonText,
+                          { color: active ? colors.textPrimary : colors.textSecondary },
+                        ]}
+                      >
+                        {reportReasonLabel(option)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.textPrimary,
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  placeholder="Anything else we should know? (optional)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={detail}
+                  onChangeText={(next) => {
+                    setDetail(next);
+                    setError(null);
+                  }}
+                  multiline
+                  editable={!busy}
+                  maxLength={MAX_REPORT_DETAIL_LENGTH}
+                />
+              </>
+            )}
 
-          {errorText}
+            {errorText}
 
-          <View style={styles.actions}>
-            <Pressable
-              onPress={onCancel}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel report"
-              style={styles.button}
-            >
-              <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={needsName ? savePromptedName : handleReport}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel={
-                needsName ? 'Save display name and report' : 'Send report'
-              }
-              style={[styles.button, styles.send, { backgroundColor: colors.accent }]}
-            >
-              {busy ? (
-                <ActivityIndicator color={colors.accentText} />
-              ) : (
-                <Text style={[styles.sendText, { color: colors.accentText }]}>
-                  {error ? 'Try again' : needsName ? 'Save & report' : 'Report'}
-                </Text>
-              )}
-            </Pressable>
+            <View style={styles.actions}>
+              <Pressable
+                onPress={onCancel}
+                disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel report"
+                style={styles.button}
+              >
+                <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={needsName ? savePromptedName : handleReport}
+                disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  needsName ? 'Save display name and report' : 'Send report'
+                }
+                style={[styles.button, styles.send, { backgroundColor: colors.accent }]}
+              >
+                {busy ? (
+                  <ActivityIndicator color={colors.accentText} />
+                ) : (
+                  <Text style={[styles.sendText, { color: colors.accentText }]}>
+                    {error ? 'Try again' : needsName ? 'Save & report' : 'Report'}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingModalContent>
     </Modal>
   );
 }

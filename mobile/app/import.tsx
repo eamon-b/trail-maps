@@ -16,7 +16,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -25,6 +24,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
 import { useTheme } from '../src/theme';
+import { KeyboardAwareScrollView } from '../src/navigation/KeyboardAwareScrollView';
 import { radii, spacing, typography } from '../src/tokens';
 import { useSettingsStore } from '../src/state/settings-store';
 import {
@@ -197,10 +197,9 @@ export default function ImportScreen() {
   const fetching = backfill.status === 'running';
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       style={[styles.root, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.field}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Guide name</Text>
@@ -338,7 +337,7 @@ export default function ImportScreen() {
       >
         <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>Cancel</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

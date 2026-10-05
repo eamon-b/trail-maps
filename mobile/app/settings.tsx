@@ -4,8 +4,9 @@
  * carries the privacy-policy link the app stores require in-app.
  */
 
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../src/theme';
+import { KeyboardAwareScrollView } from '../src/navigation/KeyboardAwareScrollView';
 import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
 import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
@@ -25,10 +26,9 @@ export default function SettingsScreen() {
   const setUnits = useSettingsStore((s) => s.setUnits);
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.section}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Units</Text>
@@ -47,7 +47,7 @@ export default function SettingsScreen() {
       {/* Last: About is always visible, while the two account sections above
           hide themselves on a device with no identity. */}
       <AboutSection />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

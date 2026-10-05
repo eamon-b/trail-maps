@@ -12,6 +12,7 @@ import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { formatDistance, type DistanceUnit } from '@lib/format-distance';
 import { useTheme } from '../../theme';
+import { KeyboardAvoidingModalContent } from '../../navigation/KeyboardAwareScrollView';
 import { radii, spacing, typography } from '../../tokens';
 
 export interface RouteBuilderBarProps {
@@ -75,41 +76,43 @@ export function RouteBuilderBar({
         animationType="fade"
         onRequestClose={() => setPromptOpen(false)}
       >
-        <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Name this route</Text>
-            <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
-              {formatDistance(totalKm, unit)} · {pointCount} points
-            </Text>
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
-              placeholder="e.g. Day 1 – Redbank Gorge"
-              placeholderTextColor={colors.textSecondary}
-              value={nameDraft}
-              onChangeText={setNameDraft}
-              autoFocus
-              maxLength={60}
-            />
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setPromptOpen(false)}
-                accessibilityRole="button"
-                style={styles.modalButton}
-              >
-                <Text style={[styles.link, { color: colors.textSecondary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={confirmSave}
-                disabled={nameDraft.trim().length === 0}
-                accessibilityRole="button"
-                accessibilityLabel="Save route"
-                style={[styles.modalButton, styles.modalSave, { backgroundColor: colors.accent }]}
-              >
-                <Text style={[styles.saveText, { color: colors.accentText }]}>Save</Text>
-              </Pressable>
+        <KeyboardAvoidingModalContent>
+          <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
+            <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Name this route</Text>
+              <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
+                {formatDistance(totalKm, unit)} · {pointCount} points
+              </Text>
+              <TextInput
+                style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
+                placeholder="e.g. Day 1 – Redbank Gorge"
+                placeholderTextColor={colors.textSecondary}
+                value={nameDraft}
+                onChangeText={setNameDraft}
+                autoFocus
+                maxLength={60}
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  onPress={() => setPromptOpen(false)}
+                  accessibilityRole="button"
+                  style={styles.modalButton}
+                >
+                  <Text style={[styles.link, { color: colors.textSecondary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={confirmSave}
+                  disabled={nameDraft.trim().length === 0}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save route"
+                  style={[styles.modalButton, styles.modalSave, { backgroundColor: colors.accent }]}
+                >
+                  <Text style={[styles.saveText, { color: colors.accentText }]}>Save</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingModalContent>
       </Modal>
     </View>
   );

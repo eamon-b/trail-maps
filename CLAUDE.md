@@ -315,7 +315,7 @@ Feature-sliced: UI lives with its feature, not in a global components dir.
 - `state/` — Zustand stores: settings, downloads, favorites, identity
 - `services/` — trail-loader/assets/bounds (bundled + imported: `loadTrail`, `listAllTrails`, `isServerKnown`), imported-trail-store (JSON at `Paths.document/trails/{id}.json` + `imported_trails` registry row), server-trails (`isServerKnown` — comment sync and the composer are gated off for `u_` ids, so no request ever carries an imported trail id), offline-pack-resolver (an import whose bbox sits inside a bundled trail's coverage borrows that pack; otherwise offline maps are unavailable), tile-service/manager/paths, online-style-service, location-service, position-on-trail, distance-calculator (Naismith ETA)
 - `hooks/` — `useLocation` (GPS + trail snapping), `useGuidePosition`
-- `navigation/` — header chrome shared by the Expo Router stacks (`HeaderIconButton`, `HeaderActions`). Lives here rather than in a feature slice because both the root and guide headers use it, and slices never import each other
+- `navigation/` — header chrome shared by the Expo Router stacks (`HeaderIconButton`, `HeaderActions`). Lives here rather than in a feature slice because both the root and guide headers use it, and slices never import each other. Also `KeyboardAwareScrollView` (use it instead of a bare `ScrollView` on any screen with a text field: Android is edge-to-edge, so the window no longer resizes for the keyboard) and `KeyboardAvoidingModalContent` (wrap a `<Modal>` dialog's backdrop in it)
 - `theme/` — ThemeContext, reduce-motion hook
 - `tokens/` — design tokens (colors, themes, typography, spacing, motion); raw palette is import-restricted and lint-enforced (`mobile/lint/design-token-restrictions.js`)
 

@@ -55,6 +55,7 @@ import {
   toggleStop,
 } from '@lib/plan-editor';
 import { useTheme } from '../../../src/theme';
+import { KeyboardAwareScrollView } from '../../../src/navigation/KeyboardAwareScrollView';
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../src/state/settings-store';
 import { selectPlan, selectPlanError, usePlansStore } from '../../../src/state/plans-store';
@@ -350,7 +351,10 @@ export default function PlanScreen() {
   }, []);
 
   return (
-    <ScrollView ref={scrollRef} style={[styles.root, { backgroundColor: colors.background }]}>
+    <KeyboardAwareScrollView
+      ref={scrollRef}
+      style={[styles.root, { backgroundColor: colors.background }]}
+    >
       <View ref={contentRef} style={styles.content}>
         <PlanHeaderCard
           name={displayPlan.name}
@@ -517,7 +521,7 @@ export default function PlanScreen() {
           </>
         )}
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

@@ -18,12 +18,18 @@
  * OpenStreetMap (`amenity=place_of_worship`, the "第NN番札所" temple nodes).
  *
  * Usage: tsx scripts/process-shikoku-caltopo.ts <caltopo-export.json> [output.gpx]
+ *        tsx scripts/process-shikoku-caltopo.ts --reapply [shikoku.gpx]
+ *
+ * Places the map lacks, closures and corrected descriptions live in
+ * CURATED_WAYPOINTS / CLOSED_MARKERS / DESCRIPTION_OVERRIDES below and are
+ * applied on every run; `--reapply` applies them to the committed GPX alone.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { haversineDistance } from '../src/lib/distance.js';
-import { generateGpx } from '../src/lib/gpx-parser.js';
+import { generateGpx, parseGpx } from '../src/lib/gpx-parser.js';
+import { jsdomXmlAdapter } from './lib/xml-adapter-jsdom.js';
 import type { GpxPoint, GpxWaypoint } from '../src/lib/types.js';
 
 const TRACK_TITLE = '88 Temple Pilgrimage';
@@ -92,6 +98,172 @@ const OKUNOIN: GpxWaypoint = {
     'An out-and-back from the temple. Position from OpenStreetMap.',
 };
 
+/**
+ * Places to sleep and drink that the source map does not have, mostly on the
+ * Temple 11 → 13 mountain crossing, where the map has almost nothing between
+ * Fujiidera and Dainichiji. Researched 2026-10-04 against min88.jp (the temple
+ * association's inn list) and henro.org; positions from henro.org's place
+ * pages or OpenStreetMap. Prices and phone numbers date from then.
+ *
+ * Left out for want of a position: Morian Loft (Nabeiwa; status unconfirmed)
+ * and River Side Camp NEW-TA (Nyuta, near Temple 13).
+ */
+const CURATED_WAYPOINTS: GpxWaypoint[] = [
+  {
+    name: 'Sudachi-an',
+    lat: 33.987025,
+    lon: 134.326663,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Pilgrim inn お宿すだち庵 at Nabeiwa, on the route 2.7 km below Temple 12 - the only open lodging between Fujiidera and Kamiyama since the Shosanji shukubo and Nabeiwa-so closed. ' +
+      '¥4,900 room only, ¥7,900 with dinner and breakfast (Oct 2026). Six rooms, curry dinner, shuttle to the Kamiyama Onsen bath, luggage transfer. ' +
+      'Bookings by phone before 14:00. Tel: 090-2677-8000 https://sudachian.com',
+  },
+  {
+    name: 'Tamagatoge Rest Stop',
+    lat: 33.986874,
+    lon: 134.342467,
+    ele: 0,
+    type: 'water',
+    desc:
+      'Rest hut on Tamagatoge pass (玉ヶ峠, about 450 m) between Temple 12 and Temple 13. Water tap (working Nov 2025); toilet closed. ' +
+      'Signs on the hut forbid camping. https://www.henro.org/place/tamagatao-rest-stop-kamiyama-tokushima',
+  },
+  {
+    name: 'Moja House',
+    lat: 33.989688,
+    lon: 134.361443,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Guesthouse 神山くらしの宿 near the Ono bus stop on Prefectural Road 20, about 0.8 km off the path. Dorm ¥4,500; dinner ¥2,000, breakfast ¥1,000, cooked with the host (Oct 2026). ' +
+      'English-speaking host, cash only. Tel: 050-6873-7990 https://moja-house.com',
+  },
+  {
+    name: 'WEEK Kamiyama',
+    lat: 33.968773,
+    lon: 134.338321,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Inn at Shimobun, about 1.7 km off the path. ¥11,000 with breakfast, ¥14,300 with dinner and breakfast (Oct 2026). Tel: 088-677-0313 https://week-kamiyama.jp',
+  },
+  {
+    name: 'Ryokan Sakuraya',
+    lat: 33.9675,
+    lon: 134.346941,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Ryokan さくらや旅館 in central Kamiyama beside the Yorii-naka bus stop (buses to Tokushima Station, last 19:15). ' +
+      '¥6,000 room only, ¥8,500 with dinner and breakfast (Oct 2026). Cash only. Tel: 088-676-0036',
+  },
+  {
+    name: 'Kamiyama Onsen Hotel Shiki-no-Sato',
+    lat: 33.971875,
+    lon: 134.369995,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Hotel 神山温泉ホテル四季の里 at the Kamiyama Onsen bath and bus stop, about 2.5 km off the path. Pilgrim rate about ¥10,000 with dinner and breakfast (Oct 2026). ' +
+      'Day bath ¥680, 10:00-20:00, closed 4th Tuesday. Tel: 088-676-1117 https://kamiyama-spa.com/',
+  },
+  {
+    name: 'Uemura Ryokan',
+    lat: 34.008519,
+    lon: 134.374847,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Ryokan 植村旅館 on the route 9.6 km past Temple 12, 11.9 km before Temple 13. From ¥5,300 room only, from ¥8,800 with dinner and breakfast (Oct 2026). ' +
+      'Large home-cooked meals; arrival by 18:00. Pickups and luggage transfer by arrangement. Tel: 088-678-0859 https://r.goope.jp/uemura-inn',
+  },
+  {
+    name: 'Ryokan Yoshino',
+    lat: 34.055767,
+    lon: 134.353997,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Ryokan 旅館吉野, 10 minutes from Temple 11 - a last bed before the Shosanji climb. ¥5,500 room only, ¥8,000 with dinner and breakfast (Oct 2026). ' +
+      'Breakfast from 6:00, rice balls for the trail, luggage forwarding. Tel: 0883-24-1263',
+  },
+  {
+    name: 'Kadoya Ryokan',
+    lat: 34.037973,
+    lon: 134.463297,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Ryokan かどや旅館 beside Temple 13. ¥5,500 room only, ¥8,800 with dinner and breakfast (Oct 2026). Cash only; check-in 15:00-18:00. Tel: 088-644-0411',
+  },
+  {
+    name: 'Myozai Ryokan Hana',
+    lat: 34.037767,
+    lon: 134.463249,
+    ele: 0,
+    type: 'accommodation',
+    desc:
+      'Ryokan 名西旅館 花 beside Temple 13. ¥5,000 room only, ¥5,500 with breakfast, ¥7,500 with dinner and breakfast (Oct 2026). Tel: 088-644-0025',
+  },
+];
+
+/**
+ * Source-map markers corrected after the 2026-10 research. Keyed by the
+ * cleaned title; the value replaces the marker's description outright.
+ */
+const DESCRIPTION_OVERRIDES: Record<string, string> = {
+  'No.12 Shosanji':
+    'Temple 12 of the 88 (焼山寺).\n' +
+    'Water on the temple grounds. The temple lodging (shukubo) is closed, confirmed by phone in Sep 2026; camping on the grounds is not permitted. ' +
+    'The car park below the temple is reachable by taxi from Kamiyama (about 8 km).',
+  'Ryusuian Rest Area':
+    'Rest hut at about 500 m on the Temple 11 → 12 climb, with a reliable spring (柳の水) and a toilet. ' +
+    'A posted notice allows overnight stays in emergencies only; futon and power outlets inside (2022 report). ' +
+    'The source map notes a possible tent spot further on at the Ipponsugi-an mountain hut (34.00759, 134.30514). ' +
+    '柳水庵休憩所 https://www.henro.org/place/ryusuian-rest-area-kamiyama-tokushima',
+  'Henro House Oyado Eleven':
+    'About 400 m from Temple 11. Tent pitches ¥1,000 with a coin shower, plus rooms (Oct 2026). Kitchen, luggage forwarding. ' +
+    'https://henrohouse.jp/en/houses/86',
+  'Karuizawa Camp':
+    'Campground 軽井沢キャンプ場 beside the Akui river, under 100 m from the path, 6.7 km before Temple 13. ' +
+    'Own tent ¥1,000, shower ¥300, bath ¥500 (Oct 2026); kitchen and vending machines. Open March to November only; check-in from 13:00. ' +
+    'Tel: 088-678-0981 https://www.karuizawa-camp.com/',
+};
+
+/** Source-map markers for places that have closed, with the evidence. */
+const CLOSED_MARKERS: Record<string, string> = {
+  'Kamojima Onsen Iyashi-no-Ya': 'free pilgrim huts; henro.org lists them as permanently closed (checked 2026-10-04)',
+};
+
+/**
+ * Apply the curated additions and corrections above. Idempotent, so it can run
+ * over a fresh CalTopo export or over the committed GPX (`--reapply`).
+ */
+export function applyCuratedWaypoints(waypoints: GpxWaypoint[]): GpxWaypoint[] {
+  const curatedNames = new Set(CURATED_WAYPOINTS.map(w => w.name));
+  const kept = waypoints
+    .filter(w => !(w.name in CLOSED_MARKERS) && !curatedNames.has(w.name))
+    .map(w => (w.name in DESCRIPTION_OVERRIDES ? { ...w, desc: DESCRIPTION_OVERRIDES[w.name] } : w));
+  return sortWaypoints([...kept, ...CURATED_WAYPOINTS.map(w => ({ ...w }))]);
+}
+
+/**
+ * Temples first, in pilgrimage order, then everything else by name: a stable
+ * order so a re-export only diffs where the map changed.
+ */
+function sortWaypoints(waypoints: GpxWaypoint[]): GpxWaypoint[] {
+  return waypoints.sort((a, b) => {
+    const ta = templeNumber(a.name);
+    const tb = templeNumber(b.name);
+    if (ta !== null && tb !== null) return ta - tb;
+    if (ta !== null) return -1;
+    if (tb !== null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 /** Spelling fixes for marker titles on the source map. */
 const TITLE_FIXES: Record<string, string> = {
   'HENRO HOUSE Gues House sakura-an': 'Henro House Guest House Sakura-an',
@@ -137,10 +309,29 @@ function distanceToLine(lat: number, lon: number, points: GpxPoint[]): number {
   return best;
 }
 
+/**
+ * Re-apply the curated waypoints to the committed GPX in place, for when they
+ * change but there is no fresh CalTopo export to rebuild from. The track is
+ * written back untouched (parse → generate round-trips this file byte for byte).
+ */
+function reapply(gpxPath: string): void {
+  const gpx = parseGpx(fs.readFileSync(gpxPath, 'utf-8'), jsdomXmlAdapter);
+  const points = gpx.tracks[0].segments.flatMap(segment => segment.points);
+  const waypoints = applyCuratedWaypoints(gpx.waypoints);
+  fs.writeFileSync(gpxPath, generateGpx(TRACK_NAME, points, waypoints));
+  console.log(`✓ Re-applied curated waypoints: ${waypoints.length} waypoints → ${gpxPath}`);
+}
+
 function main(): void {
-  const [inputPath, outputArg] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  if (args[0] === '--reapply') {
+    reapply(args[1] ? path.resolve(args[1]) : DEFAULT_OUTPUT);
+    return;
+  }
+  const [inputPath, outputArg] = args;
   if (!inputPath) {
     console.error('Usage: tsx scripts/process-shikoku-caltopo.ts <caltopo-export.json> [output.gpx]');
+    console.error('       tsx scripts/process-shikoku-caltopo.ts --reapply [shikoku.gpx]');
     process.exit(1);
   }
   const outputPath = outputArg ? path.resolve(outputArg) : DEFAULT_OUTPUT;
@@ -229,29 +420,23 @@ function main(): void {
   }
   waypoints.push(OKUNOIN);
 
-  // Temples first, in pilgrimage order, then everything else by name: a stable
-  // order so a re-export only diffs where the map changed.
-  waypoints.sort((a, b) => {
-    const ta = templeNumber(a.name);
-    const tb = templeNumber(b.name);
-    if (ta !== null && tb !== null) return ta - tb;
-    if (ta !== null) return -1;
-    if (tb !== null) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  const curated = applyCuratedWaypoints(waypoints);
 
-  const templeCount = waypoints.filter(w => templeNumber(w.name) !== null).length;
+  const templeCount = curated.filter(w => templeNumber(w.name) !== null).length;
   if (templeCount !== 23) {
     throw new Error(`Expected Temples 1-23 inside the corridor, found ${templeCount}`);
   }
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, generateGpx(TRACK_NAME, points, waypoints));
+  fs.writeFileSync(outputPath, generateGpx(TRACK_NAME, points, curated));
 
-  console.log(`✓ ${points.length} track points, ${waypoints.length} waypoints → ${outputPath}`);
+  console.log(`✓ ${points.length} track points, ${curated.length} waypoints → ${outputPath}`);
   if (skippedFolders.size > 0) {
     console.log(`  Skipped folders with no type mapping: ${[...skippedFolders].join(', ')}`);
   }
 }
 
-main();
+// Guarded so the curated waypoints can be imported by a test without running.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(SCRIPTS_DIR, 'process-shikoku-caltopo.ts')) {
+  main();
+}

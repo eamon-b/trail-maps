@@ -415,10 +415,14 @@ describe('contourSourceFor', () => {
 });
 
 describe('world contour source', () => {
-  const mockHealth = (body: unknown) => {
+  const mockHealth = (body: unknown, status = 200) => {
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if (url === `${CONTOUR_URL}/health`) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+        return Promise.resolve({
+          ok: status >= 200 && status < 300,
+          status,
+          json: () => Promise.resolve(body),
+        });
       }
       return Promise.resolve({
         ok: true,
@@ -440,6 +444,21 @@ describe('world contour source', () => {
     const style = (await getOnlineMapStyle('light', 'world')) as Record<string, unknown>;
     expect((style.sources as Record<string, unknown>).contour).toBeUndefined();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('health check failed'));
+  });
+
+  it('keeps world contours when the Australia archive fails /health (503)', async () => {
+    // The worker's status code follows the Australia archive alone.
+    mockHealth({ ok: false, sources: { contours: { ok: false }, world: { ok: true } } }, 503);
+    const style = (await getOnlineMapStyle('light', 'world')) as Record<string, unknown>;
+    const contour = (style.sources as Record<string, { tiles: string[] }>).contour;
+    expect(contour.tiles).toEqual([`${CONTOUR_URL}/world/{z}/{x}/{y}.pbf`]);
+  });
+
+  it('still drops Australia contours on a 503', async () => {
+    mockHealth({ ok: false, sources: { contours: { ok: false }, world: { ok: true } } }, 503);
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const style = (await getOnlineMapStyle('light', 'contours')) as Record<string, unknown>;
+    expect((style.sources as Record<string, unknown>).contour).toBeUndefined();
   });
 });
 

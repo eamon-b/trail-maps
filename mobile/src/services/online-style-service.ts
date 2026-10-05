@@ -294,10 +294,13 @@ async function isContourServiceHealthy(
       headers: { Accept: 'application/json' },
       signal: controller.signal,
     });
-    if (!response.ok) return false;
+    // The top-level `ok` (and the 200/503 status) describes the default
+    // (`contours`) archive only; each source's own health is under `sources`.
+    // So a 503 still carries a usable body: the Australia archive being down
+    // must not take the world contours off a trail abroad.
+    const readable = response.ok || (source !== 'contours' && response.status === 503);
+    if (!readable) return false;
 
-    // The top-level `ok` describes the default (`contours`) archive only; each
-    // source's own health is under `sources`.
     const body = await response.json() as {
       ok?: boolean;
       sources?: Partial<Record<ContourSource, { ok?: boolean }>>;

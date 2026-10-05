@@ -117,8 +117,11 @@ const CURATED_WAYPOINTS: GpxWaypoint[] = [
     type: 'accommodation',
     desc:
       'Pilgrim inn お宿すだち庵 at Nabeiwa, on the route 2.7 km below Temple 12 - the only open lodging between Fujiidera and Kamiyama since the Shosanji shukubo and Nabeiwa-so closed. ' +
-      '¥4,900 room only, ¥7,900 with dinner and breakfast (Oct 2026). Six rooms, curry dinner, shuttle to the Kamiyama Onsen bath, luggage transfer. ' +
-      'Bookings by phone before 14:00. Tel: 090-2677-8000 https://sudachian.com',
+      '¥4,900 room only, ¥5,900 with breakfast, ¥6,900 with dinner, ¥7,900 with both (Oct 2026); cash only. Six rooms, curry dinner, shuttle to the Kamiyama Onsen bath. ' +
+      'Bookings by phone in Japanese (Tel: 090-2677-8000), or in English by email to null1903@gmail.com with name, dates, number of people, gender, ' +
+      'the previous night\'s lodging and whether vegetarian. No fixed check-in time; arrivals before 14:00 phone ahead. ' +
+      'Bags are carried free from Ryokan Yoshino, Guest House Channel-kan, Awarakuya and Hostel OE near Temple 11 to Sudachi-an, so the Shosanji climb can be walked light. ' +
+      'https://sudachian.com/book/',
   },
   {
     name: 'Tamagatoge Rest Stop',

@@ -28,6 +28,34 @@ let cachedStyle: { style: object; fetchedAt: number } | undefined;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CONTOUR_HEALTH_TIMEOUT_MS = 2500;
 
+/**
+ * The contour worker's tilesets, by `{source}` path segment
+ * (workers/contour-tiles SOURCES). `contours` is the SRTM Australia archive the
+ * app has always drawn; `world` is the Copernicus GLO-30 build of everywhere
+ * else. A tile request outside an archive's coverage comes back 204 (empty), so
+ * a trail abroad on `contours` silently shows no contour lines at all.
+ */
+export type ContourSource = 'contours' | 'world';
+
+/** [west, south, east, north], degrees. */
+export type LonLatBounds = [number, number, number, number];
+
+/** Coverage of contours/australia.pmtiles, as its /health header reports it. */
+const AUSTRALIA_CONTOUR_BOUNDS: LonLatBounds = [112.921306, -43.8586, 154, -10];
+
+/**
+ * Which tileset to draw a trail's contours from. A trail wholly inside the
+ * Australia archive keeps it (unchanged for every Australian guide); anything
+ * else — Shikoku, Te Araroa, the CDT — reads the world archive. Without trail
+ * bounds the Australia archive stays the default.
+ */
+export function contourSourceFor(bounds: LonLatBounds | null | undefined): ContourSource {
+  if (!bounds) return 'contours';
+  const [west, south, east, north] = bounds;
+  const [aw, as, ae, an] = AUSTRALIA_CONTOUR_BOUNDS;
+  return west >= aw && south >= as && east <= ae && north <= an ? 'contours' : 'world';
+}
+
 // Font served by the OpenFreeMap style
 const OFM_FONT = 'Noto Sans Regular';
 
@@ -254,7 +282,10 @@ function cloneStyle(style: Record<string, unknown>): Record<string, unknown> {
  * source so a missing/corrupt R2 object cannot make MapLibre repeatedly request
  * failing tiles while the user pans.
  */
-async function isContourServiceHealthy(contourTileUrl: string): Promise<boolean> {
+async function isContourServiceHealthy(
+  contourTileUrl: string,
+  source: ContourSource,
+): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CONTOUR_HEALTH_TIMEOUT_MS);
 
@@ -265,8 +296,14 @@ async function isContourServiceHealthy(contourTileUrl: string): Promise<boolean>
     });
     if (!response.ok) return false;
 
-    const body = await response.json() as { ok?: boolean };
-    return body.ok === true;
+    // The top-level `ok` describes the default (`contours`) archive only; each
+    // source's own health is under `sources`.
+    const body = await response.json() as {
+      ok?: boolean;
+      sources?: Partial<Record<ContourSource, { ok?: boolean }>>;
+    };
+    if (source === 'contours') return body.ok === true;
+    return body.sources?.[source]?.ok === true;
   } catch {
     return false;
   } finally {
@@ -283,12 +320,13 @@ function injectContours(
   style: Record<string, unknown>,
   contourTileUrl: string,
   theme: MapTheme,
+  source: ContourSource,
 ): Record<string, unknown> {
   const cloned = style;
   const sources = cloned.sources as Record<string, unknown>;
   sources.contour = {
     type: 'vector',
-    tiles: [`${contourTileUrl.replace(/\/$/, '')}/contours/{z}/{x}/{y}.pbf`],
+    tiles: [`${contourTileUrl.replace(/\/$/, '')}/${source}/{z}/{x}/{y}.pbf`],
     minzoom: 9,
     maxzoom: 15,
   };
@@ -320,9 +358,13 @@ function prepareBaseStyle(style: Record<string, unknown>, theme: MapTheme): Reco
  * when contours are not configured.
  *
  * `theme` picks the palette (Liberty as served when light, the night repaint of
- * it when dark) and the ink the contour layers are drawn in.
+ * it when dark) and the ink the contour layers are drawn in. `source` picks the
+ * contour tileset — see contourSourceFor.
  */
-export async function getOnlineMapStyle(theme: MapTheme = 'light'): Promise<object> {
+export async function getOnlineMapStyle(
+  theme: MapTheme = 'light',
+  source: ContourSource = 'contours',
+): Promise<object> {
   const contourTileUrl = getContourTileUrl();
   if (!contourTileUrl) {
     console.warn(
@@ -333,16 +375,16 @@ export async function getOnlineMapStyle(theme: MapTheme = 'light'): Promise<obje
 
   const [style, contoursHealthy] = await Promise.all([
     fetchBaseStyle(),
-    contourTileUrl ? isContourServiceHealthy(contourTileUrl) : Promise.resolve(false),
+    contourTileUrl ? isContourServiceHealthy(contourTileUrl, source) : Promise.resolve(false),
   ]);
 
   if (contourTileUrl && !contoursHealthy) {
-    console.warn(`Contours disabled: health check failed for ${contourTileUrl}`);
+    console.warn(`Contours disabled: health check failed for ${contourTileUrl} (${source})`);
   }
 
   const base = prepareBaseStyle(style, theme);
   return contourTileUrl && contoursHealthy
-    ? injectContours(base, contourTileUrl, theme)
+    ? injectContours(base, contourTileUrl, theme, source)
     : base;
 }
 
@@ -352,14 +394,17 @@ export async function getOnlineMapStyle(theme: MapTheme = 'light'): Promise<obje
  *
  * Returns null if the contour tile URL is not configured.
  */
-export async function getOnlineStyleWithContours(theme: MapTheme = 'light'): Promise<object | null> {
+export async function getOnlineStyleWithContours(
+  theme: MapTheme = 'light',
+  source: ContourSource = 'contours',
+): Promise<object | null> {
   const contourTileUrl = getContourTileUrl();
   if (!contourTileUrl) {
     return null;
   }
 
   const base = prepareBaseStyle(await fetchBaseStyle(), theme);
-  return injectContours(base, contourTileUrl, theme);
+  return injectContours(base, contourTileUrl, theme, source);
 }
 
 /**

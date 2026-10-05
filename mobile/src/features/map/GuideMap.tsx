@@ -73,7 +73,7 @@ import {
 import { useTheme } from '../../theme';
 import { spacing, typography } from '../../tokens';
 import { tileManager } from '../../services/tile-manager';
-import { getOnlineMapStyle } from '../../services/online-style-service';
+import { contourSourceFor, getOnlineMapStyle } from '../../services/online-style-service';
 import { poiColor, waypointColor } from '../elevation/waypoint-category';
 import {
   accuracyCircleRadiusExpression,
@@ -518,6 +518,12 @@ export const GuideMap = memo(
     // import borrowing a bundled pack), so style resolution keys on the pack,
     // never on the route's trailId.
     const packId = tilePackId ?? trailId;
+    // The online contour tileset follows where the trail is: the Australia
+    // archive covers nothing abroad (Shikoku, Te Araroa, the CDT).
+    const contourSource = useMemo(
+      () => contourSourceFor(trailCameraBounds(displayPoints)),
+      [displayPoints],
+    );
     useEffect(() => {
       let cancelled = false;
       setResolved(null);
@@ -540,7 +546,7 @@ export const GuideMap = memo(
           // Pack missing or damaged between the store read and here — the map
           // goes online, and says so.
           return {
-            style: await getOnlineMapStyle(mapTheme),
+            style: await getOnlineMapStyle(mapTheme, contourSource),
             resolution: {
               requested: 'offline',
               resolved: 'online',
@@ -550,7 +556,7 @@ export const GuideMap = memo(
           };
         }
         return {
-          style: await getOnlineMapStyle(mapTheme),
+          style: await getOnlineMapStyle(mapTheme, contourSource),
           resolution: {
             requested: 'online',
             resolved: 'online',
@@ -584,7 +590,7 @@ export const GuideMap = memo(
       return () => {
         cancelled = true;
       };
-    }, [packId, styleSource, mapTheme]);
+    }, [packId, styleSource, mapTheme, contourSource]);
 
     const resolvedSource = resolved?.source ?? styleSource;
     const labelFont = useMemo(() => labelFontForSource(resolvedSource), [resolvedSource]);

@@ -54,6 +54,7 @@ jest.mock('../../../services/tile-manager', () => ({
 }));
 
 jest.mock('../../../services/online-style-service', () => ({
+  ...jest.requireActual('../../../services/online-style-service'),
   getOnlineMapStyle: jest.fn(),
 }));
 
@@ -241,6 +242,22 @@ describe('GuideMap', () => {
     expect(getOfflineStyle).toHaveBeenCalledWith('heysen', 'dark');
   });
 
+  it('draws contours from the world archive for a trail outside Australia', async () => {
+    // The Australia archive serves empty tiles abroad, so Shikoku had no contours.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const shikoku = [
+      { lat: 34.16, lon: 134.5, ele: 0, dist: 0 },
+      { lat: 33.9, lon: 134.6, ele: 10, dist: 1 },
+    ];
+    act(() => {
+      TestRenderer.create(
+        <GuideMap trailId="shikoku" styleSource="online" displayPoints={shikoku} />,
+      );
+    });
+    await flush();
+    expect(getOnline).toHaveBeenLastCalledWith('light', 'world');
+  });
+
   it('re-resolves the style when the app flips to dark, rather than repainting a live map', async () => {
     // Handing a mounted MapLibre map a new style object is the mid-flight style
     // reload that can take down the native renderer, so a theme flip has to go
@@ -254,7 +271,7 @@ describe('GuideMap', () => {
     });
     await flush();
     expect(getOnline).toHaveBeenCalledTimes(1);
-    expect(getOnline).toHaveBeenLastCalledWith('light');
+    expect(getOnline).toHaveBeenLastCalledWith('light', 'contours');
 
     // Control: a prop change on its own must not re-resolve the style.
     // (GuideMap is memo'd, and this suite stubs useTheme as a plain function
@@ -279,7 +296,7 @@ describe('GuideMap', () => {
     // light basemap and init a native map that is torn down a frame later, so
     // nothing may be mounted until the dark style is in.
     expect(getOnline).toHaveBeenCalledTimes(2);
-    expect(getOnline).toHaveBeenLastCalledWith('dark');
+    expect(getOnline).toHaveBeenLastCalledWith('dark', 'contours');
     expect(mapViews(tree)).toHaveLength(0);
     // …and not even transiently: a Map mounted-then-unmounted inside the same
     // batch never shows in the committed tree, but it does render.

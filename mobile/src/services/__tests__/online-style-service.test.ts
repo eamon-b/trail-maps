@@ -1,4 +1,5 @@
 import {
+  contourSourceFor,
   getOnlineMapStyle,
   getOnlineStyleWithContours,
   clearStyleCache,
@@ -388,6 +389,57 @@ describe('getOnlineMapStyle', () => {
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('health check failed'),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Contour source (Australia archive vs world archive)
+// ---------------------------------------------------------------------------
+
+describe('contourSourceFor', () => {
+  it('keeps the Australia archive for an Australian trail', () => {
+    // Bibbulmun Track, roughly
+    expect(contourSourceFor([115.8, -35.1, 117.9, -31.9])).toBe('contours');
+  });
+
+  it('uses the world archive for a trail outside Australia', () => {
+    // Shikoku, Temples 1-23
+    expect(contourSourceFor([133.9, 33.6, 134.7, 34.2])).toBe('world');
+    // Te Araroa
+    expect(contourSourceFor([166.4, -46.6, 173.0, -34.4])).toBe('world');
+  });
+
+  it('defaults to the Australia archive without trail bounds', () => {
+    expect(contourSourceFor(null)).toBe('contours');
+  });
+});
+
+describe('world contour source', () => {
+  const mockHealth = (body: unknown) => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === `${CONTOUR_URL}/health`) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(JSON.parse(JSON.stringify(MOCK_LIBERTY_STYLE))),
+      });
+    });
+  };
+
+  it('requests world tiles when the world archive is healthy', async () => {
+    mockHealth({ ok: true, sources: { contours: { ok: true }, world: { ok: true } } });
+    const style = (await getOnlineMapStyle('light', 'world')) as Record<string, unknown>;
+    const contour = (style.sources as Record<string, { tiles: string[] }>).contour;
+    expect(contour.tiles).toEqual([`${CONTOUR_URL}/world/{z}/{x}/{y}.pbf`]);
+  });
+
+  it('omits contours when only the Australia archive is healthy', async () => {
+    mockHealth({ ok: true, sources: { contours: { ok: true }, world: { ok: false } } });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const style = (await getOnlineMapStyle('light', 'world')) as Record<string, unknown>;
+    expect((style.sources as Record<string, unknown>).contour).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('health check failed'));
   });
 });
 

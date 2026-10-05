@@ -1,0 +1,32 @@
+name: Offline tile packs
+
+# Every trail the app bundles gets a Download button, so every one must have a
+# pack on the tile host. Runs when the bundled trail list changes (a new trail
+# fails here until its pack is built and uploaded: build:tiles, upload:tiles)
+# and weekly, to catch a pack that goes missing or bad on the server.
+
+on:
+  pull_request:
+    paths:
+      - mobile/assets/trails/index.json
+      - scripts/e2e-tile-check.mjs
+  push:
+    branches: [main]
+    paths:
+      - mobile/assets/trails/index.json
+      - scripts/e2e-tile-check.mjs
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  tile-packs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # No npm ci: the check uses only Node built-ins.
+      - run: npm run check:tile-packs

@@ -29,29 +29,39 @@
  *                           z10-z13, so an archive rebuilt with a lower maxzoom
  *                           would pass every other check while silently
  *                           blanking contours at the zooms hikers actually use.
- *   5. Trail offline sets — each trail's manifest.json parses, and every
- *                           mbtiles it lists exists (at `files[].key` when the
+ *   5. Trail offline sets — every trail the app bundles
+ *                           (mobile/assets/trails/index.json — the app offers
+ *                           an offline download for each one) has a pack: its
+ *                           manifest.json parses and lists every file the app
+ *                           installs (base + contours), and every mbtiles it
+ *                           lists exists (at `files[].key` when the
  *                           manifest is content-addressed, else at
  *                           `files[].name`) at the manifest size,
  *                           starts with the SQLite magic, and is not a
  *                           suspiciously small stub. (An empty/corrupt
  *                           mbtiles crashes the app natively on device.)
  *
- * No repo build state or external npm deps required — hits public URLs only,
- * uses Node's built-in fetch + zlib. Exits non-zero if any check fails.
+ * No build state or external npm deps required — reads only the committed
+ * trail index, hits public URLs, uses Node's built-in fetch + zlib. Exits
+ * non-zero if any check fails.
  *
- * Usage:  node scripts/e2e-tile-check.mjs
- * Env:    CONTOUR_TILE_URL   (default: the production worker)
- *         TILE_BASE_URL      (default: the production R2 bucket)
+ * Usage:  node scripts/e2e-tile-check.mjs            # every check
+ *         node scripts/e2e-tile-check.mjs --packs    # trail offline sets only
+ * Env:    CONTOUR_TILE_URL   (default: the worker the app's builds use)
+ *         TILE_BASE_URL      (default: the pack host the app's builds use)
+ *
+ * The defaults are the URLs in mobile/eas.json, so the probes go through the
+ * same Cloudflare edge the app does — an edge-cached 404 fails here too.
  */
 
+import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 
 const CONTOUR_URL = (
-  process.env.CONTOUR_TILE_URL || 'https://contour-tiles.aus-map-data.workers.dev'
+  process.env.CONTOUR_TILE_URL || 'https://tiles.contour-map-tiles.net'
 ).replace(/\/$/, '');
 const TILE_BASE_URL = (
-  process.env.TILE_BASE_URL || 'https://pub-2c4c91b48919451cb92108f6171071d6.r2.dev'
+  process.env.TILE_BASE_URL || 'https://data.contour-map-tiles.net'
 ).replace(/\/$/, '');
 
 // ---------------------------------------------------------------------------
@@ -434,12 +444,21 @@ async function checkHighZoomTiles() {
 //   - each mbtiles is at least MIN_MBTILES_BYTES (empty stubs are ~32KB)
 // ---------------------------------------------------------------------------
 
-const TRAIL_IDS = ['aawt', 'bibbulmun', 'cape_to_cape', 'heysen', 'larapinta', 'hume-and-hovell'];
+// Every bundled trail, read from the app's own index rather than a list kept
+// here: a hand-kept list missed Shikoku, which shipped with no pack and a
+// Download button that 404'd.
+const TRAIL_IDS = JSON.parse(
+  readFileSync(new URL('../mobile/assets/trails/index.json', import.meta.url), 'utf8')
+).map((trail) => trail.id);
+// The app installs exactly these (TILE_FILES in mobile/src/services/tile-paths.ts)
+// and treats a pack missing either as never downloaded, so a base-only manifest
+// is as unusable as none.
+const REQUIRED_FILES = ['base.mbtiles', 'contours.mbtiles'];
 const MIN_MBTILES_BYTES = 500_000;
 const SQLITE_MAGIC = 'SQLite format 3 ';
 
 async function checkTrailOfflineArtifacts() {
-  console.log(`\n[trails] Per-trail offline manifest + mbtiles sanity`);
+  console.log(`\n[trails] Offline pack for each of the app's ${TRAIL_IDS.length} bundled trails`);
   for (const trailId of TRAIL_IDS) {
     const manifestUrl = `${TILE_BASE_URL}/${trailId}/manifest.json`;
     let manifest;
@@ -461,6 +480,12 @@ async function checkTrailOfflineArtifacts() {
     }
 
     const failuresBefore = failures.length;
+    const listed = new Set(manifest.files.map((file) => file.name));
+    for (const name of REQUIRED_FILES) {
+      if (!listed.has(name)) {
+        failures.push(`[${trailId}] manifest.json does not list ${name} — the app cannot install the pack`);
+      }
+    }
     let keyedFiles = 0;
     let md5Files = 0;
     for (const file of manifest.files) {
@@ -552,11 +577,15 @@ async function main() {
   console.log('E2E tile pipeline check —', new Date().toISOString());
   console.log('='.repeat(70));
 
-  await checkContourHealth();
-  await checkContourWorker();
-  await checkHighZoomTiles();
-  await checkTrailOfflineArtifacts();
-  await checkGridBaseReachable();
+  if (process.argv.includes('--packs')) {
+    await checkTrailOfflineArtifacts();
+  } else {
+    await checkContourHealth();
+    await checkContourWorker();
+    await checkHighZoomTiles();
+    await checkTrailOfflineArtifacts();
+    await checkGridBaseReachable();
+  }
 
   console.log('\n' + '='.repeat(70));
   if (failures.length === 0) {

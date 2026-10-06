@@ -39,8 +39,9 @@
     },
     {
       "name": "Cape Otway",
-      "lat": -38.86,
-      "lon": 143.51
+      "lat": -38.8494,
+      "lon": 143.5138,
+      "elevation": 104
     },
     {
       "name": "Twelve Apostles",

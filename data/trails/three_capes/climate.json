@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T04:04:32.491Z",
+  "generatedAt": "2026-10-06T01:11:48.346Z",
   "dataYears": {
     "start": 1994,
     "end": 2023
@@ -98,94 +98,186 @@
       ]
     },
     {
-      "name": "Fortescue Bay",
-      "lat": -43.13,
-      "lon": 147.96,
-      "elevation": 0,
+      "name": "Retakunna",
+      "lat": -43.1802,
+      "lon": 147.9499,
+      "elevation": 237,
       "monthly": [
         {
           "month": 1,
-          "avgTempMin": 13.6,
-          "avgTempMax": 18.3,
-          "avgPrecipitation": 55.8,
-          "avgRainyDays": 8.1
+          "avgTempMin": 12.3,
+          "avgTempMax": 17,
+          "avgPrecipitation": 55.7,
+          "avgRainyDays": 7.9
         },
         {
           "month": 2,
-          "avgTempMin": 13.9,
-          "avgTempMax": 18.3,
-          "avgPrecipitation": 47.2,
-          "avgRainyDays": 7.7
+          "avgTempMin": 12.6,
+          "avgTempMax": 17,
+          "avgPrecipitation": 47.3,
+          "avgRainyDays": 7.6
         },
         {
           "month": 3,
-          "avgTempMin": 13.2,
+          "avgTempMin": 11.9,
+          "avgTempMax": 16.1,
+          "avgPrecipitation": 54.2,
+          "avgRainyDays": 8.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 10.3,
+          "avgTempMax": 14.4,
+          "avgPrecipitation": 49.5,
+          "avgRainyDays": 8.8
+        },
+        {
+          "month": 5,
+          "avgTempMin": 8.9,
+          "avgTempMax": 12.4,
+          "avgPrecipitation": 48.8,
+          "avgRainyDays": 9.2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 7.7,
+          "avgTempMax": 10.8,
+          "avgPrecipitation": 51.4,
+          "avgRainyDays": 9.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 7.1,
+          "avgTempMax": 10.3,
+          "avgPrecipitation": 45.7,
+          "avgRainyDays": 9.7
+        },
+        {
+          "month": 8,
+          "avgTempMin": 6.8,
+          "avgTempMax": 10.7,
+          "avgPrecipitation": 56.7,
+          "avgRainyDays": 11.2
+        },
+        {
+          "month": 9,
+          "avgTempMin": 7.4,
+          "avgTempMax": 11.7,
+          "avgPrecipitation": 51.7,
+          "avgRainyDays": 10.3
+        },
+        {
+          "month": 10,
+          "avgTempMin": 8.2,
+          "avgTempMax": 12.6,
+          "avgPrecipitation": 62.4,
+          "avgRainyDays": 11.3
+        },
+        {
+          "month": 11,
+          "avgTempMin": 9.5,
+          "avgTempMax": 13.8,
+          "avgPrecipitation": 59.1,
+          "avgRainyDays": 9.9
+        },
+        {
+          "month": 12,
+          "avgTempMin": 10.8,
+          "avgTempMax": 15.3,
+          "avgPrecipitation": 55.5,
+          "avgRainyDays": 9.4
+        }
+      ]
+    },
+    {
+      "name": "Fortescue Bay",
+      "lat": -43.1422,
+      "lon": 147.9674,
+      "elevation": 6,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": 13.7,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 55.7,
+          "avgRainyDays": 7.9
+        },
+        {
+          "month": 2,
+          "avgTempMin": 14,
+          "avgTempMax": 18.3,
+          "avgPrecipitation": 47.3,
+          "avgRainyDays": 7.6
+        },
+        {
+          "month": 3,
+          "avgTempMin": 13.3,
           "avgTempMax": 17.5,
-          "avgPrecipitation": 54.1,
-          "avgRainyDays": 9
+          "avgPrecipitation": 54.2,
+          "avgRainyDays": 8.9
         },
         {
           "month": 4,
           "avgTempMin": 11.7,
           "avgTempMax": 15.7,
-          "avgPrecipitation": 49.4,
-          "avgRainyDays": 8.7
+          "avgPrecipitation": 49.5,
+          "avgRainyDays": 8.8
         },
         {
           "month": 5,
           "avgTempMin": 10.2,
-          "avgTempMax": 13.7,
-          "avgPrecipitation": 49,
-          "avgRainyDays": 9.3
+          "avgTempMax": 13.8,
+          "avgPrecipitation": 48.8,
+          "avgRainyDays": 9.2
         },
         {
           "month": 6,
           "avgTempMin": 9,
           "avgTempMax": 12.1,
-          "avgPrecipitation": 51.2,
-          "avgRainyDays": 9.3
+          "avgPrecipitation": 51.4,
+          "avgRainyDays": 9.4
         },
         {
           "month": 7,
           "avgTempMin": 8.4,
-          "avgTempMax": 11.6,
-          "avgPrecipitation": 45.9,
+          "avgTempMax": 11.7,
+          "avgPrecipitation": 45.7,
           "avgRainyDays": 9.7
         },
         {
           "month": 8,
           "avgTempMin": 8.2,
           "avgTempMax": 12,
-          "avgPrecipitation": 56.5,
+          "avgPrecipitation": 56.7,
           "avgRainyDays": 11.2
         },
         {
           "month": 9,
-          "avgTempMin": 8.7,
+          "avgTempMin": 8.8,
           "avgTempMax": 13,
-          "avgPrecipitation": 51.8,
-          "avgRainyDays": 10.4
+          "avgPrecipitation": 51.7,
+          "avgRainyDays": 10.3
         },
         {
           "month": 10,
           "avgTempMin": 9.5,
-          "avgTempMax": 13.9,
+          "avgTempMax": 14,
           "avgPrecipitation": 62.4,
-          "avgRainyDays": 11.2
+          "avgRainyDays": 11.3
         },
         {
           "month": 11,
           "avgTempMin": 10.8,
           "avgTempMax": 15.1,
           "avgPrecipitation": 59.1,
-          "avgRainyDays": 9.8
+          "avgRainyDays": 9.9
         },
         {
           "month": 12,
-          "avgTempMin": 12.1,
-          "avgTempMax": 16.6,
+          "avgTempMin": 12.2,
+          "avgTempMax": 16.7,
           "avgPrecipitation": 55.5,
-          "avgRainyDays": 9.3
+          "avgRainyDays": 9.4
         }
       ]
     }

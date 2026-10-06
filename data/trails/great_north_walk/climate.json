@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T00:34:05.538Z",
+  "generatedAt": "2026-10-06T01:12:08.851Z",
   "dataYears": {
     "start": 1994,
     "end": 2023
@@ -283,91 +283,91 @@
     },
     {
       "name": "Watagans",
-      "lat": -33,
-      "lon": 151.4,
-      "elevation": 358,
+      "lat": -32.9759,
+      "lon": 151.4123,
+      "elevation": 487,
       "monthly": [
         {
           "month": 1,
-          "avgTempMin": 17.1,
-          "avgTempMax": 25.8,
-          "avgPrecipitation": 85.8,
+          "avgTempMin": 16.3,
+          "avgTempMax": 24.9,
+          "avgPrecipitation": 85.6,
           "avgRainyDays": 11.1
         },
         {
           "month": 2,
-          "avgTempMin": 17,
-          "avgTempMax": 24.8,
-          "avgPrecipitation": 102.6,
+          "avgTempMin": 16.2,
+          "avgTempMax": 24,
+          "avgPrecipitation": 102.7,
           "avgRainyDays": 11.5
         },
         {
           "month": 3,
-          "avgTempMin": 15.6,
-          "avgTempMax": 23,
-          "avgPrecipitation": 116.5,
-          "avgRainyDays": 12.6
+          "avgTempMin": 14.8,
+          "avgTempMax": 22.1,
+          "avgPrecipitation": 116.4,
+          "avgRainyDays": 12.7
         },
         {
           "month": 4,
-          "avgTempMin": 12.6,
-          "avgTempMax": 20.3,
-          "avgPrecipitation": 76.7,
-          "avgRainyDays": 10.1
+          "avgTempMin": 11.8,
+          "avgTempMax": 19.5,
+          "avgPrecipitation": 76.9,
+          "avgRainyDays": 10.3
         },
         {
           "month": 5,
-          "avgTempMin": 9.7,
-          "avgTempMax": 17.3,
+          "avgTempMin": 8.8,
+          "avgTempMax": 16.4,
           "avgPrecipitation": 67.3,
           "avgRainyDays": 9.2
         },
         {
           "month": 6,
-          "avgTempMin": 7.6,
-          "avgTempMax": 14.7,
+          "avgTempMin": 6.8,
+          "avgTempMax": 13.9,
           "avgPrecipitation": 78.2,
-          "avgRainyDays": 9.4
+          "avgRainyDays": 9.3
         },
         {
           "month": 7,
-          "avgTempMin": 6.5,
-          "avgTempMax": 14.4,
+          "avgTempMin": 5.7,
+          "avgTempMax": 13.5,
           "avgPrecipitation": 57.4,
-          "avgRainyDays": 7.4
+          "avgRainyDays": 7.6
         },
         {
           "month": 8,
-          "avgTempMin": 7,
-          "avgTempMax": 16.2,
+          "avgTempMin": 6.2,
+          "avgTempMax": 15.3,
           "avgPrecipitation": 48.8,
           "avgRainyDays": 6.3
         },
         {
           "month": 9,
-          "avgTempMin": 9.3,
-          "avgTempMax": 19.3,
+          "avgTempMin": 8.5,
+          "avgTempMax": 18.4,
           "avgPrecipitation": 55.6,
-          "avgRainyDays": 7.1
+          "avgRainyDays": 7
         },
         {
           "month": 10,
-          "avgTempMin": 11.5,
-          "avgTempMax": 21.5,
+          "avgTempMin": 10.7,
+          "avgTempMax": 20.6,
           "avgPrecipitation": 71.3,
           "avgRainyDays": 8.9
         },
         {
           "month": 11,
-          "avgTempMin": 13.6,
-          "avgTempMax": 22.9,
+          "avgTempMin": 12.8,
+          "avgTempMax": 22,
           "avgPrecipitation": 91.3,
-          "avgRainyDays": 10.7
+          "avgRainyDays": 10.8
         },
         {
           "month": 12,
-          "avgTempMin": 15.5,
-          "avgTempMax": 24.6,
+          "avgTempMin": 14.7,
+          "avgTempMax": 23.8,
           "avgPrecipitation": 81.1,
           "avgRainyDays": 10.8
         }

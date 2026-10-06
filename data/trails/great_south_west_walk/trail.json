@@ -38,6 +38,12 @@
       "lon": 141.6
     },
     {
+      "name": "Moleside",
+      "lat": -38.0545,
+      "lon": 141.2686,
+      "elevation": 13
+    },
+    {
       "name": "Nelson",
       "lat": -38.05,
       "lon": 141.01

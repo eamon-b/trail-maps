@@ -121,8 +121,11 @@ describe('validation', () => {
   });
 
   it('requires a trail file to be the trail it is listed as', () => {
-    const good = { config: { id: 'shikoku' }, waypoints: [], track: { points: [] } };
+    const good = { config: { id: 'shikoku' }, waypoints: [], track: { points: [{ lat: 33, lon: 134 }] } };
     expect(trailFileProblems('shikoku', good)).toEqual([]);
+    expect(trailFileProblems('shikoku', { ...good, track: { points: [] } })).toEqual([
+      'shikoku.json: track.points is empty',
+    ]);
     expect(trailFileProblems('shikoku', { ...good, config: { id: 'heysen' } })).toHaveLength(1);
     expect(trailFileProblems('shikoku', { config: { id: 'shikoku' } })).toHaveLength(2);
     expect(trailFileProblems('shikoku', [])).toHaveLength(1);

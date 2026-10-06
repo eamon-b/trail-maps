@@ -32,7 +32,6 @@ export const TRAIL_DATA_FORMAT = 1;
  * would shadow a hiker's own guide.
  */
 const SAFE_CATALOG_ID = /^[A-Za-z0-9_-]{1,64}$/;
-const SAFE_KEY = /^[A-Za-z0-9_.-]{1,128}\.json$/;
 const MD5 = /^[0-9a-f]{32}$/;
 
 export function isCatalogTrailId(id: string): boolean {
@@ -74,6 +73,11 @@ export interface InstalledTrail extends CatalogEntry {
   file: string;
 }
 
+/** The object key a trail's file is published under: `<id>.<md5[0..12]>.json`. */
+export function catalogKey(id: string, md5: string): string {
+  return `${id}.${md5.slice(0, 12)}.json`;
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -87,7 +91,10 @@ function parseEntry(raw: unknown): CatalogEntry | null {
   if (typeof e.updatedAt !== 'string' || Number.isNaN(Date.parse(e.updatedAt))) return null;
   if (typeof e.md5 !== 'string' || !MD5.test(e.md5)) return null;
   if (!isFiniteNumber(e.bytes) || e.bytes <= 0) return null;
-  if (typeof e.key !== 'string' || !SAFE_KEY.test(e.key)) return null;
+  // Keys are content-addressed, so the only valid one is fully determined. This
+  // also keeps a bad entry from naming another file in the directory
+  // (`state.json`) for a download to overwrite or a removal to delete.
+  if (e.key !== catalogKey(e.id, e.md5)) return null;
   return {
     id: e.id,
     name: e.name,
@@ -132,7 +139,7 @@ export function parseInstalled(raw: unknown): InstalledTrail | null {
   const entry = parseEntry(raw);
   if (!entry) return null;
   const file = (raw as Record<string, unknown>).file;
-  if (typeof file !== 'string' || !SAFE_KEY.test(file)) return null;
+  if (file !== entry.key) return null;
   return { ...entry, file };
 }
 

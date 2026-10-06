@@ -230,7 +230,9 @@ function publish(
 ): CatalogEntry {
   const body = options.body ?? trailBody(id, updatedAt);
   const sum = md5(body);
-  const key = `${id}.${sum.slice(0, 12)}.json`;
+  // Keyed by the md5 the catalog advertises, as the publish script keys it: a
+  // wrong `md5` option serves this body under the key that md5 names.
+  const key = `${id}.${(options.md5 ?? sum).slice(0, 12)}.json`;
   mockRemote[`${TRAILS_URL}/${key}`] = body;
   return {
     id,
@@ -447,6 +449,8 @@ describe('a download that fails its checks', () => {
       expect.objectContaining({ config: expect.objectContaining({ id: 'alpha' }) }),
     );
     expect(useTrailDataStore.getState().downloading).toEqual({});
+    // Not stamped as checked, so the next automatic check retries it.
+    expect(savedState().lastCheckedAt).toBe(T0);
   }
 
   it('rejects an MD5 mismatch', async () => {
@@ -776,6 +780,35 @@ describe('the state file', () => {
     await expect(checkForTrailDataUpdates({ now: T0 })).resolves.toEqual(
       expect.objectContaining({ checked: true }),
     );
+  });
+
+  it('recovers from the temp file when the app died between deleting and renaming', async () => {
+    const alpha = publish('alpha', '2026-10-01T00:00:00.000Z');
+    const gamma = publish('gamma', '2026-10-01T00:00:00.000Z');
+    serveCatalog([alpha, gamma]);
+    await checkForTrailDataUpdates({ now: T0 });
+    expect(filesInRoot()).not.toContain('state.json.tmp');
+
+    mockFiles[`${STATE_URI}.tmp`] = mockFiles[STATE_URI];
+    delete mockFiles[STATE_URI];
+    restart();
+
+    expect(activeDownload('alpha')?.file).toBe(alpha.key);
+    expect(listRemoteTrails().map((t) => t.id)).toEqual(['gamma']);
+  });
+
+  it('prefers a complete state file over a torn temp file', async () => {
+    const alpha = publish('alpha', '2026-10-01T00:00:00.000Z');
+    serveCatalog([alpha]);
+    await checkForTrailDataUpdates({ now: T0 });
+
+    mockFiles[`${STATE_URI}.tmp`] = '{"catalog": {"for';
+    restart();
+    expect(activeDownload('alpha')?.file).toBe(alpha.key);
+
+    // The next save replaces the stale temp file rather than failing on it.
+    await checkForTrailDataUpdates({ force: true, now: T0 + MINUTE });
+    expect(filesInRoot()).toEqual([alpha.key, 'state.json'].sort());
   });
 
   it('drops an installed record whose id does not match its key', async () => {

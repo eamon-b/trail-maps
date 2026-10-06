@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { describeDiff, localDataProblems, parseArgs } from './publish-trail-data.js';
+import { describeDiff, localDataProblems, parseArgs, rollbacks } from './publish-trail-data.js';
 import { buildCatalog, diffCatalogs, digestTrailFile, type MobileIndexEntry } from './lib/trail-data-catalog.js';
 
 function trailFile(id: string, extra: Record<string, unknown> = {}): Buffer {
-  return Buffer.from(JSON.stringify({ config: { id }, waypoints: [], track: { points: [] }, ...extra }));
+  return Buffer.from(JSON.stringify({ config: { id }, waypoints: [], track: { points: [{ lat: 0, lon: 0 }] }, ...extra }));
 }
 
 function indexFor(files: Record<string, Buffer>): MobileIndexEntry[] {
@@ -19,11 +19,12 @@ function indexFor(files: Record<string, Buffer>): MobileIndexEntry[] {
 }
 
 describe('parseArgs', () => {
-  it('reads the three flags and refuses anything else', () => {
-    expect(parseArgs([])).toEqual({ all: false, dryRun: false, check: false });
-    expect(parseArgs(['--dry-run', '--all'])).toEqual({ all: true, dryRun: true, check: false });
+  it('reads the four flags and refuses anything else', () => {
+    expect(parseArgs([])).toEqual({ all: false, dryRun: false, check: false, force: false });
+    expect(parseArgs(['--dry-run', '--all'])).toEqual({ all: true, dryRun: true, check: false, force: false });
     expect(parseArgs(['--check']).check).toBe(true);
-    expect(() => parseArgs(['--force'])).toThrow(/Unknown argument/);
+    expect(parseArgs(['--force']).force).toBe(true);
+    expect(() => parseArgs(['--yes'])).toThrow(/Unknown argument/);
   });
 });
 
@@ -64,5 +65,18 @@ describe('describeDiff', () => {
       '  ~ a: name "a" -> "A walk"',
       '  - b: in the live catalog, not in index.json',
     ]);
+  });
+});
+
+describe('rollbacks', () => {
+  it('names a trail whose live copy is newer and different, and nothing else', () => {
+    const [a, b] = indexFor({ a: trailFile('a'), b: trailFile('b') });
+    const newer = { ...a, updatedAt: '2026-10-07T00:00:00.000Z', md5: 'f'.repeat(32) };
+    const live = buildCatalog([newer, b], new Date());
+    expect(rollbacks(buildCatalog([a, b], new Date()), live)).toEqual([
+      '  a: live 2026-10-07T00:00:00.000Z, local 2026-10-06T00:00:00.000Z',
+    ]);
+    expect(rollbacks(buildCatalog([newer, b], new Date()), buildCatalog([a, b], new Date()))).toEqual([]);
+    expect(rollbacks(buildCatalog([a], new Date()), null)).toEqual([]);
   });
 });

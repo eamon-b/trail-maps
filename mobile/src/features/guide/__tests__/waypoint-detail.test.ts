@@ -1,12 +1,13 @@
 import {
   WATER_STATUS_OPTIONS,
   duplicatePoisFor,
-  estimateEtaMinutes,
-  formatEta,
+  distanceToLineMeters,
+  isPlaceOffTrail,
   isWaterFamily,
   relativeDate,
   tripToWaypoint,
   waterStatusMeta,
+  waypointOffTrailMeters,
 } from '../waypoint-detail';
 import type { TrailPOI } from '@lib/trail-types';
 
@@ -47,19 +48,30 @@ describe('water helpers', () => {
   });
 });
 
-describe('eta', () => {
-  it('estimates minutes ahead, null at/behind', () => {
-    expect(estimateEtaMinutes(4, 4)).toBe(60);
-    expect(estimateEtaMinutes(0)).toBeNull();
-    expect(estimateEtaMinutes(-2)).toBeNull();
+describe('place off trail', () => {
+  // A straight equatorial line, 0.01° (~1.1 km) between its two vertices.
+  const line = [
+    { lat: 0, lon: 0, dist: 0 },
+    { lat: 0, lon: 0.01, dist: 1.11 },
+  ];
+
+  it('measures to the line, not to its nearest vertex', () => {
+    // Mid-segment, 0.0001° (~11 m) north: ~556 m from either vertex.
+    const m = distanceToLineMeters(0.0001, 0.005, line)!;
+    expect(m).toBeGreaterThan(10);
+    expect(m).toBeLessThan(12);
   });
 
-  it('formats a human ETA', () => {
-    expect(formatEta(null)).toBeNull();
-    expect(formatEta(0.4)).toBe('<1 min');
-    expect(formatEta(30)).toBe('30 min');
-    expect(formatEta(90)).toBe('1 h 30 min');
-    expect(formatEta(120)).toBe('2 h');
+  it("uses a turn-off's own offTrailKm over the straight line", () => {
+    expect(waypointOffTrailMeters({ lat: 0, lon: 0.005, offTrailKm: 2.5 }, line)).toBe(2500);
+    expect(waypointOffTrailMeters({ lat: 0.01, lon: 0.005 }, line)).toBeGreaterThan(1000);
+  });
+
+  it('counts only a real walk as off the trail', () => {
+    expect(isPlaceOffTrail(17)).toBe(false);
+    expect(isPlaceOffTrail(50)).toBe(false);
+    expect(isPlaceOffTrail(51)).toBe(true);
+    expect(isPlaceOffTrail(null)).toBe(false);
   });
 });
 

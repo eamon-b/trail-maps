@@ -115,12 +115,12 @@ describe('ticking a stop splits the days', () => {
     const t = trail();
     const planTrail = t as unknown as PlanTrail;
 
-    const before = computePlanDays(planTrail, emptyPlan());
+    const before = computePlanDays(planTrail, emptyPlan(), { baseKmh: 4 });
     expect(before).toHaveLength(1);
     expect(before[0].distanceKm).toBeCloseTo(100, 3);
 
     const campB = stopCandidates(t, 'NOBO').find((c) => c.name === 'Camp B')!;
-    const after = computePlanDays(planTrail, toggleStop(emptyPlan(), toggleTargetOf(campB)));
+    const after = computePlanDays(planTrail, toggleStop(emptyPlan(), toggleTargetOf(campB)), { baseKmh: 4 });
 
     expect(after).toHaveLength(2);
     expect(after[0].endName).toBe('Camp B');
@@ -135,13 +135,13 @@ describe('ticking a stop splits the days', () => {
 
     let plan = toggleStop(emptyPlan(), toggleTargetOf(campB));
     plan = { ...plan, startDate: '2026-10-01' };
-    expect(computePlanDays(planTrail, plan).map((d) => d.date)).toEqual([
+    expect(computePlanDays(planTrail, plan, { baseKmh: 4 }).map((d) => d.date)).toEqual([
       '2026-10-01',
       '2026-10-02',
     ]);
 
     plan = { ...plan, stops: [{ ...plan.stops[0], nights: 2 }] };
-    const days = computePlanDays(planTrail, plan);
+    const days = computePlanDays(planTrail, plan, { baseKmh: 4 });
     expect(days.map((d) => d.date)).toEqual(['2026-10-01', '2026-10-03']);
     expect(days[0].restDays).toBe(1);
     expect(days[1].restDays).toBe(0);

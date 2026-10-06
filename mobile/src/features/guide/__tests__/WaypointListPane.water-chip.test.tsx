@@ -49,6 +49,7 @@ jest.mock('../use-visible-pois', () => ({
 const waterStatus = new Map<string, WaterAggregate>();
 
 const trail = {
+  track: { totalDistance: 20, points: [] },
   waypoints: [
     { id: 'w_creek', name: 'Kennedy Creek', type: 'creek', totalDistance: 4 },
     { id: 'w_tank', name: 'Rain Tank', type: 'water-tank', totalDistance: 9 },

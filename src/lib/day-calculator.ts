@@ -53,14 +53,14 @@ export interface PlanStopInput {
  * The descent term's 300 m allowance is *per call* — it is a per-day allowance, so
  * callers must pass whole-day (whole-segment) ascent/descent, never per-point sums.
  *
- * @param baseKmh - flat-ground base speed (pace preset). Default 4 keeps every
- *   existing caller byte-identical.
+ * @param baseKmh - flat-ground base speed: the hiker's pace. Required — a
+ *   shared calculator never assumes one.
  */
 export function estimateHikingHoursRaw(
   distanceKm: number,
   ascentM: number,
   descentM: number,
-  baseKmh = 4,
+  baseKmh: number,
 ): number {
   return distanceKm / baseKmh + ascentM / 600 + Math.max(0, (descentM - 300) / 600);
 }
@@ -70,14 +70,13 @@ export function estimateHikingHoursRaw(
  *   time = distance/baseKmh + ascent/600 + max(0, (descent-300)/600)
  * Returns hours rounded to 1 decimal.
  *
- * @param baseKmh - flat-ground base speed (pace preset). Default 4 preserves the
- *   original 4 km/h behavior for every existing caller.
+ * @param baseKmh - flat-ground base speed: the hiker's pace. Required.
  */
 export function estimateHikingTime(
   distanceKm: number,
   ascentM: number,
   descentM: number,
-  baseKmh = 4,
+  baseKmh: number,
 ): number {
   const hours = estimateHikingHoursRaw(distanceKm, ascentM, descentM, baseKmh);
   return Math.round(hours * 10) / 10;
@@ -158,7 +157,7 @@ export function hoursBetweenIndexed(
   index: TimeIndex,
   fromKm: number,
   toKm: number,
-  baseKmh = 4,
+  baseKmh: number,
 ): number {
   if (index.points.length === 0) return 0;
   const { gain, loss } = climbBetweenIndexed(index, fromKm, toKm);
@@ -200,7 +199,7 @@ export function kmAtHours(
   index: TimeIndex,
   fromKm: number,
   targetHours: number,
-  baseKmh = 4,
+  baseKmh: number,
 ): number {
   const { points } = index;
   if (points.length === 0) return fromKm;
@@ -287,15 +286,14 @@ function stopDisplayName(stop: PlanStopInput): string {
  * @param stops - Planned overnight stops (trail/section start and end are implicit)
  * @param startDate - Optional ISO date string for day 1
  * @param section - Optional section boundaries; when set, scopes computation to the section range
- * @param baseKmh - Naismith flat-ground base speed (pace preset). Default 4 keeps
- *   every existing caller source- and behavior-compatible.
+ * @param baseKmh - Naismith flat-ground base speed: the hiker's pace. Required.
  */
 export function computeDays(
   trail: PlanTrail,
   stops: PlanStopInput[],
-  startDate?: string | null,
-  section?: SectionConfig | null,
-  baseKmh = 4,
+  startDate: string | null | undefined,
+  section: SectionConfig | null | undefined,
+  baseKmh: number,
 ): ComputedDay[] {
   const trackPoints = trail.track.points;
   const breakStarts = routeBreakStarts(trail.track.breaks, 'points');

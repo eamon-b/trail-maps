@@ -71,7 +71,7 @@ import {
 } from './plan-state';
 import { initPlanSync, type PlanSyncController, type PlanSyncHost } from './plan-sync';
 import { finalDayMaxHours } from '@lib/plan-suggest';
-import { initNextDays, type NextDaysController, type NextDaysPlan, type NextDaysTrail } from './plan-next-days';
+import { hereLabel, initNextDays, type NextDaysController, type NextDaysPlan, type NextDaysTrail } from './plan-next-days';
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
 // `title="…"` and `class="…"`, and an imported GPX supplies both.
@@ -1172,14 +1172,18 @@ function renderStopList(): void {
 
   // "You are here", once the Next days section has located the hiker: before
   // the first row at or past them, or after the last.
-  const hereKm = nextDays?.hereKm() ?? null;
-  const hereIndex = hereKm === null
+  // Off the trail, the divider marks the km the hiker is level with and says
+  // so, rather than "You are here" between two places they are nowhere near.
+  const here = nextDays?.here() ?? null;
+  const hereIndex = here === null
     ? -1
     : (() => {
-      const idx = waypoints.findIndex(wp => (wp.totalDistance ?? 0) >= hereKm);
+      const idx = waypoints.findIndex(wp => (wp.totalDistance ?? 0) >= here.km);
       return idx === -1 ? waypoints.length : idx;
     })();
-  const hereDivider = '<div class="stops-here" id="stops-here">You are here</div>';
+  const hereDivider = here === null
+    ? ''
+    : `<div class="stops-here" id="stops-here">${escapeHtml(hereLabel(here))}</div>`;
 
   container.innerHTML = waypoints.map((wp, i) => {
     const km = wp.totalDistance ?? 0;

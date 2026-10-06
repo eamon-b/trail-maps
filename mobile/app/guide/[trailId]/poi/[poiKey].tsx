@@ -49,21 +49,18 @@ import { useTheme } from '../../../../src/theme';
 import { radii, spacing, touchTarget, typography } from '../../../../src/tokens';
 import { useSettingsStore } from '../../../../src/state/settings-store';
 import { useGuide } from '../../../../src/features/guide/GuideContext';
-import { useGuidePositionContext } from '../../../../src/features/guide/GuidePositionContext';
 import { poiColor } from '../../../../src/features/elevation/waypoint-category';
 import { poiIconName } from '../../../../src/features/map/waypoint-icons';
 import { WAYPOINT_ICON_IMAGES } from '../../../../src/features/map/waypoint-icon-images';
-import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
-import { estimateEtaMinutes, formatEta } from '../../../../src/features/guide/waypoint-detail';
+import { isPlaceOffTrail } from '../../../../src/features/guide/waypoint-detail';
+import { TripCard } from '../../../../src/features/guide/TripCard';
 import { mapsUrlFor } from '../../../../src/features/guide/poi-detail';
-import { isOffTrail } from '../../../../src/services/position-on-trail';
 
 export default function PoiDetailScreen() {
   const { poiKey } = useLocalSearchParams<{ trailId: string; poiKey: string }>();
   const { colors } = useTheme();
   const { trail } = useGuide();
   const units = useSettingsStore((s) => s.units);
-  const { currentKm } = useGuidePositionContext();
 
   const poi = useMemo(
     () => findPoiByRouteKey(trail.pois, poiKey ?? ''),
@@ -87,10 +84,6 @@ export default function PoiDetailScreen() {
   const category = poiCategoryLabel(poi.category);
   const badge = poiColor(poi.category, colors);
   const osmUrl = poiOsmUrl(poi);
-
-  const deltaKm = currentKm != null ? poi.distanceAlongTrail - currentKm : null;
-  const signed = deltaKm != null ? formatSignedDistance(deltaKm, units) : null;
-  const etaLabel = deltaKm != null && deltaKm > 0 ? formatEta(estimateEtaMinutes(deltaKm)) : null;
 
   const openOsm = () => {
     void Linking.openURL(osmUrl);
@@ -145,24 +138,14 @@ export default function PoiDetailScreen() {
       <Text style={[styles.meta, { color: colors.textSecondary }]}>
         {/* A few metres off the line is on the trail; only a real walk is worth saying. */}
         {`${category} · ${formatDistance(poi.distanceAlongTrail, units)} along the trail${
-          isOffTrail(poi.distanceFromTrail * 1000)
+          isPlaceOffTrail(poi.distanceFromTrail * 1000)
             ? ` · ${formatDistance(poi.distanceFromTrail, units, { decimals: 2 })} off trail`
             : ''
         }`}
       </Text>
 
-      {signed && signed.direction !== 'here' && (
-        <View style={styles.stats}>
-          <Stat
-            label={signed.direction === 'ahead' ? 'Ahead' : 'Behind'}
-            value={
-              etaLabel
-                ? `${signed.label.replace(/ (ahead|behind)$/, '')} · ${etaLabel}`
-                : signed.label
-            }
-          />
-        </View>
-      )}
+      {/* The walk from the hiker, at their pace — the waypoint screen's card. */}
+      <TripCard placeKm={poi.distanceAlongTrail} placeOffTrailM={poi.distanceFromTrail * 1000} />
 
       {lines.length > 0 && (
         <>
@@ -247,16 +230,6 @@ function ActionButton({ label, onPress }: { label: string; onPress: () => void }
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.stat, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <Text style={[styles.statValue, { color: colors.textPrimary }]}>{value}</Text>
-    </View>
-  );
-}
-
 const GLYPH = 22;
 const BADGE = 40;
 
@@ -286,17 +259,6 @@ const styles = StyleSheet.create({
   pillText: { ...typography.caption },
   meta: { ...typography.bodySmall },
 
-  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  stat: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: spacing.xs,
-    minWidth: 90,
-  },
-  statLabel: { ...typography.caption },
-  statValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
 
   divider: { height: StyleSheet.hairlineWidth },
   sectionTitle: { ...typography.titleLarge },

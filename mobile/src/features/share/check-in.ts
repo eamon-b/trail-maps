@@ -10,6 +10,7 @@
  * (`use-check-in-share`) owns the actual `Share.share` call.
  */
 
+import { haversineDistance } from '@lib/distance';
 import { formatDistance, type DistanceUnit } from '@lib/format-distance';
 
 /** A live GPS fix from the guide position session. */
@@ -68,9 +69,21 @@ export function mapsLink(lat: number, lon: number): string {
 const SIGNOFF = '(via Tracknotes)';
 
 /**
+ * A live fix within this straight-line distance of the waypoint is "at" it.
+ * Wider than the trail's 50 m "Here": a hut or camp can sit a little off the
+ * line, and the fix of someone standing at it should still count.
+ */
+export const AT_WAYPOINT_M = 500;
+
+/**
  * Compose a shareable check-in. Two shapes:
  *   - waypoint present → "Checking in at {name} ({km}) on {trail}."
  *   - otherwise (gps)  → "Checking in from {trail} — {done} of {total}."
+ *
+ * A check-in tells someone where the hiker is, so a live fix wins over the
+ * screen it was sent from: shared from a waypoint the fix is more than
+ * `AT_WAYPOINT_M` away from, it is a position check-in that names the
+ * waypoint's distance, never "at" it.
  *
  * Both append the user's note (if any), a maps link, and the sign-off.
  */
@@ -82,7 +95,12 @@ export function composeCheckIn(input: CheckInInput): CheckInPayload {
   let linkLat: number | null = null;
   let linkLon: number | null = null;
 
-  if (waypoint) {
+  const gpsAway =
+    waypoint && gps
+      ? haversineDistance(gps.lat, gps.lon, waypoint.lat, waypoint.lon)
+      : null;
+
+  if (waypoint && (gpsAway == null || gpsAway <= AT_WAYPOINT_M)) {
     title = `Check-in at ${waypoint.name}`;
     const km = formatDistance(waypoint.km, units);
     let sentence = `Checking in at ${waypoint.name} (${km}) on ${trailName}.`;
@@ -104,7 +122,11 @@ export function composeCheckIn(input: CheckInInput): CheckInPayload {
     const offTrail = gps.offTrail ? ' (off trail)' : '';
     lines.push(
       `Checking in from ${trailName}${offTrail} — ${done} of ${total}. ` +
-        `Position: ${formatCoords(gps.lat, gps.lon)}.`,
+        `Position: ${formatCoords(gps.lat, gps.lon)}.` +
+        (waypoint && gpsAway != null
+          ? ` ${formatDistance(gpsAway / 1000, units)} from ${waypoint.name} ` +
+            `(${formatDistance(waypoint.km, units)}).`
+          : ''),
     );
     linkLat = gps.lat;
     linkLon = gps.lon;

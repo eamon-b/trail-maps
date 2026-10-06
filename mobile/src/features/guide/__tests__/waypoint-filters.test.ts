@@ -75,6 +75,15 @@ describe('matchesFamily', () => {
 });
 
 describe('formatSignedDistance', () => {
+  it('reads "Level with you", not "Here", when the hiker or place is off the line', () => {
+    expect(formatSignedDistance(0.01, 'km')).toEqual({ label: 'Here', direction: 'here' });
+    expect(formatSignedDistance(0.01, 'km', { offLine: true })).toEqual({
+      label: 'Level with you',
+      direction: 'here',
+    });
+    expect(formatSignedDistance(2, 'km', { offLine: true }).label).toBe('2.0 km ahead');
+  });
+
   it('labels positive deltas as ahead', () => {
     expect(formatSignedDistance(12.4, 'km')).toEqual({ label: '12.4 km ahead', direction: 'ahead' });
   });

@@ -11,6 +11,10 @@
  *    state, not per trail: it is the phone's twin of the web page's
  *    `localStorage` filter, and a walker who has turned transport POIs off
  *    means it everywhere.
+ *  - `gpsOnGuideOpen` — whether opening a guide starts the foreground GPS
+ *    watch by itself. Off until the hiker taps "Show my location"; turning
+ *    location off in a guide clears it again. GPS is opt-in, never a side
+ *    effect of having once granted the OS permission.
  *
  * Persistence uses zustand's `persist` middleware backed by AsyncStorage.
  * Only the data fields are persisted (see `partialize`); action functions are
@@ -36,12 +40,15 @@ export interface SettingsState {
   perTrailDirection: Record<string, Direction>;
   /** Master switch + per-category switches for OSM points of interest. */
   poiFilter: PoiFilterState;
+  /** Start GPS when a guide opens (the hiker's last on/off choice). */
+  gpsOnGuideOpen: boolean;
 
   setUnits: (units: Units) => void;
   setDirection: (trailId: string, direction: Direction) => void;
   toggleDirection: (trailId: string) => void;
   setPoiEnabled: (enabled: boolean) => void;
   setPoiCategory: (category: TrailPOICategory, visible: boolean) => void;
+  setGpsOnGuideOpen: (on: boolean) => void;
   /** Imperative read (non-reactive). Components should select the field. */
   getDirection: (trailId: string) => Direction;
 }
@@ -52,6 +59,7 @@ export const useSettingsStore = create<SettingsState>()(
       units: 'km',
       perTrailDirection: {},
       poiFilter: defaultPoiFilterState(),
+      gpsOnGuideOpen: false,
 
       setUnits: (units) => set({ units }),
 
@@ -82,6 +90,8 @@ export const useSettingsStore = create<SettingsState>()(
           },
         })),
 
+      setGpsOnGuideOpen: (gpsOnGuideOpen) => set({ gpsOnGuideOpen }),
+
       getDirection: (trailId) => get().perTrailDirection[trailId] ?? 'default',
     }),
     {
@@ -91,6 +101,7 @@ export const useSettingsStore = create<SettingsState>()(
         units: s.units,
         perTrailDirection: s.perTrailDirection,
         poiFilter: s.poiFilter,
+        gpsOnGuideOpen: s.gpsOnGuideOpen,
       }),
       // A blob written by an older build knows nothing about categories added
       // since, and a corrupted one knows nothing at all; normalising on the way
@@ -101,6 +112,7 @@ export const useSettingsStore = create<SettingsState>()(
           ...current,
           ...saved,
           poiFilter: normalisePoiFilterState(saved.poiFilter),
+          gpsOnGuideOpen: saved.gpsOnGuideOpen === true,
         };
       },
     },

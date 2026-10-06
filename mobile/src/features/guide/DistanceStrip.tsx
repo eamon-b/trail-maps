@@ -2,13 +2,17 @@
  * Compact one-line "what's next" strip shown above every guide pane.
  *
  * Reads the shared guide position and renders one of four states:
- *   no-permission — a single unobtrusive "Show my location" pill (starts GPS)
+ *   no-permission — a single unobtrusive "Show my location" pill (starts GPS);
+ *                   "Location unavailable · Try again" when the last start failed
  *   acquiring     — a quiet "Locating…" hint
  *   fix           — horizontally-scrollable chips: next water / camp / waypoint,
  *                   each with distance and a Naismith ETA (direction-aware),
  *                   plus a "Next resupply" chip once the hiker has made a
  *                   resupply plan
  *   off-trail     — a leading "X m off trail" chip, then the same next chips
+ *
+ * While GPS is on (acquiring, fix, off-trail) a "Turn off location" button sits
+ * at the end of the row: tracking is opt-in, so it must be as easy to stop.
  *
  * All distances/ETAs come from the shared `distance-calculator`; the trail is
  * already direction-applied by the guide, so "next" always means ahead.
@@ -45,7 +49,8 @@ export function DistanceStrip() {
   const { trailId, trail } = useGuide();
   const baseKmh = usePlanInputsStore(selectPaceBaseKmh(trailId));
   const units = useSettingsStore((s) => s.units);
-  const { status, currentKm, offTrailMeters, position, start } = useGuidePositionContext();
+  const { status, currentKm, offTrailMeters, position, error, start, stop } =
+    useGuidePositionContext();
   // Null until a resupply plan exists — no chip at all until then.
   const plannedIds = usePlannedResupplyIds(trailId, trail);
   const shareCheckIn = useCheckInShare();
@@ -94,12 +99,13 @@ export function DistanceStrip() {
 
   // --- No fix yet: a single "Show my location" pill / locating hint --------
   if (status === 'no-permission') {
+    const pillLabel = error ? 'Location unavailable · Try again' : 'Show my location';
     return (
       <View style={styles.host}>
         <Pressable
           onPress={start}
           accessibilityRole="button"
-          accessibilityLabel="Show my location"
+          accessibilityLabel={pillLabel}
           style={({ pressed }) => [
             styles.pill,
             { backgroundColor: colors.accent },
@@ -107,16 +113,29 @@ export function DistanceStrip() {
           ]}
         >
           <Text style={[styles.pillIcon, { color: colors.accentText }]}>◎</Text>
-          <Text style={[styles.pillText, { color: colors.accentText }]}>Show my location</Text>
+          <Text style={[styles.pillText, { color: colors.accentText }]}>{pillLabel}</Text>
         </Pressable>
       </View>
     );
   }
 
+  const stopButton = (
+    <Pressable
+      onPress={stop}
+      accessibilityRole="button"
+      accessibilityLabel="Turn off location"
+      hitSlop={8}
+      style={({ pressed }) => [styles.stopButton, pressed && styles.pressed]}
+    >
+      <Text style={[styles.stopText, { color: colors.textSecondary }]}>Turn off</Text>
+    </Pressable>
+  );
+
   if (status === 'acquiring') {
     return (
-      <View style={styles.host}>
+      <View style={styles.fixRow}>
         <Text style={[styles.hint, { color: colors.textSecondary }]}>Locating…</Text>
+        {stopButton}
       </View>
     );
   }
@@ -153,6 +172,7 @@ export function DistanceStrip() {
           </View>
         ))}
       </ScrollView>
+      {stopButton}
       {canShare && (
         <View style={styles.shareSlot}>
           <ShareIconButton
@@ -222,6 +242,14 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.6,
+  },
+  stopButton: {
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  stopText: {
+    ...typography.caption,
+    textDecorationLine: 'underline',
   },
   chip: {
     flexDirection: 'row',

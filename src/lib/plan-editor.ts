@@ -621,8 +621,8 @@ export function overnightCandidates<W extends PlanWaypoint>(
 
 /** Options for `computePlanDays`. */
 export interface ComputePlanDaysOptions {
-  /** Naismith flat-ground base speed. Default 4, as `computeDays`. */
-  baseKmh?: number;
+  /** Naismith flat-ground base speed: the hiker's pace, never assumed. */
+  baseKmh: number;
   /** Section boundaries, in the same (active) km space as `trail`. */
   section?: SectionConfig | null;
 }
@@ -656,7 +656,7 @@ function addDays(startDate: string, days: number): string {
 export function computePlanDays(
   trail: PlanTrail,
   plan: PlanDocument,
-  opts: ComputePlanDaysOptions = {},
+  opts: ComputePlanDaysOptions,
 ): ComputedDay[] {
   const total = trail.track.totalDistance;
   const active = stopsToActive(plan.stops, plan.direction, total);

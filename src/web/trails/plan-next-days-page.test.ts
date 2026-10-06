@@ -378,6 +378,24 @@ describe('"Use my location"', () => {
     expect((divider.previousElementSibling as HTMLElement).dataset.km).toBe('48');
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
+
+  it('says "Level with you", not "You are here", for a fix off the trail', async () => {
+    (Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = vi.fn();
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        // ~2.2 km north-east of the trail's km 50.
+        getCurrentPosition: (ok: (pos: { coords: { latitude: number; longitude: number } }) => void) =>
+          ok({ coords: { latitude: latAt(50) + 0.014, longitude: lonAt(50) + 0.014 } }),
+      },
+    });
+    await boot();
+
+    ndAction('locate').click();
+    tabButton('stops').click();
+    const text = $('stops-here').textContent ?? '';
+    expect(text).toMatch(/^Level with you · you are \d\.\d km off the trail$/);
+  });
 });
 
 // ---------------------------------------------------------------------------

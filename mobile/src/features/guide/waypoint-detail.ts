@@ -1,21 +1,18 @@
 /**
  * Pure, React-free helpers for the waypoint detail screen: relative-date
  * formatting for the comment feed, the water-status chip registry, the
- * water-family test that decides whether the composer offers flow chips, a
- * simple distance→ETA estimate, and the lookup behind the "From OpenStreetMap"
+ * water-family test that decides whether the composer offers flow chips, the
+ * walk from the hiker to a place, and the lookup behind the "From OpenStreetMap"
  * section. Kept here so they are unit-tested without the screen.
  */
 
 import type { WaterStatus } from '@lib/comments-api-types';
-import { estimateHikingTime } from '@lib/day-calculator';
-import {
-  calculateElevationBetween,
-  NO_BREAK_STARTS,
-  type ElevationPoint,
-} from '@lib/track-geometry';
+import { NO_BREAK_STARTS, type ElevationPoint } from '@lib/track-geometry';
 import type { TrailPOI } from '@lib/trail-types';
 import { categoryToken } from '../elevation/waypoint-category';
 import type { TrailJson } from '../../services/trail-assets';
+import { tripAlongTrail, type TrailTrip } from '../../services/distance-calculator';
+import { snapToTrail, type SnapPoint } from '../../services/position-on-trail';
 
 const MONTHS = [
   'Jan',
@@ -86,87 +83,104 @@ export function isWaterFamily(type: string): boolean {
   return categoryToken(type) === 'waypointWater';
 }
 
-/** Default hiking pace for the rough ETA estimate. */
-export const DEFAULT_PACE_KMH = 4;
-
-/**
- * Rough minutes-to-reach for a waypoint `distanceKm` ahead. Returns null for a
- * waypoint at or behind the hiker (no meaningful ETA).
- */
-export function estimateEtaMinutes(
-  distanceKm: number,
-  paceKmh: number = DEFAULT_PACE_KMH,
-): number | null {
-  if (distanceKm <= 0 || paceKmh <= 0) return null;
-  return (distanceKm / paceKmh) * 60;
-}
-
-/** Format an ETA in minutes as "12 min" / "1 h 20 min" / "<1 min". */
-export function formatEta(minutes: number | null): string | null {
-  if (minutes == null) return null;
-  const rounded = Math.round(minutes);
-  if (rounded < 1) return '<1 min';
-  if (rounded < 60) return `${rounded} min`;
-  const h = Math.floor(rounded / 60);
-  const m = rounded % 60;
-  return m === 0 ? `${h} h` : `${h} h ${m} min`;
-}
-
 // ---------------------------------------------------------------------------
 // From the hiker to the waypoint
 // ---------------------------------------------------------------------------
 
-/** What it takes to walk the trail from the hiker's position to a waypoint. */
-export interface TripToWaypoint {
-  /** Ahead of the hiker in the travelled direction, or back the way they came. */
-  direction: 'ahead' | 'behind';
-  /** Trail distance in km (always positive). */
-  distanceKm: number;
-  /** Metres climbed on the way there, in the direction actually walked. */
-  ascentM: number;
-  /** Metres descended on the way there, in the direction actually walked. */
-  descentM: number;
-  /** Naismith walking time in minutes at the hiker's own pace. */
-  etaMinutes: number;
+/**
+ * Within this many metres of the hiker's km, a place is level with them and
+ * there is nothing to walk along the trail — the same 50 m "Here" threshold
+ * `formatSignedDistance` uses.
+ */
+export const HERE_KM = 0.05;
+
+/**
+ * A place (waypoint or POI) further than this from the trail line is a walk
+ * off it, worth saying so; nearer, it is on the trail as far as the hiker
+ * cares. Its own figure, not the GPS fix's `OFF_TRAIL_THRESHOLD_M`: that one
+ * is tuned for GPS noise and may move for reasons that have nothing to do with
+ * how a place is described.
+ */
+export const PLACE_OFF_TRAIL_M = 50;
+
+/** Whether a place `metres` from the trail line is a walk off it. */
+export function isPlaceOffTrail(metres: number | null | undefined): boolean {
+  return metres != null && metres > PLACE_OFF_TRAIL_M;
 }
 
 /**
- * Distance, climb and Naismith time along the trail from `currentKm` to a
- * waypoint at `waypointKm`, both on the guide's direction-applied scale.
+ * The walk along the trail from the hiker's snapped km to a place at
+ * `placeKm`, or null when the place is level with them (within `HERE_KM`).
+ * The maths is the distance strip's (`tripAlongTrail`), at the hiker's pace.
  *
- * A waypoint behind the hiker is walked back to, so its climb is the forward
- * stretch's descent and vice versa. Within 50 m — the same "Here" threshold
- * `formatSignedDistance` uses — there is nothing to walk and this returns null.
- *
- * `breakStarts` are the route breaks in `trackPoints`
- * (`routeBreakStarts(breaks, 'points')`), so a ferry is never climbed.
+ * This is the trail part only: a hiker off the trail, or a place off it, has
+ * a further walk this cannot measure — the trip card says so beside it.
  */
 export function tripToWaypoint(
   currentKm: number,
-  waypointKm: number,
+  placeKm: number,
   trackPoints: readonly ElevationPoint[],
   baseKmh: number,
   breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
-): TripToWaypoint | null {
-  const deltaKm = waypointKm - currentKm;
-  if (Math.abs(deltaKm) < 0.05 || trackPoints.length === 0) return null;
-  const { gain, loss } = calculateElevationBetween(
-    currentKm,
-    waypointKm,
-    trackPoints as ElevationPoint[],
-    breakStarts,
-  );
-  const ahead = deltaKm > 0;
-  const distanceKm = Math.abs(deltaKm);
-  const ascentM = ahead ? gain : loss;
-  const descentM = ahead ? loss : gain;
-  return {
-    direction: ahead ? 'ahead' : 'behind',
-    distanceKm,
-    ascentM,
-    descentM,
-    etaMinutes: estimateHikingTime(distanceKm, ascentM, descentM, baseKmh) * 60,
-  };
+): TrailTrip | null {
+  if (Math.abs(placeKm - currentKm) < HERE_KM || trackPoints.length === 0) return null;
+  return tripAlongTrail(currentKm, placeKm, trackPoints, baseKmh, breakStarts);
+}
+
+/**
+ * How far a waypoint sits from the trail line, in metres. A turn-off carries
+ * its own `offTrailKm` (the road or track to the place); anything else is
+ * measured straight to the line, which is the least the walk can be.
+ */
+export function waypointOffTrailMeters(
+  waypoint: { lat: number; lon: number; offTrailKm?: number },
+  trackPoints: readonly SnapPoint[],
+): number | null {
+  if (waypoint.offTrailKm != null) return waypoint.offTrailKm * 1000;
+  return distanceToLineMeters(waypoint.lat, waypoint.lon, trackPoints);
+}
+
+/**
+ * Straight-line metres from (lat, lon) to the track as a line, not to its
+ * nearest vertex: the app's tracks are thinned, and a waypoint on a long
+ * straight stretch can sit hundreds of metres from either end of it.
+ */
+export function distanceToLineMeters(
+  lat: number,
+  lon: number,
+  trackPoints: readonly SnapPoint[],
+): number | null {
+  const snap = snapToTrail(lat, lon, trackPoints);
+  if (!snap) return null;
+  let best = snap.offTrailMeters;
+  // The nearest segment touches the nearest vertex (or, on a coarse scan's
+  // near miss, one either side of it): project onto those.
+  const from = Math.max(0, snap.index - 2);
+  const to = Math.min(trackPoints.length - 1, snap.index + 2);
+  for (let i = from; i < to; i++) {
+    best = Math.min(best, segmentDistanceMeters(lat, lon, trackPoints[i], trackPoints[i + 1]));
+  }
+  return best;
+}
+
+const METRES_PER_DEGREE = 111_320;
+
+/** Point-to-segment distance on a local equirectangular projection. */
+function segmentDistanceMeters(
+  lat: number,
+  lon: number,
+  a: { lat: number; lon: number },
+  b: { lat: number; lon: number },
+): number {
+  const kx = METRES_PER_DEGREE * Math.cos((lat * Math.PI) / 180);
+  const ky = METRES_PER_DEGREE;
+  const ax = (a.lon - lon) * kx;
+  const ay = (a.lat - lat) * ky;
+  const dx = (b.lon - a.lon) * kx;
+  const dy = (b.lat - a.lat) * ky;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+  return Math.hypot(ax + t * dx, ay + t * dy);
 }
 
 // ---------------------------------------------------------------------------

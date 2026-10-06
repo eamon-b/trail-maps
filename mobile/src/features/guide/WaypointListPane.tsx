@@ -58,7 +58,12 @@ import { PoiRow } from './PoiRow';
 import { useVisiblePois } from './use-visible-pois';
 import { useGuidePositionContext } from './GuidePositionContext';
 import { useWaterStatus } from './use-water-status';
-import { isWaterFamily, waterStatusMeta } from './waypoint-detail';
+import {
+  isPlaceOffTrail,
+  isWaterFamily,
+  waterStatusMeta,
+  waypointOffTrailMeters,
+} from './waypoint-detail';
 import {
   formatWaterStatusChip,
   waterStatusAccessibilityLabel,
@@ -80,7 +85,8 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const { trailId } = useGuide();
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
-  const { currentKm } = useGuidePositionContext();
+  const { currentKm, status } = useGuidePositionContext();
+  const hikerOffTrail = status === 'off-trail';
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   // Null until the hiker has chosen resupply stops — no pill, no Planned chip.
   const plannedIds = usePlannedResupplyIds(trailId, trail);
@@ -93,6 +99,15 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const visiblePois = useVisiblePois(trail);
 
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
+  // How far each waypoint sits off the line, once per trail: a lodging 2 km
+  // off the route is never "Here" just because its km is.
+  const placeOffTrailM = useMemo(() => {
+    const byWaypoint = new Map<Waypoint, number | null>();
+    for (const wp of trail.waypoints) {
+      byWaypoint.set(wp, waypointOffTrailMeters(wp, trail.track.points));
+    }
+    return byWaypoint;
+  }, [trail]);
 
   const chips = useMemo(
     () => FILTER_FAMILIES.filter((f) => f.value !== 'planned' || plannedIds != null),
@@ -233,6 +248,7 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
                 poi={row.poi}
                 units={units}
                 currentKm={currentKm}
+                hikerOffTrail={hikerOffTrail}
                 onPress={() => openPoi(poiRouteKey(row.poi))}
               />
             );
@@ -249,6 +265,7 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
                 waypoint={waypoint}
                 units={units}
                 currentKm={currentKm}
+                offLine={hikerOffTrail || isPlaceOffTrail(placeOffTrailM.get(waypoint))}
                 favorite={favoriteSet.has(row.key)}
                 planned={plannedIds?.has(row.key) ?? false}
                 water={
@@ -319,6 +336,7 @@ function WaypointRow({
   waypoint,
   units,
   currentKm,
+  offLine,
   favorite,
   planned,
   water,
@@ -326,6 +344,8 @@ function WaypointRow({
   waypoint: Waypoint;
   units: 'km' | 'mi';
   currentKm: number | null;
+  /** The hiker or the waypoint is off the trail: level is not "Here". */
+  offLine: boolean;
   favorite: boolean;
   /** A ticked resupply stop — only ever true once a plan exists. */
   planned: boolean;
@@ -337,7 +357,7 @@ function WaypointRow({
 
   // With a fix: signed distance from me. Without: the plain cumulative km.
   const signed =
-    currentKm != null ? formatSignedDistance(wpKm - currentKm, units) : null;
+    currentKm != null ? formatSignedDistance(wpKm - currentKm, units, { offLine }) : null;
 
   return (
     <View style={styles.row}>

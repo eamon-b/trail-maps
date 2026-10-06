@@ -22,6 +22,16 @@ import PoiDetailScreen from '../../../../app/guide/[trailId]/poi/[poiKey]';
 let mockParams: { trailId: string; poiKey: string } = { trailId: 'heysen', poiKey: 'node-1' };
 let mockPois: TrailPOI[] = [];
 let mockCurrentKm: number | null = null;
+let mockStatus = 'no-permission';
+let mockOffTrailMeters: number | null = null;
+let mockPaceKmh = 4;
+// A flat 50 km line: the trip card's climb is zero, so its time is pace alone.
+const mockTrack = {
+  points: [
+    { lat: 0, lon: 0, ele: 0, dist: 0 },
+    { lat: 0, lon: 0.45, ele: 0, dist: 50 },
+  ],
+};
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
@@ -33,11 +43,25 @@ jest.mock('../../../theme', () => ({
 }));
 
 jest.mock('../GuideContext', () => ({
-  useGuide: () => ({ trailId: 'heysen', direction: 'default', trail: { pois: mockPois } }),
+  useGuide: () => ({
+    trailId: 'heysen',
+    direction: 'default',
+    trail: { pois: mockPois, track: mockTrack },
+  }),
 }));
 
 jest.mock('../GuidePositionContext', () => ({
-  useGuidePositionContext: () => ({ currentKm: mockCurrentKm, position: null, status: 'idle' }),
+  useGuidePositionContext: () => ({
+    currentKm: mockCurrentKm,
+    offTrailMeters: mockOffTrailMeters,
+    position: null,
+    status: mockStatus,
+  }),
+}));
+
+jest.mock('../../plan/plan-inputs-store', () => ({
+  usePlanInputsStore: (selector: (s: unknown) => unknown) => selector({}),
+  selectPaceBaseKmh: () => () => mockPaceKmh,
 }));
 
 jest.mock('../../../state/settings-store', () => ({
@@ -100,6 +124,9 @@ describe('PoiDetailScreen', () => {
     mockParams = { trailId: 'heysen', poiKey: 'node-1' };
     mockPois = [poi()];
     mockCurrentKm = null;
+    mockStatus = 'no-permission';
+    mockOffTrailMeters = null;
+    mockPaceKmh = 4;
     jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
   });
@@ -136,13 +163,48 @@ describe('PoiDetailScreen', () => {
     expect(text).toContain('SA Water');
   });
 
-  it('shows distance-from-me and an ETA when there is a fix and the POI is ahead', () => {
+  it('shows no trip without a fix', () => {
     mockCurrentKm = 40;
+    expect(allText(render())).not.toContain('From your location');
+  });
+
+  it("shows the trip from the hiker at the trail's own pace", () => {
+    mockCurrentKm = 40;
+    mockStatus = 'fix';
+    mockPaceKmh = 3;
     const text = allText(render());
-    expect(text).toContain('Ahead');
-    expect(text).toContain('2.5 km');
-    // 2.5 km at the default 4 km/h.
-    expect(text).toContain('38 min');
+    expect(text).toContain('From your location');
+    expect(text).toContain('2.5 km ahead');
+    // 2.5 km at 3 km/h on the flat: 0.8 h → "~50 min" (4 km/h would be ~35).
+    expect(text).toContain('~50 min');
+  });
+
+  it('never says "You are here" for a POI off the trail', () => {
+    mockCurrentKm = 42.5;
+    mockStatus = 'fix';
+    const text = allText(render());
+    expect(text).toContain('At its nearest point on the trail');
+    expect(text).toContain('Then 0.12 km off the trail to reach it');
+    expect(text).not.toContain('You are here');
+  });
+
+  it('says so when the hiker is off the trail, and is not "here"', () => {
+    mockPois = [poi({ distanceFromTrail: 0.01 })];
+    mockCurrentKm = 42.5;
+    mockStatus = 'off-trail';
+    mockOffTrailMeters = 3000;
+    const text = allText(render());
+    expect(text).toContain('From the nearest point on the trail');
+    expect(text).toContain('Level with you on the trail');
+    expect(text).toContain('You are 3.00 km off the trail');
+    expect(text).not.toContain('You are here');
+  });
+
+  it('says "You are here" only when both are on the trail', () => {
+    mockPois = [poi({ distanceFromTrail: 0.01 })];
+    mockCurrentKm = 42.5;
+    mockStatus = 'fix';
+    expect(allText(render())).toContain('You are here');
   });
 
   it('opens the element on openstreetmap.org', () => {

@@ -447,8 +447,21 @@ describe('resupply selection', () => {
     // The twin towns 50 m apart are one turn-off, so one group and one stop.
     expect(plan.resupplyGroups.length).toBe(1);
     expect(plan.resupplyGroups[0].label).toBe('Highway 1');
+    // Poncha is a 5 km hitch: the stop carries it, never walked.
     expect(plan.resupplyStops).toEqual([
-      { km: 40, name: 'Townsville / Poncha', optionIds: ['t1', 't2'] },
+      {
+        km: 40,
+        name: 'Townsville / Poncha',
+        optionIds: ['t1', 't2'],
+        access: {
+          place: 'Poncha',
+          walkKm: 0,
+          walkAscentM: 0,
+          walkDescentM: 0,
+          rideKm: 5,
+          rideMode: 'hitch',
+        },
+      },
     ]);
     expect(plan.resupplyLegs.map((l) => [l.fromName, l.toName])).toEqual([
       ['Trail Start', 'Townsville / Poncha'],

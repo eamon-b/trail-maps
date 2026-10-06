@@ -12,12 +12,26 @@
  *
  * Three stages, deliberately separate so a UI can hold the middle one:
  *
- *   listResupplyOptions(waypoints)      → options, clustered into groups
+ *   listResupplyOptions(resupplyCandidates(trail)) → options, clustered into groups
  *   resolveResupplyStops(groups, ids)   → the stops the selection implies
  *   computeResupplyLegs(trail, stops)   → the carries between them
  *
  * Platform-neutral and DOM-free: structural parameter types, so the web plan
  * page, the phone and an imported GPX all pass their own trail shapes.
+ *
+ * Off the route. A resupply is often somewhere the trail does not go, and the
+ * walk (or hitch) there is part of the carry. Two sources say how far:
+ *
+ *  - a **side trip** the trail data draws to the place (Heysen's spur to
+ *    Cudlee Creek, the AAWT's to Mt Hotham): `resupplyCandidates` offers the
+ *    place at the side trip's junction, with the spur's length and climb;
+ *  - a turn-off's own `offTrailKm` and `accessMode` (the CDT's, Te Araroa's).
+ *
+ * Only km the data says are *walked* (a side trip, or `accessMode: 'foot'`) go
+ * into a leg's hours, days and food. A hitch, shuttle or boat — or a distance
+ * whose mode the data does not give — is reported beside the leg, never
+ * walked: counting a 70 km hitch as three days of food would be as wrong as
+ * leaving out a real 9 km walk into town.
  *
  * Nothing here is cached. `computeResupplyLegs` walks the track once per leg,
  * which on a web (full-resolution) track is real work — callers recompute only
@@ -37,6 +51,7 @@ import { isAccessMode } from './types';
 import type { PlanTrail } from './day-calculator';
 import { estimateHikingHoursRaw } from './day-calculator';
 import { calculateElevationBetween } from './track-geometry';
+import { haversineDistance } from './distance';
 import { routeBreakStarts } from './route-breaks';
 import { isAccessWaypoint, isResupplyWaypoint } from './waypoint-taxonomy';
 import type { FoodCarryEstimate, ResupplyGap, ResupplyPoint } from './resupply-calculator';
@@ -65,6 +80,51 @@ export interface ResupplyCandidateWaypoint extends WaypointAccess {
   /** Cumulative km along the trail — the km field on every waypoint shape. */
   totalDistance?: number;
   description?: string;
+  /** The walked route to the place, when the trail draws one (see {@link resupplyCandidates}). */
+  accessRoute?: AccessRoute;
+}
+
+/**
+ * A walked route from the trail to an off-trail place: a side trip the trail
+ * data draws. Its length is the option's `offTrailKm`; this adds the climb,
+ * which a turn-off's bare figure cannot know.
+ */
+export interface AccessRoute {
+  /** The side trip's name ('S3.7 Spur to Cudlee Creek'). */
+  name: string;
+  /** Metres climbed walking in, from the junction to the place. */
+  ascentM: number;
+  /** Metres descended walking in. */
+  descentM: number;
+}
+
+/** A side trip, as far as finding resupply on it goes. Structural, like the rest. */
+export interface ResupplySideTrip {
+  name: string;
+  type: string;
+  /** Junction km on the main route (direction-applied). */
+  startDistance?: number;
+  /** Length of the side trip, km. */
+  distance: number;
+  /** Climb and descent walking the whole side trip out from the junction. */
+  elevation?: { ascent: number; descent: number };
+  /** Junction first (`points[0]`), whichever way the trail is walked. */
+  points?: readonly { lat: number; lon: number; ele: number }[];
+  /** Absolute km: the junction's plus the distance along the side trip. */
+  waypoints?: readonly ResupplyCandidateWaypoint[];
+}
+
+/** An off-route waypoint record, as `buildTrail` splits them out. */
+export interface ResupplyOffTrailWaypoint extends ResupplyCandidateWaypoint {
+  lat: number;
+  lon: number;
+}
+
+/** What {@link resupplyCandidates} reads from a trail. */
+export interface ResupplyTrail {
+  waypoints?: readonly ResupplyCandidateWaypoint[];
+  sideTrips?: readonly ResupplySideTrip[];
+  offTrailWaypoints?: readonly ResupplyOffTrailWaypoint[];
 }
 
 /** One place a hiker could resupply, as offered to them to tick or not. */
@@ -78,6 +138,8 @@ export interface ResupplyOption {
   km: number;
   offTrailKm?: number;
   accessMode?: AccessMode;
+  /** The side trip walked to reach it, when the trail draws one. */
+  accessRoute?: AccessRoute;
   acceptsBoxes?: boolean;
   description?: string;
 }
@@ -103,6 +165,38 @@ export interface ResupplyStop {
   /** The ticked options' names, joined — 'Salida / Poncha Springs'. */
   name: string;
   optionIds: string[];
+  /** Getting from the route to the place and back; absent when the place is on it. */
+  access?: StopAccess;
+}
+
+/**
+ * How a stop is reached from the route, one way. A stop with several ticked
+ * places (Salida / Poncha Springs) is measured to the one furthest to walk —
+ * the food has to last the longer way — and failing any walk, the furthest
+ * ride.
+ */
+export interface StopAccess {
+  /** The place this is measured to. */
+  place: string;
+  /** km walked between the route and the place: a side trip, `foot` or `on-trail`. */
+  walkKm: number;
+  /** Metres climbed walking in (0 when the data gives a walk but no route). */
+  walkAscentM: number;
+  /** Metres descended walking in. */
+  walkDescentM: number;
+  /** The side trip walked, when there is one. */
+  via?: string;
+  /** km covered some other way: hitch, shuttle, boat, or a way not given. */
+  rideKm: number;
+  /** How the ride is made; undefined when the data does not say. */
+  rideMode?: Exclude<AccessMode, 'foot' | 'on-trail'>;
+}
+
+/** One not-walked stretch of a leg: the ride out of the stop it starts at, or into the one it ends at. */
+export interface LegRide {
+  km: number;
+  mode?: StopAccess['rideMode'];
+  end: 'from' | 'to';
 }
 
 /**
@@ -112,6 +206,17 @@ export interface ResupplyStop {
  * the climb, the hours it implies, and the food that many days needs.
  */
 export interface ResupplyLeg extends ResupplyGap {
+  /**
+   * Off-trail km walked on this leg: out of the stop it starts at, and in to
+   * the one it ends at. `distanceKm` stays the trail km between the two
+   * turn-offs, so the two read separately ("52.3 km + 4.0 km off trail").
+   */
+  offTrailWalkKm: number;
+  /** Trail km plus off-trail walking: what the hours, days and food are worked from. */
+  walkedKm: number;
+  /** Off-trail km not walked (hitch, shuttle, boat, not given): reported, never timed. */
+  rides: LegRide[];
+  /** Climb over the whole walk, off-trail walking included. */
   ascentM: number;
   descentM: number;
   /** Naismith hours over the track, rounded to 0.1 for display. */
@@ -153,6 +258,16 @@ export interface ResupplySummary {
   hasData: boolean;
 }
 
+/**
+ * An off-route town this close to a side trip's far end is reached by it, the
+ * last stretch from the end of the line into town taken as a straight line:
+ * Heysen's spur to Hahndorf stops 550 m short of the town's marker.
+ */
+export const SIDE_TRIP_END_REACH_M = 1000;
+
+/** A side-trip waypoint closer than this to the junction is at the junction, on the route. */
+const AT_JUNCTION_KM = 0.05;
+
 /** Default grouping radius: the CDT's twins share a km, so this is slack, not need. */
 export const DEFAULT_GROUP_WITHIN_KM = 0.1;
 
@@ -169,6 +284,110 @@ function requirePositive(value: number, option: string): number {
     throw new RangeError(`computeResupplyLegs: ${option} must be a positive number, got ${String(value)}`);
   }
   return value;
+}
+
+/**
+ * Every waypoint that could be a resupply option: the main route's, plus the
+ * places a side trip leads to, offered at the side trip's junction.
+ *
+ * A side trip's place is offered once, as an off-route option: at the
+ * junction's km, `offTrailKm` the walk along the side trip to it, `accessMode`
+ * `foot`, and the climb in `accessRoute`. It counts when it is:
+ *
+ *  - a resupply-family waypoint on the side trip itself, beyond the junction
+ *    (one *at* the junction is a main-route place, and the main route lists it);
+ *  - or an off-route resupply waypoint within {@link SIDE_TRIP_END_REACH_M} of
+ *    the side trip's far end, which the walk reaches plus the straight line in.
+ *
+ * Ids already on the main route are never offered twice. Alternates and
+ * termini are not side trips to a place and are not read. Off-route places no
+ * side trip leads to stay out: a straight line is no measure of the walk.
+ */
+export function resupplyCandidates(trail: ResupplyTrail): ResupplyCandidateWaypoint[] {
+  const main = trail.waypoints ?? [];
+  const seen = new Set(main.map(wp => wp.id).filter((id): id is string => typeof id === 'string'));
+  const extra: ResupplyCandidateWaypoint[] = [];
+
+  const offer = (
+    wp: ResupplyCandidateWaypoint,
+    trip: ResupplySideTrip,
+    junctionKm: number,
+    walkKm: number,
+    route: AccessRoute
+  ) => {
+    if (typeof wp.id !== 'string' || seen.has(wp.id)) return;
+    seen.add(wp.id);
+    extra.push({
+      id: wp.id,
+      name: wp.name,
+      type: wp.type,
+      description: wp.description,
+      acceptsBoxes: wp.acceptsBoxes,
+      totalDistance: junctionKm,
+      offTrailKm: Math.round(walkKm * 10) / 10,
+      accessMode: 'foot',
+      accessName: wp.accessName ?? trip.name,
+      accessRoute: route,
+    });
+  };
+
+  for (const trip of trail.sideTrips ?? []) {
+    const junctionKm = trip.startDistance;
+    if (trip.type !== 'side-trip' || typeof junctionKm !== 'number' || !Number.isFinite(junctionKm)) continue;
+
+    for (const wp of trip.waypoints ?? []) {
+      if (!isResupplyWaypoint(wp.type) || typeof wp.totalDistance !== 'number') continue;
+      const alongKm = wp.totalDistance - junctionKm;
+      if (!(alongKm >= AT_JUNCTION_KM)) continue;
+      offer(wp, trip, junctionKm, alongKm, { name: trip.name, ...climbAlong(trip, alongKm) });
+    }
+
+    const end = trip.points?.[trip.points.length - 1];
+    if (!end) continue;
+    for (const wp of trail.offTrailWaypoints ?? []) {
+      if (!isResupplyWaypoint(wp.type)) continue;
+      const remainderM = haversineDistance(end.lat, end.lon, wp.lat, wp.lon);
+      if (remainderM > SIDE_TRIP_END_REACH_M) continue;
+      offer(wp, trip, junctionKm, trip.distance + remainderM / 1000, {
+        name: trip.name,
+        ...climbAlong(trip, trip.distance),
+      });
+    }
+  }
+
+  return extra.length === 0 ? [...main] : [...main, ...extra];
+}
+
+/**
+ * Climb and descent walking a side trip from its junction to `alongKm` along
+ * it. The whole trip's figures come from the full-resolution build; the
+ * points may be thinned (the phone's are), which under-counts climb, so the
+ * part walked is measured on the points and scaled to the whole trip's totals.
+ */
+function climbAlong(trip: ResupplySideTrip, alongKm: number): { ascentM: number; descentM: number } {
+  const points = trip.points ?? [];
+  let distM = 0;
+  let up = 0;
+  let down = 0;
+  let upAll = 0;
+  let downAll = 0;
+  let reached = false;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    const diff = b.ele - a.ele;
+    if (diff > 0) upAll += diff;
+    else downAll -= diff;
+    if (reached) continue;
+    distM += haversineDistance(a.lat, a.lon, b.lat, b.lon);
+    if (diff > 0) up += diff;
+    else down -= diff;
+    if (distM >= alongKm * 1000) reached = true;
+  }
+  const total = trip.elevation;
+  const ascentM = total && upAll > 0 ? (up * total.ascent) / upAll : up;
+  const descentM = total && downAll > 0 ? (down * total.descent) / downAll : down;
+  return { ascentM: Math.round(ascentM), descentM: Math.round(descentM) };
 }
 
 /**
@@ -214,6 +433,7 @@ export function listResupplyOptions(
       // Guarded rather than copied: a handed-off or imported trail's JSON can
       // carry anything under this key.
       if (isAccessMode(wp.accessMode)) option.accessMode = wp.accessMode;
+      if (wp.accessRoute) option.accessRoute = wp.accessRoute;
       if (typeof wp.acceptsBoxes === 'boolean') option.acceptsBoxes = wp.acceptsBoxes;
       if (typeof wp.description === 'string' && wp.description) option.description = wp.description;
       if (typeof wp.accessName === 'string' && wp.accessName.trim() !== '') {
@@ -273,14 +493,65 @@ export function resolveResupplyStops(
   for (const group of groups) {
     const picked = selected ? group.options.filter(option => selected.has(option.id)) : group.options;
     if (picked.length === 0) continue;
-    stops.push({
+    const stop: ResupplyStop = {
       km: group.km,
       name: picked.map(option => option.name).join(' / '),
       optionIds: picked.map(option => option.id),
-    });
+    };
+    const access = stopAccess(picked);
+    if (access) stop.access = access;
+    stops.push(stop);
   }
 
   return stops;
+}
+
+/**
+ * How one option is reached from the route, or null when it is on it. Exported
+ * for the surfaces that show a single option (a turn-off's detail).
+ */
+export function optionAccess(
+  option: Pick<ResupplyOption, 'name' | 'offTrailKm' | 'accessMode' | 'accessRoute'>
+): StopAccess | null {
+  const km = offTrailKmOf(option);
+  if (km === 0) return null;
+  // An 'on-trail' place with a distance contradicts itself; the distance is
+  // what the hiker covers, and on-trail means on foot (as `accessSummary` reads it).
+  const walked =
+    option.accessRoute != null || option.accessMode === 'foot' || option.accessMode === 'on-trail';
+  if (walked) {
+    const access: StopAccess = {
+      place: option.name,
+      walkKm: km,
+      walkAscentM: option.accessRoute?.ascentM ?? 0,
+      walkDescentM: option.accessRoute?.descentM ?? 0,
+      rideKm: 0,
+    };
+    if (option.accessRoute) access.via = option.accessRoute.name;
+    return access;
+  }
+  const access: StopAccess = { place: option.name, walkKm: 0, walkAscentM: 0, walkDescentM: 0, rideKm: km };
+  // 'foot' was walked above and 'on-trail' returned null, so what is left rides.
+  const mode = option.accessMode;
+  if (mode === 'hitch' || mode === 'shuttle' || mode === 'boat') access.rideMode = mode;
+  return access;
+}
+
+/** The access a stop is measured by: the longest walk among its ticks, else the longest ride. */
+function stopAccess(picked: readonly ResupplyOption[]): StopAccess | null {
+  let best: StopAccess | null = null;
+  for (const option of picked) {
+    const access = optionAccess(option);
+    if (!access) continue;
+    if (
+      !best ||
+      access.walkKm > best.walkKm ||
+      (access.walkKm === best.walkKm && access.rideKm > best.rideKm)
+    ) {
+      best = access;
+    }
+  }
+  return best;
 }
 
 /** Every option id the trail offers, in group order — the "All" selection. */
@@ -355,7 +626,7 @@ function isTurnOffFor(option: ResupplyOption, ticked: ResupplyOption): boolean {
 }
 
 /** How far off the route an option is; an absent or unusable figure means "on it". */
-function offTrailKmOf(option: ResupplyOption): number {
+function offTrailKmOf(option: Pick<ResupplyOption, 'offTrailKm'>): number {
   return typeof option.offTrailKm === 'number' && option.offTrailKm > 0 ? option.offTrailKm : 0;
 }
 
@@ -368,8 +639,11 @@ function offTrailKmOf(option: ResupplyOption): number {
  * height difference is never climbed), Naismith hours over that climb, days from
  * those hours rather than from a flat km/day, and the food those days weigh.
  *
- * Distance stays plain km subtraction: the cumulative scale already excludes
- * route-break gaps, so there is nothing to correct.
+ * `distanceKm` stays plain km subtraction between the two turn-offs: the
+ * cumulative scale already excludes route-break gaps, so there is nothing to
+ * correct. On top of it, a leg walks out of the stop it starts at and in to
+ * the one it ends at ({@link StopAccess}): walked km and their climb go into
+ * the hours, days and food, ridden km are listed in `rides` and never timed.
  *
  * Legs come out in the order of the trail passed in. Callers hand over the
  * direction-applied trail, as they do to `computeDays`.
@@ -394,8 +668,12 @@ export function computeResupplyLegs(
 
   // `type` is unread by computeResupplyGaps; a stop is several waypoints' worth
   // of types anyway, so there is no honest single value to give it.
-  const points: ResupplyPoint[] = stops
-    .filter(stop => stop.km >= rangeStartKm && stop.km <= rangeEndKm)
+  const inRange = stops.filter(stop => stop.km >= rangeStartKm && stop.km <= rangeEndKm);
+  // computeResupplyGaps keeps the first of two stops at one km; so does this.
+  const accessAt = new Map<number, StopAccess | undefined>();
+  for (const stop of inRange) if (!accessAt.has(stop.km)) accessAt.set(stop.km, stop.access);
+
+  const points: ResupplyPoint[] = inRange
     .map(stop => ({ name: stop.name, km: stop.km, type: 'resupply' }))
     .sort((a, b) => a.km - b.km);
 
@@ -415,13 +693,29 @@ export function computeResupplyLegs(
 
   return gaps.map((gap, i) => {
     const { gain, loss } = calculateElevationBetween(gap.fromKm, gap.toKm, trackPoints, breakStarts);
-    const rawHours = estimateHikingHoursRaw(gap.distanceKm, gain, loss, baseKmh);
+    // The trail start and end are on the route; only stops have a way off it.
+    const out = gap.fromName === TRAIL_START_NAME && gap.fromKm === rangeStartKm ? undefined : accessAt.get(gap.fromKm);
+    const into = gap.toName === TRAIL_END_NAME && gap.toKm === rangeEndKm ? undefined : accessAt.get(gap.toKm);
+
+    // Walking out of a town climbs what walking in descended.
+    const offTrailWalkKm = (out?.walkKm ?? 0) + (into?.walkKm ?? 0);
+    const ascentM = gain + (out?.walkDescentM ?? 0) + (into?.walkAscentM ?? 0);
+    const descentM = loss + (out?.walkAscentM ?? 0) + (into?.walkDescentM ?? 0);
+    const walkedKm = gap.distanceKm + offTrailWalkKm;
+    const rides: LegRide[] = [];
+    if (out && out.rideKm > 0) rides.push(rideOf(out, 'from'));
+    if (into && into.rideKm > 0) rides.push(rideOf(into, 'to'));
+
+    const rawHours = estimateHikingHoursRaw(walkedKm, ascentM, descentM, baseKmh);
     const estimatedDays = Math.max(1, Math.ceil(rawHours / dailyHours));
 
     const leg: ResupplyLeg = {
       ...gap,
-      ascentM: gain,
-      descentM: loss,
+      offTrailWalkKm: Math.round(offTrailWalkKm * 10) / 10,
+      walkedKm: Math.round(walkedKm * 10) / 10,
+      rides,
+      ascentM,
+      descentM,
       estimatedHours: Math.round(rawHours * 10) / 10,
       estimatedDays,
       isLong: estimatedDays > longThresholdDays,
@@ -437,6 +731,27 @@ export function computeResupplyLegs(
 
     return leg;
   });
+}
+
+function rideOf(access: StopAccess, end: LegRide['end']): LegRide {
+  const ride: LegRide = { km: access.rideKm, end };
+  if (access.rideMode) ride.mode = access.rideMode;
+  return ride;
+}
+
+/**
+ * The resupply stop the hiker reaches next from `currentKm` (direction-applied),
+ * or null past the last one. A stop within 50 m behind counts as reached.
+ */
+export function nextResupplyStop(
+  stops: readonly ResupplyStop[],
+  currentKm: number
+): ResupplyStop | null {
+  let next: ResupplyStop | null = null;
+  for (const stop of stops) {
+    if (stop.km > currentKm && (!next || stop.km < next.km)) next = stop;
+  }
+  return next;
 }
 
 /**
@@ -456,7 +771,8 @@ export function summariseResupplyLegs(legs: readonly ResupplyLeg[]): ResupplySum
   for (const leg of legs) {
     if (leg.fromName !== TRAIL_START_NAME) stopKms.add(leg.fromKm);
     if (leg.toName !== TRAIL_END_NAME) stopKms.add(leg.toKm);
-    longestKm = Math.max(longestKm, leg.distanceKm);
+    // The carry is what is walked with the food, off-trail walking included.
+    longestKm = Math.max(longestKm, leg.walkedKm);
     longestDays = Math.max(longestDays, leg.estimatedDays);
     totalFoodGrams += leg.food.weightGrams;
   }

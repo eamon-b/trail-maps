@@ -13,6 +13,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { formatDistance, formatElevation } from '@lib/format-distance';
+import type { AccessMode } from '@lib/types';
 import { routeBreakStarts } from '@lib/route-breaks';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
@@ -26,11 +27,14 @@ import { isPlaceOffTrail, tripToWaypoint } from './waypoint-detail';
 export function TripCard({
   placeKm,
   placeOffTrailM,
+  placeAccessMode,
 }: {
   /** The place's km on the guide's direction-applied scale. */
   placeKm: number;
   /** How far the place sits from the trail line, in metres (null: unknown). */
   placeOffTrailM: number | null;
+  /** How the data says that distance is covered, when it says (a turn-off's `accessMode`). */
+  placeAccessMode?: AccessMode;
 }) {
   const { colors } = useTheme();
   const { trailId, trail } = useGuide();
@@ -102,11 +106,16 @@ export function TripCard({
       )}
       {placeOff && placeOffTrailM != null && (
         <Text style={[styles.note, { color: colors.textSecondary }]}>
-          {`Then ${formatDistance(placeOffTrailM / 1000, units, { decimals: 2 })} off the trail to reach it`}
+          {`Then ${formatDistance(placeOffTrailM / 1000, units, { decimals: 2 })} ${beyondWord(placeAccessMode)} to reach it`}
         </Text>
       )}
     </View>
   );
+}
+
+/** "off the trail" on foot (or unsaid); "by hitch", "by shuttle", "by boat" otherwise. */
+function beyondWord(mode: AccessMode | undefined): string {
+  return mode === 'hitch' || mode === 'shuttle' || mode === 'boat' ? `by ${mode}` : 'off the trail';
 }
 
 const styles = StyleSheet.create({

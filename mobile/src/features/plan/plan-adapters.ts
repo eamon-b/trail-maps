@@ -32,6 +32,7 @@ import {
 import {
   computeResupplyLegs,
   listResupplyOptions,
+  resupplyCandidates,
   resolveResupplyStops,
   summariseResupplyLegs,
   type ResupplyLeg,
@@ -394,7 +395,8 @@ export function computePlanExtras(
   // The option list is trail-wide — the hiker sections later, and the choice is
   // about the trail, not this section. Only the legs are section-scoped, which
   // the calculator does itself.
-  const resupplyGroups = listResupplyOptions(trail.waypoints);
+  // Side-trip towns too: the trail draws the walk to them.
+  const resupplyGroups = listResupplyOptions(resupplyCandidates(trail));
   const resupplyStops = resolveResupplyStops(resupplyGroups, inputs.resupplyStops);
   const resupplyLegs = computeResupplyLegs(trail as unknown as PlanTrail, resupplyStops, {
     dailyHours: inputs.dailyHours,

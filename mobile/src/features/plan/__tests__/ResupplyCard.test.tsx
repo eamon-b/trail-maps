@@ -33,6 +33,9 @@ function leg(over: Partial<ResupplyLeg> = {}): ResupplyLeg {
     fromKm: 0,
     toKm: 148.2,
     distanceKm: 148.2,
+    offTrailWalkKm: 0,
+    walkedKm: 148.2,
+    rides: [],
     estimatedDays: 6,
     isLong: true,
     ascentM: 5120,
@@ -89,6 +92,24 @@ describe('ResupplyCard legs', () => {
       }),
     );
     expect(withDay).toContain('Arrive Day 7 · 2026-03-12');
+  });
+
+  it('keeps the trail and off-trail km apart, and lists a hitch it does not walk', () => {
+    const text = allText(
+      render({
+        legs: [
+          leg({
+            offTrailWalkKm: 4,
+            walkedKm: 152.2,
+            rides: [{ km: 35, mode: 'hitch', end: 'to' }],
+          }),
+        ],
+        hasOptions: true,
+        stopCount: 1,
+      }),
+    );
+    expect(text).toContain('148.2 km + 4.0 km off trail · +5,120 m');
+    expect(text).toContain('35.0 km hitch in, not walked');
   });
 
   it('follows the unit setting into feet and pounds', () => {

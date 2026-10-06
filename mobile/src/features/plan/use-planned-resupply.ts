@@ -31,8 +31,11 @@ import {
   allResupplyOptionIds,
   listResupplyOptions,
   plannedResupplyIds,
-  type ResupplyCandidateWaypoint,
+  resolveResupplyStops,
+  resupplyCandidates,
   type ResupplyOptionGroup,
+  type ResupplyStop,
+  type ResupplyTrail,
 } from '@lib/resupply-plan';
 import { setResupplyStops } from '@lib/plan-editor';
 import {
@@ -42,9 +45,15 @@ import {
 } from '../../state/plans-store';
 import { selectPrefs, usePlanInputsStore } from './plan-inputs-store';
 
-/** The only thing this module needs from a trail: its waypoints. */
-export interface PlannedResupplyTrail {
-  waypoints?: readonly ResupplyCandidateWaypoint[];
+/**
+ * What this module needs from a trail: its waypoints, and the side trips (and
+ * off-route records) that lead to a town off the route.
+ */
+export type PlannedResupplyTrail = ResupplyTrail;
+
+/** The trail's resupply options, side-trip towns included, grouped by turn-off. */
+export function resupplyGroupsFor(trail: PlannedResupplyTrail): ResupplyOptionGroup[] {
+  return listResupplyOptions(resupplyCandidates(trail));
 }
 
 /**
@@ -55,7 +64,7 @@ export function plannedIdsFor(
   trail: PlannedResupplyTrail,
   selected: ReadonlySet<string> | null,
 ): ReadonlySet<string> | null {
-  return plannedResupplyIds(listResupplyOptions(trail.waypoints), selected);
+  return plannedResupplyIds(resupplyGroupsFor(trail), selected);
 }
 
 /**
@@ -153,8 +162,26 @@ export function usePlannedResupplyIds(
   const { selected } = useStoredResupplyStops(trailId);
   // Grouping the whole CDT's 80 options is not free; key it on the trail alone
   // so ticking a box does not regroup.
-  const groups = useMemo(() => listResupplyOptions(trail.waypoints), [trail]);
+  const groups = useMemo(() => resupplyGroupsFor(trail), [trail]);
   return useMemo(() => plannedResupplyIds(groups, selected), [groups, selected]);
+}
+
+/**
+ * The hiker's planned resupply stops, each with how it is reached off the
+ * route — `null` until a plan is made, like `usePlannedResupplyIds`. The
+ * distance strip reads this, not the waypoint ids, so its "Next resupply" can
+ * measure into a town a side trip leads to, which no main-route waypoint is.
+ */
+export function usePlannedResupplyStops(
+  trailId: string,
+  trail: PlannedResupplyTrail,
+): ResupplyStop[] | null {
+  const { selected } = useStoredResupplyStops(trailId);
+  const groups = useMemo(() => resupplyGroupsFor(trail), [trail]);
+  return useMemo(
+    () => (selected ? resolveResupplyStops(groups, [...selected]) : null),
+    [groups, selected],
+  );
 }
 
 /**
@@ -198,7 +225,7 @@ export function useWaypointResupplyPlan(
   const { stored, selected } = useStoredResupplyStops(trailId);
   // Keyed on the trail alone, as `usePlannedResupplyIds` is: ticking a box must
   // not regroup the CDT's 70 options.
-  const groups = useMemo(() => listResupplyOptions(trail.waypoints), [trail]);
+  const groups = useMemo(() => resupplyGroupsFor(trail), [trail]);
   const allIds = useMemo(() => allResupplyOptionIds(groups), [groups]);
   const planned = useMemo(() => plannedResupplyIds(groups, selected), [groups, selected]);
 

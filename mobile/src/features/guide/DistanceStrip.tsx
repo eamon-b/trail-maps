@@ -20,12 +20,18 @@
  * The resupply chip only exists while a plan does, and past the last planned
  * stop it says so rather than offering the next unplanned town — quietly
  * undoing the plan on the one screen that matters on the trail would be worse
- * than an empty answer.
+ * than an empty answer. It measures to the planned *stop*, not a waypoint, so a
+ * town a side trip leads to counts, and it says what lies beyond the turn-off:
+ * "12.3 km + 2.0 km off trail", the walk in timed with the trail, or
+ * "+ 35.0 km hitch", which is not.
  */
 
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatDistance } from '@lib/format-distance';
+import { estimateHikingTime } from '@lib/day-calculator';
+import { nextResupplyStop } from '@lib/resupply-plan';
+import { stopAccessText } from '@lib/resupply-display';
 import { routeBreakStarts } from '@lib/route-breaks';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, typography } from '../../tokens';
@@ -34,10 +40,11 @@ import {
   calculateDistancesToWaypoints,
   formatEtaMinutes,
   getNextWaypointsByType,
+  tripAlongTrail,
   type WaypointDistance,
 } from '../../services/distance-calculator';
 import { selectPaceBaseKmh, usePlanInputsStore } from '../plan/plan-inputs-store';
-import { usePlannedResupplyIds } from '../plan/use-planned-resupply';
+import { usePlannedResupplyStops } from '../plan/use-planned-resupply';
 import { ShareIconButton } from '../share/ShareIconButton';
 import { useCheckInShare } from '../share/use-check-in-share';
 import { useGuide } from './GuideContext';
@@ -52,7 +59,7 @@ export function DistanceStrip() {
   const { status, currentKm, offTrailMeters, position, error, start, stop } =
     useGuidePositionContext();
   // Null until a resupply plan exists — no chip at all until then.
-  const plannedIds = usePlannedResupplyIds(trailId, trail);
+  const plannedStops = usePlannedResupplyStops(trailId, trail);
   const shareCheckIn = useCheckInShare();
 
   const chips = useMemo(() => {
@@ -66,15 +73,8 @@ export function DistanceStrip() {
       baseKmh,
       routeBreakStarts(trail.track.breaks, 'points'),
     );
-    const byType = getNextWaypointsByType(
-      currentKm,
-      waypoints,
-      trackPoints,
-      distances,
-      baseKmh,
-      undefined,
-      plannedIds ?? undefined,
-    );
+    const breakStarts = routeBreakStarts(trail.track.breaks, 'points');
+    const byType = getNextWaypointsByType(currentKm, waypoints, trackPoints, distances, baseKmh);
 
     const items: { key: string; label: string; value: string }[] = [];
     const push = (key: string, label: string, wd?: WaypointDistance) => {
@@ -87,15 +87,36 @@ export function DistanceStrip() {
     };
     push('water', 'Next water', byType.water);
     push('camp', 'Next camp', byType.campsite);
-    if (plannedIds) {
-      if (byType.town) push('resupply', 'Next resupply', byType.town);
-      // Label-less: the sentence is the whole chip.
-      else items.push({ key: 'resupply', label: '', value: 'No planned resupply ahead' });
+    if (plannedStops) {
+      const stop = nextResupplyStop(plannedStops, currentKm);
+      if (stop) {
+        const trip = tripAlongTrail(currentKm, stop.km, trackPoints, baseKmh, breakStarts);
+        const walk = stop.access;
+        // The walk in is timed with the trail; a ride is named, never timed.
+        const minutes =
+          estimateHikingTime(
+            trip.distanceKm + (walk?.walkKm ?? 0),
+            trip.ascentM + (walk?.walkAscentM ?? 0),
+            trip.descentM + (walk?.walkDescentM ?? 0),
+            baseKmh,
+          ) * 60;
+        const beyond = stopAccessText(walk, (km) => formatDistance(km, units));
+        items.push({
+          key: 'resupply',
+          label: 'Next resupply',
+          value:
+            `${formatDistance(trip.distanceKm, units)}${beyond ? ` ${beyond}` : ''} · ` +
+            formatEtaMinutes(minutes),
+        });
+      } else {
+        // Label-less: the sentence is the whole chip.
+        items.push({ key: 'resupply', label: '', value: 'No planned resupply ahead' });
+      }
     }
     // "Next waypoint" is the closest upcoming point of any type.
     push('next', 'Next waypoint', distances[0]);
     return items;
-  }, [trail, currentKm, units, baseKmh, plannedIds]);
+  }, [trail, currentKm, units, baseKmh, plannedStops]);
 
   // --- No fix yet: a single "Show my location" pill / locating hint --------
   if (status === 'no-permission') {

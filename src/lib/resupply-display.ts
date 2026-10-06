@@ -10,7 +10,7 @@
  * DOM-free and dependency-free beyond `src/lib`.
  */
 
-import type { ResupplyOption, ResupplySummary } from './resupply-plan';
+import type { LegRide, ResupplyLeg, ResupplyOption, ResupplySummary, StopAccess } from './resupply-plan';
 
 /**
  * Dotted tokens that end no sentence: "U.S. 50", "Mt. Sonder", "approx. 3 km".
@@ -61,11 +61,12 @@ function isAbbreviationDot(prose: string, index: number): boolean {
  * the phone `km => formatDistance(km, units)`.
  */
 export function accessSummary(
-  option: Pick<ResupplyOption, 'offTrailKm' | 'accessMode'>,
+  option: Pick<ResupplyOption, 'offTrailKm' | 'accessMode' | 'accessRoute'>,
   formatKm: (km: number) => string
 ): string {
   const hasKm = typeof option.offTrailKm === 'number' && option.offTrailKm > 0;
   const mode = option.accessMode;
+  if (hasKm && option.accessRoute) return `${formatKm(option.offTrailKm!)} on foot via ${option.accessRoute.name}`;
   if (hasKm) return `${formatKm(option.offTrailKm!)} ${mode && mode !== 'on-trail' ? mode : 'off trail'}`;
   if (mode === 'on-trail') return 'on trail';
   return mode ?? '';
@@ -84,4 +85,50 @@ export function resupplySummaryText(
   const days = `${summary.longestDays} day${summary.longestDays === 1 ? '' : 's'}`;
   return `${stops} · longest carry ${formatKm(summary.longestKm)} / ${days} · ` +
     `${formatFoodKg(summary.totalFoodKg)} food in total`;
+}
+
+/**
+ * A leg's distance with the trail and off-trail km kept apart:
+ * "52.3 km" on the trail alone, "52.3 km + 4.0 km off trail" with a walk into
+ * or out of a town. The trail figure is the one the datasheet's km add up to.
+ */
+export function legDistanceText(
+  leg: Pick<ResupplyLeg, 'distanceKm' | 'offTrailWalkKm'>,
+  formatKm: (km: number) => string
+): string {
+  const trail = formatKm(leg.distanceKm);
+  return leg.offTrailWalkKm > 0 ? `${trail} + ${formatKm(leg.offTrailWalkKm)} off trail` : trail;
+}
+
+/**
+ * The off-trail km a leg covers without walking, which its days and food leave
+ * out: "35.0 km hitch in · 24.1 km hitch out, not walked". Empty when there are none.
+ */
+export function legRidesText(
+  leg: Pick<ResupplyLeg, 'rides'>,
+  formatKm: (km: number) => string
+): string {
+  if (leg.rides.length === 0) return '';
+  const parts = leg.rides.map(ride => `${formatKm(ride.km)} ${rideWord(ride.mode)} ${ride.end === 'to' ? 'in' : 'out'}`);
+  return `${parts.join(' · ')}, not walked`;
+}
+
+/**
+ * The extra beyond the turn-off on the way to a stop, for a readout that
+ * measures to the turn-off ("12.3 km + 2.0 km off trail"): the walk in, or the
+ * ride in. Empty for a stop on the route.
+ */
+export function stopAccessText(
+  access: StopAccess | undefined,
+  formatKm: (km: number) => string
+): string {
+  if (!access) return '';
+  if (access.walkKm > 0) return `+ ${formatKm(access.walkKm)} off trail`;
+  if (access.rideKm > 0) return `+ ${formatKm(access.rideKm)} ${rideWord(access.rideMode)}`;
+  return '';
+}
+
+/** "hitch", "shuttle", "boat" — or, when the data does not say how, "off trail". */
+function rideWord(mode: LegRide['mode']): string {
+  return mode ?? 'off trail';
 }

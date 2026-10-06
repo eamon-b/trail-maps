@@ -2,7 +2,9 @@
  * The resupply legs: one card per carry between the stops the hiker ticked,
  * straight from `@lib/resupply-plan`'s `computeResupplyLegs`. Distance, climb,
  * days and food weight are the calculator's, including the "long carry" flag
- * (`isLong`) — nothing here decides what is far.
+ * (`isLong`) — nothing here decides what is far. Trail and off-trail km are
+ * shown apart ("52.3 km + 4.0 km off trail"), and a hitch the days and food
+ * leave out gets a line of its own, in `@lib/resupply-display`'s words.
  *
  * Three ways to have no legs, and they mean different things to a hiker: a
  * trail with no towns at all, a trail whose towns are all unticked, and a
@@ -14,6 +16,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import type { ResupplyLeg } from '@lib/resupply-plan';
+import { legDistanceText, legRidesText } from '@lib/resupply-display';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import type { Units } from '../../state/settings-store';
@@ -69,6 +72,11 @@ export function ResupplyCard({ legs, hasOptions, stopCount, units }: ResupplyCar
           <Text style={[styles.stats, { color: colors.textSecondary }]}>
             {statsLine(leg, units)}
           </Text>
+          {leg.rides.length > 0 && (
+            <Text style={[styles.arrival, { color: colors.textSecondary }]}>
+              {legRidesText(leg, (km) => formatDistance(km, units))}
+            </Text>
+          )}
           {leg.arrival && (
             <Text style={[styles.arrival, { color: colors.textSecondary }]}>
               Arrive Day {leg.arrival.day}
@@ -81,11 +89,11 @@ export function ResupplyCard({ legs, hasOptions, stopCount, units }: ResupplyCar
   );
 }
 
-/** "148.2 km · +5,120 m / −4,870 m · ≈ 6 days · 4.1 kg food" — built as one
+/** "148.2 km + 4.0 km off trail · +5,120 m / −4,870 m · ≈ 6 days · 4.1 kg food" — built as one
  *  string so the separators cannot be eaten by JSX whitespace collapsing. */
 function statsLine(leg: ResupplyLeg, units: Units): string {
   return [
-    formatDistance(leg.distanceKm, units),
+    legDistanceText(leg, (km) => formatDistance(km, units)),
     `+${formatElevation(leg.ascentM, units)} / −${formatElevation(leg.descentM, units)}`,
     formatDays(leg.estimatedDays),
     `${formatFoodWeight(leg.food.weightKg, units)} food`,

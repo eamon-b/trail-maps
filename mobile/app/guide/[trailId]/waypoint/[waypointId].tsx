@@ -53,6 +53,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import { accessSummary } from '@lib/resupply-display';
+import { isAccessMode } from '@lib/types';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
@@ -318,7 +319,11 @@ export default function WaypointDetailScreen() {
         contentContainerStyle={styles.content}
       >
         {/* How far, and how much up and down, from where the hiker stands. */}
-        <TripCard placeKm={km} placeOffTrailM={placeOffTrailM} />
+        <TripCard
+          placeKm={km}
+          placeOffTrailM={placeOffTrailM}
+          placeAccessMode={isAccessMode(waypoint.accessMode) ? waypoint.accessMode : undefined}
+        />
 
         {/* Hero header */}
         <View style={styles.hero}>

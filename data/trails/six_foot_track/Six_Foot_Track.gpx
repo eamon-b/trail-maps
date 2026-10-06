@@ -9,6 +9,9 @@
   <wpt lat="-33.709975" lon="150.289258"><ele>958.4</ele><name>Norths Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.703950" lon="150.288416"><ele>1064.2</ele><name>Six Foot Track Information Shelter</name><type>poi</type></wpt>
   <wpt lat="-33.711296" lon="150.291036"><ele>965.8</ele><name>Therabulat Lookout</name><type>poi</type></wpt>
+  <wpt lat="-33.703700" lon="150.288800"><ele>1063.9</ele><name>Katoomba (2 km east)</name><desc>Start of the track at the Explorers Tree. Supermarkets, shops and the railway station in Katoomba, about 2 km east.</desc><type>town-access</type></wpt>
+  <wpt lat="-33.731670" lon="150.235000"><ele>578.4</ele><name>Old Ford Reserve</name><type>campsite</type></wpt>
+  <wpt lat="-33.820400" lon="150.021000"><ele>787.4</ele><name>Jenolan Caves</name><desc>End of the track at Jenolan Caves.</desc><type>trailhead</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-33.703700" lon="150.288833"><ele>1063.9</ele></trkpt>
     <trkpt lat="-33.703770" lon="150.288647"><ele>1063.2</ele></trkpt>

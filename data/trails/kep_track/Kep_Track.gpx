@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="trail-maps from OpenStreetMap (ODbL) route relation and waypoints; elevation Copernicus GLO-30" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata><name>Kep Track</name></metadata>
-  <wpt lat="-31.657551" lon="116.660092"><ele>153.3</ele><name>Northam RV 48hr Stay</name><type>campsite</type></wpt>
+  <wpt lat="-31.657551" lon="116.660092"><ele>153.3</ele><name>Northam RV 48hr Stay</name><desc>RV park; OpenStreetMap marks it as not for tents.</desc><type>poi</type></wpt>
   <wpt lat="-31.747633" lon="116.455190"><ele>290.2</ele><name>Summer Creek Farm Camping Bakers Hill</name><type>campsite</type></wpt>
   <wpt lat="-31.877880" lon="116.209348"><ele>273.1</ele><name>Mount Helena</name><type>town</type></wpt>
   <wpt lat="-31.904302" lon="116.166597"><ele>310.4</ele><name>Drinking water</name><type>water</type></wpt>
   <wpt lat="-31.954397" lon="116.166352"><ele>181.0</ele><name>Drinking water</name><type>water</type></wpt>
   <wpt lat="-31.720213" lon="116.523265"><ele>224.2</ele><name>Drinking water</name><type>water</type></wpt>
+  <wpt lat="-31.901250" lon="116.167470"><ele>304.8</ele><name>Mundaring</name><desc>Supermarkets, bakery and cafes.</desc><type>town</type></wpt>
+  <wpt lat="-31.748510" lon="116.457900"><ele>296.3</ele><name>Bakers Hill</name><desc>Post office, pie shop and service station.</desc><type>town</type></wpt>
+  <wpt lat="-31.720830" lon="116.518600"><ele>232.5</ele><name>Clackline</name><desc>Post office.</desc><type>town</type></wpt>
+  <wpt lat="-31.658994" lon="116.657647"><ele>153.7</ele><name>Northam (1 km east)</name><desc>End of the track at the Avon River. Supermarkets, post office and services in Northam, about 1 km east.</desc><type>town-access</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-31.952049" lon="116.167574"><ele>175.8</ele></trkpt>
     <trkpt lat="-31.952009" lon="116.167607"><ele>176.0</ele></trkpt>

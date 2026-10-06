@@ -3,7 +3,7 @@
   <metadata><name>Grampians Peaks Trail</name></metadata>
   <wpt lat="-36.953617" lon="142.436216"><ele>233.5</ele><name>Barigar Hike-in Campground</name><type>campsite</type></wpt>
   <wpt lat="-37.224051" lon="142.539690"><ele>301.4</ele><name>Borough Huts Campground</name><type>campsite</type></wpt>
-  <wpt lat="-37.313644" lon="142.593682"><ele>896.8</ele><name>Boundry Gap</name><type>campsite</type></wpt>
+  <wpt lat="-37.313644" lon="142.593682"><ele>896.8</ele><name>Boundary Gap</name><type>campsite</type></wpt>
   <wpt lat="-37.180727" lon="142.508818"><ele>638.3</ele><name>Bugiga Hike-in Campground</name><desc>12 elevated camping platforms, 4m diameter suitable for 2-3 person tents, weather shelter, two non-flush toilets</desc><type>campsite</type></wpt>
   <wpt lat="-37.561267" lon="142.369304"><ele>420.5</ele><name>Djardji-djawara Hike-in Campground</name><type>campsite</type></wpt>
   <wpt lat="-37.353841" lon="142.555261"><ele>809.2</ele><name>Durd Durd Hike-in Campground</name><type>campsite</type></wpt>
@@ -32,12 +32,6 @@
   <wpt lat="-37.633977" lon="142.322986"><ele>572.3</ele><name>Mount Sturgeon</name><desc>Summit 582 m.</desc><type>mountain</type></wpt>
   <wpt lat="-37.262047" lon="142.597543"><ele>952.5</ele><name>Red Man Bluff</name><desc>2 Meter Rock Cairn 1021.3M Ellipsoidal Summit 1018 m.</desc><type>mountain</type></wpt>
   <wpt lat="-37.160146" lon="142.515692"><ele>696.4</ele><name>The Pinnacle</name><desc>Summit 718 m.</desc><type>mountain</type></wpt>
-  <wpt lat="-37.001735" lon="142.448220"><ele>709.3</ele><name>Communal Shelter</name><type>poi</type></wpt>
-  <wpt lat="-36.953496" lon="142.435811"><ele>236.2</ele><name>Communal Shelter</name><type>poi</type></wpt>
-  <wpt lat="-37.066008" lon="142.485134"><ele>755.5</ele><name>Communal Shelter</name><type>poi</type></wpt>
-  <wpt lat="-37.415271" lon="142.501968"><ele>572.6</ele><name>Communal Shelter</name><type>poi</type></wpt>
-  <wpt lat="-37.603314" lon="142.350667"><ele>539.5</ele><name>Communal Shelter</name><type>poi</type></wpt>
-  <wpt lat="-37.561527" lon="142.369364"><ele>424.7</ele><name>Communal Shelter</name><type>poi</type></wpt>
   <wpt lat="-37.342146" lon="142.576493"><ele>1150.0</ele><name>Durd Durd Viewpoint</name><type>poi</type></wpt>
   <wpt lat="-37.191496" lon="142.503746"><ele>874.9</ele><name>Gate of the East Wind</name><type>poi</type></wpt>
   <wpt lat="-37.158531" lon="142.514300"><ele>664.0</ele><name>Gate of the West Wind</name><type>poi</type></wpt>
@@ -49,7 +43,6 @@
   <wpt lat="-37.649447" lon="142.344164"><ele>248.6</ele><name>Dunkeld</name><type>town</type></wpt>
   <wpt lat="-37.141769" lon="142.520244"><ele>229.7</ele><name>Halls Gap</name><type>town</type></wpt>
   <wpt lat="-37.567521" lon="142.367813"><ele>383.7</ele><name>Cassidy Gap Road Trailhead</name><type>trailhead</type></wpt>
-  <wpt lat="-36.988369" lon="142.456564"><ele>574.8</ele><name>High trail around Gar camp</name><type>trailhead</type></wpt>
   <wpt lat="-37.621714" lon="142.329111"><ele>264.9</ele><name>Victoria Valley Road Trailhead</name><type>trailhead</type></wpt>
   <wpt lat="-36.986645" lon="142.430588"><ele>268.4</ele><name>Drinking water</name><type>water</type></wpt>
   <wpt lat="-37.001213" lon="142.448525"><ele>710.2</ele><name>Drinking water</name><type>water</type></wpt>
@@ -80,7 +73,8 @@
   <wpt lat="-37.561691" lon="142.368748"><ele>426.8</ele><name>Water Tank</name><desc>Rainwater tank fed by shelter roof. Treat before use.</desc><type>water-tank</type></wpt>
   <wpt lat="-36.982832" lon="142.431770"><ele>253.4</ele><name>Water tank</name><type>water-tank</type></wpt>
   <wpt lat="-36.925551" lon="142.415396"><ele>360.5</ele><name>Water tank</name><type>water-tank</type></wpt>
-  <wpt lat="-36.891054" lon="142.376089"><ele>254.6</ele><name>water tank</name><type>water-tank</type></wpt>
+  <wpt lat="-36.891054" lon="142.376089"><ele>254.6</ele><name>Water tank</name><type>water-tank</type></wpt>
+  <wpt lat="-37.223470" lon="142.553050"><ele>331.7</ele><name>Barri Yalug Hike-in Campground</name><type>campsite</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-36.891288" lon="142.375833"><ele>255.1</ele></trkpt>
     <trkpt lat="-36.891321" lon="142.375915"><ele>255.2</ele></trkpt>

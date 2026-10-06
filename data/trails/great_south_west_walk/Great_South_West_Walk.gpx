@@ -49,6 +49,7 @@
   <wpt lat="-38.342218" lon="141.607660"><ele>3.4</ele><name>Water tap</name><desc>Drinking water tap.</desc><type>water</type></wpt>
   <wpt lat="-38.213475" lon="141.311439"><ele>10.4</ele><name>Water tap</name><desc>Drinking water tap.</desc><type>water</type></wpt>
   <wpt lat="-38.368887" lon="141.407306"><ele>2.5</ele><name>Water tap</name><desc>Drinking water tap.</desc><type>water</type></wpt>
+  <wpt lat="-38.047590" lon="141.008180"><ele>4.3</ele><name>Nelson</name><desc>General store and fuel, hotel, caravan park and campsites on the Glenelg River.</desc><type>town</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-38.345978" lon="141.607311"><ele>2.2</ele></trkpt>
     <trkpt lat="-38.345543" lon="141.607343"><ele>2.1</ele></trkpt>

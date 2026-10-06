@@ -13,8 +13,8 @@
   <wpt lat="-43.149546" lon="147.993586"><ele>184.3</ele><name>Monument Lookout</name><type>poi</type></wpt>
   <wpt lat="-43.156232" lon="147.980444"><ele>279.6</ele><name>Pillars of the south</name><type>poi</type></wpt>
   <wpt lat="-43.224091" lon="148.002779"><ele>179.4</ele><name>Seal spa</name><type>poi</type></wpt>
-  <wpt lat="-43.190734" lon="147.927909"><ele>244.0</ele><name>Where the ell are we?! (mid bench sign)</name><type>poi</type></wpt>
   <wpt lat="-43.199248" lon="147.965161"><ele>250.6</ele><name>Drinking water</name><type>water</type></wpt>
+  <wpt lat="-43.138400" lon="147.895000"><ele>11.7</ele><name>Denmans Cove</name><desc>Start of the track; walkers arrive by boat from the Port Arthur Historic Site.</desc><type>trailhead</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-43.138421" lon="147.894996"><ele>11.7</ele></trkpt>
     <trkpt lat="-43.138461" lon="147.895059"><ele>11.6</ele></trkpt>

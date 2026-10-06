@@ -4,14 +4,12 @@
   <wpt lat="-32.966008" lon="151.308454"><ele>533.1</ele><name>Barraba Campsite</name><desc>Great North Walk camp site</desc><type>campsite</type></wpt>
   <wpt lat="-33.639029" lon="151.103329"><ele>18.2</ele><name>Berowra Creek camp</name><type>campsite</type></wpt>
   <wpt lat="-33.554862" lon="151.208066"><ele>80.2</ele><name>Brooklyn Dam Campsite</name><type>campsite</type></wpt>
-  <wpt lat="-33.554507" lon="151.207353"><ele>79.7</ele><name>Brooklyn Dam campsite</name><type>campsite</type></wpt>
-  <wpt lat="-32.962669" lon="151.420841"><ele>453.3</ele><name>Bushrat's Camp</name><desc>Former camp of homeless Ricky the Bushrat</desc><type>campsite</type></wpt>
   <wpt lat="-33.442756" lon="151.265662"><ele>16.1</ele><name>Campsite</name><type>campsite</type></wpt>
   <wpt lat="-33.428244" lon="151.249787"><ele>13.7</ele><name>Campsite</name><type>campsite</type></wpt>
   <wpt lat="-33.261500" lon="151.264860"><ele>328.0</ele><name>Campsite</name><desc>Free campsite. Suitable for motorhomes, caravans and tents. Gravel road leading right up to the campsite. Excellent 4G and 5G mobile reception. No WiFi.</desc><type>campsite</type></wpt>
   <wpt lat="-33.635993" lon="151.108107"><ele>27.9</ele><name>Crosslands Reserve</name><type>campsite</type></wpt>
-  <wpt lat="-33.628386" lon="151.107843"><ele>25.4</ele><name>Crosslands Youth Camp</name><type>campsite</type></wpt>
-  <wpt lat="-32.962059" lon="151.731889"><ele>12.2</ele><name>Glenrock Scout Training Camp</name><type>campsite</type></wpt>
+  <wpt lat="-33.628386" lon="151.107843"><ele>25.4</ele><name>Crosslands Youth Camp</name><desc>Youth camp for booked groups; the public campground is Crosslands Reserve.</desc><type>poi</type></wpt>
+  <wpt lat="-32.962059" lon="151.731889"><ele>12.2</ele><name>Glenrock Scout Training Camp</name><desc>Scouts NSW training camp; not a public campsite.</desc><type>poi</type></wpt>
   <wpt lat="-33.413728" lon="151.243871"><ele>18.0</ele><name>Mooney Mooney (Upper)</name><desc>Flat area is between two creeks. Enough for perhaps 3x tents. Water seems OK to drink from (filtered), unlike from further down the creek where it becomes brackish.</desc><type>campsite</type></wpt>
   <wpt lat="-33.029129" lon="151.273438"><ele>198.8</ele><name>Mt Warrawolong Campsite</name><type>campsite</type></wpt>
   <wpt lat="-33.496118" lon="151.274543"><ele>211.2</ele><name>Mt Wondabyne Campsite</name><type>campsite</type></wpt>
@@ -21,10 +19,10 @@
   <wpt lat="-33.289398" lon="151.267956"><ele>80.0</ele><name>Stringy Bark Point Campsite</name><type>campsite</type></wpt>
   <wpt lat="-33.719574" lon="151.057905"><ele>106.4</ele><name>The Jungo</name><desc>A small clearing by the path, room for about one to two small tents.</desc><type>campsite</type></wpt>
   <wpt lat="-33.678711" lon="151.081147"><ele>179.0</ele><name>Tunks Ridge Campground</name><type>campsite</type></wpt>
-  <wpt lat="-33.127796" lon="151.255432"><ele>315.9</ele><name>Walkers Rest Campsite</name><desc>Part of the Great North Walk?</desc><type>campsite</type></wpt>
+  <wpt lat="-33.127796" lon="151.255432"><ele>315.9</ele><name>Walkers Rest Campsite</name><type>campsite</type></wpt>
   <wpt lat="-32.975910" lon="151.412305"><ele>482.5</ele><name>Watagan Headquarters Camping Area</name><type>campsite</type></wpt>
   <wpt lat="-32.990297" lon="151.302165"><ele>211.3</ele><name>Crawford Hut</name><type>hut</type></wpt>
-  <wpt lat="-33.790346" lon="151.154747"><ele>16.4</ele><name>Cubby House Kukundi</name><type>hut</type></wpt>
+  <wpt lat="-33.790346" lon="151.154747"><ele>16.4</ele><name>Cubby House Kukundi</name><type>poi</type></wpt>
   <wpt lat="-33.493871" lon="151.274972"><ele>241.3</ele><name>Mount Wondabyne</name><desc>Summit 251 m.</desc><type>mountain</type></wpt>
   <wpt lat="-33.461514" lon="151.252644"><ele>230.5</ele><name>Scopas Peak</name><type>mountain</type></wpt>
   <wpt lat="-32.937884" lon="151.773596"><ele>70.4</ele><name>Shepherds Hill</name><type>mountain</type></wpt>
@@ -41,7 +39,6 @@
   <wpt lat="-33.692569" lon="151.084145"><ele>63.4</ele><name>Fishponds Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.003276" lon="151.272017"><ele>458.2</ele><name>Flat Rock Lookout</name><type>poi</type></wpt>
   <wpt lat="-32.983765" lon="151.454971"><ele>396.4</ele><name>Heaton Lookout</name><type>poi</type></wpt>
-  <wpt lat="-32.981681" lon="151.455274"><ele>432.6</ele><name>Heaton Lookout</name><type>poi</type></wpt>
   <wpt lat="-32.962421" lon="151.413594"><ele>458.3</ele><name>Hunter Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.791839" lon="151.155674"><ele>14.0</ele><name>Koonjeree Rotunda</name><type>poi</type></wpt>
   <wpt lat="-32.959107" lon="151.726553"><ele>39.2</ele><name>Leichhardts Lookout</name><type>poi</type></wpt>
@@ -50,14 +47,13 @@
   <wpt lat="-32.838718" lon="151.281323"><ele>381.1</ele><name>Mt Bright Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.617972" lon="151.128081"><ele>146.3</ele><name>Naa Badu Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.699630" lon="151.076810"><ele>168.9</ele><name>Quarter Sessions Road Lookout</name><type>poi</type></wpt>
-  <wpt lat="-33.790541" lon="151.155023"><ele>11.8</ele><name>Shade Sail</name><type>poi</type></wpt>
   <wpt lat="-32.936809" lon="151.776891"><ele>64.9</ele><name>Strzelecki Lookout</name><type>poi</type></wpt>
   <wpt lat="-32.976616" lon="151.358729"><ele>452.3</ele><name>The Narrow Place Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.753837" lon="151.102916"><ele>78.6</ele><name>The Step Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.552807" lon="151.288932"><ele>109.6</ele><name>Warrah Lookout</name><type>poi</type></wpt>
   <wpt lat="-33.588830" lon="151.169857"><ele>212.2</ele><name>Cowan</name><type>town</type></wpt>
   <wpt lat="-32.927288" lon="151.781253"><ele>11.7</ele><name>Newcastle</name><type>town</type></wpt>
-  <wpt lat="-33.869844" lon="151.208285"><ele>85.5</ele><name>Sydney</name><type>town</type></wpt>
+  <wpt lat="-33.862134" lon="151.210521"><ele>7.0</ele><name>Sydney</name><desc>Start of the walk at Macquarie Place. The route continues by ferry from Circular Quay to Woolwich.</desc><type>town</type></wpt>
   <wpt lat="-33.861424" lon="151.210631"><ele>9.9</ele><name>Drinking water</name><desc>Platform 1</desc><type>water</type></wpt>
   <wpt lat="-33.863391" lon="151.212268"><ele>45.6</ele><name>Drinking water</name><type>water</type></wpt>
   <wpt lat="-33.859072" lon="151.208076"><ele>18.7</ele><name>Drinking water</name><type>water</type></wpt>
@@ -133,8 +129,12 @@
   <wpt lat="-32.934763" lon="151.778458"><ele>63.8</ele><name>Drinking water</name><type>water</type></wpt>
   <wpt lat="-32.930485" lon="151.785019"><ele>2.2</ele><name>Drinking water</name><type>water</type></wpt>
   <wpt lat="-32.933250" lon="151.778681"><ele>52.1</ele><name>King Edward Park Fountain</name><type>water</type></wpt>
-  <wpt lat="-33.591575" lon="151.186314"><ele>39.0</ele><name>spring</name><type>water</type></wpt>
-  <wpt lat="-33.626833" lon="151.110927"><ele>9.2</ele><name>tap</name><type>water</type></wpt>
+  <wpt lat="-33.591575" lon="151.186314"><ele>39.0</ele><name>Spring</name><type>water</type></wpt>
+  <wpt lat="-33.626833" lon="151.110927"><ele>9.2</ele><name>Tap</name><type>water</type></wpt>
+  <wpt lat="-33.731970" lon="151.079850"><ele>169.6</ele><name>Thornleigh</name><desc>Supermarket, post office and railway station.</desc><type>town</type></wpt>
+  <wpt lat="-33.547970" lon="151.226330"><ele>12.4</ele><name>Brooklyn</name><desc>Shops, cafes, pub, post office and Hawkesbury River station. The route continues by ferry to Patonga.</desc><type>town</type></wpt>
+  <wpt lat="-33.358130" lon="151.289720"><ele>288.4</ele><name>Somersby</name><desc>General store and takeaway.</desc><type>town</type></wpt>
+  <wpt lat="-32.973680" lon="151.646460"><ele>13.4</ele><name>Warners Bay</name><desc>Supermarket, post office, fuel and cafes on Lake Macquarie.</desc><type>town</type></wpt>
   <trk><name>Main route 1/3</name><trkseg>
     <trkpt lat="-33.862134" lon="151.210521"><ele>7.0</ele></trkpt>
     <trkpt lat="-33.862093" lon="151.210526"><ele>7.1</ele></trkpt>

@@ -353,7 +353,10 @@ describe('updating a bundled trail', () => {
     const result = await checkForTrailDataUpdates({ now: T0 });
 
     expect(result).toEqual({ checked: true, updated: ['alpha'], failed: [] });
-    expect(fetchMock).toHaveBeenCalledWith(`${TRAILS_URL}/catalog.json`, expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(new RegExp(`^${TRAILS_URL}/catalog\\.json\\?m=\\d+$`)),
+      expect.anything(),
+    );
     expect(mockDownload).toHaveBeenCalledWith(
       `${TRAILS_URL}/${entry.key}`,
       expect.anything(),

@@ -54,6 +54,16 @@ offline tile packs use the same bucket and domain.
 
 The catalog lists the trails in `index.json` order.
 
+**The CDN caches 404s for hours.** R2 sends a 404 with no Cache-Control, and
+the `data.contour-map-tiles.net` zone kept one for `trails/v1/catalog.json`
+for hours after the first publish. So the app asks for
+`catalog.json?m=<minute>`: the query string is part of the cache key, so a
+stale 404 (or a stale catalog) is never read, and phones asking in the same
+minute still share one cached copy. The `--check` mode busts the cache the
+same way. To check by hand, add a query string: `curl
+'https://data.contour-map-tiles.net/trails/v1/catalog.json?x=1'`.
+
+
 **Content-addressed keys.** Each trail file is stored under a key named after
 its content. A new version is written to a new key and never overwrites the
 bytes an already-published catalog points at. A phone that read the old

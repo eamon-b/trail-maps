@@ -383,8 +383,20 @@ export interface TrailDataCheckResult {
 let inFlightCheck: Promise<TrailDataCheckResult> | null = null;
 let lastAttemptAt = 0;
 
+/**
+ * The catalog URL, with a per-minute query string. The CDN in front of the
+ * bucket keeps a 404 for hours (no Cache-Control on R2's 404), so a phone that
+ * asked before a catalog existed — or before a trail's first publish — would
+ * otherwise go on reading that 404. The query string is part of the cache key,
+ * so each minute is a fresh entry, while requests within the minute still
+ * share one.
+ */
+export function catalogUrl(now: number = Date.now()): string {
+  return `${trailDataBaseUrl()}/catalog.json?m=${Math.floor(now / 60_000)}`;
+}
+
 async function fetchCatalog(): Promise<TrailCatalog> {
-  const response = await fetch(`${trailDataBaseUrl()}/catalog.json`, {
+  const response = await fetch(catalogUrl(), {
     headers: { 'Cache-Control': 'no-cache' },
   });
   if (!response.ok) throw new Error(`Catalog request failed (${response.status})`);

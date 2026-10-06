@@ -873,6 +873,37 @@ describe('GuideMap', () => {
     expect(onVisibleBoundsChange).toHaveBeenCalledTimes(1);
   });
 
+  it('reports the camera on every frame and when it settles, for the scale bar', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const onCameraChange = jest.fn();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          onCameraChange={onCameraChange}
+        />,
+      );
+    });
+    await flush();
+
+    const map = mapViews(tree)[0];
+    const event = (zoom: number) => ({
+      nativeEvent: { center: [138.5, -34.5], zoom, bounds: [138, -35, 139, -34] },
+    });
+    act(() => {
+      (map.props.onRegionIsChanging as (e: unknown) => void)(event(9));
+      (map.props.onRegionDidChange as (e: unknown) => void)(event(10));
+      (map.props.onRegionIsChanging as (e: unknown) => void)({ nativeEvent: {} });
+    });
+    expect(onCameraChange.mock.calls).toEqual([
+      [9, -34.5],
+      [10, -34.5],
+    ]);
+  });
+
   it('leaves the region handler off when nobody is listening', async () => {
     getOnline.mockResolvedValue(ONLINE_STYLE);
     let tree!: ReactTestRenderer;
@@ -883,6 +914,7 @@ describe('GuideMap', () => {
     });
     await flush();
     expect(mapViews(tree)[0].props.onRegionDidChange).toBeUndefined();
+    expect(mapViews(tree)[0].props.onRegionIsChanging).toBeUndefined();
   });
 
   it('renders the route overlay source when a routeOverlay is supplied', async () => {

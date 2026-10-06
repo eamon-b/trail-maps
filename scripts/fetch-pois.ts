@@ -19,7 +19,8 @@
  * are kept in their own `pois` array.
  *
  * Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>]
- *          [--timeout <s>] [--max-vertices <n>]
+ *          [--timeout <s>] [--max-vertices <n>] [--from-km <km>] [--to-km <km>]
+ *          [--force-replace]
  *   - With no trail-id: processes every generated trail
  *   - With trail-id:    processes only that trail
  *   - --dry-run:        builds the corridor and prints query counts, but makes
@@ -28,6 +29,8 @@
  *   - --timeout <s>:    Overpass `[timeout:]` in seconds (default 22)
  *   - --max-vertices <n>: corridor vertices per query (default 300); see the
  *                       note on MAX_VERTICES_PER_CHUNK before reaching for it
+ *   - --force-replace:  replace pois.json even when chunks failed (default:
+ *                       merge into it, and exit non-zero)
  *
  * Choosing an instance: public Overpass mirrors vary wildly in reach and load,
  * and a whole-corridor query with all six POI types is a heavy one. As of
@@ -67,12 +70,15 @@
  * --max-vertices so the expensive chunk is split into cheaper queries. That
  * took AAWT from 24 POIs covering only km 485–793 to 229 covering km 0–793.
  *
- * A partial fetch is silent in the output file. `failedChunks` is printed as a
- * WARNING and then dropped on write, so a `pois.json` missing half its corridor
- * is indistinguishable from a complete one. Check that line before committing,
- * and check WHICH km the POIs span: AAWT's 24-POI file looked like a thin
- * sample of a remote trail and was actually the back half only, with km 0–485
- * missing outright. Heysen still ships 0–878 km of 1099 for the same reason.
+ * A partial fetch is silent in the output file: nothing in `pois.json` records
+ * which chunks failed, so a file missing half its corridor looks complete.
+ * AAWT's 24-POI file looked like a thin sample of a remote trail and was
+ * actually the back half only, with km 0–485 missing outright; Heysen still
+ * ships 0–878 km of 1099 for the same reason. So when any chunk fails, a
+ * whole-trail run MERGES into the existing file (as `--from-km` does) rather
+ * than replacing it, prints the WARNING, and exits non-zero once every trail
+ * is done. `--force-replace` writes the partial result over the file anyway.
+ * Still check WHICH km a new file's POIs span before committing it.
  *
  * Networking note: on hosts whose IPv6 route to Overpass black-holes, Node's
  * happy-eyeballs fallback can be slower than the request timeout and every
@@ -100,6 +106,7 @@ import type { LatLon, RouteScale } from '../src/lib/trail-pois.js';
 import type { ProcessedTrail, TrailPOI } from '../src/lib/trail-types.js';
 import {
   buildTrailPOIFile,
+  choosePoiWriteMode,
   mergeTrailPOIs,
   readTrailPOIFile,
   trailPOIPath,
@@ -364,6 +371,12 @@ function dryRunTrail(
   console.log('  No requests made, no files written.');
 }
 
+/** What one trail's fetch did: whether it found POIs, and whether any chunk failed. */
+interface ProcessOutcome {
+  updated: boolean;
+  incomplete: boolean;
+}
+
 /** Fetch POIs for one trail and write them to its `pois.json`. */
 async function processTrail(
   trailPath: string,
@@ -371,8 +384,9 @@ async function processTrail(
   fetchPOIs: POIFetcher,
   endpoint: string,
   maxVertices: number,
-  kmRange: KmRange | null
-): Promise<boolean> {
+  kmRange: KmRange | null,
+  forceReplace: boolean
+): Promise<ProcessOutcome> {
   const trailId = path.basename(trailPath, '.json');
   console.log(`\nProcessing: ${trailId}`);
 
@@ -381,7 +395,7 @@ async function processTrail(
 
   if (result.queryChunks === 0) {
     console.log('  No track points found. Skipping.');
-    return false;
+    return { updated: false, incomplete: false };
   }
 
   console.log(
@@ -405,12 +419,21 @@ async function processTrail(
   // every refresh.
   const existing = readTrailPOIFile(trailDir);
 
-  // A windowed fetch queried only part of the corridor, so its result is a
-  // partial file by construction. Writing it as-is would delete every POI
-  // outside the window; merge instead, and keep the existing metadata, which
-  // still describes the bulk of the file. A whole-trail fetch replaces.
-  const merging = kmRange !== null && existing !== null;
+  // A windowed fetch, or a whole-trail one that lost chunks, is a partial
+  // result. Writing it as-is would delete every POI it did not reach; merge
+  // instead, and keep the existing metadata, which still describes the bulk of
+  // the file. Only a clean whole-trail fetch (or --force-replace) replaces.
+  const mode = choosePoiWriteMode({
+    hasExisting: existing !== null,
+    windowed: kmRange !== null,
+    failedChunks: result.failedChunks.length,
+    forceReplace,
+  });
+  const merging = mode === 'merge' && existing !== null;
   const merged = merging ? mergeTrailPOIs(existing.pois, result.pois) : null;
+  if (merging && kmRange === null) {
+    console.log('  Chunks failed, so merging into the existing file instead of replacing it.');
+  }
 
   const file = buildTrailPOIFile({
     existing,
@@ -422,7 +445,7 @@ async function processTrail(
   if (merged) {
     console.log(
       `  Merged into the existing file: ${merged.added} new, ${merged.updated} refreshed, ` +
-        `${merged.kept} untouched outside the window -> ${file.pois.length} total`
+        `${merged.kept} untouched -> ${file.pois.length} total`
     );
   }
   const written = writeTrailPOIFile(trailDir, file);
@@ -431,12 +454,12 @@ async function processTrail(
       (file.rejected.length > 0 ? ` (kept ${file.rejected.length} rejected key(s))` : '')
   );
 
-  return result.pois.length > 0;
+  return { updated: result.pois.length > 0, incomplete: result.failedChunks.length > 0 };
 }
 
 function printUsage(): void {
   console.log(
-    'Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>] [--timeout <s>] [--max-vertices <n>]'
+    'Usage: tsx scripts/fetch-pois.ts [trail-id] [--dry-run] [--endpoint <url>] [--timeout <s>] [--max-vertices <n>] [--from-km <km>] [--to-km <km>] [--force-replace]'
   );
   console.log('');
   console.log('Fetches OSM points of interest along each trail corridor via the');
@@ -455,6 +478,10 @@ function printUsage(): void {
   console.log(
     `  --timeout <s>    Overpass [timeout:] in seconds (default ${DEFAULT_TIMEOUT_SECONDS})`,
     `  --max-vertices <n>  Corridor vertices per query (default ${MAX_VERTICES_PER_CHUNK})`
+  );
+  console.log('  --from-km <km>, --to-km <km>  Fetch only this window and merge it into the file');
+  console.log(
+    '  --force-replace  Replace pois.json even when chunks failed (default: merge, exit 1)'
   );
   console.log('  --help, -h       Show this message');
   console.log('');
@@ -574,6 +601,7 @@ async function main(): Promise<void> {
   }
 
   const dryRun = args.includes('--dry-run');
+  const forceReplace = args.includes('--force-replace');
   let endpoint: string;
   let timeoutSeconds: number;
   let maxVertices: number;
@@ -676,12 +704,21 @@ async function main(): Promise<void> {
   });
 
   let updatedCount = 0;
+  const incomplete: string[] = [];
 
   for (const { trailFile, trailDir } of targets) {
     try {
-      if (await processTrail(trailFile, trailDir, fetchPOIs, endpoint, maxVertices, kmRange)) {
-        updatedCount++;
-      }
+      const outcome = await processTrail(
+        trailFile,
+        trailDir,
+        fetchPOIs,
+        endpoint,
+        maxVertices,
+        kmRange,
+        forceReplace
+      );
+      if (outcome.updated) updatedCount++;
+      if (outcome.incomplete) incomplete.push(path.basename(trailFile, '.json'));
     } catch (error) {
       failedCount++;
       console.error(`  Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -692,6 +729,15 @@ async function main(): Promise<void> {
   console.log(`Done. Updated ${updatedCount} trail(s) with POI data.`);
   if (failedCount > 0) {
     console.log(`${failedCount} trail(s) failed.`);
+    process.exitCode = 1;
+  }
+  // Exit non-zero so a person or CI notices: the files were merged, not
+  // refreshed, and the failed stretches still hold whatever they held before.
+  if (incomplete.length > 0) {
+    console.log(
+      `WARNING: incomplete fetch for ${incomplete.join(', ')} — failed chunks were not refreshed. ` +
+        'Re-run (try --from-km 0 or a smaller --max-vertices) until no chunk fails.'
+    );
     process.exitCode = 1;
   }
 }

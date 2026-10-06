@@ -234,6 +234,34 @@ export function mergeTrailPOIs(
   };
 }
 
+/** How a fetch's result lands on disk: replace the file, or fold into it. */
+export type PoiWriteMode = 'replace' | 'merge';
+
+/**
+ * Decide whether a fetch replaces `pois.json` or merges into it.
+ *
+ * - No existing file: replace — there is nothing to merge into.
+ * - A windowed fetch (`--from-km`/`--to-km`): merge — it queried only part of
+ *   the corridor, so replacing would delete every POI outside the window.
+ * - A whole-trail fetch with failed chunks: merge as well, for the same
+ *   reason. The failed chunks' stretches came back empty, and replacing would
+ *   swap a complete file for one missing those km — silently, since nothing in
+ *   the file records which chunks failed. `forceReplace` opts out, for when
+ *   the existing file is known to be wrong and partial-but-fresh is better.
+ * - A clean whole-trail fetch: replace, so POIs deleted from OSM go away.
+ */
+export function choosePoiWriteMode(options: {
+  hasExisting: boolean;
+  windowed: boolean;
+  failedChunks: number;
+  forceReplace: boolean;
+}): PoiWriteMode {
+  if (!options.hasExisting) return 'replace';
+  if (options.windowed) return 'merge';
+  if (options.failedChunks > 0 && !options.forceReplace) return 'merge';
+  return 'replace';
+}
+
 /** Stable 2-space JSON with a trailing newline, so re-fetch diffs stay readable. */
 export function stringifyTrailPOIFile(file: TrailPOIFile): string {
   return `${JSON.stringify(file, null, 2)}\n`;

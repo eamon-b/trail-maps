@@ -31,6 +31,8 @@ export const TRAIL_FILE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 const TRAIL_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const MD5_RE = /^[0-9a-f]{32}$/;
 const DATA_VERSION_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** A full git object name: SHA-1 (40 hex) or SHA-256 (64 hex). */
+const COMMIT_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
 /** What the generated web index says about a trail, before any file is written. */
 export interface TrailIndexBase {
@@ -60,6 +62,16 @@ export interface CatalogTrail extends MobileIndexEntry {
 export interface TrailCatalog {
   format: number;
   generatedAt: string;
+  /**
+   * The git commit (`HEAD`) the publish ran from, when it could be read. The
+   * next publish refuses to go ahead unless this commit is an ancestor of its
+   * own `HEAD` (`sourceCommitVerdict`): a checkout that has not seen the last
+   * publish's commit may be publishing older data than is live, whatever its
+   * `updatedAt` stamps say. Catalog-level rather than per trail, so a rebuild
+   * never rewrites `index.json` just because the commit moved; ignored by
+   * `diffCatalogs`, like `generatedAt`. Absent on catalogs published before it.
+   */
+  sourceCommit?: string;
   trails: CatalogTrail[];
 }
 
@@ -143,11 +155,19 @@ export function catalogKey(id: string, md5: string): string {
   return `${id}.${md5.slice(0, 12)}.json`;
 }
 
-/** The catalog for an index, trails in index order. */
-export function buildCatalog(index: MobileIndexEntry[], generatedAt: Date): TrailCatalog {
+/**
+ * The catalog for an index, trails in index order. `sourceCommit` is written
+ * only when known, so a publish without git produces the same shape as before.
+ */
+export function buildCatalog(
+  index: MobileIndexEntry[],
+  generatedAt: Date,
+  sourceCommit?: string | null
+): TrailCatalog {
   return {
     format: TRAIL_DATA_FORMAT,
     generatedAt: generatedAt.toISOString(),
+    ...(sourceCommit ? { sourceCommit } : {}),
     trails: index.map(entry => ({
       id: entry.id,
       name: entry.name,
@@ -246,6 +266,12 @@ export function parseCatalog(text: string): TrailCatalog {
     throw new Error(`catalog format is ${JSON.stringify(parsed.format)}, expected ${TRAIL_DATA_FORMAT}`);
   }
   if (!Array.isArray(parsed.trails)) throw new Error('catalog has no trails array');
+  if (
+    parsed.sourceCommit !== undefined &&
+    (typeof parsed.sourceCommit !== 'string' || !COMMIT_RE.test(parsed.sourceCommit))
+  ) {
+    throw new Error(`catalog sourceCommit ${JSON.stringify(parsed.sourceCommit)} is not a git commit id`);
+  }
   for (const trail of parsed.trails) {
     if (!trail || typeof trail.id !== 'string' || typeof trail.key !== 'string') {
       throw new Error(`catalog entry ${JSON.stringify(trail)} has no id/key`);
@@ -280,7 +306,7 @@ export interface CatalogDiff {
   reordered: boolean;
 }
 
-/** How a local catalog differs from the live one (`generatedAt` is ignored). */
+/** How a local catalog differs from the live one (`generatedAt` and `sourceCommit` are ignored). */
 export function diffCatalogs(local: TrailCatalog, live: TrailCatalog | null): CatalogDiff {
   const liveTrails = live?.trails ?? [];
   const liveById = new Map(liveTrails.map(trail => [trail.id, trail]));
@@ -325,6 +351,66 @@ export function planUpload(local: TrailCatalog, live: TrailCatalog | null, optio
     files: options.all ? [...local.trails] : local.trails.filter(trail => !liveKeys.has(trail.key)),
     uploadCatalog: Boolean(options.all) || catalogsDiffer(diff),
     diff,
+  };
+}
+
+/**
+ * Trails the live catalog lists that this publish would drop, minus the ones
+ * the operator named with `--remove <id>`. Dropping a trail from the catalog
+ * takes it off every phone's list of downloadable trails, and the usual cause
+ * is not intent but a checkout that predates the trail being added — so it is
+ * refused unless asked for by name (or with `--force`).
+ */
+export function unapprovedRemovals(diff: CatalogDiff, approved: ReadonlySet<string>): string[] {
+  return diff.removed.filter(id => !approved.has(id));
+}
+
+/** What the source-commit guard decided, and why. */
+export type SourceCommitVerdict =
+  | { kind: 'ok' }
+  | { kind: 'warn'; message: string }
+  | { kind: 'refuse'; message: string };
+
+/**
+ * Whether a publish from `head` may replace a live catalog published from
+ * `liveCommit`.
+ *
+ * The `updatedAt` rollback check (`rollbacks` in publish-trail-data.ts) only
+ * catches a local copy that is OLDER; a stale checkout that rebuilds stamps
+ * every changed file `now` and sails through it, reverting newer live data.
+ * Ancestry catches that: if the live publish's commit is not in this
+ * checkout's history, this checkout has not seen what is live.
+ *
+ * - No commit recorded live (first publish, or a catalog from before this
+ *   field): nothing to compare, ok.
+ * - `head` unknown (git missing, not a repository): warn and carry on — the
+ *   guard is best-effort and must not make publishing impossible without git.
+ * - `isAncestor` true: ok. False: refuse. Null (git could not answer, usually
+ *   because the commit is not in this clone at all): refuse — that is the
+ *   stale-checkout case in its plainest form.
+ */
+export function sourceCommitVerdict(
+  liveCommit: string | undefined,
+  head: string | null,
+  isAncestor: boolean | null
+): SourceCommitVerdict {
+  if (!liveCommit) return { kind: 'ok' };
+  if (!head) {
+    return {
+      kind: 'warn',
+      message: `could not read this checkout's git HEAD, so cannot confirm it contains the live publish (${liveCommit})`,
+    };
+  }
+  if (liveCommit === head || isAncestor === true) return { kind: 'ok' };
+  if (isAncestor === false) {
+    return {
+      kind: 'refuse',
+      message: `the live catalog was published from ${liveCommit}, which is not an ancestor of HEAD ${head}`,
+    };
+  }
+  return {
+    kind: 'refuse',
+    message: `the live catalog was published from ${liveCommit}, which this clone does not have (git fetch?)`,
   };
 }
 

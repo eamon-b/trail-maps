@@ -15,8 +15,10 @@ import {
   planUpload,
   previousIndexById,
   serializeIndex,
+  sourceCommitVerdict,
   trailFileProblems,
   trailIdProblem,
+  unapprovedRemovals,
   type MobileIndexEntry,
 } from './trail-data-catalog.js';
 
@@ -100,6 +102,63 @@ describe('buildCatalog', () => {
   });
 });
 
+describe('buildCatalog sourceCommit', () => {
+  const commit = 'c'.repeat(40);
+
+  it('records the commit only when known', () => {
+    expect(buildCatalog([entry()], NOW, commit).sourceCommit).toBe(commit);
+    expect('sourceCommit' in buildCatalog([entry()], NOW, null)).toBe(false);
+    expect('sourceCommit' in buildCatalog([entry()], NOW)).toBe(false);
+  });
+
+  it('is ignored by the diff, so a new commit alone never re-publishes', () => {
+    const live = buildCatalog([entry()], NOW, 'a'.repeat(40));
+    const local = buildCatalog([entry()], NOW, commit);
+    expect(catalogsDiffer(diffCatalogs(local, live))).toBe(false);
+  });
+});
+
+describe('unapprovedRemovals', () => {
+  it('names live trails the local catalog drops, unless --remove named them', () => {
+    const live = buildCatalog([entry({ id: 'a' }), entry({ id: 'b' }), entry({ id: 'c' })], NOW);
+    const local = buildCatalog([entry({ id: 'a' })], NOW);
+    const diff = diffCatalogs(local, live);
+    expect(unapprovedRemovals(diff, new Set())).toEqual(['b', 'c']);
+    expect(unapprovedRemovals(diff, new Set(['b']))).toEqual(['c']);
+    expect(unapprovedRemovals(diff, new Set(['b', 'c']))).toEqual([]);
+    expect(unapprovedRemovals(diffCatalogs(local, null), new Set())).toEqual([]);
+  });
+});
+
+describe('sourceCommitVerdict', () => {
+  const live = 'a'.repeat(40);
+  const head = 'b'.repeat(40);
+
+  it('passes when the live commit is in HEAD\'s history, or is HEAD', () => {
+    expect(sourceCommitVerdict(live, head, true)).toEqual({ kind: 'ok' });
+    expect(sourceCommitVerdict(head, head, null)).toEqual({ kind: 'ok' });
+  });
+
+  it('refuses a checkout that has not seen the live publish', () => {
+    // The regression: a stale checkout that rebuilt stamps its files `now`,
+    // so the updatedAt rollback check let it revert newer live data.
+    expect(sourceCommitVerdict(live, head, false).kind).toBe('refuse');
+    expect(sourceCommitVerdict(live, head, null)).toEqual({
+      kind: 'refuse',
+      message: expect.stringMatching(/does not have/),
+    });
+  });
+
+  it('has nothing to compare against a catalog without a commit', () => {
+    expect(sourceCommitVerdict(undefined, head, null)).toEqual({ kind: 'ok' });
+    expect(sourceCommitVerdict(undefined, null, null)).toEqual({ kind: 'ok' });
+  });
+
+  it('warns, rather than refusing, when git cannot read HEAD', () => {
+    expect(sourceCommitVerdict(live, null, null).kind).toBe('warn');
+  });
+});
+
 describe('validation', () => {
   it('accepts plain trail ids and refuses unsafe or reserved ones', () => {
     expect(trailIdProblem('hume-and-hovell')).toBeNull();
@@ -139,6 +198,14 @@ describe('parseCatalog', () => {
     expect(() => parseCatalog(JSON.stringify({ ...catalog, format: 2 }))).toThrow(/format/);
     expect(() => parseCatalog('{"format":1}')).toThrow(/trails/);
     expect(() => parseCatalog('<html>')).toThrow();
+  });
+
+  it('reads a sourceCommit and refuses one that is not a commit id', () => {
+    const catalog = buildCatalog([entry()], NOW, 'd'.repeat(40));
+    expect(parseCatalog(JSON.stringify(catalog)).sourceCommit).toBe('d'.repeat(40));
+    expect(() => parseCatalog(JSON.stringify({ ...catalog, sourceCommit: 'main' }))).toThrow(
+      /sourceCommit/
+    );
   });
 });
 

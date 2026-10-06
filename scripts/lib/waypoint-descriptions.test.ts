@@ -7,6 +7,7 @@ import {
   MAX_DESCRIPTION_LENGTH,
   loadCuratedDescriptions,
   parseCuratedDescriptions,
+  planDescriptionSync,
 } from './waypoint-descriptions';
 import type { WaypointRegistry } from './waypoint-ids';
 
@@ -104,6 +105,47 @@ describe('applyCuratedDescriptions', () => {
   });
 });
 
+describe('planDescriptionSync', () => {
+  const authored = [
+    { waypointId: 'w_aaaa0001', description: 'Same text.' },
+    { waypointId: 'w_aaaa0002', description: 'New wording.' },
+    { waypointId: 'w_aaaa0003', description: 'Brand new.' },
+  ];
+
+  it('sends only what differs, and withdraws what the file dropped', () => {
+    const plan = planDescriptionSync(authored, [
+      { waypointId: 'w_aaaa0001', description: 'Same text.' },
+      { waypointId: 'w_aaaa0002', description: 'Old wording.' },
+      { waypointId: 'w_zzzz0009', description: 'Removed from the file.' },
+      { waypointId: 'w_bbbb0005', description: 'Also removed.' },
+    ]);
+    expect(plan.puts.map(entry => entry.waypointId)).toEqual(['w_aaaa0002', 'w_aaaa0003']);
+    expect(plan.withdrawals).toEqual(['w_bbbb0005', 'w_zzzz0009']);
+    expect(plan.unchanged).toBe(1);
+  });
+
+  it('does not re-withdraw an id the API already holds as a tombstone', () => {
+    const plan = planDescriptionSync([], [{ waypointId: 'w_cccc0001', description: '' }]);
+    expect(plan.withdrawals).toEqual([]);
+  });
+
+  it('re-sends text for an id that was withdrawn and is authored again', () => {
+    const plan = planDescriptionSync(
+      [{ waypointId: 'w_cccc0001', description: 'Back.' }],
+      [{ waypointId: 'w_cccc0001', description: '' }]
+    );
+    expect(plan.puts).toHaveLength(1);
+  });
+
+  it('sends everything against an empty live set', () => {
+    expect(planDescriptionSync(authored, [])).toEqual({
+      puts: authored,
+      withdrawals: [],
+      unchanged: 0,
+    });
+  });
+});
+
 describe('loadCuratedDescriptions', () => {
   it('returns nothing for a trail directory without a descriptions file', () => {
     expect(loadCuratedDescriptions(path.join(TRAILS_DIR, 'no-such-trail'), 'no-such-trail')).toEqual([]);
@@ -147,7 +189,11 @@ describe('committed descriptions.json files', () => {
     const entries = loadCuratedDescriptions(path.join(TRAILS_DIR, dir), trailId);
     expect(entries.length).toBeGreaterThan(0);
 
-    const knownIds = new Set((registry[trailId] ?? []).map(entry => entry.id));
+    // Retired ids are no waypoint in the current build: prose keyed to one
+    // would never be shown.
+    const knownIds = new Set(
+      (registry[trailId] ?? []).filter(entry => !entry.retired).map(entry => entry.id)
+    );
     const unknown = entries.filter(entry => !knownIds.has(entry.waypointId));
     expect(unknown.map(entry => `${entry.waypointId} (${entry.name ?? '?'})`)).toEqual([]);
   });

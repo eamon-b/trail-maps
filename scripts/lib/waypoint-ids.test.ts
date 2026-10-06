@@ -183,9 +183,63 @@ describe('assignWaypointIds', () => {
       registry,
     );
     expect(ids).toEqual([keepId]);
-    // The retired waypoint's entry survives (never deleted).
+    // The retired waypoint's entry survives (never deleted), marked retired.
     expect(registry[TRAIL]).toHaveLength(2);
-    expect(registry[TRAIL].some((e) => e.id === dropId)).toBe(true);
+    expect(registry[TRAIL].find((e) => e.id === dropId)?.retired).toBe(true);
+    expect(registry[TRAIL].find((e) => e.id === keepId)?.retired).toBeUndefined();
+  });
+
+  it('never hands a retired id to a differently-named newcomer nearby', () => {
+    // The regression: a new waypoint of the same type within 100 m of a
+    // removed one inherited its id, and with it its comments and description.
+    const registry: WaypointRegistry = {};
+    const [oldId] = assignWaypointIds(
+      TRAIL,
+      [{ name: 'Old Tank', type: 'water-tank', lat: -33.5, lon: 150.5 }],
+      registry,
+    );
+    assignWaypointIds(TRAIL, [], registry); // removed from the source data
+
+    const [newId] = assignWaypointIds(
+      TRAIL,
+      [{ name: 'New Tank', type: 'water-tank', lat: movedNorth(-33.5, 40), lon: 150.5 }],
+      registry,
+    );
+    expect(newId).not.toBe(oldId);
+    expect(registry[TRAIL].find((e) => e.id === oldId)?.retired).toBe(true);
+    expect(registry[TRAIL].find((e) => e.id === newId)?.retired).toBeUndefined();
+  });
+
+  it('gives a retired id back to the same waypoint when it returns, and un-retires it', () => {
+    const registry: WaypointRegistry = {};
+    const hut = { name: 'Returning Hut', type: 'hut', lat: -35.0, lon: 149.0 };
+    const [id] = assignWaypointIds(TRAIL, [hut], registry);
+    assignWaypointIds(TRAIL, [], registry);
+    expect(registry[TRAIL][0].retired).toBe(true);
+
+    const [back] = assignWaypointIds(
+      TRAIL,
+      [{ ...hut, lat: movedNorth(hut.lat, 30) }],
+      registry,
+    );
+    expect(back).toBe(id);
+    expect(registry[TRAIL][0].retired).toBeUndefined();
+    expect(registry[TRAIL]).toHaveLength(1);
+  });
+
+  it('still lets a live entry follow a rename (only retired entries need the name)', () => {
+    const registry: WaypointRegistry = {};
+    const [id] = assignWaypointIds(
+      TRAIL,
+      [{ name: 'Creek Camp', type: 'campsite', lat: -36.0, lon: 148.0 }],
+      registry,
+    );
+    const [renamed] = assignWaypointIds(
+      TRAIL,
+      [{ name: 'Creek Campsite', type: 'campsite', lat: -36.0, lon: 148.0 }],
+      registry,
+    );
+    expect(renamed).toBe(id);
   });
 
   it('(e) extends to 12 hex chars when the 8-char mint collides with an existing entry', () => {
@@ -262,6 +316,20 @@ describe('assignWaypointIds', () => {
 });
 
 describe('stringifyRegistry', () => {
+  it('writes `retired` last, and only on retired entries', () => {
+    const registry: WaypointRegistry = {
+      t: [
+        { id: 'w_bbbbbbbb', name: 'Gone', type: 'hut', lat: 1, lon: 2, retired: true },
+        { id: 'w_aaaaaaaa', name: 'Here', type: 'hut', lat: 3, lon: 4 },
+      ],
+    };
+    const parsed = JSON.parse(stringifyRegistry(registry)) as WaypointRegistry;
+    expect(parsed.t.map((e) => Object.keys(e))).toEqual([
+      ['id', 'name', 'type', 'lat', 'lon'],
+      ['id', 'name', 'type', 'lat', 'lon', 'retired'],
+    ]);
+  });
+
   it('sorts trails alphabetically and entries by id, with trailing newline', () => {
     const registry: WaypointRegistry = {
       zebra: [

@@ -20,9 +20,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { aggregateDailyToMonthly, type MonthlyClimate, type DailyClimateSeries } from '../src/lib/climate-aggregate.js';
 
-interface ClimateLocation {
+export interface ClimateLocation {
   name: string;
   waypointName?: string;
   lat: number;
@@ -63,7 +64,7 @@ interface ProcessedTrail {
   pois?: unknown[];
 }
 
-interface ClimateLocationData {
+export interface ClimateLocationData {
   name: string;
   lat: number;
   lon: number;
@@ -205,13 +206,37 @@ function findWaypointDistance(
 type FetchMode = 'missing' | 'force' | 'changed';
 
 /** Whether stored data still answers this configured location. */
-function isUnchanged(loc: ClimateLocation, stored: ClimateLocationData): boolean {
+export function isUnchanged(loc: ClimateLocation, stored: ClimateLocationData): boolean {
   return (
     stored.name === loc.name &&
     stored.lat === loc.lat &&
     stored.lon === loc.lon &&
     (loc.elevation === undefined || stored.elevation === loc.elevation)
   );
+}
+
+/**
+ * The elevation to store for a fetched location.
+ *
+ * - Configured (`climateLocations[].elevation`): that value, always. It is a
+ *   deliberate correction the temperatures were computed for, and
+ *   `isUnchanged` compares the stored value against it — overwriting it with
+ *   the waypoint's height made `--changed` see every corrected location as
+ *   changed and re-fetch it on every run, against a tight API quota.
+ * - Otherwise the height the API used, unless the matched waypoint's height
+ *   is more than 200 m away from it (the terrain model smoothing a peak or a
+ *   gorge), in which case the waypoint's is the better label.
+ */
+export function storedElevation(
+  configured: number | undefined,
+  apiElevation: number,
+  waypointElevation: number | undefined
+): number {
+  if (configured !== undefined) return configured;
+  if (waypointElevation && Math.abs(waypointElevation - apiElevation) > 200) {
+    return waypointElevation;
+  }
+  return apiElevation;
 }
 
 async function processTrail(trailDir: string, mode: FetchMode): Promise<boolean> {
@@ -275,24 +300,21 @@ async function processTrail(trailDir: string, mode: FetchMode): Promise<boolean>
       const response = await fetchWithRetry(loc.lat, loc.lon, loc.elevation);
       const monthly = aggregateDailyToMonthly(response.daily);
 
+      // Add distance along trail if waypoint reference exists
+      const wpData =
+        loc.waypointName && waypoints.length > 0
+          ? findWaypointDistance(loc.waypointName, waypoints)
+          : null;
+
       const locationData: ClimateLocationData = {
         name: loc.name,
         lat: loc.lat,
         lon: loc.lon,
-        elevation: response.elevation,
+        elevation: storedElevation(loc.elevation, response.elevation, wpData?.elevation),
         monthly,
       };
-
-      // Add distance along trail if waypoint reference exists
-      if (loc.waypointName && waypoints.length > 0) {
-        const wpData = findWaypointDistance(loc.waypointName, waypoints);
-        if (wpData) {
-          locationData.distanceAlongTrail = wpData.distance;
-          // Use waypoint elevation if API elevation seems off
-          if (wpData.elevation && Math.abs(wpData.elevation - response.elevation) > 200) {
-            locationData.elevation = wpData.elevation;
-          }
-        }
+      if (wpData) {
+        locationData.distanceAlongTrail = wpData.distance;
       }
 
       locations.push(locationData);
@@ -421,7 +443,11 @@ async function main() {
   console.log(`Done. Updated ${updatedCount} trail(s) with climate data.`);
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+// Guarded so a test can import the helpers without fetching anything.
+const invokedPath = process.argv[1];
+if (typeof invokedPath === 'string' && path.resolve(invokedPath) === fileURLToPath(import.meta.url)) {
+  main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+}

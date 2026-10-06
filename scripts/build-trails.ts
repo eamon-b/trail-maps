@@ -28,6 +28,7 @@ import { countNoiseByReason, dropNoisePois } from '../src/lib/poi-noise.js';
 import { findDenseStretches, thinUrbanPois } from '../src/lib/poi-urban.js';
 import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
 import { BUNDLED_PLAN_FILLS, inlinePlanShell } from './lib/plan-shell.js';
+import { fillTemplate } from './lib/fill-template.js';
 
 /** Calculate haversine distance in km */
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -321,7 +322,8 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
     resolveWaypoints: (gpxWaypoints, resolvedConfig) =>
       resolveTrailWaypoints(trailDir, resolvedConfig, gpxWaypoints),
 
-    // Stable ids come from the committed, append-only registry.
+    // Stable ids come from the committed registry (entries are never deleted;
+    // ones this build does not match are marked retired).
     mintWaypointIds: (waypoints, resolvedConfig) =>
       assignWaypointIds(resolvedConfig.id, waypoints, registry),
 
@@ -441,6 +443,15 @@ function renderDataSource(config: TrailConfig): string {
   );
 }
 
+/** The placeholders every trail page shares, escaped for where they land. */
+function pageFills(trail: ProcessedTrail): Record<string, string> {
+  return {
+    TRAIL_ID: escapeJsString(trail.config.id),
+    TRAIL_NAME: escapeHtml(trail.config.name),
+    TRAIL_SHORT_NAME: escapeHtml(trail.config.shortName || trail.config.name),
+  };
+}
+
 /**
  * Generate an HTML page for a trail from the template
  */
@@ -452,15 +463,13 @@ function generateTrailPage(trail: ProcessedTrail): void {
 
   const template = fs.readFileSync(TRAIL_TEMPLATE_PATH, 'utf-8');
 
-  // Replace placeholders with escaped values
-  const html = template
-    .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
-    .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
-    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name))
-    .replace(/\{\{TRAIL_REGION\}\}/g, escapeHtml(trail.config.region || 'Unknown'))
-    // Function form: the rendered note is already-escaped HTML and must not be
-    // reinterpreted for `$&`-style replacement patterns.
-    .replace(/\{\{TRAIL_DATA_SOURCE\}\}/g, () => renderDataSource(trail.config));
+  // Replace placeholders with escaped values. `fillTemplate` inserts them
+  // literally (no `$&`-style patterns) in a single pass.
+  const html = fillTemplate(template, {
+    ...pageFills(trail),
+    TRAIL_REGION: escapeHtml(trail.config.region || 'Unknown'),
+    TRAIL_DATA_SOURCE: renderDataSource(trail.config),
+  });
 
   // Create trail directory and write HTML
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);
@@ -491,10 +500,7 @@ function generatePlanPage(trail: ProcessedTrail): void {
     BUNDLED_PLAN_FILLS
   );
 
-  const html = template
-    .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
-    .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
-    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name));
+  const html = fillTemplate(template, pageFills(trail));
 
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);
   if (!fs.existsSync(trailPageDir)) {
@@ -518,10 +524,7 @@ function generateClimatePage(trail: ProcessedTrail): void {
   const template = fs.readFileSync(CLIMATE_TEMPLATE_PATH, 'utf-8');
 
   // Replace placeholders with escaped values
-  const html = template
-    .replace(/\{\{TRAIL_ID\}\}/g, escapeJsString(trail.config.id))
-    .replace(/\{\{TRAIL_NAME\}\}/g, escapeHtml(trail.config.name))
-    .replace(/\{\{TRAIL_SHORT_NAME\}\}/g, escapeHtml(trail.config.shortName || trail.config.name));
+  const html = fillTemplate(template, pageFills(trail));
 
   // Create trail directory if it doesn't exist
   const trailPageDir = path.join(TRAIL_PAGES_DIR, trail.config.id);
@@ -685,11 +688,15 @@ async function main() {
   fs.writeFileSync(indexPath, JSON.stringify(trailIndex, null, 2));
   console.log(`\nTrail index written to ${indexPath}`);
 
-  // Write the (append-only) waypoint-id registry back, deterministically
-  // sorted for stable git diffs.
+  // Write the waypoint-id registry back (entries never deleted, unmatched ones
+  // marked retired), deterministically sorted for stable git diffs.
   fs.writeFileSync(WAYPOINT_IDS_PATH, stringifyRegistry(waypointRegistry));
-  const registryCount = Object.values(waypointRegistry).reduce((sum, e) => sum + e.length, 0);
-  console.log(`Waypoint-id registry written to ${WAYPOINT_IDS_PATH} (${registryCount} entries)`);
+  const registryEntries = Object.values(waypointRegistry).flat();
+  const retiredCount = registryEntries.filter(e => e.retired).length;
+  console.log(
+    `Waypoint-id registry written to ${WAYPOINT_IDS_PATH} ` +
+      `(${registryEntries.length} entries, ${retiredCount} retired)`
+  );
 
   // A trail that threw wrote no output, so the generated data is stale/absent
   // for it — fail the build rather than letting a silent gap ship.

@@ -190,3 +190,43 @@ export function applyCuratedDescriptions(
     unmatchedIds: descriptions.map(d => d.waypointId).filter(id => !matched.has(id)),
   };
 }
+
+/** A description as the comments API currently serves it ('' = withdrawn). */
+export interface LiveDescription {
+  waypointId: string;
+  description: string;
+}
+
+/** What `upload-descriptions` has to send to make the API match the file. */
+export interface DescriptionSyncPlan {
+  /** Authored entries the API lacks or holds different text for. */
+  puts: CuratedDescription[];
+  /** Ids the API serves live text for that the file no longer lists: PUT ''. */
+  withdrawals: string[];
+  /** Authored entries the API already holds verbatim; nothing to send. */
+  unchanged: number;
+}
+
+/**
+ * Diff the authored file against the live set.
+ *
+ * The file is the source of truth, so an id the API still serves prose for
+ * but the file has dropped is withdrawn (the API's empty-string tombstone, so
+ * phones that cached the text learn it is gone); an id already withdrawn live
+ * is left alone. Unchanged text is not re-sent at all — the API no longer
+ * bumps `updated_at` for it either, but there is no reason to spend the
+ * request. Outputs are in authored / id order, so a dry run reads stably.
+ */
+export function planDescriptionSync(
+  authored: readonly CuratedDescription[],
+  live: readonly LiveDescription[]
+): DescriptionSyncPlan {
+  const liveById = new Map(live.map(row => [row.waypointId, row.description]));
+  const authoredIds = new Set(authored.map(entry => entry.waypointId));
+  const puts = authored.filter(entry => liveById.get(entry.waypointId) !== entry.description);
+  const withdrawals = [...liveById]
+    .filter(([id, text]) => text !== '' && !authoredIds.has(id))
+    .map(([id]) => id)
+    .sort();
+  return { puts, withdrawals, unchanged: authored.length - puts.length };
+}

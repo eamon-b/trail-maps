@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { describeDiff, localDataProblems, parseArgs, rollbacks } from './publish-trail-data.js';
+import {
+  describeDiff,
+  gitHead,
+  gitIsAncestor,
+  localDataProblems,
+  parseArgs,
+  rollbacks,
+} from './publish-trail-data.js';
 import { buildCatalog, diffCatalogs, digestTrailFile, type MobileIndexEntry } from './lib/trail-data-catalog.js';
 
 function trailFile(id: string, extra: Record<string, unknown> = {}): Buffer {
@@ -19,12 +26,39 @@ function indexFor(files: Record<string, Buffer>): MobileIndexEntry[] {
 }
 
 describe('parseArgs', () => {
-  it('reads the four flags and refuses anything else', () => {
-    expect(parseArgs([])).toEqual({ all: false, dryRun: false, check: false, force: false });
-    expect(parseArgs(['--dry-run', '--all'])).toEqual({ all: true, dryRun: true, check: false, force: false });
+  it('reads the flags and refuses anything else', () => {
+    expect(parseArgs([])).toEqual({ all: false, dryRun: false, check: false, force: false, remove: [] });
+    expect(parseArgs(['--dry-run', '--all'])).toEqual({
+      all: true,
+      dryRun: true,
+      check: false,
+      force: false,
+      remove: [],
+    });
     expect(parseArgs(['--check']).check).toBe(true);
     expect(parseArgs(['--force']).force).toBe(true);
     expect(() => parseArgs(['--yes'])).toThrow(/Unknown argument/);
+  });
+
+  it('collects --remove ids, and requires one', () => {
+    expect(parseArgs(['--remove', 'heysen', '--remove=aawt', '--dry-run']).remove).toEqual([
+      'heysen',
+      'aawt',
+    ]);
+    expect(() => parseArgs(['--remove'])).toThrow(/requires a trail id/);
+    expect(() => parseArgs(['--remove', '--force'])).toThrow(/requires a trail id/);
+  });
+});
+
+describe('git helpers', () => {
+  // Best-effort by design: where git or the repository is unavailable these
+  // answer null, and the publish only warns.
+  const head = gitHead();
+
+  it.skipIf(head === null)('reads HEAD and answers ancestry', () => {
+    expect(head).toMatch(/^[0-9a-f]{40,64}$/);
+    expect(gitIsAncestor(head!, head!)).toBe(true);
+    expect(gitIsAncestor('0'.repeat(head!.length), head!)).toBeNull();
   });
 });
 

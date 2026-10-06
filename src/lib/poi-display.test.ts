@@ -340,6 +340,54 @@ describe('reversing a trail', () => {
       expect(m.distanceAlongTrail).toBeCloseTo(31, 5); // 62 - 40 + (12 - 3)
     });
 
+    // The main line beside that alternate, 0.1 km east, km 30-42 one per km.
+    const mainBeside = Array.from({ length: 13 }, (_, i) => ({
+      lat: -42 + i * 0.009,
+      lon: 140.0012,
+      dist: 30 + i,
+    }));
+
+    it('keeps a main-route POI beside a parallel alternate on the main line', () => {
+      // 0.04 km from the main line (as the fetch recorded), 0.06 km from the alternate.
+      const onMain = poi({ distanceAlongTrail: 33, lat: -42 + 3 * 0.009, lon: 140.0007, distanceFromTrail: 0.041 });
+      const [m] = mirrorPoiDistances([onMain], 62, { ...variants, mainLine: mainBeside })!;
+      expect(m.distanceAlongTrail).toBe(29);
+    });
+
+    it('measures to the main line, not its nearest vertex, at a sparse junction', () => {
+      // Main points 2 km apart; the POI sits 0.05 km off the middle of that
+      // segment, a km from either vertex, and 0.06 km from the alternate.
+      const sparseMain = [
+        { lat: -42 + 2 * 0.009, lon: 140.0013, dist: 32 },
+        { lat: -42 + 4 * 0.009, lon: 140.0013, dist: 34 },
+      ];
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 33, lat: -42 + 3 * 0.009, lon: 140.0007, distanceFromTrail: 0.05 })],
+        62,
+        { ...variants, mainLine: sparseMain }
+      )!;
+      expect(m.distanceAlongTrail).toBe(29);
+    });
+
+    it('still moves an alternate POI the main line does not explain', () => {
+      const farMain = mainBeside.map(p => ({ ...p, lon: 141 }));
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 33, lat: -42 + 3 * 0.009, lon: 140, distanceFromTrail: 0 })],
+        62,
+        { ...variants, mainLine: farMain }
+      )!;
+      expect(m.distanceAlongTrail).toBeCloseTo(31, 5);
+    });
+
+    it('mirrors a POI on an alternate with one junction about the main line', () => {
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 33, lat: -42 + 3 * 0.009, lon: 140, distanceFromTrail: 0 })],
+        62,
+        { alternates: [{ ...variants.alternates[0], endDistance: undefined }] }
+      )!;
+      expect(m.distanceAlongTrail).toBe(29);
+    });
+
     it('mirrors a main-route POI in a variant\'s span about the main line', () => {
       const [m] = mirrorPoiDistances(
         [poi({ distanceAlongTrail: 22, lat: -35, lon: 138, distanceFromTrail: 0.05 })],

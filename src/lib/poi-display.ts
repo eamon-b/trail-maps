@@ -329,7 +329,9 @@ export function visiblePois(
  *
  * Pass the trail's variants so a POI found along a side trip, terminus or
  * alternate is moved with that variant (see `variantOf`) rather than mirrored
- * about the main line.
+ * about the main line. Pass the main line too (`variants.mainLine`, the track
+ * points): a POI is moved onto a variant only when that variant explains its
+ * cross-track distance better than the main line does.
  */
 export function mirrorPoiDistances<P extends MirrorablePoi>(
   pois: readonly P[] | undefined,
@@ -338,13 +340,16 @@ export function mirrorPoiDistances<P extends MirrorablePoi>(
 ): P[] | undefined {
   if (!pois) return undefined;
   const attached = [
-    ...(variants.alternates ?? []).map(v => ({ v, alternate: true })),
+    // An alternate without both junctions is not reversed (`reverseAlternates`
+    // leaves it as it is), so its POIs mirror about the main line as well.
+    ...(variants.alternates ?? []).filter(v => v.endDistance != null).map(v => ({ v, alternate: true })),
     ...(variants.sideTrips ?? []).map(v => ({ v, alternate: false })),
   ].filter(({ v }) => v.startDistance != null && (v.points?.length ?? 0) > 0);
+  const mainLine = variants.mainLine ?? [];
 
   return pois
     .map(poi => {
-      const on = attached.length > 0 ? variantOf(poi, attached, totalDistance) : null;
+      const on = attached.length > 0 ? variantOf(poi, attached, totalDistance, mainLine) : null;
       let km: number;
       if (!on) {
         km = totalDistance - poi.distanceAlongTrail;
@@ -385,12 +390,18 @@ export interface PoiMirrorVariant {
 export interface PoiMirrorVariants {
   alternates?: readonly PoiMirrorVariant[];
   sideTrips?: readonly PoiMirrorVariant[];
+  /**
+   * The main route's points (`{ lat, lon, dist }`; unknown so any track point
+   * fits). Without it a POI in a variant's span cannot be checked against the
+   * main line, and goes to the variant whenever the variant's distance fits.
+   */
+  mainLine?: readonly unknown[];
 }
 
 /**
  * Slack (km) between a POI's recorded cross-track distance and its distance to
- * a variant's nearest *vertex*: the phone's variant lines are thinned, so the
- * nearest vertex can sit a little further off than the line itself.
+ * a variant's line: the phone's variant lines are thinned, so the line can sit
+ * a little further off than the one the fetch measured against.
  */
 const VARIANT_MATCH_SLACK_KM = 0.15;
 
@@ -403,16 +414,22 @@ const VARIANT_MATCH_SLACK_KM = 0.15;
  * POIs (km 68-79 on a 62 km trail) all clamped to km 0, and Pine Valley Hut
  * landed on the wrong side of its junction. A POI belongs to a variant when its
  * km falls inside the variant's span and its recorded cross-track distance is
- * the distance to that variant's line. A km past the trail's end can only be
- * on a variant, so the nearest one in span takes it.
+ * the distance to that variant's line — and the main line does not explain it
+ * as well: where an alternate runs beside the route, or near a junction, a POI
+ * the fetch measured against the main line also sits at about its recorded
+ * distance from the variant (Te Araroa's Queenstown shops were moved 80 km).
+ * The main line wins a tie. A km past the trail's end can only be on a
+ * variant, so the nearest one in span takes it.
  */
 function variantOf<V extends { v: PoiMirrorVariant }>(
   poi: MirrorablePoi,
   attached: readonly V[],
-  totalDistance: number
+  totalDistance: number,
+  mainLine: readonly unknown[]
 ): V | null {
   if (poi.lat == null || poi.lon == null) return null;
   const beyondEnd = poi.distanceAlongTrail > totalDistance;
+  let mainGapKm: number | undefined;
   let best: { entry: V; gapKm: number } | null = null;
   for (const entry of attached) {
     const start = entry.v.startDistance as number;
@@ -420,26 +437,77 @@ function variantOf<V extends { v: PoiMirrorVariant }>(
     if (poi.distanceAlongTrail < start - 0.01 || poi.distanceAlongTrail > start + length + 0.01) {
       continue;
     }
-    const nearestKm = nearestVertexKm(poi.lat, poi.lon, entry.v.points ?? []);
+    const nearestKm = nearestLineKm(poi.lat, poi.lon, entry.v.points ?? []);
     const gapKm = Math.abs(nearestKm - (poi.distanceFromTrail ?? 0));
     if (!beyondEnd && gapKm > VARIANT_MATCH_SLACK_KM) continue;
+    if (!beyondEnd && mainLine.length > 0) {
+      mainGapKm ??= Math.abs(
+        nearestLineKm(poi.lat, poi.lon, mainLineNear(mainLine, poi.distanceAlongTrail)) -
+          (poi.distanceFromTrail ?? 0)
+      );
+      if (mainGapKm <= gapKm) continue;
+    }
     if (!best || gapKm < best.gapKm) best = { entry, gapKm };
   }
   return best?.entry ?? null;
 }
 
-/** Distance (km) to the nearest vertex, equirectangular: corridor-scale distances only. */
-function nearestVertexKm(lat: number, lon: number, points: readonly unknown[]): number {
+/**
+ * The main-line points within a few km of a POI's km, when the points carry
+ * `dist` (all of them otherwise). A POI measured against the main line sits
+ * beside the stretch at its own km, so this is all the main line it needs, and
+ * it keeps a 100,000-point track from being scanned once per candidate POI.
+ */
+const MAIN_LINE_WINDOW_KM = 2;
+
+function mainLineNear(points: readonly unknown[], km: number): readonly unknown[] {
+  const dist = (i: number) => (points[i] as { dist?: unknown }).dist;
+  if (typeof dist(0) !== 'number') return points;
+  // Points are in km order: binary-search the window's first point.
+  let lo = 0;
+  let hi = points.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((dist(mid) as number) < km - MAIN_LINE_WINDOW_KM) lo = mid + 1;
+    else hi = mid;
+  }
+  let end = lo;
+  while (end < points.length && (dist(end) as number) <= km + MAIN_LINE_WINDOW_KM) end++;
+  // Keep one point either side so a sparse (thinned) line still has a vertex
+  // to measure to.
+  return points.slice(Math.max(0, lo - 1), Math.min(points.length, end + 1));
+}
+
+/**
+ * Distance (km) to the nearest point of the line through `points`,
+ * equirectangular: corridor-scale distances only. To the line, not its
+ * vertices: the fetch records the distance to a segment, and at a junction the
+ * nearest *vertex* of the main line can be further off than a variant's.
+ */
+function nearestLineKm(lat: number, lon: number, points: readonly unknown[]): number {
   const kmPerDegLat = 111.32;
   const kmPerDegLon = kmPerDegLat * Math.cos((lat * Math.PI) / 180);
   let best = Infinity;
+  let prev: { x: number; y: number } | null = null;
   for (const point of points) {
     const p = point as { lat?: unknown; lon?: unknown };
     if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
-    const dy = (p.lat - lat) * kmPerDegLat;
-    const dx = (p.lon - lon) * kmPerDegLon;
-    const d = dx * dx + dy * dy;
+    // The POI is the origin.
+    const cur = { x: (p.lon - lon) * kmPerDegLon, y: (p.lat - lat) * kmPerDegLat };
+    let d = cur.x * cur.x + cur.y * cur.y;
+    if (prev) {
+      const dx = cur.x - prev.x;
+      const dy = cur.y - prev.y;
+      const len2 = dx * dx + dy * dy;
+      if (len2 > 0) {
+        const t = Math.max(0, Math.min(1, -(prev.x * dx + prev.y * dy) / len2));
+        const x = prev.x + t * dx;
+        const y = prev.y + t * dy;
+        d = Math.min(d, x * x + y * y);
+      }
+    }
     if (d < best) best = d;
+    prev = cur;
   }
   return Math.sqrt(best);
 }

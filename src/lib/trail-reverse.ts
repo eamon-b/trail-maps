@@ -247,6 +247,7 @@ export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
           pois: mirrorPoiDistances(trail.pois, totalDist, {
             alternates: trail.alternates,
             sideTrips: trail.sideTrips,
+            mainLine: trail.track.points,
           }),
         }
       : {}),

@@ -19,8 +19,8 @@
  */
 
 import { initPlanViewer } from './trails/plan-viewer';
-import { savePlanDocument } from './trails/plan-state';
-import { getQueryParam } from './web-utils';
+import { loadPlanDocument, loadPlanState, savePlanDocument } from './trails/plan-state';
+import { SITE_ROOT, generatedDataUrl, getQueryParam } from './web-utils';
 import { ApiError, getApiBase } from './api/client';
 import { loadSession } from './api/session';
 import { fetchMyPlan, fetchSharedPlan, putPlan } from './api/plans';
@@ -75,7 +75,11 @@ function applyIdentity(shared: SharedPlanResponse, shareId: string): void {
 /** The trail this site carries under that id, or null when it carries none. */
 async function loadTrail(trailId: string): Promise<Record<string, unknown> | null> {
   try {
-    const response = await fetch(`/data/generated/${encodeURIComponent(trailId)}.json`);
+    // Relative to this top-level page, as index.html's fetch is, so a site
+    // served from a sub-path still finds its data.
+    const response = await fetch(
+      generatedDataUrl(`${encodeURIComponent(trailId)}.json`, SITE_ROOT.topLevel, document.baseURI),
+    );
     if (!response.ok) return null;
     return (await response.json()) as Record<string, unknown>;
   } catch {
@@ -90,6 +94,10 @@ async function loadTrail(trailId: string): Promise<Record<string, unknown> | nul
  * unless they already have a plan for this trail, in which case the copy takes
  * over that id after they confirm — the server allows exactly one live plan per
  * trail per user, so any other id would be refused as `plan_exists`.
+ *
+ * "Already have a plan" covers this browser as well as the account: a plan
+ * that never synced (made before the browser was linked) lives only in
+ * `localStorage`, and the copy is written over it there.
  */
 async function copyToMyPlans(shared: SharedPlanResponse): Promise<void> {
   const session = loadSession();
@@ -97,18 +105,22 @@ async function copyToMyPlans(shared: SharedPlanResponse): Promise<void> {
 
   const button = byId<HTMLButtonElement>('copy-to-plans');
   if (button) button.disabled = true;
+  // The button stays disabled only once the page is on its way to the copy;
+  // a Cancel or a failure hands it back.
+  let leaving = false;
   try {
     const existing = await fetchMyPlan(session, shared.trailId);
-    let id: string;
-    if (existing.entry) {
+    const hasLocalPlan =
+      loadPlanDocument(shared.trailId) !== null || loadPlanState(shared.trailId) !== null;
+    if (existing.entry || hasLocalPlan) {
       const confirmed = window.confirm(
-        'You already have a plan for this trail. Replace it with this shared one?',
+        existing.entry
+          ? 'You already have a plan for this trail. Replace it with this shared one?'
+          : 'This browser already has a plan for this trail. Replace it with this shared one?',
       );
       if (!confirmed) return;
-      id = existing.entry.id;
-    } else {
-      id = crypto.randomUUID();
     }
+    const id = existing.entry ? existing.entry.id : crypto.randomUUID();
 
     const copy: PlanDocument = {
       ...shared.document,
@@ -120,14 +132,16 @@ async function copyToMyPlans(shared: SharedPlanResponse): Promise<void> {
     // Written locally too, so the trail's own plan page opens on it straight
     // away instead of waiting for its first sync.
     savePlanDocument(shared.trailId, stored.document);
+    leaving = true;
     window.location.href = `./trails/${encodeURIComponent(shared.trailId)}/plan.html`;
   } catch (err) {
-    if (button) button.disabled = false;
     const sharedBy = byId('shared-by');
     if (sharedBy) {
       sharedBy.textContent =
         err instanceof ApiError ? `Could not copy: ${err.code}` : 'Could not reach the server.';
     }
+  } finally {
+    if (button && !leaving) button.disabled = false;
   }
 }
 

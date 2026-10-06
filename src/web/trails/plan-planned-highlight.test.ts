@@ -9,10 +9,10 @@
  *
  *   resupply options (ids are what a selection stores)
  *
- *     w_1  Alpha    town          km 10.00
- *     w_2  Bravo    town-access   km 20.00  ┐ one turn-off, "Mill Road"
- *     w_3  Charlie  food          km 20.05  ┘
- *     w_5  Echo     town          km 40.00
+ *     w_001  Alpha    town          km 10.00
+ *     w_002  Bravo    town-access   km 20.00  ┐ one turn-off, "Mill Road"
+ *     w_003  Charlie  food          km 20.05  ┘
+ *     w_005  Echo     town          km 40.00
  *
  * Alpha and Echo are used for the assertions: each is a group of its own, so a
  * tick there plans that waypoint and nothing else, whatever the turn-off rule
@@ -113,11 +113,11 @@ function makeTrail() {
     track: { points, totalDistance: 50, totalAscent: 800, totalDescent: 100 },
     waypoints: [
       wp('w_start', 'Trailhead', 'endpoint', 0),
-      wp('w_1', 'Alpha', 'town', 10),
-      wp('w_2', 'Bravo', 'town-access', 20, { accessName: 'Mill Road', offTrailKm: 22 }),
-      wp('w_3', 'Charlie', 'food', 20.05, { accessName: 'Mill Road' }),
+      wp('w_001', 'Alpha', 'town', 10),
+      wp('w_002', 'Bravo', 'town-access', 20, { accessName: 'Mill Road', offTrailKm: 22 }),
+      wp('w_003', 'Charlie', 'food', 20.05, { accessName: 'Mill Road' }),
       wp('w_camp', 'Camp One', 'campsite', 25),
-      wp('w_5', 'Echo', 'town', 40),
+      wp('w_005', 'Echo', 'town', 40),
     ],
   };
 }
@@ -196,7 +196,7 @@ describe('before a resupply plan is made', () => {
 describe('with two stops planned', () => {
   it('badges exactly those rows on the Stops tab', async () => {
     await boot();
-    planExactly(['w_1', 'w_5']);
+    planExactly(['w_001', 'w_005']);
 
     tabButton('stops').click();
     expect(plannedStopNames()).toEqual(['Alpha', 'Echo']);
@@ -209,7 +209,7 @@ describe('with two stops planned', () => {
   it('badges the day cards the stops fall in, and names them', async () => {
     await boot();
     addCampStop(25);
-    planExactly(['w_1']);
+    planExactly(['w_001']);
 
     tabButton('days').click();
     // Day 1 runs km 0–25 and holds Alpha; day 2 runs 25–50 and holds nothing.
@@ -229,7 +229,7 @@ describe('with two stops planned', () => {
     // Camp at Echo itself, so the day ends on a planned stop — a row the day
     // plan names, not a waypoint record.
     addCampStop(40);
-    planExactly(['w_1', 'w_5']);
+    planExactly(['w_001', 'w_005']);
 
     tabButton('days').click();
     expect(plannedDatasheetNames()).toEqual(['Alpha', 'Echo']);
@@ -251,13 +251,13 @@ describe('changing the selection', () => {
   it('moves the badges with it', async () => {
     await boot();
     addCampStop(25);
-    planExactly(['w_1', 'w_5']);
+    planExactly(['w_001', 'w_005']);
 
     tabButton('stops').click();
     expect(plannedStopNames()).toEqual(['Alpha', 'Echo']);
 
     tabButton('resupply').click();
-    check('w_1').click(); // drop Alpha
+    check('w_001').click(); // drop Alpha
 
     tabButton('stops').click();
     expect(plannedStopNames()).toEqual(['Echo']);
@@ -273,7 +273,7 @@ describe('changing the selection', () => {
 
   it('survives a direction flip, where the same places are at mirrored km', async () => {
     await boot();
-    planExactly(['w_1', 'w_5']);
+    planExactly(['w_001', 'w_005']);
 
     ($('direction-toggle') as HTMLButtonElement).click();
 
@@ -284,7 +284,7 @@ describe('changing the selection', () => {
 
   it('comes back badged after a reload', async () => {
     await boot();
-    planExactly(['w_5']);
+    planExactly(['w_005']);
     vi.advanceTimersByTime(900);
 
     await boot();

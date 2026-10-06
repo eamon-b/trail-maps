@@ -8,11 +8,17 @@
  * the points into square cells once and then searches outwards from the query's
  * own cell, stopping as soon as the next ring cannot hold anything closer.
  *
- * Distance is measured in raw degrees (`dlat² + dlon²`), exactly as the linear
- * scan it replaces did: the index is a lookup accelerator, not a change of
- * metric, and over the few hundred metres a hover cares about the difference
- * from a true great-circle nearest is not observable. Ties resolve to the
- * earliest point, again matching the scan.
+ * By default distance is measured in raw degrees (`dlat² + dlon²`), exactly as
+ * the linear scan it replaces did. Ties resolve to the earliest point, again
+ * matching the scan.
+ *
+ * Raw degrees are not a distance away from the equator: a degree of longitude
+ * is `cos(latitude)` of a degree of latitude, so at 45° a point due east of the
+ * query counts for √2 times its real distance relative to one due north, and a
+ * fix between two parallel stretches can snap to the farther one. Pass
+ * `{ scaleLongitude: true }` to measure in an equirectangular projection
+ * instead — longitude scaled by the cosine of the points' mean latitude — which
+ * is as good as a great-circle nearest over the extent of one trail.
  *
  * Platform-neutral: no DOM, no Leaflet, so the mobile map can reuse it.
  */
@@ -21,6 +27,17 @@
 export interface IndexablePoint {
   lat: number;
   lon: number;
+}
+
+/** How a {@link PointIndex} measures "nearest". */
+export interface PointIndexOptions {
+  /**
+   * Scale longitude by `cos(mean latitude)` of the indexed points, both when
+   * bucketing and when querying, so nearness is in (approximate) ground
+   * distance rather than raw degrees. Off by default, which keeps the plain
+   * degree metric existing callers were written against.
+   */
+  scaleLongitude?: boolean;
 }
 
 /** Aim for roughly this many points per cell when sizing the grid. */
@@ -38,6 +55,10 @@ function range(from: number, to: number): number[] {
 
 export class PointIndex<P extends IndexablePoint> {
   private readonly points: readonly P[];
+  /** Each point's longitude times `lonScale` — the x the grid is built on. */
+  private readonly xs: number[];
+  /** 1 for raw degrees; `cos(mean latitude)` with `scaleLongitude`. */
+  private readonly lonScale: number;
   private readonly cells = new Map<number, number[]>();
   private readonly cellSize: number;
   private readonly minLat: number;
@@ -45,18 +66,30 @@ export class PointIndex<P extends IndexablePoint> {
   private readonly cols: number;
   private readonly rows: number;
 
-  constructor(points: readonly P[]) {
+  constructor(points: readonly P[], options: PointIndexOptions = {}) {
     this.points = points;
+
+    let lonScale = 1;
+    if (options.scaleLongitude && points.length > 0) {
+      let latSum = 0;
+      for (const point of points) latSum += point.lat;
+      // Floored so a track at a pole still has a usable (if squashed) grid.
+      lonScale = Math.max(Math.cos(((latSum / points.length) * Math.PI) / 180), 1e-6);
+    }
+    this.lonScale = lonScale;
+    this.xs = points.map(point => point.lon * lonScale);
 
     let minLat = Infinity;
     let maxLat = -Infinity;
     let minLon = Infinity;
     let maxLon = -Infinity;
-    for (const point of points) {
-      if (point.lat < minLat) minLat = point.lat;
-      if (point.lat > maxLat) maxLat = point.lat;
-      if (point.lon < minLon) minLon = point.lon;
-      if (point.lon > maxLon) maxLon = point.lon;
+    for (let i = 0; i < points.length; i++) {
+      const { lat } = points[i];
+      const x = this.xs[i];
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (x < minLon) minLon = x;
+      if (x > maxLon) maxLon = x;
     }
 
     if (points.length === 0) {
@@ -87,7 +120,7 @@ export class PointIndex<P extends IndexablePoint> {
     this.rows = Math.floor((maxLat - minLat) / this.cellSize) + 1;
 
     for (let i = 0; i < points.length; i++) {
-      const key = this.key(this.col(points[i].lon), this.row(points[i].lat));
+      const key = this.key(this.col(this.xs[i]), this.row(points[i].lat));
       const bucket = this.cells.get(key);
       if (bucket) bucket.push(i);
       else this.cells.set(key, [i]);
@@ -99,8 +132,9 @@ export class PointIndex<P extends IndexablePoint> {
     return this.points.length;
   }
 
-  private col(lon: number): number {
-    return Math.floor((lon - this.minLon) / this.cellSize);
+  /** @param x a longitude already multiplied by `lonScale`. */
+  private col(x: number): number {
+    return Math.floor((x - this.minLon) / this.cellSize);
   }
 
   private row(lat: number): number {
@@ -116,6 +150,8 @@ export class PointIndex<P extends IndexablePoint> {
    */
   nearestIndex(lat: number, lon: number): number {
     if (this.points.length === 0) return -1;
+    // Everything below works in the grid's x: longitude times `lonScale`.
+    lon *= this.lonScale;
 
     // The query can be well outside the trail's bounding box (the cursor is
     // nowhere near the line), so the search starts from the nearest cell that
@@ -144,9 +180,8 @@ export class PointIndex<P extends IndexablePoint> {
           const bucket = this.cells.get(this.key(col, row));
           if (!bucket) continue;
           for (const i of bucket) {
-            const point = this.points[i];
-            const dLat = point.lat - lat;
-            const dLon = point.lon - lon;
+            const dLat = this.points[i].lat - lat;
+            const dLon = this.xs[i] - lon;
             const distSq = dLat * dLat + dLon * dLon;
             // `<` only: ties keep the earliest point, as a forward scan does.
             if (distSq < bestDistSq) {
@@ -184,6 +219,9 @@ export class PointIndex<P extends IndexablePoint> {
 }
 
 /** Build a {@link PointIndex}; the function form reads better at call sites. */
-export function buildPointIndex<P extends IndexablePoint>(points: readonly P[]): PointIndex<P> {
-  return new PointIndex(points);
+export function buildPointIndex<P extends IndexablePoint>(
+  points: readonly P[],
+  options?: PointIndexOptions,
+): PointIndex<P> {
+  return new PointIndex(points, options);
 }

@@ -221,7 +221,9 @@
 
     async function loadTrailData() {
       try {
-        const response = await fetch(`/data/generated/${TRAIL_ID}.json`);
+        // Relative to this page (trails/<id>/climate.html), as index.html's
+        // fetch is, so a site served from a sub-path still finds its data.
+        const response = await fetch(`../../data/generated/${TRAIL_ID}.json`);
         if (!response.ok) throw new Error('Trail data not found');
         return await response.json();
       } catch (error) {

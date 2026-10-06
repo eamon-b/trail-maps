@@ -42,6 +42,8 @@ interface StubMarker {
 }
 
 let markers: StubMarker[] = [];
+/** Where each ⛺ stop flag was dropped. */
+let flagPositions: Array<[number, number]> = [];
 
 /** The least Leaflet the plan viewer needs to boot and draw markers. */
 function installLeafletStub(): void {
@@ -59,7 +61,8 @@ function installLeafletStub(): void {
     layerGroup: layer,
     polyline: layer,
     divIcon: (opts: { html: string }) => opts,
-    marker: (_latLng: unknown, opts: { icon: { html: string } }) => {
+    marker: (latLng: [number, number], opts: { icon: { html: string } }) => {
+      if (opts.icon.html.includes('stop-flag-icon')) flagPositions.push(latLng);
       const marker: StubMarker = { html: opts.icon.html, opacity: 1, handlers: {}, popup: null };
       markers.push(marker);
       const handle = {
@@ -120,9 +123,9 @@ function makeTrail() {
     config: { id: TRAIL_ID, name: 'Map Fixture', shortName: 'Map' },
     track: { points, totalDistance: 30, totalAscent: 0, totalDescent: 0 },
     waypoints: [
-      wp('w_1', 'Alpha', 'town', 10),
+      wp('w_alpha', 'Alpha', 'town', 10),
       wp('w_camp', 'Camp One', 'campsite', 15),
-      wp('w_2', 'Bravo', 'town', 20),
+      wp('w_bravo', 'Bravo', 'town', 20),
     ],
   };
 }
@@ -141,6 +144,7 @@ beforeEach(() => {
   window.localStorage.clear();
   vi.useFakeTimers();
   markers = [];
+  flagPositions = [];
   installLeafletStub();
 });
 
@@ -180,28 +184,28 @@ describe('clicking a waypoint marker', () => {
   it('toggles the resupply tick on the Resupply tab, not a camp stop', async () => {
     await boot();
     tabButton('resupply').click();
-    expect(check('w_1').checked).toBe(true);
+    expect(check('w_alpha').checked).toBe(true);
 
     marker('Alpha').handlers.click();
 
     expect(marker('Alpha').popup).toBeNull();
-    expect(check('w_1').checked).toBe(false);
-    expect(check('w_2').checked).toBe(true);
-    expect(savedPlan().resupplyStops).toEqual(['w_2']);
+    expect(check('w_alpha').checked).toBe(false);
+    expect(check('w_bravo').checked).toBe(true);
+    expect(savedPlan().resupplyStops).toEqual(['w_bravo']);
     expect(savedPlan().stops).toHaveLength(0);
 
     marker('Alpha').handlers.click();
-    expect(check('w_1').checked).toBe(true);
+    expect(check('w_alpha').checked).toBe(true);
   });
 
   it('fades an unticked option on the map and restores it when re-ticked', async () => {
     await boot();
     tabButton('resupply').click();
-    check('w_2').click();
+    check('w_bravo').click();
     expect(marker('Bravo').opacity).toBe(0.4);
     expect(marker('Alpha').opacity).toBe(1);
 
-    check('w_2').click();
+    check('w_bravo').click();
     expect(marker('Bravo').opacity).toBe(1);
   });
 
@@ -211,7 +215,7 @@ describe('clicking a waypoint marker', () => {
     expect(markers.some(m => m.html.includes('planned-resupply'))).toBe(false);
 
     tabButton('resupply').click();
-    check('w_2').click(); // an explicit selection: everything but Bravo
+    check('w_bravo').click(); // an explicit selection: everything but Bravo
 
     expect(marker('Alpha').html).toContain('planned-resupply');
     expect(marker('Bravo').html).not.toContain('planned-resupply');
@@ -229,7 +233,44 @@ describe('clicking a waypoint marker', () => {
     pressPopupButton('Camp One');
 
     expect(savedPlan().stops).toHaveLength(1);
-    expect(check('w_1').checked).toBe(true);
-    expect(check('w_2').checked).toBe(true);
+    expect(check('w_alpha').checked).toBe(true);
+    expect(check('w_bravo').checked).toBe(true);
   });
 });
+
+describe('a stop whose waypoint a rebuild has moved', () => {
+  it('is matched by its waypoint id on the map, as the Stops tab matches it', async () => {
+    // Saved against Alpha when Alpha sat at km 15; a rebuild has since moved it
+    // to km 10, and Camp One now sits at the stop's old km.
+    localStorage.setItem(
+      `trail-plan-doc-${TRAIL_ID}`,
+      JSON.stringify({
+        id: 'plan-1',
+        trailId: TRAIL_ID,
+        name: 'Moved',
+        direction: 'NOBO',
+        startDate: null,
+        stops: [{ waypointId: 'w_alpha', km: 15, name: 'Alpha', nights: 1 }],
+        updatedAt: '2026-07-01T10:00:00.000Z',
+        version: 1,
+      }),
+    );
+    await boot();
+
+    expect(marker('Alpha').html).toContain('is-stop');
+    expect(marker('Camp One').html).not.toContain('is-stop');
+    // The ⛺ flag goes on Alpha's marker position, not on Camp One's.
+    const flags = markers.filter(m => m.html.includes('stop-flag-icon'));
+    expect(flags).toHaveLength(1);
+    expect(flags[0].html).toContain('title="Alpha"');
+    expect(flagPositions).toEqual([[-34 - 10 / 1000, 138 + 10 / 1000]]);
+
+    // And the Stops tab says the same.
+    tabButton('stops').click();
+    const ticked = [...document.querySelectorAll('#stops-list .stop-item.is-stop .stop-name')].map(
+      node => (node.textContent ?? '').trim(),
+    );
+    expect(ticked).toEqual(['Alpha']);
+  });
+});
+

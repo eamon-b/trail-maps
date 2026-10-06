@@ -69,6 +69,7 @@ import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
 import { KM_EPSILON, getDirectionLabel, stopsToActive, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { baseWaypointType, waypointTypeLabel } from '@lib/waypoint-taxonomy';
+import { waypointIcon } from './waypoint-icons';
 import {
   loadOrMigratePlan,
   loadPlanUiPrefs,
@@ -82,7 +83,7 @@ import { hereLabel, initNextDays, type NextDaysController, type NextDaysPlan, ty
 // Escapes quotes as well as angle brackets, unlike a `textContent` round trip
 // through a detached div — this file interpolates waypoint names and types into
 // `title="…"` and `class="…"`, and an imported GPX supplies both.
-import { escapeHtml } from '../web-utils';
+import { SITE_ROOT, escapeHtml, generatedDataUrl } from '../web-utils';
 import { onThemeChange, themeColor } from '../theme';
 
 // ---------------------------------------------------------------------------
@@ -174,6 +175,8 @@ let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let readOnly = false;
 /** The sync arm, when this page has one (never in read-only mode). */
 let syncController: PlanSyncController | null = null;
+/** `initPlanViewer` has run on this page — see the guard there. */
+let booted = false;
 
 // Leaflet
 let map: L.Map | null = null;
@@ -185,43 +188,6 @@ let waypointMarkers: Array<{ marker: L.Marker; waypoint: PlanWaypoint }> = [];
 // Elevation
 const PAD = { top: 20, right: 20, bottom: 28, left: 50 };
 let elevMaxDist = 1;
-
-// ---------------------------------------------------------------------------
-// Waypoint icons
-// ---------------------------------------------------------------------------
-
-const WAYPOINT_ICONS: Record<string, string> = {
-  town: '\u{1F3D8}\u{FE0F}',
-  hut: '\u{1F6D6}',
-  campsite: '\u26FA',
-  water: '\u{1F4A7}',
-  'water-tank': '\u{1F6B0}',
-  mountain: '\u26F0\u{FE0F}',
-  'side-trip': '\u{1F97E}',
-  accommodation: '\u{1F3E8}',
-  'caravan-park': '\u{1F3D5}\u{FE0F}',
-  trailhead: '\u{1F697}',
-  food: '\u{1F374}',
-  'road-crossing': '\u{1F6E3}\u{FE0F}',
-  'inlet-crossing': '\u{1F30A}',
-  beach: '\u{1F3D6}\u{FE0F}',
-  poi: '\u{2B50}',
-  resupply: '\u{1F4E6}',
-  endpoint: '\u{1F6A9}',
-  // Keep in step with the same table in trail-viewer.ts.
-  junction: '\u{1F500}',
-  milestone: '\u{1FAA7}',
-  gap: '\u{1F6A7}',
-  'ley-note': '\u{1F5D2}\u{FE0F}',
-  'ley-waypoint': '\u{1F53A}',
-  'camp-2018': '\u{1F525}',
-  waypoint: '\u{1F4CD}',
-};
-
-function waypointIcon(type?: string): string {
-  // A turn-off shows its served type's icon (`town-access` → the town glyph).
-  return WAYPOINT_ICONS[type ?? ''] ?? WAYPOINT_ICONS[baseWaypointType(type)] ?? '\u{1F4CD}';
-}
 
 // ---------------------------------------------------------------------------
 // Services at a stop
@@ -365,9 +331,17 @@ function baseKmh(): number {
   return PACE_KMH[pace()];
 }
 
-/** Change one or more view preferences and write them for this browser. */
+/**
+ * Change one or more view preferences and write them for this browser.
+ *
+ * Not written in read-only mode: a reader may try another pace against a
+ * shared plan (it is a way of reading it, like the direction toggle), but the
+ * prefs slot is keyed by trail, so saving would overwrite the reader's own
+ * pace and hours for their own plan of the same trail.
+ */
 function setUiPrefs(patch: Partial<PlanUiPrefs>): void {
   uiPrefs = { ...uiPrefs, ...patch };
+  if (readOnly) return;
   savePlanUiPrefs(trail.config.id, uiPrefs);
 }
 
@@ -383,7 +357,7 @@ function activeTrail(): Trail {
 /**
  * Cached result of `stopsToActive` for the current render pass. All stop and
  * direction mutations funnel through renderAll(), which refreshes the cache
- * before anything reads it; isStop(), the markers, and the elevation profile
+ * before anything reads it; the stop flags, the day cards and the elevation profile
  * then share one array instead of clone-and-sorting per waypoint.
  */
 let cachedActiveStops: PlanStop[] = [];
@@ -410,7 +384,15 @@ function stopKeyFor(waypoint: { id?: string; km: number }): StopKey {
   };
 }
 
-/** The stored stop for an active-km position, or undefined. */
+/**
+ * The stored stop for an active-km position, or undefined.
+ *
+ * Only for a km that came *from* a stop — a day's `endKm` is its end stop's own
+ * km, run through the same `stopsToActive` — so this is the stop matched to
+ * itself. A waypoint's km is not: a rebuild can nudge it away from the km the
+ * stop was saved at, so a waypoint is matched by `isStopSelected`/`findStop`,
+ * id first, exactly as the Stops tab does.
+ */
 function stopAtActiveKm(km: number): PlanStop | undefined {
   return activeStops().find(stop => Math.abs(stop.km - km) < KM_EPSILON);
 }
@@ -418,11 +400,6 @@ function stopAtActiveKm(km: number): PlanStop | undefined {
 /** Display label for a direction, from trail config with NOBO/SOBO fallback. */
 function directionLabel(dir: PlanDirection): string {
   return getDirectionLabel(trail.config.direction, dir, { default: 'NOBO', reversed: 'SOBO' });
-}
-
-/** @param km active-direction km */
-function isStop(km: number): boolean {
-  return activeStops().some(s => Math.abs(s.km - km) < KM_EPSILON);
 }
 
 function getDayColors(count: number): string[] {
@@ -455,8 +432,7 @@ function resetResupplyCaches(): void {
   cachedResupplyLegs = [];
   cachedResupplyLegsKey = null;
   // Markers are drawn once by initMap() before the first renderAll(), so the
-  // planned set has to start empty rather than carry another trail's plan into
-  // a reboot (my-plan.html boots this module again per imported trail).
+  // planned set has to start empty rather than whatever the module began with.
   cachedPlannedIds = null;
   cachedPlannedStops = [];
 }
@@ -581,7 +557,11 @@ function resupplyLegs(): ResupplyLeg[] {
 
 async function loadTrailData(trailId: string): Promise<Trail | null> {
   try {
-    const response = await fetch(`/data/generated/${trailId}.json`);
+    // Relative to the page (`trails/<id>/plan.html`), as index.html's fetch is,
+    // so a site served from a sub-path still finds its data.
+    const response = await fetch(
+      generatedDataUrl(`${trailId}.json`, SITE_ROOT.trailPage, document.baseURI)
+    );
     if (!response.ok) throw new Error('Trail data not found');
     return await response.json();
   } catch {
@@ -665,7 +645,9 @@ function drawWaypointMarkers(): void {
     const km = wp.totalDistance ?? 0; // active-direction km
     const type = wp.type ?? 'waypoint';
     const icon = waypointIcon(type);
-    const isSelected = isStop(km);
+    // Id first, km only for a stop saved without one — the Stops tab's rule, so
+    // the marker and the tab agree after a rebuild nudges the waypoint's km.
+    const isSelected = isStopSelected(plan, stopKeyFor({ id: wp.id, km }));
     const isOption = optionIds !== null && wp.id !== undefined && optionIds.has(wp.id);
     const isPicked = isOption && pickedIds!.has(wp.id!);
     // A planned stop keeps its ring on every tab, and the ring wins over the
@@ -768,9 +750,14 @@ function redrawMapLayers(): void {
 
   // Stop markers
   stopMarkers.clearLayers();
+  const waypoints = activeTrail().waypoints ?? [];
   activeStops().forEach(stop => {
-    // Find waypoint position
-    const wp = (activeTrail().waypoints ?? []).find(w => Math.abs((w.totalDistance ?? 0) - stop.km) < KM_EPSILON);
+    // The stop's own waypoint by id, as the Stops tab matches it; by km only
+    // for a stop saved without an id. A km match alone loses the flag (or puts
+    // it on a neighbour) once a rebuild has moved the waypoint by >10 m.
+    const wp = stop.waypointId
+      ? waypoints.find(w => w.id === stop.waypointId)
+      : waypoints.find(w => Math.abs((w.totalDistance ?? 0) - stop.km) < KM_EPSILON);
     if (!wp) return;
     const divIcon = L.divIcon({
       className: '',
@@ -1065,7 +1052,9 @@ function renderResupplySection(): void {
   section.hidden = false;
 
   const summary = summariseResupplyLegs(resupplyLegs());
-  const line = summary.hasData ? resupplySummaryText(summary, formatKm, formatFoodKg) : 'No resupply stops ticked.';
+  // No ticked stop is still a carry — one start-to-end leg — and the summary
+  // text says so; only an empty range has nothing to summarise.
+  const line = summary.hasData ? resupplySummaryText(summary, formatKm, formatFoodKg) : 'Nothing in this range.';
   // Says what the badge on a day card, a stops row or a map marker means. Only
   // shown once there is a plan, because until then nothing is badged.
   const legend = hasResupplyPlan()
@@ -1461,13 +1450,20 @@ function renderResupplyDatasheet(): void {
 
   if (!summary.hasData) {
     subtitle.textContent = '';
-    body.innerHTML = resupplyGroups().length === 0
-      ? '<p class="days-empty">This trail has no resupply points.</p>'
-      : '<p class="days-empty">No resupply stops ticked — tick the ones you plan to use.</p>';
+    body.innerHTML = '<p class="days-empty">Nothing in this range.</p>';
     return;
   }
 
   subtitle.textContent = resupplySummaryText(summary, formatKm, formatFoodKg);
+
+  // No ticked stop in range is still a carry: the calculator reports the whole
+  // range as one leg, so the hiker who carries everything gets a food figure.
+  // The note says which of the three reasons put them there.
+  const fullCarryNote = summary.stops === 0
+    ? resupplyGroups().length === 0
+      ? '<p class="days-empty">This trail has no resupply points — this is the full carry.</p>'
+      : '<p class="days-empty">No resupply stops ticked — this is the full carry. Tick the ones you plan to use.</p>'
+    : '';
 
   // The arrival day only means anything once the camp plan has stops and a date
   // to count them from; without both the column would be a row of dashes.
@@ -1494,7 +1490,7 @@ function renderResupplyDatasheet(): void {
     </tr>`;
   }).join('');
 
-  body.innerHTML = `<div class="ds-table-wrap">
+  body.innerHTML = `${fullCarryNote}<div class="ds-table-wrap">
     <table class="resupply-table">
       <thead><tr>${header}</tr></thead>
       <tbody>${rows}</tbody>
@@ -1537,7 +1533,13 @@ function selectDay(index: number | null): void {
 function toggleStop(km: number, name: string, id?: string): void {
   if (readOnly) return;
   const noboKm = toNoboKm(km, direction(), trail.track.totalDistance);
-  tryEdit(() => editToggleStop(plan, { ...(id ? { id } : {}), km: noboKm, name }));
+  tryEdit(() =>
+    editToggleStop(
+      plan,
+      { ...(id ? { id } : {}), km: noboKm, name },
+      { totalKm: trail.track.totalDistance },
+    ),
+  );
 }
 
 /**
@@ -1678,8 +1680,14 @@ function scheduleSave(): void {
   // way of reading it, and neither is written anywhere.
   if (readOnly) return;
   setSaveStatus('unsaved');
-  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  cancelPendingSave();
   saveDebounceTimer = setTimeout(commitSave, 800);
+}
+
+function cancelPendingSave(): void {
+  if (saveDebounceTimer === null) return;
+  clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = null;
 }
 
 /**
@@ -1690,6 +1698,9 @@ function scheduleSave(): void {
  * sync arm decides for itself whether there is anything to send.
  */
 function commitSave(): void {
+  // The timer has fired (or been flushed): nothing is pending any more, which
+  // is what `flushPendingSave` reads.
+  saveDebounceTimer = null;
   if (readOnly) return;
   const ok = savePlanDocument(trail.config.id, plan);
   setSaveStatus(ok ? 'saved' : 'error');
@@ -2049,7 +2060,10 @@ function planSyncHost(trailId: string): PlanSyncHost {
     adoptServerPlan(next: PlanDocument): void {
       // The server's copy wins outright (last writer wins, as for comments),
       // so it is stored and drawn exactly as it arrived — no `scheduleSave`,
-      // which would stamp our clock on it and send it straight back.
+      // which would stamp our clock on it and send it straight back. A save
+      // still pending would do the same, so it is dropped (the sync arm has
+      // already flushed and weighed it before deciding to adopt).
+      cancelPendingSave();
       plan = next;
       savePlanDocument(trail.config.id, plan);
       setSaveStatus('saved');
@@ -2059,6 +2073,15 @@ function planSyncHost(trailId: string): PlanSyncHost {
     stampPlan(patch: Partial<PlanDocument>): void {
       plan = { ...plan, ...patch };
       savePlanDocument(trail.config.id, plan);
+    },
+    flushPendingSave(): boolean {
+      if (saveDebounceTimer === null) return false;
+      cancelPendingSave();
+      // The local write `commitSave` would have made, minus its `onLocalSave`:
+      // the sync arm is asking because it is about to reconcile this edit.
+      const ok = savePlanDocument(trail.config.id, plan);
+      setSaveStatus(ok ? 'saved' : 'error');
+      return true;
     },
   };
 }
@@ -2155,6 +2178,12 @@ export async function initPlanViewer(
   preloadedTrail?: Trail,
   options: PlanViewerOptions = {},
 ): Promise<void> {
+  // One boot per page load. Every page that hosts the planner (a trail's
+  // plan.html, my-plan.html, shared-plan.html) calls this exactly once; a second
+  // call would bind every header, tab and list listener twice and `L.map` would
+  // throw on the already-initialised container. Say so rather than half-boot.
+  if (booted) throw new Error('initPlanViewer: the planner is already booted on this page');
+  booted = true;
   const data = preloadedTrail ?? await loadTrailData(trailId);
   if (!data) {
     document.body.innerHTML = `<div style="padding:2rem;text-align:center">
@@ -2180,10 +2209,11 @@ export async function initPlanViewer(
   // plan. A newer server copy replaces it a moment after the first render —
   // see `plan-sync.ts`; the page is drawn first and never waits on the network.
   plan = options.preloadedPlan ?? loadOrMigratePlan(trailId, trail).plan;
-  uiPrefs = readOnly ? { showAllWaypoints: false } : loadPlanUiPrefs(trailId);
+  // Read in read-only mode too, so a shared plan's days are timed at the
+  // reader's own pace and hours; `setUiPrefs` never writes them back there.
+  uiPrefs = loadPlanUiPrefs(trailId);
 
-  // Module state outlives a boot (`my-plan.html` can reboot with another trail),
-  // so the per-trail caches are cleared here rather than only on a direction flip.
+  // Start from a clean slate rather than trusting the module's initial values.
   reversedTrail = null;
   resetResupplyCaches();
   activeTab = 'days';
@@ -2208,7 +2238,6 @@ export async function initPlanViewer(
   // The sync arm, last: it draws its own header controls and then talks to the
   // network, so the planner is on screen and usable before any of that starts.
   // A shared plan is nobody's to sync, so it never gets one.
-  syncController?.destroy();
   syncController = readOnly ? null : initPlanSync(planSyncHost(trailId));
 
   // Redraw elevation on resize

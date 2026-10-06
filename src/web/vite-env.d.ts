@@ -13,6 +13,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string;
+  /** Vite's own: true under `vite dev` (and Vitest), false in a production build. */
+  readonly DEV: boolean;
 }
 
 interface ImportMeta {

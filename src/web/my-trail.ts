@@ -21,7 +21,7 @@ import {
   putTrail,
   updateTrailPois,
 } from './imported-trails-db';
-import { escapeHtml, getQueryParam } from './web-utils';
+import { escapeHtml, getQueryParam, overpassEndpointOverride } from './web-utils';
 
 function panel(id: string): HTMLElement | null {
   return document.getElementById(id);
@@ -232,8 +232,11 @@ function initPoiPanel(trailId: string, trail: ProcessedTrail): void {
   const blurb = document.getElementById('poi-blurb');
   if (!findBtn || !cancelBtn || !removeBtn) return;
 
-  /** Dev override, e.g. `?overpass=https://overpass.kumi.systems/api/interpreter`. */
-  const endpointOverride = getQueryParam(window.location.search, 'overpass') ?? undefined;
+  /**
+   * Dev-build override, e.g. `?overpass=https://overpass.kumi.systems/api/interpreter`.
+   * Ignored in production and for anything but https — see the helper.
+   */
+  const endpointOverride = overpassEndpointOverride(window.location.search, import.meta.env.DEV);
 
   let controller: AbortController | null = null;
 

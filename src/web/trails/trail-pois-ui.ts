@@ -66,8 +66,8 @@ export {
 export type { InterleavedEntry, PoiFilterState, PoiTagLine } from '@lib/poi-display';
 
 /**
- * Marker glyphs. Deliberately a different set from `WAYPOINT_ICONS` in the
- * viewer — a POI marker must never be mistaken for a curated waypoint.
+ * Marker glyphs. Deliberately a different set from `WAYPOINT_ICONS` in
+ * `waypoint-icons.ts` — a POI marker must never be mistaken for a curated waypoint.
  */
 export const POI_CATEGORY_ICONS: Record<TrailPOICategory, string> = {
   water: '\u{1F4A7}',

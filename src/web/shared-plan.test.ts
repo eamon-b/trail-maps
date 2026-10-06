@@ -84,11 +84,38 @@ const sharedDoc = (over: Partial<PlanDocument> = {}): PlanDocument => ({
 let sharedReply: { status: number; body?: unknown } = { status: 200 };
 let trailFound = true;
 let requests: string[] = [];
+/** The plan the reader's own account holds for the trail, if any. */
+let accountPlan: PlanDocument | null = null;
+/** Methods of the requests to `/v1/plans…`, in order. */
+let planCalls: string[] = [];
 
 function installFetchStub(): void {
-  globalThis.fetch = (async (url: string | URL | Request) => {
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     const full = String(url);
     requests.push(full);
+    if (full.startsWith(`${API}/v1/plans`)) {
+      const method = init?.method ?? 'GET';
+      planCalls.push(method);
+      const body =
+        method === 'GET'
+          ? {
+              plans: accountPlan
+                ? [{ id: accountPlan.id, trailId: TRAIL_ID, document: accountPlan, shareId: null, updatedAt: accountPlan.updatedAt }]
+                : [],
+              nextCursor: null,
+              syncedAt: 'now',
+            }
+          : (() => {
+              const doc = JSON.parse(String(init?.body)) as PlanDocument;
+              return { id: doc.id, trailId: TRAIL_ID, document: doc, shareId: null, updatedAt: doc.updatedAt };
+            })();
+      return {
+        ok: true,
+        status: 200,
+        statusText: '',
+        text: async () => JSON.stringify(body),
+      } as unknown as Response;
+    }
     if (full.startsWith(`${API}/v1/shared/plans/`)) {
       return {
         ok: sharedReply.status >= 200 && sharedReply.status < 300,
@@ -110,7 +137,7 @@ function installFetchStub(): void {
 }
 
 /** Boot the page as Vite assembles it, with `?s=` in the address bar. */
-async function boot(search = `?s=${SHARE_ID}`): Promise<void> {
+async function boot(search = `?s=${SHARE_ID}`, page = '/shared-plan.html'): Promise<void> {
   const html = inlinePlanShell(
     fs.readFileSync(path.join(ROOT, 'src/web/shared-plan.html'), 'utf8'),
     fs.readFileSync(path.join(ROOT, 'src/web/trails/plan-shell.html'), 'utf8'),
@@ -119,7 +146,7 @@ async function boot(search = `?s=${SHARE_ID}`): Promise<void> {
   document.documentElement.innerHTML = html
     .replace(/<!DOCTYPE html>/i, '')
     .replace(/<\/?html[^>]*>/gi, '');
-  window.history.replaceState({}, '', `/shared-plan.html${search}`);
+  window.history.replaceState({}, '', `${page}${search}`);
 
   vi.resetModules();
   await import('./shared-plan');
@@ -134,6 +161,8 @@ beforeEach(() => {
   localStorage.clear();
   requests = [];
   trailFound = true;
+  accountPlan = null;
+  planCalls = [];
   sharedReply = {
     status: 200,
     body: { document: sharedDoc(), trailId: TRAIL_ID, ownerDisplayName: HOSTILE_NAME },
@@ -143,10 +172,20 @@ beforeEach(() => {
   installFetchStub();
 });
 
+const originalConfirm = window.confirm;
+
 afterEach(() => {
+  window.confirm = originalConfirm;
   vi.unstubAllEnvs();
   delete (globalThis as { L?: unknown }).L;
 });
+
+const linkBrowser = (): void => {
+  localStorage.setItem(
+    'tracknotes.webSession',
+    JSON.stringify({ userId: 'u1', token: 'tok', displayName: 'Robin', expiresAt: null }),
+  );
+};
 
 describe('the shared plan page', () => {
   it('draws the plan it was given, read-only', async () => {
@@ -197,10 +236,39 @@ describe('the shared plan page', () => {
   it('writes nothing to this browser', async () => {
     await boot();
 
+    // The pace and hours stay live (another pace is a way of reading a plan),
+    // but using them must not save anything either.
+    const pace = $('plan-pace') as HTMLSelectElement;
+    pace.value = 'slow';
+    pace.dispatchEvent(new Event('change'));
+    const hours = $('plan-daily-hours') as HTMLInputElement;
+    hours.value = '11';
+    hours.dispatchEvent(new Event('change'));
+    expect(hours.value).toBe('11');
+
     expect(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)).toBeNull();
     expect(localStorage.length).toBe(0);
     // Not even the view preference the editable planner keeps per trail.
     expect(localStorage.getItem(`trail-plan-ui-${TRAIL_ID}`)).toBeNull();
+  });
+
+  it('reads the reader’s own pace and hours, and leaves them as they were', async () => {
+    // The reader's prefs for their own plan of the same trail.
+    const own = JSON.stringify({ showAllWaypoints: true, pace: 'fast', dailyHours: 6 });
+    localStorage.setItem(`trail-plan-ui-${TRAIL_ID}`, own);
+    await boot();
+
+    const pace = $('plan-pace') as HTMLSelectElement;
+    const hours = $('plan-daily-hours') as HTMLInputElement;
+    expect(pace.value).toBe('fast');
+    expect(hours.value).toBe('6');
+
+    pace.value = 'slow';
+    pace.dispatchEvent(new Event('change'));
+    hours.value = '12';
+    hours.dispatchEvent(new Event('change'));
+
+    expect(localStorage.getItem(`trail-plan-ui-${TRAIL_ID}`)).toBe(own);
   });
 
   it('has no sync arm of its own', async () => {
@@ -221,6 +289,49 @@ describe('the shared plan page', () => {
     await boot();
 
     expect($('copy-to-plans').hidden).toBe(false);
+  });
+
+  it('asks before copying over a plan kept only in this browser, and gives the button back', async () => {
+    linkBrowser();
+    // Made before this browser was linked: the account has never seen it.
+    const local = sharedDoc({ id: 'mine', name: 'My own walk', updatedAt: '2026-05-01T00:00:00.000Z' });
+    localStorage.setItem(`trail-plan-doc-${TRAIL_ID}`, JSON.stringify(local));
+    const asked: string[] = [];
+    window.confirm = (message?: string) => {
+      asked.push(String(message));
+      return false;
+    };
+    await boot();
+
+    const button = $('copy-to-plans') as HTMLButtonElement;
+    button.click();
+    for (let i = 0; i < 12; i++) await Promise.resolve();
+
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toMatch(/This browser already has a plan/);
+    expect(planCalls).toEqual(['GET']);
+    expect(JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)!)).toEqual(local);
+    // Cancel is not a failure to copy: the reader can still change their mind.
+    expect(button.disabled).toBe(false);
+  });
+
+  it('gives the button back when the reader keeps the plan their account holds', async () => {
+    linkBrowser();
+    accountPlan = sharedDoc({ id: 'theirs-already', name: 'From the phone' });
+    window.confirm = () => false;
+    await boot();
+
+    const button = $('copy-to-plans') as HTMLButtonElement;
+    button.click();
+    for (let i = 0; i < 12; i++) await Promise.resolve();
+
+    expect(planCalls).toEqual(['GET']);
+    expect(button.disabled).toBe(false);
+  });
+
+  it('fetches the trail relative to the page, so a sub-path deployment works', async () => {
+    await boot(`?s=${SHARE_ID}`, '/trail-maps/shared-plan.html');
+    expect(requests).toContain(`${window.location.origin}/trail-maps/data/generated/${TRAIL_ID}.json`);
   });
 
   it('says so when the link is no longer shared', async () => {

@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Text } from 'react-native';
 import TestRenderer, {
   act,
   type TestInstance,
@@ -20,6 +20,7 @@ import TestRenderer, {
 import { GuideProvider, useGuide } from '../GuideContext';
 import { useSettingsStore } from '../../../state/settings-store';
 import { getTrailJson, loadTrail } from '../../../services/trail-loader';
+import { ensureTrailDownloaded } from '../../../services/trail-data-updates';
 
 jest.mock('../../../theme', () => ({
   useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
@@ -62,7 +63,14 @@ jest.mock('../../../services/trail-loader', () => {
   };
 });
 
+// The download is the service's business (it has its own spec); here only the
+// provider's states around it matter.
+jest.mock('../../../services/trail-data-updates', () => ({
+  ensureTrailDownloaded: jest.fn(async () => false),
+}));
+
 const mockGetTrailJson = getTrailJson as jest.Mock;
+const mockEnsureDownloaded = ensureTrailDownloaded as jest.Mock;
 const mockLoadTrail = loadTrail as jest.Mock;
 const BUNDLED_TRAIL = (jest.requireMock('../../../services/trail-loader') as { __trail: unknown })
   .__trail;
@@ -114,10 +122,33 @@ describe('GuideProvider direction re-resolution', () => {
   });
 });
 
+/** Every string rendered in a <Text>, joined — children may be arrays. */
+function renderedText(tree: ReactTestRenderer): string {
+  return tree.root
+    .findAllByType(Text)
+    .map((node) =>
+      ([] as unknown[])
+        .concat(node.props.children)
+        .filter((child): child is string => typeof child === 'string')
+        .join(''),
+    )
+    .join(' ');
+}
+
+function renderedTextOf(node: TestInstance): string {
+  return node
+    .findAllByType(Text)
+    .map((t) => ([] as unknown[]).concat(t.props.children).filter((c) => typeof c === 'string').join(''))
+    .join(' ');
+}
+
 describe('GuideProvider async resolution', () => {
   beforeEach(() => {
     mockGetTrailJson.mockReturnValue(BUNDLED_TRAIL);
+    mockLoadTrail.mockReset();
     mockLoadTrail.mockResolvedValue(null);
+    mockEnsureDownloaded.mockReset();
+    mockEnsureDownloaded.mockResolvedValue(false);
     act(() => {
       useSettingsStore.setState({ perTrailDirection: {} });
     });
@@ -148,6 +179,7 @@ describe('GuideProvider async resolution', () => {
     expect(rendered).toBe(1);
     expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(0);
     expect(mockLoadTrail).not.toHaveBeenCalled();
+    expect(mockEnsureDownloaded).not.toHaveBeenCalled();
   });
 
   it('shows a spinner instead of children while an imported trail loads', async () => {
@@ -222,6 +254,175 @@ describe('GuideProvider async resolution', () => {
       .findAll((n: TestInstance) => typeof n.props.children === 'string')
       .map((n) => n.props.children as string);
     expect(texts.join(' ')).toContain('Guide not found');
+  });
+
+  it('treats a failed read of a catalog-shaped id as not-found too', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockRejectedValue(new Error('EACCES'));
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId="broken">
+          <Child />
+        </GuideProvider>,
+      );
+    });
+
+    expect(renderedText(tree)).toContain('Guide not found');
+    expect(renderedText(tree)).not.toContain('Couldn’t download');
+  });
+
+  it('never asks for a download of an imported (u_) id', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId="u_missing">
+          <Child />
+        </GuideProvider>,
+      );
+    });
+
+    expect(mockLoadTrail).toHaveBeenCalledWith('u_missing');
+    expect(mockEnsureDownloaded).not.toHaveBeenCalled();
+    expect(renderedText(tree)).toContain('Guide not found');
+  });
+
+  it('does not download a trail that is already on the device', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockResolvedValue(BUNDLED_TRAIL); // e.g. a newer downloaded copy
+
+    let mounted = false;
+    function DownloadedChild() {
+      mounted = true;
+      useGuide();
+      return null;
+    }
+
+    await act(async () => {
+      TestRenderer.create(
+        <GuideProvider trailId="heysen">
+          <DownloadedChild />
+        </GuideProvider>,
+      );
+    });
+
+    expect(mounted).toBe(true);
+    expect(mockEnsureDownloaded).not.toHaveBeenCalled();
+  });
+
+  it('downloads a catalog-only trail behind a "Downloading guide" spinner', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockResolvedValueOnce(null).mockResolvedValueOnce(BUNDLED_TRAIL);
+    const download = deferred<boolean>();
+    mockEnsureDownloaded.mockReturnValue(download.promise);
+
+    let mounted = false;
+    function RemoteChild() {
+      mounted = true;
+      useGuide();
+      return null;
+    }
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId="gamma">
+          <RemoteChild />
+        </GuideProvider>,
+      );
+    });
+
+    expect(mockEnsureDownloaded).toHaveBeenCalledWith('gamma');
+    expect(mounted).toBe(false);
+    const spinners = tree.root.findAllByType(ActivityIndicator);
+    expect(spinners).toHaveLength(1);
+    expect(spinners[0].props.accessibilityLabel).toBe('Downloading guide');
+    expect(renderedText(tree)).toContain('Downloading guide…');
+
+    await act(async () => {
+      download.resolve(true);
+      await download.promise;
+    });
+
+    // Read again from the device once the file is there.
+    expect(mockLoadTrail).toHaveBeenCalledTimes(2);
+    expect(mounted).toBe(true);
+    expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(0);
+  });
+
+  it('is not found when the catalog does not have the trail either', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    mockEnsureDownloaded.mockResolvedValue(false);
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId="nowhere">
+          <Child />
+        </GuideProvider>,
+      );
+    });
+
+    expect(mockEnsureDownloaded).toHaveBeenCalledWith('nowhere');
+    expect(mockLoadTrail).toHaveBeenCalledTimes(1);
+    expect(renderedText(tree)).toContain('Guide not found');
+    expect(renderedText(tree)).not.toContain('Couldn’t download');
+  });
+
+  it('offers a retry when the download fails, and the retry can succeed', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockResolvedValue(null);
+    mockEnsureDownloaded.mockRejectedValueOnce(new Error('Network request failed'));
+
+    let mounted = false;
+    function RemoteChild() {
+      mounted = true;
+      useGuide();
+      return null;
+    }
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId="gamma">
+          <RemoteChild />
+        </GuideProvider>,
+      );
+    });
+
+    expect(mounted).toBe(false);
+    expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(0);
+    const text = renderedText(tree);
+    expect(text).toContain('Couldn’t download this guide');
+    expect(text).toContain('Network request failed');
+    expect(text).not.toContain('Guide not found');
+
+    // Second attempt: the download works and the file reads back.
+    const download = deferred<boolean>();
+    mockEnsureDownloaded.mockReturnValueOnce(download.promise);
+    mockLoadTrail.mockResolvedValueOnce(null).mockResolvedValueOnce(BUNDLED_TRAIL);
+
+    const retry = tree.root
+      .findAll((n: TestInstance) => n.props.accessibilityRole === 'button' && !!n.props.onPress)
+      .find((n) => renderedTextOf(n).includes('Try again'));
+    expect(retry).toBeDefined();
+    await act(async () => {
+      (retry!.props.onPress as () => void)();
+    });
+
+    // Back behind the spinner while it downloads.
+    expect(renderedText(tree)).toContain('Downloading guide…');
+    expect(mockEnsureDownloaded).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      download.resolve(true);
+      await download.promise;
+    });
+
+    expect(mounted).toBe(true);
+    expect(renderedText(tree)).not.toContain('Couldn’t download');
   });
 
   it('ignores a load that lands after the trail id changed', async () => {

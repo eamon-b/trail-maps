@@ -60,7 +60,10 @@ export function GuideProvider({
     error?: string;
   } | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [downloading, setDownloading] = useState(false);
+  // Tagged with its trail id, like `loaded`: a download cancelled by a route
+  // change must not label the next trail's spinner.
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const downloading = downloadingId === trailId;
 
   useEffect(() => {
     if (bundled) return;
@@ -73,7 +76,7 @@ export function GuideProvider({
       // Not on the device: a trail published after this build was made is
       // fetched now. Imported ids are never asked for — they exist nowhere else.
       if (trail || !isCatalogTrailId(trailId)) return trail;
-      if (!cancelled) setDownloading(true);
+      if (!cancelled) setDownloadingId(trailId);
       return (await ensureTrailDownloaded(trailId)) ? read() : null;
     })()
       .then((trail) => {
@@ -90,7 +93,7 @@ export function GuideProvider({
         }
       })
       .finally(() => {
-        if (!cancelled) setDownloading(false);
+        if (!cancelled) setDownloadingId(null);
       });
     return () => {
       cancelled = true;

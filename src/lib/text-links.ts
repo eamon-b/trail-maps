@@ -20,15 +20,37 @@ export interface TextSegment {
 const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"'`]+/gi;
 
 // Sentence punctuation that follows a URL rather than ending it.
-const TRAILING_PUNCTUATION = /[.,;:!?]+$/;
+const TRAILING_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?']);
 
+/**
+ * The longest URL made into a link. Anything longer is left as plain text:
+ * no real page address is this long, and the cap bounds the work an imported
+ * GPX `<desc>` can ask of every render.
+ */
+export const MAX_LINK_LENGTH = 2048;
+
+/**
+ * Drop trailing sentence punctuation and any closing bracket the URL did not
+ * open ("(see https://example.com/page)."). One count, one pass back from the
+ * end: linear however many brackets the text piles up.
+ */
 function trimUrl(raw: string): string {
-  let url = raw.replace(TRAILING_PUNCTUATION, '');
-  // "(see https://example.com/page)" — drop a closing bracket the URL did not open.
-  while (url.endsWith(')') && (url.match(/\(/g)?.length ?? 0) < (url.match(/\)/g)?.length ?? 0)) {
-    url = url.slice(0, -1).replace(TRAILING_PUNCTUATION, '');
+  let opens = 0;
+  let closes = 0;
+  for (const char of raw) {
+    if (char === '(') opens++;
+    else if (char === ')') closes++;
   }
-  return url;
+  let end = raw.length;
+  for (;;) {
+    while (end > 0 && TRAILING_PUNCTUATION.has(raw[end - 1])) end--;
+    if (end > 0 && raw[end - 1] === ')' && opens < closes) {
+      end--;
+      closes--;
+      continue;
+    }
+    return raw.slice(0, end);
+  }
 }
 
 /**
@@ -41,6 +63,7 @@ export function splitTextLinks(text: string): TextSegment[] {
 
   for (const match of text.matchAll(URL_PATTERN)) {
     const start = match.index ?? 0;
+    if (match[0].length > MAX_LINK_LENGTH) continue;
     const url = trimUrl(match[0]);
     const href = safeHttpUrl(url);
     if (!href || url.length === 0) continue;

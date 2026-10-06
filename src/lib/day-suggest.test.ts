@@ -136,4 +136,38 @@ describe('suggestDays', () => {
   it('caps the alternatives asked for', () => {
     expect(suggestDays(input({ alternatives: 1 })).plans).toHaveLength(1);
   });
+
+  it('does not let a trivial walk out dilute the mean (camp 100 m from the end)', () => {
+    // Flat 36 km at 4 km/h: one 9 h day to the end is inside 6-10 h. Camping at
+    // 35.9 km and walking the last 100 m tomorrow must not outrank it.
+    const { plans } = suggestDays(
+      input({
+        index: buildTimeIndex(track(36)),
+        candidates: [camp(35.9)],
+        endKm: 36,
+        criteria: { hours: { min: 6, max: 10, target: 8 } },
+      }),
+    );
+    expect(plans[0].days).toHaveLength(1);
+    expect(plans[0].reachesEnd).toBe(true);
+    expect(plans[0].score).toBeCloseTo(0.25);
+    const split = plans.find(plan => plan.days.length === 2);
+    if (split) expect(split.score).toBeGreaterThan(plans[0].score);
+  });
+
+  it('keeps a forced short walk out free', () => {
+    // 36 → 50 km is under the minimum, but 0 → 50 km is over the maximum: the
+    // short day cannot be avoided, so it costs nothing.
+    const { plans } = suggestDays(
+      input({
+        index: buildTimeIndex(track(50)),
+        candidates: [camp(32)],
+        endKm: 50,
+        criteria: { hours: { min: 6, max: 10, target: 8 } },
+      }),
+    );
+    expect(plans[0].stops.map(s => s.km)).toEqual([32]);
+    expect(plans[0].days[1].cost).toBe(0);
+    expect(plans[0].score).toBe(0);
+  });
 });

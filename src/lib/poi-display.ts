@@ -140,10 +140,24 @@ export interface PoiTagLine {
   href?: string;
 }
 
-/** `http:`/`https:` only. A bare `example.com` is assumed to be https. */
+/** A leading `scheme:`. */
+const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+/**
+ * A dotted host name and a port — `example.com:8080/x`, `www.hut.org.nz:443` —
+ * which `URL_SCHEME` would otherwise read as the scheme `example.com:`. Only a
+ * dotted name counts, so `tel:123` or `javascript:1` never becomes a host.
+ */
+const BARE_HOST_PORT = /^[a-z0-9-]+(?:\.[a-z0-9-]+)+:\d+(?:[/?#]|$)/i;
+
+/**
+ * `http:`/`https:` only. A bare `example.com` (or `example.com:8080`) is
+ * assumed to be https.
+ */
 export function safeHttpUrl(value: string): string | undefined {
   const trimmed = value.trim();
-  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const hasScheme = URL_SCHEME.test(trimmed) && !BARE_HOST_PORT.test(trimmed);
+  const candidate = hasScheme ? trimmed : `https://${trimmed}`;
   try {
     const url = new URL(candidate);
     return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;

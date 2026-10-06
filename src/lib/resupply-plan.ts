@@ -252,6 +252,7 @@ export interface ComputeResupplyLegsOptions {
 }
 
 export interface ResupplySummary {
+  /** Stops the legs pass through; 0 with `hasData` is the full carry, start to end. */
   stops: number;
   longestKm: number;
   longestDays: number;
@@ -647,6 +648,11 @@ function offTrailKmOf(option: Pick<ResupplyOption, 'offTrailKm'>): number {
 
 /**
  * The carries implied by a set of stops: trail start → stop 1 → … → trail end.
+ *
+ * No stops in range — "None" ticked, a trail with no options, or a section
+ * none of the ticked stops falls in — is one leg from the range start to its
+ * end, the *full carry*, with every field any other leg has. Only an empty
+ * range returns no legs.
  *
  * Boundary behaviour is `computeResupplyGaps`', because it *is*
  * `computeResupplyGaps` — the gaps it returns are then measured properly. What

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { splitTextLinks } from './text-links';
+import { MAX_LINK_LENGTH, splitTextLinks } from './text-links';
 
 const join = (text: string) =>
   splitTextLinks(text)
@@ -51,6 +51,25 @@ describe('splitTextLinks', () => {
     expect(splitTextLinks('javascript:alert(1) ftp://x.org')).toEqual([
       { text: 'javascript:alert(1) ftp://x.org' },
     ]);
+  });
+
+  it('trims a pile of unopened brackets in one pass', () => {
+    // Quadratic re-counting took seconds on 20k brackets; this must be instant.
+    const text = `see https://x.org/a${')'.repeat(1000)}.`;
+    expect(splitTextLinks(text)).toEqual([
+      { text: 'see ' },
+      { text: 'https://x.org/a', href: 'https://x.org/a' },
+      { text: `${')'.repeat(1000)}.` },
+    ]);
+  });
+
+  it('leaves an over-long match as plain text', () => {
+    const text = `https://x.org/a${')'.repeat(50_000)}`;
+    expect(splitTextLinks(text)).toEqual([{ text }]);
+    const long = `https://x.org/${'a'.repeat(MAX_LINK_LENGTH)}`;
+    expect(splitTextLinks(long)).toEqual([{ text: long }]);
+    const fits = `https://x.org/${'a'.repeat(MAX_LINK_LENGTH - 'https://x.org/'.length)}`;
+    expect(splitTextLinks(fits)[0].href).toBe(fits);
   });
 
   it('round-trips the input text', () => {

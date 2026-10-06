@@ -487,8 +487,30 @@ describe('computeResupplyLegs', () => {
     expect(legs[0].food.weightGrams).toBe(700);
   });
 
-  it('returns nothing when no stop is selected', () => {
-    expect(computeResupplyLegs(flatTrail(100), [], { dailyHours: 8, baseKmh: 4 })).toEqual([]);
+  it('is one full carry, start to end, when no stop is selected', () => {
+    const legs = computeResupplyLegs(flatTrail(100), [], { dailyHours: 8, baseKmh: 4 });
+    // 100 flat km at 4 km/h = 25 h; ceil(25 / 8) = 4 days.
+    expect(legs).toHaveLength(1);
+    expect(legs[0]).toMatchObject({
+      fromName: 'Trail Start',
+      toName: 'Trail End',
+      fromKm: 0,
+      toKm: 100,
+      distanceKm: 100,
+      ascentM: 0,
+      descentM: 0,
+      estimatedHours: 25,
+      estimatedDays: 4,
+      isLong: false,
+    });
+    expect(legs[0].food.weightGrams).toBe(4 * 680);
+    expect(summariseResupplyLegs(legs)).toEqual({
+      stops: 0,
+      longestKm: 100,
+      longestDays: 4,
+      totalFoodKg: 2.7,
+      hasData: true,
+    });
   });
 
   describe('route breaks', () => {
@@ -553,14 +575,15 @@ describe('computeResupplyLegs', () => {
       });
     });
 
-    it('returns nothing when the section holds no stop', () => {
+    it('is one full carry across the section when it holds no stop', () => {
       const legs = computeResupplyLegs(flatTrail(100), stops, {
         dailyHours: 8,
         baseKmh: 4,
         section: { startKm: 50, endKm: 70, startName: 'A', endName: 'B' },
       });
 
-      expect(legs).toEqual([]);
+      expect(legs).toHaveLength(1);
+      expect(legs[0]).toMatchObject({ fromKm: 50, toKm: 70, distanceKm: 20, estimatedHours: 5, estimatedDays: 1 });
     });
   });
 

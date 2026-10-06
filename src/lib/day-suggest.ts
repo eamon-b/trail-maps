@@ -32,6 +32,11 @@
  * per state is enough to find the best k overall. A day that can reach the end
  * of the range (the section or trail end) may finish there. That last day is
  * only held to the ranges' maximums: a short final day is simply the walk out.
+ * The concession holds only when the short day is forced. When the day before
+ * could itself have walked out inside every maximum, the walk out is scored
+ * like any other day (a day under a minimum is costed rather than refused), so
+ * "camp 100 m from the end, then walk the 100 m" never outranks finishing the
+ * day before. Ties go to the plan with fewer days.
  *
  * Pure and RN-safe: callers build the `TimeIndex` once (`buildTimeIndex`, with
  * the route breaks) and pass candidates in the same active km space as the
@@ -207,9 +212,16 @@ const METRIC_KEYS = ['distanceKm', 'ascentM', 'hours'] as const;
 /**
  * A day's cost against the criteria, or `undefined` when it falls outside a
  * range. `final` marks the walk out to `endKm`: it is held to the maximums
- * only, and being under a target costs nothing.
+ * only. Being under a target costs it nothing unless `avoidable` — the day
+ * before could have walked out itself — in which case every miss counts, a
+ * shortfall below the minimum included.
  */
-function dayCost(metrics: DayMetrics, scored: ScoredCriteria, final: boolean): number | undefined {
+function dayCost(
+  metrics: DayMetrics,
+  scored: ScoredCriteria,
+  final: boolean,
+  avoidable = false,
+): number | undefined {
   let cost = 0;
   for (const key of METRIC_KEYS) {
     const range = scored[key];
@@ -217,7 +229,7 @@ function dayCost(metrics: DayMetrics, scored: ScoredCriteria, final: boolean): n
     const value = metrics[key];
     if (value > range.max + 1e-9) return undefined;
     if (!final && value < range.min - 1e-9) return undefined;
-    if (final && value <= range.target) continue;
+    if (final && !avoidable && value <= range.target) continue;
     const miss = (value - range.target) / range.scale;
     cost += miss * miss;
   }
@@ -270,6 +282,14 @@ function stopsOf<C extends SuggestCandidate>(days: SuggestedDay<C>[]): C[] {
 function nearDuplicate<C extends SuggestCandidate>(a: SuggestedPlan<C>, b: SuggestedPlan<C>): boolean {
   if (a.days.length !== b.days.length || a.reachesEnd !== b.reachesEnd) return false;
   return a.days.every((day, i) => Math.abs(day.endKm - b.days[i].endKm) < NEAR_DUPLICATE_KM);
+}
+
+/**
+ * Best first; on a tie, the plan that gets there in fewer days. Preferring
+ * more days would favour padding a plan with a trivial extra night.
+ */
+function byScoreThenFewerDays<C extends SuggestCandidate>(a: SuggestedPlan<C>, b: SuggestedPlan<C>): number {
+  return a.score - b.score || a.days.length - b.days.length;
 }
 
 /**
@@ -330,13 +350,25 @@ export function suggestDays<C extends SuggestCandidate>(input: SuggestDaysInput<
         }
         if (bucket.length > 0) next.set(j, bucket);
       }
-      // Or the day walks out to the end of the range.
+      // Or the day walks out to the end of the range. Whether that is free
+      // below its targets depends on the day before it: if that day could
+      // have walked out within every maximum, this one is not forced.
       const out = measureDay(index, startKm, endKm, baseKmh);
-      const outCost = dayCost(out, scored, true);
-      if (outCost !== undefined) {
-        const suggested: SuggestedDay<SuggestCandidate> = { ...out, startKm, endKm, end: null, cost: outCost };
-        for (const partial of partials) {
-          finished.push({ at: -2, days: [...partial.days, suggested], cost: partial.cost + outCost });
+      const outDays = new Map<number, SuggestedDay<SuggestCandidate> | null>();
+      for (const partial of partials) {
+        const previous = partial.days[partial.days.length - 1];
+        const key = previous ? previous.startKm : -Infinity;
+        let suggested = outDays.get(key);
+        if (suggested === undefined) {
+          const avoidable =
+            previous !== undefined &&
+            dayCost(measureDay(index, previous.startKm, endKm, baseKmh), scored, true) !== undefined;
+          const outCost = dayCost(out, scored, true, avoidable);
+          suggested = outCost === undefined ? null : { ...out, startKm, endKm, end: null, cost: outCost };
+          outDays.set(key, suggested);
+        }
+        if (suggested) {
+          finished.push({ at: -2, days: [...partial.days, suggested], cost: partial.cost + suggested.cost });
         }
       }
     }
@@ -362,7 +394,7 @@ export function suggestDays<C extends SuggestCandidate>(input: SuggestDaysInput<
         reachesEnd: planDays[planDays.length - 1].end === null,
       };
     })
-    .sort((a, b) => a.score - b.score || b.days.length - a.days.length);
+    .sort(byScoreThenFewerDays);
 
   // Distinct plans first; a near-duplicate only fills a slot nothing else can.
   const plans: SuggestedPlan<C>[] = [];
@@ -374,7 +406,7 @@ export function suggestDays<C extends SuggestCandidate>(input: SuggestDaysInput<
     if (plans.length >= alternatives) break;
     if (!plans.includes(plan)) plans.push(plan);
   }
-  plans.sort((a, b) => a.score - b.score || b.days.length - a.days.length);
+  plans.sort(byScoreThenFewerDays);
 
   return shortOf === undefined ? { plans } : { plans, shortOf };
 }

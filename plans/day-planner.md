@@ -130,6 +130,12 @@ by anyone you send a link to.
   - Plans are ranked by mean squared, range-scaled deviation from each target. The search is a
     k-best dynamic programme over the Stops list's places (camps, huts, towns), with no wild
     camps.
+  - The walk out to the range end is held to the maximums only, and a short one costs nothing
+    *when it is forced*: the day before could not have reached the end inside every maximum.
+    When it could have, the walk out is scored like any other day (a shortfall under a minimum
+    is costed, not refused), so "camp 100 m from the end, then walk the 100 m" never outranks a
+    single in-range day to the end by halving its mean. Equal scores go to the plan with fewer
+    days.
   - Near-duplicates (every night within 1 km) only fill a slot when nothing distinct is left.
 - **[decided] The tail after the last stop is "not planned yet"** (issue 81), not one huge final
   day. It becomes the final day again once it fits in the hiker's daily hours plus the final-day
@@ -144,6 +150,12 @@ by anyone you send a link to.
   never started by the screen itself; the card offers "Use my location".
 - **[decided] Rest days are nights at a stop.** "Stay two nights in Salida" is `nights: 2` on
   that stop; there are no free-floating zero-day entries.
+- **[decided 2026-10-06] The trail's ends are never stops.** A night at km 0 or at the trail end
+  can move no date (zero days before day 1 are out of scope, and nothing is walked after the
+  end), so `toggleStop` and `replaceStopsInRange` refuse to *add* one — the same document comes
+  back — rather than store nights that silently count for nothing. Callers pass
+  `totalKm: track.totalDistance` so the far end is recognised as well as km 0; removing a stop
+  already there still works.
 - **[decided] Services radius is 1 km** along the trail either side of the stop, with no extra
   cap on `distanceFromTrail`.
 - **[decided] Linked-browser tokens last 180 days**, rolling from `last_seen_at`.
@@ -179,7 +191,8 @@ export interface PlanStop {
                          // absent only for a legacy km-only stop that matched nothing
   km: number;            // NOBO-absolute km, the key when waypointId is absent and the
                          // display position always (plan-direction.ts contract unchanged)
-  name: string;
+  name: string;          // 1..200 chars after trimming (`PLAN_LIMITS.stopNameMax`);
+                         // `toggleStop` trims and caps a waypoint's name to fit
   nights: number;        // >= 1; 2 = one rest day here
   note?: string;         // <= 500 chars
   booked?: boolean;
@@ -192,14 +205,20 @@ export interface PlanDocument {
   direction: PlanDirection;
   startDate: string | null;   // ISO date
   stops: PlanStop[];          // sorted by km, trail start/end implicit, <= 500
-  resupplyStops?: string[];   // unchanged from resupply-selection
-  updatedAt: string;          // server clock on the copy that came from the server
+  resupplyStops?: string[];   // unchanged from resupply-selection; <= 500
+  updatedAt: string;          // server clock on the copy that came from the server; an edit
+                              // stamps max(now, previous + 1 ms) so a clock behind the
+                              // server never loses last-writer-wins to the copy it edited
   version: 1;
 }
 ```
 
 Rules:
 - Two stops never share a `waypointId`; two stops never share a km within `KM_EPSILON`.
+- Every waypoint id (`waypointId`, each `resupplyStops` entry) matches `^[a-z0-9_-]{4,64}$`
+  (`PLAN_WAYPOINT_ID_PATTERN`) and every stop km is ≥ 0. `assertPlanDocumentWithinLimits`
+  checks these and every `PLAN_LIMITS` bound before a save, so the client is at least as strict
+  as the server and an unsendable document never reaches the outbox.
 - `nights` extends the date cascade: day n's date is `startDate` plus the sum of `nights` of
   every stop before it. A `ComputedDay` gains `restDays: number` (nights − 1 at its end) so a
   card can say "2 nights at Salida"; the walking days themselves are unchanged.

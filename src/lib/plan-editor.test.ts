@@ -545,7 +545,7 @@ describe('limits', () => {
     return {
       ...plan,
       stops: Array.from({ length: count }, (_, i) => ({
-        waypointId: `w_${i}`,
+        waypointId: `w_00${i}`,
         km: i + 1,
         name: `Stop ${i}`,
         nights: 1,
@@ -570,7 +570,7 @@ describe('limits', () => {
     const huge: PlanDocument = {
       ...plan,
       stops: Array.from({ length: 200 }, (_, i) => ({
-        waypointId: `w_${i}`,
+        waypointId: `w_00${i}`,
         km: i + 1,
         name: `Stop ${i}`,
         nights: 1,
@@ -623,6 +623,120 @@ describe('limits', () => {
       /at most 500/,
     );
   });
+
+  it('is at least as strict as the server about stops', () => {
+    const base = planWithStops(1);
+    const withStop = (over: Partial<PlanDocument['stops'][number]>): PlanDocument => ({
+      ...base,
+      stops: [{ ...base.stops[0], ...over }],
+    });
+    expect(() => assertPlanDocumentWithinLimits(withStop({ km: -0.5 }))).toThrow(/negative km/);
+    expect(() => assertPlanDocumentWithinLimits(withStop({ name: '   ' }))).toThrow(/no name/);
+    expect(() =>
+      assertPlanDocumentWithinLimits(withStop({ name: 'x'.repeat(PLAN_LIMITS.stopNameMax + 1) })),
+    ).toThrow(/exceeds 200/);
+    expect(() =>
+      assertPlanDocumentWithinLimits(withStop({ name: 'x'.repeat(PLAN_LIMITS.stopNameMax) })),
+    ).not.toThrow();
+    for (const waypointId of ['w_1', 'W_UPPER', 'w 1234', 'x'.repeat(65)]) {
+      expect(() => assertPlanDocumentWithinLimits(withStop({ waypointId })), waypointId).toThrow(
+        /invalid waypoint id/,
+      );
+    }
+    expect(() => assertPlanDocumentWithinLimits(withStop({ waypointId: 'uw_0a1b2c3d4e5f' }))).not.toThrow();
+  });
+
+  it('is at least as strict as the server about the resupply selection', () => {
+    const plan = emptyPlan();
+    const ids = (count: number) => Array.from({ length: count }, (_, i) => `w_${String(i).padStart(4, '0')}`);
+    expect(() =>
+      assertPlanDocumentWithinLimits({ ...plan, resupplyStops: ids(PLAN_LIMITS.resupplyStopsMax) }),
+    ).not.toThrow();
+    expect(() =>
+      assertPlanDocumentWithinLimits({ ...plan, resupplyStops: ids(PLAN_LIMITS.resupplyStopsMax + 1) }),
+    ).toThrow(/resupply stops exceeds 500/);
+    expect(() => assertPlanDocumentWithinLimits({ ...plan, resupplyStops: ['w_ok_1', 'no'] })).toThrow(
+      /invalid resupply waypoint id/,
+    );
+  });
+
+  it('caps and fills a waypoint name so a toggle can never build an unsendable document', () => {
+    const long = toggleStop(emptyPlan(), { id: 'w_long', km: 20, name: `  ${'y'.repeat(300)}  ` }, opts);
+    expect(long.stops[0].name).toBe('y'.repeat(PLAN_LIMITS.stopNameMax));
+    const blank = toggleStop(emptyPlan(), { id: 'w_blank', km: 20, name: '   ' }, opts);
+    expect(blank.stops[0].name).toBe('Stop');
+    expect(() => assertPlanDocumentWithinLimits(long)).not.toThrow();
+    expect(() => assertPlanDocumentWithinLimits(blank)).not.toThrow();
+    const applied = replaceStopsInRange(emptyPlan(), { fromKm: 0, toKm: 100 }, [
+      { id: 'w_long', km: 20, name: 'z'.repeat(300) },
+    ]);
+    expect(applied.stops[0].name).toHaveLength(PLAN_LIMITS.stopNameMax);
+  });
+
+  it('keeps a migrated plan inside the resupply limits', () => {
+    const plan = migratePlanState(
+      {
+        stops: [],
+        startDate: null,
+        resupplyStops: ['w_town', 'bad id', ...Array.from({ length: 600 }, (_, i) => `w_${1000 + i}`)],
+      } as unknown as PlanState,
+      'flat',
+      [],
+      opts,
+    );
+    expect(plan.resupplyStops?.[0]).toBe('w_town');
+    expect(plan.resupplyStops).not.toContain('bad id');
+    expect(plan.resupplyStops).toHaveLength(PLAN_LIMITS.resupplyStopsMax);
+    expect(() => assertPlanDocumentWithinLimits(plan)).not.toThrow();
+  });
+});
+
+describe('trail ends', () => {
+  it('never adds a stop at km 0 or at the trail end, whose nights would count for nothing', () => {
+    const plan = emptyPlan();
+    expect(toggleStop(plan, { id: 'w_start', km: 0, name: 'Start' }, opts)).toBe(plan);
+    expect(toggleStop(plan, { id: 'w_end', km: 100, name: 'Finish' }, { ...opts, totalKm: 100 })).toBe(plan);
+    expect(toggleStop(plan, { id: 'w_end', km: 99.995, name: 'Finish' }, { ...opts, totalKm: 100 })).toBe(plan);
+    // Without the length the end cannot be told from any other km.
+    expect(toggleStop(plan, { id: 'w_end', km: 100, name: 'Finish' }, opts).stops).toHaveLength(1);
+    const applied = replaceStopsInRange(
+      plan,
+      { fromKm: 0, toKm: 100 },
+      [
+        { id: 'w_start', km: 0, name: 'Start' },
+        { id: 'w_camp_a', km: 20, name: 'Camp A' },
+      ],
+      { ...opts, totalKm: 100 },
+    );
+    expect(applied.stops.map(stop => stop.waypointId)).toEqual(['w_camp_a']);
+  });
+
+  it('still removes a stop already sitting at a trail end', () => {
+    const plan: PlanDocument = {
+      ...emptyPlan(),
+      stops: [{ waypointId: 'w_start', km: 0, name: 'Start', nights: 2 }],
+    };
+    expect(toggleStop(plan, { id: 'w_start', km: 0, name: 'Start' }, opts).stops).toEqual([]);
+  });
+});
+
+describe('updatedAt', () => {
+  it('stamps an edit after the copy it edits, even when the clock is behind', () => {
+    // The copy came from a server a few seconds ahead of this device.
+    const plan: PlanDocument = { ...emptyPlan(), updatedAt: '2026-09-20T00:00:05.000Z' };
+    const behind = { now: () => '2026-09-20T00:00:00.000Z' };
+    const renamed = setPlanName(plan, 'Renamed', behind);
+    expect(renamed.updatedAt).toBe('2026-09-20T00:00:05.001Z');
+    const toggled = toggleStop(renamed, { id: 'w_camp_a', km: 20, name: 'Camp A' }, behind);
+    expect(toggled.updatedAt).toBe('2026-09-20T00:00:05.002Z');
+    expect(Date.parse(toggled.updatedAt)).toBeGreaterThan(Date.parse(plan.updatedAt));
+  });
+
+  it('uses the clock when it is ahead', () => {
+    const plan: PlanDocument = { ...emptyPlan(), updatedAt: '2026-09-20T00:00:05.000Z' };
+    const ahead = { now: () => '2026-09-21T00:00:00.000Z' };
+    expect(setStartDate(plan, '2026-10-01', ahead).updatedAt).toBe('2026-09-21T00:00:00.000Z');
+  });
 });
 
 describe('isPlanDocument', () => {
@@ -672,7 +786,7 @@ describe('thrown messages', () => {
     const full: PlanDocument = {
       ...emptyPlan(),
       stops: Array.from({ length: PLAN_LIMITS.stopsMax }, (_, i) => ({
-        waypointId: `w_${i}`,
+        waypointId: `w_00${i}`,
         km: i + 1,
         name: `Stop ${i}`,
         nights: 1,

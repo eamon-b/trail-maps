@@ -38,7 +38,7 @@ import type {
   PlanWaypoint,
   SectionConfig,
 } from './plan-types';
-import { PLAN_LIMITS } from './plan-types';
+import { PLAN_LIMITS, PLAN_WAYPOINT_ID_PATTERN } from './plan-types';
 import { computeDays, type PlanStopInput, type PlanTrail } from './day-calculator';
 import type { TrailPOI } from './trail-types';
 import { baseWaypointType, isAccessWaypoint } from './waypoint-taxonomy';
@@ -49,8 +49,20 @@ import { baseWaypointType, isAccessWaypoint } from './waypoint-taxonomy';
 
 /** Options every editor accepts: the clock that stamps `updatedAt`. */
 export interface PlanEditOptions {
-  /** ISO timestamp source for `updatedAt`. Default `new Date().toISOString()`. */
+  /**
+   * ISO timestamp source for `updatedAt`. Default `new Date().toISOString()`.
+   * An edit is always stamped at least 1 ms after the document it edits.
+   */
   now?: () => string;
+}
+
+/** Options for the editors that add stops. */
+export interface StopEditOptions extends PlanEditOptions {
+  /**
+   * The trail's length (`track.totalDistance`). With it, a place at the trail
+   * end is refused as well as one at km 0 — see `toggleStop`.
+   */
+  totalKm?: number;
 }
 
 /** Options for the editors that mint an id as well. */
@@ -86,8 +98,19 @@ function mintId(opts?: PlanCreateOptions): string {
   return (opts?.idFactory ?? defaultIdFactory)();
 }
 
-function stamp(opts?: PlanEditOptions): string {
-  return (opts?.now ?? (() => new Date().toISOString()))();
+/**
+ * The `updatedAt` for an edit: the clock, but never at or before the copy
+ * being edited (`previous`), which may carry the server's clock. A phone a
+ * second behind the server would otherwise stamp its edit *older* than the
+ * document it edited, and last-writer-wins would throw the edit away.
+ */
+function stamp(opts?: PlanEditOptions, previous?: string): string {
+  const now = (opts?.now ?? (() => new Date().toISOString()))();
+  if (previous === undefined) return now;
+  const nowMs = Date.parse(now);
+  const previousMs = Date.parse(previous);
+  if (!Number.isFinite(nowMs) || !Number.isFinite(previousMs) || nowMs > previousMs) return now;
+  return new Date(previousMs + 1).toISOString();
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +173,7 @@ function withStops(
   stops: PlanStop[],
   opts?: PlanEditOptions,
 ): PlanDocument {
-  return { ...plan, stops, updatedAt: stamp(opts) };
+  return { ...plan, stops, updatedAt: stamp(opts, plan.updatedAt) };
 }
 
 function sortStops(stops: PlanStop[]): PlanStop[] {
@@ -159,6 +182,31 @@ function sortStops(stops: PlanStop[]): PlanStop[] {
 
 function clampName(name: string): string {
   return name.trim().slice(0, PLAN_LIMITS.nameMax);
+}
+
+/** What a stop is called when its waypoint has no usable name. */
+const UNNAMED_STOP = 'Stop';
+
+/**
+ * A stop's name as the document may hold it: trimmed, never blank, at most
+ * `PLAN_LIMITS.stopNameMax` characters. A waypoint name is the import's or
+ * the GPX's, so nothing else bounds it, and the server refuses a document
+ * with a blank or over-long one.
+ */
+function clampStopName(name: string | undefined): string {
+  const trimmed = (name ?? '').trim().slice(0, PLAN_LIMITS.stopNameMax).trim();
+  return trimmed || UNNAMED_STOP;
+}
+
+/**
+ * True when `km` (NOBO-absolute) is one of the trail's ends: km 0, or
+ * `totalKm` when the caller knows it. A night there is not a day boundary —
+ * there is no walking before the start or after the end for its nights to
+ * move — so the editors never add a stop there.
+ */
+function isTrailEnd(km: number, totalKm: number | undefined): boolean {
+  if (km < KM_EPSILON) return true;
+  return typeof totalKm === 'number' && Number.isFinite(totalKm) && km > totalKm - KM_EPSILON;
 }
 
 /** A fresh, empty plan for a trail. */
@@ -184,7 +232,7 @@ export function newPlan(
 export function setPlanName(plan: PlanDocument, name: string, opts?: PlanEditOptions): PlanDocument {
   const next = clampName(name);
   if (next === plan.name) return plan;
-  return { ...plan, name: next, updatedAt: stamp(opts) };
+  return { ...plan, name: next, updatedAt: stamp(opts, plan.updatedAt) };
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -210,7 +258,7 @@ export function setStartDate(
     throw new Error(`plan-editor: startDate must be YYYY-MM-DD, got ${JSON.stringify(iso)}`);
   }
   if (iso === plan.startDate) return plan;
-  return { ...plan, startDate: iso, updatedAt: stamp(opts) };
+  return { ...plan, startDate: iso, updatedAt: stamp(opts, plan.updatedAt) };
 }
 
 /**
@@ -224,7 +272,7 @@ export function setDirection(
   opts?: PlanEditOptions,
 ): PlanDocument {
   if (direction === plan.direction) return plan;
-  return { ...plan, direction, updatedAt: stamp(opts) };
+  return { ...plan, direction, updatedAt: stamp(opts, plan.updatedAt) };
 }
 
 // ---------------------------------------------------------------------------
@@ -242,6 +290,15 @@ export function setDirection(
  * Every message thrown here (and by `setStartDate`) starts with `plan-editor:`
  * and is stable, so a UI handler can catch one and show it as it stands.
  *
+ * A place at either end of the trail (km 0, or `opts.totalKm`) is never
+ * *added*: the same document comes back. Its nights could move no date — there
+ * is nothing to walk before the start (zero days before day 1 are out of
+ * scope, `plans/day-planner.md`) or after the end — so a stop there would only
+ * hold nights that silently count for nothing. Removing one is still allowed.
+ *
+ * The name is trimmed and capped at `PLAN_LIMITS.stopNameMax` (a blank one
+ * becomes "Stop"), so no waypoint name can make the document unsendable.
+ *
  * @param waypoint.km NOBO-absolute km (convert active km with `toNoboKm`).
  * @throws when `waypoint.km` is not a finite number.
  * @throws when the plan is already at `PLAN_LIMITS.stopsMax`.
@@ -249,7 +306,7 @@ export function setDirection(
 export function toggleStop(
   plan: PlanDocument,
   waypoint: ToggleTarget,
-  opts?: PlanEditOptions,
+  opts?: StopEditOptions,
 ): PlanDocument {
   // A NaN km matches nothing, sorts nowhere and slips past the limits check,
   // but `isPlanDocument` rejects it on the next load — so a single bad number
@@ -273,13 +330,14 @@ export function toggleStop(
   if (plan.stops.some(existing => Math.abs(existing.km - waypoint.km) < KM_EPSILON)) {
     return plan;
   }
+  if (isTrailEnd(waypoint.km, opts?.totalKm)) return plan;
   if (plan.stops.length >= PLAN_LIMITS.stopsMax) {
     throw new Error(`plan-editor: a plan may hold at most ${PLAN_LIMITS.stopsMax} stops`);
   }
   const stop: PlanStop = {
     ...(waypoint.id ? { waypointId: waypoint.id } : {}),
     km: waypoint.km,
-    name: waypoint.name,
+    name: clampStopName(waypoint.name),
     nights: 1,
   };
   return withStops(plan, sortStops([...plan.stops, stop]), opts);
@@ -391,13 +449,14 @@ export function setStopBooked(
  * @param range NOBO-absolute km, either order (convert active km with
  *   `toNoboKm`; a SOBO window comes out reversed).
  * @param targets the places to stop at, NOBO-absolute like `toggleStop`'s.
+ * A target at a trail end is skipped, as `toggleStop` refuses one.
  * @throws when a target km is not finite, or the result exceeds `PLAN_LIMITS.stopsMax`.
  */
 export function replaceStopsInRange(
   plan: PlanDocument,
   range: { fromKm: number; toKm: number },
   targets: readonly ToggleTarget[],
-  opts?: PlanEditOptions,
+  opts?: StopEditOptions,
 ): PlanDocument {
   const lo = Math.min(range.fromKm, range.toKm);
   const hi = Math.max(range.fromKm, range.toKm);
@@ -409,10 +468,11 @@ export function replaceStopsInRange(
       throw new Error(`plan-editor: stop km must be a finite number, got ${String(target.km)}`);
     }
     const existing = findStop(plan, { waypointId: target.id, km: target.km });
+    if (!existing && isTrailEnd(target.km, opts?.totalKm)) continue;
     const stop: PlanStop = existing ?? {
       ...(target.id ? { waypointId: target.id } : {}),
       km: target.km,
-      name: target.name,
+      name: clampStopName(target.name),
       nights: 1,
     };
     if (next.some(kept => kept === stop || collidesWith(kept, stop))) continue;
@@ -448,12 +508,14 @@ export function setResupplyStops(
 ): PlanDocument {
   const current = plan.resupplyStops;
   if (ids === undefined) {
-    return current === undefined ? plan : { ...omitKey(plan, 'resupplyStops'), updatedAt: stamp(opts) };
+    return current === undefined
+      ? plan
+      : { ...omitKey(plan, 'resupplyStops'), updatedAt: stamp(opts, plan.updatedAt) };
   }
   if (current !== undefined && current.length === ids.length && current.every((id, i) => id === ids[i])) {
     return plan;
   }
-  return { ...plan, resupplyStops: [...ids], updatedAt: stamp(opts) };
+  return { ...plan, resupplyStops: [...ids], updatedAt: stamp(opts, plan.updatedAt) };
 }
 
 // ---------------------------------------------------------------------------
@@ -533,9 +595,12 @@ export function migratePlanState(
     const stop: PlanStop = {
       ...(match?.id ? { waypointId: match.id } : {}),
       km: match?.totalDistance ?? legacy.km,
-      name: legacy.waypointName || match?.name || 'Stop',
+      name: clampStopName(
+        (typeof legacy.waypointName === 'string' ? legacy.waypointName.trim() : '') || match?.name,
+      ),
       nights: 1,
     };
+    if (stop.km < 0) continue;
     // A legacy save could in principle hold two stops at the same place (two
     // co-located waypoints, or two km that resolved to neighbouring ones); the
     // document forbids both, so the first wins.
@@ -549,7 +614,13 @@ export function migratePlanState(
     direction: state.direction ?? 'NOBO',
     startDate: isIsoDate(state.startDate) ? state.startDate : null,
     stops: sortStops(stops).slice(0, PLAN_LIMITS.stopsMax),
-    ...(state.resupplyStops ? { resupplyStops: [...state.resupplyStops] } : {}),
+    ...(state.resupplyStops
+      ? {
+          resupplyStops: state.resupplyStops
+            .filter(id => typeof id === 'string' && PLAN_WAYPOINT_ID_PATTERN.test(id))
+            .slice(0, PLAN_LIMITS.resupplyStopsMax),
+        }
+      : {}),
     updatedAt: stamp(opts),
     version: 1,
   };
@@ -899,6 +970,20 @@ export function assertPlanDocumentWithinLimits(plan: PlanDocument): void {
     if (!Number.isFinite(stop.km)) {
       throw new Error(`plan-editor: "${stop.name}" has a non-finite km (${String(stop.km)})`);
     }
+    // The rest mirror the server's checks (`workers/comments-api` validation),
+    // so a document it would refuse is refused here, where the caller can say so.
+    if (stop.km < 0) {
+      throw new Error(`plan-editor: "${stop.name}" has a negative km (${stop.km})`);
+    }
+    if (stop.name.trim().length === 0) {
+      throw new Error(`plan-editor: the stop at km ${stop.km} has no name`);
+    }
+    if (stop.name.length > PLAN_LIMITS.stopNameMax) {
+      throw new Error(`plan-editor: stop name at km ${stop.km} exceeds ${PLAN_LIMITS.stopNameMax} characters`);
+    }
+    if (stop.waypointId !== undefined && !PLAN_WAYPOINT_ID_PATTERN.test(stop.waypointId)) {
+      throw new Error(`plan-editor: "${stop.name}" has an invalid waypoint id ${JSON.stringify(stop.waypointId)}`);
+    }
     if (!Number.isFinite(stop.nights) || stop.nights < 1 || stop.nights > PLAN_LIMITS.nightsMax) {
       throw new Error(
         `plan-editor: "${stop.name}" has ${stop.nights} nights, outside 1..${PLAN_LIMITS.nightsMax}`,
@@ -912,6 +997,18 @@ export function assertPlanDocumentWithinLimits(plan: PlanDocument): void {
         throw new Error(`plan-editor: two stops share waypoint id ${stop.waypointId}`);
       }
       seenIds.add(stop.waypointId);
+    }
+  }
+  if (plan.resupplyStops !== undefined) {
+    if (plan.resupplyStops.length > PLAN_LIMITS.resupplyStopsMax) {
+      throw new Error(
+        `plan-editor: ${plan.resupplyStops.length} resupply stops exceeds ${PLAN_LIMITS.resupplyStopsMax}`,
+      );
+    }
+    for (const id of plan.resupplyStops) {
+      if (!PLAN_WAYPOINT_ID_PATTERN.test(id)) {
+        throw new Error(`plan-editor: invalid resupply waypoint id ${JSON.stringify(id)}`);
+      }
     }
   }
   for (let i = 1; i < plan.stops.length; i++) {

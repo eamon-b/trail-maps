@@ -79,6 +79,10 @@ export function calculateFoodWeight(
 
 /**
  * Compute gaps between consecutive resupply points, including trail start/end.
+ *
+ * With no points at all the whole range is one gap, start to end: the hiker
+ * who resupplies nowhere still carries food for every day of it, and that is
+ * the carry they most need the figure for. Only an empty range has no gaps.
  */
 export function computeResupplyGaps(
   points: ResupplyPoint[],
@@ -87,10 +91,25 @@ export function computeResupplyGaps(
   dailyKm: number = DEFAULT_DAILY_KM,
   longThresholdDays: number = DEFAULT_LONG_THRESHOLD_DAYS,
 ): ResupplyGap[] {
-  if (points.length === 0) return [];
-
   const effectiveDailyKm = Math.max(1, dailyKm);
   const gaps: ResupplyGap[] = [];
+
+  if (points.length === 0) {
+    const dist = trailEndKm - trailStartKm;
+    if (dist > 0) {
+      const days = Math.ceil(dist / effectiveDailyKm);
+      gaps.push({
+        fromName: 'Trail Start',
+        toName: 'Trail End',
+        fromKm: trailStartKm,
+        toKm: trailEndKm,
+        distanceKm: Math.round(dist * 10) / 10,
+        estimatedDays: days,
+        isLong: days > longThresholdDays,
+      });
+    }
+    return gaps;
+  }
 
   // Deduplicate points at the same km position
   const deduped = points.filter(

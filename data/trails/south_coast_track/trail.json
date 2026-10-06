@@ -39,13 +39,15 @@
     },
     {
       "name": "Ironbound Range",
-      "lat": -43.52,
-      "lon": 146.45
+      "lat": -43.5071,
+      "lon": 146.4674,
+      "elevation": 818
     },
     {
       "name": "Cockle Creek",
-      "lat": -43.58,
-      "lon": 146.89
+      "lat": -43.5819,
+      "lon": 146.8903,
+      "elevation": 13
     }
   ],
   "climateFile": "climate.json"

@@ -34,13 +34,21 @@
   "climateLocations": [
     {
       "name": "Katoomba",
-      "lat": -33.71,
-      "lon": 150.31
+      "lat": -33.7037,
+      "lon": 150.2888,
+      "elevation": 1064
     },
     {
       "name": "Coxs River",
-      "lat": -33.75,
-      "lon": 150.17
+      "lat": -33.7428,
+      "lon": 150.1788,
+      "elevation": 279
+    },
+    {
+      "name": "Black Range",
+      "lat": -33.7551,
+      "lon": 150.0479,
+      "elevation": 1196
     },
     {
       "name": "Jenolan Caves",

@@ -521,3 +521,83 @@ describe('concatenateStretches', () => {
     expect(result.breaks[0]).toMatchObject({ fromTrack: 'A', toTrack: 'B', index: 5 });
   });
 });
+
+/**
+ * Run `fn` with `Array.prototype.push` refusing more arguments than
+ * JavaScriptCore (Safari) accepts in one call. V8 allows far more, so without
+ * this a `push(...points)` on a long track passes here and throws on an iPhone.
+ */
+function withJscArgumentLimit<T>(fn: () => T): T {
+  const realPush = Array.prototype.push;
+  Array.prototype.push = function (this: unknown[], ...items: unknown[]) {
+    if (items.length > 65536) throw new RangeError('Maximum call stack size exceeded.');
+    return realPush.apply(this, items);
+  };
+  try {
+    return fn();
+  } finally {
+    Array.prototype.push = realPush;
+  }
+}
+
+describe('very long tracks', () => {
+  const N = 150_000;
+  const long = (startLat: number): GpxPoint[] =>
+    Array.from({ length: N }, (_, i) => ({ lat: startLat + i * 1e-6, lon: 138, ele: 0, time: null }));
+
+  it('chains tracks of 150,000 points without one call per point', () => {
+    const a = { name: 'A', points: long(-34) };
+    const b = { name: 'B', points: long(-34 + N * 1e-6) };
+    const result = withJscArgumentLimit(() => combineTracksGeographically([a, b]));
+    expect(result.combinedPoints).toHaveLength(2 * N);
+    expect(result.combinedPoints[N]).toBe(b.points[0]);
+  });
+
+  it('prepends one just as well', () => {
+    const later = { name: 'Later', points: long(-34 + N * 1e-6) };
+    const earlier = { name: 'Earlier', points: long(-34) };
+    const result = withJscArgumentLimit(() => combineTracksGeographically([later, earlier]));
+    expect(result.orderedNames).toEqual(['Earlier', 'Later']);
+    expect(result.combinedPoints).toHaveLength(2 * N);
+  });
+
+  it('concatenates stretches of 150,000 points', () => {
+    const result = withJscArgumentLimit(() =>
+      concatenateStretches([{ name: 'A', points: long(-34) }, { name: 'B', points: long(-30) }])
+    );
+    expect(result.combinedPoints).toHaveLength(2 * N);
+    expect(result.breaks).toHaveLength(1);
+  });
+});
+
+describe('combineTracksGeographically keeps the first track as drawn', () => {
+  const pt = (lat: number): GpxPoint => ({ lat, lon: 138, ele: 0, time: null });
+
+  it('puts a track that meets the start of the route in front of it', () => {
+    // Listed Day 2 (B → C) then Day 1 (A → B). Turning the route round to
+    // append Day 1 at the far end walked the whole thing backwards.
+    const day2 = { name: 'Day 2', points: [pt(-34.1), pt(-34.2), pt(-34.3)] };
+    const day1 = { name: 'Day 1', points: [pt(-34.0), pt(-34.05), pt(-34.1)] };
+    const result = combineTracksGeographically([day2, day1]);
+
+    expect(result.orderedNames).toEqual(['Day 1', 'Day 2']);
+    expect(result.combinedPoints.map(p => p.lat)).toEqual([-34.0, -34.05, -34.1, -34.1, -34.2, -34.3]);
+  });
+
+  it('turns a track drawn the wrong way before putting it in front', () => {
+    const day2 = { name: 'Day 2', points: [pt(-34.1), pt(-34.2)] };
+    const day1Backwards = { name: 'Day 1', points: [pt(-34.1), pt(-34.0)] };
+    const result = combineTracksGeographically([day2, day1Backwards]);
+
+    expect(result.combinedPoints.map(p => p.lat)).toEqual([-34.0, -34.1, -34.1, -34.2]);
+  });
+
+  it('names the gap in walking order when it prepends', () => {
+    const day2 = { name: 'Day 2', points: [pt(-34.1), pt(-34.2)] };
+    const day1 = { name: 'Day 1', points: [pt(-34.0), pt(-34.09)] }; // ~1.1 km short
+    const result = combineTracksGeographically([day2, day1]);
+    expect(result.warnings).toEqual([
+      expect.objectContaining({ type: 'gap', fromTrack: 'Day 1', toTrack: 'Day 2' }),
+    ]);
+  });
+});

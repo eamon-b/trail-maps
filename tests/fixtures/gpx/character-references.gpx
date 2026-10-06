@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>O&#39;Connor&#x26;Sons&#160;Track</name></metadata>
+  <wpt lat="-33.8700" lon="151.2100">
+    <name>Bill&#x27;s Hut &#8211; caf&#233;</name>
+    <desc>Literal &amp;#39; stays literal; <![CDATA[so does &amp; in CDATA]]></desc>
+  </wpt>
+  <trk>
+    <name>Day&#x20;1 &#x1F3D5;</name>
+    <trkseg>
+      <trkpt lat="-33.8688" lon="151.2093"><ele>10</ele></trkpt>
+      <trkpt lat="-33.8700" lon="151.2100"><ele>15</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

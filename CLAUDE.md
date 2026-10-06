@@ -35,7 +35,7 @@ npm run preview        # Preview production build locally
 Shared processing modules (used by both web and mobile):
 - `distance.ts` - Haversine distance calculations
 - `gpx-parser.ts` - Parse GPX XML into structured data; `parseGpx(xml, adapter?, limits?)` is platform-neutral (see XML adapters below) and parses coordinates strictly (throws instead of plotting 0,0)
-- `xml-adapter.ts` - Minimal XML node interface (`querySelectorAll`/`querySelector`/`getAttribute`/`textContent`, tag selectors only) + the DOMParser adapter
+- `xml-adapter.ts` - Minimal XML node interface (`querySelectorAll`/`querySelector`/`childElement`/`getAttribute`/`textContent`, tag selectors only) + the DOMParser adapter. `querySelector` searches every descendant, so a field that must be the element's *own* (`<wpt>`'s `<name>`/`<type>`, not its `<link>`'s) goes through `childElement`
 - `xml-adapter-fxp.ts` - fast-xml-parser adapter (the React Native path — Hermes has no DOMParser)
 - `gpx-optimizer.ts` - Track simplification (Douglas-Peucker), elevation spike removal/smoothing, elevation stats
 - `track-simplify.ts` - Target-point-count simplification + coordinate truncation (the mobile point budget)

@@ -14,10 +14,19 @@ export const GPX_MAX_POINT_COUNT = 100000;
 /** Maximum accepted GPX source size, measured in UTF-16 code units. */
 export const GPX_MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+/**
+ * Maximum number of `<wpt>`s accepted from a single GPX file. Every waypoint
+ * is matched against every track point while the trail is built, so they need
+ * a ceiling as much as the points do. The largest curated trail (the CDT) has
+ * under 600; a file with more than this is not a trail guide.
+ */
+export const GPX_MAX_WAYPOINT_COUNT = 20000;
+
 /** Size/point caps applied while parsing untrusted GPX. 0 disables a cap. */
 export interface GpxParseLimits {
   maxFileSize?: number;
   maxPointCount?: number;
+  maxWaypointCount?: number;
 }
 
 /**
@@ -58,9 +67,13 @@ export function parseGpx(xml: string, adapter?: XmlAdapter, limits?: GpxParseLim
     }
   };
 
+  // A field is read from the element's own child, never from anywhere inside
+  // it: `<metadata><author><name>` is not the trail's name, and a nameless
+  // `<trk>` must not take the name of its first `<trkpt>`.
+
   // Tracks (<trk> → <trkseg> → <trkpt>)
   const tracks: GpxTrack[] = doc.querySelectorAll('trk').map(trk => ({
-    name: text(trk.querySelector('name')) ?? '',
+    name: text(trk.childElement('name')) ?? '',
     segments: trk.querySelectorAll('trkseg').map(seg => {
       const trkpts = seg.querySelectorAll('trkpt');
       countPoints(trkpts.length);
@@ -73,27 +86,36 @@ export function parseGpx(xml: string, adapter?: XmlAdapter, limits?: GpxParseLim
     const rtepts = rte.querySelectorAll('rtept');
     countPoints(rtepts.length);
     return {
-      name: text(rte.querySelector('name')) ?? '',
+      name: text(rte.childElement('name')) ?? '',
       points: rtepts.map(pt => parsePoint(pt, 'rtept')),
     };
   });
 
   // Waypoints (<wpt>)
-  const waypoints: GpxWaypoint[] = doc.querySelectorAll('wpt').map(wpt => {
-    const explicitType = text(wpt.querySelector('type'));
+  const wpts = doc.querySelectorAll('wpt');
+  const maxWaypointCount = limits?.maxWaypointCount ?? GPX_MAX_WAYPOINT_COUNT;
+  if (maxWaypointCount > 0 && wpts.length > maxWaypointCount) {
+    throw new Error(
+      `GPX file has too many waypoints: ${wpts.length} exceeds the ${maxWaypointCount} waypoint limit`
+    );
+  }
+  const waypoints: GpxWaypoint[] = wpts.map(wpt => {
+    // `<link>` carries a `<type>` of its own (a MIME type), which a descendant
+    // search would find first.
+    const explicitType = text(wpt.childElement('type'));
     return {
       lat: parseCoordinate(wpt.getAttribute('lat'), 'lat', 'wpt'),
       lon: parseCoordinate(wpt.getAttribute('lon'), 'lon', 'wpt'),
       ele: parseElevation(wpt),
-      name: text(wpt.querySelector('name')) ?? '',
-      desc: text(wpt.querySelector('desc')) ?? '',
+      name: text(wpt.childElement('name')) ?? '',
+      desc: text(wpt.childElement('desc')) ?? '',
       type: explicitType ? explicitType : undefined,
       ...parseWaypointAccess(wpt),
     };
   });
 
   const metadata = doc.querySelector('metadata');
-  const metadataName = metadata ? text(metadata.querySelector('name')) : null;
+  const metadataName = metadata ? text(metadata.childElement('name')) : null;
 
   return { tracks, routes, waypoints, metadataName };
 }
@@ -113,13 +135,13 @@ function text(node: XmlNode | null): string | null {
  * parses exactly as it did before.
  */
 function parseWaypointAccess(wpt: XmlNode): WaypointAccess {
-  const extensions = wpt.querySelector('extensions');
+  const extensions = wpt.childElement('extensions');
   if (!extensions) return {};
 
   // textContent is untrimmed, and a generator that pretty-prints its XML puts a
   // newline and an indent either side of every value.
   const read = (tag: string): string | null => {
-    const value = text(extensions.querySelector(tag))?.trim();
+    const value = text(extensions.childElement(tag))?.trim();
     return value ? value : null;
   };
 
@@ -150,7 +172,7 @@ function parseElevation(node: XmlNode): number {
   // A non-numeric <ele> (e.g. "N/A", "unknown") parses to NaN, which would then
   // poison ascent totals and Naismith time estimates while hasElevation's
   // Number.isFinite check silently suppresses any warning. Treat it as 0.
-  const value = parseFloat(text(node.querySelector('ele')) || '0');
+  const value = parseFloat(text(node.childElement('ele')) || '0');
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -159,7 +181,7 @@ function parsePoint(pt: XmlNode, context: string): GpxPoint {
     lat: parseCoordinate(pt.getAttribute('lat'), 'lat', context),
     lon: parseCoordinate(pt.getAttribute('lon'), 'lon', context),
     ele: parseElevation(pt),
-    time: text(pt.querySelector('time')) || null,
+    time: text(pt.childElement('time')) || null,
   };
 }
 

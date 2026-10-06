@@ -385,6 +385,21 @@ describe('parseHandoffJson', () => {
       });
     });
 
+    it('keeps the suffixed id an import gives a waypoint the route passes twice', () => {
+      // `resolveDuplicateWaypointIds` mints `uw_<hash>_2`; refusing the suffix
+      // re-minted it on every handoff, and anything keyed by it was lost.
+      const [wp] = parseHandoffJson(withWaypoint({ ...good, id: 'uw_deadbeef01_2' })).waypoints;
+      expect(wp.id).toBe('uw_deadbeef01_2');
+    });
+
+    it('still re-mints an id that only looks suffixed', () => {
+      for (const id of ['uw_deadbeef01_', 'uw_deadbeef01_x', 'uw_dead_beef_01_2', 'uw_a_../x']) {
+        const [wp] = parseHandoffJson(withWaypoint({ ...good, id })).waypoints;
+        expect(wp.id).not.toBe(id);
+        expect(wp.id).toMatch(/^uw_[a-z0-9]+$/);
+      }
+    });
+
     it('drops malformed access fields instead of letting them through the spread', () => {
       const [wp] = parseHandoffJson(
         withWaypoint({
@@ -401,6 +416,129 @@ describe('parseHandoffJson', () => {
       expect('acceptsBoxes' in wp).toBe(false);
       expect('accessName' in wp).toBe(false);
     });
+  });
+});
+
+describe('parseHandoffJson: variants and off-trail waypoints', () => {
+  const variantWaypoint = {
+    id: 'w_registry1',
+    name: 'Hut',
+    type: 'hut',
+    lat: -33.871,
+    lon: 151.211,
+    elevation: 30,
+    distance: 0.2,
+    totalDistance: 0.35,
+    ascent: 5,
+    descent: 0,
+    totalAscent: 5,
+    totalDescent: 0,
+    variantTrackIndex: 1,
+  };
+  const variant = {
+    name: 'Alt: High route',
+    type: 'alternate',
+    points: [
+      { lat: -33.87, lon: 151.21, ele: 25 },
+      { lat: -33.871, lon: 151.211, ele: 30 },
+      { lat: -33.875, lon: 151.215, ele: 40 },
+    ],
+    distance: 0.7,
+    elevation: { ascent: 15, descent: 0 },
+    startDistance: 0.15,
+    endDistance: 0.85,
+    startTrackIndex: 1,
+    endTrackIndex: 2,
+    waypoints: [variantWaypoint],
+  };
+  const offTrail = {
+    id: 'w_registry2',
+    name: 'Far Spring',
+    type: 'water',
+    lat: -33.9,
+    lon: 151.3,
+    distanceFromTrail: 4200,
+  };
+
+  function file(trail: Record<string, unknown>): string {
+    return JSON.stringify({ format: HANDOFF_FORMAT, version: 1, trail: { ...makeTrail(), ...trail } });
+  }
+
+  it('carries well-formed variants and off-trail waypoints through', () => {
+    const parsed = parseHandoffJson(file({ alternates: [variant], sideTrips: [], offTrailWaypoints: [offTrail] }));
+    expect(parsed.alternates[0]).toMatchObject({
+      name: 'Alt: High route',
+      type: 'alternate',
+      points: variant.points,
+      startDistance: 0.15,
+      endDistance: 0.85,
+    });
+    expect(parsed.alternates[0].waypoints![0]).toMatchObject({ name: 'Hut', totalDistance: 0.35 });
+    expect(parsed.offTrailWaypoints[0]).toMatchObject({ name: 'Far Spring', distanceFromTrail: 4200 });
+  });
+
+  it('gives no registry id to a variant or off-trail waypoint either', () => {
+    const parsed = parseHandoffJson(file({ alternates: [variant], offTrailWaypoints: [offTrail] }));
+    expect(parsed.alternates[0].waypoints![0].id).toMatch(/^uw_[a-z0-9]+$/);
+    expect(parsed.offTrailWaypoints[0].id).toMatch(/^uw_[a-z0-9]+$/);
+  });
+
+  it('re-mints a waypoint the same way on a variant as on the main route', () => {
+    const mainWaypoint = {
+      ...variantWaypoint,
+      distance: 0.15,
+      totalDistance: 0.15,
+      trackIndex: 1,
+    };
+    const parsed = parseHandoffJson(file({ waypoints: [mainWaypoint], alternates: [variant] }));
+    expect(parsed.alternates[0].waypoints![0].id).toBe(parsed.waypoints[0].id);
+  });
+
+  it('rejects a variant point that is not a number rather than drawing NaN', () => {
+    const bad = { ...variant, points: [variant.points[0], { lat: 'north', lon: 151.2, ele: 3 }] };
+    expect(() => parseHandoffJson(file({ alternates: [bad] }))).toThrow(
+      /non-numeric alternates\[0\]\.points\[1\]\.lat/
+    );
+  });
+
+  it('rejects a variant off the globe', () => {
+    const bad = { ...variant, points: [{ lat: -33.87, lon: 251.2, ele: 3 }] };
+    expect(() => parseHandoffJson(file({ sideTrips: [{ ...bad, type: 'side-trip' }] }))).toThrow(
+      /out-of-range sideTrips\[0\]\.points\[0\]\.lon/
+    );
+  });
+
+  it('rejects a junction km that is not a number', () => {
+    expect(() => parseHandoffJson(file({ alternates: [{ ...variant, startDistance: '0.15' }] }))).toThrow(
+      /non-numeric alternates\[0\]\.startDistance/
+    );
+  });
+
+  it('rejects an unknown variant type and a variant with no point list', () => {
+    expect(() => parseHandoffJson(file({ alternates: [{ ...variant, type: 'shortcut' }] }))).toThrow(
+      /unknown alternates\[0\]\.type/
+    );
+    expect(() => parseHandoffJson(file({ alternates: [{ ...variant, points: 'none' }] }))).toThrow(
+      /no point list on alternates\[0\]/
+    );
+  });
+
+  it('rejects a list that is not a list', () => {
+    expect(() => parseHandoffJson(file({ sideTrips: { 0: variant } }))).toThrow(/malformed sideTrips/);
+    expect(() => parseHandoffJson(file({ offTrailWaypoints: 'none' }))).toThrow(/malformed offTrailWaypoints/);
+  });
+
+  it('rejects an off-trail waypoint with no usable position', () => {
+    expect(() =>
+      parseHandoffJson(file({ offTrailWaypoints: [{ ...offTrail, lat: null }] }))
+    ).toThrow(/non-numeric offTrailWaypoints\[0\]\.lat/);
+  });
+
+  it('rejects a variant waypoint with no usable position', () => {
+    const bad = { ...variant, waypoints: [{ ...variantWaypoint, lon: 'east' }] };
+    expect(() => parseHandoffJson(file({ alternates: [bad] }))).toThrow(
+      /non-numeric alternates\[0\]\.waypoints\[0\]\.lon/
+    );
   });
 });
 

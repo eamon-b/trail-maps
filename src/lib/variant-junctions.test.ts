@@ -429,3 +429,105 @@ describe('a variant whose two ends attach to different alternates', () => {
     expect(c.points[0].lon).toBeCloseTo(0.04, 9);
   });
 });
+
+describe('a variant attached at its last point only', () => {
+  const route = mainRoute(31);
+
+  /**
+   * Drawn from a free end 11.12 km north of the route down to the route at
+   * km 4.45 (lon 0.04): the shape of the CDT's Govina Canyon alternate, or the
+   * Heysen's Warren Gorge spur drawn turnaround-first.
+   */
+  const dangling = (): RouteVariant => ({
+    ...alternate('Dangling', [
+      [0.1, 0.04],
+      [0, 0.04],
+    ]),
+    elevation: { ascent: 12, descent: 340 },
+  });
+
+  const waypoint = (name: string, lat: number, lon: number): TrailWaypoint => ({
+    name,
+    lat,
+    lon,
+    type: 'waypoint',
+  });
+
+  function attached(variant: RouteVariant): RouteVariant {
+    const isAlternate = variant.type === 'alternate';
+    const result = attachVariantsToParents(
+      findVariantJunctions(isAlternate ? [variant] : [], route),
+      findVariantJunctions(isAlternate ? [] : [variant], route)
+    );
+    return isAlternate ? result.alternates[0] : result.sideTrips[0];
+  }
+
+  it('turns an alternate round to be read from its junction', () => {
+    const variant = attached(dangling());
+
+    expect(variant.startDistance).toBeCloseTo(4.45, 2);
+    expect(variant.startTrackIndex).toBe(4);
+    expect(variant).not.toHaveProperty('endDistance');
+    expect(variant).not.toHaveProperty('endTrackIndex');
+    // points[0] is the junction, the free end is last.
+    expect(variant.points[0]).toMatchObject({ lat: 0, lon: 0.04 });
+    expect(variant.points[variant.points.length - 1]).toMatchObject({ lat: 0.1, lon: 0.04 });
+    // Measured the way it was drawn, so the climb trades places.
+    expect(variant.elevation).toEqual({ ascent: 340, descent: 12 });
+  });
+
+  it('turns a side trip round the same way', () => {
+    // A side trip's last point only counts as a junction when its first is
+    // nowhere near the same part of the route, so this one's free end is off
+    // to the east as well as north.
+    const spur: RouteVariant = {
+      ...alternate('Spur drawn from the far end', [
+        [0.1, 0.16],
+        [0.1, 0.04],
+        [0, 0.04],
+      ]),
+      type: 'side-trip',
+      elevation: { ascent: 12, descent: 340 },
+    };
+    const variant = attached(spur);
+
+    expect(variant.startDistance).toBeCloseTo(4.45, 2);
+    expect(variant).not.toHaveProperty('endDistance');
+    expect(variant.points[0]).toMatchObject({ lat: 0, lon: 0.04 });
+    expect(variant.points[variant.points.length - 1]).toMatchObject({ lat: 0.1, lon: 0.16 });
+    expect(variant.elevation).toEqual({ ascent: 340, descent: 12 });
+  });
+
+  it('numbers its waypoints from the junction, on the trail km scale', () => {
+    const [variant] = enrichVariantWaypoints(
+      [attached(dangling())],
+      [waypoint('Free end', 0.1, 0.04), waypoint('Half way', 0.05, 0.04)]
+    );
+    // Before: 0 and 5.56, counted from the free end with no junction km.
+    expect(variant.waypoints!.map(w => w.name)).toEqual(['Half way', 'Free end']);
+    expect(variant.waypoints![0].totalDistance).toBeCloseTo(4.45 + 5.56, 1);
+    expect(variant.waypoints![1].totalDistance).toBeCloseTo(4.45 + 11.12, 1);
+  });
+
+  it('leaves the junctions of a variant that also hangs off a parent where they were', () => {
+    // The parent touches the route at both ends; the child's far end is on
+    // the parent. The child is a two-junction variant and is not turned.
+    const parent = alternate('Parent', [
+      [0, 0.04],
+      [0.1, 0.04],
+      [0.1, 0.1],
+      [0, 0.1],
+    ]);
+    const child = alternate('Child', [
+      [0.05, 0.07],
+      [0.1, 0.07],
+    ]);
+    const { alternates } = attachVariantsToParents(findVariantJunctions([parent, child], route), []);
+    const attachedChild = alternates[1];
+    // Its free end never reached anything; the end on the parent is its junction.
+    expect(attachedChild.parent).toEqual({ name: 'Parent', index: 0 });
+    expect(attachedChild.startDistance).toBeCloseTo(4.45 + 11.12 + 3.34, 1);
+    expect(attachedChild).not.toHaveProperty('endDistance');
+    expect(attachedChild.points[0]).toMatchObject({ lat: 0.1, lon: 0.07 });
+  });
+});

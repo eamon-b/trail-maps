@@ -217,13 +217,29 @@ function findBestConnection(
 }
 
 /**
+ * Append every point of `source` to `target`.
+ *
+ * `target.push(...source)` passes each point as an argument, and
+ * JavaScriptCore (Safari) refuses a call with more than 65,536 of them - one
+ * long track in an imported file is enough.
+ */
+function appendPoints(target: GpxPoint[], source: GpxPoint[]): void {
+  for (const point of source) target.push(point);
+}
+
+/**
  * Combine multiple tracks into a single continuous route by geographic proximity.
  *
  * The algorithm:
- * 1. Start with the first track
- * 2. Find the track that best connects to the current route (smallest gap)
- * 3. Reverse tracks if needed to minimize gaps
+ * 1. Start with the first track, in the direction it is drawn
+ * 2. Find the track that best connects to either end of the route (smallest gap)
+ * 3. Reverse that track if needed to minimize the gap, and add it at that end
  * 4. Repeat until all tracks are combined
+ *
+ * The first track is never turned round: a track that fits before it is put
+ * in front of it instead. The first track is where the file starts, so turning
+ * the whole route round to append at the far end would make a file listed
+ * Day 2, Day 1 walk backwards.
  *
  * Warnings are generated for gaps larger than 100m between consecutive tracks.
  */
@@ -255,13 +271,13 @@ export function combineTracksGeographically(
   }));
 
   const orderedNames: string[] = [];
-  const combinedPoints: GpxPoint[] = [];
+  let combinedPoints: GpxPoint[] = [];
   const warnings: CombineTracksWarning[] = [];
 
   // Start with the first track
   const first = remaining.shift()!;
   orderedNames.push(first.name);
-  combinedPoints.push(...first.points);
+  appendPoints(combinedPoints, first.points);
 
   // Greedily add remaining tracks by finding best connection
   while (remaining.length > 0) {
@@ -283,42 +299,44 @@ export function combineTracksGeographically(
     // Get the best track and remove from remaining
     const [nextTrack] = remaining.splice(bestIdx, 1);
 
-    // Reverse if needed
-    if (bestConnection.reverseTrack2) {
+    // `reverseTrack1` means the track meets the start of the route, so it goes
+    // in front, drawn to end where the route begins: as is when its end is the
+    // one that touches (start1-end2), turned round when its start is.
+    const prepend = bestConnection.reverseTrack1;
+    if (prepend ? !bestConnection.reverseTrack2 : bestConnection.reverseTrack2) {
       nextTrack.points.reverse();
-    }
-
-    // Check if this would require reversing the entire combined route
-    // (shouldn't happen often with greedy approach, but handle it)
-    if (bestConnection.reverseTrack1) {
-      combinedPoints.reverse();
-      orderedNames.reverse();
     }
 
     // Check for gap warning
     if (combinedPoints.length > 0 && nextTrack.points.length > 0) {
-      const lastPoint = combinedPoints[combinedPoints.length - 1];
-      const firstPoint = nextTrack.points[0];
-      const gapMeters = haversineDistance(
-        lastPoint.lat,
-        lastPoint.lon,
-        firstPoint.lat,
-        firstPoint.lon
-      );
+      const routeEnd = prepend ? combinedPoints[0] : combinedPoints[combinedPoints.length - 1];
+      const trackEnd = prepend ? nextTrack.points[nextTrack.points.length - 1] : nextTrack.points[0];
+      const gapMeters = haversineDistance(routeEnd.lat, routeEnd.lon, trackEnd.lat, trackEnd.lon);
 
       if (gapMeters > GAP_WARNING_THRESHOLD_METERS) {
-        warnings.push({
-          type: 'gap',
-          fromTrack: orderedNames[orderedNames.length - 1],
-          toTrack: nextTrack.name,
-          gapMeters,
-        });
+        warnings.push(
+          prepend
+            ? { type: 'gap', fromTrack: nextTrack.name, toTrack: orderedNames[0], gapMeters }
+            : {
+                type: 'gap',
+                fromTrack: orderedNames[orderedNames.length - 1],
+                toTrack: nextTrack.name,
+                gapMeters,
+              }
+        );
       }
     }
 
     // Add to combined route
-    orderedNames.push(nextTrack.name);
-    combinedPoints.push(...nextTrack.points);
+    if (prepend) {
+      orderedNames.unshift(nextTrack.name);
+      const joined = nextTrack.points.slice();
+      appendPoints(joined, combinedPoints);
+      combinedPoints = joined;
+    } else {
+      orderedNames.push(nextTrack.name);
+      appendPoints(combinedPoints, nextTrack.points);
+    }
   }
 
   return {
@@ -380,7 +398,7 @@ export function concatenateStretches(
     }
 
     orderedNames.push(track.name);
-    combinedPoints.push(...track.points);
+    appendPoints(combinedPoints, track.points);
   }
 
   return { combinedPoints, orderedNames, warnings, breaks };

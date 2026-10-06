@@ -13,10 +13,10 @@
 
 import { haversineDistance as haversineDistanceMeters } from './distance';
 import {
-  douglasPeucker,
+  douglasPeuckerIndices,
   removeElevationSpikes,
   smoothElevation,
-  calculateElevationStats,
+  cumulativeElevationChange,
 } from './gpx-optimizer';
 import {
   classifyTracks,
@@ -227,22 +227,35 @@ function selectMainRoute(
   config: TrailConfig,
   combineUnclassified = false
 ): MainRouteSelection {
-  const classification = classifyTracks(
-    gpxData.tracks.map(t => ({
-      name: t.name,
-      points: t.points.map(p => ({ ...p, time: p.time })),
-    })),
-    config.trackClassification || {}
-  );
-
+  const sourceTracks = gpxData.tracks.map(t => ({
+    name: t.name,
+    points: t.points.map(p => ({ ...p, time: p.time })),
+  }));
   // A user's GPX is often one <trk> per day/leg with no naming convention at
   // all, and `fallbackToLongest` would keep only the longest of them. For
   // imports every unclassified track is part of the route; the build script
   // leaves this off, where an unclassified track means "not configured yet".
+  //
+  // The fallback is switched off rather than undone afterwards: it puts the
+  // longest track first, and chaining starts from whichever track is first, so
+  // a Day 1 (5 km) + Day 2 (17 km) file came out walking from the end of Day 2
+  // back to the start of Day 1.
+  const classification = classifyTracks(
+    sourceTracks,
+    combineUnclassified
+      ? { ...config.trackClassification, fallbackToLongest: false }
+      : config.trackClassification || {}
+  );
+
   if (combineUnclassified && classification.unclassifiedTracks.length > 0) {
     for (const track of classification.unclassifiedTracks) track.type = 'main';
     classification.mainTracks.push(...classification.unclassifiedTracks);
     classification.unclassifiedTracks = [];
+    // The file's own order, so the chain starts from the file's first track.
+    const fileOrder = new Map(sourceTracks.map((t, i) => [t.points, i]));
+    classification.mainTracks.sort(
+      (a, b) => (fileOrder.get(a.points) ?? 0) - (fileOrder.get(b.points) ?? 0)
+    );
   }
 
   const parts: string[] = [];
@@ -432,6 +445,29 @@ function normaliseJunctionOrder(variant: RouteVariant): boolean {
   if (variant.startOffsetMeters !== undefined || variant.endOffsetMeters !== undefined) {
     [variant.startOffsetMeters, variant.endOffsetMeters] = [variant.endOffsetMeters, variant.startOffsetMeters];
   }
+  variant.points = [...variant.points].reverse();
+  variant.elevation = { ascent: variant.elevation.descent, descent: variant.elevation.ascent };
+  return true;
+}
+
+/**
+ * Turn a variant attached at its last point only into one attached at
+ * `startDistance` only - the shape a terminus and a dead-end side trip already
+ * have, so it reads forwards like every other variant. Left as it was, its
+ * waypoints were numbered from km 0 (there is no `startDistance` to count
+ * from) and it was drawn turnaround-first.
+ *
+ * Returns whether it turned the variant round.
+ */
+function turnEndOnlyRound(variant: RouteVariant): boolean {
+  if (variant.startDistance !== undefined || variant.endDistance === undefined) return false;
+
+  variant.startDistance = variant.endDistance;
+  delete variant.endDistance;
+  if (variant.endTrackIndex !== undefined) variant.startTrackIndex = variant.endTrackIndex;
+  delete variant.endTrackIndex;
+  if (variant.endOffsetMeters !== undefined) variant.startOffsetMeters = variant.endOffsetMeters;
+  delete variant.endOffsetMeters;
   variant.points = [...variant.points].reverse();
   variant.elevation = { ascent: variant.elevation.descent, descent: variant.elevation.ascent };
   return true;
@@ -645,6 +681,11 @@ export function attachVariantsToParents(
     return best;
   };
 
+  // Variants turned round by `turnEndOnlyRound` below. Their far end is the
+  // branch end that nothing would take, so it is not offered again — and a
+  // variant other routes now measure along must never be turned a second time.
+  const turnedRound = new Set<number>();
+
   let attachedSomething = true;
   while (attachedSomething) {
     attachedSomething = false;
@@ -654,7 +695,7 @@ export function attachVariantsToParents(
       if (variant.points.length === 0) continue;
 
       const needsStart = variant.startDistance === undefined;
-      const needsEnd = variant.endDistance === undefined && i < alternateCount;
+      const needsEnd = variant.endDistance === undefined && i < alternateCount && !turnedRound.has(i);
       if (!needsStart && !needsEnd) continue;
 
       // A terminus has one junction and it can be at either end of the line, so
@@ -712,6 +753,20 @@ export function attachVariantsToParents(
       const parentIndex = startParent[i] ?? endParent[i]!;
       variant.parent = { name: all[parentIndex].name, index: parentIndex };
       attachedSomething = true;
+    }
+
+    // Nothing more attaches, so a variant still held by its last point only
+    // never will be by its first. Turned round now and not earlier: a variant
+    // is only a parent once it has a startDistance, so nothing has measured
+    // along these yet - and once turned they can be parents, so go round again.
+    if (!attachedSomething) {
+      for (let i = 0; i < all.length; i++) {
+        if (turnedRound.has(i) || !turnEndOnlyRound(all[i])) continue;
+        turnedRound.add(i);
+        [startParent[i], endParent[i]] = [endParent[i], startParent[i]];
+        cumulative[i] = cumulativeKm(all[i].points);
+        attachedSomething = true;
+      }
     }
   }
 
@@ -823,13 +878,25 @@ export function findWaypointVisits(
 }
 
 /**
+ * Running climb per track point, from `cumulativeElevationChange`. When given,
+ * a segment's ascent and descent are read off it instead of summing every step,
+ * so the noise threshold an import applies to its totals applies to its
+ * waypoints as well.
+ */
+export interface ClimbLadder {
+  ascent: number[];
+  descent: number[];
+}
+
+/**
  * Calculate segment statistics between two track indices
  */
 export function calculateSegmentStats(
   points: { lat: number; lon: number; ele: number }[],
   fromIndex: number,
   toIndex: number,
-  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+  climb?: ClimbLadder
 ): { distance: number; ascent: number; descent: number } {
   let distance = 0;
   let ascent = 0;
@@ -851,6 +918,13 @@ export function calculateSegmentStats(
     else descent += Math.abs(elevDiff);
   }
 
+  if (climb && toIndex > fromIndex) {
+    // The ladder already leaves the break steps out.
+    const to = Math.min(toIndex, points.length - 1);
+    ascent = climb.ascent[to] - climb.ascent[fromIndex];
+    descent = climb.descent[to] - climb.descent[fromIndex];
+  }
+
   return { distance, ascent, descent };
 }
 
@@ -864,7 +938,8 @@ export function enrichWaypoints(
   waypoints: TrailWaypoint[],
   trackPoints: { lat: number; lon: number; ele: number }[],
   maxDistanceMeters: number = DEFAULT_WAYPOINT_MAX_DISTANCE_METERS,
-  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+  climb?: ClimbLadder
 ): EnrichedWaypoint[] {
   if (trackPoints.length === 0 || waypoints.length === 0) {
     return [];
@@ -887,7 +962,8 @@ export function enrichWaypoints(
       trackPoints,
       prevTrackIndex,
       visit.trackIndex,
-      breakStarts
+      breakStarts,
+      climb
     );
 
     runningDistance += segmentStats.distance;
@@ -1001,8 +1077,10 @@ export interface ElevationCleaningOptions {
   /** Smoothing window in points (default: GPX_OPTIMIZER_DEFAULTS.elevationSmoothingWindow). */
   smoothingWindow?: number;
   /**
-   * When set, total ascent/descent are computed with `calculateElevationStats`
-   * at this threshold (m) instead of summing every sample-to-sample delta.
+   * When set, ascent/descent — the totals and every main-route waypoint's
+   * segment and running figures — count a change only once it reaches this
+   * many metres from the last counted elevation (`calculateElevationStats`'
+   * hysteresis), instead of summing every sample-to-sample delta.
    */
   ascentThreshold?: number;
 }
@@ -1231,12 +1309,15 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     };
   });
 
-  // Noise-thresholded totals, when asked for. Only the two totals change: the
-  // per-point `dist` ladder and the per-segment waypoint stats stay as-is.
-  if (options.elevation?.ascentThreshold !== undefined) {
-    const stats = calculateElevationStats(mainRoutePoints, options.elevation.ascentThreshold);
-    totalAscent = stats.gain;
-    totalDescent = stats.loss;
+  // Noise-thresholded climb, when asked for. The waypoints' segment ascent and
+  // descent come from the same running count as the totals, so the last
+  // waypoint's running total never claims more climb than the whole trail.
+  const climb = options.elevation?.ascentThreshold !== undefined
+    ? cumulativeElevationChange(points, options.elevation.ascentThreshold, breakStarts)
+    : undefined;
+  if (climb) {
+    totalAscent = climb.ascent[climb.ascent.length - 1] ?? 0;
+    totalDescent = climb.descent[climb.descent.length - 1] ?? 0;
   }
 
   // Simplify for map display (target ~3000 points for smooth rendering)
@@ -1248,16 +1329,15 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
 
   if (points.length > targetDisplayPoints) {
     const tolerance = calculateAdaptiveTolerance(points, targetDisplayPoints, totalDistance);
-    // Build a Map for O(1) lookup of original points by lat/lon
-    // Douglas-Peucker returns references to original points, so exact equality works
-    const pointMap = new Map(points.map(p => [`${p.lat},${p.lon}`, p]));
-    const restore = (sp: { lat: number; lon: number; ele: number }): TrackPoint =>
-      pointMap.get(`${sp.lat},${sp.lon}`) || { lat: sp.lat, lon: sp.lon, ele: sp.ele, dist: 0 };
-    // douglasPeucker expects GpxPoint format with lat, lon, ele
-    const toGpx = (p: TrackPoint) => ({ lat: p.lat, lon: p.lon, ele: p.ele, time: null });
+    // Kept points are taken back by index. Looking them up by coordinate gave
+    // every point an out-and-back or a loop passes twice the km of whichever
+    // pass came last, and the Bibbulmun's display line ran backwards 26 times
+    // around Denmark.
+    const simplify = (stretch: TrackPoint[]): TrackPoint[] =>
+      douglasPeuckerIndices(stretch, tolerance).map(i => stretch[i]);
 
     if (breaks.length === 0) {
-      displayPoints = douglasPeucker(points.map(toGpx), tolerance).map(restore);
+      displayPoints = simplify(points);
     } else {
       // One pass per stretch. Simplifying across a break would let
       // Douglas-Peucker drop the two points either side of it — the line's
@@ -1265,8 +1345,7 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
       const bounds = [0, ...displayBreakIndices, points.length];
       const simplifiedStretches: TrackPoint[][] = [];
       for (let i = 0; i < bounds.length - 1; i++) {
-        const stretch = points.slice(bounds[i], bounds[i + 1]);
-        simplifiedStretches.push(douglasPeucker(stretch.map(toGpx), tolerance).map(restore));
+        simplifiedStretches.push(simplify(points.slice(bounds[i], bounds[i + 1])));
       }
       displayPoints = simplifiedStretches.flat();
       displayBreakIndices = [];
@@ -1403,7 +1482,8 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
     waypoints,
     mainRoutePoints,
     waypointMaxDist,
-    breakStarts
+    breakStarts,
+    climb
   );
 
   // Output invariant: every enriched waypoint carries a distinct stable id.
@@ -1590,7 +1670,7 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
  * - `track.points[].ele` (cleaned with the same passes an import uses),
  * - `track.totalAscent` / `track.totalDescent`,
  * - `track.displayPoints[].ele` (re-read from the cleaned full-resolution
- *   points by coordinate, the same way buildTrail derives them),
+ *   points, matched in order since the display copy is a subset of them),
  * - each waypoint's `elevation`, `ascent`/`descent` and running totals, from
  *   its stored `trackIndex` via {@link calculateSegmentStats} — the identical
  *   accumulation {@link enrichWaypoints} performs.
@@ -1630,25 +1710,34 @@ export function recomputeTrailElevation(
     if (diff > 0) totalAscent += diff;
     else totalDescent += Math.abs(diff);
   }
-  if (options?.ascentThreshold !== undefined) {
-    const stats = calculateElevationStats(cleaned, options.ascentThreshold);
-    totalAscent = stats.gain;
-    totalDescent = stats.loss;
+  const climb = options?.ascentThreshold !== undefined
+    ? cumulativeElevationChange(points, options.ascentThreshold, breakStarts)
+    : undefined;
+  if (climb) {
+    totalAscent = climb.ascent[climb.ascent.length - 1] ?? 0;
+    totalDescent = climb.descent[climb.descent.length - 1] ?? 0;
   }
 
-  // displayPoints are a coordinate-identical subset of points (Douglas-Peucker
-  // returns references), so a coordinate key re-attaches the new elevations.
-  const byCoord = new Map(points.map(p => [`${p.lat},${p.lon}`, p]));
+  // displayPoints are an in-order subset of points, so walking the two arrays
+  // together re-attaches the new elevations. A lookup keyed on coordinates
+  // cannot: an out-and-back or a loop passes the same coordinate twice, and the
+  // two passes have different neighbours to smooth with.
+  let cursor = 0;
   const displayPoints = trail.track.displayPoints.map(dp => {
-    const updated = byCoord.get(`${dp.lat},${dp.lon}`);
-    return updated ? { ...dp, ele: updated.ele } : dp;
+    for (let i = cursor; i < points.length; i++) {
+      if (points[i].lat === dp.lat && points[i].lon === dp.lon) {
+        cursor = i + 1;
+        return { ...dp, ele: points[i].ele };
+      }
+    }
+    return dp;
   });
 
   let prevTrackIndex = 0;
   let runningAscent = 0;
   let runningDescent = 0;
   const waypoints: EnrichedWaypoint[] = trail.waypoints.map(wp => {
-    const segment = calculateSegmentStats(points, prevTrackIndex, wp.trackIndex, breakStarts);
+    const segment = calculateSegmentStats(points, prevTrackIndex, wp.trackIndex, breakStarts, climb);
     runningAscent += segment.ascent;
     runningDescent += segment.descent;
     prevTrackIndex = wp.trackIndex;

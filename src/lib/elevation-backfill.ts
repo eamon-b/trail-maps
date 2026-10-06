@@ -49,13 +49,25 @@ export const DEFAULT_DELAY_MS = 500;
 export const DEFAULT_MAX_SAMPLES = 2000;
 
 /**
+ * Elevations outside this band are not ground: they are a DEM's void marker
+ * (-32768 is the usual one) or garbage. The Dead Sea shore is about -430 m and
+ * Everest 8,849 m, so nothing a trail crosses is outside it.
+ */
+const MIN_PLAUSIBLE_ELEVATION_M = -500;
+const MAX_PLAUSIBLE_ELEVATION_M = 9000;
+
+/**
  * Elevation cleaning applied after a backfill.
  *
- * DEM samples are not barometric noise, so spike removal rarely fires — it is
- * on as a guard against a single bad post (voids over water read as 0 or
- * -32768). The 3 m ascent threshold matters more: interpolating between DEM
- * posts produces long shallow ramps whose every-sample deltas would otherwise
- * accumulate into an ascent total that flatters the terrain.
+ * DEM samples are not barometric noise, so spike removal rarely fires. It is
+ * not what handles voids: a void sample is dropped before interpolation (see
+ * `backfillElevation`), because once interpolated it is a ramp down to -32768
+ * and back across every point between its neighbouring samples, which no
+ * single-point spike test can see. The 3 m ascent threshold keeps the DEM's
+ * metre-scale jitter between neighbouring posts out of the totals. It is a
+ * hysteresis band (`calculateElevationStats`), so the long shallow ramps that
+ * interpolating between posts produces still count in full: each is the real
+ * climb between two posts, only spread over many small steps.
  */
 export const BACKFILL_ELEVATION_CLEANING = {
   removeSpikes: true,
@@ -138,11 +150,22 @@ export async function backfillElevation(
 
     const batch = sampleIndices.slice(start, start + batchSize).map(i => points[i]);
     const elevations = await fetchElevationBatch(doFetch, endpoint, batch, options.signal);
-    sampled.push(...elevations);
+    for (const elevation of elevations) sampled.push(elevation);
     options.onProgress?.(sampled.length, total);
   }
 
-  return interpolateBySampledDistance(cumulative, sampleIndices, sampled);
+  // Voids are left out, so the points around one are interpolated between the
+  // good samples either side of it. A track with no good sample at all gets
+  // 0, the pipeline's "no elevation".
+  const goodIndices: number[] = [];
+  const goodElevations: number[] = [];
+  sampled.forEach((elevation, k) => {
+    if (Number.isNaN(elevation)) return;
+    goodIndices.push(sampleIndices[k]);
+    goodElevations.push(elevation);
+  });
+
+  return interpolateBySampledDistance(cumulative, goodIndices, goodElevations);
 }
 
 /**
@@ -351,10 +374,19 @@ async function fetchElevationBatch(
   }
 
   return results.map(result => {
-    const value = Number(result?.elevation);
-    // Voids (ocean, DEM holes) come back null or as a sentinel; 0 is the same
-    // "no data" the rest of the pipeline uses for a missing <ele>.
-    return Number.isFinite(value) ? value : 0;
+    // Voids (ocean, DEM holes) come back null or as a sentinel such as
+    // -32768. NaN marks them for `backfillElevation` to interpolate across.
+    // `Number(null)` and `Number('')` are 0, which is sea level, not a void.
+    const elevation = result?.elevation;
+    const value =
+      typeof elevation === 'number' || (typeof elevation === 'string' && elevation.trim() !== '')
+        ? Number(elevation)
+        : NaN;
+    return Number.isFinite(value) &&
+      value >= MIN_PLAUSIBLE_ELEVATION_M &&
+      value <= MAX_PLAUSIBLE_ELEVATION_M
+      ? value
+      : NaN;
   });
 }
 

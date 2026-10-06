@@ -4,8 +4,8 @@
  *
  * This is the same pipeline the build script runs (`buildTrail`), with three
  * differences that only make sense for untrusted input:
- * - elevation cleaning is ON (spike removal + smoothing + a noise threshold on
- *   the ascent total), because barometric tracks inflate ascent 2-3×;
+ * - elevation cleaning is ON (spike removal + smoothing + a noise band on
+ *   ascent and descent), because barometric tracks inflate ascent 2-3×;
  * - waypoint ids are minted locally with a `uw_` prefix, so an imported
  *   waypoint can never collide with a registry id or reach the comments API;
  * - the trail id is `u_` + a content hash, so re-importing the same file lands
@@ -38,7 +38,10 @@ export const IMPORT_TARGET_POINTS = 5000;
 const IMPORT_SPIKE_THRESHOLD_METERS = 50;
 /** Moving-average window (points) used when smoothing imported elevation. */
 const IMPORT_SMOOTHING_WINDOW = 7;
-/** Minimum climb (m) that counts towards an imported trail's ascent total. */
+/**
+ * Hysteresis band (m) for an imported trail's ascent and descent: a change
+ * counts once it reaches this far from the last counted elevation.
+ */
 const IMPORT_ASCENT_THRESHOLD_METERS = 3;
 
 export interface ImportGpxOptions {
@@ -332,6 +335,11 @@ function longestTrackPoints(gpx: ParsedGpxResult): GpxPoint[] {
 /**
  * Heuristic: raw sample-to-sample ascent far exceeding the cleaned, thresholded
  * ascent means the elevation channel is dominated by noise rather than terrain.
+ *
+ * The cleaned side goes through the same spike removal, smoothing and
+ * hysteresis band as the ascent the trail reports. When the band was a
+ * per-step filter it threw away most of a dense, clean track's climb, so a
+ * smooth DEM export was called noisy for agreeing with itself.
  */
 function looksNoisy(points: GpxPoint[]): boolean {
   if (points.length < 3) return false;

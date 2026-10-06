@@ -89,6 +89,36 @@ describe('XML adapter parity', () => {
     expect(viaFxp).toEqual(parseGpx(xml, domParserXmlAdapter));
   });
 
+  it('reads a field from the element itself, not from something nested in it', () => {
+    const xml = readFileSync(resolve(FIXTURES, 'nested-fields.gpx'), 'utf-8');
+    for (const adapter of [fxpXmlAdapter, domParserXmlAdapter]) {
+      const gpx = parseGpx(xml, adapter);
+      expect(gpx.metadataName).toBe('Nested Fields Trail');
+      expect(gpx.waypoints.map(w => [w.name, w.type])).toEqual([
+        ['Ridge Hut', 'hut'],
+        ['Tank With No Type', undefined],
+      ]);
+      expect(gpx.tracks[0].name).toBe('');
+      expect(gpx.tracks[0].segments[0].points[0]).toMatchObject({ ele: 10, time: null });
+    }
+  });
+
+  it('decodes numeric character references the same way, and only once', () => {
+    const xml = readFileSync(resolve(FIXTURES, 'character-references.gpx'), 'utf-8');
+    const viaFxp = parseGpx(xml, fxpXmlAdapter);
+    expect(viaFxp.metadataName).toBe('O\'Connor&Sons Track');
+    expect(viaFxp.waypoints[0].name).toBe('Bill\'s Hut – café');
+    expect(viaFxp.waypoints[0].desc).toBe('Literal &#39; stays literal; so does &amp; in CDATA');
+    expect(viaFxp.tracks[0].name).toBe('Day 1 \u{1F3D5}');
+    expect(viaFxp).toEqual(parseGpx(xml, domParserXmlAdapter));
+  });
+
+  it('decodes character references in attributes too', () => {
+    const xml = `<gpx><wpt lat="&#45;33.5" lon="151"><name>x</name></wpt></gpx>`;
+    expect(parseGpx(xml, fxpXmlAdapter).waypoints[0].lat).toBe(-33.5);
+    expect(parseGpx(xml, fxpXmlAdapter)).toEqual(parseGpx(xml, domParserXmlAdapter));
+  });
+
   it('both adapters reject malformed XML', () => {
     expect(() => parseGpx('<gpx><trk></gpx>', fxpXmlAdapter)).toThrow(/Invalid GPX XML/);
     expect(() => parseGpx('<gpx><trk></gpx>', domParserXmlAdapter)).toThrow(/Invalid GPX XML/);

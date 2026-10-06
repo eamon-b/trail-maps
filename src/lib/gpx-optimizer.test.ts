@@ -5,6 +5,8 @@ import {
   smoothElevation,
   calculateTrackDistance,
   calculateElevationStats,
+  cumulativeElevationChange,
+  douglasPeuckerIndices,
   truncateTrack,
   roundCoordinates,
   optimizeGpx,
@@ -368,8 +370,68 @@ describe('calculateElevationStats', () => {
 
     const stats = calculateElevationStats(points, 3);
 
-    // Only the 100->110 change should count, but it's calculated cumulatively
-    expect(stats.gain).toBe(8);
+    // The +1 steps are not lost: they count once the climb from the last
+    // counted elevation (100) reaches the threshold, so the whole 10 m is in.
+    expect(stats.gain).toBe(10);
+  });
+
+  it('keeps a dense, smooth climb that no single step reaches the threshold on', () => {
+    // 1,000 m up and back down in 0.5 m steps, the shape of a smoothed
+    // 5,000-point import. A per-step threshold counted none of it.
+    const points = [
+      ...Array.from({ length: 2001 }, (_, i) => ({ ele: 100 + i * 0.5 })),
+      ...Array.from({ length: 2000 }, (_, i) => ({ ele: 1100 - (i + 1) * 0.5 })),
+    ];
+    const stats = calculateElevationStats(points, 3);
+    expect(stats.gain).toBeGreaterThanOrEqual(997);
+    expect(stats.gain).toBeLessThanOrEqual(1000);
+    expect(stats.loss).toBeGreaterThanOrEqual(997);
+  });
+
+  it('ignores wiggles inside the threshold band however often they repeat', () => {
+    const points = Array.from({ length: 1000 }, (_, i) => ({ ele: 100 + (i % 2) * 2 }));
+    expect(calculateElevationStats(points, 3)).toEqual({ gain: 0, loss: 0 });
+  });
+
+  it('is the plain sum of every step at threshold 0', () => {
+    const eles = [100, 101.5, 101, 104, 103.2, 103.2, 110, 95];
+    const points = eles.map(ele => ({ ele }));
+    let gain = 0;
+    let loss = 0;
+    for (let i = 1; i < eles.length; i++) {
+      const d = eles[i] - eles[i - 1];
+      if (d > 0) gain += d;
+      else loss += Math.abs(d);
+    }
+    expect(calculateElevationStats(points, 0)).toEqual({ gain, loss });
+  });
+
+  it('does not climb the step into a route break', () => {
+    const points = [{ ele: 0 }, { ele: 10 }, { ele: 500 }, { ele: 510 }];
+    expect(calculateElevationStats(points, 3, new Set([2]))).toEqual({ gain: 20, loss: 0 });
+  });
+});
+
+describe('douglasPeuckerIndices', () => {
+  it('names the kept points by index, so a retraced coordinate keeps its own pass', () => {
+    // Out and back: the outward and return passes share every coordinate.
+    const out = Array.from({ length: 50 }, (_, i) => ({ lat: -34 + i * 0.001, lon: 138 + (i % 7) * 0.0003 }));
+    const points = [...out, ...out.slice(0, -1).reverse()];
+    const kept = douglasPeuckerIndices(points, 5);
+    expect(kept[0]).toBe(0);
+    expect(kept[kept.length - 1]).toBe(points.length - 1);
+    for (let i = 1; i < kept.length; i++) expect(kept[i]).toBeGreaterThan(kept[i - 1]);
+    expect(douglasPeucker(points.map(p => ({ ...p, ele: 0, time: null })), 5)).toHaveLength(kept.length);
+  });
+});
+
+describe('cumulativeElevationChange', () => {
+  it('ends on the calculateElevationStats totals', () => {
+    const points = [100, 101, 102, 110, 108, 104, 105].map(ele => ({ ele }));
+    const { ascent, descent } = cumulativeElevationChange(points, 3);
+    expect(ascent).toEqual([0, 0, 0, 10, 10, 10, 10]);
+    expect(descent).toEqual([0, 0, 0, 0, 0, 6, 6]);
+    expect(calculateElevationStats(points, 3)).toEqual({ gain: 10, loss: 6 });
   });
 });
 

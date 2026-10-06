@@ -14,6 +14,8 @@
  */
 
 import { mirrorPoiDistances } from './poi-display';
+import { routeBreakStarts } from './route-breaks';
+import { calculateElevationBetween, type ElevationPoint } from './track-geometry';
 import {
   reverseAlternates,
   transformSideTrips,
@@ -30,6 +32,8 @@ export interface ReversiblePoi {
 export interface ReversibleTrackPoint {
   /** Cumulative distance along the trail in km */
   dist: number;
+  /** Elevation in m. Needed to price the reversed walk's first leg. */
+  ele?: number;
   /** Cumulative ascent from the start of the route in m (thinned tracks only). */
   cumAscent?: number;
   /** Cumulative descent from the start of the route in m (thinned tracks only). */
@@ -158,17 +162,24 @@ export function reverseTrackPoints<P extends ReversibleTrackPoint>(
  * build-trails enrichWaypoints ("segment ascent from previous waypoint"):
  * walking the trail backwards, the segment arriving at reversed[i] is the
  * segment that originally arrived at reversed[i - 1], with ascent/descent
- * swapped. The first reversed waypoint has no arriving segment (0/0), and
- * cumulative totals are recomputed from the per-segment values so the final
- * waypoint's totals equal the swapped trail totals.
+ * swapped.
+ *
+ * The first reversed waypoint's arriving segment is the stretch from the new
+ * start to it — the forward walk's stretch from its last waypoint to the end,
+ * which no forward waypoint stores. Its distance is the waypoint's own km.
+ * Its climb is measured on `track` when the caller has it (the forward
+ * points, with ele, and their route breaks); without it the climb is 0.
+ * Cumulative totals are recomputed from the per-segment values.
  */
 export function reverseWaypoints<W extends ReversibleWaypoint>(
   waypoints: W[],
   totalDistance: number,
   trackLength: number,
+  track?: { points: ReversibleTrackPoint[]; breaks?: ReversibleRouteBreak[] },
 ): Array<W & Required<ReversibleWaypoint>> {
   const reversed = [...waypoints].reverse();
   const newTotals = reversed.map(wp => totalDistance - (wp.totalDistance ?? 0));
+  const firstLeg = firstLegClimb(reversed[0], totalDistance, track);
 
   let runningAscent = 0;
   let runningDescent = 0;
@@ -177,12 +188,12 @@ export function reverseWaypoints<W extends ReversibleWaypoint>(
     // The segment between reversed[i - 1] and reversed[i] carries the stats
     // stored on reversed[i - 1] (its arriving segment in the original walk).
     const prev = i > 0 ? reversed[i - 1] : undefined;
-    const segmentAscent = prev ? (prev.descent ?? 0) : 0;
-    const segmentDescent = prev ? (prev.ascent ?? 0) : 0;
+    const segmentAscent = prev ? (prev.descent ?? 0) : firstLeg.ascent;
+    const segmentDescent = prev ? (prev.ascent ?? 0) : firstLeg.descent;
     runningAscent += segmentAscent;
     runningDescent += segmentDescent;
 
-    const segmentDist = i === 0 ? 0 : newTotals[i] - newTotals[i - 1];
+    const segmentDist = i === 0 ? newTotals[0] : newTotals[i] - newTotals[i - 1];
 
     return {
       ...wp,
@@ -195,6 +206,29 @@ export function reverseWaypoints<W extends ReversibleWaypoint>(
       trackIndex: trackLength - 1 - (wp.trackIndex ?? 0),
     };
   });
+}
+
+/**
+ * The climb from the new start to the first reversed waypoint: the forward
+ * walk from `waypoint` to the end of the trail, with ascent and descent
+ * swapped. 0/0 when there is no track with elevations to measure it on.
+ */
+function firstLegClimb(
+  waypoint: ReversibleWaypoint | undefined,
+  totalDistance: number,
+  track: { points: ReversibleTrackPoint[]; breaks?: ReversibleRouteBreak[] } | undefined,
+): { ascent: number; descent: number } {
+  const points = track?.points;
+  if (!waypoint || !points || points.length < 2 || !points.every(p => typeof p.ele === 'number')) {
+    return { ascent: 0, descent: 0 };
+  }
+  const { gain, loss } = calculateElevationBetween(
+    waypoint.totalDistance ?? 0,
+    totalDistance,
+    points as ElevationPoint[],
+    routeBreakStarts(track.breaks, 'points'),
+  );
+  return { ascent: loss, descent: gain };
 }
 
 /**
@@ -236,7 +270,7 @@ export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
           }
         : {}),
     },
-    waypoints: reverseWaypoints(trail.waypoints ?? [], totalDist, trackLength),
+    waypoints: reverseWaypoints(trail.waypoints ?? [], totalDist, trackLength, trail.track),
     alternates: reverseAlternates(trail.alternates ?? [], totalDist),
     sideTrips: transformSideTrips(trail.sideTrips ?? [], totalDist),
     // Only when the trail has POIs: an absent `pois` means "never enriched",

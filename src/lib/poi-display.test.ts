@@ -380,13 +380,16 @@ describe('reversing a trail', () => {
       expect(m.distanceAlongTrail).toBeCloseTo(31, 5);
     });
 
-    it('mirrors a POI on an alternate with one junction about the main line', () => {
+    it('walks a POI on an alternate with one junction out from the mirrored junction', () => {
+      // `reverseAlternates` keeps a start-only alternate reading out from its
+      // mirrored junction (62 - 30 = 32), like a side trip, so a POI 3 km along
+      // it sits at 35 — not 29, which would be a mirror about the main line.
       const [m] = mirrorPoiDistances(
         [poi({ distanceAlongTrail: 33, lat: -42 + 3 * 0.009, lon: 140, distanceFromTrail: 0 })],
         62,
         { alternates: [{ ...variants.alternates[0], endDistance: undefined }] }
       )!;
-      expect(m.distanceAlongTrail).toBe(29);
+      expect(m.distanceAlongTrail).toBe(35);
     });
 
     it('mirrors a main-route POI in a variant\'s span about the main line', () => {

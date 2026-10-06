@@ -1,7 +1,7 @@
 /**
  * Minimal XML node interface shared by every GPX parser front-end.
  *
- * The GPX parsers only ever need four operations, and every selector they use
+ * The GPX parsers only ever need five operations, and every selector they use
  * is a bare tag name (`trk`, `trkseg`, `trkpt`, `name`, `ele`, ...). That makes
  * the DOM surface small enough to re-implement on top of a non-DOM XML parser,
  * which is what lets `parseGpx` run in the browser (DOMParser), in build
@@ -11,6 +11,11 @@
  * - `querySelectorAll(tag)` returns *descendants* (never the node itself) whose
  *   tag matches, in document order.
  * - `querySelector(tag)` returns the first such descendant, or null.
+ * - `childElement(tag)` returns the first *direct child* whose tag matches, or
+ *   null. A GPX element's own `<name>`, `<type>`, `<ele>`… are its children,
+ *   and a descendant search finds the wrong one first whenever the element
+ *   nests another that has the same field: `<wpt><link><type>text/html`,
+ *   `<metadata><author><name>`, a nameless `<trk>`'s first `<trkpt><name>`.
  * - `textContent` is the concatenation of every descendant text node, untrimmed.
  * - Namespace prefixes are ignored (`gpxx:name` matches `name`), matching how a
  *   CSS type selector behaves against an XML document.
@@ -26,6 +31,8 @@ export interface XmlNode {
   querySelectorAll(tag: string): XmlNode[];
   /** First descendant element with this tag name, or null. */
   querySelector(tag: string): XmlNode | null;
+  /** First direct child element with this tag name, or null. */
+  childElement(tag: string): XmlNode | null;
   /** Attribute value, or null when absent. */
   getAttribute(name: string): string | null;
   /** Concatenated descendant text, untrimmed (DOM `textContent` semantics). */
@@ -44,6 +51,10 @@ export interface DomLikeNode {
   querySelector(selector: string): DomLikeNode | null;
   getAttribute?(name: string): string | null;
   readonly textContent: string | null;
+  /** Child elements (DOM `ParentNode.children`). */
+  readonly children?: ArrayLike<DomLikeNode>;
+  /** Tag name without its namespace prefix (DOM `Element.localName`). */
+  readonly localName?: string;
 }
 
 /** Wrap a DOM element/document (browser DOM, jsdom, ...) as an {@link XmlNode}. */
@@ -58,6 +69,16 @@ export function wrapDomNode(node: DomLikeNode): XmlNode {
     querySelector(tag: string): XmlNode | null {
       const found = node.querySelector(tag);
       return found ? wrapDomNode(found) : null;
+    },
+    childElement(tag: string): XmlNode | null {
+      // `localName`, not `tagName`: a CSS type selector ignores the prefix, so
+      // this has to as well for `gpxx:name` to answer to `name` either way.
+      const children = node.children;
+      if (!children) return null;
+      for (let i = 0; i < children.length; i++) {
+        if (children[i].localName === tag) return wrapDomNode(children[i]);
+      }
+      return null;
     },
     getAttribute(name: string): string | null {
       return node.getAttribute ? node.getAttribute(name) : null;

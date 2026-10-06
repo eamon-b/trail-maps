@@ -350,8 +350,9 @@ describe('createReversedTrail with a terminus', () => {
     const [flipped] = reversed.sideTrips;
 
     expect(flipped.type).toBe('terminus');
-    // The junction is mirrored about the trail total, like a side trip's.
-    expect(flipped.startDistance).toBeCloseTo(total - forward.startDistance!, 6);
+    // The junction is mirrored about the trail total, like a side trip's, and
+    // rounded to the 10 m every other junction km is.
+    expect(flipped.startDistance).toBeCloseTo(total - forward.startDistance!, 2);
     expect(flipped.endDistance).toBeUndefined();
     // The points are NOT turned round: points[0] is still the junction.
     expect(flipped.points[0].lat).toBeCloseTo(forward.points[0].lat, 6);

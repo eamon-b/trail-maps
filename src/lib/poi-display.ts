@@ -354,9 +354,10 @@ export function mirrorPoiDistances<P extends MirrorablePoi>(
 ): P[] | undefined {
   if (!pois) return undefined;
   const attached = [
-    // An alternate without both junctions is not reversed (`reverseAlternates`
-    // leaves it as it is), so its POIs mirror about the main line as well.
-    ...(variants.alternates ?? []).filter(v => v.endDistance != null).map(v => ({ v, alternate: true })),
+    // An alternate with one junction reverses like a side trip
+    // (`reverseAlternates` mirrors the junction and keeps its points reading
+    // out from it), so its POIs take the walked-out mapping too.
+    ...(variants.alternates ?? []).map(v => ({ v, alternate: v.endDistance != null })),
     ...(variants.sideTrips ?? []).map(v => ({ v, alternate: false })),
   ].filter(({ v }) => v.startDistance != null && (v.points?.length ?? 0) > 0);
   const mainLine = variants.mainLine ?? [];

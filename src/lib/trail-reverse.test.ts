@@ -142,6 +142,49 @@ describe('reverseWaypoints', () => {
     expect(reversed[2].totalDescent).toBe(180);
   });
 
+  it('gives the first reversed waypoint its own km and the climb to reach it', () => {
+    // A 100 km trail rising 10 m per point; the last waypoint is at km 75, so
+    // the reversed walk reaches it 25 km in, after descending km 100 → 75.
+    const points = makePoints([0, 25, 50, 75, 100]); // ele 100, 110, 120, 130, 140
+    const waypoints = [
+      { name: 'A', totalDistance: 25, ascent: 10, descent: 0, trackIndex: 1 },
+      { name: 'B', totalDistance: 75, ascent: 20, descent: 0, trackIndex: 3 },
+    ];
+    const reversed = reverseWaypoints(waypoints, 100, points.length, { points });
+
+    expect(reversed[0].name).toBe('B');
+    // The datasheet's first row read 0.0 km and 0 m here.
+    expect(reversed[0].totalDistance).toBe(25);
+    expect(reversed[0].distance).toBe(25);
+    expect(reversed[0].ascent).toBe(0);
+    expect(reversed[0].descent).toBe(10);
+    expect(reversed[0].totalDescent).toBe(10);
+    // The running totals carry on from it.
+    expect(reversed[1].totalDistance).toBe(75);
+    expect(reversed[1].distance).toBe(50);
+    expect(reversed[1].totalDescent).toBe(30);
+  });
+
+  it('does not climb across a route break on that first leg', () => {
+    // A 200 m difference between landings at the break into index 4.
+    const points = makePoints([0, 25, 50, 75, 100]).map((p, i) => ({ ...p, ele: i === 4 ? 330 : p.ele }));
+    const waypoints = [{ name: 'B', totalDistance: 75, ascent: 0, descent: 0, trackIndex: 3 }];
+    const breaks = [{ index: 4, displayIndex: 4, km: 75, fromTrack: 'a', toTrack: 'b' }];
+    const [first] = reverseWaypoints(waypoints, 100, points.length, { points, breaks });
+    expect(first.ascent).toBe(0);
+    expect(first.descent).toBe(0);
+  });
+
+  it('is applied by createReversedTrail', () => {
+    const points = makePoints([0, 25, 50, 75, 100]);
+    const trail = {
+      track: { points, totalDistance: 100, totalAscent: 40, totalDescent: 0 },
+      waypoints: [{ name: 'B', totalDistance: 75, ascent: 30, descent: 0, trackIndex: 3 }],
+    };
+    const reversed = createReversedTrail(trail);
+    expect(reversed.waypoints![0]).toMatchObject({ distance: 25, totalDistance: 25, descent: 10, ascent: 0 });
+  });
+
   it('accepts waypoints with all km fields absent (?? 0 guards)', () => {
     const bare: Array<ReversibleWaypoint & { name: string }> = [{ name: 'Bare' }];
     const reversed = reverseWaypoints(bare, 100, 50);

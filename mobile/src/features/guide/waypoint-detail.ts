@@ -7,6 +7,12 @@
  */
 
 import type { WaterStatus } from '@lib/comments-api-types';
+import { estimateHikingTime } from '@lib/day-calculator';
+import {
+  calculateElevationBetween,
+  NO_BREAK_STARTS,
+  type ElevationPoint,
+} from '@lib/track-geometry';
 import type { TrailPOI } from '@lib/trail-types';
 import { categoryToken } from '../elevation/waypoint-category';
 import type { TrailJson } from '../../services/trail-assets';
@@ -104,6 +110,63 @@ export function formatEta(minutes: number | null): string | null {
   const h = Math.floor(rounded / 60);
   const m = rounded % 60;
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+// ---------------------------------------------------------------------------
+// From the hiker to the waypoint
+// ---------------------------------------------------------------------------
+
+/** What it takes to walk the trail from the hiker's position to a waypoint. */
+export interface TripToWaypoint {
+  /** Ahead of the hiker in the travelled direction, or back the way they came. */
+  direction: 'ahead' | 'behind';
+  /** Trail distance in km (always positive). */
+  distanceKm: number;
+  /** Metres climbed on the way there, in the direction actually walked. */
+  ascentM: number;
+  /** Metres descended on the way there, in the direction actually walked. */
+  descentM: number;
+  /** Naismith walking time in minutes at the hiker's own pace. */
+  etaMinutes: number;
+}
+
+/**
+ * Distance, climb and Naismith time along the trail from `currentKm` to a
+ * waypoint at `waypointKm`, both on the guide's direction-applied scale.
+ *
+ * A waypoint behind the hiker is walked back to, so its climb is the forward
+ * stretch's descent and vice versa. Within 50 m — the same "Here" threshold
+ * `formatSignedDistance` uses — there is nothing to walk and this returns null.
+ *
+ * `breakStarts` are the route breaks in `trackPoints`
+ * (`routeBreakStarts(breaks, 'points')`), so a ferry is never climbed.
+ */
+export function tripToWaypoint(
+  currentKm: number,
+  waypointKm: number,
+  trackPoints: readonly ElevationPoint[],
+  baseKmh: number,
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+): TripToWaypoint | null {
+  const deltaKm = waypointKm - currentKm;
+  if (Math.abs(deltaKm) < 0.05 || trackPoints.length === 0) return null;
+  const { gain, loss } = calculateElevationBetween(
+    currentKm,
+    waypointKm,
+    trackPoints as ElevationPoint[],
+    breakStarts,
+  );
+  const ahead = deltaKm > 0;
+  const distanceKm = Math.abs(deltaKm);
+  const ascentM = ahead ? gain : loss;
+  const descentM = ahead ? loss : gain;
+  return {
+    direction: ahead ? 'ahead' : 'behind',
+    distanceKm,
+    ascentM,
+    descentM,
+    etaMinutes: estimateHikingTime(distanceKm, ascentM, descentM, baseKmh) * 60,
+  };
 }
 
 // ---------------------------------------------------------------------------

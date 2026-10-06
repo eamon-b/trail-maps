@@ -52,6 +52,7 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
+import { routeBreakStarts } from '@lib/route-breaks';
 import { accessSummary } from '@lib/resupply-display';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
@@ -68,14 +69,18 @@ import { ShareIconButton } from '../../../../src/features/share/ShareIconButton'
 import { useCheckInShare } from '../../../../src/features/share/use-check-in-share';
 import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
 import { waypointColor } from '../../../../src/features/elevation/waypoint-category';
-import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
 import {
   duplicatePoisFor,
-  estimateEtaMinutes,
-  formatEta,
   relativeDate,
+  tripToWaypoint,
   waterStatusMeta,
+  type TripToWaypoint,
 } from '../../../../src/features/guide/waypoint-detail';
+import { formatEtaMinutes } from '../../../../src/services/distance-calculator';
+import {
+  selectPaceBaseKmh,
+  usePlanInputsStore,
+} from '../../../../src/features/plan/plan-inputs-store';
 import { findStop, setNights, setStopBooked, setStopNote, toggleStop } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import { useIdentityStore } from '../../../../src/state/identity-store';
@@ -118,6 +123,7 @@ export default function WaypointDetailScreen() {
   const { trail, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const { currentKm, position, status } = useGuidePositionContext();
+  const baseKmh = usePlanInputsStore(selectPaceBaseKmh(trailId));
   const shareCheckIn = useCheckInShare();
 
   const waypoint = useMemo(() => {
@@ -290,10 +296,20 @@ export default function WaypointDetailScreen() {
   const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
   const duplicatePois = duplicatePoisFor(trail, waypoint.id);
   const km = waypoint.totalDistance ?? 0;
-  const deltaKm = currentKm != null ? km - currentKm : null;
-  const signed = deltaKm != null ? formatSignedDistance(deltaKm, units) : null;
-  const etaLabel =
-    deltaKm != null && deltaKm > 0 ? formatEta(estimateEtaMinutes(deltaKm)) : null;
+  // The walk from the hiker's GPS position: only with a usable fix, measured
+  // along the trail from the point they snap to. Same climb and Naismith maths
+  // as the distance strip, at the hiker's own pace.
+  const hasFix = (status === 'fix' || status === 'off-trail') && currentKm != null;
+  const trip =
+    hasFix && currentKm != null
+      ? tripToWaypoint(
+          currentKm,
+          km,
+          trail.track.points,
+          baseKmh,
+          routeBreakStarts(trail.track.breaks, 'points'),
+        )
+      : null;
 
   return (
     <View style={styles.flex}>
@@ -302,6 +318,9 @@ export default function WaypointDetailScreen() {
         style={[styles.flex, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
       >
+        {/* How far, and how much up and down, from where the hiker stands. */}
+        {hasFix && <TripCard trip={trip} offTrail={status === 'off-trail'} units={units} />}
+
         {/* Hero header */}
         <View style={styles.hero}>
           <View style={styles.heroTop}>
@@ -398,12 +417,6 @@ export default function WaypointDetailScreen() {
           <Stat label="Distance" value={formatDistance(km, units)} />
           {waypoint.elevation != null && (
             <Stat label="Elevation" value={formatElevation(waypoint.elevation, units)} />
-          )}
-          {signed && signed.direction !== 'here' && (
-            <Stat
-              label={signed.direction === 'ahead' ? 'Ahead' : 'Behind'}
-              value={etaLabel ? `${signed.label.replace(/ (ahead|behind)$/, '')} · ${etaLabel}` : signed.label}
-            />
           )}
         </View>
 
@@ -768,6 +781,56 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * The walk from the hiker's position to this waypoint: distance along the
+ * trail, climb and descent in the direction walked, and a Naismith time.
+ * `trip` null means the hiker is already within 50 m of it.
+ */
+function TripCard({
+  trip,
+  offTrail,
+  units,
+}: {
+  trip: TripToWaypoint | null;
+  offTrail: boolean;
+  units: Units;
+}) {
+  const { colors } = useTheme();
+  const heading = offTrail ? 'From the nearest point on the trail' : 'From your location';
+  return (
+    <View
+      accessible
+      style={[styles.tripCard, { backgroundColor: colors.surface, borderColor: colors.gps }]}
+    >
+      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{heading}</Text>
+      {trip ? (
+        <View style={styles.tripRow}>
+          <Text style={[styles.tripDistance, { color: colors.textPrimary }]}>
+            {`${formatDistance(trip.distanceKm, units)} ${trip.direction}`}
+          </Text>
+          <Text
+            style={[styles.tripValue, { color: colors.textPrimary }]}
+            accessibilityLabel={`${formatElevation(trip.ascentM, units)} up`}
+          >
+            {`↑ ${formatElevation(trip.ascentM, units)}`}
+          </Text>
+          <Text
+            style={[styles.tripValue, { color: colors.textPrimary }]}
+            accessibilityLabel={`${formatElevation(trip.descentM, units)} down`}
+          >
+            {`↓ ${formatElevation(trip.descentM, units)}`}
+          </Text>
+          <Text style={[styles.tripValue, { color: colors.textSecondary }]}>
+            {formatEtaMinutes(trip.etaMinutes)}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[styles.tripDistance, { color: colors.textPrimary }]}>You are here</Text>
+      )}
+    </View>
+  );
+}
+
 function EmptyNote({ text }: { text: string }) {
   const { colors } = useTheme();
   return <Text style={[styles.emptyNote, { color: colors.textSecondary }]}>{text}</Text>;
@@ -991,6 +1054,23 @@ const styles = StyleSheet.create({
   },
   statLabel: { ...typography.caption },
   statValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
+
+  tripCard: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  tripRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    columnGap: spacing.md,
+    rowGap: spacing.xs,
+  },
+  tripDistance: { ...typography.titleLarge, fontVariant: ['tabular-nums'] },
+  tripValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
 
   osmSection: { gap: spacing.sm },
   osmHeader: {

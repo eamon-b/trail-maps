@@ -6,10 +6,16 @@
  * Results are saved to data/trails/{trail}/climate.json files which
  * can be committed to the repository.
  *
- * Usage: tsx scripts/fetch-climate.ts [--force] [trail-id]
+ * Usage: tsx scripts/fetch-climate.ts [--force | --changed] [trail-id]
  *   - With no arguments: processes trails that don't have climate.json
  *   - With --force: re-fetches data even if climate.json already exists
+ *   - With --changed: re-fetches only the locations that are new or whose
+ *     lat/lon/elevation changed in trail.json, reusing the rest. Open-Meteo's
+ *     quota is tight enough that a whole-trail --force can run out mid-trail.
  *   - With trail-id: processes only that trail
+ *
+ * A trail is only written when every configured location was fetched (or
+ * reused): a file with a location silently missing is worse than the old one.
  */
 
 import * as fs from 'fs';
@@ -21,6 +27,13 @@ interface ClimateLocation {
   waypointName?: string;
   lat: number;
   lon: number;
+  /**
+   * Metres. Open-Meteo corrects temperatures to this height instead of the
+   * height of its terrain model at lat/lon. Set it where the two differ: on a
+   * slope above a river camp, a coastal point that lands on a sea cell, or a
+   * range crossing the terrain model smooths down.
+   */
+  elevation?: number;
 }
 
 interface TrailConfig {
@@ -105,7 +118,11 @@ function sleep(ms: number): Promise<void> {
  * Fetch historical climate data from Open-Meteo for a single location.
  * Throws RateLimitError on 429 responses so callers can handle retry logic.
  */
-async function fetchHistoricalClimate(lat: number, lon: number): Promise<OpenMeteoResponse> {
+async function fetchHistoricalClimate(
+  lat: number,
+  lon: number,
+  elevation?: number
+): Promise<OpenMeteoResponse> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
@@ -114,6 +131,9 @@ async function fetchHistoricalClimate(lat: number, lon: number): Promise<OpenMet
     daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum',
     timezone: 'auto',
   });
+  if (elevation !== undefined) {
+    params.set('elevation', elevation.toString());
+  }
 
   const url = `${OPEN_METEO_ENDPOINT}?${params}`;
   const response = await fetch(url);
@@ -132,10 +152,14 @@ async function fetchHistoricalClimate(lat: number, lon: number): Promise<OpenMet
 /**
  * Fetch climate data with automatic retry on rate limit errors.
  */
-async function fetchWithRetry(lat: number, lon: number): Promise<OpenMeteoResponse> {
+async function fetchWithRetry(
+  lat: number,
+  lon: number,
+  elevation?: number
+): Promise<OpenMeteoResponse> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await fetchHistoricalClimate(lat, lon);
+      return await fetchHistoricalClimate(lat, lon, elevation);
     } catch (error) {
       if (!(error instanceof RateLimitError)) {
         throw error; // Non-rate-limit errors should propagate immediately
@@ -178,7 +202,19 @@ function findWaypointDistance(
  * Process a single trail directory - fetch climate data for all configured locations.
  * Saves climate data to data/trails/{trail}/climate.json
  */
-async function processTrail(trailDir: string, force: boolean): Promise<boolean> {
+type FetchMode = 'missing' | 'force' | 'changed';
+
+/** Whether stored data still answers this configured location. */
+function isUnchanged(loc: ClimateLocation, stored: ClimateLocationData): boolean {
+  return (
+    stored.name === loc.name &&
+    stored.lat === loc.lat &&
+    stored.lon === loc.lon &&
+    (loc.elevation === undefined || stored.elevation === loc.elevation)
+  );
+}
+
+async function processTrail(trailDir: string, mode: FetchMode): Promise<boolean> {
   const trailName = path.basename(trailDir);
   const configPath = path.join(trailDir, 'trail.json');
   const climatePath = path.join(trailDir, CLIMATE_FILENAME);
@@ -192,9 +228,14 @@ async function processTrail(trailDir: string, force: boolean): Promise<boolean> 
   }
 
   // Check if climate.json already exists (unless --force is used)
-  if (fs.existsSync(climatePath) && !force) {
-    console.log('  climate.json already exists. Skipping (use --force to re-fetch).');
+  if (fs.existsSync(climatePath) && mode === 'missing') {
+    console.log('  climate.json already exists. Skipping (use --force or --changed to re-fetch).');
     return false;
+  }
+
+  let stored: ClimateLocationData[] = [];
+  if (mode === 'changed' && fs.existsSync(climatePath)) {
+    stored = (JSON.parse(fs.readFileSync(climatePath, 'utf-8')) as TrailClimate).locations ?? [];
   }
 
   const config: TrailConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -222,10 +263,16 @@ async function processTrail(trailDir: string, force: boolean): Promise<boolean> 
 
   for (let i = 0; i < config.climateLocations.length; i++) {
     const loc = config.climateLocations[i];
+    const reusable = stored.find(s => isUnchanged(loc, s));
+    if (reusable) {
+      console.log(`  Reusing ${loc.name}`);
+      locations.push(reusable);
+      continue;
+    }
     process.stdout.write(`  Fetching ${loc.name}...`);
 
     try {
-      const response = await fetchWithRetry(loc.lat, loc.lon);
+      const response = await fetchWithRetry(loc.lat, loc.lon, loc.elevation);
       const monthly = aggregateDailyToMonthly(response.daily);
 
       const locationData: ClimateLocationData = {
@@ -260,8 +307,10 @@ async function processTrail(trailDir: string, force: boolean): Promise<boolean> 
     }
   }
 
-  if (locations.length === 0) {
-    console.log('  No climate data fetched.');
+  if (locations.length < config.climateLocations.length) {
+    const missing = config.climateLocations.length - locations.length;
+    console.log(`  ${missing} location(s) failed; ${climatePath} left unchanged.`);
+    process.exitCode = 1;
     return false;
   }
 
@@ -298,7 +347,9 @@ async function main() {
 
   const args = process.argv.slice(2);
   const force = args.includes('--force');
-  const trailArgs = args.filter(arg => arg !== '--force');
+  const changed = args.includes('--changed');
+  const mode: FetchMode = changed ? 'changed' : force ? 'force' : 'missing';
+  const trailArgs = args.filter(arg => arg !== '--force' && arg !== '--changed');
   const specificTrail = trailArgs[0];
 
   if (force) {
@@ -354,7 +405,7 @@ async function main() {
   for (let i = 0; i < trailDirs.length; i++) {
     const trailDir = trailDirs[i];
     try {
-      const updated = await processTrail(trailDir, force);
+      const updated = await processTrail(trailDir, mode);
       if (updated) updatedCount++;
     } catch (error) {
       console.error(`  Error: ${error instanceof Error ? error.message : 'Unknown error'}`);

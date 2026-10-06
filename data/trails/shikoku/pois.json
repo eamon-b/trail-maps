@@ -1,9 +1,9 @@
 {
   "source": "OpenStreetMap",
   "attribution": "© OpenStreetMap contributors (ODbL)",
-  "fetchedAt": "2026-10-06T00:06:42.094Z",
+  "fetchedAt": "2026-10-06T10:29:59.782Z",
   "searchRadiusKm": 2,
-  "endpoint": "https://overpass.private.coffee/api/interpreter",
+  "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
   "rejected": [],
   "pois": [
     {
@@ -187,7 +187,7 @@
         "amenity": "clinic",
         "building": "yes",
         "name": "中西医院",
-        "phone": "088-689-1508"
+        "phone": "+81 88 689 1508"
       },
       "distanceAlongTrail": 0.07742616140660191,
       "distanceFromTrail": 0.37089059737784996
@@ -204,7 +204,7 @@
         "building": "yes",
         "cuisine": "noodle;japanese",
         "name": "ばんどう茶屋 おいでなし亭",
-        "phone": "090-2829-5651"
+        "phone": "+81 90 2829 5651"
       },
       "distanceAlongTrail": 0.07742616140660191,
       "distanceFromTrail": 0.5007572113692155
@@ -222,7 +222,7 @@
         "name": "板東診療所",
         "note": "National-Land Numerical Information (Public Facility) 2006, MLIT Japan",
         "note:ja": "国土数値情報（公共施設データ）平成19年　国土交通省",
-        "phone": "088-689-1252",
+        "phone": "+81 88 689 1252",
         "source": "KSJ2",
         "source_ref": "http://nlftp.mlit.go.jp/ksj/jpgis/datalist/KsjTmplt-P02-v2_0.html"
       },
@@ -240,7 +240,7 @@
         "amenity": "pharmacy",
         "building": "yes",
         "name": "よしたけ調剤薬局 板東店",
-        "phone": "088-689-2185",
+        "phone": "+81 88 689 2185",
         "website": "http://yoshitakemedical.com/"
       },
       "distanceAlongTrail": 0.07742616140660191,
@@ -352,7 +352,7 @@
         "name": "ENEOS板東SS",
         "name:en": "ENEOS",
         "name:ja": "エネオス",
-        "phone": "088-689-1196",
+        "phone": "+81 88 689 1196",
         "website": "https://eneos-ss.com/search/ss/pc/detail.php?SCODE=660048"
       },
       "distanceAlongTrail": 0.3243138825649691,
@@ -370,7 +370,7 @@
         "building": "yes",
         "building:levels": "3",
         "name": "小林内科",
-        "phone": "088-689-3366"
+        "phone": "+81 88 689 3366"
       },
       "distanceAlongTrail": 0.3640928490839155,
       "distanceFromTrail": 0.2538738074901295
@@ -386,7 +386,7 @@
         "amenity": "pharmacy",
         "building": "yes",
         "name": "ハート調剤薬局板東店",
-        "phone": "088-683-5450",
+        "phone": "+81 88 683 5450",
         "website": "https://www.kyosei-bs.co.jp/"
       },
       "distanceAlongTrail": 0.3640928490839155,
@@ -807,7 +807,7 @@
         "name:ja": "マルナカ",
         "opening_hours": "09:00-22:00",
         "operator": "マルナカ",
-        "phone": "088-672- 3348",
+        "phone": "+81 88 672 3348",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 4.484803525922095,
@@ -1492,7 +1492,7 @@
         "amenity": "restaurant",
         "name": "民宿寿食堂",
         "note": "宿泊可能",
-        "phone": "088-694-2024",
+        "phone": "+81 88 694 2024",
         "website": "http://www.kotobukishokudou.com/index.html"
       },
       "distanceAlongTrail": 14.72817405148608,
@@ -1680,7 +1680,7 @@
         "building": "yes",
         "name": "吉野町五条駐在所",
         "operator": "阿波警察署",
-        "phone": "088-696-2290"
+        "phone": "+81 88 696 2290"
       },
       "distanceAlongTrail": 16.56504532341288,
       "distanceFromTrail": 1.0809718195856801
@@ -2349,7 +2349,7 @@
         "name": "マルナカ 柿原店",
         "opening_hours": "09:00-22:00",
         "operator": "マルナカ",
-        "phone": "088-696-4122",
+        "phone": "+81 88 696 4122",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 24.236375476704275,
@@ -2371,7 +2371,7 @@
         "building": "yes",
         "name": "くすりのレデイ 阿波吉野店",
         "opening_hours": "09:00-21:00",
-        "phone": "088-637-7020",
+        "phone": "+81 88 637 7020",
         "website": "https://www.lady-drug.co.jp/c/?p=740"
       },
       "distanceAlongTrail": 24.236375476704275,
@@ -2512,7 +2512,7 @@
         "amenity": "fire_station",
         "building": "yes",
         "name": "徳島中央広域連合中消防署",
-        "phone": "088-695-2149"
+        "phone": "+81 88 695 2149"
       },
       "distanceAlongTrail": 25.931214959032133,
       "distanceFromTrail": 0.542065202581353
@@ -2927,7 +2927,7 @@
         "amenity": "police",
         "building": "yes",
         "name": "阿波吉野川警察署 吉野川庁舎",
-        "phone": "0883-25-6110"
+        "phone": "+81 883 25 6110"
       },
       "distanceAlongTrail": 33.912624553239326,
       "distanceFromTrail": 0.18822644098480998
@@ -2988,7 +2988,7 @@
         "building": "yes",
         "cuisine": "chinese",
         "name": "札幌ラーメン どさん子 川島店",
-        "phone": "0883254200",
+        "phone": "+81 883 25 4200",
         "website": "https://www.dskgroup.co.jp/"
       },
       "distanceAlongTrail": 34.14621459778899,
@@ -3293,7 +3293,7 @@
         "name": "ほっかほっか亭",
         "name:en": "Hokka Hokka Tei",
         "name:ja": "ほっかほっか亭",
-        "phone": "0883220972",
+        "phone": "+81 883 22 0972",
         "takeaway": "yes",
         "website": "https://www.hokkahokka-tei.jp/"
       },
@@ -3561,7 +3561,7 @@
         "amenity": "hospital",
         "healthcare": "hospital",
         "name": "国立病院機構徳島病院",
-        "phone": "0883-24-2161",
+        "phone": "+81 883 24 2161",
         "website": "http://www.hosp.go.jp/~tokusimahosp-nho/index.html",
         "wikidata": "Q11571614"
       },
@@ -3921,7 +3921,7 @@
         "addr:postcode": "776-0013",
         "addr:street": "鴨島町上下島字野神の元",
         "name": "徳島ザ・ビッグ鴨島",
-        "phone": "0883-22-2838",
+        "phone": "+81 883 22 2838",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 36.10075609822307,
@@ -4110,7 +4110,7 @@
         "name:en": "Kyoei",
         "name:ja": "キョーエイ",
         "operator": "キョーエイ",
-        "phone": "0883-26-1117",
+        "phone": "+81 883 26 1117",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 36.10075609822307,
@@ -4803,6 +4803,22 @@
       "distanceFromTrail": 1.9299539506047658
     },
     {
+      "id": 14086721802,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 33.968358,
+      "lon": 134.343905,
+      "name": "山びこ",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "italian;japanese",
+        "name": "山びこ",
+        "name:en": "Yamabiko"
+      },
+      "distanceAlongTrail": 52.42431412209509,
+      "distanceFromTrail": 1.9335770554070688
+    },
+    {
       "id": 1423660237,
       "type": "node",
       "category": "emergency",
@@ -5011,7 +5027,7 @@
         "addr:postcode": "771-3201",
         "addr:street": "阿野字南馬喰草",
         "name": "軽井沢レジャーランド",
-        "phone": "088-678-0981",
+        "phone": "+81 88 678 0981",
         "tourism": "camp_site",
         "website": "http://www.karuizawa-camp.com/"
       },
@@ -5472,7 +5488,7 @@
         "building": "yes",
         "name": "キョーエイ 石井店",
         "operator": "キョーエイ",
-        "phone": "088-674-3053",
+        "phone": "+81 88 674 3053",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 75.30788376792478,
@@ -5525,7 +5541,7 @@
         "name": "マルヨシセンター 国府店",
         "opening_hours": "09:00-22:00",
         "operator": "マルヨシセンター",
-        "phone": "088-642-8006",
+        "phone": "+81 88 642 8006",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 75.5399818387508,
@@ -5647,6 +5663,20 @@
       "distanceFromTrail": 0.04349764093013214
     },
     {
+      "id": 14144768289,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0738373,
+      "lon": 134.4824168,
+      "name": "ミマ薬局",
+      "tags": {
+        "amenity": "pharmacy",
+        "name": "ミマ薬局"
+      },
+      "distanceAlongTrail": 76.61149942173678,
+      "distanceFromTrail": 0.12521958303305078
+    },
+    {
       "id": 8706560152,
       "type": "node",
       "category": "transport",
@@ -5680,6 +5710,9 @@
         "addr:street": "国府町府中字古地",
         "amenity": "police",
         "building": "yes",
+        "building:levels": "2",
+        "ele": "7.9",
+        "height": "7.6",
         "name": "徳島名西警察署国府町府中交番"
       },
       "distanceAlongTrail": 76.76579869384452,
@@ -5691,10 +5724,19 @@
       "category": "resupply",
       "lat": 34.0725994,
       "lon": 134.4848899,
-      "name": "マルナカ 国府店",
+      "name": "マルナカ",
       "tags": {
+        "branch": "国府店",
+        "brand": "マルナカ",
+        "brand:en": "Marunaka",
+        "brand:ja": "マルナカ",
+        "brand:wikidata": "Q11341399",
         "building": "yes",
-        "name": "マルナカ 国府店",
+        "ele": "7.6",
+        "height": "10.8",
+        "name": "マルナカ",
+        "name:en": "Marunaka",
+        "name:ja": "マルナカ",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 76.80546461504377,
@@ -5809,9 +5851,11 @@
         "addr:street": "国府町早淵字池久保",
         "branch": "国府店",
         "building": "yes",
+        "ele": "7.0",
+        "height": "9.5",
         "name": "キョーエイ",
         "operator": "キョーエイ",
-        "phone": "088-643-3111",
+        "phone": "+81 88 643 3111",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 76.94512072100497,
@@ -6712,7 +6756,7 @@
         "name": "MEHR KORN RUHEPLATZ",
         "name:ja": "メーアコルン ルーエプラッツ",
         "opening_hours": "Sa-Su 07:30-19:00; We-Fr 08:00-19:00",
-        "phone": "+81 088-678-5191",
+        "phone": "+81 88 678 5191",
         "shop": "bakery"
       },
       "distanceAlongTrail": 81.76602066751578,
@@ -7973,7 +8017,7 @@
         "name:ja": "マルナカ",
         "opening_hours": "09:00-22:00",
         "operator": "マルナカ",
-        "phone": "088-632-7173",
+        "phone": "+81 88 632 7173",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 84.04819596321465,
@@ -8346,34 +8390,96 @@
       "distanceFromTrail": 0.9417983824168029
     },
     {
+      "id": 14214492648,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0802953,
+      "lon": 134.5378725,
+      "name": "とば作",
+      "tags": {
+        "amenity": "fast_food",
+        "cuisine": "udon",
+        "name": "とば作",
+        "takeaway": "yes"
+      },
+      "distanceAlongTrail": 84.77444179426494,
+      "distanceFromTrail": 0.24944794267989073
+    },
+    {
+      "id": 14214492654,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0802939,
+      "lon": 134.5380361,
+      "name": "がっつ",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "ramen",
+        "name": "がっつ"
+      },
+      "distanceAlongTrail": 84.7893710152561,
+      "distanceFromTrail": 0.25149031667632343
+    },
+    {
       "id": 227256705,
       "type": "way",
       "category": "resupply",
-      "lat": 34.0780752,
-      "lon": 134.5380452,
-      "name": "セルフ佐古SS",
+      "lat": 34.0780547,
+      "lon": 134.5380485,
+      "name": "apollostation",
       "tags": {
         "amenity": "fuel",
+        "branch": "セルフ佐古SS",
+        "brand": "apollostation",
+        "brand:en": "apollostation",
+        "brand:ja": "アポロステーション",
+        "brand:wikidata": "Q114731101",
         "building": "yes",
-        "name": "セルフ佐古SS"
+        "building:levels": "2",
+        "ele": "2.0",
+        "height": "8.4",
+        "name": "apollostation",
+        "name:en": "apollostation",
+        "name:ja": "アポロステーション",
+        "name:ja-Hira": "あぽろすてーしょん",
+        "name:ja-Latn": "Aporo Sutēsyon",
+        "operator": "出光リテール販売株式会社"
       },
-      "distanceAlongTrail": 84.82616436074377,
-      "distanceFromTrail": 0.007539626329971972
+      "distanceAlongTrail": 84.82679732201974,
+      "distanceFromTrail": 0.005328782127189572
     },
     {
-      "id": 227256707,
-      "type": "way",
-      "category": "emergency",
-      "lat": 34.0782115,
-      "lon": 134.5381138,
-      "name": "岩瀬内科医院",
+      "id": 14221210757,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0790342,
+      "lon": 134.5383425,
+      "name": "季林",
       "tags": {
-        "amenity": "hospital",
-        "building": "yes",
-        "name": "岩瀬内科医院"
+        "amenity": "pub",
+        "check_date": "2026-06-19",
+        "level": "0",
+        "name": "季林"
       },
-      "distanceAlongTrail": 84.83020564414761,
-      "distanceFromTrail": 0.02345458662394302
+      "distanceAlongTrail": 84.8377085381012,
+      "distanceFromTrail": 0.11702786703507699
+    },
+    {
+      "id": 14221210756,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.0788751,
+      "lon": 134.5383278,
+      "name": "昭和レトロ佐古駅",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2026-06-19",
+        "level": "0",
+        "name": "昭和レトロ佐古駅",
+        "shop": "general"
+      },
+      "distanceAlongTrail": 84.83894805530291,
+      "distanceFromTrail": 0.09932837539936125
     },
     {
       "id": 8316082393,
@@ -8405,6 +8511,39 @@
       "distanceFromTrail": 0.28976538273568186
     },
     {
+      "id": 14214310510,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.079779,
+      "lon": 134.5386976,
+      "name": "自家製麺 金剛",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-06-19",
+        "cuisine": "ramen",
+        "name": "自家製麺 金剛"
+      },
+      "distanceAlongTrail": 84.85676741758712,
+      "distanceFromTrail": 0.20373218910132426
+    },
+    {
+      "id": 14221210749,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0786244,
+      "lon": 134.5387003,
+      "name": "三輪寿し",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-06-19",
+        "cuisine": "sushi",
+        "level": "0",
+        "name": "三輪寿し"
+      },
+      "distanceAlongTrail": 84.8669303005145,
+      "distanceFromTrail": 0.07870698167538072
+    },
+    {
       "id": 1452243463,
       "type": "way",
       "category": "emergency",
@@ -8417,6 +8556,22 @@
       },
       "distanceAlongTrail": 84.92811179481706,
       "distanceFromTrail": 0.4005540827460979
+    },
+    {
+      "id": 14221820345,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0774275,
+      "lon": 134.5390698,
+      "name": "おおしま内科皮フ科クリニック",
+      "tags": {
+        "amenity": "clinic",
+        "check_date": "2026-06-19",
+        "healthcare:speciality": "internal;dermatology",
+        "name": "おおしま内科皮フ科クリニック"
+      },
+      "distanceAlongTrail": 84.93582860365154,
+      "distanceFromTrail": 0.040137082517567105
     },
     {
       "id": 224861167,
@@ -8435,11 +8590,75 @@
       "distanceFromTrail": 0.13692991667739282
     },
     {
+      "id": 14221820343,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0774355,
+      "lon": 134.5392112,
+      "name": "スマイル調剤薬局",
+      "tags": {
+        "amenity": "pharmacy",
+        "branch": "東佐古店",
+        "check_date": "2026-06-19",
+        "dispensing": "yes",
+        "name": "スマイル調剤薬局"
+      },
+      "distanceAlongTrail": 84.94812049841497,
+      "distanceFromTrail": 0.035744013126569885
+    },
+    {
+      "id": 14222363606,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0777191,
+      "lon": 134.5393576,
+      "name": "佐古一番町",
+      "tags": {
+        "highway": "bus_stop",
+        "name": "佐古一番町",
+        "operator": "徳島バス;徳島市営バス",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 84.9525326030049,
+      "distanceFromTrail": 0.0017324309657856458
+    },
+    {
+      "id": 14221820301,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0777616,
+      "lon": 134.5395868,
+      "name": "大吉",
+      "tags": {
+        "amenity": "pub",
+        "level": "0",
+        "name": "大吉"
+      },
+      "distanceAlongTrail": 84.97156505594474,
+      "distanceFromTrail": 0.008548874824827805
+    },
+    {
+      "id": 14222363607,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0773932,
+      "lon": 134.5402221,
+      "name": "佐古一番町",
+      "tags": {
+        "highway": "bus_stop",
+        "name": "佐古一番町",
+        "operator": "徳島バス;徳島市営バス",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 85.03900262850115,
+      "distanceFromTrail": 0.014984353196280366
+    },
+    {
       "id": 324363003,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0771387,
-      "lon": 134.5410404,
+      "lat": 34.0771522,
+      "lon": 134.5410369,
       "name": "丸亀製麺",
       "tags": {
         "amenity": "fast_food",
@@ -8449,15 +8668,17 @@
         "brand:wikidata": "Q10877253",
         "brand:zh": "丸亀製麵",
         "building": "yes",
-        "cuisine": "noodle",
+        "cuisine": "udon",
+        "ele": "2.3",
+        "height": "5.6",
         "name": "丸亀製麺",
         "name:en": "Marugame Seimen",
         "name:ja": "丸亀製麺",
         "name:zh": "丸亀製麵",
         "takeaway": "yes"
       },
-      "distanceAlongTrail": 85.11628495950607,
-      "distanceFromTrail": 0.02999686027509226
+      "distanceAlongTrail": 85.11572517822528,
+      "distanceFromTrail": 0.028567192803320245
     },
     {
       "id": 11082895630,
@@ -8508,6 +8729,34 @@
       },
       "distanceAlongTrail": 85.15493460786486,
       "distanceFromTrail": 1.4519727199531107
+    },
+    {
+      "id": 14067218701,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.0871899,
+      "lon": 134.5455099,
+      "name": "ダイレックス 田宮店",
+      "tags": {
+        "name": "ダイレックス 田宮店",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 85.15493460786486,
+      "distanceFromTrail": 1.1546804519394684
+    },
+    {
+      "id": 14067272402,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0892814,
+      "lon": 134.5451389,
+      "name": "海鮮市場ふくの家",
+      "tags": {
+        "amenity": "bar",
+        "name": "海鮮市場ふくの家"
+      },
+      "distanceAlongTrail": 85.15493460786486,
+      "distanceFromTrail": 1.368326246911664
     },
     {
       "id": 2990205837,
@@ -8577,6 +8826,37 @@
       "distanceFromTrail": 1.5036474452960562
     },
     {
+      "id": 1554449366,
+      "type": "way",
+      "category": "resupply",
+      "lat": 34.0860976,
+      "lon": 134.5507793,
+      "name": "ローソン徳島田宮街道店",
+      "tags": {
+        "building": "yes",
+        "name": "ローソン徳島田宮街道店",
+        "phone": "088-679-6808",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 85.15493460786486,
+      "distanceFromTrail": 1.294403609455709
+    },
+    {
+      "id": 1558220243,
+      "type": "way",
+      "category": "resupply",
+      "lat": 34.0826849,
+      "lon": 134.5443416,
+      "name": "ローソン徳島南田宮一丁目店",
+      "tags": {
+        "building": "yes",
+        "name": "ローソン徳島南田宮一丁目店",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 85.15493460786486,
+      "distanceFromTrail": 0.6482151523820665
+    },
+    {
       "id": 315004113,
       "type": "way",
       "category": "emergency",
@@ -8612,8 +8892,8 @@
       "id": 333947613,
       "type": "way",
       "category": "resupply",
-      "lat": 34.080729,
-      "lon": 134.5422888,
+      "lat": 34.0807779,
+      "lon": 134.5422545,
       "name": "キョーエイ",
       "tags": {
         "branch": "三ツ合橋店",
@@ -8628,7 +8908,7 @@
         "shop": "supermarket"
       },
       "distanceAlongTrail": 85.15493460786486,
-      "distanceFromTrail": 0.3826735648708323
+      "distanceFromTrail": 0.3874414760358873
     },
     {
       "id": 336021075,
@@ -8662,6 +8942,24 @@
       },
       "distanceAlongTrail": 85.15493460786486,
       "distanceFromTrail": 0.9528196588153393
+    },
+    {
+      "id": 336974562,
+      "type": "way",
+      "category": "emergency",
+      "lat": 34.086089,
+      "lon": 134.5503871,
+      "name": "くすりのレディー田宮街道店",
+      "tags": {
+        "amenity": "pharmacy",
+        "building": "retail",
+        "drive_through": "no",
+        "healthcare": "pharmacy",
+        "name": "くすりのレディー田宮街道店",
+        "phone": "088-634-3771"
+      },
+      "distanceAlongTrail": 85.15493460786486,
+      "distanceFromTrail": 1.2701351483499497
     },
     {
       "id": 356452782,
@@ -8741,6 +9039,9 @@
         "brand:wikidata": "Q11247682",
         "brand:wikipedia": "ja:ファミリーマート",
         "building": "retail",
+        "building:levels": "1",
+        "ele": "1.7",
+        "height": "5.8",
         "name": "ファミリーマート",
         "name:en": "FamilyMart",
         "name:ja": "ファミリーマート",
@@ -8844,7 +9145,8 @@
       "tags": {
         "highway": "bus_stop",
         "name": "助任本町",
-        "name:en": "Suketo-honcho"
+        "name:en": "Suketo-honcho",
+        "name:ja": "助任本町"
       },
       "distanceAlongTrail": 85.31818646472345,
       "distanceFromTrail": 1.6340398015323632
@@ -8893,10 +9195,26 @@
       "tags": {
         "amenity": "restaurant",
         "building": "yes",
+        "building:levels": "2",
+        "check_date": "2026-09-22",
+        "description": "Roast Chicken & M.C.Cafe",
         "name": "Bon"
       },
       "distanceAlongTrail": 85.3244350981897,
       "distanceFromTrail": 0.3166989255020767
+    },
+    {
+      "id": 14205373506,
+      "type": "node",
+      "category": "water",
+      "lat": 34.0766621,
+      "lon": 134.5441174,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 85.32940471218092,
+      "distanceFromTrail": 0.18219982393618514
     },
     {
       "id": 309844577,
@@ -8913,7 +9231,8 @@
         "brand:ja": "スシロー",
         "brand:wikidata": "Q11257037",
         "brand:wikipedia": "ja:あきんどスシロー",
-        "building": "yes",
+        "building": "retail",
+        "building:levels": "1",
         "cuisine": "sushi",
         "name": "スシロー",
         "name:en": "Sushiro",
@@ -8922,17 +9241,48 @@
         "official_name": "あきんどスシロー",
         "official_name:en": "Akindo Sushiro",
         "official_name:ja": "あきんどスシロー",
+        "roof:shape": "flat",
         "takeaway": "yes"
       },
       "distanceAlongTrail": 85.33049235979627,
       "distanceFromTrail": 0.2727232687301518
     },
     {
+      "id": 14231768660,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0758783,
+      "lon": 134.542325,
+      "name": "西新町五丁目",
+      "tags": {
+        "highway": "bus_stop",
+        "name": "西新町五丁目",
+        "operator": "徳島市営バス",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 85.33493529777768,
+      "distanceFromTrail": 0.0043950561048337255
+    },
+    {
+      "id": 14205342899,
+      "type": "node",
+      "category": "camping",
+      "lat": 34.0765508,
+      "lon": 134.5441015,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "picnic_shelter"
+      },
+      "distanceAlongTrail": 85.33987064901986,
+      "distanceFromTrail": 0.17543405530276904
+    },
+    {
       "id": 227079171,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0765777,
-      "lon": 134.544608,
+      "lat": 34.0765794,
+      "lon": 134.5446097,
       "name": "マクドナルド",
       "tags": {
         "amenity": "fast_food",
@@ -8942,17 +9292,19 @@
         "brand:ja": "マクドナルド",
         "brand:wikidata": "Q38076",
         "brand:wikipedia": "ja:マクドナルド",
-        "building": "yes",
+        "building": "retail",
+        "building:levels": "2",
+        "check_date": "2026-09-22",
         "cuisine": "burger",
         "name": "マクドナルド",
         "name:en": "McDonald's",
         "name:ja": "マクドナルド",
         "name:ko": "맥도날드",
-        "opening_hours": "24/7",
+        "opening_hours": "06:00-24:00",
         "takeaway": "yes"
       },
-      "distanceAlongTrail": 85.3577329711953,
-      "distanceFromTrail": 0.21863187219823843
+      "distanceAlongTrail": 85.3576322269661,
+      "distanceFromTrail": 0.21885569716655903
     },
     {
       "id": 2981248038,
@@ -8989,24 +9341,73 @@
       "distanceFromTrail": 0.2517191021662594
     },
     {
-      "id": 319442658,
-      "type": "way",
+      "id": 14231768659,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0751439,
+      "lon": 134.5429281,
+      "name": "西新町五丁目",
+      "tags": {
+        "highway": "bus_stop",
+        "name": "西新町五丁目",
+        "operator": "徳島市営バス",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 85.43271523708083,
+      "distanceFromTrail": 0.009503430313572774
+    },
+    {
+      "id": 14205272575,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.077506,
+      "lon": 134.5489136,
+      "name": "タローパン",
+      "tags": {
+        "check_date": "2026-09-22",
+        "name": "タローパン",
+        "shop": "bakery"
+      },
+      "distanceAlongTrail": 85.43972771978844,
+      "distanceFromTrail": 0.6201046451641998
+    },
+    {
+      "id": 14205409834,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.0757141,
+      "lon": 134.5454968,
+      "name": "セブン-イレブン",
+      "tags": {
+        "brand": "7-ELEVEN",
+        "brand:en": "7-ELEVEN",
+        "brand:ja": "セブン-イレブン",
+        "brand:wikidata": "Q259340",
+        "check_date": "2026-09-22",
+        "name": "セブン-イレブン",
+        "name:en": "7-Eleven",
+        "name:ja": "セブン-イレブン",
+        "official_name:en": "Seven-Eleven",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 85.48000275364107,
+      "distanceFromTrail": 0.24982762012274365
+    },
+    {
+      "id": 14231947430,
+      "type": "node",
       "category": "restaurant",
-      "lat": 34.0744209,
-      "lon": 134.5430626,
+      "lat": 34.074461,
+      "lon": 134.5430538,
       "name": "中華そば いのたに",
       "tags": {
-        "addr:city": "徳島市",
-        "addr:housenumber": "4-25",
-        "addr:street": "西大工町",
         "amenity": "restaurant",
-        "building": "yes",
         "cuisine": "noodle;ramen",
         "name": "中華そば いのたに",
-        "phone": "088-653-1482"
+        "phone": "+81 88 653 1482"
       },
-      "distanceAlongTrail": 85.51034637203948,
-      "distanceFromTrail": 0.014786886745939696
+      "distanceAlongTrail": 85.50598632735785,
+      "distanceFromTrail": 0.013550471763349555
     },
     {
       "id": 319263899,
@@ -9018,25 +9419,27 @@
       "tags": {
         "amenity": "doctors",
         "building": "yes",
+        "building:levels": "5",
         "name": "稲山外科内科"
       },
       "distanceAlongTrail": 85.57880494231098,
       "distanceFromTrail": 0.25673478740483174
     },
     {
-      "id": 2981248034,
+      "id": 14232226798,
       "type": "node",
-      "category": "resupply",
-      "lat": 34.0756721,
-      "lon": 134.5470128,
-      "name": null,
+      "category": "transport",
+      "lat": 34.0736315,
+      "lon": 134.5441254,
+      "name": "西大工町三丁目",
       "tags": {
-        "amenity": "fuel",
-        "brand": "コスモ石油",
-        "source": "Bing"
+        "highway": "bus_stop",
+        "name": "西大工町三丁目",
+        "operator": "徳島市営バス",
+        "public_transport": "platform"
       },
-      "distanceAlongTrail": 85.62902731444169,
-      "distanceFromTrail": 0.35708583828380536
+      "distanceAlongTrail": 85.63706328184107,
+      "distanceFromTrail": 0.007595625750433237
     },
     {
       "id": 3761175293,
@@ -9068,6 +9471,26 @@
       "distanceFromTrail": 0.18614084292610786
     },
     {
+      "id": 14205325758,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0752275,
+      "lon": 134.5468593,
+      "name": "郷土文化会館前",
+      "tags": {
+        "bus": "yes",
+        "departures_board": "timetable",
+        "highway": "bus_stop",
+        "name": "郷土文化会館前",
+        "name:en": "Kyodo bunka kaikan mae",
+        "operator": "徳島バス",
+        "public_transport": "platform",
+        "shelter": "no"
+      },
+      "distanceAlongTrail": 85.65843833112386,
+      "distanceFromTrail": 0.31490839326632863
+    },
+    {
       "id": 319223061,
       "type": "way",
       "category": "restaurant",
@@ -9083,15 +9506,71 @@
       "distanceFromTrail": 0.16127296766524976
     },
     {
+      "id": 14205345278,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0765733,
+      "lon": 134.5489642,
+      "name": "体育館前",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "体育館前",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 85.66479861676673,
+      "distanceFromTrail": 0.5597256196819886
+    },
+    {
+      "id": 14205271840,
+      "type": "node",
+      "category": "transport",
+      "lat": 34.0767138,
+      "lon": 134.5493469,
+      "name": "体育館前",
+      "tags": {
+        "bus": "yes",
+        "highway": "bus_stop",
+        "name": "体育館前",
+        "public_transport": "platform"
+      },
+      "distanceAlongTrail": 85.66938016460841,
+      "distanceFromTrail": 0.5969478214645217
+    },
+    {
+      "id": 14205425431,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0754312,
+      "lon": 134.5474308,
+      "name": "盛眼科医院",
+      "tags": {
+        "amenity": "doctors",
+        "check_date": "2026-09-22",
+        "healthcare": "doctor",
+        "healthcare:speciality": "ophthalmology",
+        "name": "盛眼科医院"
+      },
+      "distanceAlongTrail": 85.66938016460841,
+      "distanceFromTrail": 0.37005688312532786
+    },
+    {
       "id": 2981246632,
       "type": "node",
       "category": "resupply",
       "lat": 34.0750801,
       "lon": 134.5472037,
-      "name": null,
+      "name": "apollostation",
       "tags": {
         "amenity": "fuel",
-        "brand": "Shell",
+        "branch": "藍場町SS",
+        "brand": "apollostation",
+        "name": "apollostation",
+        "name:en": "apollostation",
+        "name:ja": "アポロステーション",
+        "name:ja-Hira": "あぽろすてーしょん",
+        "name:ja-Latn": "Aporo Sutēsyon",
+        "operator": "徳島石油株式会社",
         "source": "Bing"
       },
       "distanceAlongTrail": 85.67785694979185,
@@ -9113,6 +9592,31 @@
       "distanceFromTrail": 0.1655183889539276
     },
     {
+      "id": 318199413,
+      "type": "way",
+      "category": "emergency",
+      "lat": 34.0753865,
+      "lon": 134.5480251,
+      "name": "橘整形外科病院",
+      "tags": {
+        "addr:block_number": "37",
+        "addr:city": "徳島市",
+        "addr:housenumber": "1",
+        "addr:neighbourhood": "寺島本町西二丁目",
+        "amenity": "doctors",
+        "building": "hospital",
+        "building:levels": "4",
+        "check_date": "2026-09-22",
+        "ele": "1.9",
+        "healthcare": "doctor",
+        "healthcare:speciality": "orthopaedics",
+        "height": "19.2",
+        "name": "橘整形外科病院"
+      },
+      "distanceAlongTrail": 85.6959473975559,
+      "distanceFromTrail": 0.4107429649798055
+    },
+    {
       "id": 11083754195,
       "type": "node",
       "category": "transport",
@@ -9124,6 +9628,19 @@
       },
       "distanceAlongTrail": 85.70198642548375,
       "distanceFromTrail": 0.44586335339721767
+    },
+    {
+      "id": 14205306712,
+      "type": "node",
+      "category": "water",
+      "lat": 34.0744384,
+      "lon": 134.5467079,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 85.70758663489565,
+      "distanceFromTrail": 0.2504424507464555
     },
     {
       "id": 335844387,
@@ -9152,16 +9669,36 @@
       "id": 2991786566,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0750289,
-      "lon": 134.5484606,
-      "name": "阿波ドール",
+      "lat": 34.0751189,
+      "lon": 134.5485303,
+      "name": "AWA DOLL",
       "tags": {
         "amenity": "cafe",
-        "name": "阿波ドール",
+        "check_date": "2026-09-22",
+        "disused:amenity": "cafe",
+        "level": "0",
+        "name": "AWA DOLL",
+        "name:ja": "阿波ドール",
         "wheelchair": "limited"
       },
-      "distanceAlongTrail": 85.7518222585837,
-      "distanceFromTrail": 0.41900544795282874
+      "distanceAlongTrail": 85.74766141247655,
+      "distanceFromTrail": 0.4301430844947176
+    },
+    {
+      "id": 2991788117,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0750742,
+      "lon": 134.5486223,
+      "name": "だいきちカレー",
+      "tags": {
+        "amenity": "restaurant",
+        "level": "0",
+        "name": "だいきちカレー",
+        "wheelchair": "no"
+      },
+      "distanceAlongTrail": 85.75672005834738,
+      "distanceFromTrail": 0.43394473888051427
     },
     {
       "id": 3608601164,
@@ -9261,19 +9798,104 @@
       "distanceFromTrail": 1.8747265858993578
     },
     {
+      "id": 14205383929,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0746093,
+      "lon": 134.5493905,
+      "name": "味噌そば Jac",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-09-22",
+        "cuisine": "noodle",
+        "name": "味噌そば Jac"
+      },
+      "distanceAlongTrail": 85.76969329291644,
+      "distanceFromTrail": 0.4650035584285613
+    },
+    {
+      "id": 14205383932,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0746249,
+      "lon": 134.5491738,
+      "name": "堂の浦",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-09-22",
+        "cuisine": "ramen",
+        "level": "0",
+        "name": "堂の浦",
+        "opening_hours": "11:30-14:00,18:00-23:00"
+      },
+      "distanceAlongTrail": 85.76969329291644,
+      "distanceFromTrail": 0.4483431998230271
+    },
+    {
+      "id": 14205383933,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0745632,
+      "lon": 134.5492386,
+      "name": "DOMANNNAKA",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-22",
+        "name": "DOMANNNAKA",
+        "name:ja": "和風ダイニング どまんなか"
+      },
+      "distanceAlongTrail": 85.76969329291644,
+      "distanceFromTrail": 0.45025178672816696
+    },
+    {
+      "id": 14205383935,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.074652,
+      "lon": 134.5490268,
+      "name": "とくさん",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-22",
+        "name": "とくさん"
+      },
+      "distanceAlongTrail": 85.76969329291644,
+      "distanceFromTrail": 0.43813722738249405
+    },
+    {
+      "id": 14205410081,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0747479,
+      "lon": 134.5488216,
+      "name": "エンゼル調剤薬局",
+      "tags": {
+        "amenity": "pharmacy",
+        "check_date": "2026-09-22",
+        "healthcare": "pharmacy",
+        "level": "0",
+        "name": "エンゼル調剤薬局"
+      },
+      "distanceAlongTrail": 85.76969329291644,
+      "distanceFromTrail": 0.4277404972161155
+    },
+    {
       "id": 1423654461,
       "type": "node",
       "category": "emergency",
       "lat": 34.074449,
       "lon": 134.548652,
-      "name": "古川会古川病院",
+      "name": "こかわ医院",
       "tags": {
         "KSJ2:ADS": "寺島本町西1-15",
         "KSJ2:AdminArea": "徳島県徳島市",
         "amenity": "hospital",
-        "name": "古川会古川病院",
+        "check_date": "2026-09-22",
+        "healthcare:speciality": "internal;paediatrics",
+        "name": "こかわ医院",
         "note": "National-Land Numerical Information (Public Facility) 2006, MLIT Japan",
         "note:ja": "国土数値情報（公共施設データ）平成19年　国土交通省",
+        "operator": "医療法人古川会",
         "operator:type": "private",
         "source": "KSJ2",
         "source_ref": "http://nlftp.mlit.go.jp/ksj/jpgis/datalist/KsjTmplt-P02-v2_0.html",
@@ -9284,51 +9906,23 @@
       "distanceFromTrail": 0.3969355793520279
     },
     {
-      "id": 2991788117,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0749656,
-      "lon": 134.5487004,
-      "name": "だいきちカレー",
-      "tags": {
-        "amenity": "restaurant",
-        "name": "だいきちカレー",
-        "wheelchair": "no"
-      },
-      "distanceAlongTrail": 85.76969329291644,
-      "distanceFromTrail": 0.43246306136024704
-    },
-    {
       "id": 2991804124,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0747378,
-      "lon": 134.5495522,
+      "lat": 34.074765,
+      "lon": 134.5495683,
       "name": "けんど茶屋",
       "tags": {
         "amenity": "restaurant",
+        "check_date": "2026-09-22",
         "cuisine": "ramen;udon",
+        "level": "0",
         "name": "けんど茶屋",
         "wheelchair": "no",
         "wheelchair:description": "商店街通路の左右に段差がある。"
       },
       "distanceAlongTrail": 85.76969329291644,
-      "distanceFromTrail": 0.4849008962576014
-    },
-    {
-      "id": 2991808205,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0746402,
-      "lon": 134.5493108,
-      "name": "上海美食",
-      "tags": {
-        "amenity": "restaurant",
-        "name": "上海美食",
-        "wheelchair": "no"
-      },
-      "distanceAlongTrail": 85.76969329291644,
-      "distanceFromTrail": 0.46018962265505275
+      "distanceFromTrail": 0.48765909495691506
     },
     {
       "id": 2991857815,
@@ -9513,7 +10107,7 @@
         "name": "マルヨシセンター",
         "opening_hours": "24/7",
         "operator": "マルヨシセンター",
-        "phone": "088-622-1050",
+        "phone": "+81 88 622 1050",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 85.76969329291644,
@@ -9554,7 +10148,7 @@
         "name": "キリン堂",
         "opening_hours": "10:00-21:45",
         "operator": "キリン堂",
-        "phone": "088-657-6255",
+        "phone": "+81 88 657 6255",
         "website": "http://www.kirindo.co.jp/shop/tokushima/tokushima/store-0685.shtml"
       },
       "distanceAlongTrail": 85.77292766001585,
@@ -9572,10 +10166,39 @@
         "highway": "bus_stop",
         "name": "徳島大学前",
         "name:en": "Daigaku-mae (Tokushima University)",
+        "name:ja": "徳島大学前",
         "public_transport": "platform"
       },
       "distanceAlongTrail": 85.77320898867558,
       "distanceFromTrail": 1.4639910086540107
+    },
+    {
+      "id": 14205329759,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0745068,
+      "lon": 134.5493139,
+      "name": "おなじみや本店",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-22",
+        "name": "おなじみや本店"
+      },
+      "distanceAlongTrail": 85.77631422142055,
+      "distanceFromTrail": 0.4534163779016016
+    },
+    {
+      "id": 14205288251,
+      "type": "node",
+      "category": "water",
+      "lat": 34.0736976,
+      "lon": 134.5475715,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 85.78021747267141,
+      "distanceFromTrail": 0.2694744390908574
     },
     {
       "id": 4686523891,
@@ -9595,6 +10218,39 @@
       "distanceFromTrail": 1.368734031947988
     },
     {
+      "id": 14205439327,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0744792,
+      "lon": 134.5494279,
+      "name": "GAMEBAR LIBERTY",
+      "tags": {
+        "amenity": "bar",
+        "check_date": "2026-09-22",
+        "level": "1",
+        "name": "GAMEBAR LIBERTY"
+      },
+      "distanceAlongTrail": 85.78396219755189,
+      "distanceFromTrail": 0.4612380257613463
+    },
+    {
+      "id": 14205442521,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0744581,
+      "lon": 134.5494029,
+      "name": "重禄兵衛",
+      "tags": {
+        "amenity": "fast_food",
+        "check_date": "2026-09-22",
+        "cuisine": "takoyaki",
+        "level": "0",
+        "name": "重禄兵衛"
+      },
+      "distanceAlongTrail": 85.78494940078444,
+      "distanceFromTrail": 0.4581024654246952
+    },
+    {
       "id": 7232491717,
       "type": "node",
       "category": "water",
@@ -9606,6 +10262,21 @@
       },
       "distanceAlongTrail": 85.78500133408612,
       "distanceFromTrail": 0.15597348700448402
+    },
+    {
+      "id": 14205439326,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0744539,
+      "lon": 134.5494787,
+      "name": "焼く鶏 とりにし",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-22",
+        "name": "焼く鶏 とりにし"
+      },
+      "distanceAlongTrail": 85.7886459921932,
+      "distanceFromTrail": 0.4640434111057373
     },
     {
       "id": 3608604091,
@@ -9695,52 +10366,7 @@
       "distanceFromTrail": 0.4975268879142997
     },
     {
-      "id": 12080104570,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0743942,
-      "lon": 134.5499291,
-      "name": "松屋",
-      "tags": {
-        "amenity": "fast_food",
-        "brand": "松屋",
-        "brand:en": "Matsuya",
-        "brand:ja": "松屋",
-        "brand:wikidata": "Q848773",
-        "brand:zh": "松屋",
-        "check_date": "2024-07-29",
-        "cuisine": "beef_bowl",
-        "level": "0",
-        "name": "松屋",
-        "name:en": "Matsuya",
-        "name:ja": "松屋",
-        "name:zh": "松屋",
-        "operator": "松屋フーズ",
-        "operator:en": "Matsuya Foods",
-        "operator:ja": "松屋フーズ",
-        "takeaway": "yes"
-      },
-      "distanceAlongTrail": 85.81402027098733,
-      "distanceFromTrail": 0.4975268879142997
-    },
-    {
       "id": 12080103289,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0742997,
-      "lon": 134.5498734,
-      "name": "森珈琲店",
-      "tags": {
-        "amenity": "cafe",
-        "check_date": "2024-07-29",
-        "level": "0",
-        "name": "森珈琲店"
-      },
-      "distanceAlongTrail": 85.82087972610493,
-      "distanceFromTrail": 0.48805683652300774
-    },
-    {
-      "id": 12080110970,
       "type": "node",
       "category": "restaurant",
       "lat": 34.0742997,
@@ -9759,19 +10385,22 @@
       "id": 295438486,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0742569,
+      "lat": 34.0742641,
       "lon": 134.5498458,
       "name": "chu chu churros cafe",
       "tags": {
         "amenity": "cafe",
         "branch": "徳島駅前店",
         "building": "yes",
+        "building:levels": "3",
         "check_date": "2024-07-29",
+        "ele": "1.7",
+        "height": "9.0",
         "name": "chu chu churros cafe",
         "source": "GSI/KIBAN 2500;NARO"
       },
-      "distanceAlongTrail": 85.8238836164959,
-      "distanceFromTrail": 0.4835748912634188
+      "distanceAlongTrail": 85.82317710507536,
+      "distanceFromTrail": 0.4839515043608775
     },
     {
       "id": 312567095,
@@ -9795,6 +10424,40 @@
       },
       "distanceAlongTrail": 85.84404595390232,
       "distanceFromTrail": 1.3873369848586674
+    },
+    {
+      "id": 300189833,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.0734219,
+      "lon": 134.5485312,
+      "name": "徳島駅前郵便局",
+      "tags": {
+        "addr:block_number": "24",
+        "addr:city": "徳島市",
+        "addr:full": "徳島県徳島市元町1-24",
+        "addr:neighbourhood": "元町一丁目",
+        "addr:postcode": "770-0834",
+        "addr:province": "徳島県",
+        "amenity": "post_office",
+        "name": "徳島駅前郵便局",
+        "name:en": "Tokushima Ekimae Post Office",
+        "name:es": "Oficina de Correos de Tokushima Ekimae",
+        "name:ja": "徳島駅前郵便局",
+        "name:ja-Hira": "とくしま えきまえ ゆうびんきょく",
+        "name:pt": "Correio de Tokushima Ekimae",
+        "opening_hours": "Mo-Fr 09:00-17:00",
+        "operator": "日本郵便",
+        "operator:en": "Japan Post",
+        "operator:ja": "日本郵便",
+        "operator:short": "郵便局",
+        "operator:short:en": "JP",
+        "operator:short:ja": "郵便局",
+        "operator:wikidata": "Q11509260",
+        "phone": "+81-88-625-4507"
+      },
+      "distanceAlongTrail": 85.84885545212262,
+      "distanceFromTrail": 0.33305290097780965
     },
     {
       "id": 9502180752,
@@ -9831,18 +10494,19 @@
       "category": "restaurant",
       "lat": 34.0744983,
       "lon": 134.551069,
-      "name": "ロッテリア",
+      "name": "ゼッテリア",
       "tags": {
         "amenity": "fast_food",
-        "brand": "ロッテリア",
-        "brand:en": "Lotteria",
-        "brand:ja": "ロッテリア",
+        "brand": "ゼッテリア",
+        "brand:en": "ZETTERIA",
+        "brand:ja": "ゼッテリア",
         "brand:wikidata": "Q249525",
-        "brand:wikipedia": "ja:ロッテリア",
+        "brand:wikipedia": "ja:ゼッテリア",
         "cuisine": "burger",
-        "name": "ロッテリア",
-        "name:en": "Lotteria",
-        "name:ja": "ロッテリア",
+        "name": "ゼッテリア",
+        "name:en": "ZETTERIA",
+        "name:ja": "ゼッテリア",
+        "operator": "株式会社バーガー・ワン",
         "takeaway": "yes"
       },
       "distanceAlongTrail": 85.85319779086454,
@@ -9860,45 +10524,11 @@
         "highway": "bus_stop",
         "name": "徳島大学前",
         "name:en": "Tokushima Daigaku-mae (Tokushima University)",
+        "name:ja": "徳島大学前",
         "public_transport": "platform"
       },
       "distanceAlongTrail": 85.85855052954325,
       "distanceFromTrail": 1.427332075567475
-    },
-    {
-      "id": 300189833,
-      "type": "node",
-      "category": "resupply",
-      "lat": 34.0733611,
-      "lon": 134.5486556,
-      "name": "徳島駅前郵便局",
-      "tags": {
-        "addr:block_number": "1",
-        "addr:city": "徳島市",
-        "addr:full": "徳島県徳島市元町1-24",
-        "addr:housenumber": "24",
-        "addr:neighbourhood": "元町",
-        "addr:postcode": "770-0834",
-        "addr:province": "徳島県",
-        "amenity": "post_office",
-        "name": "徳島駅前郵便局",
-        "name:en": "Tokushima Ekimae Post Office",
-        "name:es": "Oficina de Correos de Tokushima Ekimae",
-        "name:ja": "徳島駅前郵便局",
-        "name:ja-Hira": "とくしま えきまえ ゆうびんきょく",
-        "name:pt": "Correio de Tokushima Ekimae",
-        "opening_hours": "Mo-Fr 09:00-17:00",
-        "operator": "日本郵便",
-        "operator:en": "Japan Post",
-        "operator:ja": "日本郵便",
-        "operator:short": "郵便局",
-        "operator:short:en": "JP",
-        "operator:short:ja": "郵便局",
-        "operator:wikidata": "Q11509260",
-        "phone": "+81-88-625-4507"
-      },
-      "distanceAlongTrail": 85.860211867127,
-      "distanceFromTrail": 0.33998320091323603
     },
     {
       "id": 300189831,
@@ -10074,7 +10704,7 @@
         "official_name:en": "Starbucks Coffee",
         "official_name:ja": "スターバックスコーヒー",
         "opening_hours": "Mo-Fr 07:00-22:00; Sa-Su 08:00-22:00",
-        "phone": "088-656-1721",
+        "phone": "+81 88 656 1721",
         "power_supply": "10",
         "smoking": "no",
         "takeaway": "yes",
@@ -10082,23 +10712,6 @@
       },
       "distanceAlongTrail": 85.8955090702372,
       "distanceFromTrail": 0.6063165187467403
-    },
-    {
-      "id": 3558651806,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0720039,
-      "lon": 134.54664,
-      "name": "活魚水産　新町店",
-      "tags": {
-        "addr:city": "徳島市",
-        "addr:housenumber": "2-34",
-        "addr:street": "西新町",
-        "amenity": "pub",
-        "name": "活魚水産　新町店"
-      },
-      "distanceAlongTrail": 85.90604467136504,
-      "distanceFromTrail": 0.10516699192314301
     },
     {
       "id": 373800811,
@@ -10138,20 +10751,37 @@
       "distanceFromTrail": 0.03763832630693267
     },
     {
-      "id": 10240228977,
+      "id": 3558651806,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0732289,
-      "lon": 134.549643,
-      "name": "きつね寿司縁",
+      "lat": 34.0719632,
+      "lon": 134.5466572,
+      "name": "活魚水産 新町店",
       "tags": {
-        "amenity": "restaurant",
-        "cuisine": "sushi",
-        "name": "きつね寿司縁",
-        "takeaway": "yes"
+        "addr:city": "徳島市",
+        "addr:housenumber": "2-34",
+        "addr:street": "西新町",
+        "amenity": "pub",
+        "name": "活魚水産 新町店"
       },
-      "distanceAlongTrail": 85.91596955538854,
-      "distanceFromTrail": 0.413319663424587
+      "distanceAlongTrail": 85.91078354509838,
+      "distanceFromTrail": 0.1044358554120231
+    },
+    {
+      "id": 14212336856,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.0732279,
+      "lon": 134.5496544,
+      "name": "ベトナムマート",
+      "tags": {
+        "check_date": "2026-09-22",
+        "level": "0",
+        "name": "ベトナムマート",
+        "shop": "supermarket"
+      },
+      "distanceAlongTrail": 85.9165616608649,
+      "distanceFromTrail": 0.414193899183051
     },
     {
       "id": 10240228974,
@@ -10287,23 +10917,24 @@
       "id": 2938253737,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0732626,
-      "lon": 134.5509879,
+      "lat": 34.0732725,
+      "lon": 134.5509875,
       "name": "ドンガバチョ",
       "tags": {
         "amenity": "restaurant",
+        "cuisine": "steak_house",
         "name": "ドンガバチョ",
         "wheelchair": "yes"
       },
       "distanceAlongTrail": 85.9192686275441,
-      "distanceFromTrail": 0.5269297850325109
+      "distanceFromTrail": 0.527316829062789
     },
     {
       "id": 300190064,
       "type": "node",
       "category": "transport",
-      "lat": 34.0728418,
-      "lon": 134.5488878,
+      "lat": 34.0728262,
+      "lon": 134.5488885,
       "name": "元町",
       "tags": {
         "bus": "yes",
@@ -10312,7 +10943,7 @@
         "public_transport": "platform"
       },
       "distanceAlongTrail": 85.9192686275441,
-      "distanceFromTrail": 0.3316970478463827
+      "distanceFromTrail": 0.33095085832777027
     },
     {
       "id": 3202662509,
@@ -10323,6 +10954,8 @@
       "name": "元祖大判焼 あたりや",
       "tags": {
         "amenity": "fast_food",
+        "check_date": "2026-09-22",
+        "level": "0",
         "name": "元祖大判焼 あたりや",
         "wheelchair": "yes"
       },
@@ -10433,8 +11066,8 @@
       "id": 6098756986,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0732223,
-      "lon": 134.5510607,
+      "lat": 34.0732277,
+      "lon": 134.5510746,
       "name": "CoCo壱番屋",
       "tags": {
         "amenity": "restaurant",
@@ -10452,8 +11085,8 @@
         "short_name:ja": "ココイチ",
         "takeaway": "yes"
       },
-      "distanceAlongTrail": 85.92121211012754,
-      "distanceFromTrail": 0.5314561203329781
+      "distanceAlongTrail": 85.92113306616866,
+      "distanceFromTrail": 0.532867959309931
     },
     {
       "id": 2938240381,
@@ -10468,19 +11101,6 @@
       },
       "distanceAlongTrail": 85.92251626212125,
       "distanceFromTrail": 0.45717384020473034
-    },
-    {
-      "id": 5983080788,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0732019,
-      "lon": 134.5510494,
-      "name": null,
-      "tags": {
-        "amenity": "restaurant"
-      },
-      "distanceAlongTrail": 85.92292794199044,
-      "distanceFromTrail": 0.5296437674569904
     },
     {
       "id": 12080103291,
@@ -10499,20 +11119,24 @@
       "distanceFromTrail": 0.47260928724117446
     },
     {
-      "id": 12080110969,
+      "id": 14196652818,
       "type": "node",
-      "category": "emergency",
-      "lat": 34.073008,
-      "lon": 134.5504761,
-      "name": "虹の橋メンタルクリニック",
+      "category": "restaurant",
+      "lat": 34.0731991,
+      "lon": 134.5510565,
+      "name": "鳥貴族",
       "tags": {
-        "amenity": "doctors",
-        "check_date": "2024-07-29",
-        "healthcare": "doctor",
-        "name": "虹の橋メンタルクリニック"
+        "amenity": "pub",
+        "brand": "鳥貴族",
+        "brand:en": "Torikizoku",
+        "brand:ja": "鳥貴族",
+        "brand:wikidata": "Q11675129",
+        "name": "鳥貴族",
+        "name:en": "Torikizoku",
+        "name:ja": "鳥貴族"
       },
-      "distanceAlongTrail": 85.9232148591593,
-      "distanceFromTrail": 0.47260928724117446
+      "distanceAlongTrail": 85.92346094970854,
+      "distanceFromTrail": 0.5301341917214062
     },
     {
       "id": 2938240366,
@@ -10539,7 +11163,7 @@
       "name": "セルフうどん やま",
       "tags": {
         "amenity": "fast_food",
-        "contact:phone": "088-611-3622",
+        "contact:phone": "+81 88 611 3622",
         "cuisine": "udon",
         "cuisine:ja": "うどん",
         "name": "セルフうどん やま",
@@ -10548,6 +11172,23 @@
       },
       "distanceAlongTrail": 85.9269102473992,
       "distanceFromTrail": 0.6602158598291847
+    },
+    {
+      "id": 14235064260,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0714658,
+      "lon": 134.546008,
+      "name": "米と魚と",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-06-19",
+        "cuisine": "japanese",
+        "level": "0",
+        "name": "米と魚と"
+      },
+      "distanceAlongTrail": 85.92864370379436,
+      "distanceFromTrail": 0.026807272998239026
     },
     {
       "id": 6017518487,
@@ -10564,27 +11205,20 @@
       "distanceFromTrail": 0.6705193552215424
     },
     {
-      "id": 2938194785,
+      "id": 14235064263,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0731596,
-      "lon": 134.5511057,
-      "name": "餃子の王将",
+      "lat": 34.0714339,
+      "lon": 134.5459228,
+      "name": "あわ家",
       "tags": {
-        "amenity": "restaurant",
-        "brand": "餃子の王将",
-        "brand:en": "Gyoza no Ohsho",
-        "brand:ja": "餃子の王将",
-        "brand:wikidata": "Q11666805",
-        "brand:wikipedia": "en:Gyoza no Ohsho",
-        "cuisine": "chinese;gyoza",
-        "name": "餃子の王将",
-        "name:en": "Gyoza no Ohsho",
-        "name:ja": "餃子の王将",
-        "wheelchair": "no"
+        "amenity": "pub",
+        "check_date": "2026-06-19",
+        "level": "0",
+        "name": "あわ家"
       },
-      "distanceAlongTrail": 85.92922766183213,
-      "distanceFromTrail": 0.5326983656937312
+      "distanceAlongTrail": 85.92900422972271,
+      "distanceFromTrail": 0.01820287438302064
     },
     {
       "id": 10232998235,
@@ -10599,6 +11233,29 @@
       },
       "distanceAlongTrail": 85.93073942751448,
       "distanceFromTrail": 0.6042982762752377
+    },
+    {
+      "id": 2938194785,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0731458,
+      "lon": 134.551117,
+      "name": "餃子の王将",
+      "tags": {
+        "amenity": "restaurant",
+        "brand": "餃子の王将",
+        "brand:en": "Gyoza no Ohsho",
+        "brand:ja": "餃子の王将",
+        "brand:wikidata": "Q11666805",
+        "brand:wikipedia": "en:Gyoza no Ohsho",
+        "cuisine": "chinese;gyoza",
+        "name": "餃子の王将",
+        "name:en": "Gyoza no Ohsho",
+        "name:ja": "餃子の王将",
+        "wheelchair": "no"
+      },
+      "distanceAlongTrail": 85.93103984744458,
+      "distanceFromTrail": 0.5330910331749623
     },
     {
       "id": 10232998233,
@@ -10619,15 +11276,15 @@
       "id": 2938206884,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0730709,
-      "lon": 134.5510108,
+      "lat": 34.0730825,
+      "lon": 134.551027,
       "name": "安兵衛",
       "tags": {
         "amenity": "pub",
         "name": "安兵衛"
       },
-      "distanceAlongTrail": 85.9351142524922,
-      "distanceFromTrail": 0.5209076182887604
+      "distanceAlongTrail": 85.93447472505432,
+      "distanceFromTrail": 0.5227733534129684
     },
     {
       "id": 2990539225,
@@ -10648,19 +11305,21 @@
       "id": 290266501,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0730305,
-      "lon": 134.5509597,
+      "lat": 34.0730488,
+      "lon": 134.5509747,
       "name": "味祭",
       "tags": {
         "amenity": "pub",
         "building": "yes",
+        "ele": "2.3",
+        "height": "7.0",
         "name": "味祭",
         "name:en": "Ajisai",
         "name:ja": "味祭",
         "source": "Bing"
       },
-      "distanceAlongTrail": 85.93752454501261,
-      "distanceFromTrail": 0.51486433418275
+      "distanceAlongTrail": 85.93615259134106,
+      "distanceFromTrail": 0.5169056642519445
     },
     {
       "id": 10232998234,
@@ -10679,11 +11338,43 @@
       "distanceFromTrail": 0.5852369834083866
     },
     {
+      "id": 295376812,
+      "type": "way",
+      "category": "emergency",
+      "lat": 34.0733803,
+      "lon": 134.5522114,
+      "name": "大櫛内科",
+      "tags": {
+        "amenity": "doctors",
+        "building": "yes",
+        "ele": "1.4",
+        "healthcare": "doctor",
+        "height": "24.0",
+        "name": "大櫛内科",
+        "source": "GSI/KIBAN 2500; NARO"
+      },
+      "distanceAlongTrail": 85.94448473187876,
+      "distanceFromTrail": 0.6363356889650678
+    },
+    {
+      "id": 14203250099,
+      "type": "node",
+      "category": "water",
+      "lat": 34.0722736,
+      "lon": 134.5489142,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 85.94526009377138,
+      "distanceFromTrail": 0.3086656662561258
+    },
+    {
       "id": 10232998246,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0732012,
-      "lon": 134.5515042,
+      "lat": 34.0731325,
+      "lon": 134.5515309,
       "name": "油そば 東京油組総本店",
       "tags": {
         "amenity": "restaurant",
@@ -10691,42 +11382,8 @@
         "level": "0",
         "name": "油そば 東京油組総本店"
       },
-      "distanceAlongTrail": 85.93864042010803,
-      "distanceFromTrail": 0.5684748645670021
-    },
-    {
-      "id": 10232998244,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0731444,
-      "lon": 134.5515671,
-      "name": "炭火焼肉 のぐ",
-      "tags": {
-        "amenity": "restaurant",
-        "cuisine": "japanese",
-        "level": "1",
-        "name": "炭火焼肉 のぐ"
-      },
-      "distanceAlongTrail": 85.94666292445449,
-      "distanceFromTrail": 0.5714915054697254
-    },
-    {
-      "id": 6098756988,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0731316,
-      "lon": 134.5515429,
-      "name": "徳島ラーメン麺王 徳島駅前本店",
-      "tags": {
-        "amenity": "restaurant",
-        "cuisine": "noodle",
-        "level": "0",
-        "name": "徳島ラーメン麺王 徳島駅前本店",
-        "opening_hours": "Mo-Su 11:00-00:00",
-        "phone": "088-623-4116"
-      },
-      "distanceAlongTrail": 85.9471511328504,
-      "distanceFromTrail": 0.568892407732561
+      "distanceAlongTrail": 85.94664561750466,
+      "distanceFromTrail": 0.5679044329479938
     },
     {
       "id": 10232998253,
@@ -10758,18 +11415,54 @@
       "distanceFromTrail": 0.5946822917565813
     },
     {
-      "id": 2991958525,
+      "id": 10232998244,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0730979,
-      "lon": 134.5515731,
-      "name": "渡辺精肉店",
+      "lat": 34.0731111,
+      "lon": 134.5515896,
+      "name": "炭火焼肉 のぐ",
       "tags": {
         "amenity": "restaurant",
-        "name": "渡辺精肉店"
+        "cuisine": "japanese",
+        "level": "1",
+        "name": "炭火焼肉 のぐ"
       },
-      "distanceAlongTrail": 85.95166613987837,
-      "distanceFromTrail": 0.5700739152879761
+      "distanceAlongTrail": 85.95087187026758,
+      "distanceFromTrail": 0.5720316949278895
+    },
+    {
+      "id": 6098756988,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0730983,
+      "lon": 134.5515654,
+      "name": "徳島ラーメン麺王 徳島駅前本店",
+      "tags": {
+        "amenity": "restaurant",
+        "cuisine": "noodle",
+        "level": "0",
+        "name": "徳島ラーメン麺王 徳島駅前本店",
+        "opening_hours": "Mo-Su 11:00-00:00",
+        "phone": "+81 88 623 4116"
+      },
+      "distanceAlongTrail": 85.95136007801288,
+      "distanceFromTrail": 0.5694325963812716
+    },
+    {
+      "id": 14239807374,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0711226,
+      "lon": 134.5456633,
+      "name": "武田皮フ科",
+      "tags": {
+        "amenity": "doctors",
+        "check_date": "2026-06-19",
+        "healthcare:speciality": "dermatology;urology",
+        "name": "武田皮フ科"
+      },
+      "distanceAlongTrail": 85.95219150414471,
+      "distanceFromTrail": 0.016894797374020595
     },
     {
       "id": 2938194719,
@@ -10790,26 +11483,25 @@
         "payment:credit_cards": "yes",
         "payment:paypay": "yes",
         "payment:wechat": "yes",
-        "phone": "088-653-3369",
+        "phone": "+81 88 653 3369",
         "wheelchair": "yes"
       },
       "distanceAlongTrail": 85.9551073106036,
       "distanceFromTrail": 0.5417537112281806
     },
     {
-      "id": 13938632884,
+      "id": 2991958525,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0730507,
-      "lon": 134.5516601,
-      "name": "ひとくち餃子の頂",
+      "lat": 34.0730524,
+      "lon": 134.5516207,
+      "name": "渡辺精肉店",
       "tags": {
         "amenity": "restaurant",
-        "check_date": "2026-06-10",
-        "name": "ひとくち餃子の頂"
+        "name": "渡辺精肉店"
       },
-      "distanceAlongTrail": 85.95952710951912,
-      "distanceFromTrail": 0.5755482805310354
+      "distanceAlongTrail": 85.95799679602354,
+      "distanceFromTrail": 0.5722523309754749
     },
     {
       "id": 2991950406,
@@ -10859,22 +11551,19 @@
       "distanceFromTrail": 0.6079786792420186
     },
     {
-      "id": 13938632885,
+      "id": 13938632884,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0729833,
-      "lon": 134.5516963,
-      "name": "LA FONTANA",
+      "lat": 34.0729979,
+      "lon": 134.5516856,
+      "name": "ひとくち餃子の頂",
       "tags": {
-        "addr:floor": "1F",
         "amenity": "restaurant",
         "check_date": "2026-06-10",
-        "cuisine": "italian",
-        "level": "0",
-        "name": "LA FONTANA"
+        "name": "ひとくち餃子の頂"
       },
-      "distanceAlongTrail": 85.96772490398668,
-      "distanceFromTrail": 0.5758435416581187
+      "distanceAlongTrail": 85.9658508197624,
+      "distanceFromTrail": 0.5755353430743632
     },
     {
       "id": 2991949361,
@@ -10892,19 +11581,38 @@
       "distanceFromTrail": 0.6094314731061481
     },
     {
-      "id": 295376712,
+      "id": 295376772,
       "type": "way",
-      "category": "restaurant",
-      "lat": 34.0730403,
-      "lon": 134.5519835,
-      "name": "串でん",
+      "category": "emergency",
+      "lat": 34.0731991,
+      "lon": 134.5524123,
+      "name": "大櫛耳鼻咽喉科",
       "tags": {
-        "amenity": "pub",
+        "amenity": "doctors",
         "building": "yes",
-        "name": "串でん"
+        "name": "大櫛耳鼻咽喉科",
+        "source": "GSI/KIBAN 2500; NARO"
       },
-      "distanceAlongTrail": 85.97172150567768,
-      "distanceFromTrail": 0.6027493610865553
+      "distanceAlongTrail": 85.97008600521234,
+      "distanceFromTrail": 0.6459798366191514
+    },
+    {
+      "id": 13938632885,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0729466,
+      "lon": 134.5517104,
+      "name": "LA FONTANA",
+      "tags": {
+        "addr:floor": "1F",
+        "amenity": "restaurant",
+        "check_date": "2026-06-10",
+        "cuisine": "italian",
+        "level": "0",
+        "name": "LA FONTANA"
+      },
+      "distanceAlongTrail": 85.97199571933093,
+      "distanceFromTrail": 0.5755248607114204
     },
     {
       "id": 370416663,
@@ -10934,6 +11642,20 @@
       },
       "distanceAlongTrail": 85.97437557349511,
       "distanceFromTrail": 0.40232963448877124
+    },
+    {
+      "id": 14203502539,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0730104,
+      "lon": 134.5519809,
+      "name": "串でん",
+      "tags": {
+        "amenity": "pub",
+        "name": "串でん"
+      },
+      "distanceAlongTrail": 85.97471654461057,
+      "distanceFromTrail": 0.6012860369259222
     },
     {
       "id": 10235131761,
@@ -11029,6 +11751,21 @@
       "distanceFromTrail": 0.5882631889747184
     },
     {
+      "id": 13938632886,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0728554,
+      "lon": 134.5518096,
+      "name": "ととめしや楼",
+      "tags": {
+        "amenity": "restaurant",
+        "check_date": "2026-06-10",
+        "name": "ととめしや楼"
+      },
+      "distanceAlongTrail": 85.98481523270928,
+      "distanceFromTrail": 0.5802151828178191
+    },
+    {
       "id": 2991949360,
       "type": "node",
       "category": "restaurant",
@@ -11041,36 +11778,6 @@
       },
       "distanceAlongTrail": 85.9861956936863,
       "distanceFromTrail": 0.628079966435718
-    },
-    {
-      "id": 2991958971,
-      "type": "node",
-      "category": "resupply",
-      "lat": 34.0728377,
-      "lon": 134.5518324,
-      "name": "TAKEDA",
-      "tags": {
-        "name": "TAKEDA",
-        "product": "すだち",
-        "shop": "greengrocer"
-      },
-      "distanceAlongTrail": 85.98742522370532,
-      "distanceFromTrail": 0.5814285808123568
-    },
-    {
-      "id": 13938632886,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.0728348,
-      "lon": 134.551855,
-      "name": "ととめしや楼",
-      "tags": {
-        "amenity": "restaurant",
-        "check_date": "2026-06-10",
-        "name": "ととめしや楼"
-      },
-      "distanceAlongTrail": 85.98850158852014,
-      "distanceFromTrail": 0.5832392518313362
     },
     {
       "id": 300189680,
@@ -11089,19 +11796,68 @@
       "distanceFromTrail": 1.2352365046826703
     },
     {
-      "id": 2991960915,
+      "id": 14203306916,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0727088,
-      "lon": 134.5515549,
-      "name": "炉端市場",
+      "lat": 34.0727226,
+      "lon": 134.5515392,
+      "name": "Fly",
       "tags": {
-        "amenity": "restaurant",
-        "cuisine": "sushi",
-        "name": "炉端市場"
+        "amenity": "bar",
+        "check_date": "2026-09-21",
+        "level": "-1",
+        "name": "Fly"
       },
-      "distanceAlongTrail": 85.99117923755233,
-      "distanceFromTrail": 0.5523668501929286
+      "distanceAlongTrail": 85.98921573383952,
+      "distanceFromTrail": 0.5515982206748822
+    },
+    {
+      "id": 14203306918,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0727095,
+      "lon": 134.5515277,
+      "name": "九州魂",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-21",
+        "level": "1",
+        "name": "九州魂"
+      },
+      "distanceAlongTrail": 85.99017162755294,
+      "distanceFromTrail": 0.5500718062903924
+    },
+    {
+      "id": 14203306919,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0727018,
+      "lon": 134.551516,
+      "name": "奏屋",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-21",
+        "level": "4",
+        "name": "奏屋"
+      },
+      "distanceAlongTrail": 85.99056358782613,
+      "distanceFromTrail": 0.5487524636298633
+    },
+    {
+      "id": 14203306917,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0727018,
+      "lon": 134.5515404,
+      "name": "徳島居酒屋バル チャンピオン",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-21",
+        "level": "0",
+        "name": "徳島居酒屋バル チャンピオン"
+      },
+      "distanceAlongTrail": 85.99140269599069,
+      "distanceFromTrail": 0.5508373198152642
     },
     {
       "id": 2991949358,
@@ -11119,19 +11875,21 @@
       "distanceFromTrail": 0.6307245391732323
     },
     {
-      "id": 2991960916,
+      "id": 14203306915,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0726933,
-      "lon": 134.5515308,
-      "name": "鳥兄弟",
+      "lat": 34.0726762,
+      "lon": 134.5515148,
+      "name": "阿波水炊き しあわせどり",
       "tags": {
+        "addr:floor": "4",
         "amenity": "pub",
-        "level": "-1",
-        "name": "鳥兄弟"
+        "check_date": "2026-09-21",
+        "level": "3",
+        "name": "阿波水炊き しあわせどり"
       },
-      "distanceAlongTrail": 85.99194940126424,
-      "distanceFromTrail": 0.5496642024230416
+      "distanceAlongTrail": 85.99316317418686,
+      "distanceFromTrail": 0.5475872397304419
     },
     {
       "id": 2991953716,
@@ -11149,29 +11907,6 @@
       "distanceFromTrail": 0.5921135210712599
     },
     {
-      "id": 2982746816,
-      "type": "node",
-      "category": "resupply",
-      "lat": 34.0711147,
-      "lon": 134.5470105,
-      "name": "セブン-イレブン",
-      "tags": {
-        "brand": "7-ELEVEN",
-        "brand:en": "7-ELEVEN",
-        "brand:ja": "セブン-イレブン",
-        "brand:wikidata": "Q259340",
-        "brand:wikipedia": "en:7-Eleven",
-        "name": "セブン-イレブン",
-        "name:en": "7-Eleven",
-        "name:ja": "セブン-イレブン",
-        "official_name:en": "Seven-Eleven",
-        "shop": "convenience",
-        "source": "Bing"
-      },
-      "distanceAlongTrail": 85.99933768379137,
-      "distanceFromTrail": 0.09789047228991532
-    },
-    {
       "id": 2991960841,
       "type": "node",
       "category": "restaurant",
@@ -11185,6 +11920,24 @@
       },
       "distanceAlongTrail": 86.00071585102604,
       "distanceFromTrail": 0.5863364026804998
+    },
+    {
+      "id": 295385491,
+      "type": "way",
+      "category": "restaurant",
+      "lat": 34.0726183,
+      "lon": 134.5516181,
+      "name": "さわらぎ",
+      "tags": {
+        "amenity": "restaurant",
+        "building": "yes",
+        "building:levels": "2",
+        "name": "さわらぎ",
+        "source": "GSI/KIBAN 2500;NARO",
+        "wheelchair": "limited"
+      },
+      "distanceAlongTrail": 86.00268850135038,
+      "distanceFromTrail": 0.554010200120815
     },
     {
       "id": 12011660402,
@@ -11260,71 +12013,52 @@
       "distanceFromTrail": 1.1381932776124972
     },
     {
-      "id": 295385491,
-      "type": "way",
-      "category": "restaurant",
-      "lat": 34.0726019,
-      "lon": 134.5516143,
-      "name": "さわらぎ",
-      "tags": {
-        "amenity": "restaurant",
-        "building": "yes",
-        "building:levels": "2",
-        "name": "さわらぎ",
-        "source": "GSI/KIBAN 2500;NARO",
-        "wheelchair": "limited"
-      },
-      "distanceAlongTrail": 86.00424961768793,
-      "distanceFromTrail": 0.5530047236778285
-    },
-    {
       "id": 295600341,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0720617,
-      "lon": 134.5500247,
+      "lat": 34.0720611,
+      "lon": 134.5500257,
       "name": "オズ",
       "tags": {
         "amenity": "restaurant",
         "building": "yes",
+        "ele": "2.5",
+        "height": "6.5",
         "name": "オズ",
         "source": "GSI/KIBAN 2500;NARO"
       },
-      "distanceAlongTrail": 86.00530912491404,
-      "distanceFromTrail": 0.39475605129388014
+      "distanceAlongTrail": 86.0054054091751,
+      "distanceFromTrail": 0.3948165888850393
+    },
+    {
+      "id": 14203274101,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0725568,
+      "lon": 134.551588,
+      "name": "雄食",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-09-21",
+        "name": "雄食"
+      },
+      "distanceAlongTrail": 86.00799760820964,
+      "distanceFromTrail": 0.548885357665699
     },
     {
       "id": 10240097234,
       "type": "node",
       "category": "resupply",
-      "lat": 34.071817,
-      "lon": 134.5493125,
-      "name": "こだわりマルシェ",
+      "lat": 34.0717967,
+      "lon": 134.5493242,
+      "name": "徳島元町こだわりマルシェ",
       "tags": {
-        "name": "こだわりマルシェ",
+        "check_date": "2026-09-21",
+        "name": "徳島元町こだわりマルシェ",
         "shop": "greengrocer"
       },
-      "distanceAlongTrail": 86.00605882626878,
-      "distanceFromTrail": 0.32374333510897374
-    },
-    {
-      "id": 3281559162,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.071786,
-      "lon": 134.5492548,
-      "name": "本家橋本",
-      "tags": {
-        "addr:city": "徳島市",
-        "addr:housenumber": "2-13",
-        "addr:street": "元町",
-        "amenity": "restaurant",
-        "name": "本家橋本",
-        "wheelchair": "yes",
-        "wheelchair:description": "入り口に段差なし"
-      },
-      "distanceAlongTrail": 86.0072723475997,
-      "distanceFromTrail": 0.317526183399203
+      "distanceAlongTrail": 86.0085552641877,
+      "distanceFromTrail": 0.32390031606228387
     },
     {
       "id": 3741184469,
@@ -11344,6 +12078,25 @@
       "distanceFromTrail": 1.1213815441936807
     },
     {
+      "id": 3281559162,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0717596,
+      "lon": 134.5492726,
+      "name": "本家橋本",
+      "tags": {
+        "addr:city": "徳島市",
+        "addr:housenumber": "2-13",
+        "addr:street": "元町",
+        "amenity": "restaurant",
+        "name": "本家橋本",
+        "wheelchair": "yes",
+        "wheelchair:description": "入り口に段差なし"
+      },
+      "distanceAlongTrail": 86.01060781814972,
+      "distanceFromTrail": 0.3179511463844955
+    },
+    {
       "id": 2991947641,
       "type": "node",
       "category": "restaurant",
@@ -11361,16 +12114,16 @@
       "id": 3079180399,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0724724,
-      "lon": 134.5515039,
+      "lat": 34.0724863,
+      "lon": 134.5515109,
       "name": "魚屋",
       "tags": {
         "amenity": "pub",
         "name": "魚屋",
         "name:en": "UOYA"
       },
-      "distanceAlongTrail": 86.01381198250465,
-      "distanceFromTrail": 0.5381958595566533
+      "distanceAlongTrail": 86.0126188122145,
+      "distanceFromTrail": 0.5393709853919844
     },
     {
       "id": 3608619264,
@@ -11421,23 +12174,6 @@
       "distanceFromTrail": 0.6549238766040982
     },
     {
-      "id": 295383671,
-      "type": "way",
-      "category": "restaurant",
-      "lat": 34.0727895,
-      "lon": 134.5526884,
-      "name": "中華そば 萬里",
-      "tags": {
-        "amenity": "restaurant",
-        "building": "yes",
-        "cuisine": "chinese",
-        "name": "中華そば 萬里",
-        "source": "GSI/KIBAN 2500;NARO"
-      },
-      "distanceAlongTrail": 86.02183498401666,
-      "distanceFromTrail": 0.6525685443438939
-    },
-    {
       "id": 12011660401,
       "type": "node",
       "category": "transport",
@@ -11456,6 +12192,23 @@
       "distanceFromTrail": 0.47227178204624637
     },
     {
+      "id": 14203598111,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0724292,
+      "lon": 134.5518111,
+      "name": "しずく",
+      "tags": {
+        "addr:floor": "2",
+        "amenity": "bar",
+        "check_date": "2026-09-21",
+        "level": "1",
+        "name": "しずく"
+      },
+      "distanceAlongTrail": 86.02883298413393,
+      "distanceFromTrail": 0.5626513149531062
+    },
+    {
       "id": 2991947642,
       "type": "node",
       "category": "restaurant",
@@ -11472,17 +12225,22 @@
       "distanceFromTrail": 0.6840101365700978
     },
     {
-      "id": 11446224270,
-      "type": "node",
+      "id": 1563859163,
+      "type": "way",
       "category": "camping",
-      "lat": 34.0702737,
-      "lon": 134.5454681,
+      "lat": 34.0702754,
+      "lon": 134.5454647,
       "name": null,
       "tags": {
-        "amenity": "shelter"
+        "amenity": "shelter",
+        "building": "roof",
+        "building:levels": "1",
+        "ele": "2.4",
+        "height": "4.2",
+        "layer": "1"
       },
-      "distanceAlongTrail": 86.03304481974,
-      "distanceFromTrail": 0.06881876176776239
+      "distanceAlongTrail": 86.03275252982809,
+      "distanceFromTrail": 0.0690387000332986
     },
     {
       "id": 2991945838,
@@ -11508,16 +12266,17 @@
       "id": 10235131765,
       "type": "node",
       "category": "emergency",
-      "lat": 34.0723597,
-      "lon": 134.5518904,
+      "lat": 34.0723603,
+      "lon": 134.5518696,
       "name": "ファルコ薬局",
       "tags": {
         "amenity": "pharmacy",
+        "check_date": "2026-09-21",
         "healthcare": "pharmacy",
         "name": "ファルコ薬局"
       },
-      "distanceAlongTrail": 86.03872961101861,
-      "distanceFromTrail": 0.566542084428453
+      "distanceAlongTrail": 86.03795240569681,
+      "distanceFromTrail": 0.56478973057824
     },
     {
       "id": 2991741982,
@@ -11550,48 +12309,60 @@
       "distanceFromTrail": 0.6908908189581712
     },
     {
+      "id": 1563859162,
+      "type": "way",
+      "category": "camping",
+      "lat": 34.0701877,
+      "lon": 134.545508,
+      "name": null,
+      "tags": {
+        "amenity": "shelter",
+        "building": "roof",
+        "building:levels": "1",
+        "ele": "2.3",
+        "height": "4.2",
+        "layer": "1"
+      },
+      "distanceAlongTrail": 86.04328814993995,
+      "distanceFromTrail": 0.06898002606766819
+    },
+    {
       "id": 295385510,
       "type": "way",
       "category": "emergency",
-      "lat": 34.0722592,
-      "lon": 134.5517184,
-      "name": "斎藤医院",
+      "lat": 34.0722492,
+      "lon": 134.5517015,
+      "name": "齋藤醫院",
       "tags": {
+        "alt_name": "齋藤医院",
         "amenity": "doctors",
         "building": "yes",
+        "building:levels": "5",
+        "check_date": "2026-06-19",
+        "ele": "2.4",
         "healthcare": "doctor",
-        "name": "斎藤医院",
+        "height": "23.4",
+        "name": "齋藤醫院",
         "source": "GSI/KIBAN 2500;NARO"
       },
-      "distanceAlongTrail": 86.04318194855004,
-      "distanceFromTrail": 0.5476736032866804
-    },
-    {
-      "id": 13938908136,
-      "type": "node",
-      "category": "camping",
-      "lat": 34.0701857,
-      "lon": 134.5455113,
-      "name": null,
-      "tags": {
-        "amenity": "shelter"
-      },
-      "distanceAlongTrail": 86.04360794660477,
-      "distanceFromTrail": 0.06878108791300586
+      "distanceAlongTrail": 86.04363233968621,
+      "distanceFromTrail": 0.5458144622265348
     },
     {
       "id": 10235131767,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0723115,
-      "lon": 134.5519453,
+      "lat": 34.0723152,
+      "lon": 134.551921,
       "name": "ひととき",
       "tags": {
         "amenity": "pub",
+        "check_date": "2026-09-21",
+        "level": "0",
         "name": "ひととき"
       },
-      "distanceAlongTrail": 86.04558985331767,
-      "distanceFromTrail": 0.5692321847923952
+      "distanceAlongTrail": 86.04437249146149,
+      "distanceFromTrail": 0.5673094566470956
     },
     {
       "id": 2991945592,
@@ -11655,18 +12426,36 @@
       "distanceFromTrail": 0.7108083943599156
     },
     {
-      "id": 2993264487,
+      "id": 14203598110,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0722445,
-      "lon": 134.5519889,
-      "name": "はなや食堂",
+      "lat": 34.0722618,
+      "lon": 134.5519514,
+      "name": "蛸天上",
       "tags": {
-        "amenity": "restaurant",
-        "name": "はなや食堂"
+        "amenity": "pub",
+        "check_date": "2026-09-21",
+        "cuisine": "takoyaki",
+        "level": "0",
+        "name": "蛸天上"
       },
-      "distanceAlongTrail": 86.05400086871353,
-      "distanceFromTrail": 0.5701763437025011
+      "distanceAlongTrail": 86.05092660401624,
+      "distanceFromTrail": 0.567690289881833
+    },
+    {
+      "id": 14203194205,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0713694,
+      "lon": 134.5492822,
+      "name": "いも家",
+      "tags": {
+        "amenity": "bar",
+        "check_date": "2026-09-21",
+        "name": "いも家"
+      },
+      "distanceAlongTrail": 86.05118945016642,
+      "distanceFromTrail": 0.30257257907539314
     },
     {
       "id": 12091685562,
@@ -11718,20 +12507,72 @@
       "distanceFromTrail": 1.90727458585884
     },
     {
+      "id": 14203208330,
+      "type": "node",
+      "category": "resupply",
+      "lat": 34.0708803,
+      "lon": 134.5482834,
+      "name": "Pochalabo",
+      "tags": {
+        "check_date": "2026-09-21",
+        "description": "無人コンビニ",
+        "level": "0",
+        "name": "Pochalabo",
+        "shop": "convenience"
+      },
+      "distanceAlongTrail": 86.05519384105706,
+      "distanceFromTrail": 0.1972951800792566
+    },
+    {
+      "id": 14241373610,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0720529,
+      "lon": 134.5525247,
+      "name": "酒食 晴レ家",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-06-19",
+        "cuisine": "okinawan",
+        "level": "1",
+        "name": "酒食 晴レ家"
+      },
+      "distanceAlongTrail": 86.05519384105706,
+      "distanceFromTrail": 0.6091291297041809
+    },
+    {
+      "id": 14241373611,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0720393,
+      "lon": 134.552514,
+      "name": "よき日",
+      "tags": {
+        "amenity": "pub",
+        "check_date": "2026-06-19",
+        "cuisine": "regional",
+        "level": "0",
+        "name": "よき日"
+      },
+      "distanceAlongTrail": 86.05519384105706,
+      "distanceFromTrail": 0.6077169456464858
+    },
+    {
       "id": 2991740559,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0706958,
-      "lon": 134.5475936,
-      "name": "nyanfflu",
+      "lat": 34.070679,
+      "lon": 134.5475391,
+      "name": "POINT NEUF kissa",
       "tags": {
         "amenity": "cafe",
-        "contact:phone": "088-679-8888",
-        "name": "nyanfflu",
+        "check_date": "2026-09-21",
+        "contact:phone": "+81 88 679 8888",
+        "name": "POINT NEUF kissa",
         "wheelchair": "limited"
       },
       "distanceAlongTrail": 86.05519384105706,
-      "distanceFromTrail": 0.13053346643267266
+      "distanceFromTrail": 0.1251798620358739
     },
     {
       "id": 2991945593,
@@ -11756,6 +12597,7 @@
       "name": "ビストロ がぶり",
       "tags": {
         "amenity": "restaurant",
+        "check_date": "2026-06-19",
         "cuisine": "french",
         "level": "1",
         "name": "ビストロ がぶり"
@@ -11772,25 +12614,25 @@
       "name": "鳥ぼん",
       "tags": {
         "amenity": "pub",
+        "check_date": "2026-06-19",
         "name": "鳥ぼん"
       },
       "distanceAlongTrail": 86.05519384105706,
       "distanceFromTrail": 0.5727602909569746
     },
     {
-      "id": 2993264488,
+      "id": 2993264487,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0720713,
-      "lon": 134.5525334,
-      "name": "弐八屋",
+      "lat": 34.0722286,
+      "lon": 134.5519887,
+      "name": "はなや食堂",
       "tags": {
-        "amenity": "pub",
-        "level": "1",
-        "name": "弐八屋"
+        "amenity": "restaurant",
+        "name": "はなや食堂"
       },
       "distanceAlongTrail": 86.05519384105706,
-      "distanceFromTrail": 0.610538738584255
+      "distanceFromTrail": 0.5694993952568635
     },
     {
       "id": 2993264490,
@@ -11829,7 +12671,7 @@
       "name": "たきち",
       "tags": {
         "amenity": "pub",
-        "contact:phone": "088-626-8001",
+        "contact:phone": "+81 88 626 8001",
         "name": "たきち",
         "opening_hours": "Mo-Su 17:00-23:00"
       },
@@ -11853,35 +12695,24 @@
       "distanceFromTrail": 1.207539602731398
     },
     {
-      "id": 6017518787,
-      "type": "node",
-      "category": "restaurant",
-      "lat": 34.072037,
-      "lon": 134.5526047,
-      "name": "活魚水産",
-      "tags": {
-        "amenity": "restaurant",
-        "name": "活魚水産"
-      },
-      "distanceAlongTrail": 86.05519384105706,
-      "distanceFromTrail": 0.6155731262166665
-    },
-    {
       "id": 295385663,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0721489,
-      "lon": 134.5524893,
+      "lat": 34.0721115,
+      "lon": 134.5524772,
       "name": "Cafe Takashima",
       "tags": {
         "amenity": "cafe",
         "building": "yes",
+        "building:levels": "3",
         "check_date": "2026-06-20",
+        "ele": "1.9",
+        "height": "19.8",
         "name": "Cafe Takashima",
         "source": "GSI/KIBAN 2500;NARO"
       },
       "distanceAlongTrail": 86.05519384105706,
-      "distanceFromTrail": 0.6095143243851402
+      "distanceFromTrail": 0.6070867638970311
     },
     {
       "id": 295387027,
@@ -11951,6 +12782,21 @@
       "distanceFromTrail": 1.1685293838225528
     },
     {
+      "id": 14203191132,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0707815,
+      "lon": 134.5481136,
+      "name": "O-ba'sh cafe",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2026-09-21",
+        "name": "O-ba'sh cafe"
+      },
+      "distanceAlongTrail": 86.05784566918823,
+      "distanceFromTrail": 0.17905092023601465
+    },
+    {
       "id": 2993282913,
       "type": "node",
       "category": "emergency",
@@ -11966,19 +12812,19 @@
       "distanceFromTrail": 0.768304760369012
     },
     {
-      "id": 295447366,
-      "type": "way",
+      "id": 14241373616,
+      "type": "node",
       "category": "restaurant",
-      "lat": 34.070593,
-      "lon": 134.5476704,
-      "name": "民俗村",
+      "lat": 34.0719757,
+      "lon": 134.5528707,
+      "name": "BRITISH BEER PUB 1PINT",
       "tags": {
-        "amenity": "restaurant",
-        "building": "yes",
-        "name": "民俗村"
+        "amenity": "pub",
+        "check_date": "2026-06-19",
+        "name": "BRITISH BEER PUB 1PINT"
       },
-      "distanceAlongTrail": 86.06555949139202,
-      "distanceFromTrail": 0.1338153100366377
+      "distanceAlongTrail": 86.06296701295076,
+      "distanceFromTrail": 0.6368598066120168
     },
     {
       "id": 7226737632,
@@ -11999,16 +12845,17 @@
       "id": 3754039580,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.071924,
-      "lon": 134.5529192,
+      "lat": 34.0719284,
+      "lon": 134.5529091,
       "name": "来来",
       "tags": {
         "amenity": "restaurant",
-        "cuisine": "chinese",
+        "check_date": "2026-06-19",
+        "cuisine": "chinese;ramen",
         "name": "来来"
       },
-      "distanceAlongTrail": 86.06979331757788,
-      "distanceFromTrail": 0.6393917586192948
+      "distanceAlongTrail": 86.06904692906772,
+      "distanceFromTrail": 0.6386516440817983
     },
     {
       "id": 316942228,
@@ -12026,20 +12873,36 @@
       "distanceFromTrail": 0.4646933860987448
     },
     {
-      "id": 295387039,
-      "type": "way",
+      "id": 14241373623,
+      "type": "node",
       "category": "restaurant",
-      "lat": 34.0718816,
-      "lon": 134.5529772,
-      "name": "すずの助",
+      "lat": 34.0718766,
+      "lon": 134.5529512,
+      "name": "餃子のしんちゃん",
       "tags": {
         "amenity": "pub",
-        "building": "yes",
-        "name": "すずの助",
-        "source": "GSI/KIBAN 2500;NARO"
+        "check_date": "2026-06-19",
+        "cuisine": "gyoza",
+        "name": "餃子のしんちゃん"
       },
-      "distanceAlongTrail": 86.0758964736739,
-      "distanceFromTrail": 0.6430691420615446
+      "distanceAlongTrail": 86.07570656820873,
+      "distanceFromTrail": 0.6406180587362938
+    },
+    {
+      "id": 14203185212,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.070722,
+      "lon": 134.5486526,
+      "name": "伊月検診クリニック",
+      "tags": {
+        "amenity": "doctors",
+        "check_date": "2026-09-21",
+        "healthcare": "doctor",
+        "name": "伊月検診クリニック"
+      },
+      "distanceAlongTrail": 86.07908560482058,
+      "distanceFromTrail": 0.22440945801410778
     },
     {
       "id": 2993282914,
@@ -12073,16 +12936,34 @@
       "id": 317138799,
       "type": "way",
       "category": "restaurant",
-      "lat": 34.0702273,
-      "lon": 134.5475852,
+      "lat": 34.0702203,
+      "lon": 134.547575,
       "name": "chu chu churros cafe",
       "tags": {
         "amenity": "cafe",
         "building": "yes",
+        "ele": "2.3",
+        "height": "13.4",
         "name": "chu chu churros cafe"
       },
-      "distanceAlongTrail": 86.10198149232991,
-      "distanceFromTrail": 0.11410261335729725
+      "distanceAlongTrail": 86.10244129490978,
+      "distanceFromTrail": 0.11297252846198491
+    },
+    {
+      "id": 14235411364,
+      "type": "node",
+      "category": "emergency",
+      "lat": 34.0697575,
+      "lon": 134.5462534,
+      "name": "名手耳鼻咽喉科",
+      "tags": {
+        "amenity": "doctors",
+        "check_date": "2026-06-19",
+        "healthcare:speciality": "otolaryngology",
+        "name": "名手耳鼻咽喉科"
+      },
+      "distanceAlongTrail": 86.11491216201661,
+      "distanceFromTrail": 0.018599022830444862
     },
     {
       "id": 371692253,
@@ -12131,6 +13012,22 @@
       },
       "distanceAlongTrail": 86.12429293610441,
       "distanceFromTrail": 0.2406551079446873
+    },
+    {
+      "id": 14209228453,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0705852,
+      "lon": 134.5498844,
+      "name": "pyawn",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2026-09-21",
+        "contact:instagram": "pyawn_tok",
+        "name": "pyawn"
+      },
+      "distanceAlongTrail": 86.12771346655086,
+      "distanceFromTrail": 0.32804201578621905
     },
     {
       "id": 316933147,
@@ -12220,18 +13117,35 @@
       "distanceFromTrail": 1.1125380968450183
     },
     {
-      "id": 6024424110,
+      "id": 14203175448,
       "type": "node",
       "category": "restaurant",
-      "lat": 34.0704027,
-      "lon": 134.5501568,
-      "name": "KENTAKO",
+      "lat": 34.0704152,
+      "lon": 134.5501597,
+      "name": "XICH LO",
       "tags": {
-        "amenity": "fast_food",
-        "name": "KENTAKO"
+        "amenity": "restaurant",
+        "check_date": "2026-09-21",
+        "cuisine": "vietnamese",
+        "level": "0",
+        "name": "XICH LO",
+        "opening_hours": "17:30-21:30"
       },
-      "distanceAlongTrail": 86.15461299277926,
-      "distanceFromTrail": 0.34586881303359984
+      "distanceAlongTrail": 86.15336769415812,
+      "distanceFromTrail": 0.3465415096128303
+    },
+    {
+      "id": 14203202519,
+      "type": "node",
+      "category": "water",
+      "lat": 34.0703164,
+      "lon": 134.549831,
+      "name": null,
+      "tags": {
+        "amenity": "drinking_water"
+      },
+      "distanceAlongTrail": 86.15474055966811,
+      "distanceFromTrail": 0.3143635104847206
     },
     {
       "id": 5978018797,
@@ -12354,6 +13268,22 @@
       },
       "distanceAlongTrail": 86.16912568441627,
       "distanceFromTrail": 0.13794681268780745
+    },
+    {
+      "id": 14209228439,
+      "type": "node",
+      "category": "restaurant",
+      "lat": 34.0702458,
+      "lon": 134.5502908,
+      "name": "L'Cafe TOKUSHIMA",
+      "tags": {
+        "amenity": "cafe",
+        "check_date": "2026-09-21",
+        "level": "0",
+        "name": "L'Cafe TOKUSHIMA"
+      },
+      "distanceAlongTrail": 86.17496403055455,
+      "distanceFromTrail": 0.3523939223712828
     },
     {
       "id": 8316081194,
@@ -12636,7 +13566,7 @@
         "name": "がんばりや にんにく店",
         "opening_hours": "08:00-21:00",
         "operator": "がんばりや",
-        "phone": "088-678-8001",
+        "phone": "+81 88 678 8001",
         "shop": "supermarket",
         "website": "http://ganbariya.co.jp/"
       },
@@ -12709,14 +13639,14 @@
       "type": "node",
       "category": "transport",
       "lat": 34.0709104,
-      "lon": 134.5565574,
+      "lon": 134.5565762,
       "name": "文化センター前",
       "tags": {
         "highway": "bus_stop",
         "name": "文化センター前"
       },
-      "distanceAlongTrail": 86.27806372028229,
-      "distanceFromTrail": 0.9250990344227904
+      "distanceAlongTrail": 86.27858446810708,
+      "distanceFromTrail": 0.926750503550714
     },
     {
       "id": 317073185,
@@ -13113,7 +14043,7 @@
         "cuisine": "soba",
         "name": "総本家橋本 そば蔵",
         "opening_hours": "11:00-21:30",
-        "phone": "088-655-1001",
+        "phone": "+81 88 655 1001",
         "website": "https://www.kisoba.co.jp/"
       },
       "distanceAlongTrail": 86.35745090269263,
@@ -13638,7 +14568,7 @@
       "lon": 134.5557332,
       "name": "医食同源",
       "tags": {
-        "contact:phone": "088-623-9166",
+        "contact:phone": "+81 88 623 9166",
         "name": "医食同源",
         "shop": "general"
       },
@@ -14433,6 +15363,7 @@
         "highway": "bus_stop",
         "name": "紺屋町",
         "name:en": "Konya machi",
+        "name:ja": "紺屋町",
         "source": "Bing"
       },
       "distanceAlongTrail": 86.43156627277482,
@@ -14883,6 +15814,7 @@
         "highway": "bus_stop",
         "name": "県庁前",
         "name:en": "Kencho-mae",
+        "name:ja": "県庁前",
         "source": "Bing"
       },
       "distanceAlongTrail": 86.58876366335535,
@@ -15037,6 +15969,7 @@
         "highway": "bus_stop",
         "name": "県庁前",
         "name:en": "Kencho-mae",
+        "name:ja": "県庁前",
         "source": "Bing"
       },
       "distanceAlongTrail": 86.6246732907442,
@@ -15458,7 +16391,7 @@
         "name": "ファミリーマート",
         "name:en": "FamilyMart",
         "name:ja": "ファミリーマート",
-        "phone": "088-611-1256",
+        "phone": "+81 88 611 1256",
         "shop": "convenience"
       },
       "distanceAlongTrail": 86.7958450703674,
@@ -16176,7 +17109,7 @@
         "name": "マルヨシセンター城南店",
         "opening_hours": "09:00-22:00",
         "operator": "マルヨシセンター",
-        "phone": "088-622-1950",
+        "phone": "+81 88 622 1950",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 87.95834666461373,
@@ -16409,7 +17342,7 @@
         "name": "カフェ・ド・クリエ",
         "name:en": "Cafe de CRIE",
         "name:ja": "カフェ・ド・クリエ",
-        "phone": "088-668-0605",
+        "phone": "+81 88 668 0605",
         "takeaway": "yes"
       },
       "distanceAlongTrail": 87.95834666461373,
@@ -16560,7 +17493,7 @@
         "name": "マルヨシセンター 八万店",
         "opening_hours": "09:00-22:00",
         "operator": "マルヨシセンター",
-        "phone": "088-668-7911",
+        "phone": "+81 88 668 7911",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 88.38615622934803,
@@ -17089,7 +18022,7 @@
         "addr:street": "山城西",
         "building": "retail",
         "name": "キョーエイ沖浜店",
-        "phone": "088-611-0077",
+        "phone": "+81 88 611 0077",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 89.08306011111056,
@@ -17383,6 +18316,22 @@
       "distanceFromTrail": 0.09881425425370235
     },
     {
+      "id": 1539619376,
+      "type": "way",
+      "category": "restaurant",
+      "lat": 34.0427358,
+      "lon": 134.5598822,
+      "name": "スシロー徳島西新浜店",
+      "tags": {
+        "amenity": "fast_food",
+        "building": "yes",
+        "cuisine": "sushi",
+        "name": "スシロー徳島西新浜店"
+      },
+      "distanceAlongTrail": 89.6619358321637,
+      "distanceFromTrail": 0.7125131166073015
+    },
+    {
       "id": 225641395,
       "type": "way",
       "category": "restaurant",
@@ -17502,7 +18451,7 @@
         "addr:street": "大谷町新堤",
         "building": "retail",
         "name": "キョーエイ 大谷店",
-        "phone": "088-669-0888",
+        "phone": "+81 88 669 0888",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 90.42096833470298,
@@ -17589,6 +18538,7 @@
         "KSJ2:LIN": "牟岐線",
         "name": "地蔵橋",
         "name:en": "Jizōbashi",
+        "name:ja": "地蔵橋",
         "name:ja-Hira": "じぞうばし",
         "name:ko": "지조바시",
         "note": "National-Land Numerical Information (Railway) 2007, MLIT Japan",
@@ -18201,7 +19151,7 @@
         "name": "マルナカ　浜田店",
         "opening_hours": "09:00-20:00",
         "operator": "マルナカ",
-        "phone": "08853-3-3860",
+        "phone": "+81 885 33 3860",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 94.08125798519683,
@@ -18267,7 +19217,7 @@
         "building": "yes",
         "name": "キョーエイ　小松島店",
         "operator": "キョーエイ",
-        "phone": "0885-35-0080",
+        "phone": "+81 885 35 0080",
         "shop": "supermarket",
         "wikidata": "Q105967797",
         "wikipedia": "ja:キョーエイ小松島店"
@@ -18395,7 +19345,7 @@
         "name:en": "Kyoei",
         "name:ja": "キョーエイ",
         "operator": "キョーエイ",
-        "phone": "0885-33-1850",
+        "phone": "+81 885 33 1850",
         "shop": "supermarket"
       },
       "distanceAlongTrail": 94.45784228479398,
@@ -18503,7 +19453,7 @@
         "addr:street": "小松島町字井利ノ口",
         "amenity": "hospital",
         "name": "徳島赤十字病院",
-        "phone": "0885-32-2555",
+        "phone": "+81 885 32 2555",
         "toilets:wheelchair": "yes",
         "website": "https://www.tokushima-med.jrc.or.jp/index.htm",
         "wheelchair": "yes",
@@ -18527,7 +19477,7 @@
         "amenity": "fuel",
         "name": "小松島SS / まるや石油(株)",
         "note": "FAX 0885-32-8763",
-        "phone": "0885-32-0530,0120-120530"
+        "phone": "+81 885 32 0530; 0120-120-530"
       },
       "distanceAlongTrail": 94.66732809040894,
       "distanceFromTrail": 1.108911467049812
@@ -18753,7 +19703,7 @@
         "name:en": "marunaka supermarket minami komatsusima",
         "name:ja": "（株）マルナカ 南小松島店",
         "opening_hours": "Mo-Su 09:00-22:00",
-        "phone": "0885-32-3222",
+        "phone": "+81 885 32 3222",
         "shop": "supermarket",
         "website": "http://www.marunaka.net/tenpo/shikoku/shop/shopdetail.php?sid=164"
       },
@@ -18846,6 +19796,7 @@
         "internet_access": "wlan",
         "name": "ファミリーマート 横須店",
         "name:en": "family Mart",
+        "name:ja": "ファミリーマート 横須店",
         "opening_hours": "24/7",
         "shop": "convenience"
       },
@@ -19005,7 +19956,7 @@
         "name:ko": "세븐일레븐",
         "official_name:en": "Seven-Eleven",
         "opening_hours": "24/7",
-        "phone": "0885-35-0539",
+        "phone": "+81 885 35 0539",
         "shop": "convenience",
         "website": "https://www.sej.co.jp/"
       },
@@ -19280,6 +20231,7 @@
         "KSJ2:LIN": "牟岐線",
         "name": "阿波赤石",
         "name:en": "Awa-Akaishi",
+        "name:ja": "阿波赤石",
         "name:ko": "아와아카시",
         "note": "National-Land Numerical Information (Railway) 2007, MLIT Japan",
         "note:ja": "国土数値情報（鉄道データ）平成19年 国土交通省",
@@ -20073,7 +21025,7 @@
         "amenity": "restaurant",
         "cuisine": "sushi",
         "name": "田舎寿し　なか山",
-        "phone": "0885423847",
+        "phone": "+81 885 42 3847",
         "website": "https://www.topics.or.jp/articles/-/271890"
       },
       "distanceAlongTrail": 112.60445710342405,
@@ -20524,6 +21476,7 @@
         "amenity": "police",
         "name": "牟岐警察署美波町由岐駐在所",
         "name:en": "Minami-cho Yuki Police Box",
+        "name:ja": "牟岐警察署美波町由岐駐在所",
         "note": "National-Land Numerical Information (Public Facility) 2006, MLIT Japan",
         "note:ja": "国土数値情報（公共施設データ）平成19年　国土交通省",
         "source": "KSJ2",
@@ -20894,6 +21847,7 @@
         "brand:wikidata": "Q1557223",
         "name": "ローソン 日和佐寺前",
         "name:en": "Lawson",
+        "name:ja": "ローソン 日和佐寺前",
         "operator": "Lawson",
         "shop": "convenience"
       },
@@ -21041,7 +21995,7 @@
         "int_name": "Ookita Hiwasa",
         "name": "フレッシュフーズ オオキタ 日和佐店",
         "opening_hours": "Mo-Su 09:30-19:30",
-        "phone": "0884-77-2493",
+        "phone": "+81 884 77 2493",
         "shop": "supermarket",
         "website": "http://ff-ookita.jp"
       },
@@ -21106,6 +22060,7 @@
         "amenity": "police",
         "name": "牟岐警察署美波町桜町交番",
         "name:en": "Sakuramachi police substation",
+        "name:ja": "牟岐警察署美波町桜町交番",
         "note": "National-Land Numerical Information (Public Facility) 2006, MLIT Japan",
         "note:ja": "国土数値情報（公共施設データ）平成19年　国土交通省",
         "source": "KSJ2",

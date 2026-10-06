@@ -77,7 +77,14 @@ import {
   waypointOffTrailMeters,
 } from '../../../../src/features/guide/waypoint-detail';
 import { TripCard } from '../../../../src/features/guide/TripCard';
-import { findStop, setNights, setStopBooked, setStopNote, toggleStop } from '@lib/plan-editor';
+import {
+  findStop,
+  isTrailEnd,
+  setNights,
+  setStopBooked,
+  setStopNote,
+  toggleStop,
+} from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
@@ -185,6 +192,12 @@ export default function WaypointDetailScreen() {
     [waypoint, direction, trail.track.totalDistance],
   );
   const planStop = plan && stopCandidate ? findStop(plan, stopKeyOf(stopCandidate)) : undefined;
+  // `toggleStop` refuses a stop at either end of the trail, and this screen has
+  // no plan notice to show the refusal on, so the toggle is not offered there.
+  // A stop already sitting at an end (an older plan) can still be taken out.
+  const canToggleStop =
+    stopCandidate !== null &&
+    (planStop !== undefined || !isTrailEnd(stopCandidate.noboKm, trail.track.totalDistance));
   const editPlan = useCallback(
     (fn: (p: PlanDocument) => PlanDocument) => {
       void applyPlanEdit(trailId, fn, planDefaults);
@@ -368,7 +381,7 @@ export default function WaypointDetailScreen() {
                   });
                 }}
               />
-              {stopCandidate && (
+              {stopCandidate && canToggleStop && (
                 <StopHereToggle
                   isStop={planStop !== undefined}
                   onPress={() =>

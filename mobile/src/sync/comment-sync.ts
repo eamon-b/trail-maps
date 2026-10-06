@@ -25,7 +25,8 @@
  *                         comment to `source='server'` and drop the outbox row.
  *                         A network error STOPS the drain (retry later); a 401
  *                         PAUSES the whole queue and raises the identity store's
- *                         `authError` (the next drain re-registers once); a 4xx
+ *                         `authError` (the next drain asks the server about the
+ *                         token and re-registers once if it is really dead); a 4xx
  *                         validation error — or a local failure that would recur
  *                         on every attempt (a photo whose file is gone, a payload
  *                         that does not parse) — marks the single item failed but
@@ -66,7 +67,7 @@ import * as waypointMetaRepo from '../db/waypoint-meta-repo';
 import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/client';
 import * as commentsApi from '../api/comments';
 import * as plansApi from '../api/plans';
-import { getSession, type Session } from '../api/auth';
+import { getSession, verifySession, type Session } from '../api/auth';
 import { usePlansStore } from '../state/plans-store';
 import { useIdentityStore } from '../state/identity-store';
 import { uuidv4 } from '../api/uuid';
@@ -146,6 +147,12 @@ export interface AuthHooks {
   hasAuthError: () => boolean;
   setAuthError: (value: boolean) => void;
   /**
+   * Whether the server still answers to `session`'s token: true when it does,
+   * false when the server says it does not know it (a 401). Rejects when
+   * there was no answer to learn from (the network, a 5xx).
+   */
+  verify: (session: Session) => Promise<boolean>;
+  /**
    * Register this device again under `displayName`, resolving the new session.
    * Rejects when registration fails.
    */
@@ -155,6 +162,7 @@ export interface AuthHooks {
 const identityAuthHooks: AuthHooks = {
   hasAuthError: () => useIdentityStore.getState().authError,
   setAuthError: (value) => useIdentityStore.getState().setAuthError(value),
+  verify: (session) => verifySession(session),
   // `register` clears `authError` itself once the new session is stored.
   reregister: (displayName) => useIdentityStore.getState().register(displayName),
 };
@@ -164,45 +172,77 @@ function resolveAuth(deps: SyncDeps): AuthHooks {
 }
 
 /**
- * Whether this auth-error episode has already spent its one re-registration.
- * Cleared whenever a drain starts with no auth error standing (the recovery
- * worked, or the hiker re-registered by hand), so a later 401 gets its own try.
+ * How far this auth-error episode has got with its one re-registration:
+ * `unspent` (not tried, or tried without an answer), `refused` (the server
+ * turned the registration down — tried again only on a manual retry), or
+ * `replaced` (a new identity was minted; if the server refuses that one too,
+ * nothing more is tried, or every drain would mint another). Reset whenever a
+ * drain starts with no auth error standing (the recovery worked, or the hiker
+ * re-registered by hand), so a later 401 gets its own try.
  */
-let authRecoveryUsed = false;
+let authRecovery: 'unspent' | 'refused' | 'replaced' = 'unspent';
 
 /**
- * Recover from a standing 401 by registering this device again, at most once
- * per episode. The token is dead — the server returned it once and it no
- * longer answers — and a dead token cannot be renewed, only replaced
- * (`api/auth`). Without this the queue stayed paused for good.
+ * Recover from a standing 401, at most one new identity per episode.
+ *
+ * Re-registering is not free: the new identity owns none of the comments or
+ * plans the old one made (`isMine` goes false on every one of them, and the
+ * plans stay with the orphaned user), and there is no way back. So the token
+ * is first asked about directly (`verify`): a 401 that does not reproduce —
+ * a server misconfiguration, a bad deploy — clears the pause and keeps the
+ * identity. Only a token the server confirms it no longer knows is replaced,
+ * because a dead token cannot be renewed, only replaced (`api/auth`), and the
+ * alternative is a queue paused for good.
  *
  * Returns the session to drain with, or null when the queue must stay paused.
- * A network failure does not spend the attempt: there was no answer to learn
- * from, and the next reconnect should try again.
+ * No answer (the network, a 5xx, a 429 on the register limit) spends nothing:
+ * the next drain asks again. A refused registration is retried only by a
+ * manual retry (`force`), so a paused queue always has a way out that is not
+ * reinstalling the app.
  */
 async function recoverFromAuthError(
   session: Session,
   auth: AuthHooks,
+  force = false,
 ): Promise<Session | null> {
   if (!auth.hasAuthError()) {
-    authRecoveryUsed = false;
+    authRecovery = 'unspent';
     return session;
   }
-  if (authRecoveryUsed) return null;
+  if (authRecovery === 'replaced') return null;
+  if (authRecovery === 'refused' && !force) return null;
+  let alive: boolean;
+  try {
+    alive = await auth.verify(session);
+  } catch {
+    return null;
+  }
+  if (alive) {
+    // The 401 was the server's moment, not the token's: carry on as before.
+    authRecovery = 'unspent';
+    auth.setAuthError(false);
+    return session;
+  }
   try {
     const renewed = await auth.reregister(session.displayName);
-    authRecoveryUsed = true;
+    authRecovery = 'replaced';
     auth.setAuthError(false);
     return renewed;
   } catch (e) {
-    if (!(e instanceof NetworkError)) authRecoveryUsed = true;
+    if (!isRetryableFailure(e)) authRecovery = 'refused';
     return null;
   }
 }
 
+/** A failure that says nothing about the request itself: ask again later. */
+function isRetryableFailure(e: unknown): boolean {
+  if (e instanceof NetworkError) return true;
+  return e instanceof ApiError && (e.status === 429 || e.status >= 500);
+}
+
 /** Test seam: forget the module's single-flight and auth-recovery state. */
 export function resetSyncStateForTests(): void {
-  authRecoveryUsed = false;
+  authRecovery = 'unspent';
   activeDrain = null;
   pendingDrainDeps = null;
   activePlansPull = null;
@@ -482,6 +522,14 @@ export function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
 let activePlansPull: Promise<PullResult> | null = null;
 let pendingPlansDeps: SyncDeps | null = null;
 
+/** Whether a plan write of either kind is still queued for `planId`. */
+async function hasQueuedPlanWrite(db: SqlDatabase, planId: string): Promise<boolean> {
+  return (
+    (await outboxRepo.hasQueued(db, 'plan', planId)) ||
+    (await outboxRepo.hasQueued(db, 'plan-delete', planId))
+  );
+}
+
 async function pullPlansNow(deps: SyncDeps): Promise<PullResult> {
   const baseUrl = deps.baseUrl ?? getBaseUrl();
   if (!baseUrl) return { outcome: 'unconfigured', applied: 0, syncedAt: null };
@@ -514,10 +562,21 @@ async function pullPlansNow(deps: SyncDeps): Promise<PullResult> {
   let applied = 0;
   const changedTrails = new Set<string>();
   for (const entry of result.entries) {
+    // A write this device has queued but the server has not acknowledged wins
+    // outright, whichever way round the two are: an edit or a delete here, a
+    // live copy or a tombstone from the server. Last-writer-wins alone is not
+    // enough: the queued write is stamped by this device's clock, and one
+    // running behind can stamp it OLDER than the server copy it was made after
+    // — the pull would then throw away a write that has not even been sent,
+    // and the write would go on to undo the pull server-side (a queued PUT
+    // undeletes; a queued DELETE removes what the pull just restored, or is
+    // itself dropped by the first edit of the resurrected plan). Once the
+    // write lands the server's own stamp comes back (`applyServerPlan`) and
+    // the comparison is fair again.
+    if (await hasQueuedPlanWrite(db, entry.id)) continue;
     if (isPlanTombstone(entry)) {
-      // Last-writer-wins applies to a delete too: a tombstone older than an
-      // edit still queued here would throw that edit away, and the queued PUT
-      // would then undelete the plan server-side.
+      // Last-writer-wins applies to a delete too: a tombstone older than the
+      // local copy leaves it alone.
       if (await plansRepo.tombstoneFromServer(db, entry.id, entry.updatedAt)) {
         changedTrails.add(entry.trailId);
       }
@@ -531,13 +590,6 @@ async function pullPlansNow(deps: SyncDeps): Promise<PullResult> {
       console.warn(`pullPlans: plan ${entry.id} is not a valid PlanDocument — skipped`);
       continue;
     }
-    // An edit this device has queued but the server has not acknowledged wins
-    // outright. Last-writer-wins alone is not enough: the edit is stamped by
-    // this device's clock, and one running behind can stamp it OLDER than the
-    // server copy it was made after — the pull would then throw away an edit
-    // that has not even been sent. Once the PUT lands the server's own stamp
-    // comes back (`applyServerPlan`) and the comparison is fair again.
-    if (await outboxRepo.hasQueued(db, 'plan', doc.id)) continue;
     const stored = await plansRepo.upsertServer(db, doc);
     if (stored) changedTrails.add(doc.trailId);
     applied += 1;
@@ -632,7 +684,7 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   const stored = await (deps.getSessionFn ?? getSession)();
   if (!stored) return { outcome: 'no-identity', sent: 0, failed: 0 };
   const auth = resolveAuth(deps);
-  const session = await recoverFromAuthError(stored, auth);
+  const session = await recoverFromAuthError(stored, auth, deps.force);
   if (!session) return { outcome: 'unauthorized', sent: 0, failed: 0 };
 
   const ctx: commentsApi.ApiContext = {

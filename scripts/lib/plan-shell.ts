@@ -14,6 +14,8 @@
  * read the two files and hand over their text.
  */
 
+import { fillTemplate } from './fill-template.js';
+
 /** The marker line a page carries where the shell goes. */
 export const PLAN_SHELL_MARKER = '<!-- @plan-shell -->';
 
@@ -97,22 +99,26 @@ export function inlinePlanShell(
   if (!MARKER_LINE.test(pageHtml)) {
     throw new Error(`page has no ${PLAN_SHELL_MARKER} marker line`);
   }
+  const values = {
+    PLAN_HEADER_TRAIL: fills.headerTrail,
+    PLAN_HEADER_EXTRA: fills.headerExtra,
+  };
   let body = planShellBody(shellHtml);
-  body = fillPlaceholder(body, 'PLAN_HEADER_TRAIL', fills.headerTrail);
-  body = fillPlaceholder(body, 'PLAN_HEADER_EXTRA', fills.headerExtra);
+  for (const [name, value] of Object.entries(values)) {
+    if (value === '') body = dropPlaceholderLine(body, name);
+  }
+  // The same substitution `build-trails.ts` uses for every other placeholder
+  // on these pages (literal values, one pass), so a fill cannot behave one way
+  // here and another way there.
+  body = fillTemplate(body, values);
   return pageHtml.replace(MARKER_LINE, () => body);
 }
 
 /**
- * Substitute one `{{NAME}}` placeholder. An empty fill takes its line with it,
- * so a page that does not want that element is not left with a blank,
- * trailing-whitespace line where it would have been.
+ * Remove the line a `{{NAME}}` placeholder sits on. An empty fill takes its
+ * line with it, so a page that does not want that element is not left with a
+ * blank, trailing-whitespace line where it would have been.
  */
-function fillPlaceholder(html: string, name: string, value: string): string {
-  if (value === '') {
-    return html.replace(new RegExp(`^[^\\S\\n]*\\{\\{${name}\\}\\}[^\\S\\n]*\\n`, 'gm'), '');
-  }
-  // Function form: the fill is HTML and must not be read as a `$&`-style
-  // replacement pattern.
-  return html.replace(new RegExp(`\\{\\{${name}\\}\\}`, 'g'), () => value);
+function dropPlaceholderLine(html: string, name: string): string {
+  return html.replace(new RegExp(`^[^\\S\\n]*\\{\\{${name}\\}\\}[^\\S\\n]*\\n`, 'gm'), '');
 }

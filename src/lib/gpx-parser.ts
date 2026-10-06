@@ -186,10 +186,14 @@ function parsePoint(pt: XmlNode, context: string): GpxPoint {
 }
 
 /**
- * Escape XML special characters
+ * Escape the five XML special characters. The one escaper for every GPX this
+ * code writes — `generateGpx` here and the web trail page's export — so a
+ * change to one cannot leave the other behind. `null`/`undefined` write as
+ * nothing; anything else is stringified first.
  */
-function escapeXml(str: string): string {
-  return str
+export function escapeXml(text: unknown): string {
+  if (text == null) return '';
+  return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

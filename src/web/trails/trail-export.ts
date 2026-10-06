@@ -5,6 +5,7 @@
  * decides how it is written.
  */
 
+import { escapeXml } from '@lib/gpx-parser';
 import { splitAtRouteBreaks } from '@lib/route-breaks';
 import type { RouteBreak } from '@lib/trail-types';
 
@@ -30,16 +31,6 @@ export function csvQuote(value: unknown): string {
   const text = String(value ?? '');
   const safe = FORMULA_START.test(text) ? `'${text}` : text;
   return `"${safe.replace(/"/g, '""')}"`;
-}
-
-export function escapeXml(text: unknown): string {
-  if (text == null) return '';
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 interface GpxPoint {

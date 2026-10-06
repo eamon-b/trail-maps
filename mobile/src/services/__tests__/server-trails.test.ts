@@ -5,7 +5,7 @@
  * the bundle but missed in the index would silently lose its comments.
  */
 
-import { isServerKnown, serverTrailIds } from '../server-trails';
+import { isServerKnown, registerRemoteTrailIds, serverTrailIds } from '../server-trails';
 import {
   hasTrail,
   isServerKnown as loaderIsServerKnown,
@@ -35,5 +35,39 @@ describe('isServerKnown', () => {
     // Same function object, so there is exactly one implementation of the gate
     // no matter which module a caller reaches for.
     expect(loaderIsServerKnown).toBe(isServerKnown);
+  });
+});
+
+describe('registerRemoteTrailIds', () => {
+  afterEach(() => {
+    registerRemoteTrailIds([]);
+  });
+
+  it('makes catalog-only trails server-known', () => {
+    expect(isServerKnown('catalog-only-trail')).toBe(false);
+    registerRemoteTrailIds(['catalog-only-trail']);
+    expect(isServerKnown('catalog-only-trail')).toBe(true);
+  });
+
+  it('replaces the previous set rather than adding to it', () => {
+    registerRemoteTrailIds(['first-trail', 'second-trail']);
+    registerRemoteTrailIds(new Set(['second-trail']));
+    expect(isServerKnown('first-trail')).toBe(false);
+    expect(isServerKnown('second-trail')).toBe(true);
+
+    registerRemoteTrailIds([]);
+    expect(isServerKnown('second-trail')).toBe(false);
+  });
+
+  it('refuses imported (u_) ids even when handed one', () => {
+    registerRemoteTrailIds(['u_1a2b3c4d', 'catalog-only-trail']);
+    expect(isServerKnown('u_1a2b3c4d')).toBe(false);
+    expect(isServerKnown('catalog-only-trail')).toBe(true);
+  });
+
+  it('never removes the bundled trails', () => {
+    registerRemoteTrailIds([]);
+    for (const id of serverTrailIds()) expect(isServerKnown(id)).toBe(true);
+    expect(serverTrailIds()).not.toContain('catalog-only-trail');
   });
 });

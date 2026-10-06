@@ -190,18 +190,27 @@ export function activeDownload(id: string): InstalledTrail | null {
   return downloadSupersedesBundle(installed, bundledVersions().get(id)) ? installed : null;
 }
 
-/** Read the active downloaded copy. Null when there is none or it is unreadable. */
+/**
+ * Read the active downloaded copy. Null when there is none or it is unreadable.
+ *
+ * An unreadable copy is forgotten as well: the catalog's md5 would otherwise
+ * keep matching the record, so no check would ever fetch it again and a
+ * catalog-only guide could never reopen.
+ */
 export async function readDownloadedTrail(id: string): Promise<TrailJson | null> {
   const installed = activeDownload(id);
   if (!installed) return null;
   try {
     const file = new File(trailDataRoot(), installed.file);
-    if (!file.exists) return null;
-    const json = JSON.parse(await file.text()) as unknown;
-    return isUsableTrailJson(json, id) ? (json as TrailJson) : null;
+    if (file.exists) {
+      const json = JSON.parse(await file.text()) as unknown;
+      if (isUsableTrailJson(json, id)) return json as TrailJson;
+    }
   } catch {
-    return null;
+    // Fall through: treated the same as a missing file.
   }
+  if (getState().installed[id]?.file === installed.file) removeInstalled([id]);
+  return null;
 }
 
 export interface RemoteTrailInfo extends TrailVersionInfo {
@@ -400,7 +409,9 @@ export function checkForTrailDataUpdates(
   if (!trailDataBaseUrl()) return Promise.resolve({ checked: false, updated: [], failed: [] });
   if (!options.force) {
     const last = getState().lastCheckedAt;
-    if (last !== null && now - last < CHECK_INTERVAL_MS) {
+    // A stamp in the future (the clock was wrong once) is stale, not fresh —
+    // otherwise automatic checks would stop until that time came round.
+    if (last !== null && last <= now && now - last < CHECK_INTERVAL_MS) {
       return Promise.resolve({ checked: false, updated: [], failed: [] });
     }
     if (now - lastAttemptAt < RETRY_INTERVAL_MS) {
@@ -460,7 +471,8 @@ async function runCheck(now: number): Promise<TrailDataCheckResult> {
  * with a user-presentable message when it cannot be fetched.
  */
 export async function ensureTrailDownloaded(id: string): Promise<boolean> {
-  if (activeDownload(id)) return true;
+  // A record whose file is gone is dropped by the read, and fetched again below.
+  if (activeDownload(id) && (await readDownloadedTrail(id))) return true;
   if (bundledVersions().has(id)) return false; // bundled: nothing to fetch
   // No catalog in this build: there is nowhere such a trail could come from.
   if (!trailDataBaseUrl()) return false;
@@ -469,8 +481,10 @@ export async function ensureTrailDownloaded(id: string): Promise<boolean> {
   if (!entry) {
     // The list came from an older catalog, or a deep link names a trail this
     // phone has never seen listed: ask the server.
+    // Saved without touching `lastCheckedAt`: this is not the update pass, so
+    // the next launch/foreground check still brings the other trails up to date.
     const catalog = await fetchCatalog();
-    saveState({ ...getState(), catalog, lastCheckedAt: Date.now() });
+    saveState({ ...getState(), catalog });
     entry = catalog.trails.find((e) => e.id === id);
   }
   if (!entry) return false;

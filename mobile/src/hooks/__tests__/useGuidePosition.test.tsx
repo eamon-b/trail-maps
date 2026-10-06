@@ -59,10 +59,26 @@ describe('useGuidePosition state machine', () => {
   beforeEach(() => {
     captured = null;
     (locationService.requestLocationPermission as jest.Mock).mockResolvedValue('granted');
+    (locationService.getLocationPermissionStatus as jest.Mock).mockResolvedValue('undetermined');
     (locationService.startLocationTracking as jest.Mock).mockImplementation((cb: (u: Update) => void) => {
       captured = cb;
       return Promise.resolve();
     });
+  });
+
+  it('starts tracking on its own when permission was already granted', async () => {
+    (locationService.getLocationPermissionStatus as jest.Mock).mockResolvedValue('granted');
+    await act(async () => {
+      TestRenderer.create(<Harness />);
+    });
+    expect(latest.status).toBe('acquiring');
+    expect(captured).not.toBeNull();
+
+    await act(async () => {
+      captured!(makeUpdate(0, 0.002));
+    });
+    expect(latest.status).toBe('fix');
+    expect(latest.currentKm).not.toBeNull();
   });
 
   it('starts in no-permission, then acquiring after start()', async () => {

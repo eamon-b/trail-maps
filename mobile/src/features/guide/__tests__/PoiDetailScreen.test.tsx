@@ -114,6 +114,13 @@ describe('PoiDetailScreen', () => {
     expect(text).toContain('Water · 42.5 km along the trail · 0.12 km off trail');
   });
 
+  it('leaves out the off-trail distance for a POI on the trail', () => {
+    mockPois = [poi({ distanceFromTrail: 0.017 })];
+    const text = allText(render());
+    expect(text).toContain('Water · 42.5 km along the trail');
+    expect(text).not.toContain('off trail');
+  });
+
   it('marks the data as OpenStreetMap and credits it', () => {
     const text = allText(render());
     expect(text).toContain('OpenStreetMap');

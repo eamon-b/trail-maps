@@ -112,6 +112,34 @@ describe('PointIndex', () => {
     expect(buildPointIndex(stacked).nearestIndex(5, 5)).toBe(0);
   });
 
+  it('measures in ground distance, not raw degrees, with scaleLongitude', () => {
+    // At 60°S a degree of longitude is half a degree of latitude on the
+    // ground. North is 0.012° (≈1.33 km) away, east 0.02° of longitude
+    // (≈1.11 km): raw degrees pick the farther, northern stretch.
+    const points = [
+      { lat: -60 + 0.012, lon: 10 },
+      { lat: -60, lon: 10.02 },
+    ];
+    expect(buildPointIndex(points).nearestIndex(-60, 10)).toBe(0);
+    expect(buildPointIndex(points, { scaleLongitude: true }).nearestIndex(-60, 10)).toBe(1);
+  });
+
+  it('matches a scaled brute-force scan with scaleLongitude', () => {
+    // A wandering track moved to 45°N, where the scaling matters.
+    const points = wanderingTrack(3000, 13).map(p => ({ lat: p.lat + 75, lon: p.lon }));
+    const meanLat = points.reduce((sum, p) => sum + p.lat, 0) / points.length;
+    const k = Math.cos((meanLat * Math.PI) / 180);
+    const scaled = points.map(p => ({ lat: p.lat, lon: p.lon * k }));
+    const index = buildPointIndex(points, { scaleLongitude: true });
+    const random = makeRandom(21);
+
+    for (let q = 0; q < 400; q++) {
+      const lat = 45 + (random() - 0.5) * 20;
+      const lon = 140 + (random() - 0.5) * 20;
+      expect(index.nearestIndex(lat, lon)).toBe(bruteForceNearest(scaled, lat, lon * k));
+    }
+  });
+
   it('is far cheaper than the scan it replaces on a long trail', () => {
     // Not a timing assertion — just that a 20,000-point index answers a query
     // by touching a handful of cells rather than every point.

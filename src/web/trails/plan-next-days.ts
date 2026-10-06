@@ -106,9 +106,15 @@ export interface LocatedPoint {
   offTrailMeters: number;
 }
 
-/** Snap a coordinate to the nearest point of the (direction-applied) track. */
+/**
+ * Snap a coordinate to the nearest point of the (direction-applied) track.
+ *
+ * In ground distance (`scaleLongitude`), not raw degrees: a fix between two
+ * parallel stretches at 45° would otherwise snap to whichever is nearer in
+ * latitude, up to √2 farther away than the one the hiker is standing beside.
+ */
 export function locateOnTrail(trail: NextDaysTrail, lat: number, lon: number): LocatedPoint | null {
-  const point = buildPointIndex(trail.track.points).nearest(lat, lon);
+  const point = buildPointIndex(trail.track.points, { scaleLongitude: true }).nearest(lat, lon);
   if (!point) return null;
   return { km: point.dist, offTrailMeters: haversineDistance(lat, lon, point.lat, point.lon) };
 }

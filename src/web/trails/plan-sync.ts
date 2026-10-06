@@ -5,10 +5,11 @@
  *
  * It is a separate module from `plan-viewer.ts` because the viewer's job is
  * the map, the days and the stops — everything here is about a token and a
- * `PUT`. The viewer hands over three things and nothing else: the document as
+ * `PUT`. The viewer hands over four things and nothing else: the document as
  * it stands (`getPlan`), a way to take the server's copy (`adoptServerPlan`,
- * which re-renders) and a way to stamp the server's id/timestamp onto the
- * document without re-rendering or provoking another save (`stampPlan`).
+ * which re-renders), a way to stamp the server's id/timestamp onto the
+ * document without re-rendering or provoking another save (`stampPlan`), and
+ * a way to settle an edit still inside its save debounce (`flushPendingSave`).
  *
  * The order of operations never changes: the local `localStorage` write has
  * already happened when `onLocalSave()` is called, so a plan is never lost to
@@ -61,12 +62,21 @@ export interface PlanSyncHost {
    * and no save is scheduled, so this can never loop back into a `PUT`.
    */
   stampPlan(patch: Partial<PlanDocument>): void;
+  /**
+   * Write an edit still waiting on the viewer's save debounce to
+   * `localStorage` now, cancelling the debounce, and say whether there was
+   * one. Does not call `onLocalSave`: `reconcile` asks this first, so an edit
+   * made in the last 800 ms counts as an unsynced local edit rather than being
+   * silently replaced by the server's copy (and then written back over it by
+   * the debounce).
+   */
+  flushPendingSave(): boolean;
 }
 
 export interface PlanSyncController {
   /** Called by `commitSave` once the local write has happened. */
   onLocalSave(): void;
-  /** Drop listeners — the viewer can reboot with another trail. */
+  /** Drop every listener and stop answering; nothing this arm started lands after. */
   destroy(): void;
 }
 
@@ -156,6 +166,13 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
    * server stamp that is not this one means somebody else wrote.
    */
   let syncedUpdatedAt: string | null = null;
+  /**
+   * Every server stamp a `PUT` from this page caused, including one whose
+   * document was edited again before the reply came back (and so never became
+   * `syncedUpdatedAt`). A pull that hands back one of these is reading this
+   * page's own write, never the phone's — it must not count as a conflict.
+   */
+  const ownStamps = new Set<string>();
   /** Edits made here that no `PUT` has confirmed yet. */
   let localEdits = false;
   /** When the server was last read, so an idle page can freshen before a push. */
@@ -164,10 +181,17 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
   let conflictNote: string | null = null;
   /** 409 `plan_exists` adopts the server's id once per push — never in a loop. */
   let adoptedExistingId = false;
-  /** Backoff attempts spent on the refusal in hand; reset by a `PUT` that lands. */
+  /**
+   * Backoff attempts spent on the refusal in hand; reset by a `PUT` that lands
+   * and by a new local edit, so a page that ran out of retries once still
+   * retries the next edit's transient failure.
+   */
   let retryAttempt = 0;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let destroyed = false;
+  /** One signal for every listener this arm adds, so `destroy()` drops them all. */
+  const listeners = new AbortController();
+  const { signal } = listeners;
 
   // -------------------------------------------------------------------------
   // Status line
@@ -226,10 +250,13 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
     if (inFlight || pulling) return;
     pulling = true;
     setStatus('Syncing…');
+    const readWith = session;
     try {
-      const { entry } = await fetchMyPlan(session, host.trailId);
+      const { entry } = await fetchMyPlan(readWith, host.trailId);
       pulling = false;
-      if (destroyed) return;
+      // Unlinked (or relinked) while the read was in the air: its answer is
+      // about a session this page no longer holds.
+      if (destroyed || session !== readWith) return;
       lastPullAt = Date.now();
       if (entry && !isPlanDocument(entry.document)) {
         // Everything off the wire is data, not instructions: a document this
@@ -241,6 +268,7 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
       await reconcile(entry?.document ?? null);
     } catch (err) {
       pulling = false;
+      if (session !== readWith) return;
       handleFailure(err);
     }
   }
@@ -265,25 +293,50 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
    *  - Otherwise (the boot read, before any server stamp is known — the local
    *    copy may well hold edits made offline in an earlier session): last
    *    writer by timestamp, quietly.
+   *
+   * Two checks come before all of that. An edit still inside the viewer's
+   * save debounce is an unsynced local edit like any other, so it is flushed
+   * and counted first. And a server copy that is this page's own write — the
+   * very document on screen, or a stamp one of our `PUT`s caused — is never
+   * news and never a conflict.
    */
   async function reconcile(serverDoc: PlanDocument | null): Promise<void> {
+    if (host.flushPendingSave()) {
+      localEdits = true;
+      conflictNote = null;
+    }
     if (!serverDoc) {
       // The server holds no plan for this trail, so ours is the only copy.
       await push();
       return;
     }
+    const local = host.getPlan();
+    if (serverDoc.id === local.id && serverDoc.updatedAt === local.updatedAt) {
+      // The server holds exactly the document on screen: `stampPlan` wrote its
+      // stamp onto ours when it was stored. Typically the boot read of an
+      // unchanged plan — re-sending it would hand the server a new stamp that
+      // beats the phone's pending offline edits.
+      syncedUpdatedAt = serverDoc.updatedAt;
+      localEdits = false;
+      setSynced();
+      return;
+    }
     // The feed's cursor is inclusive, so a pull can hand back the very row we
     // last stored. An equal stamp is therefore not news, it is the same copy:
-    // nothing is adopted and nothing is sent.
-    const serverIsNew = serverDoc.updatedAt !== syncedUpdatedAt;
-
+    // nothing is adopted and nothing is sent. Nor is any other stamp our own
+    // `PUT`s caused: edits made since sit on top of it, and go up as a push.
+    if (serverDoc.updatedAt === syncedUpdatedAt || ownStamps.has(serverDoc.updatedAt)) {
+      if (localEdits) await push();
+      else setSynced();
+      return;
+    }
+    // From here on the server copy is somebody else's write.
     if (!localEdits) {
       if (syncedUpdatedAt !== null) {
-        if (serverIsNew) adopt(serverDoc);
-        else setSynced();
+        adopt(serverDoc);
         return;
       }
-    } else if (syncedUpdatedAt !== null && serverIsNew) {
+    } else if (syncedUpdatedAt !== null) {
       if (isNewer(serverDoc.updatedAt, host.getPlan().updatedAt)) {
         conflictNote = 'Replaced by the copy from your phone';
         adopt(serverDoc);
@@ -346,16 +399,23 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
       if (!session || destroyed) return;
       const sent = host.getPlan();
       if (syncedUpdatedAt !== null && sent.updatedAt === syncedUpdatedAt) {
+        // The server already holds this exact version: nothing here is unsynced.
+        localEdits = false;
         setSynced();
         return;
       }
 
       inFlight = true;
       setStatus('Syncing…');
+      const sentWith = session;
       try {
-        const entry = await putPlan(session, sent);
+        const entry = await putPlan(sentWith, sent);
         inFlight = false;
-        if (destroyed) return;
+        // Unlinked (or relinked) while the PUT was in the air: its reply must
+        // not stamp a document or say "Synced" on a page that is no longer
+        // linked to that account.
+        if (destroyed || session !== sentWith) return;
+        ownStamps.add(entry.updatedAt);
         adoptedExistingId = false;
         retryAttempt = 0;
         // Only stamp the server's clock on when nothing was edited under us;
@@ -371,7 +431,7 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
         dirty = false;
       } catch (err) {
         inFlight = false;
-        if (destroyed) return;
+        if (destroyed || session !== sentWith) return;
         // The server already holds a plan for this trail under another id, and
         // has just said which: send the same document again under that id.
         if (adoptExistingId(err)) continue;
@@ -663,32 +723,32 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
     void pull();
   };
 
-  syncBtn.addEventListener('click', openDialog);
-  byId('link-cancel')?.addEventListener('click', closeDialog);
-  byId('link-unlink')?.addEventListener('click', () => void unlink());
+  syncBtn.addEventListener('click', openDialog, { signal });
+  byId('link-cancel')?.addEventListener('click', closeDialog, { signal });
+  byId('link-unlink')?.addEventListener('click', () => void unlink(), { signal });
   byId<HTMLFormElement>('link-form')?.addEventListener('submit', event => {
     event.preventDefault();
     void submitCode();
-  });
+  }, { signal });
   submitBtn?.addEventListener('click', event => {
     // The button is a submit, but a dialog in a browser without form
     // submission (and jsdom) needs the direct path too.
     event.preventDefault();
     void submitCode();
-  });
+  }, { signal });
   codeInput?.addEventListener('input', () => {
     if (codeInput.value !== codeInput.value.toUpperCase()) {
       codeInput.value = codeInput.value.toUpperCase();
     }
-  });
-  shareBtn?.addEventListener('click', () => void share());
-  shareCopyBtn?.addEventListener('click', () => void copyShareUrl());
-  byId('share-unshare')?.addEventListener('click', () => void stopSharing());
+  }, { signal });
+  shareBtn?.addEventListener('click', () => void share(), { signal });
+  shareCopyBtn?.addEventListener('click', () => void copyShareUrl(), { signal });
+  byId('share-unshare')?.addEventListener('click', () => void stopSharing(), { signal });
   byId('share-close')?.addEventListener('click', () => {
     if (sharePanel) sharePanel.hidden = true;
-  });
-  window.addEventListener('online', onOnline);
-  document.addEventListener('visibilitychange', onVisibilityChange);
+  }, { signal });
+  window.addEventListener('online', onOnline, { signal });
+  document.addEventListener('visibilitychange', onVisibilityChange, { signal });
 
   renderChrome();
   // Boot: ask the server what it holds for this trail, and reconcile.
@@ -701,6 +761,9 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
       // The reader has moved on; whatever the last conflict was, it is no
       // longer what the status line should be saying.
       conflictNote = null;
+      // A new edit earns a fresh set of backoff attempts: running out of them
+      // on an earlier edit's 503 must not leave this one never retried.
+      retryAttempt = 0;
       // A page that has sat idle asks what the server holds before writing
       // over it — one `GET`, at most every REFRESH_INTERVAL_MS, and the
       // reconciliation that follows pushes this edit when it is the newer one.
@@ -712,8 +775,8 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
     destroy(): void {
       destroyed = true;
       clearRetry();
-      window.removeEventListener('online', onOnline);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      // The buttons and the dialog as well as the window/document listeners.
+      listeners.abort();
     },
   };
 }

@@ -24,7 +24,9 @@ import {
 // in an attribute value as in a text node. That matters here: `autoLinkUrls`
 // puts its result inside `href="…"`, and imported GPX supplies every waypoint
 // name, type and description on this page.
-import { escapeHtml } from '../web-utils';
+import { SITE_ROOT, escapeHtml, generatedDataUrl } from '../web-utils';
+import { buildGpx, csvQuote } from './trail-export';
+import { waypointIcon } from './waypoint-icons';
 import { onThemeChange, themeColor } from '../theme';
 // OpenStreetMap points of interest. The pure half — labels, tag summaries,
 // popup/row markup, interleave ordering, filter state — lives next door so it
@@ -210,11 +212,16 @@ let displayPoints: TrackPoint[] = [];
 // on every pixel, so the scan this replaced was the one O(n) thing on the
 // pointer's path. Rebuilt by `setDisplayPoints`, never assigned elsewhere.
 let displayPointIndex: PointIndex<TrackPoint> = buildPointIndex([]);
+/** `initTrailViewer` has run on this page — see the guard there. */
+let trailViewerBooted = false;
 
 /** Point the map line, and its hover index, at a trail's display copy. */
 function setDisplayPoints(points: TrackPoint[]): void {
   displayPoints = points;
-  displayPointIndex = buildPointIndex(displayPoints);
+  // Ground distance, not raw degrees: on a trail far from the equator a raw
+  // degree of longitude is much shorter than one of latitude, and the hover
+  // would favour a parallel stretch to the north over the one under the cursor.
+  displayPointIndex = buildPointIndex(displayPoints, { scaleLongitude: true });
 }
 let maxDistance = 0;
 let waypointMarkers: Array<{ marker: L.Marker; waypoint: Waypoint; index: number }> = [];
@@ -900,38 +907,6 @@ function summariseLegs(
   return parts.join(' · ');
 }
 
-// Waypoint icon configuration
-const WAYPOINT_ICONS: Record<string, { icon: string }> = {
-  town: { icon: '\u{1F3D8}\u{FE0F}' },
-  hut: { icon: '\u{1F6D6}' },
-  campsite: { icon: '\u26FA' },
-  water: { icon: '\u{1F4A7}' },
-  'water-tank': { icon: '\u{1F6B0}' },
-  mountain: { icon: '\u26F0\u{FE0F}' },
-  'side-trip': { icon: '\u{1F97E}' },
-  accommodation: { icon: '\u{1F3E8}' },
-  'caravan-park': { icon: '\u{1F3D5}\u{FE0F}' },
-  trailhead: { icon: '\u{1F697}' },
-  food: { icon: '\u{1F374}' },
-  'road-crossing': { icon: '\u{1F6E3}\u{FE0F}' },
-  'inlet-crossing': { icon: '\u{1F30A}' },
-  beach: { icon: '\u{1F3D6}\u{FE0F}' },
-  poi: { icon: '\u{2B50}' },
-  resupply: { icon: '\u{1F4E6}' },
-  endpoint: { icon: '\u{1F6A9}' },
-  // Branch/rejoin points where an alternate leaves or meets the main line.
-  junction: { icon: '\u{1F500}' },
-  // A distance marker placed along the route (the CDT's every-10-mile posts).
-  milestone: { icon: '\u{1FAA7}' },
-  // Vocabulary from curated third-party data (the CDT build): kept here rather
-  // than left to fall through to the generic pin, so each reads distinctly.
-  gap: { icon: '\u{1F6A7}' },
-  'ley-note': { icon: '\u{1F5D2}\u{FE0F}' },
-  'ley-waypoint': { icon: '\u{1F53A}' },
-  'camp-2018': { icon: '\u{1F525}' },
-  waypoint: { icon: '\u{1F4CD}' }
-};
-
 // Safe min/max for large arrays (avoids stack overflow with spread operator)
 function getMinMax(arr: number[]): { min: number; max: number } {
   if (arr.length === 0) return { min: 0, max: 0 };
@@ -1170,14 +1145,10 @@ function drawTermini(termini: RouteVariant[]): void {
 }
 
 function createWaypointIcon(type?: string): L.DivIcon {
-  // A turn-off shows its served type's icon: `hut-access` is the hut glyph.
-  const config =
-    WAYPOINT_ICONS[type || 'waypoint'] ||
-    WAYPOINT_ICONS[baseWaypointType(type)] ||
-    WAYPOINT_ICONS.waypoint;
   return L.divIcon({
     className: `waypoint-marker ${type || 'waypoint'}`,
-    html: config.icon,
+    // A turn-off shows its served type's icon: `hut-access` is the hut glyph.
+    html: waypointIcon(type),
     iconSize: [24, 24],
     iconAnchor: [12, 12],
     popupAnchor: [0, -12]
@@ -1878,7 +1849,11 @@ function setupElevationHover(): void {
 
 async function loadTrailData(trailId: string): Promise<Trail | null> {
   try {
-    const response = await fetch(`/data/generated/${trailId}.json`);
+    // Relative to the page (`trails/<id>/index.html`), as index.html's fetch
+    // is, so a site served from a sub-path still finds its data.
+    const response = await fetch(
+      generatedDataUrl(`${trailId}.json`, SITE_ROOT.trailPage, document.baseURI)
+    );
     if (!response.ok) throw new Error('Trail data not found');
     return await response.json();
   } catch (error) {
@@ -2299,16 +2274,6 @@ function setWaypointFilter(next: WaypointFilter): void {
   renderWaypoints(trail.waypoints, trail.alternates, trail.sideTrips, trail.offTrailWaypoints);
 }
 
-/**
- * Quote a value for one CSV field: wrap in double quotes and double any inner
- * quote (RFC 4180). Every free-text column must go through this — waypoint
- * `type` is an editable, arbitrary string on imported trails, so an unquoted
- * comma in it would shift every later column in the row.
- */
-function csvQuote(value: unknown): string {
-  return `"${String(value ?? '').replace(/"/g, '""')}"`;
-}
-
 function exportDatasheet(trail: Trail): void {
   const { config, track, waypoints, alternates, sideTrips } = trail;
 
@@ -2339,7 +2304,7 @@ function exportDatasheet(trail: Trail): void {
   for (const leg of legs) {
     const wp = leg.wp;
     const row = [
-      `"${(wp.name || 'Unnamed').replace(/"/g, '""')}"`,
+      csvQuote(wp.name || 'Unnamed'),
       csvQuote(wp.type || 'waypoint'),
       wp.elevation ?? '',
       leg.legKm?.toFixed(1) ?? '',
@@ -2348,7 +2313,7 @@ function exportDatasheet(trail: Trail): void {
       isFiltered ? (leg.legDescent?.toFixed(0) ?? '') : (wp.descent ?? ''),
       wp.totalAscent ?? '',
       wp.totalDescent ?? '',
-      `"${(wp.description || '').replace(/"/g, '""')}"`
+      csvQuote(wp.description || '')
     ];
     lines.push(row.join(','));
   }
@@ -2361,7 +2326,7 @@ function exportDatasheet(trail: Trail): void {
     lines.push('Name,Type,Distance (km),Ascent (m),Descent (m),Start Distance (km),End Distance (km)');
     for (const alt of alternates) {
       const row = [
-        `"${(alt.name || 'Unnamed').replace(/"/g, '""')}"`,
+        csvQuote(alt.name || 'Unnamed'),
         csvQuote(alt.type || 'alternate'),
         alt.distance ?? '',
         alt.elevation?.ascent ?? '',
@@ -2379,7 +2344,7 @@ function exportDatasheet(trail: Trail): void {
     lines.push('Name,Type,Distance (km),Ascent (m),Descent (m),Start Distance (km)');
     for (const trip of sideTrips) {
       const row = [
-        `"${(trip.name || 'Unnamed').replace(/"/g, '""')}"`,
+        csvQuote(trip.name || 'Unnamed'),
         csvQuote(trip.type || 'side-trip'),
         trip.distance ?? '',
         trip.elevation?.ascent ?? '',
@@ -2401,10 +2366,10 @@ function exportDatasheet(trail: Trail): void {
     lines.push('Name,Type,Distance From Trail (m),Notes');
     for (const wp of offTrail) {
       const row = [
-        `"${(wp.name || 'Unnamed').replace(/"/g, '""')}"`,
+        csvQuote(wp.name || 'Unnamed'),
         csvQuote(wp.type || 'waypoint'),
         wp.distanceFromTrail,
-        `"${(wp.description || '').replace(/"/g, '""')}"`
+        csvQuote(wp.description || '')
       ];
       lines.push(row.join(','));
     }
@@ -2442,58 +2407,9 @@ function exportBaseName(config: { id: string; name?: string }): string {
   return slug || config.id || 'trail';
 }
 
-function escapeXml(text: unknown): string {
-  if (text == null) return '';
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
 function exportGpx(trail: Trail): void {
-  const { config, track, waypoints } = trail;
-
-  const gpxLines: string[] = [];
-  gpxLines.push('<?xml version="1.0" encoding="UTF-8"?>');
-  gpxLines.push('<gpx version="1.1" creator="GPX Tools" xmlns="http://www.topografix.com/GPX/1/1">');
-  gpxLines.push(`  <metadata>`);
-  gpxLines.push(`    <name>${escapeXml(config.name)}</name>`);
-  gpxLines.push(`    <desc>${escapeXml(config.region)} - ${track.totalDistance.toFixed(1)} km</desc>`);
-  gpxLines.push(`  </metadata>`);
-
-  for (const wp of waypoints || []) {
-    gpxLines.push(`  <wpt lat="${wp.lat}" lon="${wp.lon}">`);
-    if (wp.elevation != null) gpxLines.push(`    <ele>${wp.elevation}</ele>`);
-    gpxLines.push(`    <name>${escapeXml(wp.name || 'Waypoint')}</name>`);
-    if (wp.type) gpxLines.push(`    <type>${escapeXml(wp.type)}</type>`);
-    if (wp.description) gpxLines.push(`    <desc>${escapeXml(wp.description)}</desc>`);
-    gpxLines.push(`  </wpt>`);
-  }
-
-  for (const wp of trail.offTrailWaypoints || []) {
-    gpxLines.push(`  <wpt lat="${wp.lat}" lon="${wp.lon}">`);
-    gpxLines.push(`    <name>${escapeXml(wp.name || 'Waypoint')}</name>`);
-    if (wp.type) gpxLines.push(`    <type>${escapeXml(wp.type)}</type>`);
-    if (wp.description) gpxLines.push(`    <desc>${escapeXml(wp.description)}</desc>`);
-    gpxLines.push(`  </wpt>`);
-  }
-
-  gpxLines.push(`  <trk>`);
-  gpxLines.push(`    <name>${escapeXml(config.name)}</name>`);
-  gpxLines.push(`    <trkseg>`);
-  for (const pt of track.points || []) {
-    gpxLines.push(`      <trkpt lat="${pt.lat}" lon="${pt.lon}">`);
-    if (pt.ele != null) gpxLines.push(`        <ele>${pt.ele}</ele>`);
-    gpxLines.push(`      </trkpt>`);
-  }
-  gpxLines.push(`    </trkseg>`);
-  gpxLines.push(`  </trk>`);
-
-  gpxLines.push('</gpx>');
-
-  const gpxContent = gpxLines.join('\n');
+  const { config } = trail;
+  const gpxContent = buildGpx(trail);
   const blob = new Blob([gpxContent], { type: 'application/gpx+xml;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
@@ -2648,6 +2564,11 @@ export async function initTrailViewer(
   preloadedTrail?: Trail,
   options?: TrailViewerOptions,
 ): Promise<void> {
+  // One boot per page load, as every host page does: a second call would bind
+  // the table, filter, export and document listeners twice and `L.map` would
+  // throw on the already-initialised container. Say so rather than half-boot.
+  if (trailViewerBooted) throw new Error('initTrailViewer: the trail viewer is already booted on this page');
+  trailViewerBooted = true;
   viewerOptions = options ?? {};
   const trail = preloadedTrail ?? await loadTrailData(trailId);
   if (!trail) {

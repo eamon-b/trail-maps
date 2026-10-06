@@ -21,11 +21,11 @@
  *
  *   resupply options (ids are what a selection stores)
  *
- *     w_1  Alpha    town          km 10.00   plain on-trail town
- *     w_2  Bravo    town-access   km 20.00  ┐ one turn-off, "Mill Road":
- *     w_3  Charlie  food          km 20.05  ┘ two options, at most one stop
- *     w_4  Delta    resupply      km 30.00   description with a dotted abbreviation
- *     w_5  Echo     town          km 40.00
+ *     w_001  Alpha    town          km 10.00   plain on-trail town
+ *     w_002  Bravo    town-access   km 20.00  ┐ one turn-off, "Mill Road":
+ *     w_003  Charlie  food          km 20.05  ┘ two options, at most one stop
+ *     w_004  Delta    resupply      km 30.00   description with a dotted abbreviation
+ *     w_005  Echo     town          km 40.00
  */
 
 import fs from 'node:fs';
@@ -132,20 +132,20 @@ function makeTrail() {
     track: { points, totalDistance: 50, totalAscent: 800, totalDescent: 100 },
     waypoints: [
       wp('w_start', 'Trailhead', 'endpoint', 0),
-      wp('w_1', 'Alpha', 'town', 10),
-      wp('w_2', 'Bravo', 'town-access', 20, {
+      wp('w_001', 'Alpha', 'town', 10),
+      wp('w_002', 'Bravo', 'town-access', 20, {
         accessName: 'Mill Road',
         offTrailKm: 22,
         accessMode: 'hitch',
         acceptsBoxes: true,
         description: 'General store and post office. Closed Sundays.',
       }),
-      wp('w_3', 'Charlie', 'food', 20.05, { accessName: 'Mill Road' }),
+      wp('w_003', 'Charlie', 'food', 20.05, { accessName: 'Mill Road' }),
       wp('w_camp', 'Camp One', 'campsite', 25),
-      wp('w_4', 'Delta', 'resupply', 30, {
+      wp('w_004', 'Delta', 'resupply', 30, {
         description: 'Store beside U.S. 50 with a hiker box. Closed Mondays.',
       }),
-      wp('w_5', 'Echo', 'town', 40),
+      wp('w_005', 'Echo', 'town', 40),
     ],
   };
 }
@@ -187,7 +187,7 @@ describe('the Resupply tab with nothing chosen yet', () => {
     await boot();
 
     expect(countText()).toBe('5 of 5 selected');
-    expect(['w_1', 'w_2', 'w_3', 'w_4', 'w_5'].every(id => check(id).checked)).toBe(true);
+    expect(['w_001', 'w_002', 'w_003', 'w_004', 'w_005'].every(id => check(id).checked)).toBe(true);
 
     // Four groups (Bravo and Charlie share Mill Road), so five carries:
     // trail start → Alpha → Mill Road → Delta → Echo → trail end.
@@ -221,13 +221,13 @@ describe('the Resupply tab with nothing chosen yet', () => {
     );
     expect(headers).toEqual(['⤴ Mill Road · km 20.0']);
 
-    const sub = $('resupply-list').querySelector('.resupply-row[data-id="w_2"] .resupply-sub');
+    const sub = $('resupply-list').querySelector('.resupply-row[data-id="w_002"] .resupply-sub');
     expect(sub?.textContent).toBe('22.0 km hitch · General store and post office. · accepts boxes');
   });
 
   it('does not cut the description short at a dotted abbreviation', async () => {
     await boot();
-    const sub = $('resupply-list').querySelector('.resupply-row[data-id="w_4"] .resupply-sub');
+    const sub = $('resupply-list').querySelector('.resupply-row[data-id="w_004"] .resupply-sub');
     expect(sub?.textContent?.trim()).toBe('Store beside U.S. 50 with a hiker box.');
   });
 
@@ -247,8 +247,8 @@ describe('unticking options', () => {
   it('merges the carries either side of every option dropped', async () => {
     await boot();
 
-    check('w_4').click(); // Delta
-    check('w_5').click(); // Echo
+    check('w_004').click(); // Delta
+    check('w_005').click(); // Echo
 
     expect(countText()).toBe('3 of 5 selected');
     const rows = legRows();
@@ -268,8 +268,8 @@ describe('unticking options', () => {
 
   it('keeps the Days-tab summary in step with the table', async () => {
     await boot();
-    check('w_4').click();
-    check('w_5').click();
+    check('w_004').click();
+    check('w_005').click();
 
     tabButton('days').click();
     expect($('resupply-body').textContent).toContain(
@@ -293,9 +293,11 @@ describe('the All and None buttons', () => {
 
     $('resupply-none').click();
     expect(countText()).toBe('0 of 5 selected');
-    expect(legRows()).toHaveLength(0);
-    expect($('datasheet-body').textContent).toContain('No resupply stops ticked');
-    expect(['w_1', 'w_2', 'w_3', 'w_4', 'w_5'].some(id => check(id).checked)).toBe(false);
+    // No ticked stop is still a carry: the whole trail as one leg, with a note.
+    expect(legRows()).toHaveLength(1);
+    expect(legRows()[0][1]).toBe('Trail Start → Trail End');
+    expect($('datasheet-body').textContent).toContain('No resupply stops ticked — this is the full carry');
+    expect(['w_001', 'w_002', 'w_003', 'w_004', 'w_005'].some(id => check(id).checked)).toBe(false);
 
     $('resupply-all').click();
     expect(countText()).toBe('5 of 5 selected');
@@ -334,7 +336,7 @@ describe('the All and None buttons', () => {
 describe('the filter box', () => {
   it('narrows the rows without changing the selection', async () => {
     await boot();
-    check('w_5').click();
+    check('w_005').click();
 
     const filter = $('resupply-filter') as HTMLInputElement;
     filter.value = 'brav';
@@ -359,25 +361,25 @@ describe('the filter box', () => {
 describe('a saved selection', () => {
   it('comes back after a reload', async () => {
     await boot();
-    check('w_4').click();
-    check('w_5').click();
+    check('w_004').click();
+    check('w_005').click();
     flushSave();
 
     expect(
       JSON.parse(localStorage.getItem(`trail-plan-doc-${TRAIL_ID}`)!).resupplyStops,
-    ).toEqual(['w_1', 'w_2', 'w_3']);
+    ).toEqual(['w_001', 'w_002', 'w_003']);
 
     await boot();
     expect(countText()).toBe('3 of 5 selected');
-    expect(check('w_4').checked).toBe(false);
-    expect(check('w_5').checked).toBe(false);
-    expect(check('w_1').checked).toBe(true);
+    expect(check('w_004').checked).toBe(false);
+    expect(check('w_005').checked).toBe(false);
+    expect(check('w_001').checked).toBe(true);
     expect(legRows()).toHaveLength(3);
   });
 
   it('survives a direction flip, because ids do not change under reversal', async () => {
     await boot();
-    check('w_1').click(); // drop Alpha
+    check('w_001').click(); // drop Alpha
 
     ($('direction-toggle') as HTMLButtonElement).click();
 
@@ -385,8 +387,8 @@ describe('a saved selection', () => {
     expect(rowNames()).toEqual(['Echo', 'Delta', 'Charlie', 'Bravo', 'Alpha']);
     // …and exactly the same ones are ticked.
     expect(countText()).toBe('4 of 5 selected');
-    expect(check('w_1').checked).toBe(false);
-    expect(['w_2', 'w_3', 'w_4', 'w_5'].every(id => check(id).checked)).toBe(true);
+    expect(check('w_001').checked).toBe(false);
+    expect(['w_002', 'w_003', 'w_004', 'w_005'].every(id => check(id).checked)).toBe(true);
     expect(legRows()).toHaveLength(4);
   });
 });
@@ -441,9 +443,9 @@ describe('the pace and hours inputs', () => {
 
   it('raises a leg from one day to two at Slow', async () => {
     await boot();
-    check('w_1').click(); // drop Alpha
-    check('w_2').click(); // …and Mill Road, both options
-    check('w_3').click();
+    check('w_001').click(); // drop Alpha
+    check('w_002').click(); // …and Mill Road, both options
+    check('w_003').click();
 
     // Trail Start → Delta is 30.0 km, climbing 100 + 200 with a 100 m drop:
     // 30/4 + 300/600 = 8.0 h exactly, which is one 8-hour day.
@@ -460,8 +462,8 @@ describe('the pace and hours inputs', () => {
 
   it('drops a leg from two days to one at 16 hours a day', async () => {
     await boot();
-    check('w_4').click(); // drop Delta
-    check('w_5').click(); // …and Echo
+    check('w_004').click(); // drop Delta
+    check('w_005').click(); // …and Echo
 
     // Bravo / Charlie → Trail End: 30.0 km, +500 / -100 → 7.5 + 0.8333 = 8.33 h.
     expect(legRows()[2][5]).toBe('2');

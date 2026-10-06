@@ -448,6 +448,19 @@ describe('the CSV export', () => {
     expect(csv).not.toContain('Old Ruin');
   });
 
+  it('neutralises a waypoint name a spreadsheet would run as a formula', async () => {
+    const trail = makeTrail();
+    trail.waypoints[3] = { ...trail.waypoints[3], name: '=HYPERLINK("http://x.test","y")' };
+    await boot(trail);
+    const downloads = captureDownloads();
+    ($('export-csv-btn') as HTMLButtonElement).click();
+    const csv = await downloads.files[0].blob.text();
+    downloads.restore();
+
+    expect(csv).toContain(`"'=HYPERLINK(""http://x.test"",""y"")","mountain"`);
+    expect(csv).not.toMatch(/(^|,)"=/m);
+  });
+
   it('keeps off-trail members of the family in a filtered export', async () => {
     await boot();
     clickFilter('water');
@@ -598,5 +611,36 @@ describe('turn-off badges', () => {
     const names = rowText();
     expect(names.some(t => t.includes('Te Anau turnoff'))).toBe(true);
     expect(names.some(t => t.includes('Blyth Hut turnoff'))).toBe(false);
+  });
+});
+
+describe('booting the trail viewer', () => {
+  it('refuses a second boot on the same page rather than binding everything twice', async () => {
+    await boot();
+    const { initTrailViewer } = await import('./trail-viewer');
+    await expect(initTrailViewer('heysen', makeTrail() as never)).rejects.toThrow(/already booted/);
+  });
+
+  it('fetches its trail relative to the page, so a sub-path deployment works', async () => {
+    const realFetch = globalThis.fetch;
+    const fetched: string[] = [];
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      fetched.push(String(url));
+      return { ok: true, json: async () => makeTrail() } as unknown as Response;
+    }) as typeof fetch;
+    window.history.replaceState({}, '', '/trail-maps/trails/heysen/');
+    try {
+      const html = fs.readFileSync(path.join(ROOT, 'src/web/my-trail.html'), 'utf8');
+      document.documentElement.innerHTML = html
+        .replace(/<!DOCTYPE html>/i, '')
+        .replace(/<\/?html[^>]*>/gi, '');
+      vi.resetModules();
+      const { initTrailViewer } = await import('./trail-viewer');
+      await initTrailViewer('heysen');
+    } finally {
+      globalThis.fetch = realFetch;
+      window.history.replaceState({}, '', '/');
+    }
+    expect(fetched).toEqual([`${window.location.origin}/trail-maps/data/generated/heysen.json`]);
   });
 });

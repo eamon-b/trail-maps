@@ -49,6 +49,25 @@ describe('locateOnTrail', () => {
   });
 });
 
+describe('locateOnTrail, away from the equator', () => {
+  it('snaps to the stretch nearer on the ground, not nearer in raw degrees', () => {
+    // Two parallel stretches at 60°S: km 0-1 runs 0.012° (≈1.33 km) north of
+    // the fix, km 10-11 runs 0.02° of longitude (≈1.11 km) east of it. A raw
+    // degree metric would pick the northern one.
+    const north = [0, 1].map(km => ({ lat: -60 + 0.012, lon: 10 + km * 0.001, ele: 0, dist: km }));
+    const east = [10, 11].map(km => ({ lat: -60 + (km - 10) * 0.001, lon: 10.02, ele: 0, dist: km }));
+    const t = {
+      config: { name: 'Parallel' },
+      track: { points: [...north, ...east], totalDistance: 11 },
+      waypoints: [],
+    } as unknown as NextDaysTrail;
+    const located = locateOnTrail(t, -60, 10)!;
+    expect(located.km).toBe(10);
+    expect(located.offTrailMeters).toBeGreaterThan(1000);
+    expect(located.offTrailMeters).toBeLessThan(1200);
+  });
+});
+
 describe('suggestForTrail', () => {
   it('ranks plans at the hiker’s hours and pace', () => {
     // 5 h at 4 km/h = 20 km days.

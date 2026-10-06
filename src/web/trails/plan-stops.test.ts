@@ -595,3 +595,34 @@ describe('a tick the plan has no room for', () => {
     expect(stopItem('Salida').classList.contains('is-stop')).toBe(false);
   });
 });
+
+describe('booting the planner', () => {
+  it('refuses a second boot on the same page rather than binding everything twice', async () => {
+    await boot();
+    const { initPlanViewer } = await import('./plan-viewer');
+    await expect(initPlanViewer(TRAIL_ID, makeTrail() as never)).rejects.toThrow(/already booted/);
+  });
+
+  it('fetches its trail relative to the page, so a sub-path deployment works', async () => {
+    const realFetch = globalThis.fetch;
+    const fetched: string[] = [];
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      fetched.push(String(url));
+      return { ok: true, json: async () => makeTrail() } as unknown as Response;
+    }) as typeof fetch;
+    window.history.replaceState({}, '', `/trail-maps/trails/${TRAIL_ID}/plan.html`);
+    try {
+      const html = bundledPlanPageHtml();
+      document.documentElement.innerHTML = html
+        .replace(/<!DOCTYPE html>/i, '')
+        .replace(/<\/?html[^>]*>/gi, '');
+      vi.resetModules();
+      const { initPlanViewer } = await import('./plan-viewer');
+      await initPlanViewer(TRAIL_ID);
+    } finally {
+      globalThis.fetch = realFetch;
+      window.history.replaceState({}, '', '/');
+    }
+    expect(fetched).toEqual([`${window.location.origin}/trail-maps/data/generated/${TRAIL_ID}.json`]);
+  });
+});

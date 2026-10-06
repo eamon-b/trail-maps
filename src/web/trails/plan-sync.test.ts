@@ -703,6 +703,186 @@ describe('an edit on top of a push that has not landed', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The page's own writes, and edits it has not saved yet
+// ---------------------------------------------------------------------------
+
+/**
+ * A server that stamps every PUT with a later stamp than the last, as a real
+ * one does, and hands the latest document back on a read.
+ */
+function mintingServer(): { handler: (req: Recorded) => Reply; held: () => PlanDocument | null } {
+  let held: PlanDocument | null = null;
+  let n = 0;
+  return {
+    held: () => held,
+    handler: req => {
+      if (req.method === 'GET' && req.path.startsWith('/v1/plans?')) {
+        return {
+          status: 200,
+          body: { plans: held ? [entryFor(held, held.updatedAt)] : [], nextCursor: null, syncedAt: 'now' },
+        };
+      }
+      if (req.method === 'PUT') {
+        n += 1;
+        const stamp = `2099-01-${String(n).padStart(2, '0')}T00:00:00.000Z`;
+        held = { ...(req.body as PlanDocument), updatedAt: stamp };
+        return { status: 200, body: entryFor(held, stamp) };
+      }
+      if (req.path === '/v1/me/devices') return { status: 200, body: { devices: [] } };
+      throw new Error(`unscripted ${req.method} ${req.path}`);
+    },
+  };
+}
+
+describe('a page reading back what it wrote', () => {
+  it('does not re-send an unchanged plan at boot', async () => {
+    // This browser and the server hold the very same version — the stamp the
+    // last PUT wrote back. Re-sending it would give the server a new stamp that
+    // beats whatever the phone has queued offline.
+    linkedSession();
+    const same = serverDoc({ updatedAt: '2026-07-01T10:00:00.000Z' });
+    localStorage.setItem(`trail-plan-doc-${TRAIL_ID}`, JSON.stringify(same));
+    handler = serverHolding(() => same);
+
+    await boot();
+
+    expect(putsOf()).toHaveLength(0);
+    expect($('sync-status').textContent).toMatch(/^Synced \d\d:\d\d$/);
+    expect(storedPlan()).toEqual(same);
+
+    // And a later read of the same copy is still no news.
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(putsOf()).toHaveLength(0);
+  });
+
+  it('never mistakes its own PUT for the phone’s, when an edit landed under it', async () => {
+    linkedSession();
+    const server = mintingServer();
+    handler = server.handler;
+    await boot();
+    expect(putsOf()).toHaveLength(1);
+
+    putDelayMs = 5_000;
+    openStopsTab();
+    clickStop('Camp One');
+    await vi.advanceTimersByTimeAsync(900);
+    expect(putsOf()).toHaveLength(2);
+
+    // Another edit while that PUT is in the air, still inside its debounce
+    // when the PUT lands and when the tab is looked at again.
+    await vi.advanceTimersByTimeAsync(4_600);
+    clickStop('Salida');
+    await vi.advanceTimersByTimeAsync(500);
+    putDelayMs = 0;
+    // The server's copy is now the page's own Camp One PUT, stamped later than
+    // anything this browser's clock wrote.
+    expect(server.held()!.stops.map(stop => stop.name)).toEqual(['Camp One']);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    await settle();
+
+    const puts = putsOf();
+    expect((puts[puts.length - 1].body as PlanDocument).stops.map(stop => stop.name)).toEqual([
+      'Camp One',
+      'Salida',
+    ]);
+    expect(storedPlan().stops.map(stop => stop.name)).toEqual(['Camp One', 'Salida']);
+    expect($('sync-status').textContent).toMatch(/^Synced /);
+  });
+});
+
+describe('an edit still inside the save debounce when the server is read', () => {
+  /** Boot synced, edit, and read the server before the 800 ms save fires. */
+  async function editThenPull(phone: PlanDocument): Promise<void> {
+    linkedSession();
+    let held: PlanDocument | null = null;
+    handler = serverHolding(() => held);
+    await boot();
+    requests = [];
+
+    openStopsTab();
+    clickStop('Salida');
+    await vi.advanceTimersByTimeAsync(300);
+    // The phone wrote meanwhile; the tab comes back into view.
+    held = phone;
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    // Whatever the debounce would have done afterwards has had its chance.
+    await settle();
+  }
+
+  it('counts as an edit, and goes up when it is the newer copy', async () => {
+    await editThenPull(serverDoc({ updatedAt: '2000-01-01T00:00:00.000Z' }));
+
+    expect(putsOf()).toHaveLength(1);
+    expect((putsOf()[0].body as PlanDocument).stops.map(stop => stop.name)).toEqual(['Salida']);
+    expect($('sync-status').textContent).toMatch(/^Kept your edits/);
+    expect(storedPlan().stops.map(stop => stop.name)).toEqual(['Salida']);
+  });
+
+  it('is replaced out loud, and not written back, when the phone’s copy is newer', async () => {
+    await editThenPull(serverDoc({ updatedAt: '2099-01-01T00:00:00.000Z' }));
+
+    expect(putsOf()).toHaveLength(0);
+    expect($('sync-status').textContent).toMatch(/^Replaced by the copy from your phone/);
+    // The debounce did not fire afterwards and save the page's stale copy over it.
+    expect(storedPlan().id).toBe('plan-server');
+    expect(storedPlan().stops.map(stop => stop.name)).toEqual(['High Hut']);
+  });
+});
+
+describe('unlinking with a PUT in the air', () => {
+  it('ignores the reply: no stamp, and no "Synced" on an unlinked page', async () => {
+    linkedSession();
+    const server = mintingServer();
+    handler = server.handler;
+    await boot();
+    const bootStamp = storedPlan().updatedAt;
+
+    putDelayMs = 5_000;
+    openStopsTab();
+    clickStop('Salida');
+    await vi.advanceTimersByTimeAsync(900);
+    expect(putsOf()).toHaveLength(2);
+
+    $('sync-btn').click();
+    $('link-unlink').click();
+    await vi.advanceTimersByTimeAsync(6_000);
+
+    expect($('sync-btn').textContent).toBe('Sync');
+    expect($('sync-status').textContent).toBe('');
+    // The local edit stands, under this browser's own stamp, not the server's.
+    expect(storedPlan().stops.map(stop => stop.name)).toEqual(['Salida']);
+    expect(storedPlan().updatedAt).not.toBe(server.held()!.updatedAt);
+    expect(storedPlan().updatedAt).not.toBe(bootStamp);
+  });
+});
+
+describe('the sync arm’s own teardown', () => {
+  it('drops its button handlers on destroy, not only the window ones', async () => {
+    await boot();
+    // Fresh copies of the controls, free of the viewer's own sync arm.
+    for (const id of ['sync-btn', 'share-btn']) {
+      const el = $(id);
+      el.replaceWith(el.cloneNode(true));
+    }
+    const { initPlanSync } = await import('./plan-sync');
+    const controller = initPlanSync({
+      trailId: TRAIL_ID,
+      getPlan: () => storedPlan(),
+      adoptServerPlan() {},
+      stampPlan() {},
+      flushPendingSave: () => false,
+    });
+    controller.destroy();
+
+    $('sync-btn').click();
+    expect(($('link-dialog') as HTMLDialogElement).hasAttribute('open')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // What comes off the wire
 // ---------------------------------------------------------------------------
 
@@ -779,6 +959,28 @@ describe('a refusal the server might take back', () => {
     failing = false;
     await vi.advanceTimersByTimeAsync(60 * 60_000);
     expect(putsOf()).toHaveLength(4);
+  });
+
+  it('gives a new edit its own backoff, after an earlier one ran out', async () => {
+    linkedSession();
+    handler = req =>
+      req.method === 'GET'
+        ? { status: 200, body: { plans: [], nextCursor: null, syncedAt: 'now' } }
+        : { status: 503, body: { error: { code: 'unavailable', message: 'later' } } };
+
+    await boot();
+    await vi.advanceTimersByTimeAsync(8 * 60_000);
+    expect(putsOf()).toHaveLength(4);
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(putsOf()).toHaveLength(4);
+
+    openStopsTab();
+    clickStop('Salida');
+    await settle();
+    expect(putsOf()).toHaveLength(5);
+    // The same transient refusal, so the same patient retry — not silence.
+    await vi.advanceTimersByTimeAsync(31_000);
+    expect(putsOf()).toHaveLength(6);
   });
 
   it('stops for a refusal that will never change its mind', async () => {

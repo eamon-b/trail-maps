@@ -29,4 +29,25 @@ describe('accuracyCircleRadiusExpression', () => {
     // Last stop is zoom 20.
     expect(expr[expr.length - 2]).toBe(20);
   });
+
+  it('draws the fix at its real ground radius on MapLibre Native\'s 512-point tiles', () => {
+    // At the equator, zoom 16: 40,075,016.686 m / (512 · 2^16) ≈ 1.194 m per
+    // point, so a ±30 m fix is ≈ 25.1 points — not the ≈ 12.6 a 256-px
+    // tile formula gives, which drew the uncertainty at half its size.
+    const expr = accuracyCircleRadiusExpression(0);
+    const z16 = expr.indexOf(16);
+    const value = expr[z16 + 1] as ['min', number, ['max', number, ['*', unknown, number]]];
+    const ppm = value[2][2][2];
+    expect(30 * ppm).toBeCloseTo(25.13, 1);
+  });
+
+  it('grows the radius away from the equator, where a point covers less ground', () => {
+    const ppmAt = (lat: number) => {
+      const expr = accuracyCircleRadiusExpression(lat);
+      const value = expr[expr.indexOf(16) + 1] as [string, number, [string, number, [string, unknown, number]]];
+      return value[2][2][2];
+    };
+    // cos(60°) = 0.5: twice the points per metre.
+    expect(ppmAt(60) / ppmAt(0)).toBeCloseTo(2, 6);
+  });
 });

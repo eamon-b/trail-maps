@@ -11,6 +11,7 @@ import { formatDistance } from '@lib/format-distance';
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import type { Units } from '../../state/settings-store';
+import { dryStretchBadge } from './plan-format';
 import type { WaterGap } from '@lib/plan-types';
 
 export function WaterCarryCard({
@@ -51,7 +52,7 @@ export function WaterCarryCard({
             </Text>
             {gap.isDryStretch && (
               <View style={[styles.badge, { backgroundColor: colors.danger }]}>
-                <Text style={[styles.badgeText, { color: colors.dangerText }]}>Dry ≥ 15 km</Text>
+                <Text style={[styles.badgeText, { color: colors.dangerText }]}>{dryStretchBadge(units)}</Text>
               </View>
             )}
           </View>

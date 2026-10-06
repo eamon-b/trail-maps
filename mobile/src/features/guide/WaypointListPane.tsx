@@ -203,6 +203,59 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
     },
   });
 
+  // One renderItem and one separator type for the list's lifetime: an inline
+  // separator was a new component type every render, so every separator
+  // remounted on every GPS fix.
+  const renderItem = useCallback(
+    ({ item: row }: { item: ListRow }) => {
+      if (row.kind === 'poi') {
+        return (
+          <PoiRow
+            poi={row.poi}
+            units={units}
+            currentKm={currentKm}
+            hikerOffTrail={hikerOffTrail}
+            onPress={() => openPoi(poiRouteKey(row.poi))}
+          />
+        );
+      }
+      const waypoint = row.waypoint;
+      return (
+        <Pressable
+          onPress={() => openWaypoint(row.key)}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${waypoint.name}`}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          <WaypointRow
+            waypoint={waypoint}
+            units={units}
+            currentKm={currentKm}
+            offLine={hikerOffTrail || isPlaceOffTrail(placeOffTrailM.get(waypoint))}
+            favorite={favoriteSet.has(row.key)}
+            planned={plannedIds?.has(row.key) ?? false}
+            water={
+              waypoint.id && isWaterFamily(waypoint.type)
+                ? waterByWaypoint.get(waypoint.id) ?? null
+                : null
+            }
+          />
+        </Pressable>
+      );
+    },
+    [
+      units,
+      currentKm,
+      hikerOffTrail,
+      placeOffTrailM,
+      openPoi,
+      openWaypoint,
+      favoriteSet,
+      plannedIds,
+      waterByWaypoint,
+    ],
+  );
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Sticky category filter chips */}
@@ -241,45 +294,10 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
         onViewableItemsChanged={onViewableItemsChanged}
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
-        renderItem={({ item: row }) => {
-          if (row.kind === 'poi') {
-            return (
-              <PoiRow
-                poi={row.poi}
-                units={units}
-                currentKm={currentKm}
-                hikerOffTrail={hikerOffTrail}
-                onPress={() => openPoi(poiRouteKey(row.poi))}
-              />
-            );
-          }
-          const waypoint = row.waypoint;
-          return (
-            <Pressable
-              onPress={() => openWaypoint(row.key)}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${waypoint.name}`}
-              style={({ pressed }) => pressed && styles.pressed}
-            >
-              <WaypointRow
-                waypoint={waypoint}
-                units={units}
-                currentKm={currentKm}
-                offLine={hikerOffTrail || isPlaceOffTrail(placeOffTrailM.get(waypoint))}
-                favorite={favoriteSet.has(row.key)}
-                planned={plannedIds?.has(row.key) ?? false}
-                water={
-                  waypoint.id && isWaterFamily(waypoint.type)
-                    ? waterByWaypoint.get(waypoint.id) ?? null
-                    : null
-                }
-              />
-            </Pressable>
-          );
-        }}
-        ItemSeparatorComponent={() => (
-          <View style={[styles.separator, { backgroundColor: colors.border }]} />
-        )}
+        renderItem={renderItem}
+        // Variable-height rows (POI rows, chips and water status come and go),
+        // so there is no fixed `getItemLayout` to give.
+        ItemSeparatorComponent={RowSeparator}
         ListEmptyComponent={
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             {activeFamily === 'favorites'
@@ -330,6 +348,12 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
       )}
     </View>
   );
+}
+
+/** The hairline between rows; module-level so its type never changes. */
+function RowSeparator() {
+  const { colors } = useTheme();
+  return <View style={[styles.separator, { backgroundColor: colors.border }]} />;
 }
 
 function WaypointRow({

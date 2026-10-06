@@ -22,7 +22,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { routeBreakStarts } from '@lib/route-breaks';
 import { useTheme } from '../../theme';
@@ -47,6 +47,8 @@ import {
   buildRouteOverlayGeoJSON,
   classifyTap,
   computeRouteStats,
+  routePointsToActive,
+  routePointsToNobo,
   type RoutePointInput,
   type RouteTrackPoint,
 } from '../routes/route-geometry';
@@ -99,7 +101,6 @@ export function MapPane() {
   const downloading = download?.downloading ?? false;
 
   const startDownload = useDownloadsStore((s) => s.startDownload);
-  const deleteTiles = useDownloadsStore((s) => s.deleteTiles);
 
   // --- Degraded-basemap reporting ------------------------------------------
   // GuideMap tells us what actually mounted (which may be worse than what we
@@ -118,13 +119,16 @@ export function MapPane() {
   // which resets every state below rather than clearing them from an effect.
   const [dismissed, setDismissed] = useState<MapDegradation | null>(null);
 
+  // No delete first: the download already re-fetches only the files that fail
+  // their size/md5/structure checks, stages them as `.part` and promotes them
+  // atomically (services/tile-service). Deleting up front would leave a hiker
+  // who taps this with no signal without the base map that was still working.
   const onRedownload = useCallback(() => {
     if (!packTrailId) return;
     setDismissed(null);
     setResolution(null);
-    deleteTiles(packTrailId);
     void startDownload(packTrailId, TILE_BASE_URL);
-  }, [deleteTiles, startDownload, packTrailId]);
+  }, [startDownload, packTrailId]);
 
   const favoriteIds = useFavoritesStore((s) => s.byTrail[trailId]);
   const favoriteSet = useMemo(() => new Set(favoriteIds ?? []), [favoriteIds]);
@@ -225,9 +229,19 @@ export function MapPane() {
   // --- Route builder + active-route overlay --------------------------------
   const [building, setBuilding] = useState(false);
   const [builderPoints, setBuilderPoints] = useState<RoutePointInput[]>([]);
-  const activePoints = useRoutesStore((s) => s.activePointsByTrail[trailId]);
+  const savedActivePoints = useRoutesStore((s) => s.activePointsByTrail[trailId]);
   const saveRoute = useRoutesStore((s) => s.save);
   const activateRoute = useRoutesStore((s) => s.activate);
+  // Saved routes are NOBO-absolute; the track drawn here is direction-applied.
+  const planDirection = planDirectionOf(direction);
+  const totalKm = trail.track.totalDistance || 0;
+  const activePoints = useMemo(
+    () =>
+      savedActivePoints
+        ? routePointsToActive(savedActivePoints, planDirection, totalKm)
+        : undefined,
+    [savedActivePoints, planDirection, totalKm],
+  );
 
   const routeOverlay = useMemo(() => {
     if (building) {
@@ -260,12 +274,14 @@ export function MapPane() {
     [routeTrack],
   );
 
+  // The active route stays active while drawing: `routeOverlay` already shows
+  // only the builder's points in builder mode, so a cancel brings the route
+  // the hiker had on back without having to remember and re-activate it.
   const startBuilding = useCallback(() => {
-    void activateRoute(trailId, null); // hide any active-route overlay while drawing
     setSelectedVariantId(null); // the builder owns the bottom of the screen
     setBuilderPoints([]);
     setBuilding(true);
-  }, [activateRoute, trailId]);
+  }, []);
 
   const cancelBuilding = useCallback(() => {
     setBuilding(false);
@@ -279,26 +295,48 @@ export function MapPane() {
   const onSaveRoute = useCallback(
     (name: string) => {
       const stats = computeRouteStats(builderPoints, routeTrack, routeBreakStartSet);
+      // Tapped km are in the active direction; stored ones are NOBO-absolute,
+      // so the route still marks the same stretch after a direction flip.
+      const points = routePointsToNobo(builderPoints, planDirection, totalKm);
       void (async () => {
-        const route = await saveRoute({
-          trailId,
-          name,
-          totalKm: stats.totalKm,
-          ascentM: stats.ascentM,
-          descentM: stats.descentM,
-          points: builderPoints.map((p) => ({
-            kind: p.kind,
-            lat: p.lat,
-            lon: p.lon,
-            km: p.km,
-          })),
-        });
-        await activateRoute(trailId, route.id);
+        let route;
+        try {
+          route = await saveRoute({
+            trailId,
+            name,
+            totalKm: stats.totalKm,
+            ascentM: stats.ascentM,
+            descentM: stats.descentM,
+            points: points.map((p) => ({
+              kind: p.kind,
+              lat: p.lat,
+              lon: p.lon,
+              km: p.km,
+            })),
+          });
+        } catch {
+          // The builder stays open with its points, so a retry loses nothing.
+          Alert.alert('Couldn’t save route', 'The route wasn’t saved. Please try again.');
+          return;
+        }
         setBuilding(false);
         setBuilderPoints([]);
+        // Saved; showing it is a convenience. A failure here must not read as
+        // a failed save (a retry would save it twice) — the Routes screen can
+        // still turn it on.
+        activateRoute(trailId, route.id).catch(() => {});
       })();
     },
-    [builderPoints, routeTrack, routeBreakStartSet, saveRoute, activateRoute, trailId],
+    [
+      builderPoints,
+      routeTrack,
+      routeBreakStartSet,
+      planDirection,
+      totalKm,
+      saveRoute,
+      activateRoute,
+      trailId,
+    ],
   );
 
   const onWaypointTap = useCallback(
@@ -336,7 +374,6 @@ export function MapPane() {
     scaleBarRef.current?.update(zoom, latitude);
   }, []);
 
-  const totalKm = trail.track.totalDistance || 0;
   // Which stretch of trail the viewport covers right now (null before the
   // camera has ever settled, or when the trail is off screen).
   const currentFocus = useCallback(

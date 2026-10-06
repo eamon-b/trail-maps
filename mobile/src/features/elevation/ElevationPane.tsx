@@ -42,9 +42,13 @@ import { useVisiblePois } from '../guide/use-visible-pois';
 import { planDirectionOf } from '../plan/plan-stops';
 import { plannedStopKms } from '../plan/plan-overlay';
 import { useRoutesStore } from '../routes/routes-store';
-import { routeHighlightRanges, type RouteTrackPoint } from '../routes/route-geometry';
+import {
+  routeHighlightRanges,
+  routePointsToActive,
+  type RouteTrackPoint,
+} from '../routes/route-geometry';
 import { ElevationProfile, type ProfileReadout, type ProfileWaypoint } from './ElevationProfile';
-import { clampWindow, type KmWindow, type ProfileMarkerKind } from './geometry';
+import { clampWindow, mirrorWindow, type KmWindow, type ProfileMarkerKind } from './geometry';
 import type { ProfilePoint } from './lod';
 import { poiProfileMarkers, POI_PROFILE_MAX_WINDOW_KM } from './poi-profile';
 
@@ -89,27 +93,40 @@ export function ElevationPane() {
     [plan, direction, totalKm],
   );
 
-  // Active custom route → shade its on-trail spans on the profile.
+  // Active custom route → shade its on-trail spans on the profile. Saved route
+  // km are NOBO-absolute (route-geometry), the profile's are direction-applied.
   const activePoints = useRoutesStore((s) => s.activePointsByTrail[trailId]);
   const highlightRanges = useMemo(
     () =>
       activePoints && activePoints.length > 0
-        ? routeHighlightRanges(activePoints, points as RouteTrackPoint[])
+        ? routeHighlightRanges(
+            routePointsToActive(activePoints, planDirectionOf(direction), totalKm),
+            points as RouteTrackPoint[],
+          )
         : undefined,
-    [activePoints, points],
+    [activePoints, points, direction, totalKm],
   );
 
   const [window, setWindow] = useState<KmWindow>({ startKm: 0, endKm: totalKm });
   const [readout, setReadout] = useState<ProfileReadout | null>(null);
 
   // A different (or newly loaded) trail invalidates the km window — refit it to
-  // the full new length rather than leaving the zoom parked off the end.
-  const fittedTotalRef = useRef(totalKm);
+  // the full new length rather than leaving the zoom parked off the end. A
+  // direction flip keeps the trail but renumbers every km, so the window is
+  // mirrored to stay on the same stretch of ground, and the readout (a km from
+  // the old numbering) is cleared rather than left naming the mirrored spot.
+  const fittedRef = useRef({ totalKm, direction });
   useEffect(() => {
-    if (fittedTotalRef.current === totalKm) return;
-    fittedTotalRef.current = totalKm;
-    setWindow({ startKm: 0, endKm: totalKm });
-  }, [totalKm]);
+    const fitted = fittedRef.current;
+    if (fitted.totalKm === totalKm && fitted.direction === direction) return;
+    fittedRef.current = { totalKm, direction };
+    if (fitted.totalKm !== totalKm) {
+      setWindow({ startKm: 0, endKm: totalKm });
+    } else {
+      setWindow((w) => mirrorWindow(w, totalKm));
+    }
+    setReadout(null);
+  }, [totalKm, direction]);
 
   const isZoomed = window.startKm > ZOOM_EPSILON_KM || window.endKm < totalKm - ZOOM_EPSILON_KM;
 

@@ -183,3 +183,65 @@ describe('selectWindowPoints', () => {
     expect(selectWindowPoints([], buildLodLevels<ProfilePoint>([]), 0, 10, 10)).toEqual([]);
   });
 });
+
+describe('buildLod single pass', () => {
+  /** The original bucket-by-bucket scan, kept as the reference the one-pass build must match. */
+  function referenceLod(points: ProfilePoint[], targetCount: number): ProfilePoint[] {
+    const first = points[0];
+    const last = points[points.length - 1];
+    const span = last.dist - first.dist;
+    const bucketCount = Math.max(1, Math.floor(targetCount / 2));
+    const out: ProfilePoint[] = [];
+    const push = (p: ProfilePoint) => {
+      if (out.length === 0 || out[out.length - 1] !== p) out.push(p);
+    };
+    for (let b = 0; b < bucketCount; b++) {
+      const lo = first.dist + (span * b) / bucketCount;
+      const hi = first.dist + (span * (b + 1)) / bucketCount;
+      const isLast = b === bucketCount - 1;
+      let minI = -1;
+      let maxI = -1;
+      points.forEach((p, i) => {
+        const inBucket = isLast ? p.dist >= lo && p.dist <= hi : p.dist >= lo && p.dist < hi;
+        if (!inBucket) return;
+        if (minI === -1 || p.ele < points[minI].ele) minI = i;
+        if (maxI === -1 || p.ele > points[maxI].ele) maxI = i;
+      });
+      if (minI === -1) continue;
+      if (minI === maxI) push(points[minI]);
+      else if (minI < maxI) {
+        push(points[minI]);
+        push(points[maxI]);
+      } else {
+        push(points[maxI]);
+        push(points[minI]);
+      }
+    }
+    if (out.length === 0 || out[0] !== first) out.unshift(first);
+    if (out[out.length - 1] !== last) out.push(last);
+    return out;
+  }
+
+  it('picks exactly the points the bucket-by-bucket scan did', () => {
+    // Irregular spacing (points straddling bucket edges) and a jagged profile.
+    let seed = 7;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    let dist = 0;
+    const pts = Array.from({ length: 3000 }, () => {
+      dist += rand() < 0.1 ? 0 : rand() * 0.07;
+      return pt(dist, 200 + rand() * 900);
+    });
+    for (const target of [7, 100, 500, 2000]) {
+      expect(buildLod(pts, target)).toEqual(referenceLod(pts, target));
+    }
+  });
+
+  it('puts a point that sits exactly on a bucket edge in the bucket it opens', () => {
+    // 0..10 in 1 km steps, 5 buckets of 2 km: km 2, 4, 6, 8 open their buckets.
+    const pts = Array.from({ length: 11 }, (_, i) => pt(i, i % 2 === 0 ? 500 : 100));
+    expect(buildLod(pts, 10)).toEqual(referenceLod(pts, 10));
+  });
+});

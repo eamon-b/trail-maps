@@ -1,8 +1,9 @@
 /**
- * The legs card. Two things worth asserting: the three "no legs" states say
- * three different things (no towns on the trail, none ticked, none in this
- * section — a hiker acts differently on each), and a leg shows the climb and
- * the day it lands on, which the old gap-based card could not.
+ * The legs card. Two things worth asserting: the three "full carry" states say
+ * three different things above the one start-to-end leg (no towns on the
+ * trail, none ticked, none in this section — a hiker acts differently on
+ * each), and a leg shows the climb and the day it lands on, which the old
+ * gap-based card could not.
  */
 
 import React from 'react';
@@ -56,19 +57,33 @@ function render(props: Partial<React.ComponentProps<typeof ResupplyCard>> = {}) 
   return tree;
 }
 
-describe('ResupplyCard empty states', () => {
-  it('says the trail has no resupply at all', () => {
-    expect(allText(render())).toContain('No towns or resupply points on this trail.');
+/** The calculator's one leg when no ticked stop falls in range. */
+const fullCarry = [leg({ toName: 'Trail End', toKm: 480, distanceKm: 480 })];
+
+describe('ResupplyCard full carry', () => {
+  it('says the trail has no resupply at all, above the one leg', () => {
+    const text = allText(render({ legs: fullCarry }));
+    expect(text).toContain('No towns or resupply points on this trail — full carry.');
+    expect(text).toContain('Trail Start → Trail End');
   });
 
   it('says nothing is ticked when the trail has options', () => {
-    const text = allText(render({ hasOptions: true, stopCount: 0 }));
-    expect(text).toContain('No resupply stops ticked.');
+    const text = allText(render({ legs: fullCarry, hasOptions: true, stopCount: 0 }));
+    expect(text).toContain('No resupply stops ticked — full carry.');
   });
 
   it('says the ticked stops are all outside this section', () => {
-    const text = allText(render({ hasOptions: true, stopCount: 3 }));
-    expect(text).toContain('No ticked resupply stops in this section.');
+    const text = allText(render({ legs: fullCarry, hasOptions: true, stopCount: 3 }));
+    expect(text).toContain('No ticked resupply stops in this section — full carry.');
+  });
+
+  it('adds no caption when a ticked stop ends the leg', () => {
+    const text = allText(render({ legs: [leg()], hasOptions: true, stopCount: 1 }));
+    expect(text).not.toContain('full carry');
+  });
+
+  it('renders nothing for an empty section', () => {
+    expect(allText(render())).toBe('');
   });
 });
 

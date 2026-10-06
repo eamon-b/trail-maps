@@ -4,6 +4,8 @@
  * weight) so the calculators' raw outputs render consistently.
  */
 
+import { formatDistance } from '@lib/format-distance';
+import { DEFAULT_DRY_STRETCH_KM } from '@lib/water-carry-calculator';
 import type { Units } from '../../state/settings-store';
 
 /** Pounds per kilogram. */
@@ -32,4 +34,18 @@ export function formatFoodWeight(weightKg: number, units: Units): string {
     return `${(weightKg * LB_PER_KG).toFixed(1)} lb`;
   }
   return `${weightKg.toFixed(1)} kg`;
+}
+
+/**
+ * The dry-stretch badge, in the hiker's unit. The threshold is the one the
+ * carries were flagged against (`plan-adapters` passes the same constant), so
+ * the badge never names a figure the flag was not computed from. Miles keep a
+ * decimal: 15 km is 9.3 mi, and "≥ 9 mi" would understate it.
+ *
+ * @example dryStretchBadge('km') // "Dry ≥ 15 km"
+ * @example dryStretchBadge('mi') // "Dry ≥ 9.3 mi"
+ */
+export function dryStretchBadge(units: Units): string {
+  const decimals = units === 'mi' ? 1 : 0;
+  return `Dry ≥ ${formatDistance(DEFAULT_DRY_STRETCH_KM, units, { decimals })}`;
 }

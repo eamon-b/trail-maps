@@ -28,8 +28,8 @@ import type { TrailPOI } from '@lib/trail-types';
  * - Anything else (web, an unknown platform): fall back to OpenStreetMap's own
  *   map view, which needs no app at all.
  *
- * The caller is expected to `Linking.canOpenURL` the result and fall back to
- * the OSM URL — a device with no maps app installed is unusual but real.
+ * The caller opens it through `openUrlWithFallback`, with the OSM URL as the
+ * fallback — a device with no maps app installed is unusual but real.
  */
 export function mapsUrlFor(
   lat: number,
@@ -53,4 +53,35 @@ export function mapsUrlFor(
  */
 export function poiDetailLines(poi: Pick<TrailPOI, 'tags'>): PoiTagLine[] {
   return summarisePoiTags(poi.tags);
+}
+
+/**
+ * Open `primary`, and `fallback` if that is refused; resolves to whether
+ * either opened, and never rejects (every caller is an `onPress`).
+ *
+ * Deliberately not gated on `Linking.canOpenURL`: on Android 11+ that answers
+ * `false` for `geo:` unless the manifest declares a matching `<queries>`
+ * intent (package visibility), and on iOS for `maps:` unless the scheme is in
+ * `LSApplicationQueriesSchemes` — so the check sent every hiker to the web map
+ * even with a maps app installed. Opening directly needs neither declaration;
+ * a device with nothing to handle the URL rejects, and that is the fallback's
+ * cue.
+ */
+export async function openUrlWithFallback(
+  open: (url: string) => Promise<unknown>,
+  primary: string,
+  fallback?: string,
+): Promise<boolean> {
+  try {
+    await open(primary);
+    return true;
+  } catch {
+    if (fallback == null || fallback === primary) return false;
+  }
+  try {
+    await open(fallback);
+    return true;
+  } catch {
+    return false;
+  }
 }

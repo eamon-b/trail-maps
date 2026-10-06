@@ -1081,10 +1081,13 @@ describe('GuideMap', () => {
     expect(event.stopPropagation).toHaveBeenCalled();
   });
 
-  it('renders no POI source when the trail has none or they are all filtered out', async () => {
+  it('keeps an empty POI source mounted when the trail has none or they are all filtered out', async () => {
     // An absent `pois` means "never fetched" and an empty one means "the filter
-    // hid them all" — either way there is nothing to declare a source for.
+    // hid them all" — either way nothing draws, but the source stays: one
+    // mounted later would be appended above the waypoints and the puck.
     getOnline.mockResolvedValue(ONLINE_STYLE);
+    const poiFeatures = (t: ReactTestRenderer) =>
+      (sourceById(t, 'guide-pois').props.data as GeoJSON.FeatureCollection).features;
     let tree!: ReactTestRenderer;
     act(() => {
       tree = TestRenderer.create(
@@ -1092,7 +1095,7 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    expect(sources(tree).map((n) => n.props.id)).not.toContain('guide-pois');
+    expect(poiFeatures(tree)).toEqual([]);
 
     act(() => {
       tree.update(
@@ -1106,6 +1109,72 @@ describe('GuideMap', () => {
       );
     });
     await flush();
-    expect(sources(tree).map((n) => n.props.id)).not.toContain('guide-pois');
+    expect(poiFeatures(tree)).toEqual([]);
+  });
+
+  it('mounts the same sources in the same order whatever the overlays hold', async () => {
+    // MapLibre appends a source added to a live map at the top of the style,
+    // and taps resolve by style order. So toggling POIs or a route on must not
+    // add a source — it would land over the waypoint markers and steal taps.
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const ids = (t: ReactTestRenderer) => sources(t).map((n) => n.props.id as string);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap trailId="heysen" styleSource="online" displayPoints={points} waypoints={waypoints} />,
+      );
+    });
+    await flush();
+    const bare = ids(tree);
+
+    const routeOverlay: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: [[138, -35], [139, -34]] },
+          properties: { straight: false },
+        },
+      ],
+    };
+    act(() => {
+      tree.update(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          pois={pois}
+          routeOverlay={routeOverlay}
+          currentPosition={{ lat: -35, lon: 138 }}
+        />,
+      );
+    });
+    await flush();
+    expect(ids(tree)).toEqual(bare);
+    // ...and the order is the one tap resolution relies on.
+    expect(bare.indexOf('guide-route')).toBeLessThan(bare.indexOf('guide-pois'));
+    expect(bare.indexOf('guide-pois')).toBeLessThan(bare.indexOf('guide-waypoints'));
+    expect(bare.indexOf('guide-waypoints')).toBeLessThan(bare.indexOf('guide-user-location'));
+  });
+
+  it('pins the plan rings under the badges, since they mount after the map is up', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideMap
+          trailId="heysen"
+          styleSource="online"
+          displayPoints={points}
+          waypoints={waypoints}
+          plannedStopIds={new Set(['w_1'])}
+        />,
+      );
+    });
+    await flush();
+    expect(nodeById(tree, 'circle', 'guide-waypoints-plan-rings').props.beforeId).toBe(
+      'guide-waypoints-circles',
+    );
   });
 });

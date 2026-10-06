@@ -181,6 +181,14 @@ export function ElevationProfile({
   // Held in km (not pixels) so the crosshair stays glued to its track point
   // while the window pans/zooms underneath it.
   const [crosshair, setCrosshair] = useState<{ km: number; ele: number } | null>(null);
+  // A new track — another trail, or this one flipped, which renumbers every km
+  // — would leave a km-held crosshair pointing at the mirrored spot.
+  const crosshairPointsRef = useRef(points);
+  useEffect(() => {
+    if (crosshairPointsRef.current === points) return;
+    crosshairPointsRef.current = points;
+    setCrosshair(null);
+  }, [points]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;

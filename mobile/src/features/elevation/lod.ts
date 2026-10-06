@@ -52,43 +52,40 @@ export function buildLod<T extends ProfilePoint>(points: T[], targetCount: numbe
 
   // Two points per bucket (a min and a max), so halve the target.
   const bucketCount = Math.max(1, Math.floor(targetCount / 2));
+  const loOf = (b: number) => dStart + (span * b) / bucketCount;
+  const hiOf = (b: number) => dStart + (span * (b + 1)) / bucketCount;
+
+  // One pass over the points, each dropped straight into its bucket: scanning
+  // the whole track once per bucket was O(points × buckets) — 2.3 M visits for
+  // a 4.6k-point trail's fine level, on every trail open.
+  const minIdx = new Int32Array(bucketCount).fill(-1);
+  const maxIdx = new Int32Array(bucketCount).fill(-1);
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    if (!(p.dist >= dStart && p.dist <= dEnd)) continue;
+    let b = Math.min(bucketCount - 1, Math.floor(((p.dist - dStart) / span) * bucketCount));
+    // The division can land a boundary point one bucket off; settle it against
+    // the same edges the buckets are defined by ([lo, hi), last one closed).
+    while (b < bucketCount - 1 && p.dist >= hiOf(b)) b++;
+    while (b > 0 && p.dist < loOf(b)) b--;
+    if (minIdx[b] === -1 || p.ele < points[minIdx[b]].ele) minIdx[b] = i;
+    if (maxIdx[b] === -1 || p.ele > points[maxIdx[b]].ele) maxIdx[b] = i;
+  }
+
   const out: T[] = [];
-
   for (let b = 0; b < bucketCount; b++) {
-    const lo = dStart + (span * b) / bucketCount;
-    // Include the right edge in the final bucket so the last point is covered.
-    const hi = dStart + (span * (b + 1)) / bucketCount;
-    const isLast = b === bucketCount - 1;
-
-    let minPt: T | null = null;
-    let minIdx = -1;
-    let maxPt: T | null = null;
-    let maxIdx = -1;
-
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
-      const inBucket = isLast ? p.dist >= lo && p.dist <= hi : p.dist >= lo && p.dist < hi;
-      if (!inBucket) continue;
-      if (minPt === null || p.ele < minPt.ele) {
-        minPt = p;
-        minIdx = i;
-      }
-      if (maxPt === null || p.ele > maxPt.ele) {
-        maxPt = p;
-        maxIdx = i;
-      }
-    }
-
-    if (minPt === null || maxPt === null) continue;
+    const lo = minIdx[b];
+    const hi = maxIdx[b];
+    if (lo === -1 || hi === -1) continue;
     // Emit the two extremes in distance order so the polyline stays monotonic.
-    if (minIdx === maxIdx) {
-      pushUnique(out, minPt);
-    } else if (minIdx < maxIdx) {
-      pushUnique(out, minPt);
-      pushUnique(out, maxPt);
+    if (lo === hi) {
+      pushUnique(out, points[lo]);
+    } else if (lo < hi) {
+      pushUnique(out, points[lo]);
+      pushUnique(out, points[hi]);
     } else {
-      pushUnique(out, maxPt);
-      pushUnique(out, minPt);
+      pushUnique(out, points[hi]);
+      pushUnique(out, points[lo]);
     }
   }
 

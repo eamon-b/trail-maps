@@ -23,6 +23,7 @@ import { isIsoDate } from '@lib/plan-editor';
 import { PLAN_LIMITS } from '@lib/plan-types';
 import { useTheme } from '../../theme';
 import { radii, spacing, touchTarget, typography } from '../../tokens';
+import { useDraftField } from './use-draft-field';
 
 /** `YYYY-MM-DD` — the field's `maxLength`, and where "half-typed" ends. */
 const ISO_DATE_LENGTH = 10;
@@ -66,23 +67,15 @@ function NameField({
   onName: (name: string) => void;
 }) {
   const { colors } = useTheme();
-  const [draft, setDraft] = useState(name);
-  const known = useRef(name);
-  useEffect(() => {
-    if (name !== known.current) {
-      known.current = name;
-      setDraft(name);
-    }
-  }, [name]);
+  // Committed as you pause, on blur and on leaving the screen — a rename typed
+  // just before tapping back must not be lost (see use-draft-field).
+  const { draft, setDraft, flush } = useDraftField(name, onName, normalizeName);
 
   return (
     <TextInput
       value={draft}
       onChangeText={setDraft}
-      onBlur={() => {
-        known.current = draft.trim().slice(0, PLAN_LIMITS.nameMax);
-        onName(draft);
-      }}
+      onBlur={flush}
       placeholder={placeholder}
       placeholderTextColor={colors.textSecondary}
       accessibilityLabel="Plan name"
@@ -90,6 +83,11 @@ function NameField({
       style={[styles.nameInput, { color: colors.textPrimary, borderBottomColor: colors.border }]}
     />
   );
+}
+
+/** What `setPlanName` makes of a committed name. */
+function normalizeName(text: string): string {
+  return text.trim().slice(0, PLAN_LIMITS.nameMax);
 }
 
 function StartDateField({

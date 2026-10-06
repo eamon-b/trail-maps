@@ -54,7 +54,7 @@ import { poiIconName } from '../../../../src/features/map/waypoint-icons';
 import { WAYPOINT_ICON_IMAGES } from '../../../../src/features/map/waypoint-icon-images';
 import { isPlaceOffTrail } from '../../../../src/features/guide/waypoint-detail';
 import { TripCard } from '../../../../src/features/guide/TripCard';
-import { mapsUrlFor } from '../../../../src/features/guide/poi-detail';
+import { mapsUrlFor, openUrlWithFallback } from '../../../../src/features/guide/poi-detail';
 
 export default function PoiDetailScreen() {
   const { poiKey } = useLocalSearchParams<{ trailId: string; poiKey: string }>();
@@ -86,25 +86,15 @@ export default function PoiDetailScreen() {
   const osmUrl = poiOsmUrl(poi);
 
   const openOsm = () => {
-    void Linking.openURL(osmUrl);
+    void openUrlWithFallback((url) => Linking.openURL(url), osmUrl);
   };
 
   // A device with no maps app is unusual but real (and `geo:`/`maps:` are not
   // universally handled), so fall back to the OSM map view rather than failing
-  // silently.
+  // silently. See `openUrlWithFallback` for why there is no canOpenURL check.
   const openMaps = () => {
     const url = mapsUrlFor(poi.lat, poi.lon, name, Platform.OS);
-    void (async () => {
-      try {
-        if (await Linking.canOpenURL(url)) {
-          await Linking.openURL(url);
-          return;
-        }
-      } catch {
-        // Fall through to the web map.
-      }
-      await Linking.openURL(osmUrl);
-    })();
+    void openUrlWithFallback((target) => Linking.openURL(target), url, osmUrl);
   };
 
   return (
@@ -200,7 +190,7 @@ function TagRow({ line }: { line: PoiTagLine }) {
   const href = line.href;
   return (
     <Pressable
-      onPress={() => void Linking.openURL(href)}
+      onPress={() => void openUrlWithFallback((url) => Linking.openURL(url), href)}
       accessibilityRole="link"
       accessibilityLabel={`${line.label}: ${line.value}`}
       hitSlop={spacing.xs}

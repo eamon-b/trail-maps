@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { FlatList } from 'react-native';
 import TestRenderer, {
   act,
   type ReactTestRenderer,
@@ -263,5 +264,22 @@ describe('WaypointListPane POI rows', () => {
     ]);
     expect(allText(tree)).not.toContain('OpenStreetMap');
     expect(allText(tree)).not.toContain('OSM');
+  });
+});
+
+describe('WaypointListPane re-renders', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('keeps one separator component type, so separators are not remounted', () => {
+    // An inline `ItemSeparatorComponent={() => …}` is a new component type per
+    // render, and React remounts every separator when the type changes — on
+    // every GPS fix, with the position context re-rendering the pane.
+    mockVisiblePois.mockReturnValue([]);
+    const tree = render();
+    const before = tree.root.findAllByType(FlatList)[0].props.ItemSeparatorComponent;
+    act(() => tree.update(<WaypointListPane trail={trail} />));
+    expect(tree.root.findAllByType(FlatList)[0].props.ItemSeparatorComponent).toBe(before);
+    act(() => tree.unmount());
   });
 });

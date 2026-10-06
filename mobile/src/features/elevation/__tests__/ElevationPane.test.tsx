@@ -25,7 +25,7 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('../../guide/GuideContext', () => ({
-  useGuide: () => ({ trailId: 'heysen', trail: mockTrail, direction: 'default' }),
+  useGuide: () => ({ trailId: 'heysen', trail: mockTrail, direction: mockDirection }),
 }));
 
 jest.mock('../../guide/GuidePositionContext', () => ({
@@ -41,7 +41,8 @@ jest.mock('../../../state/favorites-store', () => ({
 }));
 
 jest.mock('../../routes/routes-store', () => ({
-  useRoutesStore: (selector: (s: unknown) => unknown) => selector({ activePointsByTrail: {} }),
+  useRoutesStore: (selector: (s: unknown) => unknown) =>
+    selector({ activePointsByTrail: { heysen: mockActivePoints } }),
 }));
 
 jest.mock('../../guide/use-visible-pois', () => ({
@@ -86,6 +87,8 @@ const mockTrail = {
 } as unknown as TrailJson;
 
 let mockVisiblePois: TrailPOI[] = [];
+let mockDirection: 'default' | 'reversed' = 'default';
+let mockActivePoints: { kind: 'snap'; lat: number; lon: number; km: number }[] | undefined;
 
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -149,6 +152,50 @@ describe('ElevationPane POI ticks', () => {
       pathname: '/guide/[trailId]/waypoint/[waypointId]',
       params: { trailId: 'heysen', waypointId: 'w_camp' },
     });
+    act(() => tree.unmount());
+  });
+});
+
+/** Whether the chip shows its hint, i.e. no readout is on screen. */
+function hintShown(tree: ReactTestRenderer): boolean {
+  return tree.root.findAll((n) => n.props.children === 'Tap to read off · pinch to zoom · drag to pan')
+    .length > 0;
+}
+
+describe('ElevationPane across a direction flip', () => {
+  beforeEach(() => {
+    mockProfileProps.length = 0;
+    mockVisiblePois = [];
+    mockDirection = 'default';
+    mockActivePoints = undefined;
+  });
+
+  it('mirrors the zoom window so it stays on the same stretch of ground', () => {
+    const tree = render();
+    act(() => lastProps().onWindowChange({ startKm: 10, endKm: 30 }));
+    act(() => lastProps().onScrub?.({ km: 20, ele: 120 }));
+    expect(hintShown(tree)).toBe(false);
+
+    mockDirection = 'reversed';
+    act(() => tree.update(<ElevationPane />));
+    expect(lastProps().window).toEqual({ startKm: 70, endKm: 90 });
+    // The readout named a km of the old numbering; it is cleared, not kept.
+    expect(hintShown(tree)).toBe(true);
+    act(() => tree.unmount());
+  });
+
+  it('shades a saved route over the km it was drawn at, in either direction', () => {
+    // Saved NOBO-absolute: km 10 → 20.
+    mockActivePoints = [
+      { kind: 'snap', lat: 0, lon: 0, km: 10 },
+      { kind: 'snap', lat: 0, lon: 0, km: 20 },
+    ];
+    const tree = render();
+    expect(lastProps().highlightRanges).toEqual([{ startKm: 10, endKm: 20 }]);
+
+    mockDirection = 'reversed';
+    act(() => tree.update(<ElevationPane />));
+    expect(lastProps().highlightRanges).toEqual([{ startKm: 80, endKm: 90 }]);
     act(() => tree.unmount());
   });
 });

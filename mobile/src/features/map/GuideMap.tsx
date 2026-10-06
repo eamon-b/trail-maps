@@ -28,8 +28,14 @@
  * order (the native map picks the touched source whose layers sit highest): the
  * waypoint source is declared last — after the POIs, which are after the
  * variant lines — so a marker tap always beats a POI a few metres away, and
- * both beat the line underneath. A tap that hits none of them reaches <Map
- * onPress>, which is what dismisses the variant selection — and because
+ * both beat the line underneath. That only holds while style order IS
+ * declaration order, and MapLibre appends a layer added after the map is up
+ * to the top of the stack — so a POI source switched off and on again would
+ * come back above the waypoints (and the GPS puck) and steal their taps. Every
+ * overlay source is therefore mounted for the life of the map, fed an empty
+ * collection when it has nothing to draw, and the one layer that does come and
+ * go (the plan rings) is pinned under the waypoint badges by `beforeId`. A tap
+ * that hits none of them reaches <Map onPress>, which is what dismisses the variant selection — and because
  * MapLibre RN 11 bubbles a source press up to the map, the source handlers stop
  * propagation so a marker tap does not also count as a background tap.
  *
@@ -221,6 +227,13 @@ const PLANNED_STOP_FILTER = [
   ['!', ['has', 'point_count']],
   ['==', ['get', 'plannedStop'], true],
 ] as FilterSpecification;
+
+/**
+ * What an overlay source is fed when it has nothing to draw. Sources are never
+ * unmounted for being empty: a source mounted later lands on top of the style,
+ * whatever its place in the JSX (see the header).
+ */
+const EMPTY_COLLECTION: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
 const CAMERA_PADDING = { top: 48, right: 32, bottom: 48, left: 32 };
 
@@ -1104,236 +1117,223 @@ export const GuideMap = memo(
         <Images images={WAYPOINT_ICON_IMAGES} />
 
         {/* Alternate routes: long-dashed violet, under the main track */}
-        {alternatesCollection.features.length > 0 && (
-          <GeoJSONSource
-            id="guide-alternates"
-            data={alternatesCollection}
-            onPress={builderMode ? undefined : handleVariantPress}
-            hitbox={VARIANT_HITBOX}
-          >
-            <Layer type="line" id="guide-alternates-hit" style={trackStyles.variantHit} />
-            <Layer
-              type="line"
-              id="guide-alternates-highlight"
-              filter={highlightFilter}
-              style={trackStyles.alternateHighlight}
-            />
-            <Layer type="line" id="guide-alternates-layer" style={trackStyles.alternate} />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource
+          id="guide-alternates"
+          data={alternatesCollection}
+          onPress={builderMode ? undefined : handleVariantPress}
+          hitbox={VARIANT_HITBOX}
+        >
+          <Layer type="line" id="guide-alternates-hit" style={trackStyles.variantHit} />
+          <Layer
+            type="line"
+            id="guide-alternates-highlight"
+            filter={highlightFilter}
+            style={trackStyles.alternateHighlight}
+          />
+          <Layer type="line" id="guide-alternates-layer" style={trackStyles.alternate} />
+        </GeoJSONSource>
 
         {/* Side trips: finely dotted teal, under the main track */}
-        {sideTripsCollection.features.length > 0 && (
-          <GeoJSONSource
-            id="guide-side-trips"
-            data={sideTripsCollection}
-            onPress={builderMode ? undefined : handleVariantPress}
-            hitbox={VARIANT_HITBOX}
-          >
-            <Layer type="line" id="guide-side-trips-hit" style={trackStyles.variantHit} />
-            <Layer
-              type="line"
-              id="guide-side-trips-highlight"
-              filter={highlightFilter}
-              style={trackStyles.sideTripHighlight}
-            />
-            <Layer type="line" id="guide-side-trips-layer" style={trackStyles.sideTrip} />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource
+          id="guide-side-trips"
+          data={sideTripsCollection}
+          onPress={builderMode ? undefined : handleVariantPress}
+          hitbox={VARIANT_HITBOX}
+        >
+          <Layer type="line" id="guide-side-trips-hit" style={trackStyles.variantHit} />
+          <Layer
+            type="line"
+            id="guide-side-trips-highlight"
+            filter={highlightFilter}
+            style={trackStyles.sideTripHighlight}
+          />
+          <Layer type="line" id="guide-side-trips-layer" style={trackStyles.sideTrip} />
+        </GeoJSONSource>
 
         {/* Alternative trail ends: dash-dot violet, and a badge at the free end
             so the line visibly stops somewhere rather than running out */}
-        {terminiCollection.features.length > 0 && (
-          <GeoJSONSource
-            id="guide-termini"
-            data={terminiCollection}
-            onPress={builderMode ? undefined : handleVariantPress}
-            hitbox={VARIANT_HITBOX}
-          >
-            <Layer type="line" id="guide-termini-hit" style={trackStyles.variantHit} />
-            <Layer
-              type="line"
-              id="guide-termini-highlight"
-              filter={highlightFilter}
-              style={trackStyles.terminusHighlight}
-            />
-            <Layer type="line" id="guide-termini-layer" style={trackStyles.terminus} />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource
+          id="guide-termini"
+          data={terminiCollection}
+          onPress={builderMode ? undefined : handleVariantPress}
+          hitbox={VARIANT_HITBOX}
+        >
+          <Layer type="line" id="guide-termini-hit" style={trackStyles.variantHit} />
+          <Layer
+            type="line"
+            id="guide-termini-highlight"
+            filter={highlightFilter}
+            style={trackStyles.terminusHighlight}
+          />
+          <Layer type="line" id="guide-termini-layer" style={trackStyles.terminus} />
+        </GeoJSONSource>
 
-        {terminusEndCollection.features.length > 0 && (
-          <GeoJSONSource
-            id="guide-terminus-ends"
-            data={terminusEndCollection}
-            onPress={builderMode ? undefined : handleVariantPress}
-            hitbox={WAYPOINT_HITBOX}
-          >
-            <Layer type="circle" id="guide-terminus-ends-circles" style={terminusEndCircleStyle} />
-            <Layer type="symbol" id="guide-terminus-ends-icons" style={waypointIconStyle} />
-            <Layer
-              type="symbol"
-              id="guide-terminus-ends-labels"
-              minzoom={WAYPOINT_LABEL_MIN_ZOOM}
-              style={labelStyle}
-            />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource
+          id="guide-terminus-ends"
+          data={terminusEndCollection}
+          onPress={builderMode ? undefined : handleVariantPress}
+          hitbox={WAYPOINT_HITBOX}
+        >
+          <Layer type="circle" id="guide-terminus-ends-circles" style={terminusEndCircleStyle} />
+          <Layer type="symbol" id="guide-terminus-ends-icons" style={waypointIconStyle} />
+          <Layer
+            type="symbol"
+            id="guide-terminus-ends-labels"
+            minzoom={WAYPOINT_LABEL_MIN_ZOOM}
+            style={labelStyle}
+          />
+        </GeoJSONSource>
 
         {/* Main trail line: white casing + solid red core, drawn last so the
             trail itself always wins where the three classes overlap */}
-        {trailLine && (
-          <GeoJSONSource id="guide-trail-line" data={trailLine}>
-            <Layer type="line" id="guide-trail-line-casing" style={trackStyles.mainCasing} />
-            <Layer type="line" id="guide-trail-line-layer" style={trackStyles.main} />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource id="guide-trail-line" data={trailLine ?? EMPTY_COLLECTION}>
+          <Layer type="line" id="guide-trail-line-casing" style={trackStyles.mainCasing} />
+          <Layer type="line" id="guide-trail-line-layer" style={trackStyles.main} />
+        </GeoJSONSource>
 
         {/* Ferries, river crossings and lake links between stretches. Dashed
             and unlabelled: the trail's own "Trail ends"/"Trail resumes"
             waypoints sit at either end and carry the names. */}
-        {routeBreakCollection.features.length > 0 && (
-          <GeoJSONSource id="guide-trail-breaks" data={routeBreakCollection}>
-            <Layer type="line" id="guide-trail-breaks-layer" style={routeBreakStyle} />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource id="guide-trail-breaks" data={routeBreakCollection}>
+          <Layer type="line" id="guide-trail-breaks-layer" style={routeBreakStyle} />
+        </GeoJSONSource>
 
         {/* Custom route overlay (active route or in-progress builder), above
             the trail line: solid on-trail spans, dashed off-trail legs, dots
             for builder vertices. */}
-        {routeOverlay && routeOverlay.features.length > 0 && (
-          <GeoJSONSource id="guide-route" data={routeOverlay}>
-            <Layer
-              type="line"
-              id="guide-route-spans"
-              filter={ROUTE_SPAN_FILTER}
-              style={routeSpanStyle}
-            />
-            <Layer
-              type="line"
-              id="guide-route-straight"
-              filter={ROUTE_STRAIGHT_FILTER}
-              style={routeStraightStyle}
-            />
-            <Layer
-              type="circle"
-              id="guide-route-vertices"
-              filter={ROUTE_VERTEX_FILTER}
-              style={routeVertexStyle}
-            />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource id="guide-route" data={routeOverlay ?? EMPTY_COLLECTION}>
+          <Layer
+            type="line"
+            id="guide-route-spans"
+            filter={ROUTE_SPAN_FILTER}
+            style={routeSpanStyle}
+          />
+          <Layer
+            type="line"
+            id="guide-route-straight"
+            filter={ROUTE_STRAIGHT_FILTER}
+            style={routeStraightStyle}
+          />
+          <Layer
+            type="circle"
+            id="guide-route-vertices"
+            filter={ROUTE_VERTEX_FILTER}
+            style={routeVertexStyle}
+          />
+        </GeoJSONSource>
 
         {/* OpenStreetMap POIs — unclustered, from POI_MIN_ZOOM only, and
             declared immediately *before* the waypoints so a curated marker on
             top of a POI still wins the tap. */}
-        {poiCollection.features.length > 0 && (
-          <GeoJSONSource
-            id="guide-pois"
-            data={poiCollection}
-            onPress={builderMode ? undefined : handlePoiPress}
-            hitbox={POI_HITBOX}
-          >
-            <Layer
-              type="circle"
-              id="guide-pois-circles"
-              minzoom={POI_MIN_ZOOM}
-              style={poiCircleStyle}
-            />
-            <Layer
-              type="symbol"
-              id="guide-pois-icons"
-              minzoom={POI_MIN_ZOOM}
-              style={poiIconStyle}
-            />
-            <Layer
-              type="symbol"
-              id="guide-pois-labels"
-              minzoom={POI_LABEL_MIN_ZOOM}
-              style={poiLabelStyle}
-            />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource
+          id="guide-pois"
+          data={poiCollection}
+          onPress={builderMode ? undefined : handlePoiPress}
+          hitbox={POI_HITBOX}
+        >
+          <Layer
+            type="circle"
+            id="guide-pois-circles"
+            minzoom={POI_MIN_ZOOM}
+            style={poiCircleStyle}
+          />
+          <Layer
+            type="symbol"
+            id="guide-pois-icons"
+            minzoom={POI_MIN_ZOOM}
+            style={poiIconStyle}
+          />
+          <Layer
+            type="symbol"
+            id="guide-pois-labels"
+            minzoom={POI_LABEL_MIN_ZOOM}
+            style={poiLabelStyle}
+          />
+        </GeoJSONSource>
 
         {/* Waypoint markers — clustered at overview zooms, labelled at hiking zooms */}
-        {waypointCollection.features.length > 0 && (
-          <GeoJSONSource
-            id="guide-waypoints"
-            data={waypointCollection}
-            onPress={builderMode ? undefined : handleWaypointPress}
-            hitbox={WAYPOINT_HITBOX}
-            cluster
-            clusterRadius={40}
-            clusterMaxZoom={WAYPOINT_CLUSTER_MAX_ZOOM}
-          >
-            {/* Every layer here carries a `key`: the plan-ring layer comes and
-                goes with the plan, and GeoJSONSource re-keys unkeyed children
-                by position after dropping the falsy ones, so without keys the
-                layers after it would swap ids and MapLibre RN would throw
-                "`id` cannot be changed" (see ACCURACY_CIRCLE_FILTER). */}
+        <GeoJSONSource
+          id="guide-waypoints"
+          data={waypointCollection}
+          onPress={builderMode ? undefined : handleWaypointPress}
+          hitbox={WAYPOINT_HITBOX}
+          cluster
+          clusterRadius={40}
+          clusterMaxZoom={WAYPOINT_CLUSTER_MAX_ZOOM}
+        >
+          {/* Every layer here carries a `key`: the plan-ring layer comes and
+              goes with the plan, and GeoJSONSource re-keys unkeyed children
+              by position after dropping the falsy ones, so without keys the
+              layers after it would swap ids and MapLibre RN would throw
+              "`id` cannot be changed" (see ACCURACY_CIRCLE_FILTER). */}
+          <Layer
+            key="guide-waypoints-clusters"
+            type="circle"
+            id="guide-waypoints-clusters"
+            filter={CLUSTER_FILTER}
+            style={clusterCircleStyle}
+          />
+          <Layer
+            key="guide-waypoints-cluster-counts"
+            type="symbol"
+            id="guide-waypoints-cluster-counts"
+            filter={CLUSTER_FILTER}
+            style={clusterCountStyle}
+          />
+          {hasPlannedStops && (
             <Layer
-              key="guide-waypoints-clusters"
+              key="guide-waypoints-plan-rings"
               type="circle"
-              id="guide-waypoints-clusters"
-              filter={CLUSTER_FILTER}
-              style={clusterCircleStyle}
+              id="guide-waypoints-plan-rings"
+              // Mounted after the map is up whenever a plan arrives, so
+              // without an anchor it would be appended above the badges it
+              // is meant to sit under.
+              beforeId="guide-waypoints-circles"
+              filter={PLANNED_STOP_FILTER}
+              style={plannedStopRingStyle}
             />
-            <Layer
-              key="guide-waypoints-cluster-counts"
-              type="symbol"
-              id="guide-waypoints-cluster-counts"
-              filter={CLUSTER_FILTER}
-              style={clusterCountStyle}
-            />
-            {hasPlannedStops && (
-              <Layer
-                key="guide-waypoints-plan-rings"
-                type="circle"
-                id="guide-waypoints-plan-rings"
-                filter={PLANNED_STOP_FILTER}
-                style={plannedStopRingStyle}
-              />
-            )}
-            <Layer
-              key="guide-waypoints-circles"
-              type="circle"
-              id="guide-waypoints-circles"
-              filter={INDIVIDUAL_FILTER}
-              style={waypointCircleStyle}
-            />
-            <Layer
-              key="guide-waypoints-icons"
-              type="symbol"
-              id="guide-waypoints-icons"
-              filter={INDIVIDUAL_FILTER}
-              style={waypointIconStyle}
-            />
-            <Layer
-              key="guide-waypoints-labels"
-              type="symbol"
-              id="guide-waypoints-labels"
-              minzoom={WAYPOINT_LABEL_MIN_ZOOM}
-              filter={INDIVIDUAL_FILTER}
-              style={labelStyle}
-            />
-          </GeoJSONSource>
-        )}
+          )}
+          <Layer
+            key="guide-waypoints-circles"
+            type="circle"
+            id="guide-waypoints-circles"
+            filter={INDIVIDUAL_FILTER}
+            style={waypointCircleStyle}
+          />
+          <Layer
+            key="guide-waypoints-icons"
+            type="symbol"
+            id="guide-waypoints-icons"
+            filter={INDIVIDUAL_FILTER}
+            style={waypointIconStyle}
+          />
+          <Layer
+            key="guide-waypoints-labels"
+            type="symbol"
+            id="guide-waypoints-labels"
+            minzoom={WAYPOINT_LABEL_MIN_ZOOM}
+            filter={INDIVIDUAL_FILTER}
+            style={labelStyle}
+          />
+        </GeoJSONSource>
 
         {/* User-location puck: accuracy circle (when uncertain) + dot. The
             circle is always mounted and hidden by its filter while the fix is
             sharp — see ACCURACY_CIRCLE_FILTER for why it must never come and
             go as a React child. */}
-        {userLocationFeature && (
-          <GeoJSONSource id="guide-user-location" data={userLocationFeature}>
-            <Layer
-              type="circle"
-              id="guide-user-accuracy"
-              minzoom={ACCURACY_CIRCLE_MIN_ZOOM}
-              filter={ACCURACY_CIRCLE_FILTER}
-              style={userAccuracyStyle}
-            />
-            <Layer type="circle" id="guide-user-dot" style={userDotStyle} />
-          </GeoJSONSource>
-        )}
+        <GeoJSONSource
+          id="guide-user-location"
+          data={userLocationFeature ?? EMPTY_COLLECTION}
+        >
+          <Layer
+            type="circle"
+            id="guide-user-accuracy"
+            minzoom={ACCURACY_CIRCLE_MIN_ZOOM}
+            filter={ACCURACY_CIRCLE_FILTER}
+            style={userAccuracyStyle}
+          />
+          <Layer type="circle" id="guide-user-dot" style={userDotStyle} />
+        </GeoJSONSource>
       </MapLibreMap>
     );
   }),

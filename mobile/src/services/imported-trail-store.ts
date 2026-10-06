@@ -33,6 +33,7 @@ import {
 import * as plansRepo from '../db/plans-repo';
 import { usePlanInputsStore } from '../features/plan/plan-inputs-store';
 import { usePlansStore } from '../state/plans-store';
+import { useSettingsStore } from '../state/settings-store';
 import type { TrailJson } from './trail-assets';
 
 /** Root directory for imported trail JSON: {documentDir}/trails/ */
@@ -157,6 +158,7 @@ export async function deleteImportedTrailEverywhere(
   await plansRepo.deleteForTrail(db, id);
   usePlansStore.getState().clear(id);
   usePlanInputsStore.getState().clearTrail(id);
+  useSettingsStore.getState().clearCurrentTrailIf(id);
 }
 
 export type { ImportedTrail };

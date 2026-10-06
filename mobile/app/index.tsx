@@ -14,14 +14,22 @@
  * once on mount, because the import and delete flows both change what belongs
  * in it while this screen sits mounted underneath them — and whenever trail
  * data changes, since a background update can rename a trail or add one.
+ *
+ * The pin on each card marks the trail being hiked now (`currentTrailId` in the
+ * settings store): that card leads the list with a "Hiking now" pill, and a
+ * fresh launch opens straight into its guide — pushed over this screen, so Back
+ * still lands here. That happens once per launch, so backing out to the list
+ * leaves you on it.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { formatDistance } from '@lib/format-distance';
 import { useTheme } from '../src/theme';
-import { radii, spacing, typography } from '../src/tokens';
+import { glyphSizes, radii, spacing, typography } from '../src/tokens';
 import { listAllTrails, listTrails, type TrailIndexEntry } from '../src/services/trail-loader';
 import { getDatabase } from '../src/db/database';
 import { deleteImportedTrailEverywhere } from '../src/services/imported-trail-store';
@@ -30,12 +38,32 @@ import { useDownloadsStore } from '../src/state/downloads-store';
 import { DownloadBadge } from '../src/features/guide/DownloadBadge';
 import { checkForTrailDataUpdates } from '../src/services/trail-data-updates';
 import { useTrailDataStore } from '../src/state/trail-data-store';
+import { launchTrailId, orderWithCurrentFirst } from '../src/features/guide/current-hike';
+import { classifyIncomingUrl } from '../src/features/import/incoming-file';
+
+// Once per app process: the launch has been offered its current-trail guide.
+// Module-level so remounting this screen never opens it a second time.
+let launchHandled = false;
+
+/** Resolves once the persisted settings (and so `currentTrailId`) are loaded. */
+function settingsHydrated(): Promise<void> {
+  if (useSettingsStore.persist.hasHydrated()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = useSettingsStore.persist.onFinishHydration(() => {
+      unsubscribe();
+      resolve();
+    });
+  });
+}
 
 export default function GuideListScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
   const hydrate = useDownloadsStore((s) => s.hydrate);
+  const navigation = useNavigation();
+  const currentTrailId = useSettingsStore((s) => s.currentTrailId);
+  const setCurrentTrail = useSettingsStore((s) => s.setCurrentTrail);
 
   // Seeded with the bundled trails so the first frame is already the real list;
   // the registry read only ever appends to it.
@@ -73,6 +101,37 @@ export default function GuideListScreen() {
       cancelled = true;
     };
   }, [dataRevision]);
+
+  // Open the current trail's guide on a fresh launch. Skipped when the launch
+  // was a file opened from outside the app (the import review screen is on its
+  // way), and when anything else is already over this screen (a shared-plan
+  // deep link).
+  useEffect(() => {
+    if (launchHandled) return;
+    let cancelled = false;
+    void (async () => {
+      await settingsHydrated();
+      const [all, initialUrl] = await Promise.all([listAllTrails(), Linking.getInitialURL()]);
+      if (cancelled || launchHandled) return;
+      launchHandled = true;
+      const trailId = launchTrailId(
+        useSettingsStore.getState().currentTrailId,
+        all.map((t) => t.id),
+        classifyIncomingUrl(initialUrl) != null,
+      );
+      if (trailId && navigation.isFocused()) {
+        router.push({ pathname: '/guide/[trailId]', params: { trailId } });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigation, router]);
+
+  const orderedTrails = useMemo(
+    () => orderWithCurrentFirst(trails, currentTrailId),
+    [trails, currentTrailId],
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -129,7 +188,7 @@ export default function GuideListScreen() {
 
   return (
     <FlatList
-      data={trails}
+      data={orderedTrails}
       keyExtractor={(t) => t.id}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
@@ -146,6 +205,7 @@ export default function GuideListScreen() {
       }
       renderItem={({ item }) => {
         const imported = item.source === 'imported';
+        const current = item.id === currentTrailId;
         return (
           <Pressable
             onPress={() =>
@@ -153,20 +213,58 @@ export default function GuideListScreen() {
             }
             onLongPress={imported ? () => confirmDelete(item) : undefined}
             accessibilityRole="button"
-            accessibilityLabel={imported ? `${item.name} (imported)` : item.name}
+            accessibilityLabel={[item.name, imported && 'imported', current && 'hiking now']
+              .filter(Boolean)
+              .join(', ')}
             accessibilityHint={imported ? 'Long press to delete this imported guide' : undefined}
             style={[
               styles.card,
-              { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+              {
+                backgroundColor: colors.surfaceElevated,
+                borderColor: current ? colors.accent : colors.border,
+                borderWidth: current ? 2 : StyleSheet.hairlineWidth,
+              },
             ]}
           >
-            <View style={styles.cardMain}>
-              <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={2}>
-                {item.name}
-              </Text>
-              <Text style={[styles.length, { color: colors.textSecondary }]}>
-                {formatDistance(item.lengthKm, units)}
-              </Text>
+            <View style={styles.cardTop}>
+              <View style={styles.cardMain}>
+                {current && (
+                  <View style={[styles.currentPill, { backgroundColor: colors.accent }]}>
+                    <MaterialCommunityIcons
+                      name="hiking"
+                      size={glyphSizes.xs}
+                      color={colors.accentText}
+                    />
+                    <Text style={[styles.currentLabel, { color: colors.accentText }]}>
+                      Hiking now
+                    </Text>
+                  </View>
+                )}
+                <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={2}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.length, { color: colors.textSecondary }]}>
+                  {formatDistance(item.lengthKm, units)}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setCurrentTrail(current ? null : item.id)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  current
+                    ? `Stop hiking ${item.name}`
+                    : `Set ${item.name} as the trail I'm hiking`
+                }
+                accessibilityState={{ selected: current }}
+                hitSlop={spacing.sm}
+                style={styles.pinButton}
+              >
+                <MaterialCommunityIcons
+                  name={current ? 'pin' : 'pin-outline'}
+                  size={glyphSizes.lg}
+                  color={current ? colors.accent : colors.textSecondary}
+                />
+              </Pressable>
             </View>
             {imported ? (
               <View style={[styles.importedPill, { borderColor: colors.accentMuted }]}>
@@ -205,8 +303,29 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
   cardMain: {
+    flex: 1,
     gap: spacing.xs,
+  },
+  pinButton: {
+    padding: spacing.xs,
+  },
+  currentPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.full,
+  },
+  currentLabel: {
+    ...typography.caption,
   },
   name: {
     ...typography.displaySmall,

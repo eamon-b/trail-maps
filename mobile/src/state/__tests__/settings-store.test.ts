@@ -14,6 +14,7 @@ describe('settings-store', () => {
       units: 'km',
       perTrailDirection: {},
       poiFilter: defaultPoiFilterState(),
+      currentTrailId: null,
     });
     jest.clearAllMocks();
   });
@@ -47,6 +48,30 @@ describe('settings-store', () => {
     useSettingsStore.getState().setDirection('bibbulmun', 'reversed');
     const value = selectDirection('bibbulmun')(useSettingsStore.getState());
     expect(value).toBe('reversed');
+  });
+
+  it('sets and clears the current trail', () => {
+    const { setCurrentTrail } = useSettingsStore.getState();
+    setCurrentTrail('heysen');
+    expect(useSettingsStore.getState().currentTrailId).toBe('heysen');
+    setCurrentTrail(null);
+    expect(useSettingsStore.getState().currentTrailId).toBeNull();
+  });
+
+  it('clears the current trail only when it is the one named', () => {
+    const { setCurrentTrail, clearCurrentTrailIf } = useSettingsStore.getState();
+    setCurrentTrail('u_mine');
+    clearCurrentTrailIf('u_other');
+    expect(useSettingsStore.getState().currentTrailId).toBe('u_mine');
+    clearCurrentTrailIf('u_mine');
+    expect(useSettingsStore.getState().currentTrailId).toBeNull();
+  });
+
+  it('persists the current trail', async () => {
+    useSettingsStore.getState().setCurrentTrail('larapinta');
+    await new Promise((r) => setTimeout(r, 0));
+    const [, payload] = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)!;
+    expect(payload).toContain('"currentTrailId":"larapinta"');
   });
 
   it('persists via AsyncStorage', async () => {

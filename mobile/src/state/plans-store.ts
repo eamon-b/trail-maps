@@ -29,11 +29,10 @@
  * logged, leave the stored plan untouched, and land in `lastError` so the Plan
  * screen can say what happened instead of appearing to ignore the tap.
  *
- * Calls for one trail are also serialised. `plansRepo` writes inside a bare
- * `BEGIN`, so two taps close enough together to overlap would nest one
- * transaction inside another and throw; a per-trail promise chain makes the
- * second edit start from the first one's result, which is what a hiker tapping
- * twice means anyway.
+ * Calls for one trail are also serialised: a per-trail promise chain makes the
+ * second of two quick taps start from the first one's result, which is what a
+ * hiker tapping twice means anyway. (Overlapping SQLite transactions — a tap
+ * against a sync ack — are kept apart one level down, by `db/transaction`.)
  */
 
 import { create } from 'zustand';

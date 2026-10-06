@@ -78,6 +78,15 @@ const FILE_SCHEMES = new Set(['content', 'file']);
  */
 const ACCEPTED_EXTENSIONS = ['.gpx', '.json', '.xml'];
 
+/**
+ * The most this will stage. Matches `MAX_IMPORT_BYTES` in `./import-gpx`, which
+ * refuses a bigger file before reading it — but staging reads the WHOLE file
+ * into a JS string first, so without its own check here the cap was enforced
+ * one full read too late (a ~100 MB string for a 50 MB file: an out-of-memory
+ * kill on a mid-range phone, not an error message).
+ */
+export const MAX_INCOMING_BYTES = 20 * 1024 * 1024;
+
 /** A file URL the OS handed us, plus whatever display name we could recover. */
 export interface IncomingFile {
   /** `content://` or `file://` URI. */
@@ -127,7 +136,16 @@ export function classifyIncomingUrl(url: string | null | undefined): IncomingFil
  * and a cache that grows once per share is a slow leak nobody would notice.
  */
 export async function stageIncomingFile(incoming: IncomingFile): Promise<IncomingFile> {
-  const text = await new File(incoming.uri).text();
+  const source = new File(incoming.uri);
+  // Before the read, not after. A provider that will not say how big the file
+  // is reports 0 (or nothing), which reads as "under the cap": the import
+  // screen's parser limits then have the last word, as they do for a pick.
+  const size = source.size ?? 0;
+  if (size > MAX_INCOMING_BYTES) {
+    const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    throw new Error(`That file is ${mb(size)} — the limit is ${mb(MAX_INCOMING_BYTES)}.`);
+  }
+  const text = await source.text();
 
   const dir = new Directory(Paths.cache, INCOMING_DIR);
   if (dir.exists) dir.delete();

@@ -726,6 +726,24 @@ describe('downloadTrailTiles validation', () => {
     expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBe(true);
   });
 
+  it('honours a cancel that arrives while the last file downloads', async () => {
+    useDb(fakeDb());
+    const signal = { cancelled: false };
+    mockDownloadFileAsync.mockImplementation(async (_url: string, dest: { uri: string }) => {
+      mockFiles[dest.uri] = { exists: true, size: 5_000_000 };
+      // The hiker taps Cancel while contours (the last file) is in flight.
+      if (dest.uri.endsWith('contours.mbtiles.part')) signal.cancelled = true;
+    });
+
+    await expect(downloadTrailTiles(TRAIL_ID, BASE_URL, { signal })).rejects.toThrow('Cancelled');
+
+    // Nothing promoted, nothing staged left behind.
+    expect(mockFiles[fileKey('base.mbtiles')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('base.mbtiles.part')]?.exists).toBeFalsy();
+    expect(mockFiles[fileKey('contours.mbtiles.part')]?.exists).toBeFalsy();
+  });
+
   it('never creates the final file and cleans up .part when validation fails', async () => {
     useDb(fakeDb({ getFirstAsync: jest.fn().mockResolvedValue(null) }));
 

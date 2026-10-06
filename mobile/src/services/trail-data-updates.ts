@@ -44,6 +44,13 @@ import { useTrailDataStore } from '../state/trail-data-store';
 export const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 /** After a failed check (offline), wait this long before the next automatic one. */
 const RETRY_INTERVAL_MS = 5 * 60 * 1000;
+/**
+ * How long a catalog key whose download failed its checks is left alone by the
+ * automatic check. The key is content-addressed (it carries the md5), so a
+ * fixed publish arrives under a new key and is fetched at once; this only stops
+ * the same broken object being downloaded in full on every foreground.
+ */
+export const FAILED_KEY_RETRY_MS = 24 * 60 * 60 * 1000;
 
 const STATE_FILE = 'state.json';
 /** Where the next state is written before it is renamed over {@link STATE_FILE}. */
@@ -100,12 +107,17 @@ interface TrailDataState {
   lastCheckedAt: number | null;
   /** Downloaded copies, keyed by trail id. */
   installed: Record<string, InstalledTrail>;
+  /**
+   * Catalog keys whose download failed its size/MD5/shape checks → epoch ms of
+   * that failure. See {@link FAILED_KEY_RETRY_MS}.
+   */
+  failedKeys: Record<string, number>;
 }
 
 let state: TrailDataState | null = null;
 
 function emptyState(): TrailDataState {
-  return { catalog: null, lastCheckedAt: null, installed: {} };
+  return { catalog: null, lastCheckedAt: null, installed: {}, failedKeys: {} };
 }
 
 function parseState(raw: unknown): TrailDataState {
@@ -118,10 +130,17 @@ function parseState(raw: unknown): TrailDataState {
       if (entry && entry.id === id) installed[id] = entry;
     }
   }
+  const failedKeys: Record<string, number> = {};
+  if (r.failedKeys && typeof r.failedKeys === 'object') {
+    for (const [key, at] of Object.entries(r.failedKeys as Record<string, unknown>)) {
+      if (typeof at === 'number' && Number.isFinite(at)) failedKeys[key] = at;
+    }
+  }
   return {
     catalog: parseCatalog(r.catalog),
     lastCheckedAt: typeof r.lastCheckedAt === 'number' ? r.lastCheckedAt : null,
     installed,
+    failedKeys,
   };
 }
 
@@ -283,6 +302,19 @@ export function getRemoteTrail(id: string): RemoteTrailInfo | null {
 // Downloading
 // ---------------------------------------------------------------------------
 
+/**
+ * A download that arrived but is not the file the catalog describes (wrong
+ * size, wrong MD5, not this trail). Unlike a network failure it will fail the
+ * same way every time until the catalog changes, which is what the per-key
+ * negative cache keys on.
+ */
+export class TrailDataIntegrityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TrailDataIntegrityError';
+  }
+}
+
 const inFlightDownloads = new Map<string, Promise<void>>();
 /** Keys being downloaded: their `.part` files are not orphans. */
 const inFlightKeys = new Set<string>();
@@ -320,13 +352,21 @@ async function doDownload(entry: CatalogEntry): Promise<void> {
 
     const info = part.info({ md5: true });
     if (info.size !== entry.bytes) {
-      throw new Error(`Size mismatch: expected ${entry.bytes} bytes, got ${info.size ?? 0}`);
+      throw new TrailDataIntegrityError(
+        `Size mismatch: expected ${entry.bytes} bytes, got ${info.size ?? 0}`,
+      );
     }
     if ((info.md5 ?? '').toLowerCase() !== entry.md5) {
-      throw new Error('Checksum mismatch');
+      throw new TrailDataIntegrityError('Checksum mismatch');
     }
-    if (!isUsableTrailJson(JSON.parse(await part.text()), entry.id)) {
-      throw new Error('The downloaded file is not this trail');
+    let json: unknown;
+    try {
+      json = JSON.parse(await part.text());
+    } catch {
+      throw new TrailDataIntegrityError('The downloaded file is not JSON');
+    }
+    if (!isUsableTrailJson(json, entry.id)) {
+      throw new TrailDataIntegrityError('The downloaded file is not this trail');
     }
 
     const dest = new File(root, entry.key);
@@ -340,9 +380,12 @@ async function doDownload(entry: CatalogEntry): Promise<void> {
   // The new file is in place; now let the state name it, then drop the old one.
   const current = getState();
   const previous = current.installed[entry.id];
+  const failedKeys = { ...current.failedKeys };
+  delete failedKeys[entry.key];
   saveState({
     ...current,
     installed: { ...current.installed, [entry.id]: { ...entry, file: entry.key } },
+    failedKeys,
   });
   if (previous && previous.file !== entry.key) deleteQuietly(previous.file);
 }
@@ -478,10 +521,20 @@ async function runCheck(now: number): Promise<TrailDataCheckResult> {
     };
   }
 
-  // `lastCheckedAt` is stamped only once every download has landed: a failed
-  // one is retried by the next launch/foreground check (after the short retry
-  // interval), not six hours later.
-  saveState({ ...getState(), catalog });
+  // `lastCheckedAt` is stamped only once every download attempted has landed: a
+  // failed one is retried by the next launch/foreground check (after the short
+  // retry interval), not six hours later.
+  //
+  // A key that failed its checks recently is not attempted at all — the same
+  // object would fail the same way, after downloading it in full on every
+  // foreground. Remembered failures are kept only for keys the catalog still
+  // lists, so a republish (a new key) is fetched straight away.
+  const liveKeys = new Set(catalog.trails.map((e) => e.key));
+  const failedKeys: Record<string, number> = {};
+  for (const [key, at] of Object.entries(getState().failedKeys)) {
+    if (liveKeys.has(key)) failedKeys[key] = at;
+  }
+  saveState({ ...getState(), catalog, failedKeys });
 
   const plan = planTrailDataSync(catalog, bundledVersions(), getState().installed);
   removeInstalled(plan.remove);
@@ -491,18 +544,32 @@ async function runCheck(now: number): Promise<TrailDataCheckResult> {
   // One at a time: these are a few hundred KB each, and a phone on a thin
   // connection does better finishing one than starting twenty.
   for (const entry of plan.download) {
+    if (recentlyFailed(entry.key, now)) continue;
     try {
       await downloadTrailEntry(entry);
       updated.push(entry.id);
     } catch (err) {
       failed.push(entry.id);
       console.warn(`[trail-data] update of ${entry.id} failed`, err);
+      if (err instanceof TrailDataIntegrityError) {
+        const current = getState();
+        saveState({ ...current, failedKeys: { ...current.failedKeys, [entry.key]: now } });
+      }
     }
   }
 
   if (failed.length === 0) saveState({ ...getState(), lastCheckedAt: now });
   sweepOrphans();
   return { checked: true, updated, failed };
+}
+
+/**
+ * Whether `key` failed its checks within {@link FAILED_KEY_RETRY_MS} of `now`.
+ * A stamp in the future (a wrong clock) does not count, as for `lastCheckedAt`.
+ */
+function recentlyFailed(key: string, now: number): boolean {
+  const at = getState().failedKeys[key];
+  return at !== undefined && at <= now && now - at < FAILED_KEY_RETRY_MS;
 }
 
 /**

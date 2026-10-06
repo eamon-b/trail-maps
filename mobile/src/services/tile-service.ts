@@ -643,13 +643,22 @@ export async function downloadTrailTiles(
     staged.length = 0;
   };
 
-  // ---- Phase 1: download + validate every file into its .part staging path --
-  for (const name of TILE_FILES) {
-    // Check cancellation
+  /**
+   * Abort cleanly if the hiker cancelled: drop every staged file so the pack on
+   * disk stays exactly as it was. Checked before each file AND after each one
+   * completes — a cancel that arrives during the last file must not fall
+   * through to the promotion and be reported as a finished download.
+   */
+  const throwIfCancelled = () => {
     if (signal?.cancelled) {
       cleanupStaged();
       throw new Error('Cancelled');
     }
+  };
+
+  // ---- Phase 1: download + validate every file into its .part staging path --
+  for (const name of TILE_FILES) {
+    throwIfCancelled();
 
     const dest = new File(dir, currentNames[name]);
     const expectedSize = expectedSizes.get(name);
@@ -734,7 +743,11 @@ export async function downloadTrailTiles(
       onProgress?.({ fileName: name, done: false, error: detail, bytesDownloaded, bytesTotal });
       throw new Error(detail);
     }
+    throwIfCancelled();
   }
+  // Again before promotion, which is the commit: a file kept from disk skips
+  // the check above (`continue`), and may have been the last one.
+  throwIfCancelled();
 
   // ---- Phase 2: promote all validated .part files at once -------------------
   /**

@@ -131,6 +131,7 @@ describe('comments-repo', () => {
       trailId: TRAIL,
       waypointId: WP,
       payload: { trailId: TRAIL, waypointId: WP, text: 'draft' },
+      createdAt: '2026-01-04T00:00:00.000Z',
     });
     const list = await commentsRepo.listByWaypoint(d, TRAIL, WP);
     expect(list[0].outboxStatus).toBe('pending');
@@ -193,6 +194,7 @@ describe('comments-repo', () => {
       trailId: TRAIL,
       waypointId: WP,
       payload: { commentId: 'withphoto', localUri: 'file:///a.jpg', contentType: 'image/jpeg' },
+      createdAt: '2026-01-04T00:00:00.000Z',
     });
     let list = await commentsRepo.listByWaypoint(d, TRAIL, WP);
     expect(list.find((c) => c.id === 'withphoto')?.photoUploadStatus).toBe('pending');

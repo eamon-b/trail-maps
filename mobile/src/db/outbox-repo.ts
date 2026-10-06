@@ -16,7 +16,8 @@
  * write is confirmed. `attempts` / `last_error` drive the retry backoff and the
  * "failed" affordance in the UI; `status` is presentational (pending → sending
  * → failed) and is reset to `pending` when a drain is interrupted (offline /
- * 401) so a subsequent run picks it back up.
+ * 401) so a subsequent run picks it back up; a 5xx leaves it `pending` too, but
+ * charged an attempt (`markRetry`), so the backoff spaces out the retries.
  */
 
 import type { SqlDatabase } from './sql-database';
@@ -51,8 +52,14 @@ export interface EnqueueInput {
   waypointId?: string | null;
   /** Serialized request body. */
   payload: unknown;
-  /** Explicit timestamp (tests); defaults to `datetime('now')`. */
-  createdAt?: string;
+  /**
+   * When the write was queued, as an ISO-8601 UTC instant
+   * (`new Date(ms).toISOString()`). Required: it is the base of the retry
+   * backoff and the FIFO order, and the column default used to be SQLite's
+   * zone-less `datetime('now')`, which `Date.parse` reads as local time (see
+   * schema migration 6).
+   */
+  createdAt: string;
 }
 
 interface OutboxRow {
@@ -84,36 +91,19 @@ function toItem(row: OutboxRow): OutboxItem {
 /** Enqueue a write. Replaces any prior row for the same id. */
 export async function enqueue(db: SqlDatabase, input: EnqueueInput): Promise<void> {
   const payloadJson = JSON.stringify(input.payload ?? null);
-  if (input.createdAt !== undefined) {
-    await db.runAsync(
-      `INSERT INTO outbox (id, kind, trail_id, waypoint_id, payload_json, created_at, attempts, status)
-       VALUES (?, ?, ?, ?, ?, ?, 0, 'pending')
-       ON CONFLICT(id) DO UPDATE SET
-         kind = excluded.kind,
-         trail_id = excluded.trail_id,
-         waypoint_id = excluded.waypoint_id,
-         payload_json = excluded.payload_json,
-         created_at = excluded.created_at,
-         attempts = 0,
-         last_error = NULL,
-         status = 'pending'`,
-      [input.id, input.kind, input.trailId ?? null, input.waypointId ?? null, payloadJson, input.createdAt],
-    );
-    return;
-  }
   await db.runAsync(
-    `INSERT INTO outbox (id, kind, trail_id, waypoint_id, payload_json, attempts, status)
-     VALUES (?, ?, ?, ?, ?, 0, 'pending')
+    `INSERT INTO outbox (id, kind, trail_id, waypoint_id, payload_json, created_at, attempts, status)
+     VALUES (?, ?, ?, ?, ?, ?, 0, 'pending')
      ON CONFLICT(id) DO UPDATE SET
        kind = excluded.kind,
        trail_id = excluded.trail_id,
        waypoint_id = excluded.waypoint_id,
        payload_json = excluded.payload_json,
-       created_at = datetime('now'),
+       created_at = excluded.created_at,
        attempts = 0,
        last_error = NULL,
        status = 'pending'`,
-    [input.id, input.kind, input.trailId ?? null, input.waypointId ?? null, payloadJson],
+    [input.id, input.kind, input.trailId ?? null, input.waypointId ?? null, payloadJson, input.createdAt],
   );
 }
 
@@ -145,6 +135,19 @@ export async function markPending(db: SqlDatabase, id: string): Promise<void> {
 export async function markFailed(db: SqlDatabase, id: string, error: string): Promise<void> {
   await db.runAsync(
     "UPDATE outbox SET attempts = attempts + 1, last_error = ?, status = 'failed' WHERE id = ?",
+    [error, id],
+  );
+}
+
+/**
+ * Record a TRANSIENT failed attempt (a 5xx): bump `attempts` so the backoff
+ * spaces out the retries, keep the error for diagnostics, but leave the row
+ * `pending` — it is not the hiker's to fix, so it must not read as `failed`
+ * (which is what the "did not send" banners look for).
+ */
+export async function markRetry(db: SqlDatabase, id: string, error: string): Promise<void> {
+  await db.runAsync(
+    "UPDATE outbox SET attempts = attempts + 1, last_error = ?, status = 'pending' WHERE id = ?",
     [error, id],
   );
 }
@@ -183,6 +186,41 @@ export async function replacePending(
     "DELETE FROM outbox WHERE kind = ? AND waypoint_id = ? AND status != 'sending'",
     [kind, key],
   );
+  return before?.n ?? 0;
+}
+
+/**
+ * Whether any row of `kind` for one entity key is still queued — pending,
+ * in flight, or failed: in every case a write this device made has not been
+ * acknowledged yet.
+ */
+export async function hasQueued(db: SqlDatabase, kind: OutboxKind, key: string): Promise<boolean> {
+  const row = await db.getFirstAsync<{ n: number }>(
+    'SELECT COUNT(*) AS n FROM outbox WHERE kind = ? AND waypoint_id = ?',
+    [kind, key],
+  );
+  return (row?.n ?? 0) > 0;
+}
+
+/**
+ * Drop the not-in-flight photo uploads queued for one comment.
+ *
+ * A photo row is keyed by its own id, with the comment it attaches to in the
+ * payload, so removing the comment's own outbox row leaves its photos behind:
+ * gated forever on a comment that will never confirm (a cancelled local one),
+ * or failing against one the server no longer has (a deleted one). `sending`
+ * rows are spared for the same reason {@link replacePending} spares them.
+ *
+ * @returns how many rows were dropped.
+ */
+export async function removePhotosFor(db: SqlDatabase, commentId: string): Promise<number> {
+  const where =
+    "kind = 'photo' AND json_extract(payload_json, '$.commentId') = ? AND status != 'sending'";
+  const before = await db.getFirstAsync<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM outbox WHERE ${where}`,
+    [commentId],
+  );
+  await db.runAsync(`DELETE FROM outbox WHERE ${where}`, [commentId]);
   return before?.n ?? 0;
 }
 

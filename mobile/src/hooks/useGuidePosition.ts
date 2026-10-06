@@ -2,10 +2,13 @@
  * GPS position for the active guide.
  *
  * Combines `useLocation` (foreground watch + snap) with the active guide's
- * full-resolution track to produce a compact, UI-ready position for the guide
- * panes. The full-res `track.points` is snapped against (not the decimated
- * `displayPoints`) so the current km and off-trail distance stay accurate; the
- * windowed snap keeps the per-fix cost low regardless of track length.
+ * track to produce a compact, UI-ready position for the guide panes. Fixes are
+ * snapped against `track.points` — the copy whose `dist` ladder every other km
+ * on the phone is measured along. On a bundled trail that array is itself
+ * thinned (to ~5,000 points; the CDT's are ~900 m apart), which is why the snap
+ * measures to the nearest segment and interpolates the km along it rather than
+ * reading it off the nearest vertex. The windowed snap keeps the per-fix cost
+ * low regardless of track length.
  *
  * GPS is opt-in. Nothing is requested until a consumer calls `start()`
  * (wired to "Show my location"), and that tap is also the hiker's choice to
@@ -25,6 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGuide } from '../features/guide/GuideContext';
+import { routeBreakStarts } from '@lib/route-breaks';
 import { useLocation } from './useLocation';
 import { isOffTrail } from '../services/position-on-trail';
 import { useSettingsStore } from '../state/settings-store';
@@ -55,6 +59,10 @@ export interface GuidePosition {
 export function useGuidePosition(): GuidePosition {
   const { trail } = useGuide();
   const points = trail.track.points;
+  const breaks = trail.track.breaks;
+  // Memoised on the breaks array: a new set every render would reset the
+  // snap's hint index in `useLocation` on every fix.
+  const breakStarts = useMemo(() => routeBreakStarts(breaks, 'points'), [breaks]);
 
   const {
     location,
@@ -64,7 +72,7 @@ export function useGuidePosition(): GuidePosition {
     isTracking,
     startTracking,
     stopTracking,
-  } = useLocation(points);
+  } = useLocation(points, breakStarts);
 
   // Whether the user has opted in this session. Kept separate from `isTracking`
   // so the "acquiring" state shows the instant `start()` is pressed, before the

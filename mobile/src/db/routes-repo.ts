@@ -14,6 +14,7 @@
  */
 
 import type { SqlDatabase } from './sql-database';
+import { withTransaction } from './transaction';
 
 /** One persisted route vertex. */
 export interface RoutePoint {
@@ -89,8 +90,7 @@ export async function createRoute(db: SqlDatabase, input: NewRoute): Promise<Rou
   const id = generateRouteId();
   const now = new Date().toISOString();
 
-  await db.execAsync('BEGIN');
-  try {
+  await withTransaction(db, async () => {
     await db.runAsync(
       `INSERT INTO routes (id, trail_id, name, total_km, ascent_m, descent_m, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -103,11 +103,7 @@ export async function createRoute(db: SqlDatabase, input: NewRoute): Promise<Rou
         [id, seq, p.kind, p.lat, p.lon, p.km ?? null],
       );
     }
-    await db.execAsync('COMMIT');
-  } catch (e) {
-    await db.execAsync('ROLLBACK');
-    throw e;
-  }
+  });
 
   return {
     id,
@@ -149,13 +145,8 @@ export async function getRoutePoints(db: SqlDatabase, routeId: string): Promise<
 
 /** Delete a route and its points (transactional; independent of FK pragma). */
 export async function deleteRoute(db: SqlDatabase, id: string): Promise<void> {
-  await db.execAsync('BEGIN');
-  try {
+  await withTransaction(db, async () => {
     await db.runAsync('DELETE FROM route_points WHERE route_id = ?', [id]);
     await db.runAsync('DELETE FROM routes WHERE id = ?', [id]);
-    await db.execAsync('COMMIT');
-  } catch (e) {
-    await db.execAsync('ROLLBACK');
-    throw e;
-  }
+  });
 }

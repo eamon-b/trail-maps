@@ -5,19 +5,28 @@
  * comment row, and a 404/410 (unknown or already-deleted comment) is a
  * *settled* report rather than a failure — there is nothing left to moderate.
  * Everything else keeps the shared branching: network stops the drain, 401
- * pauses it, 429/other 4xx marks the single item failed.
+ * pauses it, 429/other 4xx marks the single item failed, a 5xx leaves it
+ * pending for its backoff.
  */
 
 import { createMigratedTestDb } from '../../db/__tests__/test-helpers';
 import type { SqlDatabase } from '../../db/sql-database';
 import * as outboxRepo from '../../db/outbox-repo';
 import type { Session } from '../../api/auth';
-import { drainOutbox, submitReport } from '../comment-sync';
+import { drainOutbox, resetSyncStateForTests, submitReport } from '../comment-sync';
+import { useIdentityStore } from '../../state/identity-store';
 import { onSyncChange, type SyncChange } from '../sync-events';
 
 const BASE = 'https://api.test';
 const SESSION: Session = { userId: 'u1', token: 'tok', displayName: 'Me' };
 const getSessionFn = async () => SESSION;
+
+// A 401 raises the identity store's `authError`, and the next drain answers it
+// by re-registering; neither may leak into the next test.
+afterEach(() => {
+  useIdentityStore.setState({ authError: false });
+  resetSyncStateForTests();
+});
 
 async function db(): Promise<SqlDatabase> {
   return (await createMigratedTestDb()) as unknown as SqlDatabase;
@@ -149,7 +158,7 @@ describe('drainOutbox — reports', () => {
     expect((await outboxRepo.getById(d, 'r1'))?.status).toBe('pending');
   });
 
-  it('retries a 5xx later without charging an attempt', async () => {
+  it('leaves a 5xx pending for its backoff, charged one attempt', async () => {
     const d = await db();
     await seedReport(d);
     const res = await drainOutbox({
@@ -158,10 +167,12 @@ describe('drainOutbox — reports', () => {
       fetchImpl: scriptedFetch([{ status: 503, body: { error: { code: 'x', message: 'y' } } }]),
       getSessionFn,
     });
-    expect(res.outcome).toBe('offline');
+    // The server's failure, reported as such — not as being offline.
+    expect(res.outcome).toBe('server-error');
     const item = await outboxRepo.getById(d, 'r1');
     expect(item?.status).toBe('pending');
-    expect(item?.attempts).toBe(0);
+    expect(item?.attempts).toBe(1);
+    expect(item?.lastError).toBe('x: y');
   });
 
   it('drops an unparseable report row without hitting the network', async () => {

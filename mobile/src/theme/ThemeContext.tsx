@@ -35,17 +35,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Load persisted preferences
   useEffect(() => {
     (async () => {
-      const [savedTheme, savedAutoDark] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY_THEME),
-        AsyncStorage.getItem(STORAGE_KEY_AUTO_DARK),
-      ]);
-      if (savedAutoDark !== null) {
-        setAutoDarkModeState(savedAutoDark === 'true');
+      try {
+        const [savedTheme, savedAutoDark] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEY_THEME),
+          AsyncStorage.getItem(STORAGE_KEY_AUTO_DARK),
+        ]);
+        if (savedAutoDark !== null) {
+          setAutoDarkModeState(savedAutoDark === 'true');
+        }
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          setManualTheme(savedTheme);
+        }
+      } catch (e) {
+        // A storage read that fails (a corrupt store, a full disk) costs the
+        // saved preference, not the app: the provider renders nothing until
+        // `loaded`, so without this the whole app stayed blank for good.
+        console.warn('ThemeProvider: could not read the saved theme; using the default', e);
+      } finally {
+        setLoaded(true);
       }
-      if (savedTheme === 'light' || savedTheme === 'dark') {
-        setManualTheme(savedTheme);
-      }
-      setLoaded(true);
     })();
   }, []);
 

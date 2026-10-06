@@ -51,8 +51,14 @@ export interface UseLocationResult {
 
 /**
  * @param trackPoints Points to snap fixes to (pass null/undefined to skip).
+ * @param breakStarts The track's route breaks in `trackPoints`
+ *   (`routeBreakStarts(track.breaks, 'points')`), so a fix is never snapped onto
+ *   the unwalked line between two stretches.
  */
-export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocationResult {
+export function useLocation(
+  trackPoints?: readonly SnapPoint[] | null,
+  breakStarts?: ReadonlySet<number>,
+): UseLocationResult {
   const [location, setLocation] = useState<SnappedLocation | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +71,13 @@ export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocat
   // new track invalidates the old hint index (a direction reversal renumbers
   // every point), so the two must never be observed out of step.
   const trackPointsRef = useRef(trackPoints);
+  const breakStartsRef = useRef(breakStarts);
   const hintRef = useRef<number | undefined>(undefined);
   useEffect(() => {
     trackPointsRef.current = trackPoints;
+    breakStartsRef.current = breakStarts;
     hintRef.current = undefined;
-  }, [trackPoints]);
+  }, [trackPoints, breakStarts]);
 
   // Check permission on mount (non-prompting).
   useEffect(() => {
@@ -82,7 +90,13 @@ export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocat
     if (!points || points.length === 0) {
       setLocation({ raw: update, trailKm: null, offTrailMeters: null });
     } else {
-      const snap = snapToTrail(update.latitude, update.longitude, points, hintRef.current);
+      const snap = snapToTrail(
+        update.latitude,
+        update.longitude,
+        points,
+        hintRef.current,
+        breakStartsRef.current,
+      );
       if (snap) hintRef.current = snap.index;
       setLocation({
         raw: update,

@@ -19,6 +19,7 @@ import {
   resupplyCandidates,
   nextResupplyStop,
   optionAccess,
+  WALKED_WHEN_UNSAID_MAX_KM,
   type ResupplyCandidateWaypoint,
   type ResupplySideTrip,
   type ResupplyTrail,
@@ -799,12 +800,24 @@ describe('optionAccess', () => {
     expect(optionAccess({ name: 'C', offTrailKm: 0.6, accessMode: 'on-trail' })?.walkKm).toBe(0.6);
   });
 
-  it('rides a hitch, a shuttle, a boat and a distance whose way is not given', () => {
+  it('rides a hitch, a shuttle, a boat and a long distance whose way is not given', () => {
     expect(optionAccess({ name: 'H', offTrailKm: 35, accessMode: 'hitch' }))
       .toEqual({ place: 'H', walkKm: 0, walkAscentM: 0, walkDescentM: 0, rideKm: 35, rideMode: 'hitch' });
-    const unknown = optionAccess({ name: 'U', offTrailKm: 0.7 });
-    expect(unknown).toMatchObject({ walkKm: 0, rideKm: 0.7 });
+    // Warkworth: 6 km, no mode — past WALKED_WHEN_UNSAID_MAX_KM.
+    const unknown = optionAccess({ name: 'U', offTrailKm: 6 });
+    expect(unknown).toMatchObject({ walkKm: 0, rideKm: 6 });
     expect(unknown?.rideMode).toBeUndefined();
+  });
+
+  it('walks a short distance whose way is not given, up to and including the limit', () => {
+    // Kerikeri: 0.7 km, no mode.
+    expect(optionAccess({ name: 'K', offTrailKm: 0.7 })).toMatchObject({ walkKm: 0.7, rideKm: 0 });
+    expect(optionAccess({ name: 'L', offTrailKm: WALKED_WHEN_UNSAID_MAX_KM })).toMatchObject({
+      walkKm: WALKED_WHEN_UNSAID_MAX_KM,
+      rideKm: 0,
+    });
+    // A stated mode always wins over the distance.
+    expect(optionAccess({ name: 'H', offTrailKm: 0.7, accessMode: 'hitch' })).toMatchObject({ walkKm: 0, rideKm: 0.7 });
   });
 
   it('is null for a place on the route', () => {
@@ -858,10 +871,14 @@ describe('stops and legs off the route', () => {
     expect(legs[1].rides).toEqual([{ km: 20, mode: 'hitch', end: 'from' }]);
   });
 
-  it('does not walk a distance whose way the data does not give', () => {
-    const legs = legsFor([{ id: 'k', name: 'Kerikeri', type: 'town', totalDistance: 40, offTrailKm: 0.7 }]);
-    expect(legs[0]).toMatchObject({ walkedKm: 40, offTrailWalkKm: 0 });
-    expect(legs[0].rides).toEqual([{ km: 0.7, end: 'to' }]);
+  it('walks a short unsaid distance into town, and lists a long one without walking it', () => {
+    const short = legsFor([{ id: 'k', name: 'Kerikeri', type: 'town', totalDistance: 40, offTrailKm: 0.7 }]);
+    expect(short[0]).toMatchObject({ walkedKm: 40.7, offTrailWalkKm: 0.7, rides: [] });
+    expect(short[1]).toMatchObject({ offTrailWalkKm: 0.7, rides: [] });
+
+    const long = legsFor([{ id: 'w', name: 'Warkworth', type: 'town-access', totalDistance: 40, offTrailKm: 6 }]);
+    expect(long[0]).toMatchObject({ walkedKm: 40, offTrailWalkKm: 0 });
+    expect(long[0].rides).toEqual([{ km: 6, end: 'to' }]);
   });
 
   it('measures a stop with several places ticked by the longest walk', () => {

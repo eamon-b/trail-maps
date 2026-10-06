@@ -2,16 +2,14 @@
 <gpx version="1.1" creator="trail-maps from LIST Transport Segments (NRE Tasmania, CC BY 3.0 AU) + OpenStreetMap waypoints (ODbL); elevation Copernicus GLO-30" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata><name>South Coast Track</name></metadata>
   <wpt lat="-43.582976" lon="146.895197"><ele>7.0</ele><name>Boltons Green Campground</name><type>campsite</type></wpt>
-  <wpt lat="-43.582583" lon="146.895832"><ele>2.0</ele><name>Boltons Green Campground</name><type>campsite</type></wpt>
   <wpt lat="-43.497982" lon="146.273481"><ele>3.0</ele><name>Buoy Creek camp site</name><type>campsite</type></wpt>
-  <wpt lat="-43.581912" lon="146.890328"><ele>3.5</ele><name>Campsite</name><type>campsite</type></wpt>
+  <wpt lat="-43.581912" lon="146.890328"><ele>3.5</ele><name>Cockle Creek campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.491028" lon="146.225120"><ele>7.2</ele><name>Freney Lagoon Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.596668" lon="146.686331"><ele>28.2</ele><name>Granite Beach (east) Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.507140" lon="146.467445"><ele>819.0</ele><name>Ironbound high campground</name><type>campsite</type></wpt>
   <wpt lat="-43.530423" lon="146.496710"><ele>14.2</ele><name>Little Deadmans Bay Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.480448" lon="146.349356"><ele>21.9</ele><name>Louisa Creek Campground</name><type>campsite</type></wpt>
   <wpt lat="-43.485330" lon="146.409871"><ele>41.3</ele><name>Louisa River Campsite</name><type>campsite</type></wpt>
-  <wpt lat="-43.486296" lon="146.409843"><ele>46.4</ele><name>Louisa River Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.536425" lon="146.590181"><ele>6.2</ele><name>New River Lagoon Boat Crossing Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.561553" lon="146.624421"><ele>11.0</ele><name>Osmiridium Beach Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.491556" lon="146.243014"><ele>3.6</ele><name>Point Eric Campsite</name><type>campsite</type></wpt>
@@ -21,6 +19,7 @@
   <wpt lat="-43.595410" lon="146.721690"><ele>452.1</ele><name>Trackcutters Camp</name><type>campsite</type></wpt>
   <wpt lat="-43.523306" lon="146.512713"><ele>10.0</ele><name>Turua Beach West Campsite</name><type>campsite</type></wpt>
   <wpt lat="-43.582743" lon="146.895641"><ele>2.6</ele><name>Drinking water</name><type>water</type></wpt>
+  <wpt lat="-43.418470" lon="146.164230"><ele>3.5</ele><name>Melaleuca walkers' huts</name><desc>Walkers Hut and Charles King Memorial Hut beside the Melaleuca airstrip, at the start of the track.</desc><type>hut</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-43.422395" lon="146.163110"><ele>3.5</ele></trkpt>
     <trkpt lat="-43.422405" lon="146.163035"><ele>3.5</ele></trkpt>

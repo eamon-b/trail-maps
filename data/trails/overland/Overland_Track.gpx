@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="trail-maps from LIST Transport Segments (NRE Tasmania, CC BY 3.0 AU) + OpenStreetMap waypoints (ODbL); elevation Copernicus GLO-30" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata><name>Overland Track</name></metadata>
-  <wpt lat="-41.931885" lon="146.088744"><ele>879.1</ele><name>Campsite</name><type>campsite</type></wpt>
-  <wpt lat="-41.771658" lon="145.958024"><ele>992.5</ele><name>Campsite</name><type>campsite</type></wpt>
-  <wpt lat="-41.771407" lon="145.956529"><ele>991.9</ele><name>Campsite</name><type>campsite</type></wpt>
-  <wpt lat="-41.771127" lon="145.955699"><ele>996.2</ele><name>Campsite</name><desc>Windermere Group Camping Platforms</desc><type>campsite</type></wpt>
+  <wpt lat="-41.931885" lon="146.088744"><ele>879.1</ele><name>Bert Nichols Hut tent platforms</name><type>campsite</type></wpt>
+  <wpt lat="-41.771127" lon="145.955699"><ele>996.2</ele><name>Windermere Hut tent platforms</name><type>campsite</type></wpt>
   <wpt lat="-42.043399" lon="146.137904"><ele>750.7</ele><name>Echo Point Campsite</name><type>campsite</type></wpt>
   <wpt lat="-42.114339" lon="146.168328"><ele>749.4</ele><name>Fergy's Paddock Camp Site</name><type>campsite</type></wpt>
   <wpt lat="-41.891787" lon="146.081329"><ele>861.3</ele><name>Kia Ora Hut Group Camping Platform</name><type>campsite</type></wpt>
@@ -41,8 +39,6 @@
   <wpt lat="-41.797494" lon="145.983540"><ele>965.8</ele><name>Forth River Viewpoint</name><type>poi</type></wpt>
   <wpt lat="-41.889257" lon="146.079932"><ele>856.5</ele><name>Kia Ora Hut (Cradle Mountain Huts)</name><desc>Private hut used by commercial guided walks; not open to independent walkers.</desc><type>poi</type></wpt>
   <wpt lat="-41.675704" lon="145.946137"><ele>1236.6</ele><name>Kitchen Hut</name><desc>Small day use building. Overnight use in emergencies only.</desc><type>poi</type></wpt>
-  <wpt lat="-41.660333" lon="145.952845"><ele>1216.3</ele><name>Marion's Lookout</name><type>poi</type></wpt>
-  <wpt lat="-41.635424" lon="145.950698"><ele>867.7</ele><name>Mt Kate House</name><desc>Private; OpenStreetMap marks it as not open to the public.</desc><type>poi</type></wpt>
   <wpt lat="-41.863984" lon="146.058079"><ele>1126.2</ele><name>Pelion Gap</name><type>poi</type></wpt>
   <wpt lat="-41.835867" lon="146.044696"><ele>901.6</ele><name>Pelion Hut (Cradle Mountain Huts)</name><desc>Private hut used by commercial guided walks; not open to independent walkers.</desc><type>poi</type></wpt>
   <wpt lat="-41.635804" lon="145.949204"><ele>864.3</ele><name>Ronny Creek Registration Booth</name><type>poi</type></wpt>

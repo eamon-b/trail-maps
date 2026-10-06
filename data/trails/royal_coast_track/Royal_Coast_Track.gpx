@@ -5,6 +5,8 @@
   <wpt lat="-34.211467" lon="151.010581"><ele>178.3</ele><name>Otford Lookout</name><type>poi</type></wpt>
   <wpt lat="-34.198796" lon="151.022575"><ele>221.2</ele><name>Werrong Lookout</name><type>poi</type></wpt>
   <wpt lat="-34.091975" lon="151.157323"><ele>52.8</ele><name>Drinking water</name><type>water</type></wpt>
+  <wpt lat="-34.091667" lon="151.157086"><ele>52.8</ele><name>Bundeena (1 km north)</name><desc>Northern end of the track. Supermarket, post office, cafes and the ferry to Cronulla in Bundeena, about 1 km north.</desc><type>town-access</type></wpt>
+  <wpt lat="-34.210690" lon="151.005820"><ele>174.7</ele><name>Otford station</name><desc>Southern end of the track; trains to Sydney and Wollongong.</desc><type>trailhead</type></wpt>
   <trk><name>Main route</name><trkseg>
     <trkpt lat="-34.091667" lon="151.157086"><ele>52.8</ele></trkpt>
     <trkpt lat="-34.091792" lon="151.157243"><ele>52.8</ele></trkpt>

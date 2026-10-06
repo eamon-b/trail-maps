@@ -4,7 +4,21 @@
   "fetchedAt": "2026-10-01T05:14:20.744Z",
   "searchRadiusKm": 2,
   "endpoint": "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "rejected": [],
+  "rejected": [
+    "way/1314359305",
+    "way/1533442600",
+    "way/1533442611",
+    "way/1533442612",
+    "way/1533442613",
+    "way/1533442623",
+    "way/1533442635",
+    "way/186090198",
+    "way/977826650",
+    "way/977826651",
+    "way/977826652",
+    "way/977826667",
+    "way/977826668"
+  ],
   "pois": [
     {
       "id": 10000818545,

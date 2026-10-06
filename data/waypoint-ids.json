@@ -6807,7 +6807,7 @@
     },
     {
       "id": "w_4f412c1f",
-      "name": "water tank",
+      "name": "Water tank",
       "type": "water-tank",
       "lat": -36.891054,
       "lon": 142.376089
@@ -6926,7 +6926,7 @@
     },
     {
       "id": "w_7ed920ea",
-      "name": "Boundry Gap",
+      "name": "Boundary Gap",
       "type": "campsite",
       "lat": -37.313644,
       "lon": 142.593682
@@ -6944,6 +6944,13 @@
       "type": "mountain",
       "lat": -37.190865,
       "lon": 142.503411
+    },
+    {
+      "id": "w_8f72dec2",
+      "name": "Barri Yalug Hike-in Campground",
+      "type": "campsite",
+      "lat": -37.22347,
+      "lon": 142.55305
     },
     {
       "id": "w_8ff5b5e7",
@@ -7237,7 +7244,7 @@
     {
       "id": "w_0f893262",
       "name": "Glenrock Scout Training Camp",
-      "type": "campsite",
+      "type": "poi",
       "lat": -32.962059,
       "lon": 151.731889
     },
@@ -7343,8 +7350,8 @@
       "id": "w_23f79225",
       "name": "Sydney",
       "type": "town",
-      "lat": -33.869844,
-      "lon": 151.208285
+      "lat": -33.862134,
+      "lon": 151.210521
     },
     {
       "id": "w_2489fcae",
@@ -7495,7 +7502,7 @@
     },
     {
       "id": "w_532ea1f6",
-      "name": "tap",
+      "name": "Tap",
       "type": "water",
       "lat": -33.626833,
       "lon": 151.110927
@@ -7643,7 +7650,7 @@
     {
       "id": "w_8a7bdf58",
       "name": "Cubby House Kukundi",
-      "type": "hut",
+      "type": "poi",
       "lat": -33.790346,
       "lon": 151.154747
     },
@@ -7783,7 +7790,7 @@
     {
       "id": "w_9afd3017",
       "name": "Crosslands Youth Camp",
-      "type": "campsite",
+      "type": "poi",
       "lat": -33.628386,
       "lon": 151.107843
     },
@@ -7872,6 +7879,13 @@
       "lon": 151.252644
     },
     {
+      "id": "w_bac04672",
+      "name": "Warners Bay",
+      "type": "town",
+      "lat": -32.97368,
+      "lon": 151.64646
+    },
+    {
       "id": "w_bca55fe7",
       "name": "Drinking water",
       "type": "water",
@@ -7915,10 +7929,17 @@
     },
     {
       "id": "w_cb23c782",
-      "name": "spring",
+      "name": "Spring",
       "type": "water",
       "lat": -33.591575,
       "lon": 151.186314
+    },
+    {
+      "id": "w_cb5e3ca3",
+      "name": "Thornleigh",
+      "type": "town",
+      "lat": -33.73197,
+      "lon": 151.07985
     },
     {
       "id": "w_cbecb339",
@@ -7954,6 +7975,13 @@
       "type": "water",
       "lat": -32.926171,
       "lon": 151.779235
+    },
+    {
+      "id": "w_d69f52e6",
+      "name": "Brooklyn",
+      "type": "town",
+      "lat": -33.54797,
+      "lon": 151.22633
     },
     {
       "id": "w_d798b25e",
@@ -8052,6 +8080,13 @@
       "type": "poi",
       "lat": -32.852605,
       "lon": 151.28316
+    },
+    {
+      "id": "w_f0064504",
+      "name": "Somersby",
+      "type": "town",
+      "lat": -33.35813,
+      "lon": 151.28972
     },
     {
       "id": "w_f2a7c108",
@@ -8295,7 +8330,7 @@
     },
     {
       "id": "w_4868941d",
-      "name": "Caravan Park",
+      "name": "Marengo Holiday Park",
       "type": "caravan-park",
       "lat": -38.778481,
       "lon": 143.664814
@@ -8805,6 +8840,13 @@
       "type": "water",
       "lat": -38.36195,
       "lon": 141.370509
+    },
+    {
+      "id": "w_b1c4c971",
+      "name": "Nelson",
+      "type": "town",
+      "lat": -38.04759,
+      "lon": 141.00818
     },
     {
       "id": "w_b35cb9e9",
@@ -11046,6 +11088,13 @@
   ],
   "kep_track": [
     {
+      "id": "w_0196c728",
+      "name": "Northam (1 km east)",
+      "type": "town-access",
+      "lat": -31.658994,
+      "lon": 116.657647
+    },
+    {
       "id": "w_01986ced",
       "name": "Drinking water",
       "type": "water",
@@ -11058,6 +11107,27 @@
       "type": "water",
       "lat": -31.954397,
       "lon": 116.166352
+    },
+    {
+      "id": "w_6a1bda69",
+      "name": "Clackline",
+      "type": "town",
+      "lat": -31.72083,
+      "lon": 116.5186
+    },
+    {
+      "id": "w_6fc0f8bc",
+      "name": "Mundaring",
+      "type": "town",
+      "lat": -31.90125,
+      "lon": 116.16747
+    },
+    {
+      "id": "w_71408c60",
+      "name": "Bakers Hill",
+      "type": "town",
+      "lat": -31.74851,
+      "lon": 116.4579
     },
     {
       "id": "w_77bfad1f",
@@ -11083,7 +11153,7 @@
     {
       "id": "w_ef6ca162",
       "name": "Northam RV 48hr Stay",
-      "type": "campsite",
+      "type": "poi",
       "lat": -31.657551,
       "lon": 116.660092
     }
@@ -11513,7 +11583,7 @@
   "overland": [
     {
       "id": "w_005d9e1d",
-      "name": "Campsite",
+      "name": "Windermere Hut tent platforms",
       "type": "campsite",
       "lat": -41.771127,
       "lon": 145.955699
@@ -11660,7 +11730,7 @@
     },
     {
       "id": "w_66ebb08a",
-      "name": "Campsite",
+      "name": "Bert Nichols Hut tent platforms",
       "type": "campsite",
       "lat": -41.931885,
       "lon": 146.088744
@@ -11850,6 +11920,13 @@
   ],
   "royal_coast_track": [
     {
+      "id": "w_00850a80",
+      "name": "Otford station",
+      "type": "trailhead",
+      "lat": -34.21069,
+      "lon": 151.00582
+    },
+    {
       "id": "w_1ea85892",
       "name": "Werrong Lookout",
       "type": "poi",
@@ -11862,6 +11939,13 @@
       "type": "poi",
       "lat": -34.211467,
       "lon": 151.010581
+    },
+    {
+      "id": "w_a6fafe41",
+      "name": "Bundeena (1 km north)",
+      "type": "town-access",
+      "lat": -34.091667,
+      "lon": 151.157086
     },
     {
       "id": "w_b6cd63ff",
@@ -12540,6 +12624,13 @@
       "lon": 150.288416
     },
     {
+      "id": "w_2977b31a",
+      "name": "Katoomba (2 km east)",
+      "type": "town-access",
+      "lat": -33.7037,
+      "lon": 150.2888
+    },
+    {
       "id": "w_30f90ba1",
       "name": "Therabulat Lookout",
       "type": "poi",
@@ -12547,11 +12638,25 @@
       "lon": 150.291036
     },
     {
+      "id": "w_760a564c",
+      "name": "Old Ford Reserve",
+      "type": "campsite",
+      "lat": -33.73167,
+      "lon": 150.235
+    },
+    {
       "id": "w_7a3dec9e",
       "name": "Coxs River Camp Area",
       "type": "campsite",
       "lat": -33.742828,
       "lon": 150.178779
+    },
+    {
+      "id": "w_9853df4e",
+      "name": "Jenolan Caves",
+      "type": "trailhead",
+      "lat": -33.8204,
+      "lon": 150.021
     },
     {
       "id": "w_9905d34a",
@@ -12592,7 +12697,7 @@
   "south_coast_track": [
     {
       "id": "w_037443cb",
-      "name": "Campsite",
+      "name": "Cockle Creek campsite",
       "type": "campsite",
       "lat": -43.581912,
       "lon": 146.890328
@@ -12624,6 +12729,13 @@
       "type": "campsite",
       "lat": -43.491028,
       "lon": 146.22512
+    },
+    {
+      "id": "w_4e50d347",
+      "name": "Melaleuca walkers' huts",
+      "type": "hut",
+      "lat": -43.41847,
+      "lon": 146.16423
     },
     {
       "id": "w_53863551",
@@ -17355,8 +17467,15 @@
       "lon": 146.30078
     },
     {
+      "id": "w_531bd2c6",
+      "name": "Zoe Falls",
+      "type": "poi",
+      "lat": -18.40898,
+      "lon": 146.32203
+    },
+    {
       "id": "w_9ac0c3d4",
-      "name": "Forest Campsites",
+      "name": "Zoe Bay campsite",
       "type": "campsite",
       "lat": -18.402859,
       "lon": 146.325107
@@ -17446,6 +17565,13 @@
       "type": "poi",
       "lat": -43.224091,
       "lon": 148.002779
+    },
+    {
+      "id": "w_b4f525ef",
+      "name": "Denmans Cove",
+      "type": "trailhead",
+      "lat": -43.1384,
+      "lon": 147.895
     },
     {
       "id": "w_ba9b6188",

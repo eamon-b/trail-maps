@@ -23,7 +23,7 @@ import {
   DESCRIPTIONS_FILENAME,
   loadCuratedDescriptions,
 } from './lib/waypoint-descriptions.js';
-import { countDuplicatePois, markDuplicatePois } from '../src/lib/poi-dedup.js';
+import { countDuplicatePois, dedupCandidates, markDuplicatePois } from '../src/lib/poi-dedup.js';
 import { countNoiseByReason, dropNoisePois } from '../src/lib/poi-noise.js';
 import { findDenseStretches, thinUrbanPois } from '../src/lib/poi-urban.js';
 import { readTrailPOIsForBuild } from './lib/trail-pois-file.js';
@@ -631,7 +631,7 @@ async function main() {
       // waypoint is never thinned away (@lib/poi-urban).
       const fetched = readTrailPOIsForBuild(trailDir) ?? undefined;
       const noise = countNoiseByReason(fetched);
-      const unthinned = markDuplicatePois(dropNoisePois(fetched), processed.waypoints);
+      const unthinned = markDuplicatePois(dropNoisePois(fetched), dedupCandidates(processed));
       const cities = findDenseStretches(unthinned ?? []);
       const pois = thinUrbanPois(unthinned);
       if (pois) {

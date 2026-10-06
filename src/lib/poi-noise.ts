@@ -18,7 +18,11 @@
  */
 import type { TrailPOI } from './trail-types.js';
 
-export type NoiseReason = 'bus-stop' | 'minor-shelter' | 'no-emergency-department';
+export type NoiseReason =
+  | 'bus-stop'
+  | 'minor-shelter'
+  | 'no-emergency-department'
+  | 'road-emergency-phone';
 
 /**
  * `shelter_type` values that describe a roof over a bench rather than somewhere
@@ -27,7 +31,7 @@ export type NoiseReason = 'bus-stop' | 'minor-shelter' | 'no-emergency-departmen
  * `weather_shelter` is deliberately absent: on the Bibbulmun and Larapinta those
  * are real trail infrastructure. So are `basic_hut` and `lean_to`.
  */
-const MINOR_SHELTER_TYPES = new Set(['picnic_shelter', 'gazebo', 'pavilion', 'sun_shelter']);
+const MINOR_SHELTER_TYPES = new Set(['picnic_shelter', 'gazebo', 'pavilion', 'sun_shelter', 'pergola']);
 
 /**
  * Name fragments that override `MINOR_SHELTER_TYPES`.
@@ -41,6 +45,30 @@ const MINOR_SHELTER_TYPES = new Set(['picnic_shelter', 'gazebo', 'pavilion', 'su
 const SHELTER_KEEP_WORDS = ['camp', 'hut', 'shelter', 'hostel', 'yha', 'cabin', 'bunk'];
 
 /**
+ * A name that says "picnic" agrees with the tag, and beats the keep-words: the
+ * Kep Track has four roofs literally named "picnic shelter", which the word
+ * `shelter` would otherwise spare.
+ */
+const PICNIC_NAME = /\bpicnic\b/;
+
+/**
+ * A bus stop whose name says it serves walkers. The Cradle Mountain shuttle
+ * ("Ronny Creek - Cradle Shuttle Bus") and the Three Capes pickup are how a
+ * walker reaches or leaves the track, and are the bus stops worth keeping.
+ */
+const WALKER_SHUTTLE_NAME = /\b(shuttle|pick-?up)\b/i;
+
+/** Car-park and airport shuttles share the word, and serve nobody on foot. */
+const NOT_A_WALKER_SHUTTLE = /\b(parking|car ?park|airport)\b/i;
+
+/**
+ * An `emergency=phone` on a road no walker is on. The Great North Walk runs
+ * beside the Pacific Motorway and over Sydney's tunnels, and shipped 41
+ * motorway help phones as emergency POIs.
+ */
+const ROAD_PHONE_STREET = /\b(motorway|freeway|expressway|tunnel|distributor|off-?ramp|on-?ramp)\b/i;
+
+/**
  * Why this POI should not ship, or null to keep it.
  *
  * Reads `tags` rather than `category` so a rule cannot be silently bypassed by a
@@ -51,8 +79,9 @@ export function noiseReason(poi: TrailPOI): NoiseReason | null {
 
   // 420 of the 433 transport POIs, named things like "Peoples Av Before Hill
   // St". The 13 that remain — rail stations and the Cape Jervis ferry — are
-  // among the most useful POIs we have, so the category itself stays.
-  if (tags.highway === 'bus_stop') {
+  // among the most useful POIs we have, so the category itself stays. A
+  // walkers' shuttle stop is kept for the same reason (`WALKER_SHUTTLE_NAME`).
+  if (tags.highway === 'bus_stop' && !isWalkerShuttle(poi.name ?? '')) {
     return 'bus-stop';
   }
 
@@ -60,7 +89,7 @@ export function noiseReason(poi: TrailPOI): NoiseReason | null {
   // `amenity=shelter`, and they must be judged by the same rule.
   if (tags.shelter_type && MINOR_SHELTER_TYPES.has(tags.shelter_type)) {
     const name = (poi.name ?? '').toLowerCase();
-    if (!SHELTER_KEEP_WORDS.some(word => name.includes(word))) {
+    if (PICNIC_NAME.test(name) || !SHELTER_KEEP_WORDS.some(word => name.includes(word))) {
       return 'minor-shelter';
     }
   }
@@ -72,7 +101,15 @@ export function noiseReason(poi: TrailPOI): NoiseReason | null {
     return 'no-emergency-department';
   }
 
+  if (tags.emergency === 'phone' && ROAD_PHONE_STREET.test(tags['addr:street'] ?? '')) {
+    return 'road-emergency-phone';
+  }
+
   return null;
+}
+
+function isWalkerShuttle(name: string): boolean {
+  return WALKER_SHUTTLE_NAME.test(name) && !NOT_A_WALKER_SHUTTLE.test(name);
 }
 
 /** Drop every POI a rule rejects. Returns a new array; `undefined` passes through. */
@@ -89,6 +126,7 @@ export function countNoiseByReason(
     'bus-stop': 0,
     'minor-shelter': 0,
     'no-emergency-department': 0,
+    'road-emergency-phone': 0,
   };
   for (const poi of pois ?? []) {
     const reason = noiseReason(poi);

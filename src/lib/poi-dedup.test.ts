@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   countDuplicatePois,
+  dedupCandidates,
   isCompatibleType,
   markDuplicatePois,
   nameScore,
@@ -218,5 +219,75 @@ describe('nonDuplicatePois / countDuplicatePois', () => {
     expect(countDuplicatePois(pois)).toBe(2);
     expect(countDuplicatePois(undefined)).toBe(0);
     expect(nonDuplicatePois(undefined)).toEqual([]);
+  });
+});
+
+describe('open-data trail matching', () => {
+  it("joins an apostrophe instead of splitting on it", () => {
+    expect(nameTokens("Devil's Kitchen")).toEqual(['devils', 'kitchen']);
+    expect(nameScore("Devil's Kitchen", 'Devils Kitchen Hike-in Campground')).toBe(1);
+    expect(nameTokens("O' Keefes Hut")).toEqual(['okeefes']);
+    expect(nameTokens("Walkers' Rest Camp")).toEqual(['walkers']);
+  });
+
+  it('prefers the waypoint with the same name to a closer one it merely contains', () => {
+    const [flagged] = markDuplicatePois(
+      [poi({ name: 'Aire River West Campground - Otway NP', lat: latOffset(100) })],
+      [
+        wp({ id: 'w_hike', name: 'Aire River Hike-in Campground', lat: latOffset(90) }),
+        wp({ id: 'w_west', name: 'Aire River West Campground' }),
+      ]
+    )!;
+    expect(flagged.duplicateOf).toBe('w_west');
+  });
+
+  it('ignores the Great Trails Victoria naming words', () => {
+    expect(nameScore('Moleside Bushcamp (GSWW)', 'Moleside Hike-in Campground')).toBe(1);
+    expect(nameScore('Lasletts Canoe Camp', 'Lasletts Hike-in Campground')).toBe(1);
+  });
+
+  it('flags an exact, co-located match against a generic `poi` waypoint', () => {
+    const [flagged] = markDuplicatePois(
+      [poi({ name: 'Rock shelter' })],
+      [wp({ name: 'Rock shelter', type: 'poi' })]
+    )!;
+    expect(flagged.duplicateOf).toBe('w_1');
+  });
+
+  it('keeps the type check beyond the co-located radius, and for typed waypoints', () => {
+    const [near] = markDuplicatePois(
+      [poi({ name: 'Rock shelter', lat: latOffset(30) })],
+      [wp({ name: 'Rock shelter', type: 'poi' })]
+    )!;
+    expect(near.duplicateOf).toBeUndefined();
+    const [town] = markDuplicatePois(
+      [poi({ name: 'Nelson', category: 'resupply' })],
+      [wp({ name: 'Nelson', type: 'town' })]
+    )!;
+    expect(town.duplicateOf).toBeUndefined();
+  });
+});
+
+describe('dedupCandidates', () => {
+  it('collects main, off-trail and variant waypoints once each', () => {
+    const hut = wp({ id: 'w_hut', name: 'Narcissus Hut', type: 'hut' });
+    const ids = dedupCandidates({
+      waypoints: [hut],
+      offTrailWaypoints: [wp({ id: 'w_off', name: 'Dunkeld', type: 'town' })],
+      alternates: [{ waypoints: [wp({ id: 'w_alt', name: 'Beach camp' })] }],
+      sideTrips: [
+        { waypoints: [hut, wp({ id: 'w_munro', name: 'Munro Cabin', type: 'hut' })] },
+        {},
+      ],
+    }).map(w => w.id);
+    expect(ids).toEqual(['w_hut', 'w_off', 'w_alt', 'w_munro']);
+  });
+
+  it('lets a POI on a side trip match the side trip\'s waypoint', () => {
+    const [flagged] = markDuplicatePois(
+      [poi({ name: 'Munro Cabin' })],
+      dedupCandidates({ waypoints: [], sideTrips: [{ waypoints: [wp({ id: 'w_munro', name: 'Munro Cabin', type: 'hut' })] }] })
+    )!;
+    expect(flagged.duplicateOf).toBe('w_munro');
   });
 });

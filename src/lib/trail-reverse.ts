@@ -241,6 +241,14 @@ export function createReversedTrail<T extends ReversibleTrail>(trail: T): T {
     sideTrips: transformSideTrips(trail.sideTrips ?? [], totalDist),
     // Only when the trail has POIs: an absent `pois` means "never enriched",
     // which is not the same as "enriched and found nothing".
-    ...(trail.pois ? { pois: mirrorPoiDistances(trail.pois, totalDist) } : {}),
+    // Variants go along so a POI on a side trip or alternate mirrors with it.
+    ...(trail.pois
+      ? {
+          pois: mirrorPoiDistances(trail.pois, totalDist, {
+            alternates: trail.alternates,
+            sideTrips: trail.sideTrips,
+          }),
+        }
+      : {}),
   } as T;
 }

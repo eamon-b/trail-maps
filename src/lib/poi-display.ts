@@ -326,18 +326,122 @@ export function visiblePois(
  * distance is direction-independent and is left alone. `createReversedTrail`
  * calls this, so the web viewer and the mobile guide both get it for free; the
  * POI shape is structural for the same reason the rest of `trail-reverse` is.
+ *
+ * Pass the trail's variants so a POI found along a side trip, terminus or
+ * alternate is moved with that variant (see `variantOf`) rather than mirrored
+ * about the main line.
  */
-export function mirrorPoiDistances<P extends { distanceAlongTrail: number }>(
+export function mirrorPoiDistances<P extends MirrorablePoi>(
   pois: readonly P[] | undefined,
-  totalDistance: number
+  totalDistance: number,
+  variants: PoiMirrorVariants = {}
 ): P[] | undefined {
   if (!pois) return undefined;
+  const attached = [
+    ...(variants.alternates ?? []).map(v => ({ v, alternate: true })),
+    ...(variants.sideTrips ?? []).map(v => ({ v, alternate: false })),
+  ].filter(({ v }) => v.startDistance != null && (v.points?.length ?? 0) > 0);
+
   return pois
-    .map(poi => ({
-      ...poi,
-      distanceAlongTrail: Math.max(0, totalDistance - poi.distanceAlongTrail),
-    }))
+    .map(poi => {
+      const on = attached.length > 0 ? variantOf(poi, attached, totalDistance) : null;
+      let km: number;
+      if (!on) {
+        km = totalDistance - poi.distanceAlongTrail;
+      } else {
+        // The same mapping `variant-reverse` gives the variant's own waypoints:
+        // a side trip (or terminus) is walked out from its mirrored junction,
+        // an alternate is entered from what was its far end.
+        const start = on.v.startDistance as number;
+        const along = Math.max(0, poi.distanceAlongTrail - start);
+        km = on.alternate
+          ? totalDistance - (on.v.endDistance ?? start) + Math.max(0, (on.v.distance ?? 0) - along)
+          : totalDistance - start + along;
+      }
+      return { ...poi, distanceAlongTrail: Math.max(0, km) };
+    })
     .sort((a, b) => a.distanceAlongTrail - b.distanceAlongTrail);
+}
+
+/** What `mirrorPoiDistances` reads off a POI. Position is optional: without it a POI mirrors about the main line. */
+export interface MirrorablePoi {
+  distanceAlongTrail: number;
+  /** Cross-track km to whichever line the fetch measured the POI against. */
+  distanceFromTrail?: number;
+  lat?: number;
+  lon?: number;
+}
+
+/** The parts of an attached variant the POI mirror needs. */
+export interface PoiMirrorVariant {
+  startDistance?: number;
+  endDistance?: number;
+  /** Variant length, km. */
+  distance?: number;
+  /** Unknown so `ReversibleVariant` fits; entries without a numeric lat/lon are skipped. */
+  points?: readonly unknown[];
+}
+
+export interface PoiMirrorVariants {
+  alternates?: readonly PoiMirrorVariant[];
+  sideTrips?: readonly PoiMirrorVariant[];
+}
+
+/**
+ * Slack (km) between a POI's recorded cross-track distance and its distance to
+ * a variant's nearest *vertex*: the phone's variant lines are thinned, so the
+ * nearest vertex can sit a little further off than the line itself.
+ */
+const VARIANT_MATCH_SLACK_KM = 0.15;
+
+/**
+ * The variant a POI was measured along, if any.
+ *
+ * The POI fetch searches a corridor round the variants too, and numbers a POI
+ * on one the way a variant waypoint is numbered: junction km plus the distance
+ * along the variant. Mirrored about the main line, the Overland's Cynthia Bay
+ * POIs (km 68-79 on a 62 km trail) all clamped to km 0, and Pine Valley Hut
+ * landed on the wrong side of its junction. A POI belongs to a variant when its
+ * km falls inside the variant's span and its recorded cross-track distance is
+ * the distance to that variant's line. A km past the trail's end can only be
+ * on a variant, so the nearest one in span takes it.
+ */
+function variantOf<V extends { v: PoiMirrorVariant }>(
+  poi: MirrorablePoi,
+  attached: readonly V[],
+  totalDistance: number
+): V | null {
+  if (poi.lat == null || poi.lon == null) return null;
+  const beyondEnd = poi.distanceAlongTrail > totalDistance;
+  let best: { entry: V; gapKm: number } | null = null;
+  for (const entry of attached) {
+    const start = entry.v.startDistance as number;
+    const length = entry.v.distance ?? 0;
+    if (poi.distanceAlongTrail < start - 0.01 || poi.distanceAlongTrail > start + length + 0.01) {
+      continue;
+    }
+    const nearestKm = nearestVertexKm(poi.lat, poi.lon, entry.v.points ?? []);
+    const gapKm = Math.abs(nearestKm - (poi.distanceFromTrail ?? 0));
+    if (!beyondEnd && gapKm > VARIANT_MATCH_SLACK_KM) continue;
+    if (!best || gapKm < best.gapKm) best = { entry, gapKm };
+  }
+  return best?.entry ?? null;
+}
+
+/** Distance (km) to the nearest vertex, equirectangular: corridor-scale distances only. */
+function nearestVertexKm(lat: number, lon: number, points: readonly unknown[]): number {
+  const kmPerDegLat = 111.32;
+  const kmPerDegLon = kmPerDegLat * Math.cos((lat * Math.PI) / 180);
+  let best = Infinity;
+  for (const point of points) {
+    const p = point as { lat?: unknown; lon?: unknown };
+    if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
+    const dy = (p.lat - lat) * kmPerDegLat;
+    const dx = (p.lon - lon) * kmPerDegLon;
+    const d = dx * dx + dy * dy;
+    if (d < best) best = d;
+  }
+  return Math.sqrt(best);
 }
 
 // === Interleaving ===

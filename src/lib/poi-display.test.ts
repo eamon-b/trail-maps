@@ -299,6 +299,56 @@ describe('reversing a trail', () => {
   it('leaves an un-enriched trail un-enriched', () => {
     expect(mirrorPoiDistances(undefined, 130)).toBeUndefined();
   });
+
+  describe('POIs on variants', () => {
+    // A 62 km trail; a terminus leaves at km 60 and runs 10 km due north, a
+    // side trip leaves at km 20 and runs 4 km, an alternate spans km 30-40 (12 km).
+    const line = (lat0: number, n: number) =>
+      Array.from({ length: n + 1 }, (_, i) => ({ lat: lat0 + i * 0.009, lon: 140 }));
+    const variants = {
+      sideTrips: [
+        { startDistance: 60, distance: 10, points: line(-40, 10) },
+        { startDistance: 20, distance: 4, points: line(-41, 4) },
+      ],
+      alternates: [{ startDistance: 30, endDistance: 40, distance: 12, points: line(-42, 12) }],
+    };
+
+    it('keeps a terminus POI past the trail end on the terminus, not at km 0', () => {
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 66, lat: -40 + 6 * 0.009, lon: 140, distanceFromTrail: 0 })],
+        62,
+        variants
+      )!;
+      expect(m.distanceAlongTrail).toBeCloseTo(8, 5); // junction mirrors to 2, then 6 km out
+    });
+
+    it('moves a side-trip POI with its junction', () => {
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 23, lat: -41 + 3 * 0.009, lon: 140, distanceFromTrail: 0.01 })],
+        62,
+        variants
+      )!;
+      expect(m.distanceAlongTrail).toBeCloseTo(45, 5); // 62 - 20 + 3
+    });
+
+    it('enters an alternate from its far end', () => {
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 33, lat: -42 + 3 * 0.009, lon: 140, distanceFromTrail: 0 })],
+        62,
+        variants
+      )!;
+      expect(m.distanceAlongTrail).toBeCloseTo(31, 5); // 62 - 40 + (12 - 3)
+    });
+
+    it('mirrors a main-route POI in a variant\'s span about the main line', () => {
+      const [m] = mirrorPoiDistances(
+        [poi({ distanceAlongTrail: 22, lat: -35, lon: 138, distanceFromTrail: 0.05 })],
+        62,
+        variants
+      )!;
+      expect(m.distanceAlongTrail).toBe(40);
+    });
+  });
 });
 
 describe('route keys', () => {

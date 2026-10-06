@@ -9,7 +9,7 @@
 
 import { clearDirectionPreference, initTrailViewer, setTrailPois } from './trails/trail-viewer';
 import { clearPlanStorage } from './trails/plan-state';
-import { markDuplicatePois } from '@lib/poi-dedup';
+import { dedupCandidates, markDuplicatePois } from '@lib/poi-dedup';
 import { dropNoisePois } from '@lib/poi-noise';
 import { thinUrbanPois } from '@lib/poi-urban';
 import { handoffFileName, serializeTrailHandoff } from '@lib/trail-handoff';
@@ -327,7 +327,7 @@ function initPoiPanel(trailId: string, trail: ProcessedTrail): void {
     const pois =
       found === null
         ? null
-        : (thinUrbanPois(markDuplicatePois(dropNoisePois(found), trail.waypoints)) ?? []);
+        : (thinUrbanPois(markDuplicatePois(dropNoisePois(found), dedupCandidates(trail))) ?? []);
     const saved = await updateTrailPois(trailId, pois);
     panelPois = pois;
     if (pois === null) {

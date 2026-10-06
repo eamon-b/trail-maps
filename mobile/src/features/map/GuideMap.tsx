@@ -138,6 +138,20 @@ LogManager.onLog((log: { level: string; message: string; tag?: string }) => {
 const ACCURACY_CIRCLE_MIN_ZOOM = 8;
 /** Only draw the accuracy circle when the fix is this uncertain (metres). */
 const ACCURACY_CIRCLE_MIN_METERS = 20;
+/**
+ * The accuracy threshold as a filter on the puck feature's `accuracy` property,
+ * rather than a `{accuracy > 20 && <Layer/>}` child. GeoJSONSource drops falsy
+ * children and re-keys the rest by position, so a layer that comes and goes
+ * hands its sibling's slot — and its `id` — to the next layer, and MapLibre RN
+ * throws "`id` cannot be changed". The fix's accuracy wanders across 20 m on
+ * every GPS update, so the conditional version took the whole map down to the
+ * error boundary a few minutes into tracking.
+ */
+const ACCURACY_CIRCLE_FILTER = [
+  '>',
+  ['get', 'accuracy'],
+  ACCURACY_CIRCLE_MIN_METERS,
+] as FilterSpecification;
 
 /** Waypoints cluster only at/below this zoom (unreadable overview levels). */
 export const WAYPOINT_CLUSTER_MAX_ZOOM = 10;
@@ -1232,13 +1246,20 @@ export const GuideMap = memo(
             clusterRadius={40}
             clusterMaxZoom={WAYPOINT_CLUSTER_MAX_ZOOM}
           >
+            {/* Every layer here carries a `key`: the plan-ring layer comes and
+                goes with the plan, and GeoJSONSource re-keys unkeyed children
+                by position after dropping the falsy ones, so without keys the
+                layers after it would swap ids and MapLibre RN would throw
+                "`id` cannot be changed" (see ACCURACY_CIRCLE_FILTER). */}
             <Layer
+              key="guide-waypoints-clusters"
               type="circle"
               id="guide-waypoints-clusters"
               filter={CLUSTER_FILTER}
               style={clusterCircleStyle}
             />
             <Layer
+              key="guide-waypoints-cluster-counts"
               type="symbol"
               id="guide-waypoints-cluster-counts"
               filter={CLUSTER_FILTER}
@@ -1246,6 +1267,7 @@ export const GuideMap = memo(
             />
             {hasPlannedStops && (
               <Layer
+                key="guide-waypoints-plan-rings"
                 type="circle"
                 id="guide-waypoints-plan-rings"
                 filter={PLANNED_STOP_FILTER}
@@ -1253,18 +1275,21 @@ export const GuideMap = memo(
               />
             )}
             <Layer
+              key="guide-waypoints-circles"
               type="circle"
               id="guide-waypoints-circles"
               filter={INDIVIDUAL_FILTER}
               style={waypointCircleStyle}
             />
             <Layer
+              key="guide-waypoints-icons"
               type="symbol"
               id="guide-waypoints-icons"
               filter={INDIVIDUAL_FILTER}
               style={waypointIconStyle}
             />
             <Layer
+              key="guide-waypoints-labels"
               type="symbol"
               id="guide-waypoints-labels"
               minzoom={WAYPOINT_LABEL_MIN_ZOOM}
@@ -1274,17 +1299,19 @@ export const GuideMap = memo(
           </GeoJSONSource>
         )}
 
-        {/* User-location puck: accuracy circle (when uncertain) + dot */}
+        {/* User-location puck: accuracy circle (when uncertain) + dot. The
+            circle is always mounted and hidden by its filter while the fix is
+            sharp — see ACCURACY_CIRCLE_FILTER for why it must never come and
+            go as a React child. */}
         {userLocationFeature && (
           <GeoJSONSource id="guide-user-location" data={userLocationFeature}>
-            {(accuracy ?? 0) > ACCURACY_CIRCLE_MIN_METERS && (
-              <Layer
-                type="circle"
-                id="guide-user-accuracy"
-                minzoom={ACCURACY_CIRCLE_MIN_ZOOM}
-                style={userAccuracyStyle}
-              />
-            )}
+            <Layer
+              type="circle"
+              id="guide-user-accuracy"
+              minzoom={ACCURACY_CIRCLE_MIN_ZOOM}
+              filter={ACCURACY_CIRCLE_FILTER}
+              style={userAccuracyStyle}
+            />
             <Layer type="circle" id="guide-user-dot" style={userDotStyle} />
           </GeoJSONSource>
         )}

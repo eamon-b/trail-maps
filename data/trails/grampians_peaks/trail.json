@@ -43,9 +43,10 @@
       "lon": 142.52
     },
     {
-      "name": "Major Mitchell Plateau",
-      "lat": -37.38,
-      "lon": 142.43
+      "name": "Mount William Range",
+      "lat": -37.3538,
+      "lon": 142.5553,
+      "elevation": 809
     },
     {
       "name": "Dunkeld",

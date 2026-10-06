@@ -49,6 +49,27 @@ export interface TrailDataSource {
   linkText?: string;
 }
 
+/**
+ * What one trail does differently with its OSM POIs. Tags are written as OSM
+ * `key=value` strings (`amenity=fuel`).
+ */
+export interface TrailPoiConfig {
+  /**
+   * Tags whose POIs this trail does not ship: services that are no use to a
+   * walker on this particular trail (a Shikoku pilgrim has no need of a fuel
+   * station or a post office). A POI that is also a convenience store or
+   * supermarket is kept — a service station's konbini is still a konbini.
+   */
+  exclude?: string[];
+  /**
+   * POIs that city thinning (`@lib/poi-urban`) never drops: those carrying
+   * `tag` within `withinKm` of the trail. For the service that *is* the
+   * resupply here — the henro walks past a konbini every few hundred metres
+   * through Tokushima, and one every 2 km hides the ones on the route.
+   */
+  keepInCities?: { tag: string; withinKm: number }[];
+}
+
 export interface TrailConfig {
   id: string;
   name: string;
@@ -78,6 +99,11 @@ export interface TrailConfig {
    * note on the trail page.
    */
   dataSource?: TrailDataSource;
+  /**
+   * Per-trail rules for the OSM POIs in `pois.json`, applied at build time on
+   * top of the rules every trail gets (`@lib/poi-noise`, `@lib/poi-urban`).
+   */
+  pois?: TrailPoiConfig;
   /** Marks a trail produced by the runtime GPX importer rather than the build. */
   source?: 'imported';
   /**

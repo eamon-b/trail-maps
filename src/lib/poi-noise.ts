@@ -16,13 +16,14 @@
  * Each rule below was measured against the six fetched trails on 2026-09-09,
  * and each keeps the cases that look like noise but aren't.
  */
-import type { TrailPOI } from './trail-types.js';
+import type { TrailPOI, TrailPoiConfig } from './trail-types.js';
 
 export type NoiseReason =
   | 'bus-stop'
   | 'minor-shelter'
   | 'no-emergency-department'
-  | 'road-emergency-phone';
+  | 'road-emergency-phone'
+  | 'excluded-by-trail';
 
 /**
  * `shelter_type` values that describe a roof over a bench rather than somewhere
@@ -69,13 +70,46 @@ const NOT_A_WALKER_SHUTTLE = /\b(parking|car ?park|airport)\b/i;
 const ROAD_PHONE_STREET = /\b(motorway|freeway|expressway|tunnel|distributor|off-?ramp|on-?ramp)\b/i;
 
 /**
+ * Split an OSM `key=value` tag as written in a trail's `pois` config. Throws on
+ * anything else, because a typo there would otherwise match nothing and ship
+ * every POI it was meant to drop.
+ */
+export function parsePoiTag(tag: string): [key: string, value: string] {
+  const eq = tag.indexOf('=');
+  if (eq <= 0 || eq === tag.length - 1) {
+    throw new Error(`POI tag "${tag}" must be written key=value, e.g. amenity=fuel`);
+  }
+  return [tag.slice(0, eq), tag.slice(eq + 1)];
+}
+
+/** Whether a POI carries an OSM `key=value` tag. */
+export function poiHasTag(poi: TrailPOI, tag: string): boolean {
+  const [key, value] = parsePoiTag(tag);
+  return poi.tags?.[key] === value;
+}
+
+/**
+ * A shop a walker resupplies at. Never dropped by a trail's `exclude` list: a
+ * fuel station OSM also tags `shop=convenience` is a konbini first.
+ */
+function isResupplyShop(poi: TrailPOI): boolean {
+  const shop = poi.tags?.shop;
+  return shop === 'convenience' || shop === 'supermarket';
+}
+
+/**
  * Why this POI should not ship, or null to keep it.
  *
  * Reads `tags` rather than `category` so a rule cannot be silently bypassed by a
- * re-categorisation upstream in gpx-tools.
+ * re-categorisation upstream in gpx-tools. `config` adds the trail's own
+ * `exclude` tags to the rules every trail gets.
  */
-export function noiseReason(poi: TrailPOI): NoiseReason | null {
+export function noiseReason(poi: TrailPOI, config?: TrailPoiConfig): NoiseReason | null {
   const tags = poi.tags ?? {};
+
+  if (config?.exclude?.some(tag => poiHasTag(poi, tag)) && !isResupplyShop(poi)) {
+    return 'excluded-by-trail';
+  }
 
   // 420 of the 433 transport POIs, named things like "Peoples Av Before Hill
   // St". The 13 that remain — rail stations and the Cape Jervis ferry — are
@@ -113,23 +147,28 @@ function isWalkerShuttle(name: string): boolean {
 }
 
 /** Drop every POI a rule rejects. Returns a new array; `undefined` passes through. */
-export function dropNoisePois(pois: readonly TrailPOI[] | undefined): TrailPOI[] | undefined {
+export function dropNoisePois(
+  pois: readonly TrailPOI[] | undefined,
+  config?: TrailPoiConfig
+): TrailPOI[] | undefined {
   if (!pois) return undefined;
-  return pois.filter(poi => noiseReason(poi) === null);
+  return pois.filter(poi => noiseReason(poi, config) === null);
 }
 
 /** How many POIs each rule would drop. Build-log and review aid. */
 export function countNoiseByReason(
-  pois: readonly TrailPOI[] | undefined
+  pois: readonly TrailPOI[] | undefined,
+  config?: TrailPoiConfig
 ): Record<NoiseReason, number> {
   const counts: Record<NoiseReason, number> = {
     'bus-stop': 0,
     'minor-shelter': 0,
     'no-emergency-department': 0,
     'road-emergency-phone': 0,
+    'excluded-by-trail': 0,
   };
   for (const poi of pois ?? []) {
-    const reason = noiseReason(poi);
+    const reason = noiseReason(poi, config);
     if (reason) counts[reason]++;
   }
   return counts;

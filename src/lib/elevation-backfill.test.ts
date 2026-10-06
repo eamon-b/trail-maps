@@ -344,6 +344,45 @@ describe('applyElevation', () => {
     }
   });
 
+  it('re-attaches by place on an out-and-back whose display copy was restored by coordinate', () => {
+    // 2,000 points out and the same way back (the turnaround point once, so
+    // no two points share a place): every coordinate is passed twice, at two
+    // different km, and the two passes get different heights.
+    const out = line(2000);
+    const pts = [...out, ...out.slice(0, -1).reverse()]
+      .map(p => `<trkpt lat="${p.lat}" lon="${p.lon}"></trkpt>`)
+      .join('');
+    const gpx = `<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1">
+      <trk><name>Out and back</name><trkseg>${pts}</trkseg></trk></gpx>`;
+    const { trail } = importGpx(gpx, { targetPoints: 0 });
+    const { points } = trail.track;
+    expect(trail.track.displayPoints.length).toBeLessThan(points.length);
+
+    // A trail imported before display points were restored by index: each one
+    // is the LATER pass's copy of its coordinate, so the display array is not
+    // in index order (every outbound point jumped to its return twin).
+    const lastByCoord = new Map<string, (typeof points)[number]>();
+    for (const p of points) lastByCoord.set(`${p.lat},${p.lon}`, p);
+    const stale = {
+      ...trail,
+      track: {
+        ...trail.track,
+        displayPoints: trail.track.displayPoints.map(dp => lastByCoord.get(`${dp.lat},${dp.lon}`)!),
+      },
+    };
+    expect(stale.track.displayPoints.some((dp, i, arr) => i > 0 && dp.dist < arr[i - 1].dist)).toBe(true);
+
+    // Heights that climb with the index, so the two passes never agree.
+    const updated = applyElevation(stale, points.map((_, i) => i));
+
+    const byPlace = new Map(updated.track.points.map(p => [`${p.lat},${p.lon},${p.dist}`, p.ele]));
+    expect(trailHasElevation(updated.track.displayPoints)).toBe(true);
+    for (const dp of updated.track.displayPoints) {
+      // Its own pass's height — never the outbound twin's, never left stale.
+      expect(dp.ele).toBe(byPlace.get(`${dp.lat},${dp.lon},${dp.dist}`));
+    }
+  });
+
   it('rejects an elevation array that does not line up with the track', () => {
     const { trail } = importGpx(flatGpx(10));
     expect(() => applyElevation(trail, [1, 2, 3])).toThrow(/3 values for 10 track points/);

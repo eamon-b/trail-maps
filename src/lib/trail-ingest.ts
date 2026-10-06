@@ -913,6 +913,9 @@ export function calculateSegmentStats(
     const p2 = points[i + 1];
     distance += haversineDistanceKm(p1.lat, p1.lon, p2.lat, p2.lon);
 
+    // With a climb ladder the per-step sums would only be thrown away below,
+    // and this runs once per waypoint over every import and backfill.
+    if (climb) continue;
     const elevDiff = p2.ele - p1.ele;
     if (elevDiff > 0) ascent += elevDiff;
     else descent += Math.abs(elevDiff);
@@ -1718,19 +1721,21 @@ export function recomputeTrailElevation(
     totalDescent = climb.descent[climb.descent.length - 1] ?? 0;
   }
 
-  // displayPoints are an in-order subset of points, so walking the two arrays
-  // together re-attaches the new elevations. A lookup keyed on coordinates
-  // cannot: an out-and-back or a loop passes the same coordinate twice, and the
-  // two passes have different neighbours to smooth with.
-  let cursor = 0;
+  // Every display point is a copy of one track point, so its coordinates AND
+  // its km name that point: an out-and-back or a loop passes the same
+  // coordinate twice, but at two different km, and the two passes have
+  // different neighbours to smooth with. The km matters for a trail imported
+  // before display points were restored by index (`buildTrail`): its display
+  // points are the later pass's copies, out of index order, so an in-order
+  // walk of the two arrays would skip the whole outbound stretch — and scan to
+  // the end of the array for every display point after it.
+  const byPlace = new Map<string, number>();
+  for (let i = points.length - 1; i >= 0; i--) {
+    byPlace.set(placeKey(points[i]), i);
+  }
   const displayPoints = trail.track.displayPoints.map(dp => {
-    for (let i = cursor; i < points.length; i++) {
-      if (points[i].lat === dp.lat && points[i].lon === dp.lon) {
-        cursor = i + 1;
-        return { ...dp, ele: points[i].ele };
-      }
-    }
-    return dp;
+    const i = byPlace.get(placeKey(dp));
+    return i === undefined ? dp : { ...dp, ele: points[i].ele };
   });
 
   let prevTrackIndex = 0;
@@ -1756,6 +1761,11 @@ export function recomputeTrailElevation(
     track: { ...trail.track, points, displayPoints, totalAscent, totalDescent },
     waypoints,
   };
+}
+
+/** A track point's place on the trail: where it is, and which pass this is. */
+function placeKey(p: { lat: number; lon: number; dist: number }): string {
+  return `${p.lat},${p.lon},${p.dist}`;
 }
 
 /** Apply the opt-in elevation cleaning passes, in order. */

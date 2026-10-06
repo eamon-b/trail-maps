@@ -19,6 +19,7 @@ import {
   setStopNote,
   splitUnplannedTail,
   toggleStop,
+  isTrailEnd,
 } from './plan-editor';
 import { toNoboKm } from './plan-direction';
 import { PLAN_LIMITS, type PlanDocument, type PlanState, type PlanWaypoint } from './plan-types';
@@ -692,11 +693,22 @@ describe('limits', () => {
 });
 
 describe('trail ends', () => {
-  it('never adds a stop at km 0 or at the trail end, whose nights would count for nothing', () => {
+  it('refuses a stop at km 0 or at the trail end out loud, whose nights would count for nothing', () => {
     const plan = emptyPlan();
-    expect(toggleStop(plan, { id: 'w_start', km: 0, name: 'Start' }, opts)).toBe(plan);
-    expect(toggleStop(plan, { id: 'w_end', km: 100, name: 'Finish' }, { ...opts, totalKm: 100 })).toBe(plan);
-    expect(toggleStop(plan, { id: 'w_end', km: 99.995, name: 'Finish' }, { ...opts, totalKm: 100 })).toBe(plan);
+    // Thrown, not a silent same-document no-op: the Stops lists offer the
+    // start and finish, so a tap there needs a reason on screen.
+    const refused = /^plan-editor: the start and the end of the trail are not stops/;
+    expect(() => toggleStop(plan, { id: 'w_start', km: 0, name: 'Start' }, opts)).toThrow(refused);
+    expect(() =>
+      toggleStop(plan, { id: 'w_end', km: 100, name: 'Finish' }, { ...opts, totalKm: 100 }),
+    ).toThrow(refused);
+    expect(() =>
+      toggleStop(plan, { id: 'w_end', km: 99.995, name: 'Finish' }, { ...opts, totalKm: 100 }),
+    ).toThrow(refused);
+    expect(isTrailEnd(0, undefined)).toBe(true);
+    expect(isTrailEnd(100, 100)).toBe(true);
+    expect(isTrailEnd(100, undefined)).toBe(false);
+    expect(isTrailEnd(50, 100)).toBe(false);
     // Without the length the end cannot be told from any other km.
     expect(toggleStop(plan, { id: 'w_end', km: 100, name: 'Finish' }, opts).stops).toHaveLength(1);
     const applied = replaceStopsInRange(

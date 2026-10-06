@@ -89,6 +89,34 @@ export async function registerDevice(displayName: string, deps?: AuthDeps): Prom
 }
 
 /**
+ * Ask the server whether it still knows `session`'s token (`GET /v1/me`).
+ *
+ * True when it answers, false when it says 401 — the token is dead and only a
+ * new registration can replace it. Anything else (the network, a 5xx) is
+ * rethrown: there was no answer to learn from. The sync layer asks this before
+ * re-registering on a 401, so a server having a bad moment does not cost the
+ * hiker their identity.
+ */
+export async function verifySession(session: Session, deps?: AuthDeps): Promise<boolean> {
+  const baseUrl = resolveBaseUrl(deps);
+  if (!baseUrl) {
+    throw new Error('Cannot verify a session: API base URL is not configured');
+  }
+  try {
+    await apiRequest<MeResponse>('/v1/me', {
+      baseUrl,
+      token: session.token,
+      fetchImpl: deps?.fetchImpl,
+      method: 'GET',
+    });
+    return true;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return false;
+    throw e;
+  }
+}
+
+/**
  * Update the current device's display name on the server and in storage.
  * Requires an existing session.
  */

@@ -20,6 +20,7 @@ import * as commentsRepo from '../../db/comments-repo';
 import * as outboxRepo from '../../db/outbox-repo';
 import * as plansRepo from '../../db/plans-repo';
 import type { Session } from '../../api/auth';
+import { ApiError, NetworkError } from '../../api/client';
 import {
   deleteOwnComment,
   drainOutbox,
@@ -128,17 +129,24 @@ async function seedPhoto(d: SqlDatabase, id: string, commentId: string, createdA
   });
 }
 
-/** Auth hooks backed by a plain flag, so no test reaches the real identity store. */
-function fakeAuth(reregister: AuthHooks['reregister'] = jest.fn(async () => SESSION)) {
+/**
+ * Auth hooks backed by a plain flag, so no test reaches the real identity
+ * store. The token is dead unless a test says otherwise (`verify`).
+ */
+function fakeAuth(
+  reregister: AuthHooks['reregister'] = jest.fn(async () => SESSION),
+  verify: AuthHooks['verify'] = jest.fn(async () => false),
+) {
   const state = { authError: false };
   const hooks: AuthHooks = {
     hasAuthError: () => state.authError,
     setAuthError: (v) => {
       state.authError = v;
     },
+    verify,
     reregister,
   };
-  return { state, hooks, reregister };
+  return { state, hooks, reregister, verify };
 }
 
 afterEach(() => {
@@ -308,6 +316,112 @@ describe('a refused token', () => {
     await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks });
     await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks });
     expect(reregister).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps its identity when the token still answers: the 401 was the server, not the token', async () => {
+    const d = await db();
+    await seedLocalComment(d, 'm1', '2026-01-01T00:00:00.000Z');
+    const { state, hooks, reregister, verify } = fakeAuth(undefined, jest.fn(async () => true));
+    state.authError = true;
+    const fetchImpl = routedFetch([[/\/comments\/m1$/, { status: 201, body: feedComment('m1') }]]);
+
+    const res = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks });
+
+    expect(verify).toHaveBeenCalledTimes(1);
+    expect(reregister).not.toHaveBeenCalled();
+    expect(res).toMatchObject({ outcome: 'drained', sent: 1 });
+    expect(state.authError).toBe(false);
+    // Sent with the token it already had, not a fresh one.
+    expect((calls(fetchImpl)[0][1]?.headers as Record<string, string>).Authorization).toBe(
+      `Bearer ${SESSION.token}`,
+    );
+  });
+
+  it('spends nothing when the probe gets no answer', async () => {
+    const d = await db();
+    await seedLocalComment(d, 'm1', '2026-01-01T00:00:00.000Z');
+    const { state, hooks, reregister, verify } = fakeAuth(
+      undefined,
+      jest.fn(async () => {
+        throw new NetworkError('offline');
+      }),
+    );
+    state.authError = true;
+    const fetchImpl = routedFetch([[/\/comments\//, UNAUTHORIZED]]);
+
+    const a = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks });
+    const b = await drainOutbox({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks });
+
+    expect(a.outcome).toBe('unauthorized');
+    expect(b.outcome).toBe('unauthorized');
+    expect(verify).toHaveBeenCalledTimes(2);
+    expect(reregister).not.toHaveBeenCalled();
+    expect(state.authError).toBe(true);
+  });
+
+  it('asks again after a registration the server could not answer (429, 5xx)', async () => {
+    const d = await db();
+    await seedLocalComment(d, 'm1', '2026-01-01T00:00:00.000Z');
+    let attempts = 0;
+    const { state, hooks, reregister } = fakeAuth(
+      jest.fn(async () => {
+        attempts += 1;
+        // The hut's shared wifi is over the per-IP register limit, then the
+        // server is down, then it answers.
+        if (attempts === 1) throw new ApiError(429, 'rate_limited', 'slow down');
+        if (attempts === 2) throw new ApiError(503, 'unavailable', 'later');
+        return SESSION;
+      }),
+    );
+    state.authError = true;
+    const fetchImpl = routedFetch([[/\/comments\/m1$/, { status: 201, body: feedComment('m1') }]]);
+    const deps = { db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks };
+
+    expect((await drainOutbox(deps)).outcome).toBe('unauthorized');
+    expect((await drainOutbox(deps)).outcome).toBe('unauthorized');
+    expect((await drainOutbox(deps))).toMatchObject({ outcome: 'drained', sent: 1 });
+    expect(reregister).toHaveBeenCalledTimes(3);
+    expect(state.authError).toBe(false);
+  });
+
+  it('a refused registration is tried again by a manual retry, never by itself', async () => {
+    const d = await db();
+    await seedLocalComment(d, 'm1', '2026-01-01T00:00:00.000Z');
+    let attempts = 0;
+    const { state, hooks, reregister } = fakeAuth(
+      jest.fn(async () => {
+        attempts += 1;
+        if (attempts === 1) throw new ApiError(400, 'invalid', 'no');
+        return SESSION;
+      }),
+    );
+    state.authError = true;
+    const fetchImpl = routedFetch([[/\/comments\/m1$/, { status: 201, body: feedComment('m1') }]]);
+    const deps = { db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks };
+
+    expect((await drainOutbox(deps)).outcome).toBe('unauthorized');
+    expect((await drainOutbox(deps)).outcome).toBe('unauthorized');
+    expect(reregister).toHaveBeenCalledTimes(1);
+
+    expect(await drainOutbox({ ...deps, force: true })).toMatchObject({ outcome: 'drained', sent: 1 });
+    expect(reregister).toHaveBeenCalledTimes(2);
+    expect(state.authError).toBe(false);
+  });
+
+  it('never mints a second identity in one episode, even on a manual retry', async () => {
+    const d = await db();
+    await seedLocalComment(d, 'm1', '2026-01-01T00:00:00.000Z');
+    const { state, hooks, reregister } = fakeAuth();
+    state.authError = true;
+    // The server refuses the new token too: something is wrong on its side,
+    // and another identity per drain would only pile up orphans.
+    const fetchImpl = routedFetch([[/\/comments\//, UNAUTHORIZED]]);
+    const deps = { db: d, baseUrl: BASE, fetchImpl, getSessionFn, now, auth: hooks };
+
+    expect((await drainOutbox(deps)).outcome).toBe('unauthorized');
+    expect(state.authError).toBe(true);
+    expect((await drainOutbox({ ...deps, force: true })).outcome).toBe('unauthorized');
+    expect(reregister).toHaveBeenCalledTimes(1);
   });
 
   it('raises authError from the plans pull too', async () => {
@@ -499,6 +613,61 @@ describe('pullPlans', () => {
     const res = await pullPlans({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, refreshPlan });
 
     expect(res.outcome).toBe('pulled');
+    expect((await plansRepo.getByTrail(d, 'heysen'))?.name).toBe('Mine');
+    expect(refreshPlan).not.toHaveBeenCalled();
+  });
+
+  it('skips a server copy of a plan whose delete is still queued here', async () => {
+    const d = await db();
+    const mine = plan({ name: 'Mine', updatedAt: '2026-05-01T00:00:00Z' });
+    await plansRepo.upsertLocal(d, mine);
+    // Deleted on the phone with its clock behind; the DELETE has not gone out.
+    await plansRepo.tombstone(d, mine.id, '2026-05-02T00:00:00Z');
+    await outboxRepo.enqueue(d, {
+      id: 'del-1',
+      kind: 'plan-delete',
+      trailId: 'heysen',
+      waypointId: mine.id,
+      payload: { id: mine.id },
+      createdAt: '2026-05-02T00:00:00Z',
+    });
+    const fetchImpl = routedFetch([
+      [/\/v1\/plans/, plansFeed([plan({ name: 'Theirs', updatedAt: '2026-06-01T00:00:00Z' })])],
+    ]);
+
+    const res = await pullPlans({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, refreshPlan });
+
+    expect(res.outcome).toBe('pulled');
+    // Still deleted here: the pull did not resurrect what the queue is about
+    // to delete (and the next edit would then have dropped that delete).
+    expect(await plansRepo.getByTrail(d, 'heysen')).toBeNull();
+    expect(refreshPlan).not.toHaveBeenCalled();
+  });
+
+  it('skips a server tombstone for a plan whose edit is still queued here', async () => {
+    const d = await db();
+    const mine = plan({ name: 'Mine', updatedAt: '2026-05-01T00:00:00Z' });
+    await plansRepo.upsertLocal(d, mine);
+    await enqueuePlan('heysen', mine, { db: d, now });
+    const fetchImpl = routedFetch([
+      [
+        /\/v1\/plans/,
+        {
+          status: 200,
+          body: {
+            plans: [{ id: mine.id, trailId: 'heysen', deleted: true, updatedAt: '2026-06-01T00:00:00Z' }],
+            nextCursor: null,
+            syncedAt: 'T1',
+          },
+        },
+      ],
+    ]);
+
+    const res = await pullPlans({ db: d, baseUrl: BASE, fetchImpl, getSessionFn, refreshPlan });
+
+    expect(res.outcome).toBe('pulled');
+    // The queued PUT will undelete the plan server-side anyway; deleting the
+    // local copy first would have lost the edit for nothing.
     expect((await plansRepo.getByTrail(d, 'heysen'))?.name).toBe('Mine');
     expect(refreshPlan).not.toHaveBeenCalled();
   });

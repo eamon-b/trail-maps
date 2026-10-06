@@ -202,9 +202,10 @@ function clampStopName(name: string | undefined): string {
  * True when `km` (NOBO-absolute) is one of the trail's ends: km 0, or
  * `totalKm` when the caller knows it. A night there is not a day boundary —
  * there is no walking before the start or after the end for its nights to
- * move — so the editors never add a stop there.
+ * move — so the editors never add a stop there: `toggleStop` refuses with a
+ * message, and a UI that lists the place can use this to not offer the toggle.
  */
-function isTrailEnd(km: number, totalKm: number | undefined): boolean {
+export function isTrailEnd(km: number, totalKm: number | undefined): boolean {
   if (km < KM_EPSILON) return true;
   return typeof totalKm === 'number' && Number.isFinite(totalKm) && km > totalKm - KM_EPSILON;
 }
@@ -291,16 +292,18 @@ export function setDirection(
  * and is stable, so a UI handler can catch one and show it as it stands.
  *
  * A place at either end of the trail (km 0, or `opts.totalKm`) is never
- * *added*: the same document comes back. Its nights could move no date — there
- * is nothing to walk before the start (zero days before day 1 are out of
- * scope, `plans/day-planner.md`) or after the end — so a stop there would only
- * hold nights that silently count for nothing. Removing one is still allowed.
+ * *added*: the toggle throws. Its nights could move no date — there is nothing
+ * to walk before the start (zero days before day 1 are out of scope,
+ * `plans/day-planner.md`) or after the end — so a stop there would only hold
+ * nights that silently count for nothing. Removing one is still allowed, and a
+ * UI can keep the toggle off such a place with `isTrailEnd`.
  *
  * The name is trimmed and capped at `PLAN_LIMITS.stopNameMax` (a blank one
  * becomes "Stop"), so no waypoint name can make the document unsendable.
  *
  * @param waypoint.km NOBO-absolute km (convert active km with `toNoboKm`).
  * @throws when `waypoint.km` is not a finite number.
+ * @throws when adding a stop at a trail end (`isTrailEnd`).
  * @throws when the plan is already at `PLAN_LIMITS.stopsMax`.
  */
 export function toggleStop(
@@ -330,7 +333,14 @@ export function toggleStop(
   if (plan.stops.some(existing => Math.abs(existing.km - waypoint.km) < KM_EPSILON)) {
     return plan;
   }
-  if (isTrailEnd(waypoint.km, opts?.totalKm)) return plan;
+  // Refused out loud, not as a silent no-op: the Stops lists offer the start
+  // and finish (a town at either end is a place you can sleep), and a tap that
+  // changes nothing with no word why reads as a broken checkbox.
+  if (isTrailEnd(waypoint.km, opts?.totalKm)) {
+    throw new Error(
+      'plan-editor: the start and the end of the trail are not stops — a night there is not a day boundary',
+    );
+  }
   if (plan.stops.length >= PLAN_LIMITS.stopsMax) {
     throw new Error(`plan-editor: a plan may hold at most ${PLAN_LIMITS.stopsMax} stops`);
   }

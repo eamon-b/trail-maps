@@ -29,9 +29,10 @@ export interface IdentityState {
   session: Session | null;
   /**
    * Set when the server refuses this device's token (a 401 from the outbox
-   * drain or the plans pull): writes are paused. The next drain re-registers
-   * the device once (`sync/comment-sync`); this stays set if that fails, which
-   * is what a "sync paused" banner should read — via {@link selectAuthError}.
+   * drain or the plans pull): writes are paused. The next drain asks the
+   * server about the token and, only if it is really dead, re-registers the
+   * device once (`sync/comment-sync`); this stays set if that fails, which is
+   * what a "sync paused" banner should read — via {@link selectAuthError}.
    */
   authError: boolean;
 

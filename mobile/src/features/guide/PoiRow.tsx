@@ -19,17 +19,20 @@ import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { poiColor } from '../elevation/waypoint-category';
 import { formatSignedDistance } from './waypoint-filters';
-import { isOffTrail } from '../../services/position-on-trail';
+import { isPlaceOffTrail } from './waypoint-detail';
 
 export function PoiRow({
   poi,
   units,
   currentKm,
+  hikerOffTrail = false,
   onPress,
 }: {
   poi: TrailPOI;
   units: DistanceUnit;
   currentKm: number | null;
+  /** The hiker's fix is off the trail: level is not "Here". */
+  hikerOffTrail?: boolean;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
@@ -38,8 +41,13 @@ export function PoiRow({
 
   // With a fix: signed distance from me. Without: the plain cumulative km.
   // Same read as the waypoint rows, so a mixed list stays scannable.
+  const placeOffTrail = isPlaceOffTrail(poi.distanceFromTrail * 1000);
   const signed =
-    currentKm != null ? formatSignedDistance(poi.distanceAlongTrail - currentKm, units) : null;
+    currentKm != null
+      ? formatSignedDistance(poi.distanceAlongTrail - currentKm, units, {
+          offLine: hikerOffTrail || placeOffTrail,
+        })
+      : null;
 
   return (
     <Pressable
@@ -79,7 +87,7 @@ export function PoiRow({
           )}
           {/* Only worth a line when the place is a walk from the trail: a POI a
               few metres off it is on the trail as far as the hiker cares. */}
-          {isOffTrail(poi.distanceFromTrail * 1000) && (
+          {placeOffTrail && (
             <Text style={[styles.offTrail, { color: colors.textSecondary }]}>
               {`${formatDistance(poi.distanceFromTrail, units)} off trail`}
             </Text>

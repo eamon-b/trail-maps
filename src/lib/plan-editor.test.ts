@@ -158,7 +158,7 @@ describe('toggleStop', () => {
     const next = toggleStop(plan, { id: 'w_b', km: stored, name: 'Camp B' }, opts);
     expect(next.stops[0].km).toBe(80);
     // …and it reads back at active km 20 when the days are computed.
-    const days = computePlanDays(flatTrail(), next);
+    const days = computePlanDays(flatTrail(), next, { baseKmh: 4 });
     expect(days.map(d => d.endKm)).toEqual([20, 100]);
   });
 
@@ -242,7 +242,7 @@ describe('computePlanDays', () => {
     plan = toggleStop(plan, { id: 'w_b', km: 50, name: 'Camp B' }, opts);
     plan = setNights(plan, { waypointId: 'w_a', km: 20 }, 2, opts);
 
-    const days = computePlanDays(flatTrail(), plan);
+    const days = computePlanDays(flatTrail(), plan, { baseKmh: 4 });
     expect(days.map(d => d.date)).toEqual(['2026-10-01', '2026-10-03', '2026-10-04']);
     expect(days.map(d => d.restDays)).toEqual([1, 0, 0]);
     expect(days.map(d => d.endName)).toEqual(['Camp A', 'Camp B', 'Finish']);
@@ -251,7 +251,7 @@ describe('computePlanDays', () => {
 
   it('leaves dates undefined when there is no start date', () => {
     const plan = toggleStop(emptyPlan(), { id: 'w_a', km: 20, name: 'Camp A' }, opts);
-    const days = computePlanDays(flatTrail(), plan);
+    const days = computePlanDays(flatTrail(), plan, { baseKmh: 4 });
     expect(days.every(d => d.date === undefined)).toBe(true);
     expect(days.map(d => d.restDays)).toEqual([0, 0]);
   });
@@ -263,6 +263,7 @@ describe('computePlanDays', () => {
     plan = setNights(plan, { waypointId: 'w_b', km: 50 }, 3, opts);
 
     const days = computePlanDays(flatTrail(), plan, {
+      baseKmh: 4,
       section: { startKm: 30, endKm: 100, startName: 'Section start', endName: 'Finish' },
     });
     // Camp A (km 20) is outside the section, so Camp B ends day 1 and its two
@@ -742,7 +743,7 @@ describe('replaceStopsInRange', () => {
 describe('splitUnplannedTail', () => {
   it('leaves a plan whose last day fits alone', () => {
     const trail = flatTrail();
-    const days = computePlanDays(trail, toggleStop(newPlan('t', 'P', 'NOBO', opts), { id: 'w_b', km: 50, name: 'Camp B' }, opts));
+    const days = computePlanDays(trail, toggleStop(newPlan('t', 'P', 'NOBO', opts), { id: 'w_b', km: 50, name: 'Camp B' }, opts), { baseKmh: 4 });
     // 50 km flat at 4 km/h = 12.5 h
     expect(splitUnplannedTail(days, 13)).toEqual({ days, unplanned: null });
   });
@@ -750,14 +751,14 @@ describe('splitUnplannedTail', () => {
   it('turns an over-long last day into the unplanned rest of the trail', () => {
     const trail = flatTrail();
     const plan = toggleStop(newPlan('t', 'P', 'NOBO', opts), { id: 'w_a', km: 20, name: 'Camp A' }, opts);
-    const days = computePlanDays(trail, plan);
+    const days = computePlanDays(trail, plan, { baseKmh: 4 });
     const split = splitUnplannedTail(days, 10);
     expect(split.days).toHaveLength(1);
     expect(split.unplanned).toMatchObject({ startKm: 20, endKm: 100, dayNumber: 2 });
   });
 
   it('treats an empty plan over a long trail as wholly unplanned', () => {
-    const split = splitUnplannedTail(computePlanDays(flatTrail(), newPlan('t', 'P', 'NOBO', opts)), 10);
+    const split = splitUnplannedTail(computePlanDays(flatTrail(), newPlan('t', 'P', 'NOBO', opts), { baseKmh: 4 }), 10);
     expect(split.days).toEqual([]);
     expect(split.unplanned?.distanceKm).toBe(100);
   });

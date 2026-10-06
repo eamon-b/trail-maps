@@ -1,5 +1,6 @@
 import {
   calculateDistancesToWaypoints,
+  tripAlongTrail,
   getNextWaypointsByType,
   formatEtaMinutes,
   type DistanceWaypoint,
@@ -22,13 +23,13 @@ const WAYPOINTS: DistanceWaypoint[] = [
 
 describe('calculateDistancesToWaypoints', () => {
   it('keeps only waypoints ahead of the current position', () => {
-    const result = calculateDistancesToWaypoints(3, WAYPOINTS, TRACK);
+    const result = calculateDistancesToWaypoints(3, WAYPOINTS, TRACK, 4);
     expect(result.map((r) => r.waypoint.name)).toEqual(['Camp One', 'Township', 'Old Hut']);
     expect(result[0].trailDistanceKm).toBeCloseTo(1, 5);
   });
 
   it('computes a Naismith ETA (flat → distance / 4 km/h)', () => {
-    const [first] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK);
+    const [first] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK, 4);
     // 2 km / 4 km/h = 0.5 h = 30 min.
     expect(first.etaMinutes).toBeCloseTo(30, 0);
   });
@@ -45,16 +46,26 @@ describe('calculateDistancesToWaypoints', () => {
     expect(slow.etaMinutes).toBeGreaterThan(fast.etaMinutes);
   });
 
-  it('defaults to 4 km/h when no base speed is passed', () => {
-    const [withDefault] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK);
-    const [explicit] = calculateDistancesToWaypoints(0, [WAYPOINTS[1]], TRACK, 4);
-    expect(withDefault.etaMinutes).toBeCloseTo(explicit.etaMinutes, 5);
+  it('walks back to a km behind: climb and descent swap', () => {
+    // Up 200 m over 0-2 km, down 50 m over 2-4 km.
+    const hill: ElevationPoint[] = [
+      { dist: 0, ele: 100 },
+      { dist: 2, ele: 300 },
+      { dist: 4, ele: 250 },
+    ];
+    const fwd = tripAlongTrail(0, 4, hill, 4);
+    const back = tripAlongTrail(4, 0, hill, 4);
+    expect(fwd).toMatchObject({ direction: 'ahead', ascentM: 200, descentM: 50 });
+    expect(back.direction).toBe('behind');
+    expect(back.distanceKm).toBeCloseTo(fwd.distanceKm, 5);
+    expect(back.ascentM).toBe(fwd.descentM);
+    expect(back.descentM).toBe(fwd.ascentM);
   });
 });
 
 describe('getNextWaypointsByType', () => {
   it('picks the next of each important type ahead', () => {
-    const next = getNextWaypointsByType(1, WAYPOINTS, TRACK);
+    const next = getNextWaypointsByType(1, WAYPOINTS, TRACK, undefined, 4);
     expect(next.water?.waypoint.name).toBe('Spring');
     expect(next.campsite?.waypoint.name).toBe('Camp One');
     expect(next.town?.waypoint.name).toBe('Township');
@@ -72,12 +83,12 @@ describe('getNextWaypointsByType', () => {
 
     // Hiker at km 1 in the reversed frame: the next water is the mirrored Spring
     // (now at km 8, i.e. 7 km ahead).
-    const next = getNextWaypointsByType(1, reversed, TRACK);
+    const next = getNextWaypointsByType(1, reversed, TRACK, undefined, 4);
     expect(next.water?.waypoint.name).toBe('Spring');
     expect(next.water?.trailDistanceKm).toBeCloseTo(7, 5);
 
     // Travelling reversed, the hut (km 2) then town (km 4) come before the camp.
-    const ahead = calculateDistancesToWaypoints(1, reversed, TRACK).map((r) => r.waypoint.name);
+    const ahead = calculateDistancesToWaypoints(1, reversed, TRACK, 4).map((r) => r.waypoint.name);
     expect(ahead).toEqual(['Old Hut', 'Township', 'Camp One', 'Spring', 'Trailhead']);
   });
 
@@ -121,7 +132,7 @@ describe('getNextWaypointsByType', () => {
     });
 
     it('is unfiltered when no plan has been made', () => {
-      expect(getNextWaypointsByType(1, TOWNS, TRACK).town?.waypoint.name).toBe('Township');
+      expect(getNextWaypointsByType(1, TOWNS, TRACK, undefined, 4).town?.waypoint.name).toBe('Township');
     });
   });
 });
@@ -145,7 +156,7 @@ describe('getNextWaypointsByType — turn-offs', () => {
 
   it('counts a turn-off to somewhere you can buy food as the next town', () => {
     for (const type of ['town-access', 'food-access', 'resupply-access']) {
-      const next = getNextWaypointsByType(0, [at(2, 'Te Anau turnoff', type)], TRACK);
+      const next = getNextWaypointsByType(0, [at(2, 'Te Anau turnoff', type)], TRACK, undefined, 4);
       expect(next.town?.waypoint.name).toBe('Te Anau turnoff');
     }
   });
@@ -160,13 +171,15 @@ describe('getNextWaypointsByType — turn-offs', () => {
         at(4, 'Camp', 'campsite'),
       ],
       TRACK,
+      undefined,
+      4,
     );
     expect(next.shelter?.waypoint.name).toBe('Blyth Hut');
     expect(next.campsite?.waypoint.name).toBe('Camp');
   });
 
   it('never reads a water turn-off as water on the route', () => {
-    const next = getNextWaypointsByType(0, [at(2, 'Spring turnoff', 'water-access')], TRACK);
+    const next = getNextWaypointsByType(0, [at(2, 'Spring turnoff', 'water-access')], TRACK, undefined, 4);
     expect(next.water).toBeUndefined();
   });
 });

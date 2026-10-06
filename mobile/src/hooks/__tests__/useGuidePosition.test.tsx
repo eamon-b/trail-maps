@@ -24,6 +24,17 @@ jest.mock('../../features/guide/GuideContext', () => {
   };
 });
 
+// The opt-in lives in the settings store; a plain object stands in for it.
+const mockSettings = {
+  gpsOnGuideOpen: false,
+  setGpsOnGuideOpen: jest.fn((on: boolean) => {
+    mockSettings.gpsOnGuideOpen = on;
+  }),
+};
+jest.mock('../../state/settings-store', () => ({
+  useSettingsStore: (selector: (s: unknown) => unknown) => selector(mockSettings),
+}));
+
 jest.mock('../../services/location-service', () => ({
   requestLocationPermission: jest.fn(() => Promise.resolve('granted')),
   getLocationPermissionStatus: jest.fn(() => Promise.resolve('undetermined')),
@@ -58,6 +69,8 @@ describe('useGuidePosition state machine', () => {
 
   beforeEach(() => {
     captured = null;
+    mockSettings.gpsOnGuideOpen = false;
+    mockSettings.setGpsOnGuideOpen.mockClear();
     (locationService.requestLocationPermission as jest.Mock).mockResolvedValue('granted');
     (locationService.getLocationPermissionStatus as jest.Mock).mockResolvedValue('undetermined');
     (locationService.startLocationTracking as jest.Mock).mockImplementation((cb: (u: Update) => void) => {
@@ -66,7 +79,17 @@ describe('useGuidePosition state machine', () => {
     });
   });
 
-  it('starts tracking on its own when permission was already granted', async () => {
+  it('does not start on its own when the hiker never turned location on', async () => {
+    (locationService.getLocationPermissionStatus as jest.Mock).mockResolvedValue('granted');
+    await act(async () => {
+      TestRenderer.create(<Harness />);
+    });
+    expect(latest.status).toBe('no-permission');
+    expect(captured).toBeNull();
+  });
+
+  it('starts on its own when the hiker turned it on before and permission holds', async () => {
+    mockSettings.gpsOnGuideOpen = true;
     (locationService.getLocationPermissionStatus as jest.Mock).mockResolvedValue('granted');
     await act(async () => {
       TestRenderer.create(<Harness />);
@@ -129,5 +152,47 @@ describe('useGuidePosition state machine', () => {
     });
     expect(latest.status).toBe('no-permission');
     expect(captured).toBeNull();
+  });
+
+  it('records the opt-in on start() and clears it, and the fix, on stop()', async () => {
+    await act(async () => {
+      TestRenderer.create(<Harness />);
+    });
+    await act(async () => {
+      await latest.start();
+    });
+    expect(mockSettings.setGpsOnGuideOpen).toHaveBeenLastCalledWith(true);
+    await act(async () => {
+      captured!(makeUpdate(0, 0.002));
+    });
+    expect(latest.status).toBe('fix');
+
+    await act(async () => {
+      latest.stop();
+    });
+    expect(mockSettings.setGpsOnGuideOpen).toHaveBeenLastCalledWith(false);
+    expect(latest.status).toBe('no-permission');
+    expect(latest.currentKm).toBeNull();
+    expect(latest.position).toBeNull();
+  });
+
+  it('falls back to the pill with an error when an automatic start fails, and retries on start()', async () => {
+    mockSettings.gpsOnGuideOpen = true;
+    (locationService.getLocationPermissionStatus as jest.Mock).mockResolvedValue('granted');
+    (locationService.startLocationTracking as jest.Mock).mockRejectedValueOnce(
+      new Error('Location services are off'),
+    );
+    await act(async () => {
+      TestRenderer.create(<Harness />);
+    });
+    expect(latest.status).toBe('no-permission');
+    expect(latest.error).toBe('Location services are off');
+
+    await act(async () => {
+      await latest.start();
+    });
+    expect(latest.error).toBeNull();
+    expect(latest.status).toBe('acquiring');
+    expect(captured).not.toBeNull();
   });
 });

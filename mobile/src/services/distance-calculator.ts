@@ -40,8 +40,8 @@ export interface WaypointDistance<W extends DistanceWaypoint = DistanceWaypoint>
   /**
    * Naismith walking time from the current position, in minutes
    * (distance / baseKmh + ascent / 600 m/h + Tranter descent correction).
-   * `baseKmh` is the per-trail pace preference (Slow 3 / Average 4 / Fast 5),
-   * defaulting to 4 km/h when the hiker has never set a pace.
+   * `baseKmh` is the per-trail pace preference (Slow 3 / Average 4 / Fast 5);
+   * the caller passes it, the calculator never assumes one.
    */
   etaMinutes: number;
 }
@@ -78,29 +78,72 @@ export function calculateDistancesToWaypoints<W extends DistanceWaypoint>(
   currentKm: number,
   waypoints: readonly W[],
   trackPoints: readonly ElevationPoint[],
-  baseKmh = 4,
+  baseKmh: number,
   breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
 ): WaypointDistance<W>[] {
   const upcoming = waypoints.filter((wp) => (wp.totalDistance ?? 0) > currentKm);
 
   return upcoming.map((wp) => {
-    const wpKm = wp.totalDistance ?? 0;
-    const distanceKm = wpKm - currentKm;
-    const { gain, loss } = calculateElevationBetween(
-      currentKm,
-      wpKm,
-      trackPoints as ElevationPoint[],
-      breakStarts,
-    );
-
+    const trip = tripAlongTrail(currentKm, wp.totalDistance ?? 0, trackPoints, baseKmh, breakStarts);
     return {
       waypoint: wp,
-      trailDistanceKm: distanceKm,
-      elevationGain: gain,
-      elevationLoss: loss,
-      etaMinutes: estimateHikingTime(distanceKm, gain, loss, baseKmh) * 60,
+      trailDistanceKm: trip.distanceKm,
+      elevationGain: trip.ascentM,
+      elevationLoss: trip.descentM,
+      etaMinutes: trip.etaMinutes,
     };
   });
+}
+
+/** What it takes to walk the trail from one km to another. */
+export interface TrailTrip {
+  /** Ahead in the travelled direction, or back the way the hiker came. */
+  direction: 'ahead' | 'behind';
+  /** Trail distance in km (never negative). */
+  distanceKm: number;
+  /** Metres climbed, in the direction actually walked. */
+  ascentM: number;
+  /** Metres descended, in the direction actually walked. */
+  descentM: number;
+  /** Naismith walking time in minutes at `baseKmh`. */
+  etaMinutes: number;
+}
+
+/**
+ * Distance, climb and Naismith time along the trail from `fromKm` to `toKm`,
+ * both on the guide's direction-applied scale. The one home of this maths: the
+ * distance strip's chips and the detail screens' trip cards both come here.
+ *
+ * Walking back to a km behind you climbs what the forward stretch descends, so
+ * for `toKm < fromKm` ascent and descent are swapped.
+ *
+ * `breakStarts` are the route breaks in `trackPoints`
+ * (`routeBreakStarts(breaks, 'points')`), so a ferry is never climbed.
+ */
+export function tripAlongTrail(
+  fromKm: number,
+  toKm: number,
+  trackPoints: readonly ElevationPoint[],
+  baseKmh: number,
+  breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
+): TrailTrip {
+  const ahead = toKm >= fromKm;
+  const distanceKm = Math.abs(toKm - fromKm);
+  const { gain, loss } = calculateElevationBetween(
+    fromKm,
+    toKm,
+    trackPoints as ElevationPoint[],
+    breakStarts,
+  );
+  const ascentM = ahead ? gain : loss;
+  const descentM = ahead ? loss : gain;
+  return {
+    direction: ahead ? 'ahead' : 'behind',
+    distanceKm,
+    ascentM,
+    descentM,
+    etaMinutes: estimateHikingTime(distanceKm, ascentM, descentM, baseKmh) * 60,
+  };
 }
 
 /**
@@ -146,8 +189,8 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
   currentKm: number,
   waypoints: readonly W[],
   trackPoints: readonly ElevationPoint[],
-  precomputedDistances?: WaypointDistance<W>[],
-  baseKmh = 4,
+  precomputedDistances: WaypointDistance<W>[] | undefined,
+  baseKmh: number,
   breakStarts: ReadonlySet<number> = NO_BREAK_STARTS,
   plannedIds?: ReadonlySet<string>,
 ): NextWaypointsByType<W> {

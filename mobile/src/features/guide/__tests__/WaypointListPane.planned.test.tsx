@@ -57,7 +57,7 @@ jest.mock('../use-visible-pois', () => ({
  * way, and never planned by ticking Hahndorf.
  */
 const trail = {
-  track: { totalDistance: 30 },
+  track: { totalDistance: 30, points: [] },
   waypoints: [
     { id: 'w_start', name: 'Trailhead', type: 'trailhead', totalDistance: 0 },
     {

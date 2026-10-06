@@ -59,14 +59,28 @@ describe('composeCheckIn — position (guide) variant', () => {
 describe('composeCheckIn — waypoint variant', () => {
   const waypoint = { name: 'Tyers River East', km: 13.2, lat: -37.12345, lon: 146.54321 };
 
-  it('uses the live GPS fix for the readout and link when available', () => {
-    const { title, message } = composeCheckIn(base({ waypoint, gps: GPS }));
+  // A fix ~100 m from the waypoint: at it.
+  const NEAR = { lat: -37.1243, lon: 146.54321, currentKm: 13.2 };
+
+  it('uses the live GPS fix for the readout and link when it is at the waypoint', () => {
+    const { title, message } = composeCheckIn(base({ waypoint, gps: NEAR }));
     expect(title).toBe('Check-in at Tyers River East');
     expect(message).toBe(
-      'Checking in at Tyers River East (13.2 km) on Australian Alps Walking Track. Position: 37.04449°S, 146.96018°E.\n' +
-        'https://maps.google.com/?q=-37.04449,146.96018\n' +
+      'Checking in at Tyers River East (13.2 km) on Australian Alps Walking Track. Position: 37.12430°S, 146.54321°E.\n' +
+        'https://maps.google.com/?q=-37.12430,146.54321\n' +
         '(via Tracknotes)',
     );
+  });
+
+  it('never says "at" a waypoint the live fix is far from', () => {
+    // GPS is ~38 km from the waypoint: a position check-in that names it.
+    const { title, message } = composeCheckIn(base({ waypoint, gps: GPS }));
+    expect(title).toBe('Check-in on Australian Alps Walking Track');
+    expect(message).not.toContain('Checking in at');
+    expect(message).toMatch(
+      /^Checking in from Australian Alps Walking Track — 219\.2 km of 688\.3 km\. Position: 37\.04449°S, 146\.96018°E\. \d+\.\d km from Tyers River East \(13\.2 km\)\.\n/,
+    );
+    expect(message).toContain('https://maps.google.com/?q=-37.04449,146.96018');
   });
 
   it('falls back to the waypoint coordinates without a fix', () => {

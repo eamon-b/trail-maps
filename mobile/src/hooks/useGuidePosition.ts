@@ -7,14 +7,17 @@
  * `displayPoints`) so the current km and off-trail distance stay accurate; the
  * windowed snap keeps the per-fix cost low regardless of track length.
  *
- * Permission is requested lazily: the app never prompts for it until a
- * consumer calls `start()` (wired to a "Show my location" affordance). Once the
- * hiker has granted it, though, opening a guide starts the foreground watch on
- * its own, so the list's distances read from where they stand without a tap
- * first. It is still foreground-only and stops when the guide closes.
+ * GPS is opt-in. Nothing is requested until a consumer calls `start()`
+ * (wired to "Show my location"), and that tap is also the hiker's choice to
+ * have it on: it sets the settings store's `gpsOnGuideOpen`, so later guides
+ * start the foreground watch on their own (when the OS permission is still
+ * granted) and the list's distances read from where the hiker stands. `stop()`
+ * turns it off and clears that choice. Tracking is foreground-only and stops
+ * when the guide closes.
  *
  * The four-state machine:
- *   no-permission — not yet started, or permission denied → show the pill
+ *   no-permission — not started, permission denied, or the start failed
+ *                   (`error` says why) → show the pill, whose tap retries
  *   acquiring     — started, permission ok, waiting for the first fix
  *   fix           — a fix snapped on-trail
  *   off-trail     — a fix, but beyond the off-trail threshold from the track
@@ -24,6 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGuide } from '../features/guide/GuideContext';
 import { useLocation } from './useLocation';
 import { isOffTrail } from '../services/position-on-trail';
+import { useSettingsStore } from '../state/settings-store';
 
 export type GuidePositionStatus = 'no-permission' | 'acquiring' | 'fix' | 'off-trail';
 
@@ -40,9 +44,11 @@ export interface GuidePosition {
   status: GuidePositionStatus;
   /** Whether a tracking session is live. */
   isTracking: boolean;
-  /** Lazily request permission and begin tracking. */
+  /** Why the last start failed (location services off, …), or null. */
+  error: string | null;
+  /** Lazily request permission and begin tracking; the hiker's opt-in. */
   start: () => Promise<void>;
-  /** Stop tracking. */
+  /** Stop tracking and stop starting it when a guide opens. */
   stop: () => void;
 }
 
@@ -53,6 +59,7 @@ export function useGuidePosition(): GuidePosition {
   const {
     location,
     accuracy,
+    error,
     permissionStatus,
     isTracking,
     startTracking,
@@ -63,21 +70,26 @@ export function useGuidePosition(): GuidePosition {
   // so the "acquiring" state shows the instant `start()` is pressed, before the
   // async permission request resolves.
   const [hasStarted, setHasStarted] = useState(false);
+  const gpsOnGuideOpen = useSettingsStore((s) => s.gpsOnGuideOpen);
+  const setGpsOnGuideOpen = useSettingsStore((s) => s.setGpsOnGuideOpen);
 
   const start = useCallback(async () => {
     setHasStarted(true);
+    setGpsOnGuideOpen(true);
     await startTracking();
-  }, [startTracking]);
+  }, [startTracking, setGpsOnGuideOpen]);
 
   const stop = useCallback(() => {
     setHasStarted(false);
+    setGpsOnGuideOpen(false);
     stopTracking();
-  }, [stopTracking]);
+  }, [stopTracking, setGpsOnGuideOpen]);
 
-  // Already granted (an earlier session's "Show my location"): start without
-  // waiting for a tap. `undetermined` and `denied` stay manual, so this never
-  // raises a permission prompt by itself.
-  const autoStart = permissionStatus === 'granted';
+  // The hiker turned location on before and the OS still allows it: start
+  // without waiting for a tap. Undetermined or denied stays manual, so this
+  // never raises a permission prompt by itself. It runs once per change; a
+  // failed start shows the pill (below), whose tap is the retry.
+  const autoStart = gpsOnGuideOpen && permissionStatus === 'granted';
   useEffect(() => {
     if (autoStart) void startTracking();
   }, [autoStart, startTracking]);
@@ -88,9 +100,10 @@ export function useGuidePosition(): GuidePosition {
     if (location) {
       return isOffTrail(offTrailMeters) ? 'off-trail' : 'fix';
     }
-    if ((hasStarted || autoStart) && permissionStatus !== 'denied') return 'acquiring';
+    const wanted = hasStarted || autoStart;
+    if (wanted && permissionStatus !== 'denied' && error == null) return 'acquiring';
     return 'no-permission';
-  }, [location, offTrailMeters, hasStarted, autoStart, permissionStatus]);
+  }, [location, offTrailMeters, hasStarted, autoStart, permissionStatus, error]);
 
   const position = useMemo(
     () =>
@@ -105,6 +118,7 @@ export function useGuidePosition(): GuidePosition {
     accuracy,
     status,
     isTracking,
+    error,
     start,
     stop,
   };

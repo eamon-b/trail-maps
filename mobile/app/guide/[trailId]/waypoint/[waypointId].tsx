@@ -52,7 +52,6 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
-import { routeBreakStarts } from '@lib/route-breaks';
 import { accessSummary } from '@lib/resupply-display';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
@@ -72,15 +71,10 @@ import { waypointColor } from '../../../../src/features/elevation/waypoint-categ
 import {
   duplicatePoisFor,
   relativeDate,
-  tripToWaypoint,
   waterStatusMeta,
-  type TripToWaypoint,
+  waypointOffTrailMeters,
 } from '../../../../src/features/guide/waypoint-detail';
-import { formatEtaMinutes } from '../../../../src/services/distance-calculator';
-import {
-  selectPaceBaseKmh,
-  usePlanInputsStore,
-} from '../../../../src/features/plan/plan-inputs-store';
+import { TripCard } from '../../../../src/features/guide/TripCard';
 import { findStop, setNights, setStopBooked, setStopNote, toggleStop } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import { useIdentityStore } from '../../../../src/state/identity-store';
@@ -123,7 +117,6 @@ export default function WaypointDetailScreen() {
   const { trail, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const { currentKm, position, status } = useGuidePositionContext();
-  const baseKmh = usePlanInputsStore(selectPaceBaseKmh(trailId));
   const shareCheckIn = useCheckInShare();
 
   const waypoint = useMemo(() => {
@@ -209,6 +202,9 @@ export default function WaypointDetailScreen() {
   // make a row's output depend on when React happened to re-render it; one
   // clock per read also keeps every row in the feed on the same reference.
   const [feedNowMs, setFeedNowMs] = useState(0);
+  // The last cache read failed (SQLite unavailable): say so and offer a retry
+  // instead of a spinner that never stops.
+  const [feedError, setFeedError] = useState(false);
 
   // The cache read is separated from the state write so the effects below can
   // do the write in a promise callback — setState in an effect *body* cascades
@@ -229,16 +225,23 @@ export default function WaypointDetailScreen() {
     };
   }, [trailId, commentWaypointId, visibleCount]);
 
-  /** Re-read the cached feed and show it. Returns once the rows are on screen. */
+  /**
+   * Re-read the cached feed and show it. Returns once the rows are on screen,
+   * or once a failed read has been recorded in `feedError` — it never rejects.
+   */
   const load = useCallback(
     () =>
-      readFeed().then((feed) => {
-        if (!feed) return;
-        setComments(feed.rows);
-        setTotalComments(feed.total);
-        setSyncedDescription(feed.description);
-        setFeedNowMs(feed.nowMs);
-      }),
+      readFeed().then(
+        (feed) => {
+          setFeedError(false);
+          if (!feed) return;
+          setComments(feed.rows);
+          setTotalComments(feed.total);
+          setSyncedDescription(feed.description);
+          setFeedNowMs(feed.nowMs);
+        },
+        () => setFeedError(true),
+      ),
     [readFeed],
   );
 
@@ -261,8 +264,12 @@ export default function WaypointDetailScreen() {
     if (!serverKnown) return;
     let active = true;
     void (async () => {
-      const res = await pullTrail(trailId);
-      if (active && res.outcome === 'pulled') setReloadToken((t) => t + 1);
+      try {
+        const res = await pullTrail(trailId);
+        if (active && res.outcome === 'pulled') setReloadToken((t) => t + 1);
+      } catch {
+        // Offline-first: the cached feed stands; the next pull tries again.
+      }
     })();
     return () => {
       active = false;
@@ -278,6 +285,13 @@ export default function WaypointDetailScreen() {
       if (change.trailId == null || change.trailId === trailId) void load();
     });
   }, [load, trailId]);
+
+  // How far the place itself is from the line, so the trip card never calls a
+  // lodging two kilometres off the route "here".
+  const placeOffTrailM = useMemo(
+    () => (waypoint ? waypointOffTrailMeters(waypoint, trail.track.points) : null),
+    [waypoint, trail],
+  );
 
   if (!waypoint) {
     return (
@@ -296,21 +310,6 @@ export default function WaypointDetailScreen() {
   const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
   const duplicatePois = duplicatePoisFor(trail, waypoint.id);
   const km = waypoint.totalDistance ?? 0;
-  // The walk from the hiker's GPS position: only with a usable fix, measured
-  // along the trail from the point they snap to. Same climb and Naismith maths
-  // as the distance strip, at the hiker's own pace.
-  const hasFix = (status === 'fix' || status === 'off-trail') && currentKm != null;
-  const trip =
-    hasFix && currentKm != null
-      ? tripToWaypoint(
-          currentKm,
-          km,
-          trail.track.points,
-          baseKmh,
-          routeBreakStarts(trail.track.breaks, 'points'),
-        )
-      : null;
-
   return (
     <View style={styles.flex}>
       <Stack.Screen options={{ title: waypoint.name }} />
@@ -319,7 +318,7 @@ export default function WaypointDetailScreen() {
         contentContainerStyle={styles.content}
       >
         {/* How far, and how much up and down, from where the hiker stands. */}
-        {hasFix && <TripCard trip={trip} offTrail={status === 'off-trail'} units={units} />}
+        <TripCard placeKm={km} placeOffTrailM={placeOffTrailM} />
 
         {/* Hero header */}
         <View style={styles.hero}>
@@ -453,6 +452,14 @@ export default function WaypointDetailScreen() {
           <EmptyNote text="Comments are unavailable — no server is configured for this build." />
         ) : !commentWaypointId ? (
           <EmptyNote text="Comments aren’t supported for this waypoint." />
+        ) : comments === null && feedError ? (
+          <Pressable
+            onPress={() => void load()}
+            accessibilityRole="button"
+            accessibilityLabel="Couldn’t load comments. Try again"
+          >
+            <EmptyNote text="Couldn’t load comments. Tap to try again." />
+          </Pressable>
         ) : comments === null ? (
           <ActivityIndicator style={styles.loader} color={colors.accent} />
         ) : comments.length === 0 ? (
@@ -781,56 +788,6 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/**
- * The walk from the hiker's position to this waypoint: distance along the
- * trail, climb and descent in the direction walked, and a Naismith time.
- * `trip` null means the hiker is already within 50 m of it.
- */
-function TripCard({
-  trip,
-  offTrail,
-  units,
-}: {
-  trip: TripToWaypoint | null;
-  offTrail: boolean;
-  units: Units;
-}) {
-  const { colors } = useTheme();
-  const heading = offTrail ? 'From the nearest point on the trail' : 'From your location';
-  return (
-    <View
-      accessible
-      style={[styles.tripCard, { backgroundColor: colors.surface, borderColor: colors.gps }]}
-    >
-      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{heading}</Text>
-      {trip ? (
-        <View style={styles.tripRow}>
-          <Text style={[styles.tripDistance, { color: colors.textPrimary }]}>
-            {`${formatDistance(trip.distanceKm, units)} ${trip.direction}`}
-          </Text>
-          <Text
-            style={[styles.tripValue, { color: colors.textPrimary }]}
-            accessibilityLabel={`${formatElevation(trip.ascentM, units)} up`}
-          >
-            {`↑ ${formatElevation(trip.ascentM, units)}`}
-          </Text>
-          <Text
-            style={[styles.tripValue, { color: colors.textPrimary }]}
-            accessibilityLabel={`${formatElevation(trip.descentM, units)} down`}
-          >
-            {`↓ ${formatElevation(trip.descentM, units)}`}
-          </Text>
-          <Text style={[styles.tripValue, { color: colors.textSecondary }]}>
-            {formatEtaMinutes(trip.etaMinutes)}
-          </Text>
-        </View>
-      ) : (
-        <Text style={[styles.tripDistance, { color: colors.textPrimary }]}>You are here</Text>
-      )}
-    </View>
-  );
-}
-
 function EmptyNote({ text }: { text: string }) {
   const { colors } = useTheme();
   return <Text style={[styles.emptyNote, { color: colors.textSecondary }]}>{text}</Text>;
@@ -1054,23 +1011,6 @@ const styles = StyleSheet.create({
   },
   statLabel: { ...typography.caption },
   statValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
-
-  tripCard: {
-    borderWidth: 1,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-  },
-  tripRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'baseline',
-    columnGap: spacing.md,
-    rowGap: spacing.xs,
-  },
-  tripDistance: { ...typography.titleLarge, fontVariant: ['tabular-nums'] },
-  tripValue: { ...typography.titleSmall, fontVariant: ['tabular-nums'] },
 
   osmSection: { gap: spacing.sm },
   osmHeader: {

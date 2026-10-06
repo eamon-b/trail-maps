@@ -22,6 +22,10 @@ jest.mock('../../../theme', () => ({
 }));
 
 const mockPush = jest.fn();
+let mockPosition: { currentKm: number | null; status: string } = {
+  currentKm: null,
+  status: 'no-permission',
+};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
@@ -31,7 +35,7 @@ jest.mock('../GuideContext', () => ({
 }));
 
 jest.mock('../GuidePositionContext', () => ({
-  useGuidePositionContext: () => ({ currentKm: null }),
+  useGuidePositionContext: () => mockPosition,
 }));
 
 jest.mock('../../../state/favorites-store', () => ({
@@ -74,7 +78,7 @@ const pois: TrailPOI[] = [
 ];
 
 const trail = {
-  track: { totalDistance: 30 },
+  track: { totalDistance: 30, points: [] },
   waypoints: [
     { id: 'w_start', name: 'Trailhead', type: 'trailhead', totalDistance: 0 },
     { id: 'w_creek', name: 'Kennedy Creek', type: 'creek', totalDistance: 12 },
@@ -151,6 +155,32 @@ describe('WaypointListPane POI rows', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    mockPosition = { currentKm: null, status: 'no-permission' };
+  });
+
+  it('says "Here" only for a POI on the trail, level with an on-trail hiker', () => {
+    mockVisiblePois.mockImplementation(() => [
+      poi({ id: 9, category: 'water', name: 'Trailside Tank', distanceAlongTrail: 6, distanceFromTrail: 0.017 }),
+      poi({ id: 10, category: 'restaurant', name: 'Town Cafe', distanceAlongTrail: 6, distanceFromTrail: 2 }),
+    ]);
+    mockPosition = { currentKm: 6, status: 'fix' };
+    const tree = render();
+    const row = (name: string) =>
+      textOf(tree.root.findAll((n) => n.props.accessibilityLabel === `Open ${name} (OpenStreetMap)`)[0]);
+    // The tank is on the line: here. The cafe is 2 km off it: level, not here.
+    expect(row('Trailside Tank')).toContain('Here');
+    expect(row('Town Cafe')).toContain('Level with you');
+    expect(row('Town Cafe')).not.toContain('Here');
+  });
+
+  it('never says "Here" while the hiker is off the trail', () => {
+    mockVisiblePois.mockImplementation(() => [
+      poi({ id: 9, category: 'water', name: 'Trailside Tank', distanceAlongTrail: 6, distanceFromTrail: 0.017 }),
+    ]);
+    mockPosition = { currentKm: 6, status: 'off-trail' };
+    const text = allText(render());
+    expect(text).not.toContain('Here');
+    expect(text).toContain('Level with you');
   });
 
   it('interleaves POIs by distance, waypoint first on a tie', () => {

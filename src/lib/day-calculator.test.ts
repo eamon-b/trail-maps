@@ -18,30 +18,26 @@ import { simplifyToTarget } from './track-simplify';
 
 describe('estimateHikingTime', () => {
   it('flat 20km day with no descent returns 5h', () => {
-    expect(estimateHikingTime(20, 0, 0)).toBe(5);
+    expect(estimateHikingTime(20, 0, 0, 4)).toBe(5);
   });
 
   it('20km with 600m ascent and 0m descent returns 6h', () => {
-    expect(estimateHikingTime(20, 600, 0)).toBe(6);
+    expect(estimateHikingTime(20, 600, 0, 4)).toBe(6);
   });
 
   it('descent up to 300m is free (no penalty)', () => {
     // 20km flat + 0 ascent + 300m descent (300 <= threshold, penalty = 0)
-    expect(estimateHikingTime(20, 0, 300)).toBe(5);
+    expect(estimateHikingTime(20, 0, 300, 4)).toBe(5);
   });
 
   it('descent > 300m incurs penalty', () => {
     // 20km + 0 ascent + 900m descent → 5 + 0 + (900-300)/600 = 5 + 1 = 6
-    expect(estimateHikingTime(20, 0, 900)).toBe(6);
+    expect(estimateHikingTime(20, 0, 900, 4)).toBe(6);
   });
 
   it('rounds to 1 decimal', () => {
     // 15km + 500m ascent → 15/4 + 500/600 = 3.75 + 0.833… = 4.583… → 4.6
-    expect(estimateHikingTime(15, 500, 0)).toBe(4.6);
-  });
-
-  it('baseKmh defaults to 4 (unchanged behavior)', () => {
-    expect(estimateHikingTime(20, 0, 0)).toBe(estimateHikingTime(20, 0, 0, 4));
+    expect(estimateHikingTime(15, 500, 0, 4)).toBe(4.6);
   });
 
   it('non-default baseKmh scales the distance term', () => {
@@ -56,17 +52,17 @@ describe('estimateHikingTime', () => {
 describe('estimateHikingHoursRaw', () => {
   it('matches the Naismith formula without rounding', () => {
     // 15km + 500m ascent at 4 km/h → 3.75 + 0.8333… (unrounded)
-    expect(estimateHikingHoursRaw(15, 500, 0)).toBeCloseTo(3.75 + 500 / 600, 10);
+    expect(estimateHikingHoursRaw(15, 500, 0, 4)).toBeCloseTo(3.75 + 500 / 600, 10);
   });
 
   it('estimateHikingTime is the 0.1 h rounding of the raw variant', () => {
-    const raw = estimateHikingHoursRaw(15, 500, 0);
-    expect(estimateHikingTime(15, 500, 0)).toBe(Math.round(raw * 10) / 10);
+    const raw = estimateHikingHoursRaw(15, 500, 0, 4);
+    expect(estimateHikingTime(15, 500, 0, 4)).toBe(Math.round(raw * 10) / 10);
   });
 
   it('descent up to 300m is free; beyond incurs a linear penalty', () => {
-    expect(estimateHikingHoursRaw(20, 0, 300)).toBeCloseTo(5, 10);
-    expect(estimateHikingHoursRaw(20, 0, 900)).toBeCloseTo(6, 10);
+    expect(estimateHikingHoursRaw(20, 0, 300, 4)).toBeCloseTo(5, 10);
+    expect(estimateHikingHoursRaw(20, 0, 900, 4)).toBeCloseTo(6, 10);
   });
 });
 
@@ -236,7 +232,7 @@ function makeFlatTrail(totalKm: number, waypoints: PlanWaypoint[] = []): PlanTra
 describe('computeDays', () => {
   it('no stops → single day covering full trail', () => {
     const trail = makeFlatTrail(100);
-    const days = computeDays(trail, []);
+    const days = computeDays(trail, [], null, null, 4);
     expect(days).toHaveLength(1);
     expect(days[0].dayNumber).toBe(1);
     expect(days[0].startKm).toBe(0);
@@ -247,7 +243,7 @@ describe('computeDays', () => {
   it('one stop → two days', () => {
     const trail = makeFlatTrail(100);
     const stops: StopData[] = [{ km: 60, waypointName: 'Camp Alpha' }];
-    const days = computeDays(trail, stops);
+    const days = computeDays(trail, stops, null, null, 4);
     expect(days).toHaveLength(2);
     expect(days[0].distanceKm).toBe(60);
     expect(days[1].distanceKm).toBe(40);
@@ -261,7 +257,7 @@ describe('computeDays', () => {
       { km: 30, waypointName: 'Stop A' },
       { km: 60, waypointName: 'Stop B' },
     ];
-    const days = computeDays(trail, stops);
+    const days = computeDays(trail, stops, null, null, 4);
     expect(days).toHaveLength(3);
     expect(days[0].distanceKm).toBe(30);
     expect(days[1].distanceKm).toBe(30);
@@ -271,14 +267,14 @@ describe('computeDays', () => {
   it('assigns dates when startDate provided', () => {
     const trail = makeFlatTrail(60);
     const stops: StopData[] = [{ km: 30, waypointName: 'Mid' }];
-    const days = computeDays(trail, stops, '2025-03-15');
+    const days = computeDays(trail, stops, '2025-03-15', null, 4);
     expect(days[0].date).toBe('2025-03-15');
     expect(days[1].date).toBe('2025-03-16');
   });
 
   it('date is undefined when no startDate', () => {
     const trail = makeFlatTrail(50);
-    const days = computeDays(trail, []);
+    const days = computeDays(trail, [], null, null, 4);
     expect(days[0].date).toBeUndefined();
   });
 
@@ -289,7 +285,7 @@ describe('computeDays', () => {
     ];
     const trail = makeFlatTrail(80, waypoints);
     const stops: StopData[] = [{ km: 40, waypointName: 'Camp' }];
-    const days = computeDays(trail, stops);
+    const days = computeDays(trail, stops, null, null, 4);
     expect(days[0].waterSources).toBe(1); // spring at 25
     expect(days[1].waterSources).toBe(1); // creek at 55
   });
@@ -300,7 +296,7 @@ describe('computeDays', () => {
       { name: 'Summit', type: 'mountain', totalDistance: 50 },
     ];
     const trail = makeFlatTrail(50, waypoints);
-    const days = computeDays(trail, []);
+    const days = computeDays(trail, [], null, null, 4);
     expect(days[0].startName).toBe('Trailhead');
     expect(days[0].endName).toBe('Summit');
   });
@@ -313,7 +309,7 @@ describe('computeDays', () => {
       { km: 70, waypointName: 'Camp B' },
       { km: 30, waypointName: 'Camp A' },
     ];
-    const days = computeDays(trail, unsortedStops);
+    const days = computeDays(trail, unsortedStops, null, null, 4);
     // Every day must have a non-negative distance
     for (const day of days) {
       expect(day.distanceKm).toBeGreaterThanOrEqual(0);
@@ -330,7 +326,7 @@ describe('computeDays', () => {
       waypoints: [],
     };
     // Should not throw; should either return valid days or an empty array
-    const days = computeDays(trail, []);
+    const days = computeDays(trail, [], null, null, 4);
     expect(Array.isArray(days)).toBe(true);
     if (days.length > 0) {
       expect(days[0].distanceKm).toBe(50);
@@ -341,7 +337,7 @@ describe('computeDays', () => {
     const trail = makeFlatTrail(50);
     const stops: StopData[] = [{ km: 80, waypointName: 'Past End' }];
     // Stop at 80km on a 50km trail — should not produce negative day distance
-    const days = computeDays(trail, stops);
+    const days = computeDays(trail, stops, null, null, 4);
     for (const day of days) {
       expect(day.distanceKm).toBeGreaterThanOrEqual(0);
     }
@@ -352,7 +348,7 @@ describe('computeDays', () => {
     const stops: StopData[] = [{ km: 60, waypointName: 'Camp' }];
     const fast = computeDays(trail, stops, null, null, 5);
     const slow = computeDays(trail, stops, null, null, 3);
-    const base = computeDays(trail, stops); // default 4 km/h
+    const base = computeDays(trail, stops, null, null, 4);
 
     // Distances are identical regardless of pace.
     expect(fast.map(d => d.distanceKm)).toEqual(base.map(d => d.distanceKm));
@@ -364,11 +360,6 @@ describe('computeDays', () => {
     expect(slow[0].estimatedHours).toBe(20);
   });
 
-  it('default baseKmh keeps existing behavior byte-identical', () => {
-    const trail = makeFlatTrail(80);
-    const stops: StopData[] = [{ km: 40, waypointName: 'Mid' }];
-    expect(computeDays(trail, stops)).toEqual(computeDays(trail, stops, null, null, 4));
-  });
 });
 
 describe('route breaks', () => {
@@ -396,7 +387,7 @@ describe('route breaks', () => {
   }
 
   it('computeDays does not count the climb across a break', () => {
-    const [day] = computeDays(trailWithFerry(), []);
+    const [day] = computeDays(trailWithFerry(), [], null, null, 4);
     expect(day.ascentM).toBe(0);
     expect(day.descentM).toBe(0);
     expect(day.estimatedHours).toBe(2.5);
@@ -405,10 +396,10 @@ describe('route breaks', () => {
   it('the time index agrees with computeDays when given the same breaks', () => {
     const trail = trailWithFerry();
     const index = buildTimeIndex(trail.track.points, new Set([51]));
-    expect(hoursBetweenIndexed(index, 0, 10)).toBeCloseTo(estimateHikingHoursRaw(10, 0, 0), 10);
+    expect(hoursBetweenIndexed(index, 0, 10, 4)).toBeCloseTo(estimateHikingHoursRaw(10, 0, 0, 4), 10);
     // Without them it would charge the 300 m: an hour at 600 m/h.
     const unaware = buildTimeIndex(trail.track.points);
-    expect(hoursBetweenIndexed(unaware, 0, 10)).toBeCloseTo(estimateHikingHoursRaw(10, 300, 0), 10);
+    expect(hoursBetweenIndexed(unaware, 0, 10, 4)).toBeCloseTo(estimateHikingHoursRaw(10, 300, 0, 4), 10);
   });
 });
 

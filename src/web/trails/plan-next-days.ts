@@ -78,8 +78,23 @@ export interface NextDaysHost {
 export interface NextDaysController {
   /** Re-render with the current plan, trail and inputs; drops a stale result. */
   render(): void;
-  /** The located km (active), or null. */
-  hereKm(): number | null;
+  /** Where the located fix lands on the trail (active), or null. */
+  here(): LocatedPoint | null;
+}
+
+/**
+ * A located fix further than this from the track is off the trail: level with
+ * a km of it, not standing on it. The phone's GPS uses the same 50 m.
+ */
+export const OFF_TRAIL_M = 50;
+
+/** The Stops tab's divider text for a located fix. */
+export function hereLabel(here: LocatedPoint): string {
+  if (here.offTrailMeters <= OFF_TRAIL_M) return 'You are here';
+  const off = here.offTrailMeters < 1000
+    ? `${Math.round(here.offTrailMeters)} m`
+    : `${(here.offTrailMeters / 1000).toFixed(1)} km`;
+  return `Level with you \u00B7 you are ${off} off the trail`;
 }
 
 type FromChoice = 'auto' | 'last-stop';
@@ -442,5 +457,5 @@ export function initNextDays(container: HTMLElement, host: NextDaysHost): NextDa
   });
 
   render();
-  return { render, hereKm: () => located()?.km ?? null };
+  return { render, here: located };
 }

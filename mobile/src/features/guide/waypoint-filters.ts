@@ -126,12 +126,20 @@ export interface SignedDistance {
  * @example formatSignedDistance(12.4, 'km')  // "12.4 km ahead"
  * @example formatSignedDistance(-3.1, 'km')  // "3.1 km behind"
  * @example formatSignedDistance(0, 'km')     // "Here"
+ * @example formatSignedDistance(0, 'km', { offLine: true }) // "Level with you"
+ *
+ * `offLine`: the hiker or the place is off the trail line, so being level on
+ * the trail is not being there — it reads "Level with you", never "Here".
  */
-export function formatSignedDistance(deltaKm: number, unit: DistanceUnit): SignedDistance {
-  // Collapse sub-50 m deltas to "Here" — GPS and snap noise make a sign
-  // meaningless that close.
+export function formatSignedDistance(
+  deltaKm: number,
+  unit: DistanceUnit,
+  { offLine = false }: { offLine?: boolean } = {},
+): SignedDistance {
+  // Collapse sub-50 m deltas — GPS and snap noise make a sign meaningless
+  // that close.
   if (Math.abs(deltaKm) < 0.05) {
-    return { label: 'Here', direction: 'here' };
+    return { label: offLine ? 'Level with you' : 'Here', direction: 'here' };
   }
   const magnitude = formatDistance(Math.abs(deltaKm), unit);
   if (deltaKm > 0) {

@@ -100,6 +100,8 @@ export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocat
   const startTracking = useCallback(async () => {
     if (startingRef.current || activeRef.current) return;
     startingRef.current = true;
+    // A retry starts clean: the last attempt's error is no longer the answer.
+    setError(null);
     try {
       const status = await requestLocationPermission();
       setPermissionStatus(status);
@@ -123,6 +125,10 @@ export function useLocation(trackPoints?: readonly SnapPoint[] | null): UseLocat
     stopLocationTracking(handleLocationUpdate);
     activeRef.current = false;
     setIsTracking(false);
+    // A stopped watch has no position: a later start must not show this fix
+    // as current before its own first one arrives.
+    setLocation(null);
+    setAccuracy(null);
   }, [handleLocationUpdate]);
 
   // Clean up this instance's subscription on unmount.

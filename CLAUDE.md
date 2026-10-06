@@ -289,7 +289,7 @@ The app is named **Tracknotes** (`app.json` name/slug `tracknotes`, package `com
 ### Mobile Route Structure (`mobile/app/`)
 
 - `_layout.tsx` — Root Stack (ThemeProvider, GestureHandlerRootView)
-- `index.tsx` — "My Guides" home: bundled trails (download badges) + imported ones ("Imported" badge, long-press to delete); ＋ header action picks a GPX
+- `index.tsx` — "My Guides" home: bundled trails (download badges) + imported ones ("Imported" badge, long-press to delete); ＋ header action picks a GPX; a pin on each card marks the trail being hiked now (settings store `currentTrailId`, rules in `features/guide/current-hike.ts`): it leads the list with a "Hiking now" pill, and a fresh launch pushes its guide over the list once (not when the launch was an incoming file)
 - `settings.tsx` — App settings (units, display name, Linked browsers: mint a link code, list and revoke linked tokens)
 - `import.tsx` — Modal: review a picked GPX (name, counts, warnings) then save it as a guide
 - `guide/[trailId]/_layout.tsx` — Per-trail guide stack, wrapped in `GuideProvider` + `GuidePositionProvider`; header actions for Routes / Plan / Offline maps / Settings

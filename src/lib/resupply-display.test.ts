@@ -7,7 +7,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { accessSummary, firstSentence, resupplySummaryText } from './resupply-display';
+import {
+  accessSummary,
+  firstSentence,
+  legDistanceText,
+  legRidesText,
+  resupplySummaryText,
+  stopAccessText,
+} from './resupply-display';
 import type { ResupplySummary } from './resupply-plan';
 
 const km = (value: number): string => `${value.toFixed(1)} km`;
@@ -73,6 +80,15 @@ describe('accessSummary', () => {
   it('formats through the caller’s units', () => {
     expect(accessSummary({ offTrailKm: 22.5, accessMode: 'hitch' }, mi)).toBe('14.0 mi hitch');
   });
+
+  it('names the side trip walked to the place', () => {
+    expect(
+      accessSummary(
+        { offTrailKm: 0.9, accessMode: 'foot', accessRoute: { name: 'S3.7 Spur to Cudlee Creek', ascentM: 38, descentM: 39 } },
+        km
+      )
+    ).toBe('0.9 km on foot via S3.7 Spur to Cudlee Creek');
+  });
 });
 
 describe('resupplySummaryText', () => {
@@ -101,5 +117,30 @@ describe('resupplySummaryText', () => {
     expect(resupplySummaryText(summary(), mi, v => `${(v * 2.20462).toFixed(1)} lb`)).toBe(
       '4 stops · longest carry 6.2 mi / 2 days · 7.5 lb food in total',
     );
+  });
+});
+
+describe('leg and stop distances, trail and off trail apart', () => {
+  it('adds the off-trail walk to the trail km only when there is one', () => {
+    expect(legDistanceText({ distanceKm: 52.3, offTrailWalkKm: 0 }, km)).toBe('52.3 km');
+    expect(legDistanceText({ distanceKm: 52.3, offTrailWalkKm: 4 }, km)).toBe('52.3 km + 4.0 km off trail');
+    expect(legDistanceText({ distanceKm: 52.3, offTrailWalkKm: 4 }, mi)).toBe('32.5 mi + 2.5 mi off trail');
+  });
+
+  it('lists the rides a leg does not walk', () => {
+    expect(legRidesText({ rides: [] }, km)).toBe('');
+    expect(
+      legRidesText(
+        { rides: [{ km: 24.1, mode: 'hitch', end: 'from' }, { km: 0.7, end: 'to' }] },
+        km
+      )
+    ).toBe('24.1 km hitch out · 0.7 km off trail in, not walked');
+  });
+
+  it('says what lies beyond the turn-off on the way to a stop', () => {
+    expect(stopAccessText(undefined, km)).toBe('');
+    const walk = { place: 'A', walkKm: 2, walkAscentM: 0, walkDescentM: 0, rideKm: 0 };
+    expect(stopAccessText(walk, km)).toBe('+ 2.0 km off trail');
+    expect(stopAccessText({ ...walk, walkKm: 0, rideKm: 35, rideMode: 'hitch' }, km)).toBe('+ 35.0 km hitch');
   });
 });

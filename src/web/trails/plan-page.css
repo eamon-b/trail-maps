@@ -681,6 +681,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   font-variant-numeric: tabular-nums;
 }
 .resupply-table td.rs-route { white-space: normal; min-width: 7rem; }
+.resupply-table td.rs-distance { white-space: normal; min-width: 6rem; }
+.resupply-table .rs-rides { font-size: 0.85em; color: var(--text-secondary); }
 .resupply-table tr:last-child td { border-bottom: none; }
 .resupply-table tr.is-long { background: var(--tint-warn); }
 

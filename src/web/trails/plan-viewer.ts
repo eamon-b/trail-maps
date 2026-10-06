@@ -51,12 +51,19 @@ import {
   listResupplyOptions,
   plannedResupplyIds,
   resolveResupplyStops,
+  resupplyCandidates,
   summariseResupplyLegs,
   type ResupplyLeg,
   type ResupplyOption,
   type ResupplyOptionGroup,
 } from '@lib/resupply-plan';
-import { accessSummary, firstSentence, resupplySummaryText } from '@lib/resupply-display';
+import {
+  accessSummary,
+  firstSentence,
+  legDistanceText,
+  legRidesText,
+  resupplySummaryText,
+} from '@lib/resupply-display';
 import { analyzeWaterCarry } from '@lib/water-carry-calculator';
 import { createReversedTrail } from '@lib/trail-reverse';
 import { trailElevationIsUsable } from '@lib/elevation-backfill';
@@ -457,7 +464,8 @@ function resetResupplyCaches(): void {
 function resupplyGroups(): ResupplyOptionGroup[] {
   const key = direction();
   if (key !== cachedResupplyGroupsKey) {
-    cachedResupplyGroups = listResupplyOptions(activeTrail().waypoints);
+    // Main-route places plus the towns a side trip leads to, offered at its junction.
+    cachedResupplyGroups = listResupplyOptions(resupplyCandidates(activeTrail()));
     cachedResupplyGroupsKey = key;
   }
   return cachedResupplyGroups;
@@ -1320,6 +1328,16 @@ function renderResupplyList(): void {
   }).join('');
 }
 
+/**
+ * A leg's distance: the trail km, the off-trail walk beside it, and any ride the
+ * days and food leave out on a line of its own — trail and off-trail kept apart.
+ */
+function resupplyDistanceCell(leg: ResupplyLeg): string {
+  const rides = legRidesText(leg, formatKm);
+  return escapeHtml(legDistanceText(leg, formatKm)) +
+    (rides ? `<div class="rs-rides">${escapeHtml(rides)}</div>` : '');
+}
+
 function renderResupplyRow(option: ResupplyOption, picked: ReadonlySet<string>): string {
   const checked = picked.has(option.id);
   const inputId = `resupply-opt-${option.id}`;
@@ -1467,7 +1485,7 @@ function renderResupplyDatasheet(): void {
     return `<tr class="resupply-leg${leg.isLong ? ' is-long' : ''}">
       <td>${i + 1}</td>
       <td class="rs-route">${escapeHtml(leg.fromName)} → ${escapeHtml(leg.toName)}</td>
-      <td>${leg.distanceKm.toFixed(1)} km</td>
+      <td class="rs-distance">${resupplyDistanceCell(leg)}</td>
       <td>+${leg.ascentM} m</td>
       <td>-${leg.descentM} m</td>
       <td class="${leg.isLong ? 'gap-warn' : ''}">${leg.estimatedDays}${leg.isLong ? ' ⚠️' : ''}</td>

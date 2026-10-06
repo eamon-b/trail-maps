@@ -257,8 +257,9 @@ describe('unticking options', () => {
     // The last carry now runs Mill Road (km 20) → trail end (km 50): 30.0 km,
     // climbing 200→600→700 with one 100 m drop on the way (+500 / -100).
     // Naismith: 30/4 + 500/600 = 8.33 h → 2 days at 8 h → 2 × 680 g = 1.4 kg.
+    // Charlie is a 22 km hitch: listed under the distance, never walked.
     expect(rows[2]).toEqual([
-      '3', 'Bravo / Charlie → Trail End', '30.0 km', '+500 m', '-100 m', '2', '1.4 kg',
+      '3', 'Bravo / Charlie → Trail End', '30.0 km22.0 km hitch out, not walked', '+500 m', '-100 m', '2', '1.4 kg',
     ]);
     expect($('datasheet-subtitle').textContent).toBe(
       '2 stops · longest carry 30.0 km / 2 days · 2.7 kg food in total',

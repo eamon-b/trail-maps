@@ -16,7 +16,12 @@ import {
   resolveResupplyStops,
   computeResupplyLegs,
   summariseResupplyLegs,
+  resupplyCandidates,
+  nextResupplyStop,
+  optionAccess,
   type ResupplyCandidateWaypoint,
+  type ResupplySideTrip,
+  type ResupplyTrail,
 } from './resupply-plan';
 import type { PlanTrail } from './day-calculator';
 import type { ComputedDay } from './plan-types';
@@ -690,5 +695,245 @@ describe('the built CDT', () => {
     expect(optionCount).toBeGreaterThanOrEqual(60);
     expect(groups.length).toBeLessThan(optionCount);
     expect(resolveResupplyStops(groups, undefined)).toHaveLength(groups.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Off the route: side trips and turn-offs
+// ---------------------------------------------------------------------------
+
+/**
+ * A 3 km spur north from km 30 of `flatTrail`, climbing 100 m per km
+ * (0.009° of latitude is ~1 km). Its build-time totals say 300 m up, 0 down.
+ */
+function spur(overrides: Partial<ResupplySideTrip> = {}): ResupplySideTrip {
+  return {
+    name: 'Spur to Town',
+    type: 'side-trip',
+    startDistance: 30,
+    distance: 3,
+    elevation: { ascent: 300, descent: 0 },
+    points: [0, 1, 2, 3].map(k => ({ lat: -35 + k * 0.009, lon: 149.03, ele: k * 100 })),
+    waypoints: [{ id: 'spur-town', name: 'Spur Town', type: 'town', totalDistance: 33 }],
+    ...overrides,
+  };
+}
+
+describe('resupplyCandidates', () => {
+  it('offers a town on a side trip at the junction, with the walk and its climb', () => {
+    const [town] = resupplyCandidates({ waypoints: [], sideTrips: [spur()] });
+    expect(town).toMatchObject({
+      id: 'spur-town',
+      totalDistance: 30,
+      offTrailKm: 3,
+      accessMode: 'foot',
+      accessName: 'Spur to Town',
+      accessRoute: { name: 'Spur to Town', ascentM: 300, descentM: 0 },
+    });
+  });
+
+  it('measures the climb only as far as a town part-way along', () => {
+    const trip = spur({ waypoints: [{ id: 'mid', name: 'Mid', type: 'food', totalDistance: 31 }] });
+    const [mid] = resupplyCandidates({ sideTrips: [trip] });
+    expect(mid.offTrailKm).toBe(1);
+    // ~1 km of the thinned points climbs ~100 m, scaled to the build's 300 m total.
+    expect(mid.accessRoute!.ascentM).toBeGreaterThanOrEqual(100);
+    expect(mid.accessRoute!.ascentM).toBeLessThan(300);
+  });
+
+  it('scales a thinned side trip’s climb up to the build’s total', () => {
+    const [town] = resupplyCandidates({ sideTrips: [spur({ elevation: { ascent: 450, descent: 20 } })] });
+    expect(town.accessRoute).toMatchObject({ ascentM: 450, descentM: 0 });
+  });
+
+  it('reaches an off-route town just past the end of a side trip', () => {
+    const trail: ResupplyTrail = {
+      sideTrips: [spur({ waypoints: [] })],
+      // ~550 m north of the spur's end.
+      offTrailWaypoints: [{ id: 'far', name: 'Far Town', type: 'town', lat: -35 + 0.032, lon: 149.03 }],
+    };
+    const [far] = resupplyCandidates(trail);
+    expect(far.id).toBe('far');
+    expect(far.totalDistance).toBe(30);
+    expect(far.offTrailKm).toBeCloseTo(3.6, 1);
+    expect(far.accessRoute).toMatchObject({ ascentM: 300 });
+  });
+
+  it('leaves out an off-route town no side trip reaches', () => {
+    const trail: ResupplyTrail = {
+      sideTrips: [spur({ waypoints: [] })],
+      offTrailWaypoints: [{ id: 'far', name: 'Far Town', type: 'town', lat: -34.9, lon: 149.03 }],
+    };
+    expect(resupplyCandidates(trail)).toEqual([]);
+  });
+
+  it('never offers a main-route place twice, nor one at the junction', () => {
+    const main: ResupplyCandidateWaypoint[] = [{ id: 'spur-town', name: 'Spur Town', type: 'town', totalDistance: 33 }];
+    expect(resupplyCandidates({ waypoints: main, sideTrips: [spur()] })).toEqual(main);
+
+    const atJunction = spur({ waypoints: [{ id: 'j', name: 'Junction Town', type: 'town', totalDistance: 30.01 }] });
+    expect(resupplyCandidates({ sideTrips: [atJunction] })).toEqual([]);
+  });
+
+  it('reads side trips only — not termini or alternates — and only resupply places', () => {
+    expect(resupplyCandidates({ sideTrips: [spur({ type: 'terminus' })] })).toEqual([]);
+    expect(resupplyCandidates({ sideTrips: [spur({ type: 'alternate' })] })).toEqual([]);
+    const hut = spur({ waypoints: [{ id: 'hut', name: 'Hut', type: 'hut', totalDistance: 33 }] });
+    expect(resupplyCandidates({ sideTrips: [hut] })).toEqual([]);
+  });
+
+  it('keeps the in-spur distance when the trail is walked the other way', () => {
+    // transformSideTrips mirrors the junction and moves the waypoints with it.
+    const reversed = spur({ startDistance: 70, waypoints: [{ id: 'spur-town', name: 'Spur Town', type: 'town', totalDistance: 73 }] });
+    const [town] = resupplyCandidates({ sideTrips: [reversed] });
+    expect(town).toMatchObject({ totalDistance: 70, offTrailKm: 3 });
+  });
+});
+
+describe('optionAccess', () => {
+  it('walks a side trip, a foot turn-off and an on-trail place with a distance', () => {
+    expect(optionAccess({ name: 'A', offTrailKm: 3, accessMode: 'foot', accessRoute: { name: 'S', ascentM: 300, descentM: 10 } }))
+      .toEqual({ place: 'A', walkKm: 3, walkAscentM: 300, walkDescentM: 10, via: 'S', rideKm: 0 });
+    expect(optionAccess({ name: 'B', offTrailKm: 4, accessMode: 'foot' }))
+      .toEqual({ place: 'B', walkKm: 4, walkAscentM: 0, walkDescentM: 0, rideKm: 0 });
+    expect(optionAccess({ name: 'C', offTrailKm: 0.6, accessMode: 'on-trail' })?.walkKm).toBe(0.6);
+  });
+
+  it('rides a hitch, a shuttle, a boat and a distance whose way is not given', () => {
+    expect(optionAccess({ name: 'H', offTrailKm: 35, accessMode: 'hitch' }))
+      .toEqual({ place: 'H', walkKm: 0, walkAscentM: 0, walkDescentM: 0, rideKm: 35, rideMode: 'hitch' });
+    const unknown = optionAccess({ name: 'U', offTrailKm: 0.7 });
+    expect(unknown).toMatchObject({ walkKm: 0, rideKm: 0.7 });
+    expect(unknown?.rideMode).toBeUndefined();
+  });
+
+  it('is null for a place on the route', () => {
+    expect(optionAccess({ name: 'T' })).toBeNull();
+    expect(optionAccess({ name: 'T', offTrailKm: 0, accessMode: 'hitch' })).toBeNull();
+  });
+});
+
+describe('stops and legs off the route', () => {
+  const trail = flatTrail(100);
+  const legsFor = (candidates: ResupplyCandidateWaypoint[], selected?: string[]) =>
+    computeResupplyLegs(
+      trail,
+      resolveResupplyStops(listResupplyOptions(candidates), selected),
+      { dailyHours: 8, baseKmh: 4 }
+    );
+
+  it('walks in to a side-trip town and back out, climb and all', () => {
+    const legs = legsFor(resupplyCandidates({ sideTrips: [spur()] }));
+    expect(legs).toHaveLength(2);
+    // In: 30 km trail + 3 km up the spur (300 m) = 33/4 + 300/600 = 8.75 h.
+    expect(legs[0]).toMatchObject({
+      toName: 'Spur Town',
+      distanceKm: 30,
+      offTrailWalkKm: 3,
+      walkedKm: 33,
+      ascentM: 300,
+      descentM: 0,
+      estimatedHours: 8.8,
+      estimatedDays: 2,
+      rides: [],
+    });
+    // Out: back down the spur (300 m down, within Tranter's 300 m allowance) + 70 km.
+    expect(legs[1]).toMatchObject({
+      fromName: 'Spur Town',
+      distanceKm: 70,
+      offTrailWalkKm: 3,
+      walkedKm: 73,
+      ascentM: 0,
+      descentM: 300,
+      estimatedHours: 18.3,
+    });
+  });
+
+  it('reports a hitch beside the leg without walking it', () => {
+    const legs = legsFor([
+      { id: 'h', name: 'Hitch Town', type: 'town-access', totalDistance: 40, offTrailKm: 20, accessMode: 'hitch' },
+    ]);
+    expect(legs[0]).toMatchObject({ distanceKm: 40, offTrailWalkKm: 0, walkedKm: 40, estimatedHours: 10 });
+    expect(legs[0].rides).toEqual([{ km: 20, mode: 'hitch', end: 'to' }]);
+    expect(legs[1].rides).toEqual([{ km: 20, mode: 'hitch', end: 'from' }]);
+  });
+
+  it('does not walk a distance whose way the data does not give', () => {
+    const legs = legsFor([{ id: 'k', name: 'Kerikeri', type: 'town', totalDistance: 40, offTrailKm: 0.7 }]);
+    expect(legs[0]).toMatchObject({ walkedKm: 40, offTrailWalkKm: 0 });
+    expect(legs[0].rides).toEqual([{ km: 0.7, end: 'to' }]);
+  });
+
+  it('measures a stop with several places ticked by the longest walk', () => {
+    const candidates: ResupplyCandidateWaypoint[] = [
+      { id: 'far', name: 'Far', type: 'town-access', totalDistance: 40, offTrailKm: 35, accessMode: 'hitch' },
+      { id: 'near', name: 'Near', type: 'town-access', totalDistance: 40, offTrailKm: 4, accessMode: 'foot' },
+    ];
+    const [stop] = resolveResupplyStops(listResupplyOptions(candidates), undefined);
+    expect(stop.access).toMatchObject({ place: 'Near', walkKm: 4, rideKm: 0 });
+    expect(legsFor(candidates)[0]).toMatchObject({ walkedKm: 44, rides: [] });
+  });
+
+  it('counts the off-trail walk in the longest carry', () => {
+    const summary = summariseResupplyLegs(legsFor(resupplyCandidates({ sideTrips: [spur()] })));
+    expect(summary.longestKm).toBe(73);
+  });
+
+  it('gives an on-route stop no access, and its legs no off-trail km', () => {
+    const [stop] = resolveResupplyStops(
+      listResupplyOptions([{ id: 'town', name: 'Town', type: 'town', totalDistance: 40 }]),
+      undefined
+    );
+    expect(stop.access).toBeUndefined();
+    expect(legsFor([{ id: 'town', name: 'Town', type: 'town', totalDistance: 40 }])[0]).toMatchObject({
+      offTrailWalkKm: 0,
+      walkedKm: 40,
+      rides: [],
+    });
+  });
+});
+
+describe('nextResupplyStop', () => {
+  const stops = resolveResupplyStops(
+    listResupplyOptions([
+      { id: 'a', name: 'A', type: 'town', totalDistance: 10 },
+      { id: 'b', name: 'B', type: 'town', totalDistance: 50 },
+    ]),
+    undefined
+  );
+
+  it('is the first stop ahead', () => {
+    expect(nextResupplyStop(stops, 0)?.name).toBe('A');
+    expect(nextResupplyStop(stops, 10)?.name).toBe('B');
+    expect(nextResupplyStop(stops, 50)).toBeNull();
+  });
+});
+
+describe('the built side trips', () => {
+  const load = (id: string) =>
+    JSON.parse(readFileSync(resolve(__dirname, `../../mobile/assets/trails/${id}.json`), 'utf-8')) as ResupplyTrail;
+
+  it('offers the Heysen’s towns at the end of its spurs', () => {
+    const groups = listResupplyOptions(resupplyCandidates(load('heysen')));
+    const options = groups.flatMap(group => group.options.map(option => ({ ...option, groupKm: group.km })));
+
+    const cudlee = options.find(option => option.name === 'Cudlee Creek');
+    expect(cudlee).toMatchObject({ accessMode: 'foot', accessRoute: { name: 'S3.7 Spur to Cudlee Creek' } });
+    expect(cudlee!.offTrailKm).toBeCloseTo(0.9, 1);
+
+    // Hahndorf sits ~550 m past the end of the 8.4 km spur from Bridgewater,
+    // and is offered beside Bridgewater, at the same turn-off.
+    const hahndorf = options.find(option => option.name === 'Hahndorf');
+    expect(hahndorf!.offTrailKm).toBeGreaterThan(8.4);
+    expect(hahndorf!.offTrailKm).toBeLessThan(9.5);
+    const bridgewater = groups.find(group => group.options.some(option => option.name === 'Hahndorf'));
+    expect(bridgewater!.options.map(option => option.name)).toContain('Bridgewater');
+  });
+
+  it('gives the AAWT its Mt Hotham resupply, by the Davenport Village spur', () => {
+    const groups = listResupplyOptions(resupplyCandidates(load('aawt')));
+    const hotham = groups.flatMap(group => group.options).find(option => option.name === 'Mt Hotham');
+    expect(hotham).toMatchObject({ accessMode: 'foot', accessRoute: { name: 'ST S3 Davenport Village' } });
+    expect(hotham!.offTrailKm).toBeCloseTo(2.3, 1);
   });
 });

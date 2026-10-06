@@ -16,7 +16,7 @@
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { allResupplyOptionIds, listResupplyOptions } from '@lib/resupply-plan';
+import { allResupplyOptionIds } from '@lib/resupply-plan';
 import { useGuide } from '../../../src/features/guide/GuideContext';
 import {
   ResupplySelectList,
@@ -26,6 +26,7 @@ import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan
 import { planDirectionOf } from '../../../src/features/plan/plan-stops';
 import {
   resetResupplyStops,
+  resupplyGroupsFor,
   saveResupplyStops,
   toggleResupplyStop,
 } from '../../../src/features/plan/use-planned-resupply';
@@ -55,7 +56,7 @@ export default function ResupplyStopsScreen() {
 
   // Keyed on the trail alone (as `usePlannedResupplyIds` is): grouping the
   // CDT's 80 options is not free, and ticking a box must not regroup.
-  const groups = useMemo(() => listResupplyOptions(trail.waypoints), [trail]);
+  const groups = useMemo(() => resupplyGroupsFor(trail), [trail]);
   const allIds = useMemo(() => allResupplyOptionIds(groups), [groups]);
   // No selection yet = every option ticked, the same default the legs card uses.
   const selectedIds = useMemo(() => new Set(stored ?? allIds), [stored, allIds]);

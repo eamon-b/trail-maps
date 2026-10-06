@@ -97,8 +97,23 @@ describe('computeResupplyGaps', () => {
     expect(gaps[0].estimatedDays).toBe(6);
   });
 
-  it('returns empty array when no points', () => {
-    expect(computeResupplyGaps([], 0, 100)).toHaveLength(0);
+  it('makes the whole range one gap when there are no points (the full carry)', () => {
+    const gaps = computeResupplyGaps([], 10, 130, DEFAULT_DAILY_KM);
+    expect(gaps).toEqual([
+      {
+        fromName: 'Trail Start',
+        toName: 'Trail End',
+        fromKm: 10,
+        toKm: 130,
+        distanceKm: 120,
+        estimatedDays: 6,
+        isLong: true,
+      },
+    ]);
+  });
+
+  it('returns no gaps for an empty range', () => {
+    expect(computeResupplyGaps([], 50, 50)).toHaveLength(0);
   });
 });
 

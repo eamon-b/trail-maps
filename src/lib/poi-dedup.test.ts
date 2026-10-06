@@ -51,6 +51,11 @@ describe('nameTokens', () => {
     expect(nameTokens('Conto Campground - Leeuwin-Naturaliste NP')).toEqual(['conto']);
   });
 
+  it('keeps a name an unspaced hyphen runs through', () => {
+    expect(nameTokens('Bay-of-Fires Lodge')).toEqual(['bay', 'of', 'fires', 'lodge']);
+    expect(nameTokens('Leeuwin-Naturaliste Hut')).toEqual(['leeuwin', 'naturaliste']);
+  });
+
   it('returns nothing for an unnamed or wholly generic POI', () => {
     expect(nameTokens(null)).toEqual([]);
     expect(nameTokens('Campsite')).toEqual([]);
@@ -61,6 +66,12 @@ describe('nameScore', () => {
   it('scores containment as a full match', () => {
     expect(nameScore('Buddong Hut Camp Site', 'Buddong hut')).toBe(1);
     expect(nameScore('Mount Clare hut', 'Mount Clare')).toBe(1);
+    expect(nameScore('Aire River West Campground', 'Aire River Hike-in Campground')).toBe(1);
+  });
+
+  it('does not call one shared word a match', () => {
+    expect(nameScore('River Camp', 'Finke River Campground')).toBeLessThan(0.9);
+    expect(nameScore('Lake', 'Lake Tali Karng')).toBeLessThan(0.9);
   });
 
   it('tolerates spelling drift', () => {
@@ -112,6 +123,14 @@ describe('markDuplicatePois', () => {
     )!;
     expect(marked).not.toHaveProperty('duplicateOf');
     expect(marked).not.toHaveProperty('duplicateDistanceM');
+  });
+
+  it('keeps a distinct POI that shares one word with a nearby waypoint', () => {
+    const [marked] = markDuplicatePois(
+      [poi({ name: 'Finke River Campground', lat: latOffset(100) })],
+      [wp({ name: 'River Camp', id: 'w_river' })]
+    )!;
+    expect(marked.duplicateOf).toBeUndefined();
   });
 
   it('does not match beyond 250 m', () => {

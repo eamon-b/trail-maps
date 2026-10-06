@@ -18,6 +18,7 @@ import {
   interleavePoisByDistance,
   mirrorPoiDistances,
   normalisePoiFilterState,
+  safeHttpUrl,
   parsePoiRouteKey,
   poiDisplayName,
   poiOsmUrl,
@@ -423,5 +424,46 @@ describe('route keys', () => {
     expect(findPoiByRouteKey(pois, 'relation-5')).toBeNull();
     expect(findPoiByRouteKey(pois, 'nonsense')).toBeNull();
     expect(findPoiByRouteKey(undefined, 'node-5')).toBeNull();
+  });
+});
+
+describe('safeHttpUrl', () => {
+  it('keeps http(s) URLs', () => {
+    expect(safeHttpUrl('https://ok.org')).toBe('https://ok.org/');
+    expect(safeHttpUrl('http://a.b/c')).toBe('http://a.b/c');
+  });
+
+  it('reads a bare host as https', () => {
+    expect(safeHttpUrl('example.com')).toBe('https://example.com/');
+    expect(safeHttpUrl('  www.hut.org.nz/book ')).toBe('https://www.hut.org.nz/book');
+  });
+
+  it('reads a bare host with a port as a host, not a scheme', () => {
+    expect(safeHttpUrl('example.com:8080/x')).toBe('https://example.com:8080/x');
+    expect(safeHttpUrl('www.hut.org.nz:443')).toBe('https://www.hut.org.nz/');
+    expect(safeHttpUrl('hut.org.nz:8443?a=1')).toBe('https://hut.org.nz:8443/?a=1');
+  });
+
+  it('rejects every other scheme, however it is dressed up', () => {
+    for (const value of [
+      'javascript:alert(1)',
+      'JavaScript:alert(1)',
+      ' javascript:alert(1)',
+      '\njavascript:alert(1)',
+      'java\tscript:alert(1)',
+      'javascript:1',
+      'data:text/html,<script>1</script>',
+      'vbscript:x',
+      'file:///etc/passwd',
+      'mailto:a@b.org',
+      'tel:123',
+      'localhost:3000',
+    ]) {
+      expect(safeHttpUrl(value), value).toBeUndefined();
+    }
+  });
+
+  it('only ever returns an http(s) URL for a protocol-relative one', () => {
+    expect(safeHttpUrl('//example.com/x')).toBe('https://example.com/x');
   });
 });

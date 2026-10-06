@@ -90,12 +90,23 @@ export interface PlanStop {
 /** Limits enforced on a `PlanDocument` by the editor, the web page and the server alike. */
 export const PLAN_LIMITS = {
   nameMax: 80,
+  /** A stop's name: required (non-blank), at most this many characters. */
+  stopNameMax: 200,
   noteMax: 500,
   stopsMax: 500,
+  /** Entries in `resupplyStops`. */
+  resupplyStopsMax: 500,
   nightsMax: 14,
   /** Serialised JSON byte ceiling. */
   documentBytes: 64 * 1024,
 } as const;
+
+/**
+ * What every waypoint id in a plan (a stop's `waypointId`, a `resupplyStops`
+ * entry) must look like: the registry's `w_…` and an import's `uw_…` both do.
+ * The server refuses a document carrying any other.
+ */
+export const PLAN_WAYPOINT_ID_PATTERN = /^[a-z0-9_-]{4,64}$/;
 
 /**
  * The plan document: one per trail per user. It is the wire shape

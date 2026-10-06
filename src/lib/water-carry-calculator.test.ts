@@ -3,6 +3,7 @@ import {
   extractWaterSources,
   computeWaterGaps,
   analyzeWaterCarry,
+  analyzeWaterCarryForSection,
   DEFAULT_DRY_STRETCH_KM,
 } from './water-carry-calculator';
 import type { PlanWaypoint } from './plan-types';
@@ -75,8 +76,12 @@ describe('computeWaterGaps', () => {
     expect(smallGap?.isDryStretch).toBe(false);
   });
 
-  it('returns empty when no sources', () => {
-    expect(computeWaterGaps([], 0, 100)).toHaveLength(0);
+  it('makes the whole range one gap when there are no sources', () => {
+    expect(computeWaterGaps([], 10, 40)).toEqual([
+      { fromName: 'Trail Start', toName: 'Trail End', fromKm: 10, toKm: 40, distanceKm: 30, isDryStretch: true },
+    ]);
+    expect(computeWaterGaps([], 10, 20)[0].isDryStretch).toBe(false);
+    expect(computeWaterGaps([], 10, 10)).toEqual([]);
   });
 
   it('DEFAULT_DRY_STRETCH_KM is 15', () => {
@@ -162,5 +167,24 @@ describe('extractWaterSources seasonal keyword variants', () => {
     ];
     const sources = extractWaterSources(wps);
     expect(sources[0].seasonalNote).toBeTruthy();
+  });
+});
+
+describe('analyzeWaterCarryForSection', () => {
+  it('reports a waterless section as one dry stretch, not as no dry stretches', () => {
+    // The trail maps water at 10, 30 and 60 km; nothing between 32 and 58.
+    const result = analyzeWaterCarryForSection(waypoints, 32, 58);
+    expect(result.hasWaterData).toBe(true);
+    expect(result.sources).toEqual([]);
+    expect(result.gaps).toEqual([
+      { fromName: 'Trail Start', toName: 'Trail End', fromKm: 32, toKm: 58, distanceKm: 26, isDryStretch: true },
+    ]);
+    expect(result.longestGapKm).toBe(26);
+    expect(result.dryStretchCount).toBe(1);
+  });
+
+  it('says there is no water data when the trail maps no water at all', () => {
+    const result = analyzeWaterCarryForSection([{ name: 'Hut', type: 'hut', totalDistance: 5 }], 0, 50);
+    expect(result).toEqual({ sources: [], gaps: [], longestGapKm: 0, dryStretchCount: 0, hasWaterData: false });
   });
 });

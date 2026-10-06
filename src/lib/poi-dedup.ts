@@ -98,8 +98,12 @@ const GENERIC_WORDS = new Set([
 /** Curator prefixes used in the bundled GPX files (`R: Ormiston Gorge`). */
 const CURATOR_PREFIX = /^(closed\s*c?\s*-?\s*|c\?\s*|r:\s*|kiosk:\s*)/i;
 
-/** A trailing ` - Leeuwin-Naturaliste NP` style qualifier. */
-const TRAILING_QUALIFIER = /\s*-\s*.*$/;
+/**
+ * A trailing ` - Leeuwin-Naturaliste NP` style qualifier: a hyphen with space
+ * either side. An unspaced hyphen is part of the name (`Hike-in`, `Leeuwin-
+ * Naturaliste`, `Bay-of-Fires`) and must not cut it short.
+ */
+const TRAILING_QUALIFIER = /\s+-\s+.*$/;
 
 /** The subset of a waypoint this module reads. Structural, so both platforms fit. */
 export interface DedupWaypointLike {
@@ -149,11 +153,14 @@ function sequenceRatio(a: string, b: string): number {
 /**
  * How alike two place names are, 0..1.
  *
- * Containment scores 1: `Buddong Hut Camp Site` reduces to `buddong` and
- * `Buddong hut` to `buddong`, but `Mount Clare hut` reduces to `mount clare`
- * against a waypoint `Mount Clare`, and one set containing the other is the
- * signal that matters. Otherwise the better of token overlap and string
- * similarity, so spelling drift (`Hewett's` / `Hewitt's`) still matches.
+ * The same tokens score 1: `Buddong Hut Camp Site` and `Buddong hut` both
+ * reduce to `buddong`, `Mount Clare hut` and `Mount Clare` to `mount clare`.
+ * One set containing the other scores 1 too, but only when they share at
+ * least two tokens (`Aire River` in `Aire River West`): one shared word is
+ * not an identity, and `River Camp` against `Finke River Campground`, or
+ * `Lake` against `Lake Tali Karng`, are different places. Otherwise the better
+ * of token overlap and string similarity, so spelling drift (`Hewett's` /
+ * `Hewitt's`) still matches.
  *
  * Note this is deliberately order-insensitive, which is safe here only because
  * `transport` is excluded: bus-stop names encode direction by word order, so
@@ -165,12 +172,11 @@ export function nameScore(a: string | null | undefined, b: string | null | undef
   const setB = new Set(nameTokens(b));
   if (setA.size === 0 || setB.size === 0) return 0;
 
-  const contained =
-    [...setA].every(token => setB.has(token)) || [...setB].every(token => setA.has(token));
-  if (contained) return 1;
-
   let shared = 0;
   for (const token of setA) if (setB.has(token)) shared += 1;
+  const contained = shared === Math.min(setA.size, setB.size);
+  if (contained && (shared >= 2 || setA.size === setB.size)) return 1;
+
   const jaccard = shared / (setA.size + setB.size - shared);
 
   const ratio = sequenceRatio([...setA].sort().join(' '), [...setB].sort().join(' '));

@@ -41,6 +41,19 @@ describe('firstSentence', () => {
     expect(firstSentence('Water approx. 3 km on. Treat it.')).toBe('Water approx. 3 km on.');
   });
 
+  it('reads a run of initials as one name', () => {
+    expect(firstSentence('Named for J. R. R. Tolkien by the club. Bunks for six.')).toBe(
+      'Named for J. R. R. Tolkien by the club.',
+    );
+    expect(firstSentence('Hut built by A. B. Paterson. Tank water.')).toBe('Hut built by A. B. Paterson.');
+  });
+
+  it('ends a sentence at a lone capital letter', () => {
+    expect(firstSentence('Water from tank B. Camp is beside it.')).toBe('Water from tank B.');
+    expect(firstSentence('Use tank B. it is cleaner.')).toBe('Use tank B.');
+    expect(firstSentence('Take track A.')).toBe('Take track A.');
+  });
+
   it('reads the prose out of a generator’s |-separated metadata', () => {
     expect(
       firstSentence('mi 1947.3 (SOBO mi 1947.3) | off. mi 1955.8 | CO | Leave the CDT here for Salida. Hitch east.'),
@@ -104,6 +117,12 @@ describe('resupplySummaryText', () => {
   it('reads as the web datasheet subtitle does', () => {
     expect(resupplySummaryText(summary(), km, kg)).toBe(
       '4 stops · longest carry 10.0 km / 2 days · 3.4 kg food in total',
+    );
+  });
+
+  it('names the full carry when there are no stops', () => {
+    expect(resupplySummaryText(summary({ stops: 0, longestKm: 120, longestDays: 5, totalFoodKg: 3.4 }), km, kg)).toBe(
+      'No resupply stops · full carry 120.0 km / 5 days · 3.4 kg food',
     );
   });
 

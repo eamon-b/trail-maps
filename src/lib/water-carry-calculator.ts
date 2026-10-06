@@ -58,6 +58,10 @@ export function extractWaterSources(waypoints: PlanWaypoint[]): WaterSource[] {
 
 /**
  * Compute gaps between consecutive water sources, including trail start/end.
+ *
+ * With no sources the whole range is one gap, start to end. Whether that
+ * means "dry" or "unmapped" is the caller's to say (`hasWaterData`); what this
+ * must never do is report a waterless range as having no carry at all.
  */
 export function computeWaterGaps(
   sources: WaterSource[],
@@ -65,10 +69,23 @@ export function computeWaterGaps(
   trailEndKm: number,
   dryStretchThreshold: number = DEFAULT_DRY_STRETCH_KM,
 ): WaterGap[] {
-  if (sources.length === 0) return [];
-
   const effectiveThreshold = Math.max(0, dryStretchThreshold);
   const gaps: WaterGap[] = [];
+
+  if (sources.length === 0) {
+    const dist = trailEndKm - trailStartKm;
+    if (dist > 0) {
+      gaps.push({
+        fromName: 'Trail Start',
+        toName: 'Trail End',
+        fromKm: trailStartKm,
+        toKm: trailEndKm,
+        distanceKm: Math.round(dist * 10) / 10,
+        isDryStretch: dist >= effectiveThreshold,
+      });
+    }
+    return gaps;
+  }
 
   // Deduplicate sources at the same km position
   const deduped = sources.filter(
@@ -145,6 +162,13 @@ export function analyzeWaterCarry(
 
 /**
  * Get water sources and gaps scoped to a section of trail.
+ *
+ * A section with no source in it, on a trail that maps water elsewhere, is one
+ * carry from the section start to its end — a dry stretch when it is long
+ * enough — and `hasWaterData` stays true: the trail's data says there is no
+ * water here, which is the most important carry to report, not a reason to
+ * report none. Only a trail with no water sources at all is `hasWaterData:
+ * false` ("no mapped water sources"), because then the absence says nothing.
  */
 export function analyzeWaterCarryForSection(
   waypoints: PlanWaypoint[],
@@ -155,14 +179,8 @@ export function analyzeWaterCarryForSection(
   const allSources = extractWaterSources(waypoints);
   const sectionSources = allSources.filter(s => s.km >= startKm && s.km <= endKm);
 
-  if (sectionSources.length === 0) {
-    return {
-      sources: [],
-      gaps: [],
-      longestGapKm: 0,
-      dryStretchCount: 0,
-      hasWaterData: allSources.length > 0,
-    };
+  if (allSources.length === 0) {
+    return { sources: [], gaps: [], longestGapKm: 0, dryStretchCount: 0, hasWaterData: false };
   }
 
   const gaps = computeWaterGaps(sectionSources, startKm, endKm, dryStretchThreshold);

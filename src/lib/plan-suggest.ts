@@ -195,5 +195,6 @@ export function applySuggestedPlan(
       toKm: toNoboKm(endKm, plan.direction, totalDistance),
     },
     targets,
+    { totalKm: totalDistance },
   );
 }

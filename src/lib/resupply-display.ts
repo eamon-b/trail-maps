@@ -14,8 +14,8 @@ import type { LegRide, ResupplyLeg, ResupplyOption, ResupplySummary, StopAccess 
 
 /**
  * Dotted tokens that end no sentence: "U.S. 50", "Mt. Sonder", "approx. 3 km".
- * A single capital letter before the dot (the "S" of "U.S.") is handled by the
- * pattern itself; these are the multi-letter ones a trail description uses.
+ * Initials ("U.S.", "J. R. R. Tolkien") are handled by `isAbbreviationDot`
+ * itself; these are the multi-letter ones a trail description uses.
  */
 const NON_TERMINAL_ABBREVIATIONS = new Set([
   'mt', 'mtn', 'st', 'hwy', 'rd', 'jct', 'approx', 'alt', 'elev', 'ft', 'km', 'mi', 'no', 'vs', 'etc', 'inc', 'co', 'ltd',
@@ -45,12 +45,21 @@ export function firstSentence(text: string): string {
   return prose.trim();
 }
 
-/** Whether the dot at `index` closes an initial ("U.S.") or a listed abbreviation ("Mt."). */
+/** Whether the dot at `index` closes an initial ("U.S.", "J. R. R.") or a listed abbreviation ("Mt."). */
 function isAbbreviationDot(prose: string, index: number): boolean {
   const word = prose.slice(0, index).match(/(\S+)$/)?.[1] ?? '';
   // "U.S." — the dot after the S sits behind a single capital letter, itself
-  // behind another dotted letter or the start of the word.
-  if (/^(?:[A-Z]\.)*[A-Z]$/.test(word)) return true;
+  // behind another dotted letter.
+  if (/^(?:[A-Z]\.)+[A-Z]$/.test(word)) return true;
+  // A lone capital is an initial only inside a run of them: the next word is
+  // one too ("J. R."), or the word before was ("R. Tolkien"). Otherwise it is
+  // a letter that ends a sentence: "Water from tank B. Camp is beside it."
+  if (/^[A-Z]$/.test(word)) {
+    const before = prose.slice(0, index - 1).match(/(\S+)\s+$/)?.[1] ?? '';
+    const after = prose.slice(index + 1).match(/^\s?(\S+)/)?.[1] ?? '';
+    if (!/^[A-Z]/.test(after)) return false;
+    return /^[A-Z]\.?$/.test(after) || /^[A-Z]\.$/.test(before);
+  }
   return NON_TERMINAL_ABBREVIATIONS.has(word.replace(/^[^a-z]+/i, '').toLowerCase());
 }
 
@@ -75,14 +84,21 @@ export function accessSummary(
 /**
  * The one line that sits above a set of legs — the web's Resupply datasheet
  * subtitle and the Days-tab collapsible, the phone's Resupply section subtitle.
+ *
+ * No stops is the full carry, start to end (`computeResupplyLegs` emits it as
+ * the one leg), and says so rather than "0 stops · longest carry …".
  */
 export function resupplySummaryText(
   summary: ResupplySummary,
   formatKm: (km: number) => string,
   formatFoodKg: (kg: number) => string
 ): string {
-  const stops = `${summary.stops} stop${summary.stops === 1 ? '' : 's'}`;
   const days = `${summary.longestDays} day${summary.longestDays === 1 ? '' : 's'}`;
+  if (summary.stops === 0) {
+    return `No resupply stops · full carry ${formatKm(summary.longestKm)} / ${days} · ` +
+      `${formatFoodKg(summary.totalFoodKg)} food`;
+  }
+  const stops = `${summary.stops} stop${summary.stops === 1 ? '' : 's'}`;
   return `${stops} · longest carry ${formatKm(summary.longestKm)} / ${days} · ` +
     `${formatFoodKg(summary.totalFoodKg)} food in total`;
 }

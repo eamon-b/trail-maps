@@ -177,6 +177,15 @@ describe('WaypointListPane POI rows', () => {
     expect(text).toContain('18.0 km');
   });
 
+  it('drops the off-trail line for a POI that is on the trail', () => {
+    mockVisiblePois.mockImplementation(() => [
+      poi({ id: 9, category: 'water', name: 'Trailside Tank', distanceAlongTrail: 6, distanceFromTrail: 0.017 }),
+    ]);
+    const text = allText(render());
+    expect(text).toContain('Trailside Tank');
+    expect(text).not.toContain('off trail');
+  });
+
   it('carries the OSM credit as a footer while POI rows are on screen', () => {
     expect(allText(render())).toContain(
       'Rows marked OSM are OpenStreetMap points of interest · © OpenStreetMap contributors',

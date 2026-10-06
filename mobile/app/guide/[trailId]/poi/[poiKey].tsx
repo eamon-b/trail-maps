@@ -56,6 +56,7 @@ import { WAYPOINT_ICON_IMAGES } from '../../../../src/features/map/waypoint-icon
 import { formatSignedDistance } from '../../../../src/features/guide/waypoint-filters';
 import { estimateEtaMinutes, formatEta } from '../../../../src/features/guide/waypoint-detail';
 import { mapsUrlFor } from '../../../../src/features/guide/poi-detail';
+import { isOffTrail } from '../../../../src/services/position-on-trail';
 
 export default function PoiDetailScreen() {
   const { poiKey } = useLocalSearchParams<{ trailId: string; poiKey: string }>();
@@ -142,11 +143,12 @@ export default function PoiDetailScreen() {
       </View>
 
       <Text style={[styles.meta, { color: colors.textSecondary }]}>
-        {`${category} · ${formatDistance(poi.distanceAlongTrail, units)} along the trail · ${formatDistance(
-          poi.distanceFromTrail,
-          units,
-          { decimals: 2 },
-        )} off trail`}
+        {/* A few metres off the line is on the trail; only a real walk is worth saying. */}
+        {`${category} · ${formatDistance(poi.distanceAlongTrail, units)} along the trail${
+          isOffTrail(poi.distanceFromTrail * 1000)
+            ? ` · ${formatDistance(poi.distanceFromTrail, units, { decimals: 2 })} off trail`
+            : ''
+        }`}
       </Text>
 
       {signed && signed.direction !== 'here' && (

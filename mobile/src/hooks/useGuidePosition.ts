@@ -7,9 +7,11 @@
  * `displayPoints`) so the current km and off-trail distance stay accurate; the
  * windowed snap keeps the per-fix cost low regardless of track length.
  *
- * Permission is requested lazily: nothing happens until a consumer calls
- * `start()` (wired to a "Show my location" affordance), honouring the no
- * always-on GPS policy.
+ * Permission is requested lazily: the app never prompts for it until a
+ * consumer calls `start()` (wired to a "Show my location" affordance). Once the
+ * hiker has granted it, though, opening a guide starts the foreground watch on
+ * its own, so the list's distances read from where they stand without a tap
+ * first. It is still foreground-only and stops when the guide closes.
  *
  * The four-state machine:
  *   no-permission — not yet started, or permission denied → show the pill
@@ -18,7 +20,7 @@
  *   off-trail     — a fix, but beyond the off-trail threshold from the track
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGuide } from '../features/guide/GuideContext';
 import { useLocation } from './useLocation';
 import { isOffTrail } from '../services/position-on-trail';
@@ -72,15 +74,23 @@ export function useGuidePosition(): GuidePosition {
     stopTracking();
   }, [stopTracking]);
 
+  // Already granted (an earlier session's "Show my location"): start without
+  // waiting for a tap. `undetermined` and `denied` stay manual, so this never
+  // raises a permission prompt by itself.
+  const autoStart = permissionStatus === 'granted';
+  useEffect(() => {
+    if (autoStart) void startTracking();
+  }, [autoStart, startTracking]);
+
   const offTrailMeters = location?.offTrailMeters ?? null;
 
   const status = useMemo<GuidePositionStatus>(() => {
     if (location) {
       return isOffTrail(offTrailMeters) ? 'off-trail' : 'fix';
     }
-    if (hasStarted && permissionStatus !== 'denied') return 'acquiring';
+    if ((hasStarted || autoStart) && permissionStatus !== 'denied') return 'acquiring';
     return 'no-permission';
-  }, [location, offTrailMeters, hasStarted, permissionStatus]);
+  }, [location, offTrailMeters, hasStarted, autoStart, permissionStatus]);
 
   const position = useMemo(
     () =>

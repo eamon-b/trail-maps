@@ -50,6 +50,12 @@ export class MapErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
+  // The fallback says nothing about what went wrong, so the cause has to reach
+  // the logs — without it a map that falls over minutes in leaves no trace.
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('Map crashed; showing the retry surface:', error, info.componentStack);
+  }
+
   handleRetry = () => {
     this.setState({ hasError: false });
     this.props.onRetry?.();

@@ -33,12 +33,31 @@ jest.mock('@maplibre/maplibre-react-native', () => {
     return React.createElement('Map', { ...props, ref });
   });
   MockMap.displayName = 'Map';
+  // GeoJSONSource and Layer reproduce the two library behaviours that together
+  // can take the map down: the source drops falsy children and re-keys the rest
+  // by position (cloneReactChildrenWithProps), and a Layer freezes its first
+  // `id` and throws if a later render hands it another (useFrozenId).
+  const MockGeoJSONSource = ({ children, ...props }: Record<string, unknown>) => {
+    const list = (Array.isArray(children) ? children : [children]).filter(Boolean);
+    return React.createElement(
+      'GeoJSONSource',
+      props,
+      React.Children.map(list as React.ReactElement<Record<string, unknown>>[], (child) =>
+        React.cloneElement(child, { source: props.id }),
+      ),
+    );
+  };
+  const MockLayer = (props: Record<string, unknown>) => {
+    const [frozenId] = React.useState(props.id);
+    if (props.id !== frozenId) throw new Error('`id` cannot be changed');
+    return React.createElement('Layer', props);
+  };
   return {
   __esModule: true,
   Map: MockMap,
   Camera: 'Camera',
-  GeoJSONSource: 'GeoJSONSource',
-  Layer: 'Layer',
+  GeoJSONSource: MockGeoJSONSource,
+  Layer: MockLayer,
   Images: 'Images',
   LogManager: { onLog: jest.fn() },
   };
@@ -190,6 +209,60 @@ describe('planned stops', () => {
     const feature = (source.props.data as { features: { properties: { plannedStop: boolean } }[] })
       .features[0];
     expect(feature.properties.plannedStop).toBe(false);
+  });
+});
+
+describe('layers that come and go', () => {
+  const render = (props: Partial<React.ComponentProps<typeof GuideMap>>) => (
+    <GuideMap
+      trailId="heysen"
+      styleSource="online"
+      displayPoints={points}
+      waypoints={waypoints}
+      {...props}
+    />
+  );
+
+  it('survives the GPS accuracy crossing the circle threshold', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    const position = { lat: -35, lon: 138 };
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(render({ currentPosition: position, accuracy: 50 }));
+    });
+    await flush();
+
+    // Sharp fix, then a vague one, then sharp again: each update re-renders
+    // the puck, and none of them may swap a layer's id.
+    for (const accuracy of [5, 50, 8]) {
+      act(() => tree.update(render({ currentPosition: position, accuracy })));
+    }
+
+    const dot = nodeById(tree, 'circle', 'guide-user-dot');
+    expect(dot).toBeTruthy();
+    // The circle stays mounted; whether it draws is the filter's call.
+    const circle = nodeById(tree, 'circle', 'guide-user-accuracy');
+    expect(circle.props.filter).toEqual(['>', ['get', 'accuracy'], 20]);
+    const source = sourceById(tree, 'guide-user-location');
+    const feature = (source.props.data as { properties: { accuracy: number } }).properties;
+    expect(feature.accuracy).toBe(8);
+  });
+
+  it('survives a plan arriving and being cleared while the map is up', async () => {
+    getOnline.mockResolvedValue(ONLINE_STYLE);
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(render({}));
+    });
+    await flush();
+
+    act(() => tree.update(render({ plannedStopIds: new Set(['w_1']) })));
+    expect(nodeById(tree, 'circle', 'guide-waypoints-plan-rings')).toBeTruthy();
+
+    act(() => tree.update(render({ plannedStopIds: new Set() })));
+    expect(nodeById(tree, 'circle', 'guide-waypoints-plan-rings')).toBeUndefined();
+    expect(nodeById(tree, 'circle', 'guide-waypoints-circles')).toBeTruthy();
+    expect(nodeById(tree, 'symbol', 'guide-waypoints-labels')).toBeTruthy();
   });
 });
 

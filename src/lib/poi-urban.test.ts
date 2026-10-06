@@ -167,6 +167,24 @@ describe('thinUrbanPois', () => {
     expect(kept.length).toBeLessThanOrEqual(Math.ceil(20 / ANCHOR_SPACING_KM) + 2);
   });
 
+  it("keeps every POI a trail's keepInCities rule names, and thins the rest as usual", () => {
+    const city = cafes(50, 70, 30);
+    const konbini = Array.from({ length: 80 }, (_, i) =>
+      poi(50.1 + i * 0.25, 'resupply', { shop: 'convenience', brand: 'Lawson' }, {
+        distanceFromTrail: i % 2 === 0 ? 0.2 : 1.5,
+      })
+    );
+    const config = { keepInCities: [{ tag: 'shop=convenience', withinKm: 0.5 }] };
+    const kept = thinUrbanPois([...city, ...konbini], config)!;
+    const keptKeys = keys(kept);
+    const near = konbini.filter(p => p.distanceFromTrail <= 0.5);
+    for (const p of near) expect(keptKeys.has(`node/${p.id}`)).toBe(true);
+    // The far ones are still thinned, and so are the cafés.
+    const far = konbini.filter(p => p.distanceFromTrail > 0.5);
+    expect(far.filter(p => keptKeys.has(`node/${p.id}`)).length).toBeLessThan(far.length / 2);
+    expect(kept.filter(p => p.tags.amenity === 'cafe').length).toBeLessThan(city.length / 10);
+  });
+
   it('never drops a POI that stands in for a curated waypoint', () => {
     const city = cafes(50, 60, 30);
     const dup = poi(55, 'restaurant', { amenity: 'cafe' }, { duplicateOf: 'wp-1' });

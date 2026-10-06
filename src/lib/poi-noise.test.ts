@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { countNoiseByReason, dropNoisePois, noiseReason } from './poi-noise.js';
+import { countNoiseByReason, dropNoisePois, noiseReason, parsePoiTag } from './poi-noise.js';
 import type { TrailPOI } from './trail-types.js';
 
 function poi(overrides: Partial<TrailPOI> = {}): TrailPOI {
@@ -145,6 +145,7 @@ describe('countNoiseByReason', () => {
       'minor-shelter': 1,
       'no-emergency-department': 1,
       'road-emergency-phone': 0,
+      'excluded-by-trail': 0,
     });
   });
 
@@ -154,6 +155,7 @@ describe('countNoiseByReason', () => {
       'minor-shelter': 0,
       'no-emergency-department': 0,
       'road-emergency-phone': 0,
+      'excluded-by-trail': 0,
     });
   });
 });
@@ -194,5 +196,47 @@ describe('noiseReason: walker shuttles, picnic roofs, road phones', () => {
       ).toBe('road-emergency-phone');
     }
     expect(noiseReason(poi({ category: 'emergency', tags: { emergency: 'phone' } }))).toBeNull();
+  });
+});
+
+describe("noiseReason: a trail's own exclude list", () => {
+  const config = { exclude: ['amenity=post_office', 'amenity=fuel'] };
+
+  it('drops the tags the trail excludes, and only on that trail', () => {
+    const post = poi({ category: 'resupply', tags: { amenity: 'post_office' } });
+    const fuel = poi({ category: 'resupply', tags: { amenity: 'fuel', brand: 'ENEOS' } });
+    expect(noiseReason(post, config)).toBe('excluded-by-trail');
+    expect(noiseReason(fuel, config)).toBe('excluded-by-trail');
+    expect(noiseReason(post)).toBeNull();
+    expect(noiseReason(fuel)).toBeNull();
+  });
+
+  it('keeps an excluded POI that is also a convenience store or supermarket', () => {
+    const konbini = poi({ category: 'resupply', tags: { amenity: 'fuel', shop: 'convenience' } });
+    const market = poi({ category: 'resupply', tags: { amenity: 'post_office', shop: 'supermarket' } });
+    expect(noiseReason(konbini, config)).toBeNull();
+    expect(noiseReason(market, config)).toBeNull();
+  });
+
+  it('keeps everything the list does not name', () => {
+    expect(noiseReason(poi({ category: 'resupply', tags: { shop: 'convenience' } }), config)).toBeNull();
+    expect(noiseReason(poi({ category: 'emergency', tags: { amenity: 'police' } }), config)).toBeNull();
+  });
+
+  it('counts and drops through the same rule', () => {
+    const pois = [
+      poi({ id: 1, tags: { amenity: 'fuel' } }),
+      poi({ id: 2, tags: { shop: 'convenience' } }),
+    ];
+    expect(countNoiseByReason(pois, config)['excluded-by-trail']).toBe(1);
+    expect(dropNoisePois(pois, config)!.map(p => p.id)).toEqual([2]);
+  });
+
+  it('refuses a tag that is not key=value, rather than matching nothing', () => {
+    expect(parsePoiTag('amenity=fuel')).toEqual(['amenity', 'fuel']);
+    for (const bad of ['fuel', '=fuel', 'amenity=']) {
+      expect(() => parsePoiTag(bad)).toThrow(/key=value/);
+    }
+    expect(() => noiseReason(poi(), { exclude: ['fuel'] })).toThrow(/key=value/);
   });
 });

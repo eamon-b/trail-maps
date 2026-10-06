@@ -10,6 +10,10 @@
     "text": "Track, accommodation and rest areas from a personal CalTopo map of the Shikoku 88 temples; Temples 3-9 and the Shosanji Okunoin positioned from OpenStreetMap."
   },
   "waypointMaxDistance": 3000,
+  "pois": {
+    "exclude": ["amenity=post_office", "amenity=fuel"],
+    "keepInCities": [{ "tag": "shop=convenience", "withinKm": 0.5 }]
+  },
   "extractSpurs": [
     {
       "name": "Shosanji Okunoin (return)",

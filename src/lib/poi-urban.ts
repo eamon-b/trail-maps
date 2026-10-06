@@ -26,6 +26,10 @@
  * its 84. One per kind per 2 km keeps the nearest few without listing every
  * corner store in Auckland.
  *
+ * A trail can name more POIs to keep (`TrailPoiConfig.keepInCities`): the
+ * henro keeps every konbini within 500 m of the route, because one per 2 km
+ * hid the ones a pilgrim actually walks past.
+ *
  * Everything else in the stretch is dropped: cafés, takeaways, bars,
  * bakeries, pharmacies, clinics, drinking fountains, fuel,
  * picnic shelters. Outside dense stretches nothing is touched, so a small
@@ -34,7 +38,8 @@
  * Like `@lib/poi-noise`, this runs at build and import time and never on
  * `pois.json` itself, so changing a threshold is a rebuild, not a re-fetch.
  */
-import type { TrailPOI } from './trail-types.js';
+import { poiHasTag } from './poi-noise.js';
+import type { TrailPOI, TrailPoiConfig } from './trail-types.js';
 
 /** Width of the sliding window density is measured over, km. */
 export const DENSITY_WINDOW_KM = 5;
@@ -158,13 +163,20 @@ function preferred(a: TrailPOI, b: TrailPOI): number {
   );
 }
 
+/** Whether the trail's config says this POI survives a city. */
+function keptByTrail(poi: TrailPOI, config: TrailPoiConfig | undefined): boolean {
+  return (config?.keepInCities ?? []).some(
+    rule => poi.distanceFromTrail <= rule.withinKm && poiHasTag(poi, rule.tag)
+  );
+}
+
 /** The keys of the POIs to keep inside one dense stretch. */
-function keepInStretch(stretch: DenseStretch, inside: TrailPOI[]): Set<string> {
+function keepInStretch(stretch: DenseStretch, inside: TrailPOI[], config?: TrailPoiConfig): Set<string> {
   const keep = new Set<string>();
 
   const byCategory = new Map<string, TrailPOI[]>();
   for (const poi of inside) {
-    if (poi.duplicateOf) keep.add(poiKeyOf(poi));
+    if (poi.duplicateOf || keptByTrail(poi, config)) keep.add(poiKeyOf(poi));
     const list = byCategory.get(poi.category) ?? [];
     list.push(poi);
     byCategory.set(poi.category, list);
@@ -189,7 +201,10 @@ function keepInStretch(stretch: DenseStretch, inside: TrailPOI[]): Set<string> {
 }
 
 /** Drop the city clutter described above. Returns a new array; `undefined` passes through. */
-export function thinUrbanPois(pois: readonly TrailPOI[] | undefined): TrailPOI[] | undefined {
+export function thinUrbanPois(
+  pois: readonly TrailPOI[] | undefined,
+  config?: TrailPoiConfig
+): TrailPOI[] | undefined {
   if (!pois) return undefined;
   const stretches = findDenseStretches(pois);
   if (stretches.length === 0) return [...pois];
@@ -199,7 +214,7 @@ export function thinUrbanPois(pois: readonly TrailPOI[] | undefined): TrailPOI[]
     const inside = pois.filter(
       poi => poi.distanceAlongTrail >= stretch.fromKm && poi.distanceAlongTrail < stretch.toKm
     );
-    const keep = keepInStretch(stretch, inside);
+    const keep = keepInStretch(stretch, inside, config);
     for (const poi of inside) {
       if (!keep.has(poiKeyOf(poi))) drop.add(poiKeyOf(poi));
     }

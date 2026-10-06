@@ -629,11 +629,13 @@ async function main() {
       // lives here rather than in the fetch. City stretches are thinned last,
       // after duplicates are marked, so a POI standing in for a curated
       // waypoint is never thinned away (@lib/poi-urban).
+      // `config.pois` carries the trail's own rules on top (TrailPoiConfig).
       const fetched = readTrailPOIsForBuild(trailDir) ?? undefined;
-      const noise = countNoiseByReason(fetched);
-      const unthinned = markDuplicatePois(dropNoisePois(fetched), dedupCandidates(processed));
+      const poiConfig = processed.config.pois;
+      const noise = countNoiseByReason(fetched, poiConfig);
+      const unthinned = markDuplicatePois(dropNoisePois(fetched, poiConfig), dedupCandidates(processed));
       const cities = findDenseStretches(unthinned ?? []);
-      const pois = thinUrbanPois(unthinned);
+      const pois = thinUrbanPois(unthinned, poiConfig);
       if (pois) {
         processed.pois = pois;
       }

@@ -11,7 +11,7 @@
  * vocabulary, and two of the families have no OSM equivalent at all.
  */
 
-import { formatDistance, type DistanceUnit } from '@lib/format-distance';
+import { formatDistance, formatElevation, type DistanceUnit } from '@lib/format-distance';
 import { POI_CATEGORIES } from '@lib/poi-display';
 import type { TrailPOICategory } from '@lib/trail-types';
 import { categoryToken, type WaypointColorToken } from '../elevation/waypoint-category';
@@ -146,4 +146,17 @@ export function formatSignedDistance(
     return { label: `${magnitude} ahead`, direction: 'ahead' };
   }
   return { label: `${magnitude} behind`, direction: 'behind' };
+}
+
+/**
+ * A short ground distance given in metres — how far off the trail the hiker
+ * is — in the small unit that pairs with their distance unit: metres, or feet
+ * for imperial users. The rounding and units are `formatElevation`'s, which is
+ * already the app's metres-or-feet choke point.
+ *
+ * @example formatShortDistance(120, 'km') // "120 m"
+ * @example formatShortDistance(120, 'mi') // "394 ft"
+ */
+export function formatShortDistance(meters: number, unit: DistanceUnit): string {
+  return formatElevation(meters, unit);
 }

@@ -223,7 +223,9 @@ describe('PoiDetailScreen', () => {
       mapsUrlFor(-34.9285, 138.6007, 'Mount Lofty Tank', Platform.OS),
     );
 
-    jest.mocked(Linking.canOpenURL).mockResolvedValue(false);
+    // No maps app: opening the geo:/maps: URL rejects, and the web map opens.
+    // (canOpenURL is never asked — it says no on Android 11+ without <queries>.)
+    jest.mocked(Linking.openURL).mockRejectedValueOnce(new Error('No activity'));
     const fallback = controls(render()).get('Open in Maps');
     await act(async () => fallback?.());
     expect(Linking.openURL).toHaveBeenLastCalledWith('https://www.openstreetmap.org/node/1');

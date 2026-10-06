@@ -6,10 +6,12 @@
  * shown apart ("52.3 km + 4.0 km off trail"), and a hitch the days and food
  * leave out gets a line of its own, in `@lib/resupply-display`'s words.
  *
- * Three ways to have no legs, and they mean different things to a hiker: a
- * trail with no towns at all, a trail whose towns are all unticked, and a
- * section that happens to contain none of the ticked ones. `hasOptions` and
- * `stopCount` tell them apart.
+ * No ticked stop in range is still a carry — the whole section, start to end —
+ * and the calculator reports it as one leg, so the hiker who carries
+ * everything gets a food figure. Three things can put them there, and they
+ * mean different things: a trail with no towns at all, a trail whose towns
+ * are all unticked, and a section that happens to contain none of the ticked
+ * ones. `hasOptions` and `stopCount` tell them apart in the caption.
  */
 
 import React from 'react';
@@ -31,23 +33,28 @@ export interface ResupplyCardProps {
   units: Units;
 }
 
+/** The calculator's one start-to-end leg when no ticked stop falls in range. */
+export function isFullCarry(legs: ResupplyLeg[]): boolean {
+  return legs.length === 1 && legs[0].fromName === 'Trail Start' && legs[0].toName === 'Trail End';
+}
+
 export function ResupplyCard({ legs, hasOptions, stopCount, units }: ResupplyCardProps) {
   const { colors } = useTheme();
 
-  if (legs.length === 0) {
-    return (
-      <Text style={[styles.empty, { color: colors.textSecondary }]}>
-        {!hasOptions
-          ? 'No towns or resupply points on this trail.'
-          : stopCount === 0
-            ? 'No resupply stops ticked. Tick the ones you plan to use.'
-            : 'No ticked resupply stops in this section.'}
-      </Text>
-    );
-  }
+  // Only an empty section has no legs at all.
+  if (legs.length === 0) return null;
+
+  const caption = isFullCarry(legs)
+    ? !hasOptions
+      ? 'No towns or resupply points on this trail — full carry.'
+      : stopCount === 0
+        ? 'No resupply stops ticked — full carry. Tick the ones you plan to use.'
+        : 'No ticked resupply stops in this section — full carry.'
+    : null;
 
   return (
     <View style={styles.list}>
+      {caption && <Text style={[styles.empty, { color: colors.textSecondary }]}>{caption}</Text>}
       {legs.map((leg, i) => (
         <View
           key={`${leg.fromKm}-${leg.toKm}-${i}`}

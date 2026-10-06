@@ -10,21 +10,23 @@
  *
  * Presentational: the caller owns the plan and does the writing, through
  * `plans-store.apply` and the `@lib/plan-editor` setters that clamp and trim.
- * The note is the one stateful bit — it keeps a local draft and commits on
- * blur, because a SQLite write (and later a `PUT`) per keystroke is not worth
- * it for a field whose value only matters when you stop typing.
+ * The note is the one stateful bit — it keeps a local draft and commits it
+ * when you pause, blur or leave (`useDraftField`), because a SQLite write (and
+ * later a `PUT`) per keystroke is not worth it for a field whose value only
+ * matters when you stop typing.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PLAN_LIMITS, type PlanStop } from '@lib/plan-types';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, touchTarget, typography } from '../../tokens';
+import { useDraftField } from './use-draft-field';
 
 export interface StopEditorProps {
   stop: PlanStop;
   onNights: (nights: number) => void;
-  /** Called on blur with the raw text; the editor trims and caps it. */
+  /** Called with the raw text once typing pauses; the editor trims and caps it. */
   onNote: (note: string) => void;
   onBooked: (booked: boolean) => void;
 }
@@ -78,27 +80,13 @@ export function NightsStepper({
 
 function NoteField({ note, onNote }: { note?: string; onNote: (note: string) => void }) {
   const { colors } = useTheme();
-  const [draft, setDraft] = useState(note ?? '');
-  // What the plan last told us the note was. A change to it that did NOT come
-  // from this field (another screen, a sync) replaces the draft; our own commit
-  // coming back does not, so the cursor is never yanked mid-edit.
-  const known = useRef(note ?? '');
-  useEffect(() => {
-    const incoming = note ?? '';
-    if (incoming !== known.current) {
-      known.current = incoming;
-      setDraft(incoming);
-    }
-  }, [note]);
+  const { draft, setDraft, flush } = useDraftField(note ?? '', onNote, normalizeNote);
 
   return (
     <TextInput
       value={draft}
       onChangeText={setDraft}
-      onBlur={() => {
-        known.current = draft.trim().slice(0, PLAN_LIMITS.noteMax);
-        onNote(draft);
-      }}
+      onBlur={flush}
       placeholder="Note (rang ahead, 2 beds…)"
       placeholderTextColor={colors.textSecondary}
       accessibilityLabel="Stop note"
@@ -110,6 +98,11 @@ function NoteField({ note, onNote }: { note?: string; onNote: (note: string) => 
       ]}
     />
   );
+}
+
+/** What `setStopNote` makes of a committed note. */
+function normalizeNote(text: string): string {
+  return text.trim().slice(0, PLAN_LIMITS.noteMax);
 }
 
 /** "Booked" — a hand tick, not a booking flow. */

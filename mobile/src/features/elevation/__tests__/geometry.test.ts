@@ -1,6 +1,7 @@
 import {
   buildProfileMarkers,
   clampWindow,
+  mirrorWindow,
   hitTestMarkers,
   kmToX,
   nearestPointByKm,
@@ -341,5 +342,20 @@ describe('buildProfileMarkers', () => {
     );
     // ele = eleMin (0) → y at the plot floor (top + height = 200).
     expect(markers[0].y).toBeCloseTo(200, 6);
+  });
+});
+
+describe('mirrorWindow', () => {
+  it('renumbers the window from the other end of the trail', () => {
+    expect(mirrorWindow({ startKm: 10, endKm: 30 }, 100)).toEqual({ startKm: 70, endKm: 90 });
+  });
+
+  it('is its own inverse, so flipping back lands where the hiker was', () => {
+    const w = { startKm: 12.5, endKm: 47 };
+    expect(mirrorWindow(mirrorWindow(w, 100), 100)).toEqual(w);
+  });
+
+  it('maps the whole trail to the whole trail', () => {
+    expect(mirrorWindow({ startKm: 0, endKm: 100 }, 100)).toEqual({ startKm: 0, endKm: 100 });
   });
 });

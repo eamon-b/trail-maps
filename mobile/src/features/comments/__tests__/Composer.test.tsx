@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Composer, PHOTO_FAILED_MESSAGE, POST_FAILED_MESSAGE } from '../Composer';
 import { NETWORK_ERROR_MESSAGE } from '../../../api/error-message';
 import { NetworkError } from '../../../api/client';
+import { KeyboardAvoidingModalContent } from '../../../navigation/KeyboardAwareScrollView';
 
 jest.mock('../../../theme', () => ({
   useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
@@ -202,6 +203,18 @@ describe('Composer', () => {
 
       expect(onSubmit).not.toHaveBeenCalled();
       expect(renderedText(r)).toContain('Enter a display name.');
+    });
+
+    it('keeps the name field above the keyboard', () => {
+      // Edge-to-edge Android does not resize for the keyboard, so the dialog
+      // has to avoid it itself, as ReportDialog and the route builder do.
+      const r = mount({ registered: false, onSubmit: jest.fn() });
+      setInput(r, 0, 'First note');
+      press(r, 'Post comment');
+      const nameField = r.root.findAllByType(TextInput)[1];
+      const avoiding = r.root.findAllByType(KeyboardAvoidingModalContent);
+      expect(avoiding).toHaveLength(1);
+      expect(avoiding[0].findAllByType(TextInput)).toContain(nameField);
     });
   });
 });

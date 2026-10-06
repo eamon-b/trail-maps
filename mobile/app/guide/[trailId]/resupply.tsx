@@ -24,11 +24,11 @@ import {
 } from '../../../src/features/plan/ResupplySelectList';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
 import { planDirectionOf } from '../../../src/features/plan/plan-stops';
+import { queueResupplyToggle } from '../../../src/features/plan/resupply-toggle';
 import {
   resetResupplyStops,
   resupplyGroupsFor,
   saveResupplyStops,
-  toggleResupplyStop,
 } from '../../../src/features/plan/use-planned-resupply';
 import { selectResupplyStops, usePlansStore } from '../../../src/state/plans-store';
 import { useSettingsStore } from '../../../src/state/settings-store';
@@ -62,9 +62,11 @@ export default function ResupplyStopsScreen() {
   const selectedIds = useMemo(() => new Set(stored ?? allIds), [stored, allIds]);
   const section = useMemo(() => parseSection(params.startKm, params.endKm), [params.startKm, params.endKm]);
 
+  // The new list is worked out when the edit runs, from the document it is
+  // handed — not from `stored` — so a second quick tap builds on the first.
   const onToggle = useCallback(
-    (id: string) => saveResupplyStops(trailId, toggleResupplyStop(stored, allIds, id), defaults),
-    [trailId, stored, allIds, defaults],
+    (id: string) => queueResupplyToggle(trailId, allIds, id, defaults),
+    [trailId, allIds, defaults],
   );
 
   return (

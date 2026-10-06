@@ -6,6 +6,7 @@ import {
   poiCategoriesForFamily,
   formatSignedDistance,
   FILTER_FAMILIES,
+  formatShortDistance,
 } from '../waypoint-filters';
 
 describe('familyForType', () => {
@@ -141,5 +142,13 @@ describe('matchesPoiFamily', () => {
   it('lets an unknown category through "all", as visiblePois does', () => {
     expect(matchesPoiFamily('viewpoint', 'all')).toBe(true);
     expect(matchesPoiFamily('viewpoint', 'water')).toBe(false);
+  });
+});
+
+describe('formatShortDistance', () => {
+  it('reads metres for metric users and feet for imperial ones', () => {
+    expect(formatShortDistance(120.4, 'km')).toBe('120 m');
+    expect(formatShortDistance(120, 'mi')).toBe('394 ft');
+    expect(formatShortDistance(1000, 'mi')).toBe('3,281 ft');
   });
 });

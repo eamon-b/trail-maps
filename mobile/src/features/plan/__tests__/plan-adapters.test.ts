@@ -497,8 +497,12 @@ describe('resupply selection', () => {
   it('an explicit empty selection is a plan with no stops, not the default', () => {
     const plan = computePlan(twoTownTrail(), { ...full, resupplyStops: [] });
     expect(plan.resupplyStops).toEqual([]);
-    expect(plan.resupplyLegs).toEqual([]);
-    expect(plan.resupplySummary.hasData).toBe(false);
+    // No stops is still a carry: the whole trail, start to end, as one leg.
+    expect(plan.resupplyLegs.map((l) => [l.fromName, l.toName])).toEqual([
+      ['Trail Start', 'Trail End'],
+    ]);
+    expect(plan.resupplySummary.hasData).toBe(true);
+    expect(plan.resupplySummary.stops).toBe(0);
     // The options themselves are still offered — the list is trail-wide.
     expect(plan.resupplyGroups.length).toBe(2);
   });

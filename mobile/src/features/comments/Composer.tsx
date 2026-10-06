@@ -24,6 +24,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { useTheme } from '../../theme';
+import { KeyboardAvoidingModalContent } from '../../navigation/KeyboardAwareScrollView';
 import { radii, spacing, typography } from '../../tokens';
 import { apiErrorMessage } from '../../api/error-message';
 import {
@@ -277,53 +278,58 @@ export function Composer({
           if (!busy) setPromptOpen(false);
         }}
       >
-        <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Choose a display name</Text>
-            <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
-              Shown next to your comments. You can change it later in Settings.
-            </Text>
-            <TextInput
-              style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
-              placeholder="e.g. Trail Ghost"
-              placeholderTextColor={colors.textSecondary}
-              value={nameDraft}
-              onChangeText={(next) => {
-                setNameDraft(next);
-                setError(null);
-              }}
-              autoFocus
-              editable={!busy}
-              maxLength={MAX_DISPLAY_NAME_LENGTH}
-            />
-            {errorText}
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setPromptOpen(false)}
-                disabled={busy}
-                accessibilityRole="button"
-                style={styles.modalButton}
-              >
-                <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={savePromptedName}
-                disabled={busy}
-                accessibilityRole="button"
-                accessibilityLabel={error ? 'Retry posting comment' : 'Save display name and post'}
-                style={[styles.modalButton, styles.modalSave, { backgroundColor: colors.accent }]}
-              >
-                {busy ? (
-                  <ActivityIndicator color={colors.accentText} />
-                ) : (
-                  <Text style={[styles.submitText, { color: colors.accentText }]}>
-                    {error ? 'Try again' : 'Save & post'}
-                  </Text>
-                )}
-              </Pressable>
+        {/* The name field sits mid-screen; edge-to-edge Android no longer
+            resizes the window for the keyboard, so without this it covers
+            the field and the Save button (see KeyboardAvoidingModalContent). */}
+        <KeyboardAvoidingModalContent>
+          <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
+            <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Choose a display name</Text>
+              <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
+                Shown next to your comments. You can change it later in Settings.
+              </Text>
+              <TextInput
+                style={[styles.input, { color: colors.textPrimary, borderColor: colors.border }]}
+                placeholder="e.g. Trail Ghost"
+                placeholderTextColor={colors.textSecondary}
+                value={nameDraft}
+                onChangeText={(next) => {
+                  setNameDraft(next);
+                  setError(null);
+                }}
+                autoFocus
+                editable={!busy}
+                maxLength={MAX_DISPLAY_NAME_LENGTH}
+              />
+              {errorText}
+              <View style={styles.modalActions}>
+                <Pressable
+                  onPress={() => setPromptOpen(false)}
+                  disabled={busy}
+                  accessibilityRole="button"
+                  style={styles.modalButton}
+                >
+                  <Text style={[styles.actionLink, { color: colors.textSecondary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={savePromptedName}
+                  disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel={error ? 'Retry posting comment' : 'Save display name and post'}
+                  style={[styles.modalButton, styles.modalSave, { backgroundColor: colors.accent }]}
+                >
+                  {busy ? (
+                    <ActivityIndicator color={colors.accentText} />
+                  ) : (
+                    <Text style={[styles.submitText, { color: colors.accentText }]}>
+                      {error ? 'Try again' : 'Save & post'}
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingModalContent>
       </Modal>
     </View>
   );

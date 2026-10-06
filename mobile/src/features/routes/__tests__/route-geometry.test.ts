@@ -4,6 +4,8 @@ import {
   computeRouteLegs,
   computeRouteStats,
   routeHighlightRanges,
+  routePointsToActive,
+  routePointsToNobo,
   type RoutePointInput,
   type RouteTrackPoint,
 } from '../route-geometry';
@@ -43,9 +45,19 @@ describe('classifyTap', () => {
   });
 
   it('honors a custom threshold', () => {
-    // A tap ~1.11 km away is a sketch under 200 m but a snap under 2 km.
-    expect(classifyTap(0, 0.005, TRACK, 200).kind).toBe('sketch');
-    expect(classifyTap(0, 0.005, TRACK, 2000).kind).toBe('snap');
+    // A tap ~556 m beside the line (0.005° of latitude) is a sketch under
+    // 200 m but a snap under 2 km. Distance is measured to the line, not to
+    // the nearest vertex.
+    expect(classifyTap(0.005, 0.02, TRACK, 200).kind).toBe('sketch');
+    expect(classifyTap(0.005, 0.02, TRACK, 2000).kind).toBe('snap');
+  });
+
+  it('snaps to the nearer end of the segment the tap lands on', () => {
+    // Four fifths of the way from km 0 to km 1: km 1, not the segment start.
+    expect(classifyTap(0, 0.008, TRACK).km).toBe(1);
+    expect(classifyTap(0, 0.002, TRACK).km).toBe(0);
+    // The last segment's far end is the end of the track.
+    expect(classifyTap(0, 0.0399, TRACK).km).toBe(4);
   });
 });
 
@@ -181,5 +193,47 @@ describe('route breaks', () => {
     const features = buildRouteOverlayGeoJSON(ends, FERRY_TRACK).features;
     expect(features).toHaveLength(1);
     expect(features[0].properties?.straight).toBe(false);
+  });
+});
+
+describe('route km across a direction flip', () => {
+  // The same 4 km track walked SOBO: km 0 is the NOBO km-4 end.
+  const SOBO_TRACK: RouteTrackPoint[] = [...TRACK]
+    .reverse()
+    .map((p) => ({ ...p, dist: 4 - p.dist }));
+
+  it('saves a route tapped walking SOBO in NOBO-absolute km', () => {
+    // Tapped at SOBO km 1 and 3 — NOBO km 3 and 1.
+    const tapped = [classifyTap(0, 0.03, SOBO_TRACK), classifyTap(0, 0.01, SOBO_TRACK)];
+    expect(tapped.map((p) => p.km)).toEqual([1, 3]);
+    expect(routePointsToNobo(tapped, 'SOBO', 4).map((p) => p.km)).toEqual([3, 1]);
+  });
+
+  it('highlights the stretch it was drawn on, whichever way it is viewed', () => {
+    const tapped = [classifyTap(0, 0.03, SOBO_TRACK), classifyTap(0, 0.01, SOBO_TRACK)];
+    const saved = routePointsToNobo(tapped, 'SOBO', 4);
+    // Viewed NOBO: NOBO km 1-3, the lon 0.01-0.03 stretch it was drawn on.
+    expect(routeHighlightRanges(routePointsToActive(saved, 'NOBO', 4), TRACK)).toEqual([
+      { startKm: 1, endKm: 3 },
+    ]);
+    // Viewed SOBO again: back to the km it was tapped at, not total − km.
+    expect(routeHighlightRanges(routePointsToActive(saved, 'SOBO', 4), SOBO_TRACK)).toEqual([
+      { startKm: 1, endKm: 3 },
+    ]);
+  });
+
+  it('draws the overlay over the same ground after a flip', () => {
+    const tapped = [classifyTap(0, 0.03, SOBO_TRACK), classifyTap(0, 0.01, SOBO_TRACK)];
+    const saved = routePointsToNobo(tapped, 'SOBO', 4);
+    const line = buildRouteOverlayGeoJSON(routePointsToActive(saved, 'NOBO', 4), TRACK)
+      .features[0].geometry as GeoJSON.LineString;
+    const lons = line.coordinates.map(([lon]) => lon).sort();
+    expect(lons).toEqual([0.01, 0.02, 0.03]);
+  });
+
+  it('leaves sketch points and a NOBO walk untouched', () => {
+    const pts = [snap(1), sketch(1, 1)];
+    expect(routePointsToNobo(pts, 'NOBO', 4)).toBe(pts);
+    expect(routePointsToActive(pts, 'SOBO', 4)[1]).toEqual(sketch(1, 1));
   });
 });

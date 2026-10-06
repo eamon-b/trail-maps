@@ -61,6 +61,15 @@ export function clampWindow(
   return { startKm: start, endKm: end };
 }
 
+/**
+ * The same stretch of ground with the km renumbered from the other end — what
+ * a direction flip does to every km on the profile. Clamped, so a window
+ * already at the trail's edge cannot slip past the new zero.
+ */
+export function mirrorWindow(window: KmWindow, totalKm: number): KmWindow {
+  return clampWindow(totalKm - window.endKm, totalKm - window.startKm, totalKm);
+}
+
 /** Horizontal plot geometry needed to map km <-> x. */
 export interface PlotLayout {
   /** Left inset (px) where the plot area starts. */

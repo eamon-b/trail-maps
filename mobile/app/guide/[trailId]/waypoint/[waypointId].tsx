@@ -54,6 +54,7 @@ import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import { accessSummary } from '@lib/resupply-display';
 import { isAccessMode } from '@lib/types';
+import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
@@ -96,6 +97,10 @@ import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
 import * as waypointMetaRepo from '../../../../src/db/waypoint-meta-repo';
 import { Composer } from '../../../../src/features/comments/Composer';
 import { ReportDialog } from '../../../../src/features/comments/ReportDialog';
+import {
+  confirmDeleteComment,
+  retryComment,
+} from '../../../../src/features/comments/comment-actions';
 import { isApiConfigured } from '../../../../src/api/client';
 import {
   deleteOwnComment,
@@ -128,6 +133,7 @@ export default function WaypointDetailScreen() {
       null
     );
   }, [trail, waypointId]);
+  // Before the not-found return below: a hook cannot sit after it.
 
   // The comments channel needs BOTH a server-side trail (imported guides have
   // none) and a stable waypoint id. Null here switches the whole block off:
@@ -330,7 +336,7 @@ export default function WaypointDetailScreen() {
           <View style={styles.heroTop}>
             <View style={[styles.typeChip, { backgroundColor: marker }]}>
               <Text style={[styles.typeChipText, { color: colors.textInverse }]} numberOfLines={1}>
-                {waypoint.type}
+                {waypointTypeLabel(waypoint.type)}
               </Text>
             </View>
             <View style={styles.heroActions}>
@@ -365,7 +371,13 @@ export default function WaypointDetailScreen() {
               {stopCandidate && (
                 <StopHereToggle
                   isStop={planStop !== undefined}
-                  onPress={() => editPlan((p) => toggleStop(p, toggleTargetOf(stopCandidate)))}
+                  onPress={() =>
+                    editPlan((p) =>
+                      toggleStop(p, toggleTargetOf(stopCandidate), {
+                        totalKm: trail.track.totalDistance,
+                      }),
+                    )
+                  }
                 />
               )}
               <FavoriteHeart
@@ -484,13 +496,17 @@ export default function WaypointDetailScreen() {
                 reported={reportedIds.includes(c.id)}
                 onReport={() => setReportTarget(c)}
                 onOpenPhoto={setViewerUri}
-                onDelete={async () => {
-                  await deleteOwnComment({ id: c.id, source: c.source });
-                  await load();
-                }}
-                onRetry={async () => {
-                  await retryOutbox();
-                  await load();
+                onDelete={() =>
+                  confirmDeleteComment(async () => {
+                    await deleteOwnComment({ id: c.id, source: c.source });
+                    await load();
+                  })
+                }
+                onRetry={() => {
+                  void retryComment(async () => {
+                    await retryOutbox();
+                    await load();
+                  });
                 }}
               />
             );
@@ -868,8 +884,9 @@ function CommentItem({
   reported: boolean;
   onReport: () => void;
   onOpenPhoto: (uri: string) => void;
-  onDelete: () => void | Promise<void>;
-  onRetry: () => void | Promise<void>;
+  /** Asks for confirmation itself; errors are surfaced, never thrown. */
+  onDelete: () => void;
+  onRetry: () => void;
 }) {
   const { colors } = useTheme();
   const pending = comment.outboxStatus === 'pending' || comment.outboxStatus === 'sending';
@@ -979,7 +996,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     maxWidth: '70%',
   },
-  typeChipText: { ...typography.dataSmall, textTransform: 'capitalize' },
+  typeChipText: { ...typography.dataSmall },
   name: { ...typography.displaySmall },
   description: { ...typography.body },
   accessLine: { ...typography.bodySmall },

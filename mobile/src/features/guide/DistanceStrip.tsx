@@ -50,6 +50,7 @@ import { useCheckInShare } from '../share/use-check-in-share';
 import { useGuide } from './GuideContext';
 import { orderedWaypoints } from './guide-trail';
 import { useGuidePositionContext } from './GuidePositionContext';
+import { formatShortDistance } from './waypoint-filters';
 
 export function DistanceStrip() {
   const { colors } = useTheme();
@@ -177,7 +178,7 @@ export function DistanceStrip() {
         {status === 'off-trail' && offTrailMeters != null && (
           <View style={[styles.chip, { backgroundColor: colors.warning, borderColor: colors.warning }]}>
             <Text style={[styles.chipValue, { color: colors.warningText }]}>
-              {Math.round(offTrailMeters)} m off trail
+              {`${formatShortDistance(offTrailMeters, units)} off trail`}
             </Text>
           </View>
         )}

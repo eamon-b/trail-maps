@@ -25,6 +25,15 @@
  * into that same track array of the first point after each break, from
  * `routeBreakStarts`. A span across one climbs nothing over the water and is
  * drawn as two trail lines with a dashed straight crossing between them.
+ *
+ * Snap km live in two spaces. The track the builder taps and the overlay draws
+ * over is direction-applied (km count from the end the hiker walks from), but a
+ * saved route stores them NOBO-absolute, as plan stops do, so a route drawn
+ * walking one way still marks the same stretch after a direction flip.
+ * `routePointsToNobo` converts on save and `routePointsToActive` on the way
+ * back to the map and the profile. Routes saved before this rule have no
+ * record of the direction they were drawn in; they are read as NOBO, which is
+ * right for every route drawn with the default direction.
  */
 
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
@@ -35,6 +44,7 @@ import {
   NO_BREAK_STARTS,
 } from '@lib/track-geometry';
 import { sliceAcrossRouteBreaks } from '@lib/route-breaks';
+import { toActiveKm, toNoboKm, type PlanDirection } from '@lib/plan-direction';
 import { snapToTrail, type SnapPoint } from '../../services/position-on-trail';
 
 /** A track point the route is drawn over. */
@@ -64,6 +74,11 @@ export const SNAP_THRESHOLD_M = 200;
  * from that vertex so it sits exactly on the drawn line); a farther tap keeps
  * its raw lat/lon as a 'sketch' point (km null). Reuses the proven
  * `snapToTrail` search from position-on-trail.
+ *
+ * `snapToTrail` snaps to the nearest *segment* and reports its start vertex,
+ * so the nearer of that segment's two ends is picked here: on a thinned track
+ * (vertices up to ~1 km apart) taking the start alone could move a tap by most
+ * of a segment, back along the trail.
  */
 export function classifyTap(
   lat: number,
@@ -73,10 +88,50 @@ export function classifyTap(
 ): RoutePointInput {
   const snap = snapToTrail(lat, lon, track as unknown as SnapPoint[]);
   if (snap && snap.offTrailMeters <= thresholdM) {
-    const pt = track[snap.index];
+    const pt = nearerSegmentEnd(track, snap.index, snap.currentKm);
     return { kind: 'snap', lat: pt.lat, lon: pt.lon, km: pt.dist };
   }
   return { kind: 'sketch', lat, lon, km: null };
+}
+
+/** Whichever end of segment `index` → `index + 1` is nearer `km` along the trail. */
+function nearerSegmentEnd(track: RouteTrackPoint[], index: number, km: number): RouteTrackPoint {
+  const start = track[index];
+  const end = track[index + 1];
+  if (!end) return start;
+  return Math.abs(end.dist - km) < Math.abs(km - start.dist) ? end : start;
+}
+
+/**
+ * Mirror every snap km through `convert`; sketch points (km null) and a NOBO
+ * walk (the identity) pass through untouched, and the latter hands back the
+ * same array so memoised overlays do not rebuild for nothing.
+ */
+function mapRouteKm<P extends RoutePointInput>(
+  points: readonly P[],
+  direction: PlanDirection,
+  convert: (km: number) => number,
+): P[] {
+  if (direction === 'NOBO') return points as P[];
+  return points.map((p) => (p.km == null ? p : { ...p, km: convert(p.km) }));
+}
+
+/** Direction-applied route points (as tapped) → NOBO-absolute, for saving. */
+export function routePointsToNobo<P extends RoutePointInput>(
+  points: readonly P[],
+  direction: PlanDirection,
+  totalKm: number,
+): P[] {
+  return mapRouteKm(points, direction, (km) => toNoboKm(km, direction, totalKm));
+}
+
+/** Saved (NOBO-absolute) route points → the active direction, for drawing. */
+export function routePointsToActive<P extends RoutePointInput>(
+  points: readonly P[],
+  direction: PlanDirection,
+  totalKm: number,
+): P[] {
+  return mapRouteKm(points, direction, (km) => toActiveKm(km, direction, totalKm));
 }
 
 /** Whether a route point sits on the trail (drives snap→snap span legs). */

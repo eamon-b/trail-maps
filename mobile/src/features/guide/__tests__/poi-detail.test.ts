@@ -4,7 +4,7 @@
  */
 
 import { summarisePoiTags } from '@lib/poi-display';
-import { mapsUrlFor, poiDetailLines } from '../poi-detail';
+import { mapsUrlFor, openUrlWithFallback, poiDetailLines } from '../poi-detail';
 
 describe('mapsUrlFor', () => {
   it('uses the geo: scheme on Android, with a labelled pin', () => {
@@ -78,5 +78,25 @@ describe('poiDetailLines', () => {
       'OSM tag',
       'Operator',
     ]);
+  });
+});
+
+describe('openUrlWithFallback', () => {
+  it('opens the maps URL directly, without asking canOpenURL first', async () => {
+    const open = jest.fn().mockResolvedValue(true);
+    await expect(openUrlWithFallback(open, 'geo:1,2', 'https://osm')).resolves.toBe(true);
+    expect(open.mock.calls).toEqual([['geo:1,2']]);
+  });
+
+  it('falls back to the web map when the maps URL is refused', async () => {
+    const open = jest.fn().mockRejectedValueOnce(new Error('No activity')).mockResolvedValue(true);
+    await expect(openUrlWithFallback(open, 'geo:1,2', 'https://osm')).resolves.toBe(true);
+    expect(open.mock.calls).toEqual([['geo:1,2'], ['https://osm']]);
+  });
+
+  it('never rejects, even when nothing can open', async () => {
+    const open = jest.fn().mockRejectedValue(new Error('nope'));
+    await expect(openUrlWithFallback(open, 'geo:1,2', 'https://osm')).resolves.toBe(false);
+    await expect(openUrlWithFallback(open, 'https://example.com')).resolves.toBe(false);
   });
 });

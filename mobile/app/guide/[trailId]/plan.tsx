@@ -59,6 +59,7 @@ import { KeyboardAwareScrollView } from '../../../src/navigation/KeyboardAwareSc
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../src/state/settings-store';
 import { selectPlan, selectPlanError, usePlansStore } from '../../../src/state/plans-store';
+import { selectAuthError, useIdentityStore } from '../../../src/state/identity-store';
 import { useGuide } from '../../../src/features/guide/GuideContext';
 import { useGuidePositionContext } from '../../../src/features/guide/GuidePositionContext';
 import {
@@ -123,7 +124,8 @@ export default function PlanScreen() {
   // matters: an edit this screen refused, then a write the server did.
   const editError = usePlansStore(selectPlanError(trailId));
   const syncError = usePlanSyncError(plan?.id);
-  const notice = planNotice(editError, syncError);
+  const authError = useIdentityStore(selectAuthError);
+  const notice = planNotice(editError, syncError, authError);
 
   // Waypoints bracketed by synthetic termini so the default section is the whole
   // track (0 → totalDistance) and both trail ends are reachable — see
@@ -468,7 +470,11 @@ export default function PlanScreen() {
                 showClimb={!distanceOnly}
                 showAll={showAllWaypoints}
                 onShowAll={setShowAllWaypoints}
-                onToggle={(c) => edit((p) => toggleStop(p, toggleTargetOf(c)))}
+                onToggle={(c) =>
+                  edit((p) =>
+                    toggleStop(p, toggleTargetOf(c), { totalKm: trail.track.totalDistance }),
+                  )
+                }
                 onNights={(c, nights) => edit((p) => setNights(p, stopKeyOf(c), nights))}
                 onNote={(c, note) => edit((p) => setStopNote(p, stopKeyOf(c), note))}
                 onBooked={(c, booked) => edit((p) => setStopBooked(p, stopKeyOf(c), booked))}
@@ -532,9 +538,16 @@ export default function PlanScreen() {
  * change the plan at all. A failed write did — locally — so it is reported as
  * what it is, a copy the server has not got.
  */
-function planNotice(editError: string | null, syncError: string | null): string | null {
+function planNotice(
+  editError: string | null,
+  syncError: string | null,
+  authError = false,
+): string | null {
   if (editError) return `Not saved: ${editError}`;
   if (syncError) return `Not synced: ${syncError}`;
+  // The server refused this device's token and the one automatic
+  // re-registration did not clear it: nothing queued will reach it.
+  if (authError) return 'Not synced: the server no longer recognises this device';
   return null;
 }
 
@@ -550,7 +563,9 @@ function resupplySubtitle(
 ): string | undefined {
   // Nothing to summarise on a trail with no resupply at all — the card says so.
   if (extras.resupplyGroups.length === 0) return undefined;
-  if (!extras.resupplySummary.hasData) return 'No resupply stops ticked.';
+  // No ticked stop is still a carry (one start-to-end leg); only an empty
+  // section has nothing to summarise.
+  if (!extras.resupplySummary.hasData) return undefined;
   const text = resupplySummaryText(
     extras.resupplySummary,
     (km) => formatDistance(km, units),

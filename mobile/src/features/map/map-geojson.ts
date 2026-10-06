@@ -13,6 +13,7 @@ import { routeBreakCrossings, splitAtRouteBreaks } from '@lib/route-breaks';
 import type { RouteBreak, TrailPOICategory } from '@lib/trail-types';
 import { calculateTrailBounds, type TrackPoint } from '../../services/trail-bounds';
 import { poiIconName, waypointIconName } from './waypoint-icons';
+import { metresPerPoint } from './map-scale';
 
 /** Minimal track-point shape used for polyline geometry. */
 export interface LatLon {
@@ -412,16 +413,15 @@ export function buildUserLocationGeoJSON(
  * sits on the map plane; radius is still in pixels at the current zoom, so we
  * precompute pixels-per-metre at each discrete zoom.
  *
- *   metresPerPixel(z) = cos(lat) · 40075017 / (256 · 2^z)
- *   pixelsPerMetre(z) = 256 · 2^z / (cos(lat) · 40075017)
+ * The scale comes from map-scale's `metresPerPoint`, the same maths the scale
+ * bar uses: MapLibre Native lays its world out in 512-point tiles, so a
+ * 256-pixel formula would draw a ±30 m fix as ±15 m — a puck claiming twice
+ * the confidence the GPS actually has.
  */
 export function accuracyCircleRadiusExpression(latDegrees: number): unknown[] {
-  const latRad = (latDegrees * Math.PI) / 180;
-  const cosLat = Math.cos(latRad);
-  const base = 256 / (cosLat * 40075017);
   const stops: unknown[] = [];
   for (let z = 5; z <= 20; z++) {
-    const ppm = base * Math.pow(2, z);
+    const ppm = 1 / metresPerPoint(z, latDegrees);
     stops.push(z, ['min', 200, ['max', 2, ['*', ['get', 'accuracy'], ppm]]]);
   }
   return ['interpolate', ['linear'], ['zoom'], ...stops];

@@ -9,24 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-
-const MAX_ZOOM = 22;
-
-// Replicate parseTilePath from the worker (with zoom validation)
-function parseTilePath(
-  pathname: string,
-): { source: string; z: number; x: number; y: number } | null {
-  const match = pathname.match(/^\/(\w+)\/(\d+)\/(\d+)\/(\d+)\.pbf$/);
-  if (!match) return null;
-  const z = parseInt(match[2], 10);
-  if (z > MAX_ZOOM) return null;
-  return {
-    source: match[1],
-    z,
-    x: parseInt(match[3], 10),
-    y: parseInt(match[4], 10),
-  };
-}
+// The worker's own parser (a dependency-free module), not a copy of it.
+import { parseTilePath } from '../../workers/contour-tiles/src/tile-path';
 
 const ALLOWED_SOURCES = ['contours'];
 
@@ -56,6 +40,20 @@ describe('parseTilePath', () => {
 
   it('rejects negative coordinates (regex blocks them)', () => {
     expect(parseTilePath('/contours/12/-1/2520.pbf')).toBeNull();
+  });
+
+  it('rejects non-canonical integers, so one tile has one cache key', () => {
+    expect(parseTilePath('/contours/12/0003750/02520.pbf')).toBeNull();
+    expect(parseTilePath('/contours/012/3750/2520.pbf')).toBeNull();
+    expect(parseTilePath('/contours/12/3750/02520.pbf')).toBeNull();
+    expect(parseTilePath('/contours/0/00/0.pbf')).toBeNull();
+    // Zero itself is canonical.
+    expect(parseTilePath('/contours/0/0/0.pbf')).toEqual({ source: 'contours', z: 0, x: 0, y: 0 });
+  });
+
+  it('rejects coordinates outside the zoom level', () => {
+    expect(parseTilePath('/contours/2/4/0.pbf')).toBeNull();
+    expect(parseTilePath('/contours/2/3/3.pbf')).not.toBeNull();
   });
 });
 

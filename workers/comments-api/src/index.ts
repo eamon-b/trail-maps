@@ -29,9 +29,22 @@ import {
 } from './plans';
 import { createLinkCode, linkDevice, listDevices, revokeDevice } from './link';
 
-/** Split a pathname into decoded, non-empty segments. */
+/**
+ * Split a pathname into decoded, non-empty segments. A malformed escape
+ * (`/v1/plans/%E0%A4%A`) makes `decodeURIComponent` throw a URIError, which is
+ * the client's mistake — a 400, not the 500 an uncaught throw would become.
+ */
 function segments(pathname: string): string[] {
-  return pathname.split('/').filter((s) => s.length > 0).map(decodeURIComponent);
+  return pathname
+    .split('/')
+    .filter((s) => s.length > 0)
+    .map((s) => {
+      try {
+        return decodeURIComponent(s);
+      } catch {
+        throw new HttpError(400, 'invalid_path', 'Path contains malformed percent-encoding');
+      }
+    });
 }
 
 async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -55,7 +68,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
 
     // /v1/devices
     if (rest.length === 1 && rest[0] === 'devices') {
-      if (method === 'POST') return await registerDevice(request, env);
+      if (method === 'POST') return await registerDevice(request, env, ctx);
       return methodNotAllowed();
     }
 

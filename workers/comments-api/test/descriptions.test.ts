@@ -76,6 +76,44 @@ describe('PUT /v1/admin/trails/:trailId/descriptions/:waypointId', () => {
     expect(count?.n).toBe(1);
   });
 
+  it('leaves updated_at alone when the text is unchanged', async () => {
+    // Every `upload-descriptions` run re-PUTs the whole file; a bump here would
+    // re-ship every description to every phone on every run.
+    const admin = await adminDevice();
+    await putDescription(admin, 'heysen', 'desc-same-wp', { description: 'same' });
+    const stamp = new Date(Date.now() - 60_000).toISOString();
+    await env.DB.prepare(
+      `UPDATE waypoint_descriptions SET updated_at = ? WHERE trail_id = ? AND waypoint_id = ?`
+    )
+      .bind(stamp, 'heysen', 'desc-same-wp')
+      .run();
+
+    const res = await putDescription(admin, 'heysen', 'desc-same-wp', { description: ' same ' });
+    expect(res.status).toBe(200);
+    expect((await res.json()) as WaypointDescription).toEqual({
+      waypointId: 'desc-same-wp',
+      description: 'same',
+      updatedAt: stamp,
+    });
+
+    // So a delta since before the re-PUT does not carry it.
+    const delta = await readDescriptions('heysen', new Date(Date.now() - 30_000).toISOString());
+    expect(delta.descriptions.some((d) => d.waypointId === 'desc-same-wp')).toBe(false);
+
+    // A withdrawal of already-withdrawn prose is the same no-op.
+    await putDescription(admin, 'heysen', 'desc-same-wp', { description: '' });
+    const cleared = await env.DB.prepare(
+      `SELECT updated_at FROM waypoint_descriptions WHERE trail_id = ? AND waypoint_id = ?`
+    )
+      .bind('heysen', 'desc-same-wp')
+      .first<{ updated_at: string }>();
+    await new Promise((r) => setTimeout(r, 5));
+    const again = (await (
+      await putDescription(admin, 'heysen', 'desc-same-wp', { description: '' })
+    ).json()) as WaypointDescription;
+    expect(again.updatedAt).toBe(cleared?.updated_at);
+  });
+
   it('accepts an empty description as a cleared tombstone', async () => {
     const admin = await adminDevice();
     await putDescription(admin, 'heysen', 'desc-clear-wp', { description: 'something' });
@@ -204,9 +242,23 @@ describe('GET /v1/trails/:trailId/descriptions', () => {
     ]);
 
     // A watermark past every row yields an empty delta with a fresh syncedAt.
-    const empty = await readDescriptions('bibbulmun', full.syncedAt);
+    // (+1 ms: the boundary is inclusive, and a row may share `syncedAt`'s ms.)
+    const past = new Date(Date.parse(full.syncedAt) + 1).toISOString();
+    const empty = await readDescriptions('bibbulmun', past);
     expect(empty.descriptions).toEqual([]);
     expect(Date.parse(empty.syncedAt)).toBeGreaterThanOrEqual(Date.parse(full.syncedAt));
+  });
+
+  it('delivers a row stamped exactly at `since`', async () => {
+    // `syncedAt` is taken before the SELECT, so a write that commits in the
+    // same millisecond just after it would fall through a strict `>`.
+    const admin = await adminDevice();
+    const stored = (await (
+      await putDescription(admin, 'heysen', 'desc-boundary-wp', { description: 'edge' })
+    ).json()) as WaypointDescription;
+
+    const delta = await readDescriptions('heysen', stored.updatedAt);
+    expect(delta.descriptions.map((d) => d.waypointId)).toContain('desc-boundary-wp');
   });
 
   it('returns cleared rows in a delta so clients drop stale prose', async () => {

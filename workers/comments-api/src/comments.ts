@@ -6,7 +6,7 @@
 import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { requireAdmin, requireUser } from './auth';
-import { decodeCursor, encodeCursor } from './cursor';
+import { appendSinceFilter, decodeCursor, encodeCursor } from './cursor';
 import { deleteCommentPhotos, parsePhotoUrls } from './photos';
 import {
   assertClientCommentId,
@@ -266,9 +266,8 @@ export async function getBulkSync(request: Request, env: Env, trailId: string): 
   const binds: unknown[] = [trailId];
 
   if (since) {
-    // Delta mode: everything touched after `since`, tombstones included.
-    conditions.push('c.updated_at > ?');
-    binds.push(since);
+    // Delta mode: everything touched since `since`, tombstones included.
+    appendSinceFilter(conditions, binds, 'c.updated_at', since);
   } else {
     // Snapshot mode: only live rows.
     conditions.push('c.deleted_at IS NULL');

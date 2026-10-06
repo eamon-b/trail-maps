@@ -21,7 +21,7 @@ import {
   sha256Hex,
 } from './auth';
 import type { TokenKind } from './auth';
-import { RATE_BUCKETS, assertUnderRateLimit, recordRateEvent } from './rate-limit';
+import { RATE_BUCKETS, consumeRateLimit, ipRateKey } from './rate-limit';
 import type {
   DeviceTokenSummary,
   DevicesResponse,
@@ -90,6 +90,12 @@ export async function createLinkCode(
 ): Promise<Response> {
   // The phone only: a linked browser must not be able to link further browsers.
   const user = await requirePrimaryUser(request, env, ctx);
+  // A banned account's codes are refused at the exchange (`linkDevice`), so a
+  // mint could only ever write dead rows; say so up front with the same 403
+  // every other banned write gets.
+  if (user.is_banned === 1) {
+    throw new HttpError(403, 'banned', 'This account may not link new devices');
+  }
 
   const now = new Date();
   const nowIso = now.toISOString();
@@ -158,19 +164,20 @@ export async function linkDevice(
   env: Env,
   ctx: ExecutionContext
 ): Promise<Response> {
-  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const ip = ipRateKey(request.headers.get('CF-Connecting-IP'));
   const nowMs = Date.now();
 
   // Counted before the code is even looked at: a wrong guess must cost an
-  // attempt, otherwise the limit protects nothing.
-  await assertUnderRateLimit(
+  // attempt, otherwise the limit protects nothing. Insert-then-count, so a
+  // burst of parallel guesses cannot all read the same count and slip past.
+  await consumeRateLimit(
     env,
     RATE_BUCKETS.deviceLink,
     ip,
     nowMs,
-    `Too many link attempts; try again later`
+    `Too many link attempts; try again later`,
+    ctx
   );
-  await recordRateEvent(env, RATE_BUCKETS.deviceLink, ip, nowMs, ctx);
 
   const body = await readJson(request);
   const code = normaliseCode(body.code);

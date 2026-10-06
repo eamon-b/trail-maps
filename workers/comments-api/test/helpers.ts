@@ -14,11 +14,15 @@ export interface Device {
   displayName: string;
 }
 
-/** Register a fresh anonymous device and return its identity + token. */
+/**
+ * Register a fresh anonymous device and return its identity + token. Each call
+ * comes from its own address (`freshIp`): registration is capped per IP, and a
+ * test file registers far more devices than one address may.
+ */
 export async function registerDevice(displayName = 'Trail Angel'): Promise<Device> {
   const res = await SELF.fetch(`${BASE}/v1/devices`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': freshIp() },
     body: JSON.stringify({ displayName }),
   });
   expect(res.status).toBe(201);

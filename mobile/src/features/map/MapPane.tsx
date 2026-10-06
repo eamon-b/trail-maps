@@ -53,6 +53,7 @@ import {
 import { GuideMap, type GuideMapHandle, type ViewportBounds } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import { PoiLayersSheet } from './PoiLayersSheet';
+import { ScaleBar, type ScaleBarHandle } from './ScaleBar';
 import {
   degradationMessage,
   isRedownloadFixable,
@@ -329,6 +330,12 @@ export function MapPane() {
     visibleBoundsRef.current = box;
   }, []);
 
+  // The scale bar re-renders itself from the camera; the pane only relays.
+  const scaleBarRef = useRef<ScaleBarHandle>(null);
+  const onCameraChange = useCallback((zoom: number, latitude: number) => {
+    scaleBarRef.current?.update(zoom, latitude);
+  }, []);
+
   const totalKm = trail.track.totalDistance || 0;
   // Which stretch of trail the viewport covers right now (null before the
   // camera has ever settled, or when the trail is off screen).
@@ -382,6 +389,7 @@ export function MapPane() {
           onMapPress={onMapPress}
           onStyleResolved={onStyleResolved}
           onVisibleBoundsChange={onVisibleBoundsChange}
+          onCameraChange={onCameraChange}
         />
       </MapErrorBoundary>
 
@@ -430,6 +438,10 @@ export function MapPane() {
             </>
           )}
         </View>
+
+        {/* Scale: always on, below the status pill so nothing at the bottom
+            of the screen (builder bar, variant card) can ever cover it. */}
+        <ScaleBar ref={scaleBarRef} unit={units} />
       </View>
 
       {/* Map key for the track classes — suppressed while the builder toolbar or

@@ -325,6 +325,12 @@ export interface GuideMapProps {
    * they switch panes; nothing here re-renders on it.
    */
   onVisibleBoundsChange?: (bounds: ViewportBounds) => void;
+  /**
+   * The camera's zoom and centre latitude, on every frame it moves and again
+   * when it settles — what the scale bar is drawn from. Held in a ref like
+   * `onVisibleBoundsChange`, so a fresh closure never re-renders the map.
+   */
+  onCameraChange?: (zoom: number, latitude: number) => void;
 }
 
 // Route-overlay layer filters: split the single mixed GeoJSONSource into
@@ -481,6 +487,7 @@ export const GuideMap = memo(
       onMapPress,
       onStyleResolved,
       onVisibleBoundsChange,
+      onCameraChange,
     },
     ref,
   ) {
@@ -697,8 +704,17 @@ export const GuideMap = memo(
     // reduced to plain corners so nothing downstream knows about MapLibre.
     const onVisibleBoundsChangeRef = useRef(onVisibleBoundsChange);
     onVisibleBoundsChangeRef.current = onVisibleBoundsChange;
+    const onCameraChangeRef = useRef(onCameraChange);
+    onCameraChangeRef.current = onCameraChange;
+    const reportCamera = useCallback((event: NativeSyntheticEvent<ViewStateChangeEvent>) => {
+      const zoom = event?.nativeEvent?.zoom;
+      const latitude = event?.nativeEvent?.center?.[1];
+      if (typeof zoom !== 'number' || typeof latitude !== 'number') return;
+      onCameraChangeRef.current?.(zoom, latitude);
+    }, []);
     const handleRegionDidChange = useCallback(
       (event: NativeSyntheticEvent<ViewStateChangeEvent>) => {
+        reportCamera(event);
         // v11: the idle event carries the viewport directly as
         // bounds = [west, south, east, north] (was a GeoJSON feature in v10).
         const b = event?.nativeEvent?.bounds;
@@ -706,7 +722,7 @@ export const GuideMap = memo(
         const [west, south, east, north] = b;
         onVisibleBoundsChangeRef.current?.({ ne: [east, north], sw: [west, south] });
       },
-      [],
+      [reportCamera],
     );
 
     // --- Layer paint (data-driven marker colors; track paint is module-level) --
@@ -1062,7 +1078,10 @@ export const GuideMap = memo(
         attribution={false}
         compass
         onPress={builderMode || onBackgroundPress ? handleMapPress : undefined}
-        onRegionDidChange={onVisibleBoundsChange ? handleRegionDidChange : undefined}
+        onRegionIsChanging={onCameraChange ? reportCamera : undefined}
+        onRegionDidChange={
+          onVisibleBoundsChange || onCameraChange ? handleRegionDidChange : undefined
+        }
       >
         <Camera ref={cameraRef} initialViewState={cameraInitialViewState} />
 

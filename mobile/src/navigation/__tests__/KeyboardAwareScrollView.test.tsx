@@ -8,7 +8,7 @@
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
-import { HeaderHeightContext } from '@react-navigation/elements';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import {
   KeyboardAvoidingModalContent,
   KeyboardAwareScrollView,

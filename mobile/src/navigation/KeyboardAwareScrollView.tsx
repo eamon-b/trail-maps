@@ -21,7 +21,7 @@
  * both stacks, and screens of several features, use it.
  */
 
-import { HeaderHeightContext } from '@react-navigation/elements';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { forwardRef, useContext, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,

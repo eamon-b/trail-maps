@@ -9,13 +9,22 @@ import {
   drainOutbox,
   isDrainable,
   pullTrail,
+  resetSyncStateForTests,
   submitComment,
 } from '../comment-sync';
+import { useIdentityStore } from '../../state/identity-store';
 import { onSyncChange, type SyncChange } from '../sync-events';
 
 const BASE = 'https://api.test';
 const SESSION: Session = { userId: 'u1', token: 'tok', displayName: 'Me' };
 const getSessionFn = async () => SESSION;
+
+// A 401 raises the identity store's `authError`, and the next drain answers it
+// by re-registering; neither may leak into the next test.
+afterEach(() => {
+  useIdentityStore.setState({ authError: false });
+  resetSyncStateForTests();
+});
 
 async function db(): Promise<SqlDatabase> {
   return (await createMigratedTestDb()) as unknown as SqlDatabase;

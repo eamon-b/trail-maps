@@ -28,7 +28,12 @@ describe('outbox-repo', () => {
 
   it('round-trips status transitions and attempt counting', async () => {
     const d = await db();
-    await outboxRepo.enqueue(d, { id: 'x', kind: 'comment', payload: {} });
+    await outboxRepo.enqueue(d, {
+      id: 'x',
+      kind: 'comment',
+      payload: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
 
     await outboxRepo.markSending(d, 'x');
     expect((await outboxRepo.getById(d, 'x'))?.status).toBe('sending');
@@ -50,20 +55,97 @@ describe('outbox-repo', () => {
 
   it('re-enqueue resets attempts/error and clears the failed state', async () => {
     const d = await db();
-    await outboxRepo.enqueue(d, { id: 'x', kind: 'comment', payload: { a: 1 } });
+    await outboxRepo.enqueue(d, {
+      id: 'x',
+      kind: 'comment',
+      payload: { a: 1 },
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
     await outboxRepo.markFailed(d, 'x', 'boom');
-    await outboxRepo.enqueue(d, { id: 'x', kind: 'delete', payload: { id: 'x' } });
+    await outboxRepo.enqueue(d, {
+      id: 'x',
+      kind: 'delete',
+      payload: { id: 'x' },
+      createdAt: '2026-01-02T00:00:00.000Z',
+    });
     const item = await outboxRepo.getById(d, 'x');
     expect(item).toMatchObject({ kind: 'delete', attempts: 0, status: 'pending', lastError: null });
   });
 
   it('removes items and counts', async () => {
     const d = await db();
-    await outboxRepo.enqueue(d, { id: '1', kind: 'comment', payload: {} });
-    await outboxRepo.enqueue(d, { id: '2', kind: 'comment', payload: {} });
+    await outboxRepo.enqueue(d, {
+      id: '1',
+      kind: 'comment',
+      payload: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    await outboxRepo.enqueue(d, {
+      id: '2',
+      kind: 'comment',
+      payload: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
     expect(await outboxRepo.count(d)).toBe(2);
     await outboxRepo.remove(d, '1');
     expect(await outboxRepo.count(d)).toBe(1);
     expect(await outboxRepo.getById(d, '1')).toBeNull();
+  });
+
+  it('markRetry charges an attempt but leaves the row pending', async () => {
+    const d = await db();
+    await outboxRepo.enqueue(d, {
+      id: 'x',
+      kind: 'comment',
+      payload: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    await outboxRepo.markSending(d, 'x');
+    await outboxRepo.markRetry(d, 'x', 'unavailable: busy');
+    expect(await outboxRepo.getById(d, 'x')).toMatchObject({
+      status: 'pending',
+      attempts: 1,
+      lastError: 'unavailable: busy',
+    });
+    // Not a failure the "did not send" banners should show.
+    expect(await outboxRepo.lastFailure(d, 'comment', 'x')).toBeNull();
+  });
+
+  it('hasQueued sees pending, sending and failed rows for one entity key', async () => {
+    const d = await db();
+    expect(await outboxRepo.hasQueued(d, 'plan', 'p1')).toBe(false);
+    await outboxRepo.enqueue(d, {
+      id: 'row',
+      kind: 'plan',
+      waypointId: 'p1',
+      payload: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    expect(await outboxRepo.hasQueued(d, 'plan', 'p1')).toBe(true);
+    expect(await outboxRepo.hasQueued(d, 'plan', 'p2')).toBe(false);
+    expect(await outboxRepo.hasQueued(d, 'plan-delete', 'p1')).toBe(false);
+    await outboxRepo.markFailed(d, 'row', 'x');
+    expect(await outboxRepo.hasQueued(d, 'plan', 'p1')).toBe(true);
+  });
+
+  it('removePhotosFor drops one comment\'s photo rows, sparing in-flight ones', async () => {
+    const d = await db();
+    const photo = (id: string, commentId: string) =>
+      outboxRepo.enqueue(d, {
+        id,
+        kind: 'photo',
+        payload: { commentId, localUri: 'file:///a.jpg', contentType: 'image/jpeg' },
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+    await photo('a', 'c1');
+    await photo('b', 'c1');
+    await photo('c', 'c1');
+    await photo('other', 'c2');
+    await outboxRepo.markFailed(d, 'b', 'x');
+    await outboxRepo.markSending(d, 'c');
+
+    expect(await outboxRepo.removePhotosFor(d, 'c1')).toBe(2);
+    const left = (await outboxRepo.listPending(d)).map((i) => i.id).sort();
+    expect(left).toEqual(['c', 'other']);
   });
 });

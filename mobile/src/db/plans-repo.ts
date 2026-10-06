@@ -29,6 +29,7 @@
 import { isPlanDocument } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import type { SqlDatabase } from './sql-database';
+import { withTransaction } from './transaction';
 
 /** Where the stored copy came from: a local edit, or the server. */
 export type PlanSource = 'local' | 'server';
@@ -99,8 +100,9 @@ export async function getById(db: SqlDatabase, id: string): Promise<StoredPlan |
 }
 
 async function write(db: SqlDatabase, doc: PlanDocument, source: PlanSource): Promise<void> {
-  await db.execAsync('BEGIN');
-  try {
+  // Serialised with every other transaction on the connection: a sync ack and
+  // a tap's edit routinely overlap, and a nested BEGIN would throw one away.
+  await withTransaction(db, async () => {
     // Any other LIVE plan for this trail loses: the unique index allows only
     // one, and an id change (server `plan_exists` adoption) is the case that
     // produces a second. Tombstones for other ids are left alone — they are
@@ -120,11 +122,7 @@ async function write(db: SqlDatabase, doc: PlanDocument, source: PlanSource): Pr
          deleted_at = NULL`,
       [doc.id, doc.trailId, JSON.stringify(doc), doc.updatedAt, source],
     );
-    await db.execAsync('COMMIT');
-  } catch (e) {
-    await db.execAsync('ROLLBACK');
-    throw e;
-  }
+  });
 }
 
 /**

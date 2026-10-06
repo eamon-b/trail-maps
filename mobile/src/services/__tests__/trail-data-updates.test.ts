@@ -29,6 +29,7 @@ import {
   readDownloadedTrail,
   resetTrailDataStateForTests,
   CHECK_INTERVAL_MS,
+  FAILED_KEY_RETRY_MS,
 } from '../trail-data-updates';
 import { isServerKnown, registerRemoteTrailIds } from '../server-trails';
 import type { CatalogEntry } from '../trail-catalog';
@@ -270,6 +271,7 @@ function savedState(): {
   catalog: { trails: { id: string }[] } | null;
   lastCheckedAt: number | null;
   installed: Record<string, { file: string; updatedAt: string }>;
+  failedKeys: Record<string, number>;
 } {
   return JSON.parse(mockFiles[STATE_URI]);
 }
@@ -482,6 +484,58 @@ describe('a download that fails its checks', () => {
     const entry = publish('alpha', '2026-10-05T00:00:00.000Z');
     delete mockRemote[`${TRAILS_URL}/${entry.key}`];
     await expectPreviousCopyKept(entry);
+  });
+
+  it('does not download a key that failed its checks again for a day', async () => {
+    const bad = publish('alpha', '2026-10-05T00:00:00.000Z', { md5: '0'.repeat(32) });
+    serveCatalog([bad]);
+    await checkForTrailDataUpdates({ force: true, now: T0 + HOUR });
+    expect(mockDownload).toHaveBeenCalledTimes(2); // v2 in beforeEach, then the bad one
+
+    // The next automatic checks re-read the catalog but leave that object
+    // alone — it would fail the same way after downloading it in full.
+    const later = await checkForTrailDataUpdates({ now: T0 + 7 * HOUR });
+    expect(later).toEqual({ checked: true, updated: [], failed: [] });
+    expect(mockDownload).toHaveBeenCalledTimes(2);
+    // Nothing failed this time, so the check is stamped and the next one waits
+    // the normal interval.
+    expect(savedState().lastCheckedAt).toBe(T0 + 7 * HOUR);
+    expect(activeDownload('alpha')?.file).toBe(v2.key);
+
+    // A day on, it is tried again.
+    await checkForTrailDataUpdates({ force: true, now: T0 + HOUR + FAILED_KEY_RETRY_MS });
+    expect(mockDownload).toHaveBeenCalledTimes(3);
+  });
+
+  it('remembers a failed key across a restart', async () => {
+    serveCatalog([publish('alpha', '2026-10-05T00:00:00.000Z', { md5: '0'.repeat(32) })]);
+    await checkForTrailDataUpdates({ force: true, now: T0 + HOUR });
+    restart();
+    await checkForTrailDataUpdates({ force: true, now: T0 + 2 * HOUR });
+    expect(mockDownload).toHaveBeenCalledTimes(2);
+  });
+
+  it('fetches a republish straight away: a new key is not the one that failed', async () => {
+    serveCatalog([publish('alpha', '2026-10-05T00:00:00.000Z', { md5: '0'.repeat(32) })]);
+    await checkForTrailDataUpdates({ force: true, now: T0 + HOUR });
+
+    const fixed = publish('alpha', '2026-10-05T00:00:00.000Z', { name: 'Alpha (fixed)' });
+    serveCatalog([fixed]);
+    const result = await checkForTrailDataUpdates({ force: true, now: T0 + 2 * HOUR });
+
+    expect(result.updated).toEqual(['alpha']);
+    expect(activeDownload('alpha')?.file).toBe(fixed.key);
+    // The dead key is forgotten once the catalog no longer lists it.
+    expect(savedState().failedKeys).toEqual({});
+  });
+
+  it('keeps retrying a download that failed for want of a network', async () => {
+    const entry = publish('alpha', '2026-10-05T00:00:00.000Z');
+    delete mockRemote[`${TRAILS_URL}/${entry.key}`];
+    serveCatalog([entry]);
+    await checkForTrailDataUpdates({ force: true, now: T0 + HOUR });
+    await checkForTrailDataUpdates({ force: true, now: T0 + 2 * HOUR });
+    expect(mockDownload).toHaveBeenCalledTimes(3);
   });
 
   it('throws from ensureTrailDownloaded for a catalog-only trail, leaving no part file', async () => {

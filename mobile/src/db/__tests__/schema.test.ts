@@ -362,7 +362,7 @@ describe('schema v5 — plan documents', () => {
     );
     expect(tables.map((t) => t.name)).not.toContain('plans');
 
-    await migrateDatabase(db as never);
+    await migrateDatabase(db as never, 5);
 
     tables = await db.getAllAsync<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type = 'table'"
@@ -378,5 +378,59 @@ describe('schema v5 — plan documents', () => {
       "SELECT waypoint_id FROM favorites WHERE trail_id = 'larapinta'"
     );
     expect(favorites.map((f) => f.waypoint_id)).toEqual(['w_abcd1234']);
+  });
+});
+
+describe('schema v6 — ISO outbox timestamps', () => {
+  it('rewrites zone-less outbox stamps as ISO UTC and keeps every row', async () => {
+    const db = createTestDatabase();
+    await migrateDatabase(db as never, 5);
+    // A row written with the v1 default, and one already stamped explicitly.
+    await db.runAsync(
+      `INSERT INTO outbox (id, kind, payload_json, created_at, attempts, last_error, status)
+       VALUES ('legacy', 'delete', '{"id":"legacy"}', '2026-10-06 03:04:05', 2, 'x: y', 'failed')`
+    );
+    await db.runAsync(
+      `INSERT INTO outbox (id, kind, trail_id, waypoint_id, payload_json, created_at)
+       VALUES ('iso', 'comment', 'heysen', 'w_1', '{}', '2026-10-06T01:00:00.000Z')`
+    );
+
+    await migrateDatabase(db as never);
+
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      'SELECT * FROM outbox ORDER BY created_at, id'
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({ id: 'iso', created_at: '2026-10-06T01:00:00.000Z', trail_id: 'heysen' }),
+      expect.objectContaining({
+        id: 'legacy',
+        created_at: '2026-10-06T03:04:05Z',
+        attempts: 2,
+        last_error: 'x: y',
+        status: 'failed',
+      }),
+    ]);
+    // Read as UTC wherever the phone is.
+    expect(Date.parse(rows[1].created_at as string)).toBe(Date.UTC(2026, 9, 6, 3, 4, 5));
+    const version = await db.getFirstAsync<{ version: number }>('SELECT version FROM schema_version');
+    expect(version?.version).toBe(6);
+  });
+
+  it('defaults a new row to an ISO UTC instant', async () => {
+    const db = await createMigratedTestDb();
+    await db.runAsync("INSERT INTO outbox (id, kind, payload_json) VALUES ('d', 'comment', '{}')");
+    const row = await db.getFirstAsync<{ created_at: string }>(
+      "SELECT created_at FROM outbox WHERE id = 'd'"
+    );
+    expect(row?.created_at).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+    expect(Math.abs(Date.parse(row!.created_at) - Date.now())).toBeLessThan(60_000);
+  });
+
+  it('keeps the outbox status index', async () => {
+    const db = await createMigratedTestDb();
+    const rows = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'outbox'"
+    );
+    expect(rows.map((r) => r.name)).toContain('idx_outbox_status');
   });
 });

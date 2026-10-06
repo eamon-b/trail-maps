@@ -18,6 +18,7 @@ import { Alert } from 'react-native';
 import TestRenderer, { act } from 'react-test-renderer';
 import {
   INCOMING_DIR,
+  MAX_INCOMING_BYTES,
   classifyIncomingUrl,
   incomingImportRoute,
   stageIncomingFile,
@@ -30,6 +31,9 @@ import {
 // ---------------------------------------------------------------------------
 
 const mockFiles: Record<string, string> = {};
+/** Sizes a provider reports, by URI; absent = the provider does not say. */
+const mockSizes: Record<string, number> = {};
+const mockReads: string[] = [];
 const mockWritten: { uri: string; text: string }[] = [];
 const mockDirectoryOps: string[] = [];
 let mockDirectoryExists = false;
@@ -41,7 +45,11 @@ jest.mock('expo-file-system', () => {
       const joined = parts.map((p) => (typeof p === 'string' ? p : p.uri));
       this.uri = joined.length === 1 ? joined[0] : `${joined[0].replace(/\/$/, '')}/${joined.slice(1).join('/')}`;
     }
+    get size(): number | null {
+      return mockSizes[this.uri] ?? null;
+    }
     async text(): Promise<string> {
+      mockReads.push(this.uri);
       const value = mockFiles[this.uri];
       if (value === undefined) throw new Error(`ENOENT: ${this.uri}`);
       return value;
@@ -98,6 +106,8 @@ const GPX = '<?xml version="1.0"?><gpx/>';
 beforeEach(() => {
   jest.clearAllMocks();
   for (const key of Object.keys(mockFiles)) delete mockFiles[key];
+  for (const key of Object.keys(mockSizes)) delete mockSizes[key];
+  mockReads.length = 0;
   mockWritten.length = 0;
   mockDirectoryOps.length = 0;
   mockDirectoryExists = false;
@@ -174,6 +184,30 @@ describe('stagedFileName', () => {
 });
 
 describe('stageIncomingFile', () => {
+  it('refuses a file over the import cap without reading it', async () => {
+    mockFiles['content://provider/huge'] = GPX;
+    mockSizes['content://provider/huge'] = MAX_INCOMING_BYTES + 1;
+
+    await expect(
+      stageIncomingFile({ uri: 'content://provider/huge', fileName: 'huge.gpx' }),
+    ).rejects.toThrow(/the limit is 20\.0 MB/);
+    expect(mockReads).toEqual([]);
+    expect(mockWritten).toEqual([]);
+  });
+
+  it('stages a file at the cap, and one whose size the provider does not report', async () => {
+    mockFiles['content://provider/at-cap'] = GPX;
+    mockSizes['content://provider/at-cap'] = MAX_INCOMING_BYTES;
+    await expect(
+      stageIncomingFile({ uri: 'content://provider/at-cap', fileName: 'walk.gpx' }),
+    ).resolves.toMatchObject({ fileName: 'walk.gpx' });
+
+    mockFiles['content://provider/unsized'] = GPX;
+    await expect(
+      stageIncomingFile({ uri: 'content://provider/unsized', fileName: 'walk.gpx' }),
+    ).resolves.toMatchObject({ fileName: 'walk.gpx' });
+  });
+
   it('copies the file into the cache and reports the staged URI', async () => {
     mockFiles['content://provider/doc/1'] = GPX;
 

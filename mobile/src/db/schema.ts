@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { withTransaction } from './transaction';
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 // Fresh v1 schema for Tracknotes. Waypoints and track geometry stay OUT of
 // SQLite — bundled trails ship as JSON assets, and user-imported trails are
@@ -223,6 +224,55 @@ const MIGRATIONS: Record<number, string> = {
 
     UPDATE schema_version SET version = 5;
   `,
+
+  // Migration 6: outbox timestamps are ISO-8601 UTC, always.
+  //
+  // `outbox.created_at` is the base of the retry backoff (`isDrainable` in
+  // `sync/comment-sync`), which reads it with `Date.parse`. The v1 default,
+  // `datetime('now')`, writes `YYYY-MM-DD HH:MM:SS` — UTC, but with no zone and
+  // a space, which JS engines parse as LOCAL time. West of UTC a row written
+  // with the default sat hours in the "future" and was not drainable (a
+  // comment delete held back 6-7 h in the Americas); east of UTC its backoff
+  // was skipped; and the two formats mixed in one `ORDER BY created_at` broke
+  // FIFO, since ' ' sorts before 'T'. Every enqueue now passes an explicit
+  // stamp; this changes the default to the same shape anyway and rewrites the
+  // rows already queued.
+  //
+  // SQLite cannot change a column default in place, so the table is rebuilt.
+  // Only the zone-less shape is rewritten — rows that are already ISO are copied
+  // verbatim.
+  6: `
+    CREATE TABLE outbox_v6 (
+      id TEXT PRIMARY KEY NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'comment',
+      trail_id TEXT,
+      waypoint_id TEXT,
+      payload_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      attempts INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'sending', 'failed'))
+    );
+
+    INSERT INTO outbox_v6
+      (id, kind, trail_id, waypoint_id, payload_json, created_at, attempts, last_error, status)
+    SELECT
+      id, kind, trail_id, waypoint_id, payload_json,
+      CASE
+        WHEN created_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]*'
+          THEN replace(created_at, ' ', 'T') || 'Z'
+        ELSE created_at
+      END,
+      attempts, last_error, status
+    FROM outbox;
+
+    DROP TABLE outbox;
+    ALTER TABLE outbox_v6 RENAME TO outbox;
+    CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status, created_at);
+
+    UPDATE schema_version SET version = 6;
+  `,
 };
 
 export async function migrateDatabase(
@@ -244,14 +294,10 @@ export async function migrateDatabase(
     if (!migration) {
       throw new Error(`Missing migration for version ${v}`);
     }
-    await db.execAsync('BEGIN');
-    try {
-      await db.execAsync(migration);
-      await db.execAsync('COMMIT');
-    } catch (e) {
-      await db.execAsync('ROLLBACK');
-      throw e;
-    }
+    // Through the shared write path like every other transaction: the
+    // connection is opened and migrated before anything else holds it today,
+    // but a bare BEGIN here is one refactor away from nesting.
+    await withTransaction(db, () => db.execAsync(migration));
   }
 }
 

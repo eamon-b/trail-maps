@@ -27,7 +27,12 @@ export type IdentityStatus = 'unknown' | 'anonymous' | 'registered';
 export interface IdentityState {
   status: IdentityStatus;
   session: Session | null;
-  /** Set when a 401 pauses the outbox — the user needs to re-establish identity. */
+  /**
+   * Set when the server refuses this device's token (a 401 from the outbox
+   * drain or the plans pull): writes are paused. The next drain re-registers
+   * the device once (`sync/comment-sync`); this stays set if that fails, which
+   * is what a "sync paused" banner should read — via {@link selectAuthError}.
+   */
   authError: boolean;
 
   /** Load the persisted session (idempotent; safe to call on every guide open). */
@@ -92,3 +97,11 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
 
   setAuthError: (value: boolean) => set({ authError: value }),
 }));
+
+/**
+ * Reactive selector for whether syncing is paused on a refused token:
+ * `useIdentityStore(selectAuthError)`.
+ */
+export function selectAuthError(s: IdentityState): boolean {
+  return s.authError;
+}

@@ -5,8 +5,9 @@
  *   - the network transitioning back to connected (expo-network), and
  *   - the app returning to the foreground (AppState).
  * On either edge — and once when the guide opens — it drains the outbox and
- * pulls the active trail's delta plus this user's day plans. `runSync` is exported (and injectable) so the
- * edge logic is testable without native modules.
+ * pulls the active trail's delta plus this user's day plans. `runSync` is
+ * exported (and injectable) so the edge logic is testable without native
+ * modules.
  *
  * A user-imported guide has no server side at all (see `services/server-trails`),
  * so {@link useCommentSync} wires nothing for one: no initial catch-up, no
@@ -28,6 +29,16 @@ export interface RunSyncResult {
   plans: PullResult | null;
 }
 
+/** The sync steps, injectable so the single-flight rule is testable without a network. */
+export interface RunSyncDeps {
+  drain?: () => Promise<DrainResult>;
+  pullTrail?: (trailId: string) => Promise<PullResult>;
+  pullPlans?: () => Promise<PullResult>;
+}
+
+/** The sync in flight, and which trail it is for. */
+let activeSync: { trailId: string | null; promise: Promise<RunSyncResult> } | null = null;
+
 /**
  * Drain the outbox, pull the active trail (if any), then pull this user's day
  * plans.
@@ -36,13 +47,30 @@ export interface RunSyncResult {
  * trail-scoped — so a failure there must not turn a successful comment pull
  * into an error. Same reasoning (and same swallowed try/catch) as the curated
  * descriptions inside `pullTrail`.
+ *
+ * Single-flight. Foregrounding a phone that was offline fires the AppState edge
+ * and the reconnect edge together, and two overlapping syncs raced each other's
+ * SQLite writes. A call for the trail already syncing joins that run; a call
+ * for another trail (the guide changed) waits for it and then runs.
  */
-export async function runSync(trailId: string | null): Promise<RunSyncResult> {
-  const drain = await drainOutbox();
-  const pull = trailId ? await pullTrail(trailId) : null;
+export function runSync(trailId: string | null, deps: RunSyncDeps = {}): Promise<RunSyncResult> {
+  if (activeSync && activeSync.trailId === trailId) return activeSync.promise;
+  const previous = activeSync?.promise.catch(() => undefined) ?? Promise.resolve();
+  const promise: Promise<RunSyncResult> = previous
+    .then(() => runSyncNow(trailId, deps))
+    .finally(() => {
+      if (activeSync?.promise === promise) activeSync = null;
+    });
+  activeSync = { trailId, promise };
+  return promise;
+}
+
+async function runSyncNow(trailId: string | null, deps: RunSyncDeps): Promise<RunSyncResult> {
+  const drain = await (deps.drain ?? drainOutbox)();
+  const pull = trailId ? await (deps.pullTrail ?? pullTrail)(trailId) : null;
   let plans: PullResult | null = null;
   try {
-    plans = await pullPlans();
+    plans = await (deps.pullPlans ?? pullPlans)();
   } catch {
     // Keep the comment sync's outcome; the plans mark is unchanged and the
     // next trigger retries.

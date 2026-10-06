@@ -16,6 +16,7 @@
  */
 
 import type { SqlDatabase } from './sql-database';
+import { withTransaction } from './transaction';
 
 /** A registry row for one imported trail. */
 export interface ImportedTrail {
@@ -144,8 +145,7 @@ export async function upsertImportedTrail(
  * `services/imported-trail-store.deleteImportedTrailEverywhere` composes those.
  */
 export async function deleteImportedTrail(db: SqlDatabase, id: string): Promise<void> {
-  await db.execAsync('BEGIN');
-  try {
+  await withTransaction(db, async () => {
     await db.runAsync(
       'DELETE FROM route_points WHERE route_id IN (SELECT id FROM routes WHERE trail_id = ?)',
       [id],
@@ -157,9 +157,5 @@ export async function deleteImportedTrail(db: SqlDatabase, id: string): Promise<
     await db.runAsync('DELETE FROM outbox WHERE trail_id = ?', [id]);
     await db.runAsync('DELETE FROM waypoint_meta WHERE trail_id = ?', [id]);
     await db.runAsync('DELETE FROM imported_trails WHERE id = ?', [id]);
-    await db.execAsync('COMMIT');
-  } catch (e) {
-    await db.execAsync('ROLLBACK');
-    throw e;
-  }
+  });
 }

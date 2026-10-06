@@ -24,9 +24,15 @@
  *                         the idempotent write endpoints. On 2xx flip the mirrored
  *                         comment to `source='server'` and drop the outbox row.
  *                         A network error STOPS the drain (retry later); a 401
- *                         PAUSES the whole queue (identity needs attention); a
- *                         4xx validation error marks the single item failed but
- *                         keeps it (and the optimistic comment) visible.
+ *                         PAUSES the whole queue and raises the identity store's
+ *                         `authError` (the next drain re-registers once); a 4xx
+ *                         validation error — or a local failure that would recur
+ *                         on every attempt (a photo whose file is gone, a payload
+ *                         that does not parse) — marks the single item failed but
+ *                         keeps it (and the optimistic comment) visible; a 5xx
+ *                         charges the item an attempt and leaves it pending for
+ *                         its backoff. Only the network and a 401 stop the drain:
+ *                         one bad item never holds back the ones behind it.
  *                         A `report` item is settled by a 2xx (201 first report,
  *                         200 idempotent repeat) and equally by a 404/410 —
  *                         a comment that no longer exists needs no moderation.
@@ -36,8 +42,8 @@
  *                         is settled by a 204 and equally by a 404.
  *
  * Retry backoff is `min(2^attempts * 30s, 1h)` measured from the item's
- * `created_at`; attempts start at 0 (send immediately), and each 4xx failure
- * bumps them.
+ * `created_at`; attempts start at 0 (send immediately), and each 4xx, 5xx or
+ * local failure bumps them.
  */
 
 import type {
@@ -62,6 +68,7 @@ import * as commentsApi from '../api/comments';
 import * as plansApi from '../api/plans';
 import { getSession, type Session } from '../api/auth';
 import { usePlansStore } from '../state/plans-store';
+import { useIdentityStore } from '../state/identity-store';
 import { uuidv4 } from '../api/uuid';
 import { isServerKnown } from '../services/server-trails';
 import type { SelectedPhoto } from '../features/comments/photo-upload';
@@ -126,6 +133,80 @@ export interface SyncDeps {
    * inject a spy so the pull never reaches the real (native) database.
    */
   refreshPlan?: (trailId: string) => void;
+  /** Test seam for the auth-error state and re-registration (defaults to `state/identity-store`). */
+  auth?: AuthHooks;
+}
+
+/**
+ * What the sync layer needs from the device identity when the server answers
+ * 401: somewhere to say so (the UI reads `selectAuthError` from
+ * `state/identity-store`), and a way to mint a fresh identity.
+ */
+export interface AuthHooks {
+  hasAuthError: () => boolean;
+  setAuthError: (value: boolean) => void;
+  /**
+   * Register this device again under `displayName`, resolving the new session.
+   * Rejects when registration fails.
+   */
+  reregister: (displayName: string) => Promise<Session>;
+}
+
+const identityAuthHooks: AuthHooks = {
+  hasAuthError: () => useIdentityStore.getState().authError,
+  setAuthError: (value) => useIdentityStore.getState().setAuthError(value),
+  // `register` clears `authError` itself once the new session is stored.
+  reregister: (displayName) => useIdentityStore.getState().register(displayName),
+};
+
+function resolveAuth(deps: SyncDeps): AuthHooks {
+  return deps.auth ?? identityAuthHooks;
+}
+
+/**
+ * Whether this auth-error episode has already spent its one re-registration.
+ * Cleared whenever a drain starts with no auth error standing (the recovery
+ * worked, or the hiker re-registered by hand), so a later 401 gets its own try.
+ */
+let authRecoveryUsed = false;
+
+/**
+ * Recover from a standing 401 by registering this device again, at most once
+ * per episode. The token is dead — the server returned it once and it no
+ * longer answers — and a dead token cannot be renewed, only replaced
+ * (`api/auth`). Without this the queue stayed paused for good.
+ *
+ * Returns the session to drain with, or null when the queue must stay paused.
+ * A network failure does not spend the attempt: there was no answer to learn
+ * from, and the next reconnect should try again.
+ */
+async function recoverFromAuthError(
+  session: Session,
+  auth: AuthHooks,
+): Promise<Session | null> {
+  if (!auth.hasAuthError()) {
+    authRecoveryUsed = false;
+    return session;
+  }
+  if (authRecoveryUsed) return null;
+  try {
+    const renewed = await auth.reregister(session.displayName);
+    authRecoveryUsed = true;
+    auth.setAuthError(false);
+    return renewed;
+  } catch (e) {
+    if (!(e instanceof NetworkError)) authRecoveryUsed = true;
+    return null;
+  }
+}
+
+/** Test seam: forget the module's single-flight and auth-recovery state. */
+export function resetSyncStateForTests(): void {
+  authRecoveryUsed = false;
+  activeDrain = null;
+  pendingDrainDeps = null;
+  activePlansPull = null;
+  pendingPlansDeps = null;
 }
 
 async function resolveDb(deps: SyncDeps): Promise<SqlDatabase> {
@@ -269,7 +350,9 @@ export type PullOutcome =
   /** The trail is user-imported: it has no server side, so nothing was pulled. */
   | 'not-server-trail'
   /** Plans only: they are private, so with no device identity there is nothing to pull. */
-  | 'no-identity';
+  | 'no-identity'
+  /** Plans only: the server refused the token (`authError` is raised for the UI). */
+  | 'unauthorized';
 
 export interface PullResult {
   outcome: PullOutcome;
@@ -363,9 +446,43 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
  * Conflicts are last-writer-wins on `updatedAt`, decided by `plansRepo`: a
  * local edit still queued in the outbox carries this device's clock and keeps
  * winning until its PUT lands and the server's stamp comes back. A tombstone
- * entry deletes locally the same way.
+ * entry deletes locally the same way. A plan with a write still queued here is
+ * not overwritten at all — see the loop below.
+ *
+ * Single-flight like {@link drainOutbox}: foregrounding fires both the AppState
+ * and the reconnect edge, and registering pulls too, so overlapping calls are
+ * common. A call made while one is running gets that run's result, after one
+ * follow-up pull (with the latest caller's deps) — the running one may have
+ * started before whatever prompted the new call (a registration, say).
  */
-export async function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
+export function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
+  if (activePlansPull) {
+    pendingPlansDeps = deps;
+    return activePlansPull;
+  }
+  const run = async (): Promise<PullResult> => {
+    try {
+      let result = await pullPlansNow(deps);
+      while (pendingPlansDeps) {
+        const next = pendingPlansDeps;
+        pendingPlansDeps = null;
+        result = await pullPlansNow(next);
+      }
+      return result;
+    } finally {
+      // Cleared synchronously with the loop's last check, so a caller arriving
+      // after it starts a fresh pull rather than joining one that has finished.
+      activePlansPull = null;
+    }
+  };
+  activePlansPull = run();
+  return activePlansPull;
+}
+
+let activePlansPull: Promise<PullResult> | null = null;
+let pendingPlansDeps: SyncDeps | null = null;
+
+async function pullPlansNow(deps: SyncDeps): Promise<PullResult> {
   const baseUrl = deps.baseUrl ?? getBaseUrl();
   if (!baseUrl) return { outcome: 'unconfigured', applied: 0, syncedAt: null };
 
@@ -385,6 +502,12 @@ export async function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
     result = await plansApi.listPlans(ctx, { since });
   } catch (e) {
     if (e instanceof NetworkError) return { outcome: 'offline', applied: 0, syncedAt: null };
+    if (e instanceof ApiError && e.status === 401) {
+      // Same dead token the drain would hit: say so, and let the next drain
+      // re-register (`recoverFromAuthError`).
+      resolveAuth(deps).setAuthError(true);
+      return { outcome: 'unauthorized', applied: 0, syncedAt: null };
+    }
     return { outcome: 'error', applied: 0, syncedAt: null };
   }
 
@@ -408,6 +531,13 @@ export async function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
       console.warn(`pullPlans: plan ${entry.id} is not a valid PlanDocument — skipped`);
       continue;
     }
+    // An edit this device has queued but the server has not acknowledged wins
+    // outright. Last-writer-wins alone is not enough: the edit is stamped by
+    // this device's clock, and one running behind can stamp it OLDER than the
+    // server copy it was made after — the pull would then throw away an edit
+    // that has not even been sent. Once the PUT lands the server's own stamp
+    // comes back (`applyServerPlan`) and the comparison is fair again.
+    if (await outboxRepo.hasQueued(db, 'plan', doc.id)) continue;
     const stored = await plansRepo.upsertServer(db, doc);
     if (stored) changedTrails.add(doc.trailId);
     applied += 1;
@@ -430,7 +560,13 @@ export async function pullPlans(deps: SyncDeps = {}): Promise<PullResult> {
 export type DrainOutcome =
   | 'idle'
   | 'drained'
+  /** The drain stopped on a transport failure: nothing more can be sent until the network returns. */
   | 'offline'
+  /**
+   * The drain went through the queue, but the server failed (5xx) at least one
+   * item; those wait out their backoff as pending. Everything else was sent.
+   */
+  | 'server-error'
   | 'unauthorized'
   | 'unconfigured'
   | 'no-identity';
@@ -448,24 +584,42 @@ export interface DrainResult {
 // follow-up drain runs afterwards so work enqueued mid-drain isn't stranded
 // until the next external trigger.
 let activeDrain: Promise<DrainResult> | null = null;
-let followUpRequested = false;
+/**
+ * The options the follow-up drain will run with, or null when none is queued.
+ * Every caller that joins a running drain merges into it, so the follow-up
+ * honours the strongest request made while waiting: a manual retry (`force`)
+ * that joins an automatic drain must still ignore the backoff.
+ */
+let pendingDrainDeps: SyncDeps | null = null;
+
+function mergeDrainDeps(queued: SyncDeps | null, next: SyncDeps): SyncDeps {
+  return { ...next, force: !!(queued?.force || next.force) };
+}
 
 /** Drain the outbox FIFO against the API. See module docs for semantics. */
-export async function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
+export function drainOutbox(deps: SyncDeps = {}): Promise<DrainResult> {
   if (activeDrain) {
-    followUpRequested = true;
+    pendingDrainDeps = mergeDrainDeps(pendingDrainDeps, deps);
     return activeDrain;
   }
-  activeDrain = (async () => {
-    let result = await drainOutboxNow(deps);
-    while (followUpRequested) {
-      followUpRequested = false;
-      result = await drainOutboxNow(deps);
+  const run = async (): Promise<DrainResult> => {
+    try {
+      let result = await drainOutboxNow(deps);
+      while (pendingDrainDeps) {
+        const next = pendingDrainDeps;
+        pendingDrainDeps = null;
+        result = await drainOutboxNow(next);
+      }
+      return result;
+    } finally {
+      // Synchronously with the loop's last check — not in a `.finally()` a
+      // microtask later. In that gap a new caller saw a drain still "active",
+      // queued a follow-up nobody would run, and was handed a result from
+      // before its own write was enqueued.
+      activeDrain = null;
     }
-    return result;
-  })().finally(() => {
-    activeDrain = null;
-  });
+  };
+  activeDrain = run();
   return activeDrain;
 }
 
@@ -475,8 +629,11 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
 
   const db = await resolveDb(deps);
   const nowMs = (deps.now ?? Date.now)();
-  const session = await (deps.getSessionFn ?? getSession)();
-  if (!session) return { outcome: 'no-identity', sent: 0, failed: 0 };
+  const stored = await (deps.getSessionFn ?? getSession)();
+  if (!stored) return { outcome: 'no-identity', sent: 0, failed: 0 };
+  const auth = resolveAuth(deps);
+  const session = await recoverFromAuthError(stored, auth);
+  if (!session) return { outcome: 'unauthorized', sent: 0, failed: 0 };
 
   const ctx: commentsApi.ApiContext = {
     baseUrl,
@@ -488,6 +645,8 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   const items = await outboxRepo.listPending(db);
   let sent = 0;
   let failed = 0;
+  /** Items the server failed (5xx) this drain, left pending for their backoff. */
+  let retrying = 0;
 
   // Track what changed so a single event fires on the way out (whether the
   // drain finished cleanly or bailed early), nudging any mounted feed to re-read.
@@ -514,6 +673,34 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
     return { outcome, sent, failed };
   };
 
+  /**
+   * Settle an item whose send threw, without stopping the drain — the network
+   * and a 401 are the only failures that do (they would fail every item alike),
+   * and the caller handles those first.
+   */
+  const settleFailure = async (item: outboxRepo.OutboxItem, e: unknown): Promise<void> => {
+    if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+      await outboxRepo.markFailed(db, item.id, `${e.code}: ${e.message}`);
+      failed += 1;
+    } else if (e instanceof ApiError) {
+      // 5xx (or an unreadable 2xx): the server's problem, and likely a passing
+      // one. Charged an attempt so the backoff spaces the retries, but left
+      // pending — and the drain moves on, so a server that keeps failing one
+      // item does not hold back every write queued after it.
+      await outboxRepo.markRetry(db, item.id, `${e.code}: ${e.message}`);
+      retrying += 1;
+    } else {
+      // Not the network, not the server: this item cannot be sent from here —
+      // a photo whose cached file was purged, a payload that does not parse.
+      // It would fail the same way on every attempt, so it is marked failed
+      // (with the reason, for the "did not send" banners) instead of going
+      // back to pending and stopping the drain, which wedged the whole queue.
+      const message = e instanceof Error ? e.message : String(e);
+      await outboxRepo.markFailed(db, item.id, `local_error: ${message}`);
+      failed += 1;
+    }
+  };
+
   // Photos gated on a not-yet-confirmed comment in the first pass. A second
   // pass re-checks them so a comment+photo composed together lands in ONE
   // drain, deterministically — regardless of outbox ordering or clock ticks.
@@ -526,30 +713,32 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   for (const item of list) {
     if (!deps.force && !isDrainable(item, nowMs)) continue;
 
-    // A photo can only be attached once its comment exists server-side. Gate the
-    // upload on the comment row being `source='server'` (the PUT confirmed);
-    // until then leave the photo row pending — do NOT mark it sending or charge
-    // an attempt. The second pass picks up photos whose comment confirmed during
-    // this drain; this check is the correctness guarantee, not the ordering.
-    if (item.kind === 'photo') {
-      const { commentId } = JSON.parse(item.payloadJson) as PhotoOutboxPayload;
-      const comment = await commentsRepo.getById(db, commentId);
-      if (!comment || comment.source !== 'server') {
-        if (collectGated) gatedPhotos.push(item);
+    try {
+      // A photo can only be attached once its comment exists server-side. Gate
+      // the upload on the comment row being `source='server'` (the PUT
+      // confirmed); until then leave the photo row pending — do NOT mark it
+      // sending or charge an attempt. The second pass picks up photos whose
+      // comment confirmed during this drain; this check is the correctness
+      // guarantee, not the ordering. (Inside the try: a payload that does not
+      // parse is this item's failure, not the drain's.)
+      if (item.kind === 'photo') {
+        const { commentId } = JSON.parse(item.payloadJson) as PhotoOutboxPayload;
+        const comment = await commentsRepo.getById(db, commentId);
+        if (!comment || comment.source !== 'server') {
+          if (collectGated) gatedPhotos.push(item);
+          continue;
+        }
+      }
+
+      // A report we can't parse can never succeed — drop it instead of
+      // retrying a payload we can't turn into a request.
+      if (item.kind === 'report' && parseReportPayload(item.payloadJson) === null) {
+        await outboxRepo.remove(db, item.id);
         continue;
       }
-    }
 
-    // A report we can't parse can never succeed — drop it instead of retrying a
-    // payload we can't turn into a request.
-    if (item.kind === 'report' && parseReportPayload(item.payloadJson) === null) {
-      await outboxRepo.remove(db, item.id);
-      continue;
-    }
+      await outboxRepo.markSending(db, item.id);
 
-    await outboxRepo.markSending(db, item.id);
-
-    try {
       if (item.kind === 'delete') {
         await commentsApi.deleteComment(ctx, item.id);
         await commentsRepo.deleteById(db, item.id);
@@ -599,6 +788,9 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
       }
       if (e instanceof ApiError && e.status === 401) {
         await outboxRepo.markPending(db, item.id);
+        // Without this the queue paused for good with nothing on screen: the
+        // UI reads `authError`, and the next drain re-registers once.
+        auth.setAuthError(true);
         return finish('unauthorized');
       }
       if (e instanceof ApiError && e.status === 404 && item.kind === 'delete') {
@@ -629,14 +821,7 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
         sent += 1;
         continue;
       }
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
-        await outboxRepo.markFailed(db, item.id, `${e.code}: ${e.message}`);
-        failed += 1;
-        continue;
-      }
-      // 5xx / unknown — retryable transient; stop and try again later.
-      await outboxRepo.markPending(db, item.id);
-      return finish('offline');
+      await settleFailure(item, e);
     }
   }
   return null;
@@ -649,6 +834,7 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
     if (late) return late;
   }
 
+  if (retrying > 0) return finish('server-error');
   return finish(sent > 0 || failed > 0 ? 'drained' : 'idle');
 }
 
@@ -756,10 +942,11 @@ export async function enqueuePlan(
     // The entity key for a plan row — what `replacePending` coalesces on.
     waypointId: doc.id,
     payload: doc,
-    // Always an explicit ISO instant. The column's default is SQLite's
-    // `datetime('now')`, whose `YYYY-MM-DD HH:MM:SS` has no zone, and
-    // `isDrainable` parses it as LOCAL time — east of UTC that puts a
-    // just-queued row hours in the "future" and holds the write back.
+    // Always an explicit ISO instant (`EnqueueInput.createdAt` is required).
+    // The column's old default, SQLite's `datetime('now')`, wrote a zone-less
+    // `YYYY-MM-DD HH:MM:SS` that `isDrainable` parses as LOCAL time: WEST of
+    // UTC that put a just-queued row hours in the "future" and held the write
+    // back; east of UTC it skipped the backoff (schema migration 6).
     createdAt: new Date((deps.now ?? Date.now)()).toISOString(),
   });
 }
@@ -975,12 +1162,23 @@ export async function deleteOwnComment(
 
   if (input.source === 'local') {
     await outboxRepo.remove(db, input.id);
+    // The photo rows are keyed by their own ids: removing the comment's row
+    // alone left them gated forever on a comment that will never confirm.
+    await outboxRepo.removePhotosFor(db, input.id);
     await commentsRepo.deleteById(db, input.id);
     return undefined;
   }
 
   await commentsRepo.deleteById(db, input.id);
-  await outboxRepo.enqueue(db, { id: input.id, kind: 'delete', payload: { id: input.id } });
+  // A photo still queued (or failed) for a comment being deleted can only
+  // fail against a comment the server no longer has.
+  await outboxRepo.removePhotosFor(db, input.id);
+  await outboxRepo.enqueue(db, {
+    id: input.id,
+    kind: 'delete',
+    payload: { id: input.id },
+    createdAt: new Date((deps.now ?? Date.now)()).toISOString(),
+  });
   return drainOutbox({ ...deps, db });
 }
 

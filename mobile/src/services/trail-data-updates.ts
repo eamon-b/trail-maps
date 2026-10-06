@@ -46,6 +46,8 @@ export const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const RETRY_INTERVAL_MS = 5 * 60 * 1000;
 
 const STATE_FILE = 'state.json';
+/** Where the next state is written before it is renamed over {@link STATE_FILE}. */
+const STATE_TEMP_FILE = 'state.json.tmp';
 const PART_SUFFIX = '.part';
 
 // ---------------------------------------------------------------------------
@@ -130,23 +132,41 @@ function parseState(raw: unknown): TrailDataState {
  */
 function getState(): TrailDataState {
   if (state) return state;
-  let loaded = emptyState();
-  try {
-    const file = new File(trailDataRoot(), STATE_FILE);
-    if (file.exists) loaded = parseState(JSON.parse(file.textSync()));
-  } catch {
-    loaded = emptyState();
-  }
+  const loaded = readStateFile(STATE_FILE) ?? readStateFile(STATE_TEMP_FILE) ?? emptyState();
   state = loaded;
   registerRemoteTrailIds(remoteIds(loaded));
   return loaded;
 }
 
+/** One state file parsed, or null when it is missing or unreadable. */
+function readStateFile(name: string): TrailDataState | null {
+  try {
+    const file = new File(trailDataRoot(), name);
+    return file.exists ? parseState(JSON.parse(file.textSync())) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write the state without ever leaving a torn `state.json`: a catalog-only
+ * trail is known only through this file, so a half-written one would make its
+ * guide vanish for a hiker who is offline. The new state goes to a temp file
+ * first, then replaces the old one. `rename` will not overwrite, so there is a
+ * moment with only the temp file on disk — complete by then, and read as the
+ * state if the app dies in that moment.
+ */
 function saveState(next: TrailDataState): void {
   state = next;
   registerRemoteTrailIds(remoteIds(next));
   try {
-    new File(ensureRoot(), STATE_FILE).write(JSON.stringify(next));
+    const root = ensureRoot();
+    const temp = new File(root, STATE_TEMP_FILE);
+    if (temp.exists) temp.delete();
+    temp.write(JSON.stringify(next));
+    const live = new File(root, STATE_FILE);
+    if (live.exists) live.delete();
+    temp.rename(STATE_FILE);
   } catch (err) {
     console.warn('[trail-data] could not save state', err);
   }
@@ -169,6 +189,7 @@ export function resetTrailDataStateForTests(): void {
   inFlightCheck = null;
   lastAttemptAt = 0;
   inFlightDownloads.clear();
+  inFlightKeys.clear();
 }
 
 /** Load the state now (registers catalog-only ids with the server gate). */
@@ -263,6 +284,8 @@ export function getRemoteTrail(id: string): RemoteTrailInfo | null {
 // ---------------------------------------------------------------------------
 
 const inFlightDownloads = new Map<string, Promise<void>>();
+/** Keys being downloaded: their `.part` files are not orphans. */
+const inFlightKeys = new Set<string>();
 
 /**
  * Download one published trail and make it the installed copy. Single-flight
@@ -272,8 +295,10 @@ const inFlightDownloads = new Map<string, Promise<void>>();
 export function downloadTrailEntry(entry: CatalogEntry): Promise<void> {
   const existing = inFlightDownloads.get(entry.id);
   if (existing) return existing;
+  inFlightKeys.add(entry.key);
   const run = doDownload(entry).finally(() => {
     inFlightDownloads.delete(entry.id);
+    inFlightKeys.delete(entry.key);
     useTrailDataStore.getState().setDownloading(entry.id, false);
   });
   useTrailDataStore.getState().setDownloading(entry.id, true);
@@ -351,12 +376,11 @@ function removeInstalled(ids: readonly string[]): void {
 function sweepOrphans(): void {
   const root = trailDataRoot();
   if (!root.exists) return;
-  const keep = new Set([STATE_FILE, ...Object.values(getState().installed).map((e) => e.file)]);
-  // Downloads still running own their `.part` file.
-  for (const id of inFlightDownloads.keys()) {
-    const key = getState().catalog?.trails.find((e) => e.id === id)?.key;
-    if (key) keep.add(`${key}${PART_SUFFIX}`);
-  }
+  const keep = new Set([STATE_FILE, STATE_TEMP_FILE, ...Object.values(getState().installed).map((e) => e.file)]);
+  // Downloads still running own their `.part` file — by the key they are
+  // fetching, which an entry from an older catalog may not share with the
+  // current one.
+  for (const key of inFlightKeys) keep.add(`${key}${PART_SUFFIX}`);
   try {
     for (const item of root.list()) {
       if (item instanceof File && !keep.has(item.name)) item.delete();
@@ -454,7 +478,10 @@ async function runCheck(now: number): Promise<TrailDataCheckResult> {
     };
   }
 
-  saveState({ ...getState(), catalog, lastCheckedAt: now });
+  // `lastCheckedAt` is stamped only once every download has landed: a failed
+  // one is retried by the next launch/foreground check (after the short retry
+  // interval), not six hours later.
+  saveState({ ...getState(), catalog });
 
   const plan = planTrailDataSync(catalog, bundledVersions(), getState().installed);
   removeInstalled(plan.remove);
@@ -473,6 +500,7 @@ async function runCheck(now: number): Promise<TrailDataCheckResult> {
     }
   }
 
+  if (failed.length === 0) saveState({ ...getState(), lastCheckedAt: now });
   sweepOrphans();
   return { checked: true, updated, failed };
 }

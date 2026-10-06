@@ -21,6 +21,7 @@
  *   npm run publish:trail-data                # upload new files, then the catalog
  *   npm run publish:trail-data -- --all       # re-upload every file and the catalog
  *   npm run publish:trail-data -- --check     # exit 1 if the live catalog differs
+ *   npm run publish:trail-data -- --force     # publish even if it rolls a trail back
  *
  * Env: R2_BUCKET (default aus-map-data), TRAIL_DATA_BASE_URL (default
  * https://data.contour-map-tiles.net). Uploads need `wrangler` on PATH and
@@ -65,15 +66,17 @@ export interface PublishOptions {
   all: boolean;
   dryRun: boolean;
   check: boolean;
+  force: boolean;
 }
 
 export function parseArgs(argv: string[]): PublishOptions {
-  const options: PublishOptions = { all: false, dryRun: false, check: false };
+  const options: PublishOptions = { all: false, dryRun: false, check: false, force: false };
   for (const arg of argv) {
     if (arg === '--all') options.all = true;
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--check') options.check = true;
-    else throw new Error(`Unknown argument ${JSON.stringify(arg)} (expected --all, --dry-run or --check)`);
+    else if (arg === '--force') options.force = true;
+    else throw new Error(`Unknown argument ${JSON.stringify(arg)} (expected --all, --dry-run, --check or --force)`);
   }
   return options;
 }
@@ -115,6 +118,24 @@ export function localDataProblems(index: unknown, readFile: ReadTrailFile): stri
     problems.push(...trailFileProblems(entry.id, parsed));
   }
   return problems;
+}
+
+/**
+ * Trails the local data would roll back: listed live with a later `updatedAt`
+ * than the local copy. A publish from a stale checkout would otherwise hand
+ * fresh installs older data than the phones that already updated.
+ */
+export function rollbacks(local: TrailCatalog, live: TrailCatalog | null): string[] {
+  const liveById = new Map((live?.trails ?? []).map(trail => [trail.id, trail]));
+  const lines: string[] = [];
+  for (const trail of local.trails) {
+    const before = liveById.get(trail.id);
+    if (!before || before.md5 === trail.md5) continue;
+    if (Date.parse(trail.updatedAt) < Date.parse(before.updatedAt)) {
+      lines.push(`  ${trail.id}: live ${before.updatedAt}, local ${trail.updatedAt}`);
+    }
+  }
+  return lines;
 }
 
 /** One line per trail the diff names, for --check and --dry-run output. */
@@ -239,6 +260,14 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     console.error('The live catalog differs from the local trail data:');
     for (const line of describeDiff(diff, local, live)) console.error(line);
     console.error('Publish with `npm run publish:trail-data`.');
+    return 1;
+  }
+
+  const rolledBack = rollbacks(local, live);
+  if (rolledBack.length > 0 && !options.force) {
+    console.error('The live catalog has newer data for these trails than this checkout:');
+    for (const line of rolledBack) console.error(line);
+    console.error('Pull and rebuild first, or pass --force to publish the older data anyway.');
     return 1;
   }
 

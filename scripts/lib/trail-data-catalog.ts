@@ -225,7 +225,11 @@ export function trailFileProblems(id: string, parsed: unknown): string[] {
     problems.push(`${id}.json: config.id is ${JSON.stringify(trail.config?.id)}, expected "${id}"`);
   }
   if (!Array.isArray(trail.waypoints)) problems.push(`${id}.json: waypoints is not an array`);
-  if (!Array.isArray(trail.track?.points)) problems.push(`${id}.json: track.points is not an array`);
+  const points = trail.track?.points;
+  if (!Array.isArray(points)) problems.push(`${id}.json: track.points is not an array`);
+  // The app refuses a trail with no track points, so publishing one would only
+  // have every phone download it and throw it away on each check.
+  else if (points.length === 0) problems.push(`${id}.json: track.points is empty`);
   return problems;
 }
 

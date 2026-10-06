@@ -130,18 +130,20 @@ On the device the copies live in `{documentDir}/trail-data/` beside a small
    ```
    The last line of the build log says how many trails changed content. Only
    those get a new `updatedAt`.
-3. Dry run, and check that only the trails you expected appear:
+3. Commit the regenerated `mobile/assets/trails/` files and `index.json`, and
+   get them onto `main`. The committed index must match what was published:
+   the next APK bundles that index, and the `updatedAt` stamps are what stop
+   phones re-downloading content they already have. Publishing from a
+   committed tree also means a later publish from another checkout cannot
+   quietly undo this one.
+4. Dry run, and check that only the trails you expected appear:
    ```bash
    npm run publish:trail-data -- --dry-run
    ```
-4. Publish. This needs `wrangler` on `PATH` and `wrangler login`:
+5. Publish. This needs `wrangler` on `PATH` and `wrangler login`:
    ```bash
    npm run publish:trail-data
    ```
-5. Commit the regenerated `mobile/assets/trails/` files and `index.json`. The
-   committed index must match what was published. The next APK bundles that
-   index, and the `updatedAt` stamps are what stop phones re-downloading
-   content they already have.
 
 Checking and options:
 
@@ -149,6 +151,7 @@ Checking and options:
   trails when the live catalog does not match the local index. Use it to
   answer "did I forget to publish?", for example in CI.
 - `--all` re-uploads every trail file and the catalog, even if nothing changed.
+- `--force` publishes even when it would roll a trail back (see below).
 - `R2_BUCKET` overrides the bucket. `TRAIL_DATA_BASE_URL` overrides where the
   live catalog is read from.
 
@@ -159,9 +162,13 @@ wrong:
   `npm run build:mobile-trails`.
 - A file is not a trail the app could load. It must parse as JSON, its
   `config.id` must match its id, and it must have a `waypoints` array and a
-  `track.points` array.
+  non-empty `track.points` array (the app refuses an empty track).
 - An id is not `[A-Za-z0-9_-]{1,64}`, or it starts with `u_`. That prefix is
   reserved for trails imported on the device.
+- The live catalog has a newer `updatedAt` for a trail than the local index,
+  with different content: publishing would roll it back, as a publish from a
+  stale checkout would. Pull and rebuild, or pass `--force` if the rollback is
+  intended.
 
 ## Adding a brand-new trail
 

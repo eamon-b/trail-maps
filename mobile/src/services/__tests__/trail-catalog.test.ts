@@ -85,6 +85,8 @@ describe('parseCatalog', () => {
         good,
         { ...entry('bad-md5', T2, MD5_B), md5: 'xyz' },
         { ...entry('bad-key', T2, MD5_B), key: '../../evil.json' },
+        { ...entry('state-key', T2, MD5_B), key: 'state.json' },
+        { ...entry('other-key', T2, MD5_B), key: `other-key.${MD5_C.slice(0, 12)}.json` },
         { ...entry('bad-time', T2, MD5_B), updatedAt: 'yesterday' },
         { ...entry('no-bytes', T2, MD5_B), bytes: 0 },
         entry('u_import', T2, MD5_B),
@@ -100,6 +102,7 @@ describe('parseInstalled', () => {
   it('needs a safe file name on top of a valid entry', () => {
     expect(parseInstalled(installed('heysen', T2, MD5_A))).toEqual(installed('heysen', T2, MD5_A));
     expect(parseInstalled({ ...installed('heysen', T2, MD5_A), file: '../x.json' })).toBeNull();
+    expect(parseInstalled({ ...installed('heysen', T2, MD5_A), file: 'state.json' })).toBeNull();
     expect(parseInstalled(entry('heysen', T2, MD5_A))).toBeNull();
   });
 });

@@ -46,6 +46,7 @@ const keys = (pois: TrailPOI[] | undefined) => new Set((pois ?? []).map(p => `${
 describe('anchorKind', () => {
   it('names the services a walker looks for in a city', () => {
     expect(anchorKind(poi(0, 'resupply', { shop: 'supermarket' }))).toBe('supermarket');
+    expect(anchorKind(poi(0, 'resupply', { shop: 'convenience' }))).toBe('convenience');
     expect(anchorKind(poi(0, 'resupply', { shop: 'outdoor' }))).toBe('outdoor');
     expect(anchorKind(poi(0, 'resupply', { amenity: 'post_office' }))).toBe('post-office');
     expect(anchorKind(poi(0, 'camping', { tourism: 'camp_site' }))).toBe('campground');
@@ -63,7 +64,7 @@ describe('anchorKind', () => {
   it('is not an anchor for the clutter', () => {
     const clutter: Record<string, string>[] = [
       { amenity: 'cafe' },
-      { shop: 'convenience' },
+      { shop: 'bakery' },
       { amenity: 'drinking_water' },
     ];
     for (const tags of clutter) {
@@ -127,8 +128,8 @@ describe('thinUrbanPois', () => {
     const city = cafes(50, 60, 30);
     // First and last of each category, so the anchors below are all mid-city.
     const edges = [
-      poi(50.05, 'resupply', { shop: 'convenience' }),
-      poi(59.95, 'resupply', { shop: 'convenience' }),
+      poi(50.05, 'resupply', { shop: 'bakery' }),
+      poi(59.95, 'resupply', { shop: 'bakery' }),
       poi(50.05, 'transport', { amenity: 'ferry_terminal' }),
       poi(59.95, 'transport', { amenity: 'ferry_terminal' }),
     ];
@@ -153,6 +154,17 @@ describe('thinUrbanPois', () => {
     const kept = thinUrbanPois([...city, ...shops])!.filter(p => p.tags.shop === 'supermarket');
     expect(kept.length).toBeLessThanOrEqual(Math.ceil(20 / ANCHOR_SPACING_KM) + 2);
     expect(kept.length).toBeGreaterThanOrEqual(Math.floor(20 / ANCHOR_SPACING_KM));
+  });
+
+  it('keeps convenience stores through a city, spaced like supermarkets', () => {
+    const city = cafes(50, 70, 30);
+    // A konbini every 250 m, as through Tokushima on the Shikoku henro.
+    const konbini = Array.from({ length: 80 }, (_, i) =>
+      poi(50.1 + i * 0.25, 'resupply', { shop: 'convenience', brand: 'Lawson' })
+    );
+    const kept = thinUrbanPois([...city, ...konbini])!.filter(p => p.tags.shop === 'convenience');
+    expect(kept.length).toBeGreaterThanOrEqual(Math.floor(20 / ANCHOR_SPACING_KM));
+    expect(kept.length).toBeLessThanOrEqual(Math.ceil(20 / ANCHOR_SPACING_KM) + 2);
   });
 
   it('never drops a POI that stands in for a curated waypoint', () => {

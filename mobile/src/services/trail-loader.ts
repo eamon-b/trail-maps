@@ -1,37 +1,50 @@
 /**
- * Trail resolver — bundled trails plus user-imported ones.
+ * Trail resolver — bundled trails, their over-the-air updates, catalog-only
+ * trails, and user-imported ones.
  *
  * Tracknotes keeps waypoints and track geometry in trail JSON, never in SQLite.
- * There are two sources for that JSON and this module is the single place that
- * knows about both:
+ * This module is the single place that knows every source of that JSON:
  *
- * - **bundled** (`source: 'bundled'`): the six shipped trails, resolved
- *   synchronously from the Metro `require()` map in `trail-assets`.
+ * - **bundled** (`source: 'bundled'`): the shipped trails, resolved
+ *   synchronously from the Metro `require()` map in `trail-assets` — unless a
+ *   newer copy has been downloaded from the R2 catalog
+ *   (`services/trail-data-updates`), which is then read from disk instead.
+ *   The bundle is the seed and the offline fallback, never stale for long.
+ * - **remote** (`source: 'remote'`): a trail published to the catalog after
+ *   this build was made. Listed from the last catalog; its JSON is downloaded
+ *   the first time the guide is opened (`GuideProvider`).
  * - **imported** (`source: 'imported'`): a user's GPX, ingested at runtime and
  *   written to `{documentDir}/trails/{id}.json` with a registry row in
- *   `imported_trails` (see `services/imported-trail-store.ts`). Reading one is
- *   asynchronous — a file read plus a SQLite query.
+ *   `imported_trails` (see `services/imported-trail-store.ts`).
  *
- * So the API comes in pairs: the sync bundled-only functions (`listTrails`,
- * `getTrailJson`, `getTrailIndexEntry`, `hasTrail`) stay for callers that
- * genuinely only mean bundled data, and the async ones (`listAllTrails`,
- * `loadTrail`, `getTrailIndexEntryAsync`) span both sources. Prefer the async
- * trio anywhere a user-imported id can appear.
+ * So the API comes in pairs: the sync functions (`listTrails`,
+ * `getTrailJson`, `getTrailIndexEntry`, `hasTrail`) answer from memory — the
+ * bundle and the small trail-data state file — and the async ones
+ * (`listAllTrails`, `loadTrail`, `getTrailIndexEntryAsync`) span every source.
+ * Prefer the async trio anywhere a non-bundled id can appear.
  *
- * {@link isServerKnown} is the server boundary: only bundled trail ids exist in
- * the comments API's allowlist and in `data/waypoint-ids.json`, so anything that
- * talks to the network must gate on it. An imported id must never be sent.
+ * {@link isServerKnown} is the server boundary: only bundled and catalog trail
+ * ids exist in the comments API's allowlist and in `data/waypoint-ids.json`, so
+ * anything that talks to the network must gate on it. An imported id must
+ * never be sent.
  */
 
 import { TRAIL_DATA, type TrailJson } from './trail-assets';
 import { getDatabase } from '../db/database';
 import { getImportedTrail, listImportedTrails } from '../db/imported-trails-repo';
 import { readImportedTrail } from './imported-trail-store';
+import {
+  activeDownload,
+  getRemoteTrail,
+  listRemoteTrails,
+  readDownloadedTrail,
+  type RemoteTrailInfo,
+} from './trail-data-updates';
 
 export type { TrailJson } from './trail-assets';
 
 /** Where a trail's JSON comes from. */
-export type TrailSource = 'bundled' | 'imported';
+export type TrailSource = 'bundled' | 'remote' | 'imported';
 
 export interface TrailIndexEntry {
   id: string;
@@ -39,25 +52,69 @@ export interface TrailIndexEntry {
   shortName: string;
   lengthKm: number;
   dataVersion?: string;
+  /** ISO time the trail's content last changed (bundled and remote only). */
+  updatedAt?: string;
   /** Bundled by default — index.json predates imports and carries no field. */
   source: TrailSource;
+  /**
+   * Remote trails only: false until the JSON has been downloaded, i.e. the
+   * guide needs a connection to open the first time.
+   */
+  downloaded?: boolean;
 }
 
-const trailIndex: TrailIndexEntry[] = (
-  require('../../assets/trails/index.json') as Omit<TrailIndexEntry, 'source'>[]
-).map((entry) => ({ ...entry, source: 'bundled' as const }));
+interface BundledIndexEntry {
+  id: string;
+  name: string;
+  shortName: string;
+  lengthKm: number;
+  dataVersion?: string;
+  updatedAt?: string;
+}
 
-/** All bundled trails' index metadata, in bundle order. */
+const bundledIndex: readonly BundledIndexEntry[] = require('../../assets/trails/index.json');
+
+function toIndexEntry(
+  info: BundledIndexEntry,
+  source: TrailSource,
+  downloaded?: boolean,
+): TrailIndexEntry {
+  return {
+    id: info.id,
+    name: info.name,
+    shortName: info.shortName,
+    lengthKm: info.lengthKm,
+    ...(info.dataVersion ? { dataVersion: info.dataVersion } : {}),
+    ...(info.updatedAt ? { updatedAt: info.updatedAt } : {}),
+    source,
+    ...(downloaded === undefined ? {} : { downloaded }),
+  };
+}
+
+function remoteIndexEntry(info: RemoteTrailInfo): TrailIndexEntry {
+  return toIndexEntry(info, 'remote', info.downloaded);
+}
+
+/**
+ * All bundled trails' index metadata, in bundle order. A trail with a newer
+ * downloaded copy reports that copy's name and length.
+ */
 export function listTrails(): TrailIndexEntry[] {
-  return trailIndex;
+  return bundledIndex.map((entry) => toIndexEntry(activeDownload(entry.id) ?? entry, 'bundled'));
 }
 
-/** Index metadata for one BUNDLED trail, or null if the id is not bundled. */
+/**
+ * Index metadata for a bundled or catalog trail, or null. Synchronous: both
+ * come from memory (the bundle, and the trail-data state file).
+ */
 export function getTrailIndexEntry(id: string): TrailIndexEntry | null {
-  return trailIndex.find((entry) => entry.id === id) ?? null;
+  const bundled = bundledIndex.find((entry) => entry.id === id);
+  if (bundled) return toIndexEntry(activeDownload(id) ?? bundled, 'bundled');
+  const remote = getRemoteTrail(id);
+  return remote ? remoteIndexEntry(remote) : null;
 }
 
-/** Whether a bundled trail with this id exists. */
+/** Whether a bundled trail with this id exists (downloaded updates aside). */
 export function hasTrail(id: string): boolean {
   return Object.prototype.hasOwnProperty.call(TRAIL_DATA, id);
 }
@@ -70,28 +127,47 @@ export function hasTrail(id: string): boolean {
  */
 export { isServerKnown } from './server-trails';
 
-/** Resolve the full bundled trail JSON by id, or null if not bundled. */
+/**
+ * The bundled trail JSON, synchronously — but only while it is the copy to
+ * use. Null when the id is not bundled AND when a newer download supersedes the
+ * bundle, so a caller holding a non-null result never shows outdated data;
+ * such callers fall back to {@link loadTrail}.
+ */
 export function getTrailJson(id: string): TrailJson | null {
+  if (activeDownload(id)) return null;
   return TRAIL_DATA[id] ?? null;
 }
 
 /**
- * Resolve a trail from either source: the bundled require() map first (a
- * synchronous hit that never touches disk), otherwise the imported trail's
- * JSON file.
+ * The JSON shipped in this build, whatever has been downloaded since. For
+ * callers that want something stable rather than current — the offline-pack
+ * coverage table only needs each trail's rough bounds.
+ */
+export function getBundledTrailJson(id: string): TrailJson | null {
+  return TRAIL_DATA[id] ?? null;
+}
+
+/**
+ * Resolve a trail from any source: a newer downloaded copy first, then the
+ * bundled require() map (a synchronous hit that never touches disk), then the
+ * imported trail's JSON file.
  *
- * Returns null for an unknown id AND for a torn import whose registry row
- * outlived its file — both are "no such guide" to every caller.
+ * A downloaded copy that cannot be read falls through to the bundle — the
+ * guide opens on older data rather than not at all. Returns null for an
+ * unknown id, for a remote trail not downloaded yet, AND for a torn import
+ * whose registry row outlived its file.
  */
 export async function loadTrail(id: string): Promise<TrailJson | null> {
-  const bundled = getTrailJson(id);
+  const downloaded = await readDownloadedTrail(id);
+  if (downloaded) return downloaded;
+  const bundled = TRAIL_DATA[id];
   if (bundled) return bundled;
   return readImportedTrail(id);
 }
 
 /**
- * Every trail the app can open: bundled first (stable bundle order), then
- * imported ones newest-first.
+ * Every trail the app can list: bundled first (stable bundle order), then
+ * catalog-only ones (catalog order), then imported ones newest-first.
  *
  * A database failure degrades to the bundled list rather than an empty guide
  * list — the shipped trails are readable with no database at all, and a broken
@@ -111,7 +187,7 @@ export async function listAllTrails(): Promise<TrailIndexEntry[]> {
   } catch {
     imported = [];
   }
-  return [...trailIndex, ...imported];
+  return [...listTrails(), ...listRemoteTrails().map(remoteIndexEntry), ...imported];
 }
 
 /**
@@ -120,8 +196,8 @@ export async function listAllTrails(): Promise<TrailIndexEntry[]> {
  * an imported id.
  */
 export async function getTrailIndexEntryAsync(id: string): Promise<TrailIndexEntry | null> {
-  const bundled = getTrailIndexEntry(id);
-  if (bundled) return bundled;
+  const known = getTrailIndexEntry(id);
+  if (known) return known;
 
   try {
     const db = await getDatabase();

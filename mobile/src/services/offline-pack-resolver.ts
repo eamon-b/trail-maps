@@ -31,7 +31,7 @@
  */
 
 import { calculateTrailBounds, type TrackPoint, type TrailBounds } from './trail-bounds';
-import { getTrailJson, isServerKnown, listTrails } from './trail-loader';
+import { getBundledTrailJson, isServerKnown, listTrails } from './trail-loader';
 
 /**
  * Margin added to a bundled track's bbox when treating it as pack coverage.
@@ -160,7 +160,7 @@ export function bundledPackCandidates(): PackCandidate[] {
   if (candidateCache) return candidateCache;
 
   candidateCache = listTrails().flatMap((entry) => {
-    const bounds = trailBounds(getTrailJson(entry.id));
+    const bounds = trailBounds(getBundledTrailJson(entry.id));
     if (!bounds) return [];
     return [
       {

@@ -29,7 +29,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src",
-    "build:mobile-trails": "tsx scripts/build-mobile-trails.ts"
+    "build:mobile-trails": "tsx scripts/build-mobile-trails.ts",
+    "publish:trail-data": "tsx scripts/publish-trail-data.ts"
   },
   "dependencies": {
     "papaparse": "^5.4.1"

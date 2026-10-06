@@ -9,6 +9,10 @@
  * The noise and duplicate-flagging passes have already run in build-trails.ts;
  * this script only shrinks what they produced.
  *
+ * index.json records each file's md5 and size, and `updatedAt`/`dataVersion`
+ * move only for a trail whose bytes changed — they are what the app compares
+ * against the R2 catalog `publish-trail-data.ts` uploads.
+ *
  * Usage: tsx scripts/build-mobile-trails.ts
  */
 
@@ -23,6 +27,14 @@ import {
   findNearestByDistance,
 } from '../src/lib/track-geometry.js';
 import type { RouteBreak, TrackPoint, TrailPOI } from '../src/lib/trail-types.js';
+import {
+  digestTrailFile,
+  mergeIndexEntry,
+  previousIndexById,
+  serializeIndex,
+  type MobileIndexEntry,
+  type TrailIndexBase,
+} from './lib/trail-data-catalog.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,14 +75,6 @@ export interface TrailJson {
   alternates?: Array<{ points?: TrackPoint[]; [key: string]: unknown }>;
   sideTrips?: Array<{ points?: TrackPoint[]; [key: string]: unknown }>;
   [key: string]: unknown;
-}
-
-interface IndexEntry {
-  id: string;
-  name: string;
-  shortName: string;
-  lengthKm: number;
-  dataVersion?: string;
 }
 
 /**
@@ -262,15 +266,23 @@ export function processTrail(trail: TrailJson): TrailJson {
 export function main() {
   // Read the index
   const indexPath = path.join(GENERATED_DIR, 'index.json');
-  const index: IndexEntry[] = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  const index: TrailIndexBase[] = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
 
   // Ensure output directory exists
   if (!fs.existsSync(MOBILE_TRAILS_DIR)) {
     fs.mkdirSync(MOBILE_TRAILS_DIR, { recursive: true });
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const mobileIndex: IndexEntry[] = [];
+  // The previous index carries each trail's md5 and `updatedAt`. A trail whose
+  // bytes come out the same keeps both, so a rebuild does not tell every phone
+  // to download every trail again (see scripts/lib/trail-data-catalog.ts).
+  const mobileIndexPath = path.join(MOBILE_TRAILS_DIR, 'index.json');
+  const previousById = previousIndexById(
+    fs.existsSync(mobileIndexPath) ? fs.readFileSync(mobileIndexPath, 'utf-8') : undefined,
+  );
+  const now = new Date();
+  const mobileIndex: MobileIndexEntry[] = [];
+  let changedCount = 0;
 
   let totalOriginal = 0;
   let totalOptimized = 0;
@@ -315,23 +327,33 @@ export function main() {
         `, POIs: ${poiCount} (${poiKb.toFixed(1)} KB))`,
     );
 
-    // Build mobile index entry
-    mobileIndex.push({
-      id: entry.id,
-      name: nameFix?.name ?? entry.name,
-      shortName: nameFix?.shortName ?? entry.shortName,
-      lengthKm: entry.lengthKm,
-      dataVersion: today,
-    });
+    // Build mobile index entry, hashed over the exact bytes just written
+    const previous = previousById.get(entry.id);
+    const indexEntry = mergeIndexEntry(
+      {
+        id: entry.id,
+        name: nameFix?.name ?? entry.name,
+        shortName: nameFix?.shortName ?? entry.shortName,
+        lengthKm: entry.lengthKm,
+      },
+      digestTrailFile(optimizedJson),
+      previous,
+      now,
+    );
+    if (indexEntry.updatedAt !== previous?.updatedAt) changedCount++;
+    mobileIndex.push(indexEntry);
   }
 
   // Write mobile index
-  const mobileIndexPath = path.join(MOBILE_TRAILS_DIR, 'index.json');
-  fs.writeFileSync(mobileIndexPath, JSON.stringify(mobileIndex, null, 2));
+  fs.writeFileSync(mobileIndexPath, serializeIndex(mobileIndex));
 
   console.log('');
   console.log(`Total: ${(totalOriginal / 1024 / 1024).toFixed(2)}MB -> ${(totalOptimized / 1024 / 1024).toFixed(2)}MB`);
   console.log(`Wrote ${mobileIndex.length} trails + index.json to ${MOBILE_TRAILS_DIR}`);
+  console.log(
+    `${changedCount} trail(s) changed content this run` +
+      (changedCount > 0 ? ' — publish them with `npm run publish:trail-data`' : ''),
+  );
 }
 
 // Guarded so the module can be imported by a test without writing to

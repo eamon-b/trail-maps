@@ -1,19 +1,23 @@
 /**
  * "My Guides" — the FarOut-style guide list.
  *
- * One card per trail (name, unit-aware length, offline-status badge), bundled
- * trails first and user-imported ones after. Tapping a card opens that guide;
- * long-pressing an imported one offers to delete it.
+ * One card per trail (name, unit-aware length, offline-status badge): bundled
+ * trails first, then trails published to the R2 catalog after this build (a
+ * "Download" pill until first opened), then user-imported ones. Tapping a card
+ * opens that guide; long-pressing an imported one offers to delete it. Pulling
+ * down checks the catalog for newer trail data now rather than on the six-hour
+ * schedule (`services/trail-data-updates`).
  *
  * The list reads only index metadata via `listAllTrails()` — it never eagerly
  * loads any full trail JSON, so it stays instant. (That metadata carries no
  * elevation data, so there are no sparklines.) It re-reads on focus rather than
  * once on mount, because the import and delete flows both change what belongs
- * in it while this screen sits mounted underneath them.
+ * in it while this screen sits mounted underneath them — and whenever trail
+ * data changes, since a background update can rename a trail or add one.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
 import { useTheme } from '../src/theme';
@@ -24,6 +28,8 @@ import { deleteImportedTrailEverywhere } from '../src/services/imported-trail-st
 import { useSettingsStore } from '../src/state/settings-store';
 import { useDownloadsStore } from '../src/state/downloads-store';
 import { DownloadBadge } from '../src/features/guide/DownloadBadge';
+import { checkForTrailDataUpdates } from '../src/services/trail-data-updates';
+import { useTrailDataStore } from '../src/state/trail-data-store';
 
 export default function GuideListScreen() {
   const { colors } = useTheme();
@@ -39,6 +45,10 @@ export default function GuideListScreen() {
     setTrails(await listAllTrails());
   }, []);
 
+  // Bumped by every catalog refresh and trail download.
+  const dataRevision = useTrailDataStore((s) => s.revision);
+  const [refreshing, setRefreshing] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -51,9 +61,40 @@ export default function GuideListScreen() {
     }, []),
   );
 
-  // Offline-tile statuses, for bundled trails only: tile packs are built
-  // server-side per bundled trailId, so no directory is ever named after an
-  // imported id and asking the tile manager about one is a pointless probe.
+  // A background catalog refresh or download can rename a trail or add one
+  // while this list is on screen.
+  useEffect(() => {
+    if (dataRevision === 0) return;
+    let cancelled = false;
+    listAllTrails().then((all) => {
+      if (!cancelled) setTrails(all);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataRevision]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const result = await checkForTrailDataUpdates({ force: true });
+      await refresh();
+      if (result.error) {
+        Alert.alert('Couldn’t check for trail updates', result.error);
+      } else if (result.failed.length > 0) {
+        Alert.alert(
+          'Some trail updates failed',
+          'They will be tried again next time. The guides still open with the data already on this phone.',
+        );
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
+
+  // Offline-tile statuses, for bundled and catalog trails only: tile packs are
+  // built server-side per published trailId, so no directory is ever named
+  // after an imported id and asking the tile manager about one is a pointless probe.
   //
   // An import can still *borrow* a bundled pack when its track sits inside that
   // trail's coverage (`services/offline-pack-resolver`) — but the borrowed
@@ -61,7 +102,7 @@ export default function GuideListScreen() {
   // list. Known gap: the imported card shows an "Imported" pill instead of a
   // DownloadBadge, so a borrowed pack is not reflected here.
   useEffect(() => {
-    hydrate(trails.filter((t) => t.source === 'bundled').map((t) => t.id));
+    hydrate(trails.filter((t) => t.source !== 'imported').map((t) => t.id));
   }, [hydrate, trails]);
 
   const confirmDelete = (trail: TrailIndexEntry) => {
@@ -92,6 +133,14 @@ export default function GuideListScreen() {
       keyExtractor={(t) => t.id}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void onRefresh()}
+          colors={[colors.accent]}
+          tintColor={colors.accent}
+        />
+      }
       ListHeaderComponent={
         <Text style={[styles.heading, { color: colors.textPrimary }]}>My Guides</Text>
       }
@@ -122,6 +171,14 @@ export default function GuideListScreen() {
             {imported ? (
               <View style={[styles.importedPill, { borderColor: colors.accentMuted }]}>
                 <Text style={[styles.importedLabel, { color: colors.accentMuted }]}>Imported</Text>
+              </View>
+            ) : item.source === 'remote' && !item.downloaded ? (
+              // Published after this build: the guide itself is fetched on
+              // first open, so offline-map status would be premature.
+              <View style={[styles.importedPill, { borderColor: colors.accentMuted }]}>
+                <Text style={[styles.importedLabel, { color: colors.accentMuted }]}>
+                  New · downloads when opened
+                </Text>
               </View>
             ) : (
               <DownloadBadge trailId={item.id} />

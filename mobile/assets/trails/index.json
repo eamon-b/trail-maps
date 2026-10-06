@@ -11,14 +11,14 @@
     "name": "Hume and Hovell Track",
     "shortName": "H&H",
     "lengthKm": 426,
-    "dataVersion": "2026-09-30"
+    "dataVersion": "2026-10-06"
   },
   {
     "id": "bibbulmun",
     "name": "Bibbulmun Track",
     "shortName": "Bibb",
     "lengthKm": 981.6,
-    "dataVersion": "2026-09-30"
+    "dataVersion": "2026-10-06"
   },
   {
     "id": "cape_to_cape",
@@ -32,7 +32,7 @@
     "name": "Continental Divide Trail",
     "shortName": "CDT",
     "lengthKm": 4823.2,
-    "dataVersion": "2026-09-30"
+    "dataVersion": "2026-10-06"
   },
   {
     "id": "grampians_peaks",
@@ -46,7 +46,7 @@
     "name": "Great North Walk",
     "shortName": "GNW",
     "lengthKm": 257,
-    "dataVersion": "2026-10-02"
+    "dataVersion": "2026-10-06"
   },
   {
     "id": "great_ocean_walk",
@@ -102,7 +102,7 @@
     "name": "Shikoku Henro: Temples 1-23",
     "shortName": "Shikoku T1-23",
     "lengthKm": 154.1,
-    "dataVersion": "2026-10-05"
+    "dataVersion": "2026-10-06"
   },
   {
     "id": "six_foot_track",
@@ -123,7 +123,7 @@
     "name": "Te Araroa",
     "shortName": "Te Araroa",
     "lengthKm": 3056.8,
-    "dataVersion": "2026-09-30"
+    "dataVersion": "2026-10-06"
   },
   {
     "id": "thorsborne",

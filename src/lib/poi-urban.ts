@@ -11,8 +11,8 @@
  * So inside a dense stretch this keeps:
  * - the first and last POI of each category (by trail km): the last water,
  *   food and shop on the way in, the first on the way out;
- * - "anchors" in between: supermarkets and outdoor shops (resupply), post
- *   offices (bounce boxes), campgrounds, holiday parks and huts, hospitals
+ * - "anchors" in between: supermarkets, convenience stores and outdoor shops
+ *   (resupply), post offices (bounce boxes), campgrounds, holiday parks and huts, hospitals
  *   with an emergency department, rail stations and ferry terminals — thinned
  *   to one per ANCHOR_SPACING_KM of trail for each kind, preferring a branded
  *   store (a Woolworths over a spice shop OSM also tags `supermarket`), then
@@ -20,8 +20,14 @@
  * - anything flagged `duplicateOf`: it carries OSM detail onto a curated
  *   waypoint and is never drawn as a POI anyway.
  *
+ * Convenience stores are anchors because in Japan they *are* the resupply: a
+ * Shikoku pilgrim crossing Tokushima eats, refills and finds a toilet at a
+ * Lawson or a 7-Eleven, and dropping them left km 76-97 of the henro with 5 of
+ * its 84. One per kind per 2 km keeps the nearest few without listing every
+ * corner store in Auckland.
+ *
  * Everything else in the stretch is dropped: cafés, takeaways, bars,
- * convenience stores, bakeries, pharmacies, clinics, drinking fountains, fuel,
+ * bakeries, pharmacies, clinics, drinking fountains, fuel,
  * picnic shelters. Outside dense stretches nothing is touched, so a small
  * town's café and the only tap for 40 km stay exactly as fetched.
  *
@@ -64,6 +70,7 @@ export const ANCHOR_SPACING_KM = 2;
 export function anchorKind(poi: TrailPOI): string | null {
   const tags = poi.tags ?? {};
   if (tags.shop === 'supermarket') return 'supermarket';
+  if (tags.shop === 'convenience') return 'convenience';
   if (tags.shop === 'outdoor') return 'outdoor';
   if (tags.amenity === 'post_office') return 'post-office';
   if (tags.tourism === 'camp_site' || tags.tourism === 'caravan_site') return 'campground';

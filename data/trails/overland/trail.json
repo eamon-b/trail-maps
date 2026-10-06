@@ -38,6 +38,12 @@
       "lon": 145.95
     },
     {
+      "name": "Waterfall Valley",
+      "lat": -41.7147,
+      "lon": 145.9469,
+      "elevation": 1021
+    },
+    {
       "name": "Pelion Plains",
       "lat": -41.83,
       "lon": 146.05

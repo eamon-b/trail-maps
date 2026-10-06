@@ -38,9 +38,16 @@
       "lon": 147.85
     },
     {
+      "name": "Retakunna",
+      "lat": -43.1802,
+      "lon": 147.9499,
+      "elevation": 237
+    },
+    {
       "name": "Fortescue Bay",
-      "lat": -43.13,
-      "lon": 147.96
+      "lat": -43.1422,
+      "lon": 147.9674,
+      "elevation": 6
     }
   ],
   "climateFile": "climate.json"

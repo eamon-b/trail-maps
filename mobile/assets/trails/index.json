@@ -4,10 +4,10 @@
     "name": "Australian Alps Walking Track",
     "shortName": "AAWT",
     "lengthKm": 688.3,
-    "dataVersion": "2026-09-20",
-    "updatedAt": "2026-09-20T00:00:00.000Z",
-    "md5": "545933a2a9fc7a89d35392319ae021b5",
-    "bytes": 1146916
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "94618bba2c2271f582b3171a2e1360c4",
+    "bytes": 1147672
   },
   {
     "id": "hume-and-hovell",
@@ -15,9 +15,9 @@
     "shortName": "H&H",
     "lengthKm": 426,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T00:00:00.000Z",
-    "md5": "388c29e83cd56b350fbabcee3de086fd",
-    "bytes": 718314
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "858bf3db7821d543b2bb35c0ace305a9",
+    "bytes": 718341
   },
   {
     "id": "bibbulmun",
@@ -25,9 +25,9 @@
     "shortName": "Bibb",
     "lengthKm": 981.6,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T00:00:00.000Z",
-    "md5": "ff76180e141e32fa79ccad881fe4c57e",
-    "bytes": 1068833
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "8aa000c597d6eee7f3e187caa0f25fed",
+    "bytes": 1069046
   },
   {
     "id": "cape_to_cape",
@@ -45,19 +45,19 @@
     "shortName": "CDT",
     "lengthKm": 4823.2,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T00:00:00.000Z",
-    "md5": "6589d5c1a7b9c03a84cf145d4547631c",
-    "bytes": 2525171
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "19b9c87a84a21055be7e9054b74a50c0",
+    "bytes": 2525333
   },
   {
     "id": "grampians_peaks",
     "name": "Grampians Peaks Trail",
     "shortName": "GPT",
     "lengthKm": 157.4,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "ce8e96eb0f49bc23ab7e93a6c35e2759",
-    "bytes": 682345
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "441c8efcc9d2acb5c7ef5c3bc3ae4f9f",
+    "bytes": 681165
   },
   {
     "id": "great_north_walk",
@@ -65,79 +65,79 @@
     "shortName": "GNW",
     "lengthKm": 257,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T00:00:00.000Z",
-    "md5": "bb45f9f8f38cb669f09bda450bddcb69",
-    "bytes": 778701
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "878c6fb35b7c8fe68c5537df57c56a08",
+    "bytes": 768835
   },
   {
     "id": "great_ocean_walk",
     "name": "Great Ocean Walk",
     "shortName": "GOW",
     "lengthKm": 96.6,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "e978ffcc91bc985b74a9162983dad67c",
-    "bytes": 586987
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "4d7bf72e13c81e7cb5f4e49b807b2417",
+    "bytes": 587225
   },
   {
     "id": "great_south_west_walk",
     "name": "Great South West Walk",
     "shortName": "GSWW",
     "lengthKm": 253.7,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "1f35a7971e0b2ca5f2d1a65b8ec90191",
-    "bytes": 591849
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "92476bffcf9487837b833021c707358b",
+    "bytes": 593594
   },
   {
     "id": "heysen",
     "name": "Heysen Trail",
     "shortName": "Heysen",
     "lengthKm": 1098.9,
-    "dataVersion": "2026-09-20",
-    "updatedAt": "2026-09-20T00:00:00.000Z",
-    "md5": "4d991c001c1c45863307e929a5ed24cc",
-    "bytes": 1228098
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "480b6589409492ee5f222007fcbd68aa",
+    "bytes": 1228449
   },
   {
     "id": "kep_track",
     "name": "Kep Track",
     "shortName": "Kep",
     "lengthKm": 72.5,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "c261536902e7408ae63608da1a3cc092",
-    "bytes": 311788
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "23b527b5797a124539efbda7b63118b4",
+    "bytes": 311821
   },
   {
     "id": "larapinta",
     "name": "Larapinta Trail",
     "shortName": "Larapinta",
     "lengthKm": 215.8,
-    "dataVersion": "2026-09-20",
-    "updatedAt": "2026-09-20T00:00:00.000Z",
-    "md5": "0e7a4bf9e26fa2d91370c25478826aa6",
-    "bytes": 771409
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "d1cfca481dae310772e78ffa5a9f7c5a",
+    "bytes": 771436
   },
   {
     "id": "overland",
     "name": "Overland Track",
     "shortName": "Overland",
     "lengthKm": 62.1,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "c22a7568ec91ed8c03557a75c0b5d13a",
-    "bytes": 651445
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "53f99970ffe0e839b42a290810484c92",
+    "bytes": 651026
   },
   {
     "id": "royal_coast_track",
     "name": "The Coast Track",
     "shortName": "Coast Track",
     "lengthKm": 25.3,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "026999b8e9d19a1a6ca9b474b601daba",
-    "bytes": 273879
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "d6f1144b8fd0f4991d8f646ba0e26760",
+    "bytes": 274533
   },
   {
     "id": "shikoku",
@@ -154,20 +154,20 @@
     "name": "Six Foot Track",
     "shortName": "Six Foot",
     "lengthKm": 44.5,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "f7a58f8abcc5d81b14668d2b9b378b5c",
-    "bytes": 343737
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "212e682199c98f757baf076af361cc3c",
+    "bytes": 346035
   },
   {
     "id": "south_coast_track",
     "name": "South Coast Track",
     "shortName": "South Coast",
     "lengthKm": 85.5,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "62267351d1b3a86c6f9411652c2f4fa8",
-    "bytes": 341153
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "30b2c671888b4f446b44c5ee9581f9ba",
+    "bytes": 341550
   },
   {
     "id": "te_araroa",
@@ -175,28 +175,28 @@
     "shortName": "Te Araroa",
     "lengthKm": 3056.8,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T00:00:00.000Z",
-    "md5": "fa6613e9e993b229141eff06f3423b27",
-    "bytes": 1913201
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "fce1d03dd8dd38558e2b3d08f09175c7",
+    "bytes": 1913927
   },
   {
     "id": "thorsborne",
     "name": "Thorsborne Trail",
     "shortName": "Thorsborne",
     "lengthKm": 28.8,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "0352c69154a01419d5ffde4754fd6037",
-    "bytes": 88600
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "eeaad19528cfd1a2c911b49f0eb216a8",
+    "bytes": 88782
   },
   {
     "id": "three_capes",
     "name": "Three Capes Track",
     "shortName": "Three Capes",
     "lengthKm": 22.7,
-    "dataVersion": "2026-10-02",
-    "updatedAt": "2026-10-02T00:00:00.000Z",
-    "md5": "2e26b637174b3c5a855671d80aba9202",
-    "bytes": 465418
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "md5": "ee4028cce2740dc9875cfca9a54b2566",
+    "bytes": 467113
   }
 ]

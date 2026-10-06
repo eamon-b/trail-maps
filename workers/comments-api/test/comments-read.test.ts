@@ -1,4 +1,4 @@
-import { SELF } from 'cloudflare:test';
+import { SELF, env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { authHeaders, createComment, registerDevice, url } from './helpers';
 import type {
@@ -67,6 +67,9 @@ describe('trail-wide bulk / delta sync', () => {
     const a = await createComment(device, { trailId: trail, waypointId: 'bulk-wp-a', text: 'A' });
     const b = await createComment(device, { trailId: trail, waypointId: 'bulk-wp-b', text: 'B' });
     await createComment(device, { trailId: trail, waypointId: 'bulk-wp-c', text: 'C' });
+    // The `since` boundary is inclusive, so keep the writes out of the
+    // snapshot's own millisecond for the "unchanged B is absent" check below.
+    await delay(5);
 
     // Full snapshot (no since): 3 live rows, none flagged deleted, syncedAt present.
     const snapRes = await SELF.fetch(url(`/v1/trails/${trail}/comments`));
@@ -113,6 +116,21 @@ describe('trail-wide bulk / delta sync', () => {
     const snap2 = (await (await SELF.fetch(url(`/v1/trails/${trail}/comments`))).json()) as BulkSyncResponse;
     expect(snap2.comments).toHaveLength(3);
     expect(snap2.comments.some((c) => c.id === a.id)).toBe(false);
+  });
+
+  it('delivers a row stamped exactly at `since`', async () => {
+    // `syncedAt` is taken before the SELECT, so a write that commits in the
+    // same millisecond just after it would fall through a strict `>`.
+    const device = await registerDevice('Boundary');
+    const { id } = await createComment(device, { trailId: 'aawt', waypointId: 'bulk-edge-wp' });
+    const row = await env.DB.prepare(`SELECT updated_at FROM comments WHERE id = ?`)
+      .bind(id)
+      .first<{ updated_at: string }>();
+
+    const delta = (await (
+      await SELF.fetch(url(`/v1/trails/aawt/comments?since=${encodeURIComponent(row!.updated_at)}`))
+    ).json()) as BulkSyncResponse;
+    expect(delta.comments.map((c) => c.id)).toContain(id);
   });
 
   it('paginates the delta feed stably with a small limit', async () => {

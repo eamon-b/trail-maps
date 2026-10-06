@@ -2,6 +2,7 @@ import { SELF, env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import {
   authHeaders,
+  banUser,
   createComment,
   registerDevice,
   uploadPhoto,
@@ -25,6 +26,19 @@ function distinctJpeg(n: number): Uint8Array<ArrayBuffer> {
   return new Uint8Array([0xff, 0xd8, 0xff, 0xe0, n, n + 1, n + 2]);
 }
 
+/** A uuid, as each upload's object key carries one. */
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+
+/** Matches the public URL of a photo on `commentId` with extension `ext`. */
+function photoUrlPattern(commentId: string, ext: 'jpg' | 'webp'): RegExp {
+  return new RegExp(`^https://photos\\.test/comments/${commentId}/${UUID}\\.${ext}$`);
+}
+
+/** The R2 key behind a public photo URL. */
+function keyOf(photoUrl: string): string {
+  return photoUrl.replace('https://photos.test/', '');
+}
+
 /** Read a comment row's photo_urls_json + updated_at straight from D1. */
 async function readRow(id: string): Promise<{ photo_urls_json: string | null; updated_at: string }> {
   const row = await env.DB.prepare(
@@ -36,21 +50,31 @@ async function readRow(id: string): Promise<{ photo_urls_json: string | null; up
   return row;
 }
 
+/** Read a comment row's photo hash array straight from D1. */
+async function readHashes(id: string): Promise<string[]> {
+  const row = await env.DB.prepare(`SELECT photo_hashes_json FROM comments WHERE id = ?`)
+    .bind(id)
+    .first<{ photo_hashes_json: string | null }>();
+  return row?.photo_hashes_json === null || row?.photo_hashes_json === undefined
+    ? []
+    : (JSON.parse(row.photo_hashes_json) as string[]);
+}
+
 describe('POST /v1/comments/:id/photos — happy path', () => {
   it('uploads a jpeg then a webp, storing bytes in R2 and returning public URLs', async () => {
     const device = await registerDevice();
     const { id, res } = await createComment(device, { waypointId: 'photo-happy-wp' });
     const created = (await res.json()) as { createdAt: string; updatedAt?: string };
 
-    // First photo — jpeg → index 0 → .jpg
+    // First photo — jpeg → .jpg under a per-upload uuid
     const up1 = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
     expect(up1.status).toBe(201);
     const body1 = (await up1.json()) as UploadCommentPhotoResponse;
-    expect(body1.photoUrl).toBe(`https://photos.test/comments/${id}/0.jpg`);
+    expect(body1.photoUrl).toMatch(photoUrlPattern(id, 'jpg'));
     expect(body1.photoUrls).toEqual([body1.photoUrl]);
 
     // Bytes actually landed in R2 with the right content type.
-    const obj = await env.PHOTOS.get(`comments/${id}/0.jpg`);
+    const obj = await env.PHOTOS.get(keyOf(body1.photoUrl));
     expect(obj).not.toBeNull();
     const stored = new Uint8Array(await obj!.arrayBuffer());
     expect(Array.from(stored)).toEqual(Array.from(JPEG_BYTES));
@@ -60,15 +84,12 @@ describe('POST /v1/comments/:id/photos — happy path', () => {
     const rowAfter1 = await readRow(id);
     expect(Date.parse(rowAfter1.updated_at)).toBeGreaterThan(Date.parse(created.createdAt));
 
-    // Second photo — webp → index 1 → .webp
+    // Second photo — webp → .webp, appended after the first
     const up2 = await uploadPhoto(device, id, WEBP_BYTES, 'image/webp');
     expect(up2.status).toBe(201);
     const body2 = (await up2.json()) as UploadCommentPhotoResponse;
-    expect(body2.photoUrl).toBe(`https://photos.test/comments/${id}/1.webp`);
-    expect(body2.photoUrls).toEqual([
-      `https://photos.test/comments/${id}/0.jpg`,
-      `https://photos.test/comments/${id}/1.webp`,
-    ]);
+    expect(body2.photoUrl).toMatch(photoUrlPattern(id, 'webp'));
+    expect(body2.photoUrls).toEqual([body1.photoUrl, body2.photoUrl]);
 
     // Appears in the per-waypoint feed with photoUrls populated.
     const feed = (await (
@@ -140,6 +161,85 @@ describe('POST /v1/comments/:id/photos — authorization & existence', () => {
   });
 });
 
+describe('POST /v1/comments/:id/photos — banned accounts', () => {
+  it('403 banned for a new photo, and nothing lands in R2', async () => {
+    const device = await registerDevice('Banned Photographer');
+    const { id } = await createComment(device, { waypointId: 'photo-banned-wp' });
+    await banUser(device.userId);
+
+    const res = await uploadPhoto(device, id, JPEG_BYTES);
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('banned');
+    expect((await readRow(id)).photo_urls_json).toBeNull();
+    const listed = await env.PHOTOS.list({ prefix: `comments/${id}/` });
+    expect(listed.objects).toHaveLength(0);
+  });
+
+  it('still replays a photo stored before the ban (an outbox retry)', async () => {
+    const device = await registerDevice('Banned Retrier');
+    const { id } = await createComment(device, { waypointId: 'photo-banned-replay-wp' });
+    const first = await uploadPhoto(device, id, JPEG_BYTES);
+    expect(first.status).toBe(201);
+    await banUser(device.userId);
+
+    const replay = await uploadPhoto(device, id, JPEG_BYTES);
+    expect(replay.status).toBe(200);
+  });
+});
+
+describe('POST /v1/comments/:id/photos — parallel uploads', () => {
+  it('keeps every photo when uploads to one comment race', async () => {
+    const device = await registerDevice('Racer');
+    const { id } = await createComment(device, { waypointId: 'photo-race-wp' });
+
+    // Index-keyed objects and a blind UPDATE let the second racer overwrite
+    // the first's bytes and drop its URL from the row.
+    const results = await Promise.all(
+      [11, 22, 33].map((n) => uploadPhoto(device, id, distinctJpeg(n)))
+    );
+    expect(results.map((r) => r.status)).toEqual([201, 201, 201]);
+    const urls = await Promise.all(
+      results.map(async (r) => ((await r.json()) as UploadCommentPhotoResponse).photoUrl)
+    );
+    expect(new Set(urls).size).toBe(3);
+
+    const stored = JSON.parse((await readRow(id)).photo_urls_json ?? '[]') as string[];
+    expect([...stored].sort()).toEqual([...urls].sort());
+    expect(await readHashes(id)).toHaveLength(3);
+
+    // Each URL serves the bytes of the upload that returned it.
+    for (const [i, n] of [11, 22, 33].entries()) {
+      const obj = await env.PHOTOS.get(keyOf(urls[i]));
+      expect(Array.from(new Uint8Array(await obj!.arrayBuffer()))).toEqual(
+        Array.from(distinctJpeg(n))
+      );
+    }
+  });
+
+  it('refuses the racer that would make a fifth photo, and leaves no orphan object', async () => {
+    const device = await registerDevice('Late Racer');
+    const { id } = await createComment(device, { waypointId: 'photo-race-cap-wp' });
+    for (let i = 0; i < 3; i++) {
+      expect((await uploadPhoto(device, id, distinctJpeg(60 + i))).status).toBe(201);
+    }
+
+    const results = await Promise.all([
+      uploadPhoto(device, id, distinctJpeg(70)),
+      uploadPhoto(device, id, distinctJpeg(80)),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(JSON.parse((await readRow(id)).photo_urls_json ?? '[]')).toHaveLength(4);
+
+    // The loser's object (if it got as far as R2) is removed in waitUntil.
+    let count = Infinity;
+    for (let i = 0; i < 20 && count > 4; i++) {
+      count = (await env.PHOTOS.list({ prefix: `comments/${id}/` })).objects.length;
+      if (count > 4) await new Promise((r) => setTimeout(r, 25));
+    }
+    expect(count).toBe(4);
+  });
+});
+
 describe('POST /v1/comments/:id/photos — payload limits', () => {
   it('415 for an unsupported content type', async () => {
     const device = await registerDevice();
@@ -192,16 +292,6 @@ describe('POST /v1/comments/:id/photos — rate limit', () => {
 });
 
 describe('POST /v1/comments/:id/photos — idempotent replay', () => {
-  /** Read a comment row's photo hash array straight from D1. */
-  async function readHashes(id: string): Promise<string[]> {
-    const row = await env.DB.prepare(`SELECT photo_hashes_json FROM comments WHERE id = ?`)
-      .bind(id)
-      .first<{ photo_hashes_json: string | null }>();
-    return row?.photo_hashes_json === null || row?.photo_hashes_json === undefined
-      ? []
-      : (JSON.parse(row.photo_hashes_json) as string[]);
-  }
-
   it('re-uploading identical bytes returns 200 with the original URL and stores one object', async () => {
     const device = await registerDevice();
     const { id } = await createComment(device, { waypointId: 'photo-replay-wp' });
@@ -223,15 +313,15 @@ describe('POST /v1/comments/:id/photos — idempotent replay', () => {
     expect(rowAfterReplay.photo_urls_json).toBe(rowAfterFirst.photo_urls_json);
     expect(rowAfterReplay.updated_at).toBe(rowAfterFirst.updated_at);
     const listed = await env.PHOTOS.list({ prefix: `comments/${id}/` });
-    expect(listed.objects.map((o) => o.key)).toEqual([`comments/${id}/0.jpg`]);
+    expect(listed.objects.map((o) => o.key)).toEqual([keyOf(firstBody.photoUrl)]);
   });
 
   it('records one hash per stored photo, index-aligned with the URLs', async () => {
     const device = await registerDevice();
     const { id } = await createComment(device, { waypointId: 'photo-hashes-wp' });
 
-    await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
-    await uploadPhoto(device, id, WEBP_BYTES, 'image/webp');
+    const first = (await (await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg')).json()) as UploadCommentPhotoResponse;
+    const second = (await (await uploadPhoto(device, id, WEBP_BYTES, 'image/webp')).json()) as UploadCommentPhotoResponse;
 
     const hashes = await readHashes(id);
     expect(hashes).toHaveLength(2);
@@ -242,15 +332,11 @@ describe('POST /v1/comments/:id/photos — idempotent replay', () => {
     // A replay of the *second* photo returns that photo's URL, not the last one.
     const replay = await uploadPhoto(device, id, WEBP_BYTES, 'image/webp');
     expect(replay.status).toBe(200);
-    expect(((await replay.json()) as UploadCommentPhotoResponse).photoUrl).toBe(
-      `https://photos.test/comments/${id}/1.webp`
-    );
+    expect(((await replay.json()) as UploadCommentPhotoResponse).photoUrl).toBe(second.photoUrl);
 
     const replayFirst = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
     expect(replayFirst.status).toBe(200);
-    expect(((await replayFirst.json()) as UploadCommentPhotoResponse).photoUrl).toBe(
-      `https://photos.test/comments/${id}/0.jpg`
-    );
+    expect(((await replayFirst.json()) as UploadCommentPhotoResponse).photoUrl).toBe(first.photoUrl);
   });
 
   it('different bytes still create a new photo', async () => {
@@ -318,8 +404,8 @@ describe('POST /v1/comments/:id/photos — idempotent replay', () => {
     expect((await uploadPhoto(device, a, JPEG_BYTES, 'image/jpeg')).status).toBe(201);
     const onB = await uploadPhoto(device, b, JPEG_BYTES, 'image/jpeg');
     expect(onB.status).toBe(201);
-    expect(((await onB.json()) as UploadCommentPhotoResponse).photoUrl).toBe(
-      `https://photos.test/comments/${b}/0.jpg`
+    expect(((await onB.json()) as UploadCommentPhotoResponse).photoUrl).toMatch(
+      photoUrlPattern(b, 'jpg')
     );
   });
 
@@ -335,11 +421,12 @@ describe('POST /v1/comments/:id/photos — idempotent replay', () => {
       .bind(JSON.stringify([legacyUrl]), id)
       .run();
 
-    // The same bytes upload again (no hash to match), landing at the next index…
+    // The same bytes upload again (no hash to match), landing as a second photo…
     const res = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
     expect(res.status).toBe(201);
     const body = (await res.json()) as UploadCommentPhotoResponse;
-    expect(body.photoUrl).toBe(`https://photos.test/comments/${id}/1.jpg`);
+    expect(body.photoUrl).toMatch(photoUrlPattern(id, 'jpg'));
+    expect(body.photoUrls).toEqual([legacyUrl, body.photoUrl]);
 
     // …and the hash array is padded so index 1 describes index 1.
     const hashes = await readHashes(id);
@@ -358,11 +445,11 @@ describe('DELETE /v1/comments/:id — R2 cleanup', () => {
   it('removes the comment photos from R2 on soft delete', async () => {
     const device = await registerDevice();
     const { id } = await createComment(device, { waypointId: 'photo-cleanup-wp' });
-    await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
-    await uploadPhoto(device, id, WEBP_BYTES, 'image/webp');
+    const keyA = keyOf(((await (await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg')).json()) as UploadCommentPhotoResponse).photoUrl);
+    const keyB = keyOf(((await (await uploadPhoto(device, id, WEBP_BYTES, 'image/webp')).json()) as UploadCommentPhotoResponse).photoUrl);
 
-    expect(await env.PHOTOS.get(`comments/${id}/0.jpg`)).not.toBeNull();
-    expect(await env.PHOTOS.get(`comments/${id}/1.webp`)).not.toBeNull();
+    expect(await env.PHOTOS.get(keyA)).not.toBeNull();
+    expect(await env.PHOTOS.get(keyB)).not.toBeNull();
 
     const del = await SELF.fetch(url(`/v1/comments/${id}`), {
       method: 'DELETE',
@@ -373,8 +460,8 @@ describe('DELETE /v1/comments/:id — R2 cleanup', () => {
     // Cleanup runs in ctx.waitUntil — poll briefly for the objects to disappear.
     let gone = false;
     for (let i = 0; i < 20 && !gone; i++) {
-      const a = await env.PHOTOS.get(`comments/${id}/0.jpg`);
-      const b = await env.PHOTOS.get(`comments/${id}/1.webp`);
+      const a = await env.PHOTOS.get(keyA);
+      const b = await env.PHOTOS.get(keyB);
       gone = a === null && b === null;
       if (!gone) await new Promise((r) => setTimeout(r, 25));
     }

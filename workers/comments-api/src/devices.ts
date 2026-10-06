@@ -2,21 +2,43 @@
  * Device identity endpoints: register a device, read/update the current user.
  */
 
-import { json, noContent, readJson } from './http';
+import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { generateToken, requirePrimaryUser, requireUser, sha256Hex } from './auth';
 import type { UserRow } from './auth';
 import { deleteCommentPhotos } from './photos';
+import { RATE_BUCKETS, consumeRateLimit, ipRateKey } from './rate-limit';
 import { validateDisplayName } from './validation';
 import type {
   MeResponse,
   RegisterDeviceResponse,
 } from '../../../src/lib/comments-api-types';
 
-/** POST /v1/devices — mint a new anonymous user + token. */
-export async function registerDevice(request: Request, env: Env): Promise<Response> {
+/**
+ * POST /v1/devices — mint a new anonymous user + token.
+ *
+ * Unauthenticated by nature, so it is capped per address
+ * (`RATE_BUCKETS.deviceRegister`: 20 an hour per IPv4 address or IPv6 /64).
+ * Every account carries its own daily comment, photo and plan allowances, so an
+ * uncapped mint would make those per-user limits meaningless. The body is
+ * validated first: a malformed request is a client bug, not a registration.
+ */
+export async function registerDevice(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
   const body = await readJson(request);
   const displayName = validateDisplayName(body.displayName);
+
+  await consumeRateLimit(
+    env,
+    RATE_BUCKETS.deviceRegister,
+    ipRateKey(request.headers.get('CF-Connecting-IP')),
+    Date.now(),
+    'Too many devices registered from this network; try again later',
+    ctx
+  );
 
   const token = generateToken();
   const tokenHash = await sha256Hex(token);
@@ -65,6 +87,12 @@ export async function updateMe(
   ctx: ExecutionContext
 ): Promise<Response> {
   const user = await requireUser(request, env, ctx);
+  // The display name is printed on every comment the account ever left, so a
+  // banned account renaming itself is still putting new text in front of the
+  // public — the same write the ban refuses for comments and plans.
+  if (user.is_banned === 1) {
+    throw new HttpError(403, 'banned', 'This account may not change its display name');
+  }
   const body = await readJson(request);
   const displayName = validateDisplayName(body.displayName);
 

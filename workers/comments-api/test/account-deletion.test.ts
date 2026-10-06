@@ -209,15 +209,18 @@ describe('DELETE /v1/me — photos and reports', () => {
   it('removes the account photos from R2', async () => {
     const device = await registerDevice('Photo Doomed');
     const { id } = await createComment(device, { waypointId: 'delme-photo-wp' });
-    expect((await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg')).status).toBe(201);
-    expect(await env.PHOTOS.get(`comments/${id}/0.jpg`)).not.toBeNull();
+    const upload = await uploadPhoto(device, id, JPEG_BYTES, 'image/jpeg');
+    expect(upload.status).toBe(201);
+    const { photoUrl } = (await upload.json()) as { photoUrl: string };
+    const key = photoUrl.replace('https://photos.test/', '');
+    expect(await env.PHOTOS.get(key)).not.toBeNull();
 
     expect((await deleteMe(device)).status).toBe(204);
 
     // Cleanup runs in ctx.waitUntil — poll briefly for the object to disappear.
     let gone = false;
     for (let i = 0; i < 20 && !gone; i++) {
-      gone = (await env.PHOTOS.get(`comments/${id}/0.jpg`)) === null;
+      gone = (await env.PHOTOS.get(key)) === null;
       if (!gone) await new Promise((r) => setTimeout(r, 25));
     }
     expect(gone).toBe(true);

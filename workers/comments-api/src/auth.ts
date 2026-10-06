@@ -123,16 +123,27 @@ async function lookupToken(env: Env, tokenHash: string): Promise<TokenLookupRow 
  * the backfill would have written (same shape: `primary`, no label, no expiry)
  * the first time such a token is presented.
  *
- * Only reached on a lookup miss, so an ordinary request never pays for it, and
- * `INSERT OR IGNORE` makes two simultaneous first requests idempotent — both
- * then read the one row back. A revoked or expired token is not a miss — its
- * row exists — so nothing here can undo a revocation, and a banned (or
- * deleted, which is banned + anonymised) account is excluded by the SELECT.
+ * Only reached on a lookup miss, so an ordinary request never pays for it. A
+ * miss is also what every bogus token produces, so the adoption is a read
+ * first (`users.token_hash` is UNIQUE, so it is one index probe) and a write
+ * only on a hit: an unauthenticated caller spraying random bearers must not
+ * cost a D1 write each. `INSERT OR IGNORE` keeps two simultaneous first
+ * requests idempotent — both then read the one row back. A revoked or expired
+ * token is not a miss — its row exists — so nothing here can undo a
+ * revocation, and a banned (or deleted, which is banned + anonymised) account
+ * is excluded by the SELECT.
  */
 async function healMissingPrimaryToken(
   env: Env,
   tokenHash: string
 ): Promise<TokenLookupRow | null> {
+  const legacy = await env.DB.prepare(
+    `SELECT id FROM users WHERE token_hash = ? AND is_banned = 0`
+  )
+    .bind(tokenHash)
+    .first<{ id: string }>();
+  if (!legacy) return null;
+
   await env.DB.prepare(
     `INSERT OR IGNORE INTO device_tokens
        (token_hash, user_id, kind, label, created_at, last_seen_at, expires_at, revoked_at)

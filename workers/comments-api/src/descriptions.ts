@@ -10,6 +10,7 @@
 import { json, readJson } from './http';
 import type { Env } from './http';
 import { requireAdmin } from './auth';
+import { appendSinceFilter } from './cursor';
 import { validateDescription, validateTrailId, validateWaypointId } from './validation';
 import type {
   TrailDescriptionsResponse,
@@ -48,8 +49,7 @@ export async function getTrailDescriptions(
   const conditions = ['trail_id = ?'];
   const binds: unknown[] = [trailId];
   if (since) {
-    conditions.push('updated_at > ?');
-    binds.push(since);
+    appendSinceFilter(conditions, binds, 'updated_at', since);
   }
 
   const { results } = await env.DB.prepare(
@@ -72,7 +72,15 @@ export async function getTrailDescriptions(
 // PUT /v1/admin/trails/:trailId/descriptions/:waypointId — admin upsert
 // ---------------------------------------------------------------------------
 
-/** PUT a curated description for one waypoint. Empty string clears it. */
+/**
+ * PUT a curated description for one waypoint. Empty string clears it.
+ *
+ * Re-sending the text a waypoint already has is a no-op: `updated_at` is what
+ * every phone's delta pull keys on, and `upload-descriptions` re-PUTs the whole
+ * curated file each run, so bumping it unconditionally re-shipped every
+ * description to every phone on every upload. The conflict update only fires
+ * when the text differs; otherwise the stored row is answered as it stands.
+ */
 export async function upsertTrailDescription(
   request: Request,
   env: Env,
@@ -93,14 +101,24 @@ export async function upsertTrailDescription(
      VALUES (?, ?, ?, ?)
      ON CONFLICT(trail_id, waypoint_id) DO UPDATE
        SET description = excluded.description, updated_at = excluded.updated_at
+       WHERE excluded.description <> waypoint_descriptions.description
      RETURNING waypoint_id, description, updated_at`
   )
     .bind(trailId, waypointId, description, now)
     .first<DescriptionRow>();
+  if (row) return json(toWaypointDescription(row));
 
-  if (!row) {
-    // RETURNING always yields a row for an upsert; belt-and-braces for typing.
+  // No RETURNING row: the conflict update's WHERE held it back, i.e. the text
+  // was already this. Answer with the row as stored, its original stamp intact.
+  const unchanged = await env.DB.prepare(
+    `SELECT waypoint_id, description, updated_at
+       FROM waypoint_descriptions WHERE trail_id = ? AND waypoint_id = ?`
+  )
+    .bind(trailId, waypointId)
+    .first<DescriptionRow>();
+  if (!unchanged) {
+    // Unreachable short of a concurrent hard delete (nothing deletes rows).
     return json({ waypointId, description, updatedAt: now } satisfies WaypointDescription);
   }
-  return json(toWaypointDescription(row));
+  return json(toWaypointDescription(unchanged));
 }

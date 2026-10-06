@@ -12,8 +12,8 @@ import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { requireUser } from './auth';
 import type { AuthUser } from './auth';
-import { decodeCursor, encodeCursor } from './cursor';
-import { RATE_BUCKETS, assertUnderRateLimit, recordRateEvent } from './rate-limit';
+import { appendSinceFilter, decodeCursor, encodeCursor } from './cursor';
+import { RATE_BUCKETS, consumeRateLimit } from './rate-limit';
 import {
   assertClientPlanId,
   parseLimit,
@@ -144,13 +144,8 @@ export async function listPlans(
   const binds: unknown[] = [user.id];
 
   if (since) {
-    // Delta mode: everything touched after `since`, tombstones included.
-    // `>=`, not `>`: `syncedAt` is stamped before this SELECT runs, so a write
-    // that commits in the same millisecond just after it would never be
-    // delivered. Clients are last-writer-wins and treat an equal `updatedAt`
-    // as a no-op, so re-delivering the boundary row costs nothing.
-    conditions.push('updated_at >= ?');
-    binds.push(since);
+    // Delta mode: everything touched since `since`, tombstones included.
+    appendSinceFilter(conditions, binds, 'updated_at', since);
   } else {
     // Snapshot mode: only live rows.
     conditions.push('deleted_at IS NULL');
@@ -227,12 +222,16 @@ export async function putPlan(
     return planExistsResponse(clash.id);
   }
 
-  await assertUnderRateLimit(
+  // Spent before the write, not recorded after it: a count read here and a
+  // row written after the UPDATE would let parallel PUTs all pass the check.
+  // A write that then fails still costs its unit, which is the safe way round.
+  await consumeRateLimit(
     env,
     RATE_BUCKETS.planPut,
     user.id,
     nowMs,
-    `Plan write limit of ${RATE_BUCKETS.planPut.limit} per day reached`
+    `Plan write limit of ${RATE_BUCKETS.planPut.limit} per day reached`,
+    ctx
   );
 
   let row: PlanRow | null;
@@ -278,8 +277,6 @@ export async function putPlan(
   if (!row) {
     throw new HttpError(500, 'write_failed', 'Plan could not be stored');
   }
-
-  await recordRateEvent(env, RATE_BUCKETS.planPut, user.id, nowMs, ctx);
 
   return json(toPlanSyncEntry(row), existing ? 200 : 201);
 }
@@ -339,30 +336,44 @@ export async function sharePlan(
 ): Promise<Response> {
   const user = await requireUser(request, env, ctx);
   assertNotBanned(user);
-  const row = await requireOwnPlan(env, id, user.id);
-  if (row.deleted_at !== null) {
-    throw new HttpError(404, 'not_found', 'Plan not found');
+
+  // Mint by compare-and-swap. Two parallel POSTs both read `share_id IS NULL`;
+  // a blind UPDATE let the second overwrite the first's id, so the link the
+  // first caller had already handed out was dead on arrival. The UPDATE only
+  // lands while the row is still unshared *and* unchanged since this round
+  // read it (the stamped document is built from that read, so a PUT in
+  // between must not be overwritten by the older copy); a loser re-reads and
+  // replays whatever id won, exactly as a retried POST would.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const row = await requireOwnPlan(env, id, user.id);
+    if (row.deleted_at !== null) {
+      throw new HttpError(404, 'not_found', 'Plan not found');
+    }
+
+    // Idempotent: a plan that is already shared replays its id and URL.
+    if (row.share_id !== null) {
+      const payload: SharePlanResponse = {
+        shareId: row.share_id,
+        url: shareUrl(env, row.share_id),
+      };
+      return json(payload);
+    }
+
+    const shareId = generateShareId();
+    const now = new Date().toISOString();
+    const minted = await env.DB.prepare(
+      `UPDATE plans SET share_id = ?, document_json = ?, updated_at = ?
+        WHERE id = ? AND share_id IS NULL AND deleted_at IS NULL AND updated_at = ?`
+    )
+      .bind(shareId, stampDocument(row, now), now, id, row.updated_at)
+      .run();
+    if ((minted.meta.changes ?? 0) === 1) {
+      const payload: SharePlanResponse = { shareId, url: shareUrl(env, shareId) };
+      return json(payload);
+    }
   }
 
-  // Idempotent: a plan that is already shared replays its id and URL.
-  if (row.share_id !== null) {
-    const payload: SharePlanResponse = {
-      shareId: row.share_id,
-      url: shareUrl(env, row.share_id),
-    };
-    return json(payload);
-  }
-
-  const shareId = generateShareId();
-  const now = new Date().toISOString();
-  await env.DB.prepare(
-    `UPDATE plans SET share_id = ?, document_json = ?, updated_at = ? WHERE id = ?`
-  )
-    .bind(shareId, stampDocument(row, now), now, id)
-    .run();
-
-  const payload: SharePlanResponse = { shareId, url: shareUrl(env, shareId) };
-  return json(payload);
+  throw new HttpError(409, 'share_conflict', 'The plan changed while sharing; try again');
 }
 
 export async function unsharePlan(

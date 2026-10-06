@@ -2,6 +2,7 @@ import { SELF, env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import {
   authHeaders,
+  banUser,
   createLinkCode,
   createPlan,
   deleteMe,
@@ -258,6 +259,37 @@ describe('POST /v1/devices/link', () => {
 
     // A different IP is unaffected, and the code is still unused.
     expect((await linkDevice({ code }, '198.51.100.43')).status).toBe(201);
+  });
+});
+
+describe('link-attempt limit under load', () => {
+  it('cannot be raced past with parallel guesses', async () => {
+    // With a COUNT then an INSERT, every parallel guess read the same count
+    // and all of them got to try a code.
+    const ip = '198.51.100.90';
+    const results = await Promise.all(
+      Array.from({ length: 16 }, () => linkDevice({ code: 'ZZZZZZZZ' }, ip))
+    );
+    const statuses = results.map((r) => r.status);
+    expect(statuses.filter((s) => s === 404)).toHaveLength(10);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(6);
+  });
+
+  it('counts an IPv6 /64 as one address', async () => {
+    for (let i = 0; i < 10; i++) {
+      expect((await linkDevice({ code: 'ZZZZZZZZ' }, `2001:db8:90::${i + 1}`)).status).toBe(404);
+    }
+    expect((await linkDevice({ code: 'ZZZZZZZZ' }, '2001:db8:90:0:aaaa::1')).status).toBe(429);
+  });
+});
+
+describe('banned accounts', () => {
+  it('may not mint link codes', async () => {
+    const phone = await registerDevice('Banned phone');
+    await banUser(phone.userId);
+    const res = await createLinkCode(phone);
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('banned');
   });
 });
 

@@ -403,6 +403,39 @@ describe('PUT /v1/plans/:id', () => {
   });
 });
 
+describe('plan write limit under load', () => {
+  it('cannot be raced past with parallel PUTs', async () => {
+    const device = await registerDevice('Parallel');
+    const { id } = await createPlan(device);
+    // One below the ceiling, so exactly one more PUT may land.
+    const now = new Date().toISOString();
+    await env.DB.batch(
+      Array.from({ length: 238 }, () =>
+        env.DB.prepare(`INSERT INTO rate_events (bucket, key, created_at) VALUES (?, ?, ?)`).bind(
+          'plan_put',
+          device.userId,
+          now
+        )
+      )
+    );
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, (_, i) => putPlan(device, id, planBody(id, { name: `Race ${i}` })))
+    );
+    const statuses = results.map((r) => r.status);
+    expect(statuses.filter((s) => s === 200)).toHaveLength(1);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(4);
+
+    // Refused requests hand their unit back: the log holds exactly the limit.
+    const row = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM rate_events WHERE bucket = 'plan_put' AND key = ?`
+    )
+      .bind(device.userId)
+      .first<{ n: number }>();
+    expect(row?.n).toBe(240);
+  });
+});
+
 describe('GET /v1/plans', () => {
   it('lists only the caller’s plans', async () => {
     const mine = await registerDevice('Mine');
@@ -534,6 +567,19 @@ describe('plan sharing', () => {
     expect(shared.trailId).toBe('heysen');
     expect(shared.ownerDisplayName).toBe('Sharer');
     expect(shared.document.stops).toHaveLength(2);
+  });
+
+  it('hands parallel share requests one id, so no returned link is dead', async () => {
+    const device = await registerDevice('Double tap');
+    const { id } = await createPlan(device);
+
+    const results = await Promise.all([share(device, id), share(device, id), share(device, id)]);
+    expect(results.map((r) => r.status)).toEqual([200, 200, 200]);
+    const ids = await Promise.all(
+      results.map(async (r) => ((await r.json()) as SharePlanResponse).shareId)
+    );
+    expect(new Set(ids).size).toBe(1);
+    expect((await SELF.fetch(url(`/v1/shared/plans/${ids[0]}`))).status).toBe(200);
   });
 
   it('surfaces the share id on the sync entry', async () => {

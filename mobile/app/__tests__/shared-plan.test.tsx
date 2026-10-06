@@ -36,10 +36,16 @@ jest.mock('../../src/api/client', () => ({
 
 jest.mock('../../src/api/plans', () => ({ fetchSharedPlan: jest.fn() }));
 
-jest.mock('../../src/services/trail-loader', () => ({
-  getTrailJson: jest.fn(),
-  getTrailIndexEntry: () => ({ id: 'heysen', name: 'Heysen Trail' }),
-}));
+// The screen reads the trail through the async `loadTrail` (a newer download
+// can supersede the bundle); here it resolves whatever `getTrailJson` is set to.
+jest.mock('../../src/services/trail-loader', () => {
+  const getTrailJson = jest.fn();
+  return {
+    getTrailJson,
+    loadTrail: jest.fn(async (id: string) => getTrailJson(id)),
+    getTrailIndexEntry: () => ({ id: 'heysen', name: 'Heysen Trail' }),
+  };
+});
 
 jest.mock('../../src/api/uuid', () => ({ uuidv4: () => 'new-plan-id' }));
 

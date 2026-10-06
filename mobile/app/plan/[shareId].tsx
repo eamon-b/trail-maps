@@ -13,8 +13,10 @@
  * the app; the website's "Open in Tracknotes" button is what produces this URL.
  *
  * The trail is the one thing that cannot be shared: a plan names a trail id,
- * and a phone that does not have that guide bundled has nothing to compute days
- * against. That case says so plainly rather than rendering an empty list.
+ * and a phone that does not have that guide has nothing to compute days
+ * against. A trail published to the R2 catalog after this build is downloaded
+ * here, as opening its guide would; anything else says so plainly rather than
+ * rendering an empty list.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -38,7 +40,9 @@ import { getBaseUrl } from '../../src/api/client';
 import { apiErrorMessage } from '../../src/api/error-message';
 import { fetchSharedPlan } from '../../src/api/plans';
 import { uuidv4 } from '../../src/api/uuid';
-import { getTrailIndexEntry, getTrailJson, type TrailJson } from '../../src/services/trail-loader';
+import { getTrailIndexEntry, loadTrail, type TrailJson } from '../../src/services/trail-loader';
+import { ensureTrailDownloaded } from '../../src/services/trail-data-updates';
+import { isCatalogTrailId } from '../../src/services/trail-catalog';
 import { resolveGuideTrail } from '../../src/features/guide/guide-trail';
 import { useSettingsStore } from '../../src/state/settings-store';
 import { usePlansStore } from '../../src/state/plans-store';
@@ -100,15 +104,40 @@ export default function SharedPlanScreen() {
     if (sharedTrailId) void hydratePlan(sharedTrailId);
   }, [hydratePlan, sharedTrailId]);
 
-  // The bundled trail, oriented the way the plan was made: `computePlanDays`
-  // converts the stops out of their NOBO-absolute storage, but it cannot
-  // reverse a track, so a SOBO plan needs the reversed guide trail.
+  // The guide's trail as this phone has it (a newer download over the bundle,
+  // or fetched now for a catalog-only trail). Tagged with the id it belongs to;
+  // undefined while it resolves, null when the phone cannot get it.
+  const [rawTrail, setRawTrail] = useState<{ id: string; trail: TrailJson | null } | null>(null);
+  useEffect(() => {
+    if (!sharedTrailId) return;
+    let cancelled = false;
+    (async () => {
+      let found = await loadTrail(sharedTrailId);
+      if (!found && isCatalogTrailId(sharedTrailId)) {
+        if (await ensureTrailDownloaded(sharedTrailId)) found = await loadTrail(sharedTrailId);
+      }
+      return found;
+    })()
+      .catch(() => null)
+      .then((found) => {
+        if (!cancelled) setRawTrail({ id: sharedTrailId, trail: found });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sharedTrailId]);
+
+  // Oriented the way the plan was made: `computePlanDays` converts the stops
+  // out of their NOBO-absolute storage, but it cannot reverse a track, so a
+  // SOBO plan needs the reversed guide trail.
+  const trailResolved = !!shared && rawTrail?.id === shared.trailId;
   const trail = useMemo<TrailJson | null>(() => {
-    if (!shared) return null;
-    const raw = getTrailJson(shared.trailId);
-    if (!raw) return null;
-    return resolveGuideTrail(raw, shared.document.direction === 'SOBO' ? 'reversed' : 'default');
-  }, [shared]);
+    if (!shared || !trailResolved || !rawTrail?.trail) return null;
+    return resolveGuideTrail(
+      rawTrail.trail,
+      shared.document.direction === 'SOBO' ? 'reversed' : 'default',
+    );
+  }, [shared, trailResolved, rawTrail]);
 
   // Estimated at the reader's own pace and hours for this trail (defaults
   // until they set some): the estimates are for whoever is reading the plan.
@@ -204,7 +233,7 @@ export default function SharedPlanScreen() {
         </Text>
       );
     }
-    if (!shared) {
+    if (!shared || !trailResolved) {
       return <ActivityIndicator color={colors.accent} />;
     }
     if (!trail) {

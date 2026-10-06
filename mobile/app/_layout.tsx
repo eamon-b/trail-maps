@@ -8,6 +8,7 @@ import { HeaderActions, HeaderIconButton } from '../src/navigation/HeaderIconBut
 import { pickGpxFile } from '../src/features/import/import-gpx';
 import { useIncomingFile } from '../src/features/import/incoming-file';
 import { registerPlanSync, unregisterPlanSync } from '../src/sync/plan-sync';
+import { useTrailDataUpdates } from '../src/hooks/useTrailDataUpdates';
 
 function ThemedStack() {
   const { colors } = useTheme();
@@ -19,6 +20,10 @@ function ThemedStack() {
   // screen. Mounted here because it is the one component guaranteed to exist
   // for the whole app lifetime.
   useIncomingFile();
+
+  // Newer trail data published to R2 since this build (waypoint fixes, new
+  // trails) is fetched in the background; a guide picks it up when next opened.
+  useTrailDataUpdates();
 
   // Every local plan edit goes through one store hook; this is where that hook
   // is pointed at the outbox. Mounted here for the same reason as the line

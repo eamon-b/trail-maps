@@ -14,21 +14,39 @@
  * same ids as the allowlist (`scripts/server-trail-allowlist.test.ts` holds them
  * equal), so this module is the cheap authority and `trail-loader` re-exports
  * it (see its `isServerKnown`).
+ *
+ * Trails published to the R2 catalog but not bundled in this build (a trail
+ * added after the APK was made) are server-known too: the catalog is ours, and
+ * publishing a trail means adding it to the allowlist. `trail-data-updates`
+ * registers their ids here whenever it loads or refreshes the catalog — pushed
+ * in rather than pulled, so this module still imports nothing.
  */
 
 const SERVER_TRAIL_IDS: ReadonlySet<string> = new Set(
   (require('../../assets/trails/index.json') as { id: string }[]).map((entry) => entry.id),
 );
 
+/** Catalog-only trail ids — see {@link registerRemoteTrailIds}. */
+let remoteTrailIds: ReadonlySet<string> = new Set();
+
 /**
  * Whether this trail id is known to the server (comments API allowlist,
- * waypoint-id registry) — i.e. whether it is one of the bundled trails.
+ * waypoint-id registry) — i.e. whether it is bundled or in the R2 catalog.
  *
  * Imported ids must never be sent: a comment posted against one would 4xx at
  * best and create orphan rows at worst.
  */
 export function isServerKnown(id: string): boolean {
-  return SERVER_TRAIL_IDS.has(id);
+  return SERVER_TRAIL_IDS.has(id) || remoteTrailIds.has(id);
+}
+
+/**
+ * Replace the set of catalog-only trail ids (published to R2, not bundled).
+ * Called by `trail-data-updates`, which has already refused `u_` ids — they are
+ * refused again here, because this set is the gate on every network path.
+ */
+export function registerRemoteTrailIds(ids: Iterable<string>): void {
+  remoteTrailIds = new Set([...ids].filter((id) => !id.startsWith('u_')));
 }
 
 /** The bundled trail ids, in bundle order. */

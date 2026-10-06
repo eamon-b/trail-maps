@@ -66,7 +66,9 @@ const GENERIC_WORDS = new Set([
   'campsite',
   'campground',
   'camp',
+  'camping',
   'site',
+  'ground',
   'shelter',
   'hut',
   'caravan',
@@ -120,7 +122,7 @@ export interface DedupWaypointLike {
  * Exported for tests, which is the only way to pin the behaviour that the
  * generic-word list drives.
  */
-export function nameTokens(name: string | null | undefined): string[] {
+export function nameTokens(name: string | null | undefined, keepGeneric = false): string[] {
   if (!name) return [];
   // An apostrophe joins rather than splits, so `Devil's Kitchen` and `Devils
   // Kitchen` reduce to the same `devils`, not to `devil s` against `devils`.
@@ -131,7 +133,9 @@ export function nameTokens(name: string | null | undefined): string[] {
     .replace(/\b([a-z])['‘’]\s*/g, '$1')
     .replace(/['‘’]/g, '')
     .replace(/[^a-z0-9 ]/g, ' ');
-  return cleaned.split(/\s+/).filter(token => token.length > 0 && !GENERIC_WORDS.has(token));
+  return cleaned
+    .split(/\s+/)
+    .filter(token => token.length > 0 && (keepGeneric || !GENERIC_WORDS.has(token)));
 }
 
 /** Longest-common-subsequence ratio, the same measure `difflib` reports. */
@@ -174,13 +178,48 @@ export function nameScore(a: string | null | undefined, b: string | null | undef
 
   let shared = 0;
   for (const token of setA) if (setB.has(token)) shared += 1;
+  // One name inside the other is the same place only when more than a single
+  // word says so: `Opua General Store` is not the town `Opua`, and `River
+  // Camp` is not `Finke River Campground`. The generic words count towards
+  // that second word, though — `Melrose Caravan Park` and `Melrose Caravan
+  // Park and Campground` agree on the kind of place as well as its name.
   const contained = shared === Math.min(setA.size, setB.size);
   if (contained && (shared >= 2 || setA.size === setB.size)) return 1;
+  // On a single word, only when the longer name *leads* with it: a place name
+  // puts its proper name first (`Blowering Dam Campsite`, `Trezona Camp
+  // Ground`), while `Finke River Campground` leads with Finke and `River Camp`
+  // merely shares its common noun.
+  if (contained && leadsWith(a, b) && sharedWithGeneric(a, b) >= 2) return 1;
 
   const jaccard = shared / (setA.size + setB.size - shared);
 
   const ratio = sequenceRatio([...setA].sort().join(' '), [...setB].sort().join(' '));
   return Math.max(jaccard, ratio);
+}
+
+/**
+ * The words that all say "a place to camp": `Trezona Camp Ground`, `Trezona
+ * Campsite` and `Mangahuia Camping Ground` differ only in which of them the
+ * mapper reached for, so for the kind-of-place comparison they are one word.
+ */
+const CAMP_WORDS = new Set(['campsite', 'campground', 'camp', 'camping', 'site', 'ground', 'bushcamp']);
+
+/** Whether the longer of two names opens with the shorter one's first token. */
+function leadsWith(a: string | null | undefined, b: string | null | undefined): boolean {
+  const ta = nameTokens(a);
+  const tb = nameTokens(b);
+  const [longer, shorter] = ta.length >= tb.length ? [ta, tb] : [tb, ta];
+  return shorter.length > 0 && longer[0] === shorter[0];
+}
+
+/** Shared tokens before the generic words are dropped, camp words folded into one. */
+function sharedWithGeneric(a: string | null | undefined, b: string | null | undefined): number {
+  const kind = (name: string | null | undefined) =>
+    new Set(nameTokens(name, true).map(token => (CAMP_WORDS.has(token) ? 'camp' : token)));
+  const setB = kind(b);
+  let shared = 0;
+  for (const token of kind(a)) if (setB.has(token)) shared += 1;
+  return shared;
 }
 
 /**

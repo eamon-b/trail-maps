@@ -110,6 +110,63 @@ describe('reverseAlternates', () => {
     expect(reversed[0].endOffsetMeters).toBe(900);
   });
 
+  it('mirrors an alternate attached at its start only, still read from that junction', () => {
+    // The Bibbulmun's "Alt: hitch into Denmark": leaves at km 909.53 of
+    // 981.6 and never rejoins. Reversal used to leave it at 909.53.
+    const hitch: ReversibleVariant = {
+      distance: 12,
+      startDistance: 909.53,
+      startOffsetMeters: 600,
+      points: [{ i: 0 }, { i: 1 }, { i: 2 }],
+      waypoints: [makeWaypoint({ distance: 12, totalDistance: 921.53, variantTrackIndex: 2 })],
+    };
+    const [reversed] = reverseAlternates([hitch], 981.6);
+
+    expect(reversed.startDistance).toBe(72.07);
+    expect(reversed).not.toHaveProperty('endDistance');
+    // The junction is still the branch point, so nothing about the walk out
+    // from it changes.
+    expect(reversed.points).toEqual(hitch.points);
+    expect(reversed.startOffsetMeters).toBe(600);
+    expect(reversed.waypoints![0].totalDistance).toBe(84.07);
+    expect(reversed.waypoints![0].variantTrackIndex).toBe(2);
+  });
+
+  it('turns an alternate attached at its end only into one read from that junction', () => {
+    // Written by an ingest from before such variants were turned round: the
+    // junction is the last point, and the waypoint km count from points[0].
+    const dangling: ReversibleVariant = {
+      distance: 8,
+      endDistance: 1122.77,
+      endOffsetMeters: 900,
+      points: [{ i: 0 }, { i: 1 }, { i: 2 }],
+      waypoints: [
+        makeWaypoint({ name: 'Free end', distance: 0, totalDistance: 0, ascent: 0, descent: 0, variantTrackIndex: 0 }),
+        makeWaypoint({ name: 'Near junction', distance: 7.5, totalDistance: 7.5, ascent: 300, descent: 20, variantTrackIndex: 2 }),
+      ],
+    };
+    const [reversed] = reverseAlternates([dangling], 4800);
+
+    expect(reversed.startDistance).toBe(3677.23);
+    expect(reversed).not.toHaveProperty('endDistance');
+    expect(reversed.startOffsetMeters).toBe(900);
+    expect(reversed).not.toHaveProperty('endOffsetMeters');
+    expect(reversed.points).toEqual([{ i: 2 }, { i: 1 }, { i: 0 }]);
+    const names = reversed.waypoints!.map(w => (w as TestWaypoint).name);
+    expect(names).toEqual(['Near junction', 'Free end']);
+    expect(reversed.waypoints![0].totalDistance).toBe(3677.73); // 0.5 km out
+    expect(reversed.waypoints![1].totalDistance).toBe(3685.23); // the whole 8 km
+    expect(reversed.waypoints![1].distance).toBe(7.5);
+    expect(reversed.waypoints![0].variantTrackIndex).toBe(0);
+  });
+
+  it('rounds the mirrored junctions to the 10 m every other km is', () => {
+    // 100.1 - 30.7 is 69.39999999999999 in floating point.
+    const [reversed] = reverseAlternates([{ startDistance: 10.3, endDistance: 30.7 }], 100.1);
+    expect(reversed.startDistance).toBe(69.4);
+    expect(reversed.endDistance).toBe(89.8);
+  });
+
   it('leaves unattached alternates untouched (variant-relative km, no junction to mirror)', () => {
     const unattached: ReversibleVariant = {
       distance: 5,
@@ -141,6 +198,26 @@ describe('transformSideTrips', () => {
     expect(wp.distance).toBe(3);
     expect(wp.ascent).toBe(50);
     expect(wp.variantTrackIndex).toBe(7);
+  });
+
+  it('rounds the mirrored junction', () => {
+    // 981.6 - 909.53 is 72.07000000000005 in floating point.
+    const [transformed] = transformSideTrips([{ startDistance: 909.53 }], 981.6);
+    expect(transformed.startDistance).toBe(72.07);
+  });
+
+  it('turns a side trip attached at its end only round, like an alternate', () => {
+    const spur: ReversibleVariant = {
+      distance: 3,
+      endDistance: 903.01,
+      points: [{ i: 0 }, { i: 1 }],
+      waypoints: [makeWaypoint({ distance: 0, totalDistance: 0, variantTrackIndex: 0 })],
+    };
+    const [transformed] = transformSideTrips([spur], 1200);
+    expect(transformed.startDistance).toBe(296.99);
+    expect(transformed).not.toHaveProperty('endDistance');
+    expect(transformed.points).toEqual([{ i: 1 }, { i: 0 }]);
+    expect(transformed.waypoints![0].totalDistance).toBe(299.99);
   });
 
   it('mirrors a parent-attached side trip the same way', () => {

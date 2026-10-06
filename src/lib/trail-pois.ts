@@ -98,7 +98,9 @@ export function buildRouteScale(
       breaks.add(kmScale.length - 1);
     }
     polylines.push(points);
-    kmScale.push(...km);
+    // A loop, not `push(...km)`: JavaScriptCore (Safari) refuses a call with
+    // more than 65,536 arguments, and a long imported track has more points.
+    for (const value of km) kmScale.push(value);
   };
 
   const trackPoints: TrackPoint[] = (trail.track?.points ?? []).filter(isFinitePoint);

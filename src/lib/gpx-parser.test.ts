@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { parseGpx, generateGpx, GPX_MAX_POINT_COUNT } from './gpx-parser';
+import { parseGpx, generateGpx, GPX_MAX_POINT_COUNT, GPX_MAX_WAYPOINT_COUNT } from './gpx-parser';
 import { flattenGpx } from './trail-ingest';
 import type { GpxWaypoint } from './types';
 
@@ -96,6 +96,21 @@ describe('parseGpx', () => {
       /too many points/
     );
     expect(GPX_MAX_POINT_COUNT).toBe(100000);
+  });
+
+  it('enforces the waypoint-count cap', () => {
+    // simple-trail has three <wpt>s.
+    expect(() => parseGpx(fixture('simple-trail'), undefined, { maxWaypointCount: 2 })).toThrow(
+      /too many waypoints: 3 exceeds the 2 waypoint limit/
+    );
+    expect(parseGpx(fixture('simple-trail'), undefined, { maxWaypointCount: 3 }).waypoints).toHaveLength(3);
+    expect(parseGpx(fixture('simple-trail'), undefined, { maxWaypointCount: 0 }).waypoints).toHaveLength(3);
+    expect(GPX_MAX_WAYPOINT_COUNT).toBe(20000);
+  });
+
+  it('applies the waypoint cap by default', () => {
+    const wpts = Array.from({ length: GPX_MAX_WAYPOINT_COUNT + 1 }, () => '<wpt lat="1" lon="2"/>').join('');
+    expect(() => parseGpx(`<gpx>${wpts}</gpx>`)).toThrow(/too many waypoints/);
   });
 
   it('accepts namespace-prefixed elements', () => {

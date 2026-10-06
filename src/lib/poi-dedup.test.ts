@@ -72,6 +72,27 @@ describe('nameScore', () => {
   it('does not call one shared word a match', () => {
     expect(nameScore('River Camp', 'Finke River Campground')).toBeLessThan(0.9);
     expect(nameScore('Lake', 'Lake Tali Karng')).toBeLessThan(0.9);
+    // A shop or a pub in a town is not the town.
+    expect(nameScore('Opua General Store', 'Opua')).toBeLessThan(0.9);
+    expect(nameScore('Puhoi Pub', 'Puhoi')).toBeLessThan(0.9);
+  });
+
+  it('lets the generic words supply the second shared word', () => {
+    // Stripped, these are `melrose` against `melrose and`: one name inside the
+    // other on a single word. The caravan park they both name makes it a match.
+    expect(nameScore('Melrose Caravan Park', 'Melrose Caravan Park and Campground')).toBe(1);
+    // A brand prefix puts another word first, so this one stays apart; a second
+    // pin for a caravan park is the cheaper mistake.
+    expect(nameScore('Big 4: Hawker Caravan Park', 'Hawker Caravan Park')).toBeLessThan(1);
+    expect(nameScore('Burra Caravan & Camping Park', 'Burra Caravan Park')).toBe(1);
+    // Every way of spelling "campground" is the same kind of place.
+    expect(nameScore('Trezona Camp Ground', 'Trezona Campsite')).toBe(1);
+    expect(nameScore('Pines Camp Freedom Camping', 'Pines Campsite')).toBe(1);
+    expect(nameScore('Blowering Dam Campsite', 'Blowering camp')).toBe(1);
+    // ...but a shelter beside a campsite is not the campsite, and the old hut
+    // is not the new one.
+    expect(nameScore('Klondyke Shelter', 'Klondyke Corner Campsite')).toBeLessThan(0.9);
+    expect(nameScore('Old Aparima Hut', 'Aparima Hut')).toBeLessThan(0.9);
   });
 
   it('tolerates spelling drift', () => {

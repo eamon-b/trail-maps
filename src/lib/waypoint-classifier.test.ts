@@ -785,6 +785,22 @@ describe('waypoint-classifier', () => {
         expect(inferWaypointTypeFromKeywords('Heavitree Gap')).toBe(null);
       });
 
+      it('finds a keyword that ends in a non-ASCII letter', () => {
+        // `\b` is ASCII-only, so it saw no word boundary after the é and the
+        // `café` keyword never matched a café.
+        expect(inferWaypointTypeFromKeywords('Café')).toBe('food');
+        expect(inferWaypointTypeFromKeywords('Rimutaka Café & Store')).toBe('food');
+        expect(inferWaypointTypeFromKeywords('Cafés de la Gare')).toBe('food');
+      });
+
+      it('treats accented letters as part of a word on either side', () => {
+        // A keyword inside a longer word is not that word, whatever alphabet
+        // the rest of it is in.
+        expect(inferWaypointTypeFromKeywords('Éhut')).toBe(null);
+        expect(inferWaypointTypeFromKeywords('Hutë')).toBe(null);
+        expect(inferWaypointTypeFromKeywords('Kōwhai Hut')).toBe('hut');
+      });
+
       it('handles empty and whitespace-only input', () => {
         expect(inferWaypointTypeFromKeywords('')).toBe(null);
         expect(inferWaypointTypeFromKeywords('   ')).toBe(null);

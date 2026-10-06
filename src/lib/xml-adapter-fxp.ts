@@ -9,6 +9,13 @@
  * possible: document order is load-bearing for GPX (track point order *is* the
  * route). `trimValues: false` is equally deliberate — DOM `textContent` does not
  * trim, and the build pipeline feeds raw text straight into waypoint names.
+ *
+ * Entities are decoded here rather than by fast-xml-parser, which decodes the
+ * five named XML entities but leaves numeric references (`&#39;`, `&#x26;`,
+ * `&#160;`) as literal text where the DOM decodes them. Decoding those
+ * afterwards would decode twice: `&amp;#39;` is the text `&#39;`, not an
+ * apostrophe. So the parser's own pass is off and one pass here does both.
+ * Entities declared in a DOCTYPE are not expanded; no GPX generator writes one.
  */
 
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
@@ -27,6 +34,39 @@ interface FxpElement {
 type FxpEntry = Record<string, unknown>;
 
 const ATTR_PREFIX = '@_';
+const CDATA_KEY = '#cdata';
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+};
+
+const ENTITY_PATTERN = /&(?:#[xX]([0-9a-fA-F]+)|#([0-9]+)|(amp|lt|gt|quot|apos));/g;
+
+/** Code points an XML 1.0 document may contain (its `Char` production). */
+function isXmlChar(cp: number): boolean {
+  return (
+    cp === 0x9 ||
+    cp === 0xa ||
+    cp === 0xd ||
+    (cp >= 0x20 && cp <= 0xd7ff) ||
+    (cp >= 0xe000 && cp <= 0xfffd) ||
+    (cp >= 0x10000 && cp <= 0x10ffff)
+  );
+}
+
+/** Decode XML entity and character references in a single pass. */
+function decodeEntities(value: string): string {
+  if (value.indexOf('&') === -1) return value;
+  return value.replace(ENTITY_PATTERN, (match, hex?: string, dec?: string, named?: string) => {
+    if (named) return NAMED_ENTITIES[named];
+    const cp = hex !== undefined ? parseInt(hex, 16) : parseInt(dec ?? '', 10);
+    return isXmlChar(cp) ? String.fromCodePoint(cp) : match;
+  });
+}
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -40,6 +80,9 @@ const parser = new XMLParser({
   removeNSPrefix: true,
   ignoreDeclaration: true,
   ignorePiTags: true,
+  processEntities: false,
+  // CDATA is literal text: kept apart so the entity pass leaves it alone.
+  cdataPropName: CDATA_KEY,
 });
 
 function tagOf(entry: FxpEntry): string | null {
@@ -52,14 +95,14 @@ function tagOf(entry: FxpEntry): string | null {
 
 function elementFromEntry(entry: FxpEntry): FxpElement | null {
   const tag = tagOf(entry);
-  if (tag === null || tag === '#text' || tag === '#comment') return null;
+  if (tag === null || tag === '#text' || tag === '#comment' || tag === CDATA_KEY) return null;
 
   const attrs: Record<string, string> = {};
   const rawAttrs = entry[':@'] as Record<string, unknown> | undefined;
   if (rawAttrs) {
     for (const [key, value] of Object.entries(rawAttrs)) {
       const name = key.startsWith(ATTR_PREFIX) ? key.slice(ATTR_PREFIX.length) : key;
-      attrs[name] = value == null ? '' : String(value);
+      attrs[name] = value == null ? '' : decodeEntities(String(value));
     }
   }
 
@@ -73,7 +116,14 @@ function childrenFromEntries(entries: FxpEntry[]): { children: FxpElement[]; tex
   for (const entry of entries) {
     if (Object.prototype.hasOwnProperty.call(entry, '#text')) {
       const value = entry['#text'];
-      text += value == null ? '' : String(value);
+      text += value == null ? '' : decodeEntities(String(value));
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(entry, CDATA_KEY)) {
+      for (const part of (entry[CDATA_KEY] as FxpEntry[] | undefined) ?? []) {
+        const value = part['#text'];
+        text += value == null ? '' : String(value);
+      }
       continue;
     }
     const child = elementFromEntry(entry);
@@ -110,6 +160,10 @@ function toXmlNode(element: FxpElement): XmlNode {
     },
     querySelector(tag: string): XmlNode | null {
       const found = firstDescendant(element, tag);
+      return found ? toXmlNode(found) : null;
+    },
+    childElement(tag: string): XmlNode | null {
+      const found = element.children.find(child => child.tag === tag);
       return found ? toXmlNode(found) : null;
     },
     getAttribute(name: string): string | null {

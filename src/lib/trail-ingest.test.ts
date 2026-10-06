@@ -13,6 +13,7 @@ import {
   buildTrail,
   calculateAdaptiveTolerance,
   flattenGpx,
+  recomputeTrailElevation,
   type BuildTrailDiagnostics,
   type ParsedGpxResult,
 } from './trail-ingest';
@@ -643,6 +644,55 @@ describe('waypoint km across a route break', () => {
     // 400 m up across the water, if it counted.
     expect(far.totalAscent).toBe(20);
     expect(far.ascent).toBe(0);
+  });
+});
+
+describe('the display copy of an out-and-back route', () => {
+  /**
+   * 2,000 points north along a meander the simplification keeps some of, then
+   * back over exactly the same coordinates: every coordinate is passed twice.
+   * The shape of the Bibbulmun's walk into Denmark and back.
+   */
+  function outAndBack(): ParsedGpxResult {
+    const out = Array.from({ length: 2000 }, (_, i) => ({
+      lat: -35 + i * 0.0005,
+      lon: 117 + 0.002 * Math.sin(i / 50),
+      ele: 100 + i * 0.1,
+      time: null,
+    }));
+    const back = out.slice(0, -1).reverse().map(p => ({ ...p }));
+    return { tracks: [{ name: 'There and back', points: [...out, ...back] }], waypoints: [], name: null };
+  }
+
+  it('keeps each kept point on its own pass, so km never runs backwards', () => {
+    const trail = buildTrail(outAndBack(), { config: config() });
+    const display = trail.track.displayPoints;
+
+    expect(display.length).toBeLessThan(trail.track.points.length);
+    for (let i = 1; i < display.length; i++) {
+      expect(display[i].dist).toBeGreaterThanOrEqual(display[i - 1].dist);
+    }
+    // Every display point is one of the track's own points, km included.
+    const byDist = new Map(trail.track.points.map(p => [p.dist, p]));
+    for (const p of display) expect(byDist.get(p.dist)).toBe(p);
+  });
+
+  it('re-attaches recomputed elevations to the pass each display point is on', () => {
+    const trail = buildTrail(outAndBack(), { config: config() });
+    // The two passes now differ in height: the return is 1 km higher. The
+    // display copy names points on both passes at the same coordinates.
+    const n = trail.track.points.length;
+    const points = trail.track.points.map((p, i) => ({ ...p, ele: i < n / 2 ? p.ele : p.ele + 1000 }));
+    const lifted = {
+      ...trail,
+      track: { ...trail.track, points, displayPoints: [0, 500, 1500, 1999, 2498, 3498, n - 1].map(i => points[i]) },
+    };
+
+    const recomputed = recomputeTrailElevation(lifted);
+    expect(recomputed.track.displayPoints[1].ele).toBeLessThan(1000);
+    expect(recomputed.track.displayPoints[5].ele).toBeGreaterThan(1000);
+    const byDist = new Map(recomputed.track.points.map(p => [p.dist, p.ele]));
+    for (const p of recomputed.track.displayPoints) expect(p.ele).toBe(byDist.get(p.dist));
   });
 });
 

@@ -5,9 +5,9 @@
     "shortName": "AAWT",
     "lengthKm": 688.3,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "94618bba2c2271f582b3171a2e1360c4",
-    "bytes": 1147672
+    "updatedAt": "2026-10-06T19:38:35.939Z",
+    "md5": "0bf1a54cd2ced1cfc15a26bf30a966ca",
+    "bytes": 1147618
   },
   {
     "id": "hume-and-hovell",
@@ -15,7 +15,7 @@
     "shortName": "H&H",
     "lengthKm": 426,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
+    "updatedAt": "2026-10-06T19:40:25.668Z",
     "md5": "858bf3db7821d543b2bb35c0ace305a9",
     "bytes": 718341
   },
@@ -25,19 +25,19 @@
     "shortName": "Bibb",
     "lengthKm": 981.6,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "8aa000c597d6eee7f3e187caa0f25fed",
-    "bytes": 1069046
+    "updatedAt": "2026-10-06T19:38:35.939Z",
+    "md5": "4acce8d8051a0d2c7b8c76764adaa67d",
+    "bytes": 1069044
   },
   {
     "id": "cape_to_cape",
     "name": "Cape to Cape Track",
     "shortName": "Cape to Cape",
     "lengthKm": 126.9,
-    "dataVersion": "2026-09-20",
-    "updatedAt": "2026-09-20T00:00:00.000Z",
-    "md5": "a2bd41ca41b4864a794075bafa100550",
-    "bytes": 570213
+    "dataVersion": "2026-10-06",
+    "updatedAt": "2026-10-06T19:34:08.401Z",
+    "md5": "ab7c4ba82d0f6972e469f46cb75363ee",
+    "bytes": 570211
   },
   {
     "id": "cdt",
@@ -45,9 +45,9 @@
     "shortName": "CDT",
     "lengthKm": 4823.2,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "19b9c87a84a21055be7e9054b74a50c0",
-    "bytes": 2525333
+    "updatedAt": "2026-10-06T19:34:08.401Z",
+    "md5": "8fb03ebcf596123c2b83b7268e21e8d5",
+    "bytes": 2525330
   },
   {
     "id": "grampians_peaks",
@@ -75,9 +75,9 @@
     "shortName": "GOW",
     "lengthKm": 96.6,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "4d7bf72e13c81e7cb5f4e49b807b2417",
-    "bytes": 587225
+    "updatedAt": "2026-10-06T19:40:25.668Z",
+    "md5": "0f80224ed6d2eb7bf612309cd8a62b61",
+    "bytes": 587198
   },
   {
     "id": "great_south_west_walk",
@@ -85,9 +85,9 @@
     "shortName": "GSWW",
     "lengthKm": 253.7,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "92476bffcf9487837b833021c707358b",
-    "bytes": 593594
+    "updatedAt": "2026-10-06T19:34:08.401Z",
+    "md5": "d717c4ec3b41f1cf81d5263cae5b2e83",
+    "bytes": 593567
   },
   {
     "id": "heysen",
@@ -95,9 +95,9 @@
     "shortName": "Heysen",
     "lengthKm": 1098.9,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "480b6589409492ee5f222007fcbd68aa",
-    "bytes": 1228449
+    "updatedAt": "2026-10-06T19:42:08.483Z",
+    "md5": "a11823a7451d1882d56545b7db7d68dc",
+    "bytes": 1228399
   },
   {
     "id": "kep_track",
@@ -165,9 +165,9 @@
     "shortName": "South Coast",
     "lengthKm": 85.5,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "30b2c671888b4f446b44c5ee9581f9ba",
-    "bytes": 341550
+    "updatedAt": "2026-10-06T19:34:08.401Z",
+    "md5": "55fafed49e6ee421218fb71c6ea1558e",
+    "bytes": 341496
   },
   {
     "id": "te_araroa",
@@ -175,9 +175,9 @@
     "shortName": "Te Araroa",
     "lengthKm": 3056.8,
     "dataVersion": "2026-10-06",
-    "updatedAt": "2026-10-06T08:57:49.450Z",
-    "md5": "fce1d03dd8dd38558e2b3d08f09175c7",
-    "bytes": 1913927
+    "updatedAt": "2026-10-06T19:42:08.483Z",
+    "md5": "930da5d197218fc8a8118cbc343622eb",
+    "bytes": 1913630
   },
   {
     "id": "thorsborne",

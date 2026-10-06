@@ -87,7 +87,8 @@ describe('backfillElevation', () => {
   });
 
   it('samples long tracks and interpolates the rest', async () => {
-    const { fetch, batches } = stubFetch(lat => (lat + 33) * 10000); // 0 → 1000 m over the line
+    // 0 → 4,995 m over the line: steep, but inside the band a DEM can return.
+    const { fetch, batches } = stubFetch(lat => (lat + 33) * 5000);
     const points = line(1000);
 
     const elevations = await backfillElevation(points, {
@@ -103,10 +104,10 @@ describe('backfillElevation', () => {
     // ...but every point got an elevation, interpolated along the line.
     expect(elevations).toHaveLength(1000);
     expect(elevations[0]).toBeCloseTo(0, 5);
-    expect(elevations[999]).toBeCloseTo(9990, 0);
+    expect(elevations[999]).toBeCloseTo(4995, 0);
     // A point between two samples lands on the straight line between them.
-    expect(elevations[5]).toBeCloseTo(50, 0);
-    expect(elevations[505]).toBeCloseTo(5050, 0);
+    expect(elevations[5]).toBeCloseTo(25, 0);
+    expect(elevations[505]).toBeCloseTo(2525, 0);
   });
 
   it('aborts between batches without applying anything', async () => {
@@ -171,6 +172,37 @@ describe('backfillElevation', () => {
 
     const elevations = await backfillElevation(line(4), { fetch: voids, delayMs: 0 });
     expect(elevations).toEqual([0, 0, 0, 0]);
+  });
+
+  it('interpolates across a void sample instead of ramping down to the sentinel', async () => {
+    // Every point is sampled; the third reads as the -32768 void marker and a
+    // fourth as an absurd 20 km.
+    const sentinel: Record<number, number> = { 2: -32768, 3: 20000 };
+    const pts = line(6);
+    const { fetch } = stubFetch(lat => {
+      const i = pts.findIndex(p => Math.abs(p.lat - lat) < 1e-9);
+      return sentinel[i] ?? 100 + i * 10;
+    });
+
+    const elevations = await backfillElevation(pts, { fetch, delayMs: 0 });
+    expect(elevations[0]).toBe(100);
+    expect(elevations[1]).toBe(110);
+    // Between the good samples either side (110 and 140), by distance.
+    expect(elevations[2]).toBeCloseTo(120, 0);
+    expect(elevations[3]).toBeCloseTo(130, 0);
+    expect(elevations[4]).toBe(140);
+    expect(Math.min(...elevations)).toBeGreaterThan(0);
+  });
+
+  it('keeps a void at the end of the track level with the last good sample', async () => {
+    const pts = line(4);
+    const { fetch } = stubFetch(lat => (Math.abs(lat - pts[3].lat) < 1e-9 ? -32768 : 250));
+    expect(await backfillElevation(pts, { fetch, delayMs: 0 })).toEqual([250, 250, 250, 250]);
+  });
+
+  it('accepts real ground below sea level', async () => {
+    const { fetch } = stubFetch(() => -430);
+    expect(await backfillElevation(line(3), { fetch, delayMs: 0 })).toEqual([-430, -430, -430]);
   });
 
   it('returns an empty array for an empty track without calling out', async () => {

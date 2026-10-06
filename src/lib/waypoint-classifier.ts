@@ -357,12 +357,20 @@ function escapeRegExp(literal: string): string {
  * Compiled `keyword -> RegExp` cache. `(?:e?s)?` tolerates the plural of every
  * keyword shape we use ("huts", "beaches", "campsites") without needing a
  * second table entry per word.
+ *
+ * The word boundaries are Unicode letters and digits, not `\b`: `\b` only
+ * knows ASCII, so it finds no boundary after the `é` of "café" and the keyword
+ * never matched the word it is there for. (Hermes supports both the lookbehind
+ * and `\p{…}` used here.)
  */
 const keywordPatterns = new Map<string, RegExp>();
 function keywordPattern(keyword: string): RegExp {
   let pattern = keywordPatterns.get(keyword);
   if (!pattern) {
-    pattern = new RegExp(`\\b${escapeRegExp(keyword)}(?:e?s)?\\b`);
+    pattern = new RegExp(
+      `(?<![\\p{L}\\p{N}])${escapeRegExp(keyword)}(?:e?s)?(?![\\p{L}\\p{N}])`,
+      'u'
+    );
     keywordPatterns.set(keyword, pattern);
   }
   return pattern;

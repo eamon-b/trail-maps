@@ -110,6 +110,77 @@ describe('importGpx', () => {
     expect(trail.track.totalAscent).toBeLessThan(rawAscent / 5);
   });
 
+  it('keeps the climb of a dense, smooth track instead of filtering every step out', () => {
+    // 1,500 m up in 0.5 m steps, the shape of a smoothed DEM export. Against a
+    // per-step 3 m filter this read 0 m and was called "noisy".
+    const eles = Array.from({ length: 3001 }, (_, i) => 100 + i * 0.5);
+    const wpts = [500, 1500, 2500]
+      .map(i => `<wpt lat="${-33 + i * 0.001}" lon="${151 + i * 0.001}"><name>WP ${i}</name></wpt>`)
+      .join('');
+    const xml = syntheticGpx(eles).replace('<trk>', `${wpts}<trk>`);
+    const { trail, report } = importGpx(xml, { targetPoints: 0 });
+
+    expect(report.elevationLooksNoisy).toBe(false);
+    expect(trail.track.totalAscent).toBeGreaterThanOrEqual(1490);
+    expect(trail.track.totalAscent).toBeLessThanOrEqual(1500);
+
+    // The waypoints' climb is measured the same way as the total, so their
+    // running figure never claims more than the trail has.
+    const ascents = trail.waypoints.map(w => w.totalAscent);
+    expect(ascents).toHaveLength(3);
+    expect(ascents[0]).toBeCloseTo(250, -1);
+    expect(ascents[2]).toBeCloseTo(1250, -1);
+    expect(ascents[2]).toBeLessThanOrEqual(Math.round(trail.track.totalAscent));
+    expect(trail.waypoints.reduce((sum, w) => sum + w.ascent, 0)).toBe(ascents[2]);
+  });
+
+  it('ignores wiggles inside the 3 m band in the waypoints as well as the total', () => {
+    const eles = Array.from({ length: 400 }, (_, i) => 100 + (i % 2) * 1.5);
+    const xml = syntheticGpx(eles).replace(
+      '<trk>',
+      `<wpt lat="${-33 + 300 * 0.001}" lon="${151 + 300 * 0.001}"><name>Hut</name></wpt><trk>`
+    );
+    const { trail } = importGpx(xml, { targetPoints: 0 });
+    expect(trail.track.totalAscent).toBe(0);
+    expect(trail.waypoints[0].totalAscent).toBe(0);
+  });
+
+  describe('a file of one track per day', () => {
+    // Day 1 runs A → B (5.5 km), Day 2 B → C (16.7 km), due north.
+    const leg = (name: string, fromLat: number, toLat: number) => {
+      const steps = Math.round((toLat - fromLat) / 0.001);
+      const pts = Array.from({ length: steps + 1 }, (_, i) =>
+        `<trkpt lat="${(fromLat + i * 0.001).toFixed(3)}" lon="151"><ele>10</ele></trkpt>`
+      ).join('');
+      return `<trk><name>${name}</name><trkseg>${pts}</trkseg></trk>`;
+    };
+    const A = -33.15;
+    const B = -33.1;
+    const C = -32.95;
+    const gpx = (...tracks: string[]) =>
+      `<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1">${tracks.join('')}</gpx>`;
+
+    it('starts from the first day, not from the longest one', () => {
+      const { trail, report } = importGpx(gpx(leg('Day 1', A, B), leg('Day 2', B, C)));
+      expect(report.tracksCombined).toBe(2);
+      // km 0 is the start of Day 1. Starting from the longer Day 2 built the
+      // route C → B → A, the whole walk backwards.
+      expect(trail.track.points[0].lat).toBeCloseTo(A, 6);
+      expect(trail.track.points[trail.track.points.length - 1].lat).toBeCloseTo(C, 6);
+    });
+
+    it('never turns the first track round, even when the days are listed out of order', () => {
+      const { trail } = importGpx(gpx(leg('Day 2', B, C), leg('Day 1', A, B)));
+      expect(trail.track.points[0].lat).toBeCloseTo(A, 6);
+      expect(trail.track.points[trail.track.points.length - 1].lat).toBeCloseTo(C, 6);
+    });
+
+    it('still builds a single-track file exactly as drawn', () => {
+      const { trail } = importGpx(gpx(leg('Only', A, C)));
+      expect(trail.track.points[0].lat).toBeCloseTo(A, 6);
+    });
+  });
+
   it('reports gaps when several tracks are chained into one route', () => {
     const far = `<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1">
       <trk><name>Leg 1</name><trkseg>

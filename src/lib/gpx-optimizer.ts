@@ -46,9 +46,9 @@ export const GPX_OPTIMIZER_DEFAULTS: OptimizationOptions = {
  * @returns Perpendicular distance in meters
  */
 function perpendicularDistance(
-  point: GpxPoint,
-  lineStart: GpxPoint,
-  lineEnd: GpxPoint
+  point: { lat: number; lon: number },
+  lineStart: { lat: number; lon: number },
+  lineEnd: { lat: number; lon: number }
 ): number {
   // Convert to cartesian coordinates for calculation
   const toRadians = (deg: number) => deg * Math.PI / 180;
@@ -104,6 +104,25 @@ export function douglasPeucker(points: GpxPoint[], tolerance: number): GpxPoint[
   if (points.length <= 2) {
     return points;
   }
+  return douglasPeuckerIndices(points, tolerance).map(i => points[i]);
+}
+
+/**
+ * The indices {@link douglasPeucker} keeps, ascending.
+ *
+ * For callers that have to carry something per point across the
+ * simplification (cumulative km, say). Matching the kept points back by
+ * coordinate cannot do that: an out-and-back or a loop passes the same
+ * coordinate twice, and whichever pass a lookup lands on, half of those points
+ * come back with the other pass's km.
+ */
+export function douglasPeuckerIndices(
+  points: { lat: number; lon: number }[],
+  tolerance: number
+): number[] {
+  if (points.length <= 2) {
+    return points.map((_, i) => i);
+  }
 
   // Track which points to keep
   const keep: boolean[] = new Array(points.length).fill(false);
@@ -134,7 +153,11 @@ export function douglasPeucker(points: GpxPoint[], tolerance: number): GpxPoint[
     }
   }
 
-  return points.filter((_, i) => keep[i]);
+  const kept: number[] = [];
+  for (let i = 0; i < keep.length; i++) {
+    if (keep[i]) kept.push(i);
+  }
+  return kept;
 }
 
 /**
@@ -288,31 +311,69 @@ export function calculateTrackDistance(points: GpxPoint[]): number {
  * Calculate elevation gain and loss for a track
  * Uses threshold to filter out noise
  *
+ * The threshold is a hysteresis band, not a per-step filter: the change is
+ * measured from the last counted elevation (the anchor), and once it reaches
+ * the threshold the whole change is credited and the anchor moves. Filtering
+ * each step on its own throws away a real climb whenever the samples are dense
+ * enough that no single step reaches the threshold - a smoothed 5,000-point
+ * import of the Overland Track read 260 m of its 1,729 m. A threshold of 0 is
+ * the plain sum of every step.
+ *
  * @param points - Array of GPS points with elevation data
  * @param threshold - Minimum elevation change in meters to count (default: 3m)
+ * @param breakStarts - Indices of points that start a new stretch after a
+ *   route break: the step into one is not walked, so it is not climbed either
  * @returns Object containing total gain and loss in meters
  */
-export function calculateElevationStats(
-  points: GpxPoint[],
-  threshold: number = 3 // 3 meter threshold for counting elevation changes
+export function calculateElevationStats<P extends { ele: number }>(
+  points: P[],
+  threshold: number = 3, // 3 meter threshold for counting elevation changes
+  breakStarts?: ReadonlySet<number>
 ): { gain: number; loss: number } {
   if (points.length < 2) return { gain: 0, loss: 0 };
+  const { ascent, descent } = cumulativeElevationChange(points, threshold, breakStarts);
+  return { gain: ascent[ascent.length - 1], loss: descent[descent.length - 1] };
+}
+
+/**
+ * The running gain and loss of {@link calculateElevationStats} at every point,
+ * so the climb between any two points is the difference of the two entries and
+ * the segments between waypoints add up to exactly the track's total.
+ */
+export function cumulativeElevationChange<P extends { ele: number }>(
+  points: P[],
+  threshold: number = 3,
+  breakStarts?: ReadonlySet<number>
+): { ascent: number[]; descent: number[] } {
+  const ascent = new Array<number>(points.length);
+  const descent = new Array<number>(points.length);
+  if (points.length === 0) return { ascent, descent };
 
   let gain = 0;
   let loss = 0;
+  let anchor = points[0].ele;
+  ascent[0] = 0;
+  descent[0] = 0;
 
   for (let i = 1; i < points.length; i++) {
-    const diff = points[i].ele - points[i - 1].ele;
-    if (Math.abs(diff) >= threshold) {
-      if (diff > 0) {
+    if (breakStarts?.has(i)) {
+      // The other side of a ferry starts its own count.
+      anchor = points[i].ele;
+    } else {
+      const diff = points[i].ele - anchor;
+      if (diff >= threshold && diff > 0) {
         gain += diff;
-      } else {
-        loss += Math.abs(diff);
+        anchor = points[i].ele;
+      } else if (-diff >= threshold && diff < 0) {
+        loss -= diff;
+        anchor = points[i].ele;
       }
     }
+    ascent[i] = gain;
+    descent[i] = loss;
   }
 
-  return { gain, loss };
+  return { ascent, descent };
 }
 
 /**
@@ -455,15 +516,17 @@ export function generateOptimizedGpx(
 function getAllPoints(gpxData: GpxData): GpxPoint[] {
   const points: GpxPoint[] = [];
 
+  // Loops rather than `push(...array)`: JavaScriptCore (Safari) caps a call at
+  // 65,536 arguments, and one long segment is past that.
   for (const track of gpxData.tracks) {
     for (const segment of track.segments) {
-      points.push(...segment.points);
+      for (const point of segment.points) points.push(point);
     }
   }
 
   // Also include route points
   for (const route of gpxData.routes) {
-    points.push(...route.points);
+    for (const point of route.points) points.push(point);
   }
 
   return points;
@@ -584,7 +647,7 @@ export function optimizeGpx(
   const optimizedPoints: GpxPoint[] = [];
   for (const track of optimizedTracks) {
     for (const segment of track.segments) {
-      optimizedPoints.push(...segment.points);
+      for (const point of segment.points) optimizedPoints.push(point);
     }
   }
   const optimizedStats = calculateStats(optimizedPoints, optimizedContent);

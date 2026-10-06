@@ -140,7 +140,12 @@ describe('countNoiseByReason', () => {
         poi({ tags: { emergency: 'no' } }),
         poi({ tags: { railway: 'station' } }),
       ])
-    ).toEqual({ 'bus-stop': 2, 'minor-shelter': 1, 'no-emergency-department': 1 });
+    ).toEqual({
+      'bus-stop': 2,
+      'minor-shelter': 1,
+      'no-emergency-department': 1,
+      'road-emergency-phone': 0,
+    });
   });
 
   it('reports zeroes for no POIs at all', () => {
@@ -148,6 +153,46 @@ describe('countNoiseByReason', () => {
       'bus-stop': 0,
       'minor-shelter': 0,
       'no-emergency-department': 0,
+      'road-emergency-phone': 0,
     });
+  });
+});
+
+describe('noiseReason: walker shuttles, picnic roofs, road phones', () => {
+  it('keeps a bus stop whose name says it is a walkers\' shuttle or pickup', () => {
+    for (const name of ['Ronny Creek - Cradle Shuttle Bus', 'Three Capes Walk pickup']) {
+      expect(noiseReason(poi({ category: 'transport', name, tags: { highway: 'bus_stop' } }))).toBeNull();
+    }
+    expect(
+      noiseReason(poi({ category: 'transport', name: 'Pickering Rd', tags: { highway: 'bus_stop' } }))
+    ).toBe('bus-stop');
+    expect(
+      noiseReason(
+        poi({ category: 'transport', name: 'Long Term Parking Shuttle', tags: { highway: 'bus_stop' } })
+      )
+    ).toBe('bus-stop');
+  });
+
+  it('drops a roof named "picnic shelter" although "shelter" is a keep-word', () => {
+    expect(
+      noiseReason(
+        poi({ name: 'picnic shelter', tags: { amenity: 'shelter', shelter_type: 'picnic_shelter' } })
+      )
+    ).toBe('minor-shelter');
+  });
+
+  it('treats a pergola as a minor shelter', () => {
+    expect(noiseReason(poi({ tags: { amenity: 'shelter', shelter_type: 'pergola' } }))).toBe(
+      'minor-shelter'
+    );
+  });
+
+  it('drops help phones on motorways and in road tunnels, keeps other phones', () => {
+    for (const street of ['Pacific Motorway', 'Lane Cove Tunnel', 'Warringah Freeway', 'Macquarie Street Offramp']) {
+      expect(
+        noiseReason(poi({ category: 'emergency', tags: { emergency: 'phone', 'addr:street': street } }))
+      ).toBe('road-emergency-phone');
+    }
+    expect(noiseReason(poi({ category: 'emergency', tags: { emergency: 'phone' } }))).toBeNull();
   });
 });

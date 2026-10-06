@@ -85,6 +85,14 @@ const GENERIC_WORDS = new Set([
   'closed',
   'np',
   'national',
+  // Great Trails Victoria names every walkers' camp "<Place> Hike-in
+  // Campground" where OSM has "<Place> Camp", "<Place> Bushcamp (GSWW)" or
+  // "<Place> Canoe Camp"; none of these words tells two places apart.
+  'hike',
+  'bushcamp',
+  'canoe',
+  'gow',
+  'gsww',
 ]);
 
 /** Curator prefixes used in the bundled GPX files (`R: Ormiston Gorge`). */
@@ -110,8 +118,14 @@ export interface DedupWaypointLike {
  */
 export function nameTokens(name: string | null | undefined): string[] {
   if (!name) return [];
+  // An apostrophe joins rather than splits, so `Devil's Kitchen` and `Devils
+  // Kitchen` reduce to the same `devils`, not to `devil s` against `devils`.
+  // After a one-letter prefix it also swallows a stray space: the AAWT's
+  // `O' Keefes Hut` is OSM's `O'Keefes Hut`.
   const cleaned = (name.toLowerCase().replace(CURATOR_PREFIX, '') as string)
     .replace(TRAILING_QUALIFIER, '')
+    .replace(/\b([a-z])['‘’]\s*/g, '$1')
+    .replace(/['‘’]/g, '')
     .replace(/[^a-z0-9 ]/g, ' ');
   return cleaned.split(/\s+/).filter(token => token.length > 0 && !GENERIC_WORDS.has(token));
 }
@@ -163,11 +177,66 @@ export function nameScore(a: string | null | undefined, b: string | null | undef
   return Math.max(jaccard, ratio);
 }
 
+/**
+ * Within this many metres, with names that match outright, a POI duplicates a
+ * waypoint of a *generic* type (`GENERIC_WAYPOINT_TYPES`).
+ *
+ * The open-data trails take their waypoints *from* OSM, so the POI fetch finds
+ * the very same object again: a rock shelter or a private hut the trail types
+ * `poi` sits 0 m from its POI twin, and the type table above, which has no row
+ * for `poi`, would keep both. A typed waypoint still needs a compatible
+ * category — a tap named after the campground it stands in is not the
+ * campground — and transport never matches (see `nameScore`).
+ */
+export const COLOCATED_DUPLICATE_M = 10;
+
+/** Waypoint types that say nothing about what the place is. */
+const GENERIC_WAYPOINT_TYPES = new Set(['poi', 'waypoint']);
+
 /** Whether a POI category may duplicate a waypoint of this type. */
 export function isCompatibleType(category: string, waypointType: string | undefined): boolean {
   if (!waypointType) return false;
   const allowed = DUPLICATE_COMPATIBLE_TYPES[category as TrailPOICategory];
   return allowed ? allowed.includes(waypointType) : false;
+}
+
+/** The parts of a processed trail that carry waypoints a POI may duplicate. */
+export interface DedupTrailLike {
+  waypoints?: readonly DedupWaypointLike[];
+  offTrailWaypoints?: readonly DedupWaypointLike[];
+  alternates?: readonly { waypoints?: readonly DedupWaypointLike[] }[];
+  sideTrips?: readonly { waypoints?: readonly DedupWaypointLike[] }[];
+}
+
+/**
+ * Every waypoint of a trail a POI may duplicate: the main route's, the
+ * off-trail ones, and those on alternates, side trips and termini.
+ *
+ * The POI fetch searches a corridor round the variants too, so Munro Cabin on
+ * the Three Capes' Cape Pillar side trip, or Pine Valley Hut on the Overland's,
+ * is found as a POI exactly as a main-route hut is. Matching only
+ * `waypoints` left those as a second marker on top of the curated one. A
+ * waypoint listed twice (a variant that starts at a main-route hut) is kept
+ * once, by id.
+ */
+export function dedupCandidates(trail: DedupTrailLike): DedupWaypointLike[] {
+  const seen = new Set<string>();
+  const out: DedupWaypointLike[] = [];
+  const add = (list: readonly DedupWaypointLike[] | undefined): void => {
+    for (const waypoint of list ?? []) {
+      if (waypoint.id) {
+        if (seen.has(waypoint.id)) continue;
+        seen.add(waypoint.id);
+      }
+      out.push(waypoint);
+    }
+  };
+  add(trail.waypoints);
+  add(trail.offTrailWaypoints);
+  for (const variant of [...(trail.alternates ?? []), ...(trail.sideTrips ?? [])]) {
+    add(variant.waypoints);
+  }
+  return out;
 }
 
 /**
@@ -195,10 +264,15 @@ export function markDuplicatePois(
 
     if (nameTokens(poi.name).length === 0) return next;
 
-    let best: { waypoint: DedupWaypointLike; metres: number; score: number } | null = null;
+    const poiKey = [...new Set(nameTokens(poi.name))].sort().join(' ');
+    let best: {
+      waypoint: DedupWaypointLike;
+      metres: number;
+      score: number;
+      exact: boolean;
+    } | null = null;
     for (const waypoint of waypoints) {
       if (!waypoint.id) continue;
-      if (!isCompatibleType(poi.category, waypoint.type)) continue;
       if (nameTokens(waypoint.name).length === 0) continue;
 
       const metres = haversineDistance2D(poi.lat, poi.lon, waypoint.lat, waypoint.lon);
@@ -207,9 +281,24 @@ export function markDuplicatePois(
       const score = nameScore(poi.name, waypoint.name);
       if (score < MIN_NAME_SCORE) continue;
 
-      // Prefer the better name match, then the closer one.
-      if (!best || score > best.score || (score === best.score && metres < best.metres)) {
-        best = { waypoint, metres, score };
+      const colocated =
+        metres <= COLOCATED_DUPLICATE_M &&
+        score === 1 &&
+        poi.category !== 'transport' &&
+        GENERIC_WAYPOINT_TYPES.has(waypoint.type ?? '');
+      if (!colocated && !isCompatibleType(poi.category, waypoint.type)) continue;
+
+      // Prefer the better name match, then the same name outright (containment
+      // scores 1 too, so `Aire River West Campground` would otherwise go to the
+      // closer `Aire River Hike-in Campground`), then the closer one.
+      const exact = [...new Set(nameTokens(waypoint.name))].sort().join(' ') === poiKey;
+      if (
+        !best ||
+        score > best.score ||
+        (score === best.score && exact && !best.exact) ||
+        (score === best.score && exact === best.exact && metres < best.metres)
+      ) {
+        best = { waypoint, metres, score, exact };
       }
     }
 

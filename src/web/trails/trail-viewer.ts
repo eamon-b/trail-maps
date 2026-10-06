@@ -401,7 +401,10 @@ export function setTrailPois(pois: TrailPOI[]): void {
   // The reversed copy is memoised, so it has to be corrected rather than left
   // to be rebuilt — it may already be the trail on screen.
   if (trailState.reversedTrail) {
-    trailState.reversedTrail.pois = mirrorPoiDistances(sorted, original.track.totalDistance);
+    trailState.reversedTrail.pois = mirrorPoiDistances(sorted, original.track.totalDistance, {
+      alternates: original.alternates,
+      sideTrips: original.sideTrips,
+    });
   }
   refreshPois();
 }

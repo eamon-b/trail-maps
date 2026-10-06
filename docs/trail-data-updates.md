@@ -151,7 +151,10 @@ Checking and options:
   trails when the live catalog does not match the local index. Use it to
   answer "did I forget to publish?", for example in CI.
 - `--all` re-uploads every trail file and the catalog, even if nothing changed.
-- `--force` publishes even when it would roll a trail back (see below).
+- `--force` publishes even when it would roll a trail back, drop a trail, or
+  comes from a checkout the live catalog does not descend from (see below).
+- `--remove <id>` (repeatable) allows this publish to drop that trail from the
+  live catalog.
 - `R2_BUCKET` overrides the bucket. `TRAIL_DATA_BASE_URL` overrides where the
   live catalog is read from.
 
@@ -169,6 +172,13 @@ wrong:
   with different content: publishing would roll it back, as a publish from a
   stale checkout would. Pull and rebuild, or pass `--force` if the rollback is
   intended.
+- The live catalog's `sourceCommit` (the HEAD it was published from) is not an
+  ancestor of this checkout's HEAD, or is unknown to this clone: the same stale
+  checkout, caught even when the bytes happen to differ. Pull and rebuild, or
+  pass `--force`. Without git the check warns and continues.
+- A trail in the live catalog is missing from the local `index.json`. That is
+  usually a build that failed for it, not a decision, so name each trail to
+  drop with `--remove <id>` (or pass `--force`).
 
 ## Adding a brand-new trail
 

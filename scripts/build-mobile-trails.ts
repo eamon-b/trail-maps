@@ -145,12 +145,17 @@ function simplifyMainTrack(
  * Copy the cumulative climb from a full-resolution track onto a subset of it.
  *
  * `displayPoints` is what Douglas-Peucker kept of `points`, so it is a
- * subsequence of it and a single forward walk matching on coordinates lines the
- * two up — including where a trail doubles back over its own coordinates, which
- * a lat/lon lookup map would collapse. If the walk ever fails to find the next
- * point ahead (a display copy that is not a subsequence — not something
- * `buildTrail` produces, but nothing here depends on that), it gives up and
- * falls back to the nearest full-resolution point by km for the rest.
+ * subsequence of it and a single forward walk lines the two up. The walk
+ * matches on `dist` as well as lat/lon: where a trail doubles back over its
+ * own coordinates, a display point on the way back can share its lat/lon with
+ * an outbound point the display copy dropped, and a coordinate-only match
+ * would stop on that earlier pass and hand the point its climb. Both arrays
+ * carry the same `dist` objects (the display copy is a subset, never
+ * re-measured), so the comparison is exact up to float noise. If the walk
+ * ever fails to find the next point ahead (a display copy that is not a
+ * subsequence — not something `buildTrail` produces, but nothing here depends
+ * on that), it gives up and falls back to the nearest full-resolution point
+ * by km for the rest.
  */
 function copyCumulativeOntoSubset(
   source: (TrackPoint & { cumAscent: number; cumDescent: number })[],
@@ -158,12 +163,14 @@ function copyCumulativeOntoSubset(
 ): TrackPoint[] {
   let cursor = 0;
   let walking = true;
+  const samePoint = (a: TrackPoint, b: TrackPoint): boolean =>
+    a.lat === b.lat && a.lon === b.lon && Math.abs(a.dist - b.dist) <= SAME_DIST_KM;
 
   return subset.map(point => {
     let matched = -1;
     if (walking) {
       let i = cursor;
-      while (i < source.length && (source[i].lat !== point.lat || source[i].lon !== point.lon)) i++;
+      while (i < source.length && !samePoint(source[i], point)) i++;
       if (i < source.length) {
         matched = i;
         cursor = i + 1;
@@ -179,6 +186,9 @@ function copyCumulativeOntoSubset(
     };
   });
 }
+
+/** `dist` tolerance for "the same track point" (km): float noise, not metres. */
+const SAME_DIST_KM = 1e-9;
 
 export function processTrail(trail: TrailJson): TrailJson {
   // Cumulative climb, measured on the full-resolution track *before* anything is

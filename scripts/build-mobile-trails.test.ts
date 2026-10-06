@@ -414,6 +414,39 @@ describe('processTrail cumulative climb', () => {
     );
   });
 
+  it('gives a return-pass display point its own climb on an out-and-back', () => {
+    // Out 9 steps uphill, then back down over the very same coordinates. The
+    // display copy keeps a point on the way back but not its outbound twin, so
+    // a coordinate-only walk stopped on the outbound pass and handed the
+    // return point the climb from half way up, with none of the descent.
+    const coords = Array.from({ length: 10 }, (_, i) => ({ lat: -35 - i * 0.001, lon: 149 }));
+    const points: TrackPoint[] = Array.from({ length: 20 }, (_, j) => {
+      const c = j < 10 ? coords[j] : coords[19 - j];
+      const ele = j < 10 ? 100 + 10 * j : 100 + 10 * (19 - j);
+      return { ...c, ele, dist: j * 0.111 };
+    });
+    const source: TrailJson = {
+      config: { id: 'test', name: 'Test' },
+      track: {
+        points,
+        displayPoints: [points[0], points[13], points[19]],
+        totalDistance: points[19].dist,
+        totalAscent: 90,
+        totalDescent: 90,
+      },
+      waypoints: [],
+    };
+
+    const out = processTrail(source);
+
+    const display = out.track.displayPoints[1];
+    const own = out.track.points[13];
+    expect(display.dist).toBe(own.dist);
+    expect(display.cumAscent).toBe(own.cumAscent);
+    expect(display.cumDescent).toBe(own.cumDescent);
+    expect(display.cumDescent).toBeGreaterThan(0);
+  });
+
   it('falls back to the nearest point by km when displayPoints is not a subsequence', () => {
     const source = bumpyTrail();
     const endKm = source.track.totalDistance;

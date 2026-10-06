@@ -2419,7 +2419,8 @@
       "name": "Official mile 2810",
       "type": "milestone",
       "lat": 47.553995,
-      "lon": -112.962556
+      "lon": -112.962556,
+      "retired": true
     },
     {
       "id": "w_01848ceb",
@@ -2790,7 +2791,8 @@
       "name": "Official mile 2950",
       "type": "milestone",
       "lat": 48.493426,
-      "lon": -113.368772
+      "lon": -113.368772,
+      "retired": true
     },
     {
       "id": "w_1731104e",
@@ -2825,7 +2827,8 @@
       "name": "Official mile 2880",
       "type": "milestone",
       "lat": 48.03231,
-      "lon": -113.017039
+      "lon": -113.017039,
+      "retired": true
     },
     {
       "id": "w_199736ce",
@@ -3105,7 +3108,8 @@
       "name": "Official mile 2800",
       "type": "milestone",
       "lat": 47.459489,
-      "lon": -112.922346
+      "lon": -112.922346,
+      "retired": true
     },
     {
       "id": "w_2b0e7966",
@@ -3147,7 +3151,8 @@
       "name": "Official mile 2850",
       "type": "milestone",
       "lat": 47.794863,
-      "lon": -113.045775
+      "lon": -113.045775,
+      "retired": true
     },
     {
       "id": "w_2c83687f",
@@ -3504,7 +3509,8 @@
       "name": "Official mile 2970",
       "type": "milestone",
       "lat": 48.606656,
-      "lon": -113.526036
+      "lon": -113.526036,
+      "retired": true
     },
     {
       "id": "w_47343cb4",
@@ -3574,7 +3580,8 @@
       "name": "Official mile 2890",
       "type": "milestone",
       "lat": 48.132706,
-      "lon": -113.065609
+      "lon": -113.065609,
+      "retired": true
     },
     {
       "id": "w_4d0b0eb8",
@@ -3749,7 +3756,8 @@
       "name": "Official mile 2940",
       "type": "milestone",
       "lat": 48.453634,
-      "lon": -113.252467
+      "lon": -113.252467,
+      "retired": true
     },
     {
       "id": "w_55067e9c",
@@ -3763,7 +3771,8 @@
       "name": "Official mile 3020",
       "type": "milestone",
       "lat": 48.833815,
-      "lon": -113.827605
+      "lon": -113.827605,
+      "retired": true
     },
     {
       "id": "w_5664f9b0",
@@ -3798,7 +3807,8 @@
       "name": "Official mile 2830",
       "type": "milestone",
       "lat": 47.725935,
-      "lon": -113.162594
+      "lon": -113.162594,
+      "retired": true
     },
     {
       "id": "w_59ea6982",
@@ -3840,7 +3850,8 @@
       "name": "Official mile 2900",
       "type": "milestone",
       "lat": 48.21196,
-      "lon": -113.174494
+      "lon": -113.174494,
+      "retired": true
     },
     {
       "id": "w_5c376b09",
@@ -3938,7 +3949,8 @@
       "name": "Official mile 3030",
       "type": "milestone",
       "lat": 48.916684,
-      "lon": -113.905448
+      "lon": -113.905448,
+      "retired": true
     },
     {
       "id": "w_63460f7d",
@@ -4148,7 +4160,8 @@
       "name": "Official mile 2990",
       "type": "milestone",
       "lat": 48.681143,
-      "lon": -113.656183
+      "lon": -113.656183,
+      "retired": true
     },
     {
       "id": "w_6fd5a01c",
@@ -4183,7 +4196,8 @@
       "name": "Official mile 2960",
       "type": "milestone",
       "lat": 48.538551,
-      "lon": -113.454437
+      "lon": -113.454437,
+      "retired": true
     },
     {
       "id": "w_71fb0cf6",
@@ -4491,7 +4505,8 @@
       "name": "Official mile 2920",
       "type": "milestone",
       "lat": 48.311988,
-      "lon": -113.310805
+      "lon": -113.310805,
+      "retired": true
     },
     {
       "id": "w_81576173",
@@ -4932,7 +4947,8 @@
       "name": "Official mile 3010",
       "type": "milestone",
       "lat": 48.783849,
-      "lon": -113.755999
+      "lon": -113.755999,
+      "retired": true
     },
     {
       "id": "w_9b374ba1",
@@ -4946,7 +4962,8 @@
       "name": "Official mile 2840",
       "type": "milestone",
       "lat": 47.751301,
-      "lon": -113.010646
+      "lon": -113.010646,
+      "retired": true
     },
     {
       "id": "w_9b5416ed",
@@ -5149,7 +5166,8 @@
       "name": "Official mile 2820",
       "type": "milestone",
       "lat": 47.635999,
-      "lon": -113.078143
+      "lon": -113.078143,
+      "retired": true
     },
     {
       "id": "w_a666f7c1",
@@ -5226,7 +5244,8 @@
       "name": "Official mile 2790",
       "type": "milestone",
       "lat": 47.371265,
-      "lon": -112.811401
+      "lon": -112.811401,
+      "retired": true
     },
     {
       "id": "w_aa6b4c34",
@@ -5968,7 +5987,8 @@
       "name": "Official mile 2930",
       "type": "milestone",
       "lat": 48.374047,
-      "lon": -113.312466
+      "lon": -113.312466,
+      "retired": true
     },
     {
       "id": "w_d769307d",
@@ -6024,7 +6044,8 @@
       "name": "Official mile 2860",
       "type": "milestone",
       "lat": 47.892595,
-      "lon": -113.056641
+      "lon": -113.056641,
+      "retired": true
     },
     {
       "id": "w_dcf19209",
@@ -6052,7 +6073,8 @@
       "name": "Official mile 3000",
       "type": "milestone",
       "lat": 48.769312,
-      "lon": -113.683042
+      "lon": -113.683042,
+      "retired": true
     },
     {
       "id": "w_ddd70633",
@@ -6164,7 +6186,8 @@
       "name": "Official mile 2910",
       "type": "milestone",
       "lat": 48.270838,
-      "lon": -113.173517
+      "lon": -113.173517,
+      "retired": true
     },
     {
       "id": "w_e81f020b",
@@ -6318,7 +6341,8 @@
       "name": "Official mile 2870",
       "type": "milestone",
       "lat": 47.941611,
-      "lon": -112.974207
+      "lon": -112.974207,
+      "retired": true
     },
     {
       "id": "w_ef8cf2c5",
@@ -6388,7 +6412,8 @@
       "name": "Official mile 2980",
       "type": "milestone",
       "lat": 48.682772,
-      "lon": -113.504698
+      "lon": -113.504698,
+      "retired": true
     },
     {
       "id": "w_f21eecaf",
@@ -6642,7 +6667,8 @@
       "name": "Communal Shelter",
       "type": "poi",
       "lat": -37.561527,
-      "lon": 142.369364
+      "lon": 142.369364,
+      "retired": true
     },
     {
       "id": "w_06ce45df",
@@ -6656,14 +6682,16 @@
       "name": "Communal Shelter",
       "type": "poi",
       "lat": -37.066008,
-      "lon": 142.485134
+      "lon": 142.485134,
+      "retired": true
     },
     {
       "id": "w_0bb9bb78",
       "name": "High trail around Gar camp",
       "type": "trailhead",
       "lat": -36.988369,
-      "lon": 142.456564
+      "lon": 142.456564,
+      "retired": true
     },
     {
       "id": "w_11a49b65",
@@ -6740,7 +6768,8 @@
       "name": "Communal Shelter",
       "type": "poi",
       "lat": -37.603314,
-      "lon": 142.350667
+      "lon": 142.350667,
+      "retired": true
     },
     {
       "id": "w_266c5034",
@@ -6936,7 +6965,8 @@
       "name": "Communal Shelter",
       "type": "poi",
       "lat": -37.001735,
-      "lon": 142.44822
+      "lon": 142.44822,
+      "retired": true
     },
     {
       "id": "w_89f1af01",
@@ -7041,7 +7071,8 @@
       "name": "Communal Shelter",
       "type": "poi",
       "lat": -37.415271,
-      "lon": 142.501968
+      "lon": 142.501968,
+      "retired": true
     },
     {
       "id": "w_adc054a4",
@@ -7167,7 +7198,8 @@
       "name": "Communal Shelter",
       "type": "poi",
       "lat": -36.953496,
-      "lon": 142.435811
+      "lon": 142.435811,
+      "retired": true
     },
     {
       "id": "w_f87161ea",
@@ -7729,7 +7761,8 @@
       "name": "Heaton Lookout",
       "type": "poi",
       "lat": -32.981681,
-      "lon": 151.455274
+      "lon": 151.455274,
+      "retired": true
     },
     {
       "id": "w_94a67c72",
@@ -7813,7 +7846,8 @@
       "name": "Bushrat's Camp",
       "type": "campsite",
       "lat": -32.962669,
-      "lon": 151.420841
+      "lon": 151.420841,
+      "retired": true
     },
     {
       "id": "w_a11e0059",
@@ -7855,7 +7889,8 @@
       "name": "Brooklyn Dam campsite",
       "type": "campsite",
       "lat": -33.554507,
-      "lon": 151.207353
+      "lon": 151.207353,
+      "retired": true
     },
     {
       "id": "w_afe5e9ce",
@@ -7918,7 +7953,8 @@
       "name": "Shade Sail",
       "type": "poi",
       "lat": -33.790541,
-      "lon": 151.155023
+      "lon": 151.155023,
+      "retired": true
     },
     {
       "id": "w_c76faa39",
@@ -11698,7 +11734,8 @@
       "name": "Mt Kate House",
       "type": "poi",
       "lat": -41.635424,
-      "lon": 145.950698
+      "lon": 145.950698,
+      "retired": true
     },
     {
       "id": "w_4da086ca",
@@ -11768,7 +11805,8 @@
       "name": "Campsite",
       "type": "campsite",
       "lat": -41.771658,
-      "lon": 145.958024
+      "lon": 145.958024,
+      "retired": true
     },
     {
       "id": "w_9a56559b",
@@ -11810,7 +11848,8 @@
       "name": "Campsite",
       "type": "campsite",
       "lat": -41.771407,
-      "lon": 145.956529
+      "lon": 145.956529,
+      "retired": true
     },
     {
       "id": "w_b227e993",
@@ -11901,7 +11940,8 @@
       "name": "Marion's Lookout",
       "type": "poi",
       "lat": -41.660333,
-      "lon": 145.952845
+      "lon": 145.952845,
+      "retired": true
     },
     {
       "id": "w_edfbe06b",
@@ -12444,7 +12484,8 @@
       "name": "Kamojima Onsen Iyashi-no-Ya",
       "type": "accommodation",
       "lat": 34.063032,
-      "lon": 134.361536
+      "lon": 134.361536,
+      "retired": true
     },
     {
       "id": "w_bd04349f",
@@ -12707,7 +12748,8 @@
       "name": "Boltons Green Campground",
       "type": "campsite",
       "lat": -43.582583,
-      "lon": 146.895832
+      "lon": 146.895832,
+      "retired": true
     },
     {
       "id": "w_1112dafe",
@@ -12784,7 +12826,8 @@
       "name": "Louisa River Campsite",
       "type": "campsite",
       "lat": -43.486296,
-      "lon": 146.409843
+      "lon": 146.409843,
+      "retired": true
     },
     {
       "id": "w_becdb1ed",
@@ -17557,7 +17600,8 @@
       "name": "Where the ell are we?! (mid bench sign)",
       "type": "poi",
       "lat": -43.190734,
-      "lon": 147.927909
+      "lon": 147.927909,
+      "retired": true
     },
     {
       "id": "w_8f8ad897",

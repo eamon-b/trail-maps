@@ -14,7 +14,15 @@ import { haversineDistance } from '../../src/lib/distance';
  * registry of prior ids by proximity (same type, within {@link MATCH_RADIUS_METERS}).
  * Matches reuse the stored id (and refresh the stored coordinates so slow drift
  * is tracked); unmatched waypoints mint a new deterministic id and append an
- * entry. Entries are never deleted, so retired waypoints keep their ids.
+ * entry.
+ *
+ * Entries are never deleted, but an entry no waypoint matched in a build is
+ * marked `retired`. A retired id carries its comments and curated description
+ * with it, so proximity alone must not hand it on: a *different* waypoint
+ * added later within {@link MATCH_RADIUS_METERS} would otherwise inherit the
+ * old place's comments as its own. A retired entry is reclaimed only by a
+ * waypoint of the same type, in range, AND with the same name — the waypoint
+ * coming back — which clears the flag.
  */
 
 /** Max distance (metres) a built waypoint may be from a registry entry to be
@@ -31,6 +39,13 @@ export interface WaypointRegistryEntry {
   type: string;
   lat: number;
   lon: number;
+  /**
+   * Set when no waypoint in the trail's latest build matched this entry. Such
+   * an entry is reclaimable only by an exact name match; see the module note.
+   * Absent (never `false`) on a live entry, so the file only grows the key
+   * where it means something.
+   */
+  retired?: true;
 }
 
 /** The registry file shape: trailId -> list of entries. */
@@ -114,12 +129,18 @@ interface Candidate {
  *
  * For each waypoint (in input order):
  *  - Find unclaimed registry entries of the same `type` within
- *    {@link MATCH_RADIUS_METERS}. Rank them by exact name match, then by
- *    proximity, then by id (deterministic tie-break).
- *  - Match → reuse the entry's id and refresh its stored name/lat/lon.
+ *    {@link MATCH_RADIUS_METERS} — a retired entry only when its name is the
+ *    waypoint's exact name. Rank them by exact name match, then by proximity,
+ *    then by id (deterministic tie-break).
+ *  - Match → reuse the entry's id, refresh its stored name/lat/lon, and clear
+ *    any `retired` flag.
  *  - No candidate entries at all → mint a new id and append an entry.
  *  - Had candidate entries but every one was already claimed by another
  *    built waypoint this run → throw (ambiguous identity; needs a human).
+ *
+ * Afterwards every pre-existing entry of this trail that no waypoint claimed
+ * is marked `retired`. Call it once per trail per build, with every waypoint
+ * the trail has, or entries for the ones left out are retired.
  *
  * Returns ids parallel to `waypoints`.
  */
@@ -146,6 +167,9 @@ export function assignWaypointIds(
     for (let entryIndex = 0; entryIndex < initialEntryCount; entryIndex++) {
       const entry = entries[entryIndex];
       if (entry.type !== wp.type) continue;
+      // A retired id goes back only to the waypoint it belonged to (same name),
+      // never to a newcomer that happens to sit within the radius.
+      if (entry.retired && entry.name !== wp.name) continue;
       const distance = haversineDistance(wp.lat, wp.lon, entry.lat, entry.lon);
       if (distance > MATCH_RADIUS_METERS) continue;
       candidates.push({
@@ -171,6 +195,7 @@ export function assignWaypointIds(
       entry.name = wp.name;
       entry.lat = wp.lat;
       entry.lon = wp.lon;
+      delete entry.retired;
       claimedBy.set(pick.entryIndex, wpIndex);
       results[wpIndex] = entry.id;
       return;
@@ -208,13 +233,19 @@ export function assignWaypointIds(
     results[wpIndex] = id;
   });
 
+  // Whatever this build did not match is gone from the trail as built: retire
+  // it, so its id (and the comments keyed to it) cannot pass to a newcomer.
+  for (let entryIndex = 0; entryIndex < initialEntryCount; entryIndex++) {
+    if (!claimedBy.has(entryIndex)) entries[entryIndex].retired = true;
+  }
+
   return results;
 }
 
 /**
  * Serialise a registry deterministically for stable git diffs: trail keys
  * sorted alphabetically, entries within each trail sorted by id, fixed key
- * order per entry.
+ * order per entry, `retired` written only on retired entries.
  */
 export function stringifyRegistry(registry: WaypointRegistry): string {
   const ordered: WaypointRegistry = {};
@@ -228,6 +259,7 @@ export function stringifyRegistry(registry: WaypointRegistry): string {
       type: e.type,
       lat: e.lat,
       lon: e.lon,
+      ...(e.retired ? { retired: true as const } : {}),
     }));
   }
   return `${JSON.stringify(ordered, null, 2)}\n`;

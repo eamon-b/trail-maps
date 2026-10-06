@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   buildTrailPOIFile,
+  choosePoiWriteMode,
   mergeTrailPOIs,
   parseTrailPOIFile,
   poisForBuild,
@@ -250,5 +251,42 @@ describe('mergeTrailPOIs', () => {
     const before = JSON.stringify([existing, fetched]);
     mergeTrailPOIs(existing, fetched);
     expect(JSON.stringify([existing, fetched])).toBe(before);
+  });
+});
+
+describe('choosePoiWriteMode', () => {
+  const base = { hasExisting: true, windowed: false, failedChunks: 0, forceReplace: false };
+
+  it('replaces on a clean whole-trail fetch', () => {
+    expect(choosePoiWriteMode(base)).toBe('replace');
+  });
+
+  it('merges a whole-trail fetch that lost chunks, rather than shipping a partial file', () => {
+    // The regression: a run with failed chunks replaced a complete file with
+    // one missing those stretches, and exited 0.
+    expect(choosePoiWriteMode({ ...base, failedChunks: 1 })).toBe('merge');
+  });
+
+  it('replaces anyway with --force-replace', () => {
+    expect(choosePoiWriteMode({ ...base, failedChunks: 2, forceReplace: true })).toBe('replace');
+  });
+
+  it('always merges a windowed fetch, even with --force-replace', () => {
+    expect(choosePoiWriteMode({ ...base, windowed: true })).toBe('merge');
+    expect(choosePoiWriteMode({ ...base, windowed: true, forceReplace: true })).toBe('merge');
+  });
+
+  it('replaces when there is no file to merge into', () => {
+    expect(choosePoiWriteMode({ ...base, hasExisting: false, failedChunks: 3 })).toBe('replace');
+    expect(choosePoiWriteMode({ ...base, hasExisting: false, windowed: true })).toBe('replace');
+  });
+
+  it('keeps the existing POIs a failed chunk did not return', () => {
+    const existing = [poi(1, 10), poi(2, 500), poi(3, 900)];
+    // Chunk covering km 400-600 failed: POI 2 is missing from the fetch.
+    const fetched = [poi(1, 10), poi(3, 900), poi(4, 950)];
+    const mode = choosePoiWriteMode({ ...base, failedChunks: 1 });
+    const pois = mode === 'merge' ? mergeTrailPOIs(existing, fetched).pois : fetched;
+    expect(pois.map(p => p.id)).toEqual([1, 2, 3, 4]);
   });
 });

@@ -21,7 +21,19 @@
  *   npm run publish:trail-data                # upload new files, then the catalog
  *   npm run publish:trail-data -- --all       # re-upload every file and the catalog
  *   npm run publish:trail-data -- --check     # exit 1 if the live catalog differs
- *   npm run publish:trail-data -- --force     # publish even if it rolls a trail back
+ *   npm run publish:trail-data -- --remove <id>  # allow dropping that trail from the catalog
+ *   npm run publish:trail-data -- --force     # publish past every guard below
+ *
+ * Guards, each refusing the publish unless `--force`:
+ *   - a trail whose live `updatedAt` is later than the local one (`rollbacks`);
+ *   - the live catalog was published from a git commit that is not an
+ *     ancestor of this checkout's HEAD (`sourceCommitVerdict`) — the stale
+ *     checkout that rebuilt, so its stamps are new but its data is old. The
+ *     catalog records the HEAD it was published from as `sourceCommit`; with
+ *     no git available the guard warns and lets the publish through;
+ *   - a trail the live catalog has and this checkout does not, unless named
+ *     with `--remove <id>` (`unapprovedRemovals`).
+ * `--dry-run` reports the same refusals; `--check` only compares.
  *
  * Env: R2_BUCKET (default aus-map-data), TRAIL_DATA_BASE_URL (default
  * https://data.contour-map-tiles.net). Uploads need `wrangler` on PATH and
@@ -46,7 +58,9 @@ import {
   parseAllowedTrails,
   parseCatalog,
   planUpload,
+  sourceCommitVerdict,
   trailFileProblems,
+  unapprovedRemovals,
   type CatalogDiff,
   type MobileIndexEntry,
   type TrailCatalog,
@@ -67,18 +81,57 @@ export interface PublishOptions {
   dryRun: boolean;
   check: boolean;
   force: boolean;
+  /** Trail ids `--remove` allows this publish to drop from the live catalog. */
+  remove: string[];
 }
 
 export function parseArgs(argv: string[]): PublishOptions {
-  const options: PublishOptions = { all: false, dryRun: false, check: false, force: false };
-  for (const arg of argv) {
+  const options: PublishOptions = { all: false, dryRun: false, check: false, force: false, remove: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
     if (arg === '--all') options.all = true;
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--check') options.check = true;
     else if (arg === '--force') options.force = true;
-    else throw new Error(`Unknown argument ${JSON.stringify(arg)} (expected --all, --dry-run, --check or --force)`);
+    else if (arg === '--remove' || arg.startsWith('--remove=')) {
+      const id = arg === '--remove' ? argv[++i] : arg.slice('--remove='.length);
+      if (!id || id.startsWith('-')) throw new Error('--remove requires a trail id');
+      options.remove.push(id);
+    } else {
+      throw new Error(
+        `Unknown argument ${JSON.stringify(arg)} (expected --all, --dry-run, --check, --force or --remove <id>)`
+      );
+    }
   }
   return options;
+}
+
+/** Run git in the repository; null when git is missing or the command fails to start. */
+function git(args: string[]): { status: number | null; stdout: string } | null {
+  const result = spawnSync('git', args, { cwd: ROOT, encoding: 'utf-8' });
+  if (result.error) return null;
+  return { status: result.status, stdout: result.stdout ?? '' };
+}
+
+/** This checkout's HEAD commit, or null when git cannot say (best-effort). */
+export function gitHead(): string | null {
+  const result = git(['rev-parse', 'HEAD']);
+  if (!result || result.status !== 0) return null;
+  const head = result.stdout.trim();
+  return /^[0-9a-f]{40,64}$/.test(head) ? head : null;
+}
+
+/**
+ * Whether `ancestor` is in `head`'s history: `git merge-base --is-ancestor`
+ * exits 0 for yes and 1 for no; anything else (an unknown commit, no git) is
+ * null, "could not tell".
+ */
+export function gitIsAncestor(ancestor: string, head: string): boolean | null {
+  const result = git(['merge-base', '--is-ancestor', ancestor, head]);
+  if (!result) return null;
+  if (result.status === 0) return true;
+  if (result.status === 1) return false;
+  return null;
 }
 
 /** A trail file's bytes, keyed by trail id. Injected so the checks are testable. */
@@ -241,8 +294,9 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   const entries = index as MobileIndexEntry[];
   warnAboutCommentsAllowlist(entries.map(entry => entry.id));
 
-  const local = buildCatalog(entries, new Date());
-  console.log(`Local: ${local.trails.length} trails in ${indexPath}`);
+  const head = gitHead();
+  const local = buildCatalog(entries, new Date(), head);
+  console.log(`Local: ${local.trails.length} trails in ${indexPath}` + (head ? ` (HEAD ${head})` : ''));
 
   const live = await fetchLiveCatalog(baseUrl);
   console.log(
@@ -271,7 +325,36 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     return 1;
   }
 
+  // The rollback check above only sees stamps, and a stale checkout that
+  // rebuilt has fresh ones; ancestry is what tells it apart.
+  const liveCommit = live?.sourceCommit;
+  const verdict = sourceCommitVerdict(
+    liveCommit,
+    head,
+    liveCommit && head ? gitIsAncestor(liveCommit, head) : null
+  );
+  if (verdict.kind === 'warn') {
+    console.warn(`Warning: ${verdict.message}.`);
+  } else if (verdict.kind === 'refuse' && !options.force) {
+    console.error(`Refusing to publish: ${verdict.message}.`);
+    console.error('This checkout may not contain the data that is live. Pull (and rebuild), or pass --force.');
+    return 1;
+  }
+
   const plan = planUpload(local, live, { all: options.all });
+
+  const removals = unapprovedRemovals(plan.diff, new Set(options.remove));
+  if (removals.length > 0 && !options.force) {
+    console.error('This publish would remove trails the live catalog lists:');
+    for (const id of removals) console.error(`  - ${id}`);
+    console.error(
+      'If that is intended, name each one: ' +
+        removals.map(id => `--remove ${id}`).join(' ') +
+        ' (or pass --force).'
+    );
+    return 1;
+  }
+
   const diffLines = describeDiff(plan.diff, local, live);
   if (diffLines.length > 0) {
     console.log('Changes against the live catalog:');

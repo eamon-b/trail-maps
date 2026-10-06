@@ -27,11 +27,12 @@
  *    place at the side trip's junction, with the spur's length and climb;
  *  - a turn-off's own `offTrailKm` and `accessMode` (the CDT's, Te Araroa's).
  *
- * Only km the data says are *walked* (a side trip, or `accessMode: 'foot'`) go
- * into a leg's hours, days and food. A hitch, shuttle or boat — or a distance
- * whose mode the data does not give — is reported beside the leg, never
- * walked: counting a 70 km hitch as three days of food would be as wrong as
- * leaving out a real 9 km walk into town.
+ * Only walked km go into a leg's hours, days and food: a side trip,
+ * `accessMode: 'foot'`, or a distance whose mode the data does not give that
+ * is short enough to be a walk ({@link WALKED_WHEN_UNSAID_MAX_KM}). A hitch,
+ * shuttle or boat — or a longer unsaid distance — is reported beside the leg,
+ * never walked: counting a 70 km hitch as three days of food would be as wrong
+ * as leaving out a real 4 km walk into town.
  *
  * Nothing here is cached. `computeResupplyLegs` walks the track once per leg,
  * which on a web (full-resolution) track is real work — callers recompute only
@@ -186,7 +187,7 @@ export interface StopAccess {
   walkDescentM: number;
   /** The side trip walked, when there is one. */
   via?: string;
-  /** km covered some other way: hitch, shuttle, boat, or a way not given. */
+  /** km covered some other way: hitch, shuttle, boat, or an unsaid way too long to walk. */
   rideKm: number;
   /** How the ride is made; undefined when the data does not say. */
   rideMode?: Exclude<AccessMode, 'foot' | 'on-trail'>;
@@ -214,7 +215,7 @@ export interface ResupplyLeg extends ResupplyGap {
   offTrailWalkKm: number;
   /** Trail km plus off-trail walking: what the hours, days and food are worked from. */
   walkedKm: number;
-  /** Off-trail km not walked (hitch, shuttle, boat, not given): reported, never timed. */
+  /** Off-trail km not walked (hitch, shuttle, boat, a long unsaid way): reported, never timed. */
   rides: LegRide[];
   /** Climb over the whole walk, off-trail walking included. */
   ascentM: number;
@@ -267,6 +268,16 @@ export const SIDE_TRIP_END_REACH_M = 1000;
 
 /** A side-trip waypoint closer than this to the junction is at the junction, on the route. */
 const AT_JUNCTION_KM = 0.05;
+
+/**
+ * The longest off-trail distance taken to be walked when the data does not say
+ * how it is covered — every one of Te Araroa's. Its turn-offs fall into two
+ * groups with a gap between them: 3.1 km and under (Kerikeri 0.7, Mt Potts
+ * Lodge 3.0), then 4.5 km and up (Warkworth 6, Te Anau 35). The CDT, whose data
+ * does say, walks to a median 4 km and hitches from 6.4 km, so 5 km sits
+ * between what gets walked and what gets hitched. A stated mode always wins.
+ */
+export const WALKED_WHEN_UNSAID_MAX_KM = 5;
 
 /** Default grouping radius: the CDT's twins share a km, so this is slack, not need. */
 export const DEFAULT_GROUP_WITHIN_KM = 0.1;
@@ -517,8 +528,12 @@ export function optionAccess(
   if (km === 0) return null;
   // An 'on-trail' place with a distance contradicts itself; the distance is
   // what the hiker covers, and on-trail means on foot (as `accessSummary` reads it).
+  // With no mode at all, a short distance is a walk and a long one a ride.
   const walked =
-    option.accessRoute != null || option.accessMode === 'foot' || option.accessMode === 'on-trail';
+    option.accessRoute != null ||
+    option.accessMode === 'foot' ||
+    option.accessMode === 'on-trail' ||
+    (option.accessMode === undefined && km <= WALKED_WHEN_UNSAID_MAX_KM);
   if (walked) {
     const access: StopAccess = {
       place: option.name,

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community review - Trail Maps</title>
+  <!-- Admin tool: not linked from any public page, never indexed. -->
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./my-trails.css">
+  <link rel="stylesheet" href="./community.css">
+</head>
+<body>
+  <div class="container community-page">
+    <nav class="breadcrumb">
+      <a href="./">Home</a> / <span>Community review</span>
+    </nav>
+
+    <header>
+      <h1>Community review</h1>
+      <p class="subtitle">
+        Every community route that has not been removed: AI-rejected and hidden first,
+        then unverified, then verified.
+      </p>
+    </header>
+
+    <p class="loading" id="admin-status">Loading…</p>
+    <div id="admin-link" hidden></div>
+    <p class="import-error" id="admin-error" role="alert" hidden></p>
+
+    <div id="admin-toolbar" class="community-actions" hidden>
+      <span class="import-note" id="admin-identity"></span>
+      <button type="button" id="admin-reload" class="community-btn">Reload</button>
+    </div>
+
+    <div id="admin-list"></div>
+  </div>
+
+  <script type="module" src="./admin-community.ts"></script>
+</body>
+</html>

@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trail Maps - Australian Long Distance Trails</title>
+  <title>Trail Maps - Long Distance Hiking Trails</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./my-trails.css">
+  <link rel="stylesheet" href="./trail-list.css">
   <!-- Applies the saved theme before first paint so the page never flashes. See theme.ts. -->
   <script>
     (function () {
@@ -30,14 +31,26 @@
 
     <header class="hero">
       <h1>Trail Maps</h1>
-      <p class="tagline">Interactive maps and data for Australian hiking trails</p>
+      <p class="tagline">Interactive maps and data for long-distance hiking trails in Australia, New Zealand, Japan and the United States</p>
     </header>
 
-    <section class="feature-section">
+    <div id="trail-filter" class="trail-filter" role="search"></div>
+
+    <div id="no-match" class="no-results" hidden>
+      <p>No trails match.</p>
+      <p><button type="button" id="clear-filter" class="link-button">Clear the search and filters</button></p>
+    </div>
+
+    <section class="feature-section" id="featured-section" hidden>
+      <h2>Featured</h2>
+      <div id="featured-list" class="trail-grid list-grid"></div>
+    </section>
+
+    <section class="feature-section" id="curated-section">
       <h2>Trails</h2>
       <p>Browse trail information including interactive maps, elevation profiles, waypoints, and downloadable datasheets.</p>
 
-      <div id="trail-list" class="trail-grid">
+      <div id="trail-list" class="trail-groups">
         <p class="loading">Loading trails...</p>
       </div>
 
@@ -47,6 +60,17 @@
       </div>
     </section>
 
+    <section class="feature-section" id="community-section" hidden>
+      <div class="section-actions">
+        <h2>Community routes</h2>
+        <a href="./upload.html" class="trail-nav-link">Share a route →</a>
+      </div>
+      <p>Routes shared by other hikers. Verified ones have been checked by a person; unverified ones have only passed automatic checks.</p>
+
+      <p id="community-note" class="list-note" hidden></p>
+      <div id="community-list" class="trail-groups"></div>
+    </section>
+
     <section class="feature-section" id="my-trails-section">
       <div class="section-actions">
         <h2>My trails</h2>
@@ -54,7 +78,7 @@
       </div>
       <p>Trails imported from your own GPX files. They are stored in this browser only.</p>
 
-      <div id="my-trail-list" class="trail-grid" hidden></div>
+      <div id="my-trail-list" class="trail-grid list-grid" hidden></div>
 
       <div id="no-my-trails" class="no-results">
         <p>No imported trails yet.</p>
@@ -73,77 +97,6 @@
     </footer>
   </div>
 
-  <script type="module">
-    import { escapeHtml, formatKm } from './web-utils.ts';
-    import { isIndexedDbAvailable, listTrailSummaries } from './imported-trails-db.ts';
-
-    async function loadTrails() {
-      const trailList = document.getElementById('trail-list');
-      const noTrails = document.getElementById('no-trails');
-
-      try {
-        const response = await fetch('./data/generated/index.json');
-        if (!response.ok) {
-          throw new Error('Trail index not found');
-        }
-
-        const trails = await response.json();
-
-        if (trails.length === 0) {
-          trailList.setAttribute('hidden', '');
-          noTrails.removeAttribute('hidden');
-          return;
-        }
-
-        trailList.innerHTML = trails.map(trail => `
-          <a href="./trails/${encodeURIComponent(trail.id)}/" class="trail-card">
-            <h2>${escapeHtml(trail.name)}</h2>
-            <p class="trail-meta">
-              <span class="trail-short-name">${escapeHtml(trail.shortName)}</span>
-              <span class="trail-length">${escapeHtml(trail.lengthKm)} km</span>
-            </p>
-          </a>
-        `).join('');
-
-      } catch (error) {
-        trailList.innerHTML = '';
-        noTrails.removeAttribute('hidden');
-      }
-    }
-
-    async function loadMyTrails() {
-      const list = document.getElementById('my-trail-list');
-      const empty = document.getElementById('no-my-trails');
-
-      if (!isIndexedDbAvailable()) return;
-
-      let summaries = [];
-      try {
-        summaries = await listTrailSummaries();
-      } catch (error) {
-        // No imports to show (or storage locked down) — keep the empty state.
-        return;
-      }
-
-      if (summaries.length === 0) return;
-
-      // Every field here traces back to a user-supplied GPX file: escape it all.
-      list.innerHTML = summaries.map(trail => `
-        <a href="./my-trail.html?id=${encodeURIComponent(trail.id)}" class="trail-card">
-          <h2>${escapeHtml(trail.name)}<span class="imported-badge">Imported</span></h2>
-          <p class="trail-meta">
-            <span class="trail-length">${escapeHtml(formatKm(trail.lengthKm))} km</span>
-            <span class="trail-added">Added ${escapeHtml(new Date(trail.createdAt).toLocaleDateString())}</span>
-          </p>
-        </a>
-      `).join('');
-
-      list.removeAttribute('hidden');
-      empty.setAttribute('hidden', '');
-    }
-
-    loadTrails();
-    loadMyTrails();
-  </script>
+  <script type="module" src="./index.ts"></script>
 </body>
 </html>

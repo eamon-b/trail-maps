@@ -1,0 +1,337 @@
+/**
+ * Community routes: the share step on upload.html, the public route page
+ * (community-route.html) and the admin queue (admin-community.html).
+ *
+ * Built on the tokens in styles.css, so it follows light/dark with the rest.
+ */
+
+/* Author `display` rules below would otherwise beat `[hidden]`. */
+.community-panel [hidden],
+.community-page [hidden] {
+  display: none !important;
+}
+
+/* ---- Form fields ---- */
+.community-form,
+.community-link-form {
+  margin-top: 0.75rem;
+}
+
+.community-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+  min-width: 0;
+}
+
+.community-field label {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.community-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+
+.community-field-row > .community-field {
+  flex: 1 1 12rem;
+}
+
+.community-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.community-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+textarea.community-input {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.community-hint,
+.community-optional {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.community-rights {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin: 1rem 0 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.community-rights input {
+  margin-top: 0.2rem;
+  flex: none;
+}
+
+.community-rights a,
+.community-page a {
+  color: var(--primary);
+}
+
+.community-identity-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.community-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---- Automatic checks ---- */
+.community-checks {
+  list-style: none;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.community-check {
+  padding: 0.35rem 0.6rem;
+  border-left: 3px solid var(--border);
+  margin-bottom: 0.25rem;
+  background: var(--bg-subtle);
+  border-radius: 0 4px 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.community-check-level {
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+
+.community-check-pass {
+  border-left-color: var(--success);
+}
+
+.community-check-pass .community-check-level {
+  color: var(--tint-success-text);
+}
+
+.community-check-warn {
+  border-left-color: var(--tint-warn-border);
+  background: var(--tint-warn);
+  color: var(--tint-warn-text);
+}
+
+.community-check-fail {
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ---- Status badges ---- */
+.community-badge {
+  display: inline-block;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  cursor: help;
+  white-space: nowrap;
+}
+
+.community-badge-verified {
+  background: var(--tint-success);
+  color: var(--tint-success-text);
+}
+
+.community-badge-unverified {
+  background: var(--tint-warn);
+  color: var(--tint-warn-text);
+}
+
+.community-badge-hidden,
+.community-badge-removed {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* ---- Route page ---- */
+.community-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: center;
+  margin: 0.4rem 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.community-status-note {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.community-description {
+  margin: 0 0 0.75rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.community-licence,
+.community-safety {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.community-safety {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--tint-warn-border);
+  background: var(--tint-warn);
+  color: var(--tint-warn-text);
+  border-radius: 0 4px 4px 0;
+}
+
+.community-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.community-box {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.community-box h3 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.community-note-ok {
+  color: var(--tint-success-text);
+  font-size: 0.875rem;
+}
+
+/* ---- Admin queue ---- */
+.admin-row {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.admin-row.admin-row-attention {
+  border-left: 4px solid var(--danger);
+}
+
+.admin-row h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.admin-row dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.admin-row dt {
+  color: var(--text-muted);
+}
+
+.admin-row dd {
+  margin: 0;
+}
+
+.admin-row ul {
+  margin: 0.25rem 0 0.5rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.admin-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.admin-row-actions .community-input {
+  flex: 1 1 14rem;
+  width: auto;
+}
+
+.community-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.community-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.community-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.community-btn.is-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.community-btn.is-danger {
+  color: var(--danger);
+}
+
+@media (max-width: 600px) {
+  .admin-row dl {
+    grid-template-columns: 1fr;
+  }
+}

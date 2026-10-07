@@ -6,6 +6,7 @@
   <title>Import a GPX - Trail Maps</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./my-trails.css">
+  <link rel="stylesheet" href="./community.css">
 </head>
 <body>
   <div class="container">
@@ -17,7 +18,8 @@
       <h1>Import a GPX</h1>
       <p class="subtitle">
         Turn your own track into a full trail page — map, elevation profile, waypoints and
-        trip planner. The file is read in your browser and stored on this device only.
+        trip planner. The file is read in your browser and stored on this device only, unless you
+        choose to share it with the community afterwards.
         <a href="./how-import-works.html">How your file is processed</a>
       </p>
     </header>
@@ -33,7 +35,7 @@
     <label class="upload-area" id="drop-zone" for="file-input">
       <span class="upload-icon" aria-hidden="true">🗺️</span>
       <span class="upload-label">Drop a .gpx file here, or click to choose one</span>
-      <span class="upload-hint">Tracks, routes and waypoints are all read. Nothing is uploaded anywhere.</span>
+      <span class="upload-hint">Tracks, routes and waypoints are all read. Nothing is uploaded unless you choose to share it.</span>
     </label>
     <input type="file" id="file-input" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden>
 
@@ -96,6 +98,88 @@
         <a id="saved-plan-link" class="cta-button" href="#">Plan this trail</a>
       </div>
       <p class="import-note"><a href="./">← Back to all trails</a></p>
+    </section>
+
+    <!-- Opt-in, and only in a build with an API (VITE_API_BASE_URL): upload.ts
+         loads community-share.ts lazily once a trail has been saved. -->
+    <section id="community-share" class="results community-panel" hidden>
+      <h3>Share with the community</h3>
+      <p class="import-note">
+        A shared route is listed for everyone on Trail Maps and in the Tracknotes app.
+        It goes up straight away labelled <strong>Unverified</strong>, is reviewed
+        automatically, and is marked <strong>Verified</strong> once a person has checked it.
+        <a href="./how-import-works.html#sharing-with-the-community" target="_blank" rel="noopener">How sharing works</a>
+      </p>
+
+      <div id="community-link"></div>
+
+      <form id="community-form" class="community-form" novalidate hidden>
+        <p class="import-note community-identity-row">
+          <span id="community-identity"></span>
+          <button type="button" id="community-unlink" class="community-link-btn">Unlink this browser</button>
+        </p>
+
+        <div class="community-field">
+          <label for="community-name">Route name</label>
+          <input type="text" id="community-name" class="community-input" autocomplete="off">
+        </div>
+
+        <div class="community-field">
+          <label for="community-description">Description</label>
+          <textarea id="community-description" class="community-input" rows="5"
+            placeholder="Where it goes, how long it takes, water, camps, access, best season…"></textarea>
+          <span class="community-hint" id="community-description-count"></span>
+        </div>
+
+        <div class="community-field">
+          <label for="community-credit">Credit or source <span class="community-optional">(optional)</span></label>
+          <input type="text" id="community-credit" class="community-input" autocomplete="off"
+            placeholder="e.g. Recorded by me, March 2026 · or the open dataset it comes from">
+        </div>
+
+        <div class="community-field-row">
+          <div class="community-field">
+            <label for="community-country">Country</label>
+            <select id="community-country" class="community-input"></select>
+          </div>
+          <div class="community-field" id="community-country-other-field" hidden>
+            <label for="community-country-other">Country code (2 letters)</label>
+            <input type="text" id="community-country-other" class="community-input" maxlength="2"
+              autocomplete="off" autocapitalize="characters" placeholder="e.g. PE">
+          </div>
+          <div class="community-field" id="community-state-field" hidden>
+            <label for="community-state">State or region</label>
+            <select id="community-state" class="community-input"></select>
+          </div>
+        </div>
+
+        <p class="import-note" id="community-checks-source"></p>
+        <div id="community-checks"></div>
+
+        <label class="community-rights">
+          <input type="checkbox" id="community-rights">
+          <span>
+            I recorded this track myself, or it is openly licensed, and I release it under
+            <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 (public domain)</a>.
+          </span>
+        </label>
+
+        <p class="import-note">
+          It will be listed publicly as Unverified straight away and reviewed. The route,
+          its text and your display name are public; the original GPX file is kept privately.
+          You can edit or delete it later from its page.
+        </p>
+
+        <button type="submit" id="community-submit" class="process-btn" disabled>Share route</button>
+        <p id="community-error" class="import-error" role="alert" hidden></p>
+      </form>
+
+      <div id="community-done" hidden>
+        <p class="import-note"><strong>Shared.</strong> Your route is now listed as Unverified.</p>
+        <div class="cta-buttons import-cta">
+          <a id="community-done-link" class="cta-button primary" href="#">Open the community page</a>
+        </div>
+      </div>
     </section>
 
     <footer>

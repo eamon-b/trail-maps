@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community route - Trail Maps</title>
+  <meta name="description" content="A hiking route shared by the Tracknotes community.">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <link rel="stylesheet" href="./trails/trail-page.css">
+  <link rel="stylesheet" href="./my-trails.css">
+  <link rel="stylesheet" href="./community.css">
+</head>
+<body>
+  <div class="container trail-data community-page">
+    <header>
+      <nav class="breadcrumb">
+        <a href="./">Home</a> / <span>Community</span> / <span id="breadcrumb-name">Route</span>
+      </nav>
+    </header>
+
+    <section class="panel active" id="loading-panel">
+      <p class="loading" id="loading-text">Loading this route…</p>
+    </section>
+
+    <!-- Unknown id, a hidden or removed route, or a build without the API. -->
+    <section class="panel" id="missing-panel" hidden>
+      <div class="import-missing">
+        <h2 id="missing-title">Route not found</h2>
+        <p class="import-note" id="missing-detail">
+          This community route doesn't exist, or it is no longer shared.
+        </p>
+        <div class="cta-buttons import-cta" style="justify-content:center">
+          <a class="cta-button primary" href="./">Browse trails</a>
+          <a class="cta-button" href="./upload.html">Share a route</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="trail-panel" hidden>
+      <div class="trail-header">
+        <h1><span id="trail-title">Community route</span> <span id="status-badge"></span></h1>
+        <div class="community-header-meta">
+          <span id="route-region"></span>
+          <span id="route-submitted"></span>
+          <span id="route-reviewed" hidden>Reviewed automatically</span>
+        </div>
+        <p class="community-status-note" id="status-note"></p>
+        <p class="community-description" id="route-description"></p>
+        <p class="community-licence" id="route-licence"></p>
+        <p class="community-safety">
+          Shared by a hiker, not surveyed by Tracknotes. Tracks, water and camps change:
+          check conditions, closures and permits with the land manager before you go, and
+          carry a map and the means to navigate without this page.
+        </p>
+        <div class="trail-meta">
+          <div class="trail-meta-item direction-controls">
+            <strong>Direction</strong>
+            <span id="direction-label">Start → End</span>
+            <button id="reverse-direction-btn" class="direction-btn" aria-pressed="false" title="Reverse trail direction">
+              ↔ Reverse Direction
+            </button>
+            <span id="direction-loading" class="direction-loading" hidden>...</span>
+          </div>
+        </div>
+        <div class="community-actions">
+          <button type="button" id="save-btn" class="community-btn is-primary">Save to my trails</button>
+          <button type="button" id="report-btn" class="community-btn">Report</button>
+          <button type="button" id="edit-btn" class="community-btn" hidden>Edit</button>
+          <button type="button" id="delete-btn" class="community-btn is-danger" hidden>Delete</button>
+        </div>
+        <p class="import-note" id="save-note" hidden></p>
+      </div>
+
+      <!-- Report: needs a linked browser (community-route.ts swaps in the link form). -->
+      <div class="community-box" id="report-box" hidden>
+        <h3>Report this route</h3>
+        <div id="report-link"></div>
+        <form id="report-form" novalidate>
+          <div class="community-field">
+            <label for="report-reason">Reason</label>
+            <select id="report-reason" class="community-input"></select>
+          </div>
+          <div class="community-field">
+            <label for="report-note">Details <span class="community-optional">(optional)</span></label>
+            <textarea id="report-note" class="community-input" rows="3" maxlength="500"></textarea>
+          </div>
+          <div class="community-actions">
+            <button type="submit" id="report-submit" class="community-btn is-primary">Send report</button>
+            <button type="button" id="report-cancel" class="community-btn">Cancel</button>
+          </div>
+        </form>
+        <p class="import-error" id="report-error" role="alert" hidden></p>
+        <p class="community-note-ok" id="report-done" hidden>Thanks — the report has been sent.</p>
+      </div>
+
+      <!-- Owner only. -->
+      <div class="community-box" id="owner-box" hidden>
+        <h3>Your route</h3>
+        <form id="edit-form" novalidate hidden>
+          <div class="community-field">
+            <label for="edit-name">Route name</label>
+            <input type="text" id="edit-name" class="community-input" autocomplete="off">
+          </div>
+          <div class="community-field">
+            <label for="edit-description">Description</label>
+            <textarea id="edit-description" class="community-input" rows="5"></textarea>
+          </div>
+          <div class="community-field">
+            <label for="edit-credit">Credit or source <span class="community-optional">(optional)</span></label>
+            <input type="text" id="edit-credit" class="community-input" autocomplete="off">
+          </div>
+          <div class="community-field-row">
+            <div class="community-field">
+              <label for="edit-country">Country</label>
+              <select id="edit-country" class="community-input"></select>
+            </div>
+            <div class="community-field" id="edit-country-other-field" hidden>
+              <label for="edit-country-other">Country code (2 letters)</label>
+              <input type="text" id="edit-country-other" class="community-input" maxlength="2" autocomplete="off">
+            </div>
+            <div class="community-field" id="edit-state-field" hidden>
+              <label for="edit-state">State or region</label>
+              <select id="edit-state" class="community-input"></select>
+            </div>
+          </div>
+          <p class="import-note" id="edit-verified-note" hidden>
+            Editing a Verified route returns it to Unverified until it is checked again.
+          </p>
+          <div class="community-actions">
+            <button type="submit" id="edit-submit" class="community-btn is-primary">Save changes</button>
+            <button type="button" id="edit-cancel" class="community-btn">Cancel</button>
+          </div>
+          <p class="import-error" id="edit-error" role="alert" hidden></p>
+        </form>
+        <h4>Automatic checks</h4>
+        <div id="owner-checks"></div>
+        <h4>Review</h4>
+        <div id="owner-review"></div>
+      </div>
+
+      <div class="trail-stats">
+        <div class="stat-card">
+          <div class="value" id="distance">--</div>
+          <div class="label">Distance (km)</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="ascent">--</div>
+          <div class="label">Total Ascent (m)</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="descent">--</div>
+          <div class="label">Total Descent (m)</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="points">--</div>
+          <div class="label">Track Points</div>
+        </div>
+      </div>
+
+      <h3>Trail Map</h3>
+      <div id="trail-map" class="trail-map"></div>
+
+      <h3>Elevation Profile</h3>
+      <div class="elevation-profile">
+        <canvas id="elevation-canvas"></canvas>
+      </div>
+
+      <div class="section-header">
+        <h3>Waypoints</h3>
+        <div class="export-buttons">
+          <button id="export-csv-btn" class="export-btn" disabled>Download CSV</button>
+          <button id="export-gpx-btn" class="export-btn" disabled>Download GPX</button>
+          <!-- Enabled by community-route.ts once the trail is in hand. -->
+          <button id="export-tracknotes-btn" class="export-btn" disabled
+                  title="Download this trail as a file the Tracknotes mobile app can open">
+            Export for Tracknotes
+          </button>
+        </div>
+      </div>
+      <div class="waypoint-filter-bar">
+        <div class="waypoint-filter" id="waypoint-filter" role="group" aria-label="Filter waypoints">
+          <button type="button" class="filter-btn" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="filter-btn" data-filter="water" aria-pressed="false">Water</button>
+          <button type="button" class="filter-btn" data-filter="resupply" aria-pressed="false">Food &amp; resupply</button>
+        </div>
+        <span class="waypoint-filter-count" id="waypoint-filter-count" aria-live="polite"></span>
+      </div>
+      <p class="waypoint-filter-summary" id="waypoint-filter-summary" aria-live="polite" hidden></p>
+      <div class="waypoints-table-wrapper" id="waypoints-container">
+        <p>Loading waypoints...</p>
+      </div>
+    </section>
+
+    <footer>
+      <p><a href="./">Back to Trail List</a> · <a href="./upload.html">Share a route</a></p>
+    </footer>
+  </div>
+
+  <script type="module" src="./community-route.ts"></script>
+</body>
+</html>

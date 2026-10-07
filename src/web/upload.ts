@@ -14,6 +14,8 @@ import {
   estimateElevationRequests,
 } from '@lib/elevation-backfill';
 import { importGpx, type ImportGpxResult } from '@lib/gpx-import';
+import { getApiBase } from './api/client';
+import type { CommunityShareController } from './community-share';
 import {
   isIndexedDbAvailable,
   putTrail,
@@ -83,6 +85,27 @@ let pending: ImportGpxResult | null = null;
  * in-place update rather than a second row.
  */
 let savedSummary: ImportedTrailSummary | null = null;
+
+/** The pending import's file text, kept for the optional community share. */
+let pendingGpxText: string | null = null;
+
+/**
+ * The community share step, loaded on first use and only in a build with an
+ * API — a local-only site never fetches the module.
+ */
+let communityShare: Promise<CommunityShareController | null> | null = null;
+
+function loadCommunityShare(): Promise<CommunityShareController | null> {
+  if (!getApiBase()) return Promise.resolve(null);
+  communityShare ??= import('./community-share')
+    .then(m => m.initCommunityShare())
+    .catch((err: unknown) => {
+      console.error('Community sharing is unavailable', err);
+      communityShare = null;
+      return null;
+    });
+  return communityShare;
+}
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -191,6 +214,8 @@ function renderWarnings(ui: Elements, result: ImportGpxResult): void {
 function resetOutput(ui: Elements): void {
   pending = null;
   savedSummary = null;
+  pendingGpxText = null;
+  void communityShare?.then(share => share?.hide());
   show(ui.error, false);
   show(ui.report, false);
   show(ui.saved, false);
@@ -280,6 +305,7 @@ async function handleFetchElevation(ui: Elements): Promise<void> {
   show(ui.elevationBackfill, false);
 
   await persistBackfillIfSaved(ui);
+  void communityShare?.then(share => share?.refresh(withElevation));
 }
 
 /**
@@ -346,6 +372,7 @@ async function handleFile(ui: Elements, file: File): Promise<void> {
   }
 
   pending = result;
+  pendingGpxText = text;
   show(ui.status, false);
   ui.trailName.value = result.report.name;
   renderStats(ui, result);
@@ -399,6 +426,14 @@ async function handleSave(ui: Elements): Promise<void> {
   ui.savedPlanLink.href = `./my-plan.html${query}`;
   show(ui.saved, true);
   ui.saved.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Offer the community share for what was just saved. `pending` is read again
+  // after the await: a new file may have been chosen meanwhile.
+  const target = pending;
+  const share = await loadCommunityShare();
+  if (share && target && pending === target) {
+    share.open({ trail: target.trail, name, gpxText: pendingGpxText });
+  }
 }
 
 function initDragAndDrop(ui: Elements): void {

@@ -484,7 +484,7 @@ describe('waypoints', () => {
   it('counts variant waypoints toward the limit, and in the stats', () => {
     const t = thorsborne();
     const variant = slicedVariant(t, 100, 200, 'side-trip');
-    const vw = { ...t.waypoints[0], variantTrackIndex: 3 };
+    const vw = { ...t.waypoints[0], ...latLon(variant.points[3]), variantTrackIndex: 3 };
     variant.waypoints = new Array(1000).fill(vw);
     t.sideTrips = [variant];
     const under = runCommunityChecks(t, META);
@@ -633,6 +633,111 @@ describe('the rebuild', () => {
   });
 });
 
+describe('waypoint placement', () => {
+  it('moves a waypoint listed on the route but placed 300 km away off-trail', () => {
+    const honest = thorsborne();
+    const t = thorsborne();
+    const forged = t.waypoints[0];
+    forged.name = 'Water tank';
+    forged.type = 'water';
+    forged.lat += 3;
+    forged.trackIndex = 1;
+    const result = runCommunityChecks(t, META);
+    expect(result.ok).toBe(true);
+    const trail = result.trail!;
+    expect(trail.waypoints.some((w) => w.name === 'Water tank')).toBe(false);
+    expect(trail.waypoints).toHaveLength(honest.waypoints.length - 1);
+    const moved = trail.offTrailWaypoints.find((w) => w.name === 'Water tank')!;
+    expect(moved).toBeDefined();
+    expect(moved.type).toBe('water');
+    expect(moved.lat).toBe(forged.lat);
+    expect(moved.distanceFromTrail).toBeGreaterThan(300_000);
+    expect('trackIndex' in moved).toBe(false);
+    expect(result.stats!.waypointCount).toBe(countAll(honest));
+  });
+
+  it('re-places a waypoint near the route at its nearest point', () => {
+    const t = thorsborne();
+    const target = 150;
+    const w = t.waypoints[0];
+    Object.assign(w, latLon(t.track.points[target]));
+    w.trackIndex = t.track.points.length - 1;
+    const trail = runCommunityChecks(t, META).trail!;
+    const placed = trail.waypoints.find((x) => x.name === w.name && x.lat === w.lat)!;
+    expect(placed.trackIndex).toBe(nearestIndex(trail.track.points, w));
+    expect(haversineDistance(w.lat, w.lon, trail.track.points[placed.trackIndex].lat, trail.track.points[placed.trackIndex].lon)).toBe(0);
+    expect(placed.totalDistance).toBe(Math.round(trail.track.points[placed.trackIndex].dist * 100) / 100);
+  });
+
+  it('keeps an honest waypoint\'s index on a route that retraces itself', () => {
+    const imported = JSON.parse(JSON.stringify(importGpx(OUT_AND_BACK).trail)) as ProcessedTrail;
+    const visits = imported.waypoints.filter((w) => w.name === 'Creek');
+    // One row per pass; the return pass is not the nearest point.
+    expect(visits).toHaveLength(2);
+    const points = imported.track.points;
+    expect(visits.map((w) => w.trackIndex)).not.toContain(-1);
+    expect(visits.some((w) => w.trackIndex !== nearestIndex(points, w))).toBe(true);
+    const result = runCommunityChecks(imported, { ...META, name: 'Out and back' });
+    expect(result.trail!.waypoints).toEqual(imported.waypoints);
+    expect(result.trail!.offTrailWaypoints).toEqual(imported.offTrailWaypoints);
+  });
+
+  it('moves a variant waypoint that is not on its variant to the main route or off-trail', () => {
+    const t = thorsborne();
+    const variant = slicedVariant(t, 100, 200, 'side-trip');
+    const onMain = { ...t.waypoints[0], ...latLon(t.track.points[20]), name: 'On the route', variantTrackIndex: 5 };
+    const far = { ...t.waypoints[0], lat: t.track.points[20].lat - 2, lon: t.track.points[20].lon, name: 'Far away', variantTrackIndex: 6 };
+    const honest = { ...t.waypoints[0], ...latLon(variant.points[30]), name: 'On the side trip', variantTrackIndex: 30 };
+    variant.waypoints = [onMain, far, honest];
+    t.sideTrips = [variant];
+    const result = runCommunityChecks(t, META);
+    expect(result.ok).toBe(true);
+    const trail = result.trail!;
+    expect(trail.sideTrips[0].waypoints!.map((w) => [w.name, w.variantTrackIndex])).toEqual([['On the side trip', 30]]);
+    const main = trail.waypoints.find((w) => w.name === 'On the route')!;
+    expect(main.trackIndex).toBe(nearestIndex(trail.track.points, onMain));
+    const off = trail.offTrailWaypoints.find((w) => w.name === 'Far away')!;
+    expect(off.distanceFromTrail).toBeGreaterThan(200_000);
+    expect(result.stats!.waypointCount).toBe(t.waypoints.length + t.offTrailWaypoints.length + 3);
+  });
+});
+
+/** Index of the nearest point (the earliest on a tie), by brute force. */
+function nearestIndex(points: { lat: number; lon: number }[], w: { lat: number; lon: number }): number {
+  let best = -1;
+  let bestM = Infinity;
+  points.forEach((p, i) => {
+    const m = haversineDistance(w.lat, w.lon, p.lat, p.lon);
+    if (m < bestM) {
+      bestM = m;
+      best = i;
+    }
+  });
+  return best;
+}
+
+function countAll(t: ProcessedTrail): number {
+  let n = t.waypoints.length + t.offTrailWaypoints.length;
+  for (const v of [...t.alternates, ...t.sideTrips]) n += v.waypoints?.length ?? 0;
+  return n;
+}
+
+/**
+ * A 6 km walk north and back the same way, ~30 m between points, with a creek
+ * 2 km in: an import lists the creek once on each pass.
+ */
+const OUT_AND_BACK = (() => {
+  const pts: string[] = [];
+  const step = 30 / 111_320;
+  const n = 200;
+  for (let i = 0; i <= n; i++) pts.push(`<trkpt lat="${(-33 + i * step).toFixed(7)}" lon="151.0000000"><ele>${100 + i}</ele></trkpt>`);
+  for (let i = n - 1; i >= 0; i--) pts.push(`<trkpt lat="${(-33 + i * step).toFixed(7)}" lon="151.0001000"><ele>${100 + i}</ele></trkpt>`);
+  const creek = (-33 + 66 * step).toFixed(7);
+  return `<?xml version="1.0"?><gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">` +
+    `<wpt lat="${creek}" lon="151.0000500"><name>Creek</name><type>water</type></wpt>` +
+    `<trk><name>Out and back</name><trkseg>${pts.join('')}</trkseg></trk></gpx>`;
+})();
+
 describe('variants', () => {
   it('rebuilds an alternate\'s junctions, length, climb and waypoints', () => {
     const t = thorsborne();
@@ -643,8 +748,8 @@ describe('variants', () => {
     variant.endDistance = 4000;
     variant.parent = { name: 'nonsense', index: 7 };
     variant.waypoints = [
-      { ...t.waypoints[0], variantTrackIndex: 40, distance: 1, totalDistance: 9999, ascent: 1, descent: 1, totalAscent: 1, totalDescent: 1, elevation: 1 },
-      { ...t.waypoints[1], variantTrackIndex: 10, distance: 1, totalDistance: 9999, ascent: 1, descent: 1, totalAscent: 1, totalDescent: 1, elevation: 1 },
+      { ...t.waypoints[0], ...latLon(variant.points[40]), variantTrackIndex: 40, distance: 1, totalDistance: 9999, ascent: 1, descent: 1, totalAscent: 1, totalDescent: 1, elevation: 1 },
+      { ...t.waypoints[1], ...latLon(variant.points[10]), variantTrackIndex: 10, distance: 1, totalDistance: 9999, ascent: 1, descent: 1, totalAscent: 1, totalDescent: 1, elevation: 1 },
     ];
     t.alternates = [variant];
     const result = runCommunityChecks(t, META);
@@ -672,7 +777,7 @@ describe('variants', () => {
     const variant = slicedVariant(t, 100, 200, 'alternate');
     const n = variant.points.length;
     variant.points.reverse();
-    variant.waypoints = [{ ...t.waypoints[0], variantTrackIndex: n - 1 - 10 }];
+    variant.waypoints = [{ ...t.waypoints[0], ...latLon(variant.points[n - 1 - 10]), variantTrackIndex: n - 1 - 10 }];
     t.alternates = [variant];
     const alt = runCommunityChecks(t, META).trail!.alternates[0];
     expect(alt.startTrackIndex).toBe(100);
@@ -728,6 +833,10 @@ describe('variants', () => {
     expect(terminus.endDistance).toBeUndefined();
   });
 });
+
+function latLon(p: { lat: number; lon: number }): { lat: number; lon: number } {
+  return { lat: p.lat, lon: p.lon };
+}
 
 /** A variant along main points `from`..`to`, nudged ~50 m east so it is its own line. */
 function slicedVariant(t: ProcessedTrail, from: number, to: number, type: RouteVariant['type']): RouteVariant {

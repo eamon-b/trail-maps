@@ -13,11 +13,11 @@ import { createHash } from 'crypto';
 import {
   ensureCommunityRouteDownloaded,
   forgetCommunityRoute,
-  installCommunityRouteCopy,
   listCachedCommunityRoutes,
   readCommunityTrail,
   refreshCommunityRoutes,
   resetCommunityStateForTests,
+  upsertCommunitySummary,
   COMMUNITY_REFRESH_MS,
 } from '../community-routes';
 import {
@@ -25,6 +25,7 @@ import {
   mergeCommunityRoutes,
   parseCommunityList,
   parseCommunitySummary,
+  pruneInstalledCommunity,
 } from '../community-catalog';
 
 /** uri → file contents. */
@@ -262,6 +263,20 @@ describe('mergeCommunityRoutes', () => {
   });
 });
 
+describe('pruneInstalledCommunity', () => {
+  it('keeps listed downloads and names the files of the rest', () => {
+    const a = parseCommunitySummary(publish(ID))!;
+    const b = parseCommunitySummary(publish(ID2))!;
+    const fileB = communityFileName(ID2, b.md5);
+    const result = pruneInstalledCommunity([a], {
+      [ID]: { summary: a, file: communityFileName(ID, a.md5) },
+      [ID2]: { summary: b, file: fileB },
+    });
+    expect(Object.keys(result.installed)).toEqual([ID]);
+    expect(result.droppedFiles).toEqual([fileB]);
+  });
+});
+
 describe('refreshCommunityRoutes', () => {
   it('caches the list on disk so it is listed offline after a restart', async () => {
     const fetchImpl = listFetch([publish(ID)]);
@@ -290,6 +305,30 @@ describe('refreshCommunityRoutes', () => {
     const fetchImpl = listFetch([publish(ID)]);
     expect((await refreshCommunityRoutes({ now: T0, fetchImpl })).checked).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('drops a downloaded route, file and all, once a fresh list no longer has it', async () => {
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID), publish(ID2)]) });
+    expect(await ensureCommunityRouteDownloaded(ID)).toBe(true);
+    expect(await ensureCommunityRouteDownloaded(ID2)).toBe(true);
+    const fileOf = (id: string) =>
+      Object.keys(mockFiles).find((k) => k.startsWith(`${ROOT}/${id}.`) && k.endsWith('.json'));
+    expect(fileOf(ID)).toBeDefined();
+
+    // ID was hidden or removed: the next list leaves it out.
+    const res = await refreshCommunityRoutes({ now: T0 + 1, force: true, fetchImpl: listFetch([publish(ID2)]) });
+    expect(res.checked).toBe(true);
+    expect(listCachedCommunityRoutes().map((r) => r.id)).toEqual([ID2]);
+    expect(fileOf(ID)).toBeUndefined();
+    expect(await readCommunityTrail(ID)).toBeNull();
+    expect((await readCommunityTrail(ID2))?.config.id).toBe(ID2);
+
+    // A failed refresh prunes nothing.
+    const offline = jest.fn(async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+    await refreshCommunityRoutes({ now: T0 + 2, force: true, fetchImpl: offline });
+    expect(fileOf(ID2)).toBeDefined();
   });
 
   it('keeps the cached list when offline', async () => {
@@ -341,16 +380,22 @@ describe('downloading on open', () => {
 });
 
 describe('a route this phone just shared', () => {
-  it('is installed from the local copy and needs no download', async () => {
-    const row = publish(ID);
-    installCommunityRouteCopy(row, JSON.parse(trailBody()));
-    expect(listCachedCommunityRoutes().map((r) => [r.id, r.downloaded])).toEqual([[ID, true]]);
-    expect((await readCommunityTrail(ID))?.config.id).toBe(ID);
-    expect(mockDownloadTargets).toEqual([]);
+  it('is listed at once and downloads the server copy on first open', async () => {
+    const serverCopy = trailBody('c_server_rebuilt');
+    upsertCommunitySummary(publish(ID, {}, serverCopy));
+    expect(listCachedCommunityRoutes().map((r) => [r.id, r.downloaded])).toEqual([[ID, false]]);
+    expect(await readCommunityTrail(ID)).toBeNull();
+
+    expect(await ensureCommunityRouteDownloaded(ID)).toBe(true);
+    expect(mockDownloadTargets).toHaveLength(1);
+    // The file under the server's md5 holds the server's bytes.
+    const file = Object.keys(mockFiles).find((k) => k.endsWith(communityFileName(ID, md5(serverCopy))));
+    expect(file && mockFiles[file]).toBe(serverCopy);
   });
 
   it('is forgotten, file and all, when its owner deletes it', async () => {
-    installCommunityRouteCopy(publish(ID), JSON.parse(trailBody()));
+    upsertCommunitySummary(publish(ID));
+    await ensureCommunityRouteDownloaded(ID);
     forgetCommunityRoute(ID);
     expect(listCachedCommunityRoutes()).toEqual([]);
     expect(await readCommunityTrail(ID)).toBeNull();

@@ -65,6 +65,23 @@ async function storedTrail(trailUrl: string): Promise<ProcessedTrail> {
   return (await object.json()) as ProcessedTrail;
 }
 
+/** Poll until `cond` holds (work scheduled with `ctx.waitUntil` runs after the response). */
+async function eventually(cond: () => Promise<boolean>): Promise<void> {
+  for (let i = 0; i < 100; i++) {
+    if (await cond()) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error('condition never held');
+}
+
+async function publicKeys(id: string): Promise<string[]> {
+  return (await env.PHOTOS.list({ prefix: `community/v1/${id}.` })).objects.map((o) => o.key);
+}
+
+async function privateKeys(id: string): Promise<string[]> {
+  return (await env.PHOTOS.list({ prefix: `community/private/${id}/` })).objects.map((o) => o.key);
+}
+
 async function row(id: string): Promise<Record<string, unknown>> {
   const r = await env.DB.prepare(`SELECT * FROM community_routes WHERE id = ?`).bind(id).first();
   if (!r) throw new Error(`no row ${id}`);
@@ -90,17 +107,17 @@ describe('POST /v1/community/routes', () => {
     expect(route.review?.status).toBe('skipped');
     expect(route.reviewed).toBe(false);
     expect(route.checks.find((c) => c.id === 'duplicate')?.level).toBe('pass');
-    expect(route.trailUrl).toMatch(
+    expect(route.trailUrl!).toMatch(
       new RegExp(`^https://photos\\.test/community/v1/${route.id}\\.${route.md5.slice(0, 12)}\\.json$`)
     );
 
-    const object = await env.PHOTOS.get(keyOf(route.trailUrl));
+    const object = await env.PHOTOS.get(keyOf(route.trailUrl!));
     expect(object).not.toBeNull();
     expect(object!.httpMetadata?.contentType).toBe('application/json');
-    expect(object!.httpMetadata?.cacheControl).toBe('public, max-age=31536000, immutable');
+    expect(object!.httpMetadata?.cacheControl).toBe('public, max-age=300');
     expect(object!.size).toBe(route.bytes);
 
-    const stored = await storedTrail(route.trailUrl);
+    const stored = await storedTrail(route.trailUrl!);
     expect(stored.config.id).toBe(route.id);
     expect(stored.config.name).toBe('Ridge and river loop');
     expect(stored.config.source).toBe('community');
@@ -115,20 +132,58 @@ describe('POST /v1/community/routes', () => {
   it('stores the md5 of the exact bytes', async () => {
     const device = await registerDevice();
     const route = await submitOk(device);
-    const object = await env.PHOTOS.get(keyOf(route.trailUrl));
+    const object = await env.PHOTOS.get(keyOf(route.trailUrl!));
     const bytes = await object!.arrayBuffer();
     const digest = await crypto.subtle.digest('MD5', bytes);
     const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
     expect(hex).toBe(route.md5);
   });
 
-  it('keeps an uploaded GPX privately', async () => {
+  it('keeps an uploaded GPX, and the canonical JSON, under unguessable keys it never returns', async () => {
     const device = await registerDevice();
-    const route = await submitOk(device, { gpxBase64: base64(GPX_TEXT) });
+    const res = await submitRoute(device, submitBody({ gpxBase64: base64(GPX_TEXT) }));
+    expect(res.status).toBe(201);
+    const text = await res.text();
+    const route = JSON.parse(text) as CommunityRouteDetail;
     const r = await row(route.id);
-    expect(r.gpx_key).toBe(`community/gpx/${route.id}.gpx`);
-    const gpx = await env.PHOTOS.get(r.gpx_key as string);
+    const gpxKey = r.gpx_key as string;
+    const privateKey = r.private_key as string;
+    expect(gpxKey).toMatch(new RegExp(`^community/private/${route.id}/[0-9a-f]{32}\\.gpx$`));
+    expect(privateKey).toMatch(new RegExp(`^community/private/${route.id}/[0-9a-f]{32}\\.json$`));
+    expect(gpxKey).not.toContain(route.md5.slice(0, 12));
+    const gpx = await env.PHOTOS.get(gpxKey);
     expect(await gpx!.text()).toBe(GPX_TEXT);
+    // The private copy is the public one's bytes.
+    const priv = await env.PHOTOS.get(privateKey);
+    expect(priv!.size).toBe(route.bytes);
+    // Nothing that names a private object reaches a client.
+    for (const body of [
+      text,
+      await (await getRoute(route.id, device)).text(),
+      await (await SELF.fetch(url('/v1/me/community/routes'), { headers: authHeaders(device) })).text(),
+      await (await SELF.fetch(url('/v1/community/routes'))).text(),
+    ]) {
+      expect(body).not.toContain('community/private');
+      expect(body).not.toContain(gpxKey.split('/').pop()!.slice(0, 32));
+    }
+  });
+
+  it('accepts a GPX with a byte-order mark and a leading comment, sniffing only its head', async () => {
+    const device = await registerDevice();
+    const withBom = `\uFEFF<!-- exported -->\n${GPX_TEXT}`;
+    expect((await submitRoute(device, submitBody({ gpxBase64: base64(withBom) }))).status).toBe(201);
+    const late = `<?xml version="1.0"?><!--${' '.repeat(2000)}-->${GPX_TEXT.replace('<?xml version="1.0"?>', '')}`;
+    const res = await submitRoute(device, submitBody({ gpxBase64: base64(late) }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('invalid_gpx');
+  });
+
+  it('413s a GPX over 5 MB', async () => {
+    const device = await registerDevice();
+    const big = `${GPX_TEXT}${' '.repeat(5 * 1024 * 1024)}`;
+    const res = await submitRoute(device, submitBody({ gpxBase64: base64(big) }));
+    expect(res.status).toBe(413);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('gpx_too_large');
   });
 
   it('never trusts client stats or extra fields', async () => {
@@ -139,7 +194,7 @@ describe('POST /v1/community/routes', () => {
     trail.injected = 'x';
     const route = await submitOk(device, { trail, lengthKm: 1, ascentM: 1 });
     expect(route.lengthKm).toBeLessThan(30);
-    const stored = await storedTrail(route.trailUrl);
+    const stored = await storedTrail(route.trailUrl!);
     expect(stored.config.id).toBe(route.id);
     expect(stored.config.lengthKm).toBeLessThan(30);
     expect('injected' in stored).toBe(false);
@@ -213,7 +268,10 @@ describe('POST /v1/community/routes', () => {
     const first = await submitOk(device, { trail });
     const again = await submitRoute(device, submitBody({ trail, name: 'Same route, new name' }));
     expect(again.status).toBe(409);
-    expect(((await again.json()) as { existingId: string }).existingId).toBe(first.id);
+    const dup = (await again.json()) as { existingId: string; error: { message: string } };
+    expect(dup.existingId).toBe(first.id);
+    // Neutral: the first copy may be hidden.
+    expect(dup.error.message).not.toMatch(/list/i);
 
     expect((await del(device, first.id)).status).toBe(204);
     const third = await submitRoute(device, submitBody({ trail }));
@@ -245,6 +303,17 @@ describe('POST /v1/community/routes', () => {
       expect((await submitRoute(other, submitBody({ trail: makeTrail({ count: 5 }) }))).status).toBe(422);
     }
     await submitOk(other);
+  });
+
+  it('limits every submit attempt, failed or not, to 30 a day', async () => {
+    const device = await registerDevice();
+    for (let i = 0; i < 30; i++) {
+      const res = await submitRoute(device, i % 2 === 0 ? submitBody({ trail: makeTrail({ count: 5 }) }) : 'not json');
+      expect(res.status === 422 || res.status === 400).toBe(true);
+    }
+    const res = await submitRoute(device);
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: { message: string } }).error.message).toMatch(/attempts/);
   });
 });
 
@@ -301,6 +370,20 @@ describe('GET /v1/community/routes/:id', () => {
     expect(asOwner.reports).toBeUndefined();
   });
 
+  it('never lets a shared cache keep a response to a request with a token', async () => {
+    const device = await registerDevice();
+    const route = await submitOk(device);
+    const anon = await getRoute(route.id);
+    expect(anon.headers.get('Cache-Control')).toBe('public, max-age=60');
+    expect(anon.headers.get('Vary')).toBe('Authorization');
+    const stranger = await getRoute(route.id, await registerDevice());
+    expect(stranger.headers.get('Cache-Control')).toBe('private, no-store');
+    const bogus = await SELF.fetch(url(`/v1/community/routes/${route.id}`), {
+      headers: { Authorization: 'Bearer not-a-token' },
+    });
+    if (bogus.status === 200) expect(bogus.headers.get('Cache-Control')).toBe('private, no-store');
+  });
+
   it('404s an unknown or malformed id', async () => {
     expect((await getRoute('c_AAAAAAAAAAAAAAAA')).status).toBe(404);
     expect((await getRoute('nope')).status).toBe(404);
@@ -321,6 +404,36 @@ describe('GET /v1/community/routes/:id', () => {
     expect(asAdmin.reportCount).toBe(0);
     expect((await list()).routes.map((r) => r.id)).not.toContain(route.id);
   });
+
+  it('takes a hidden route off the public domain and republishes it from the private copy on restore', async () => {
+    const owner = await registerDevice();
+    const admin = await registerDevice();
+    await makeAdmin(admin.userId);
+    const route = await submitOk(owner);
+    expect(await publicKeys(route.id)).toEqual([keyOf(route.trailUrl!)]);
+
+    await setStatus(admin, route.id, { status: 'hidden' });
+    expect(await publicKeys(route.id)).toEqual([]);
+    expect((await row(route.id)).r2_key).toBeNull();
+    const asOwner = (await (await getRoute(route.id, owner)).json()) as CommunityRouteDetail;
+    expect(asOwner.trailUrl).toBeNull();
+    expect(asOwner.name).toBe(route.name);
+    expect(await privateKeys(route.id)).toHaveLength(1);
+
+    // An owner edit while hidden re-stores the private copy only.
+    const edited = (await (await patch(owner, route.id, { name: 'Hidden but renamed' })).json()) as CommunityRouteDetail;
+    expect(edited.trailUrl).toBeNull();
+    expect(await publicKeys(route.id)).toEqual([]);
+
+    const restored = (await (await setStatus(admin, route.id, { status: 'unverified' })).json()) as CommunityRouteDetail;
+    expect(restored.trailUrl).not.toBeNull();
+    expect(await publicKeys(route.id)).toEqual([keyOf(restored.trailUrl!)]);
+    const stored = await storedTrail(restored.trailUrl!);
+    expect(stored.config.name).toBe('Hidden but renamed');
+    const object = await env.PHOTOS.get(keyOf(restored.trailUrl!));
+    expect(object!.size).toBe(restored.bytes);
+    expect((await list()).routes.find((r) => r.id === route.id)?.trailUrl).toBe(restored.trailUrl);
+  });
 });
 
 describe('PATCH /v1/community/routes/:id', () => {
@@ -340,11 +453,17 @@ describe('PATCH /v1/community/routes/:id', () => {
     expect(body.md5).not.toBe(route.md5);
     expect(body.trailUrl).not.toBe(route.trailUrl);
 
-    const stored = await storedTrail(body.trailUrl);
+    const stored = await storedTrail(body.trailUrl!);
     expect(stored.config.name).toBe('Renamed loop');
     expect(stored.config.states).toEqual(['NSW']);
     expect(stored.config.dataSource?.text).toBe('Shared by Editor under CC0. With thanks to the club');
-    expect(await env.PHOTOS.get(keyOf(route.trailUrl))).toBeNull();
+    // The old object stays: lists cached at the edge and on phones still name it.
+    expect(await env.PHOTOS.get(keyOf(route.trailUrl!))).not.toBeNull();
+    expect((await publicKeys(route.id)).sort()).toEqual([keyOf(route.trailUrl!), keyOf(body.trailUrl!)].sort());
+    // The superseded private copy goes; the new one is in the row.
+    const privateKey = (await row(route.id)).private_key as string;
+    await eventually(async () => (await privateKeys(route.id)).length === 1);
+    expect(await privateKeys(route.id)).toEqual([privateKey]);
   });
 
   it('drops a verified route back to unverified', async () => {
@@ -380,9 +499,11 @@ describe('PATCH /v1/community/routes/:id', () => {
 });
 
 describe('DELETE /v1/community/routes/:id', () => {
-  it('lets the owner remove a route and purges its objects', async () => {
+  it('lets the owner remove a route and purges its objects, old versions included', async () => {
     const owner = await registerDevice();
     const route = await submitOk(owner, { gpxBase64: base64(GPX_TEXT) });
+    await patch(owner, route.id, { name: 'Second version' });
+    expect(await publicKeys(route.id)).toHaveLength(2);
     expect((await del(await registerDevice(), route.id)).status).toBe(404);
     expect((await del(owner, route.id)).status).toBe(204);
     expect((await del(owner, route.id)).status).toBe(204);
@@ -391,8 +512,8 @@ describe('DELETE /v1/community/routes/:id', () => {
     const r = await row(route.id);
     expect(r.status).toBe('removed');
     expect(r.removed_at).not.toBeNull();
-    expect(await env.PHOTOS.get(keyOf(route.trailUrl))).toBeNull();
-    expect(await env.PHOTOS.get(`community/gpx/${route.id}.gpx`)).toBeNull();
+    await eventually(async () => (await publicKeys(route.id)).length === 0 && (await privateKeys(route.id)).length === 0);
+    expect(await env.PHOTOS.get(keyOf(route.trailUrl!))).toBeNull();
   });
 
   it('lets an admin remove any route', async () => {
@@ -418,6 +539,30 @@ describe('POST /v1/community/routes/:id/report', () => {
     expect(r.status).toBe('hidden');
     expect(r.status_note).toBe('Hidden after 3 reports');
     expect((await getRoute(route.id)).status).toBe(404);
+    expect(await publicKeys(route.id)).toEqual([]);
+  });
+
+  it('counts only reports filed since an admin last restored the route', async () => {
+    const owner = await registerDevice();
+    const admin = await registerDevice();
+    await makeAdmin(admin.userId);
+    const route = await submitOk(owner);
+    for (let i = 0; i < 3; i++) await report(await registerDevice(), route.id);
+    expect((await row(route.id)).status).toBe('hidden');
+
+    // Restored: the three reports the admin weighed no longer count.
+    await setStatus(admin, route.id, { status: 'unverified' });
+    // Reports must be strictly after the status change.
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect((await report(await registerDevice(), route.id)).status).toBe(201);
+    expect((await row(route.id)).status).toBe('unverified');
+    expect((await list()).routes.map((x) => x.id)).toContain(route.id);
+
+    await report(await registerDevice(), route.id);
+    expect((await row(route.id)).status).toBe('unverified');
+    await report(await registerDevice(), route.id);
+    expect((await row(route.id)).status).toBe('hidden');
+    expect(await publicKeys(route.id)).toEqual([]);
   });
 
   it('leaves a verified route up, for the admin to weigh', async () => {
@@ -545,8 +690,18 @@ describe('account deletion', () => {
     }
     expect(detail!.submittedBy).toBeNull();
     expect(detail!.md5).not.toBe(route.md5);
-    const stored = await storedTrail(detail!.trailUrl);
+    const stored = await storedTrail(detail!.trailUrl!);
     expect(stored.config.dataSource?.text).toBe('Shared by a Tracknotes user under CC0.');
     expect(JSON.stringify(stored)).not.toContain('Soon Gone');
+
+    // The old public version named the account, so it is purged too.
+    const oldKey = keyOf(route.trailUrl!);
+    let old: R2Object | null = null;
+    for (let i = 0; i < 50; i++) {
+      old = await env.PHOTOS.head(oldKey);
+      if (!old) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(old).toBeNull();
   });
 });

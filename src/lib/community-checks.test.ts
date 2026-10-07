@@ -225,8 +225,41 @@ describe('elevation', () => {
   });
   it('warns when the climb is implausible', () => {
     const t = thorsborne();
-    t.track.totalAscent = t.track.totalDistance * 400;
+    // A 400 m sawtooth on every other point: noise the recomputed climb sees.
+    t.track.points.forEach((p, i) => {
+      p.ele = i % 2 === 0 ? 0.5 : 400;
+    });
     expect(byId(runCommunityChecks(t, META).checks, 'elevation').level).toBe('warn');
+  });
+  it('ignores a claimed climb and recomputes it from the points', () => {
+    const t = thorsborne();
+    const honest = runCommunityChecks(thorsborne(), META);
+    // The import's own figure is what the recomputation reproduces.
+    expect(honest.trail!.track.totalAscent).toBeCloseTo(t.track.totalAscent, 6);
+    expect(honest.trail!.track.totalDescent).toBeCloseTo(t.track.totalDescent, 6);
+    t.track.totalAscent = t.track.totalDistance * 400;
+    t.track.totalDescent = 0;
+    const forged = runCommunityChecks(t, META);
+    expect(byId(forged.checks, 'elevation').level).toBe('pass');
+    expect(forged.trail!.track.totalAscent).toBeCloseTo(honest.trail!.track.totalAscent, 6);
+    expect(forged.trail!.track.totalDescent).toBeCloseTo(honest.trail!.track.totalDescent, 6);
+    expect(forged.stats!.ascentM).toBe(honest.stats!.ascentM);
+  });
+  it('does not climb the gap across a route break', () => {
+    const t = thorsborne();
+    const pts = t.track.points;
+    const mid = Math.floor(pts.length / 2);
+    // Everything after the break sits 1,000 m higher; only the jump is new.
+    const before = runCommunityChecks(thorsborne(), META).trail!.track.totalAscent;
+    for (let i = mid; i < pts.length; i++) pts[i].ele += 1000;
+    t.track.breaks = [
+      { index: mid, displayIndex: 1, km: pts[mid].dist, straightLineKm: 0, fromTrack: 'a', toTrack: 'b' },
+    ];
+    const result = runCommunityChecks(t, META);
+    // The hysteresis anchor restarts at the break, so a few metres may move.
+    expect(Math.abs(result.trail!.track.totalAscent - before)).toBeLessThan(10);
+    delete t.track.breaks;
+    expect(runCommunityChecks(t, META).trail!.track.totalAscent).toBeGreaterThan(before + 900);
   });
 });
 
@@ -273,6 +306,27 @@ describe('metadata', () => {
   it('warns when the description is mostly links', () => {
     const description = 'See https://example.com/a-very-long-link-to-somewhere and https://example.org/another-one';
     expect(byId(runCommunityChecks(thorsborne(), { ...META, description }).checks, 'metadata').level).toBe('warn');
+  });
+  it('warns when the waypoint descriptions are mostly links', () => {
+    const t = thorsborne();
+    for (const w of t.waypoints) w.description = `https://spam.example/buy-now-${w.name.length}-cheap-deals`;
+    const result = runCommunityChecks(t, META);
+    const metadata = byId(result.checks, 'metadata');
+    expect(metadata.level).toBe('warn');
+    expect(metadata.message).toMatch(/waypoint descriptions/);
+    expect(result.ok).toBe(true);
+  });
+  it('passes waypoint descriptions that mention a link among real text', () => {
+    const t = thorsborne();
+    for (const w of t.waypoints) {
+      w.description = 'Tank water beside the shelter; reliable after rain, otherwise treat creek water. See www.parks.example';
+    }
+    expect(byId(runCommunityChecks(t, META).checks, 'metadata').level).toBe('pass');
+  });
+  it('reports a failing name before any waypoint-description warning', () => {
+    const t = thorsborne();
+    for (const w of t.waypoints) w.description = 'https://spam.example/buy-now';
+    expect(byId(runCommunityChecks(t, { ...META, name: 'ab' }).checks, 'metadata').level).toBe('fail');
   });
 });
 

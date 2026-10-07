@@ -75,16 +75,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function stubFetch(detailStatus = 200): void {
+function stubFetch(detailStatus = 200, detailBody: object = detail, trailStatus = 200): void {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
       const body = url.startsWith('https://api.example.test')
         ? detailStatus === 200
-          ? detail
+          ? detailBody
           : { error: { code: 'not_found', message: 'Not found' } }
-        : trail;
-      const status = url.startsWith('https://api.example.test') ? detailStatus : 200;
+        : trailStatus === 200
+          ? trail
+          : { error: 'gone' };
+      const status = url.startsWith('https://api.example.test') ? detailStatus : trailStatus;
       return { ok: status < 300, status, statusText: '', text: async () => JSON.stringify(body) };
     }),
   );
@@ -110,6 +112,32 @@ describe('community-route.html', () => {
     const saved = await getTrail(localCopyId(ID));
     expect(saved?.trail.config.id).toBe(localCopyId(ID));
     expect(saved?.name).toBe('Cape <b>to</b> Cape');
+  });
+
+  it('shows a hidden route to its owner as details only, with no track to fetch', async () => {
+    stubFetch(200, { ...detail, status: 'hidden', trailUrl: null, isOwner: true, review: { status: 'skipped' } });
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('trail-title').textContent).toBe('Cape <b>to</b> Cape');
+    expect($('trail-body').hidden).toBe(true);
+    expect($('no-track-note').hidden).toBe(false);
+    expect($('no-track-note').textContent).toMatch(/hidden/);
+    expect($('save-btn').hidden).toBe(true);
+    expect($('edit-btn').hidden).toBe(false);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the details up when the track download 404s', async () => {
+    stubFetch(200, detail, 404);
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('trail-body').hidden).toBe(true);
+    expect($('no-track-note').textContent).toMatch(/could not be downloaded/);
+    expect($('route-description').innerHTML).toContain('&lt;script&gt;');
   });
 
   it('shows not found for an unknown route', async () => {

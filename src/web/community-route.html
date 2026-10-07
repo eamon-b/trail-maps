@@ -140,6 +140,11 @@
         <div id="owner-review"></div>
       </div>
 
+      <!-- Shown instead of the map when the track cannot be drawn: a hidden
+           route (no public copy while hidden) or a failed download. -->
+      <p class="import-note" id="no-track-note" hidden></p>
+
+      <div id="trail-body">
       <div class="trail-stats">
         <div class="stat-card">
           <div class="value" id="distance">--</div>
@@ -190,6 +195,7 @@
       <p class="waypoint-filter-summary" id="waypoint-filter-summary" aria-live="polite" hidden></p>
       <div class="waypoints-table-wrapper" id="waypoints-container">
         <p>Loading waypoints...</p>
+      </div>
       </div>
     </section>
 

@@ -11,14 +11,23 @@
  * invented), and every later check reads that rebuilt copy. The rebuilt trail
  * is returned as `trail`, which is what the worker stores.
  *
- * Platform-neutral and dependency-free apart from `distance.ts`; every check is
- * O(points), so the whole run fits a Worker's CPU budget.
+ * Nothing numeric the client claims about the route as a whole is kept: the
+ * length comes from the points' own `dist` (checked against the coordinates),
+ * and `track.totalAscent`/`totalDescent` are recomputed from the points'
+ * elevations with the import pipeline's 3 m hysteresis band
+ * (`calculateElevationStats`, the step into each route break skipped), so a
+ * stored route can never advertise a climb its profile does not have.
+ *
+ * Platform-neutral and dependency-free apart from `distance.ts` and the pure
+ * `gpx-optimizer` elevation helper; every check is O(points), so the whole run
+ * fits a Worker's CPU budget.
  *
  * Messages are shown to the person sharing the route, so they are plain
  * English and say what to do where there is something to do.
  */
 
 import { haversineDistance } from './distance';
+import { calculateElevationStats } from './gpx-optimizer';
 import { ACCESS_MODES } from './types';
 import type { AccessMode } from './types';
 import type { CommunityCheck, CommunityCheckLevel } from './community-types';
@@ -49,6 +58,8 @@ export const COMMUNITY_CHECK_THRESHOLDS = {
   distanceToleranceMinKm: 0.05,
   driveSpeedKmh: 15,
   noisyAscentPerKm: 250,
+  /** The hysteresis band the recomputed climb uses: `gpx-import`'s ascent threshold. */
+  ascentThresholdM: 3,
   gapKm: 2,
   maxWaypoints: 2000,
   urlShareWarn: 0.5,
@@ -142,7 +153,7 @@ export function runCommunityChecks(trail: unknown, meta: CommunityChecksMeta): C
     speedCheck(shaped.times, points, breakStarts),
     elevationCheck(clean, lengthKm),
     gapsCheck(points, breakStarts),
-    metadata,
+    metadata.level === 'pass' ? waypointTextCheck(clean) ?? metadata : metadata,
     waypointsCheck(clean),
   ];
 
@@ -326,10 +337,7 @@ function metadataCheck(meta: CommunityChecksMeta): CommunityCheck {
       `The description must be ${L.descriptionMin} to ${L.descriptionMax.toLocaleString('en')} characters long (it is ${description.length.toLocaleString('en')}).`
     );
   }
-  const visible = description.replace(/\s+/g, '').length;
-  let urlChars = 0;
-  for (const match of description.matchAll(URL_RE)) urlChars += match[0].length;
-  if (visible > 0 && urlChars / visible > COMMUNITY_CHECK_THRESHOLDS.urlShareWarn) {
+  if (mostlyLinks(description)) {
     return check(
       'metadata',
       'warn',
@@ -337,6 +345,37 @@ function metadataCheck(meta: CommunityChecksMeta): CommunityCheck {
     );
   }
   return check('metadata', 'pass', 'The name and description are a good length.');
+}
+
+/** True when links make up more than `urlShareWarn` of the visible characters. */
+function mostlyLinks(text: string): boolean {
+  const visible = text.replace(/\s+/g, '').length;
+  if (visible === 0) return false;
+  let urlChars = 0;
+  for (const match of text.matchAll(URL_RE)) urlChars += match[0].length;
+  return urlChars / visible > COMMUNITY_CHECK_THRESHOLDS.urlShareWarn;
+}
+
+/**
+ * The same "mostly links" test over every waypoint description (main route,
+ * off-trail and variant waypoints) taken together: link spam hides there as
+ * easily as in the route's own description. A `metadata` warning, or null when
+ * the descriptions are fine.
+ */
+function waypointTextCheck(trail: ProcessedTrail): CommunityCheck | null {
+  const texts: string[] = [];
+  const add = (w: { description?: string }) => {
+    if (w.description) texts.push(w.description);
+  };
+  trail.waypoints.forEach(add);
+  trail.offTrailWaypoints.forEach(add);
+  for (const v of [...trail.alternates, ...trail.sideTrips]) v.waypoints?.forEach(add);
+  if (texts.length === 0 || !mostlyLinks(texts.join('\n'))) return null;
+  return check(
+    'metadata',
+    'warn',
+    'The waypoint descriptions are mostly links. Describe each place instead: what is there, water, shelter and access.'
+  );
 }
 
 function waypointsCheck(trail: ProcessedTrail): CommunityCheck {
@@ -787,6 +826,8 @@ export function sanitiseCommunityTrail(
         points: main.points,
         displayPoints: display.points,
         totalDistance,
+        // Recomputed below from the points; the client's figures are only
+        // shape-checked.
         totalAscent: num(track.totalAscent, 'track.totalAscent', 0, 1e7),
         totalDescent: num(track.totalDescent, 'track.totalDescent', 0, 1e7),
       },
@@ -803,6 +844,13 @@ export function sanitiseCommunityTrail(
       direction: direction(t.direction, 'direction'),
     };
     if (breaks && breaks.length > 0) trail.track.breaks = breaks;
+    const climb = calculateElevationStats(
+      main.points,
+      COMMUNITY_CHECK_THRESHOLDS.ascentThresholdM,
+      new Set((breaks ?? []).map((b) => b.index))
+    );
+    trail.track.totalAscent = climb.gain;
+    trail.track.totalDescent = climb.loss;
     if (t.pois !== undefined && t.pois !== null) {
       trail.pois = arr(t.pois, 'pois', S.pois).map((p, i) => poi(p, `pois[${i}]`));
     }

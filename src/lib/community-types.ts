@@ -78,9 +78,12 @@ export const COMMUNITY_LIMITS = {
   creditMax: 300,
   /** Serialised ProcessedTrail. */
   trailJsonMaxBytes: 4 * 1024 * 1024,
-  /** Raw GPX, before base64. */
-  gpxMaxBytes: 20 * 1024 * 1024,
+  /** Raw GPX, before base64. A larger file is shared without its GPX. */
+  gpxMaxBytes: 5 * 1024 * 1024,
+  /** Routes a user may publish per day. */
   submitsPerDay: 10,
+  /** Submit requests a user may make per day, failed ones included. */
+  submitAttemptsPerDay: 30,
 } as const;
 
 /**
@@ -109,8 +112,13 @@ export interface CommunityRouteSummary {
   verifiedAt: string | null;
   /** True once the AI review has run (its content is not public). */
   reviewed: boolean;
-  /** Public URL of the trail JSON (content-addressed, immutable). */
-  trailUrl: string;
+  /**
+   * Public URL of the trail JSON (content-addressed, immutable). Always set in
+   * the public list and public detail; null in an owner's or admin's view of a
+   * hidden route, whose public copies are deleted while it is hidden (the
+   * detail then carries metadata only).
+   */
+  trailUrl: string | null;
   /** md5 of the trail JSON, for cache keys. */
   md5: string;
   bytes: number;
@@ -144,7 +152,11 @@ export interface CommunitySubmitRequest {
   rightsConfirmed: true;
   /** The processed trail (`importGpx(...).trail`), after any elevation backfill. */
   trail: unknown;
-  /** Optional raw GPX, base64, kept privately for re-processing. */
+  /**
+   * Optional raw GPX, base64 (at most `COMMUNITY_LIMITS.gpxMaxBytes` before
+   * encoding), kept privately under an unguessable key for re-processing and
+   * never returned.
+   */
   gpxBase64?: string;
 }
 

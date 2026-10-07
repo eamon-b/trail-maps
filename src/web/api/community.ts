@@ -249,6 +249,10 @@ export async function fetchCommunityTrail(
   summary: Pick<CommunityRouteSummary, 'id' | 'trailUrl'>,
   deps: CommunityApiDeps = {},
 ): Promise<ProcessedTrail> {
+  if (!summary.trailUrl) {
+    // A hidden route, seen by its owner or an admin: no public copy exists.
+    throw new Error('This route has no public track while it is hidden');
+  }
   let url: URL;
   try {
     url = new URL(summary.trailUrl);

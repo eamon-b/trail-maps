@@ -12,7 +12,8 @@
  * cadence as the trail catalog, throttled to {@link COMMUNITY_REFRESH_MS}. A
  * route's JSON is downloaded the first time its guide is opened
  * (`GuideProvider`), checked for size, MD5 and shape on a `.part` file before
- * the state names it.
+ * the state names it. A fresh list that no longer has a downloaded route (it
+ * was hidden or removed) drops it from the device, file and all.
  *
  * A community route is NOT server-known (`server-trails`): no comments, no
  * plan sync, no curated descriptions — the same as a `u_` import. Its offline
@@ -33,6 +34,7 @@ import {
   isUsableCommunityTrail,
   mergeCommunityRoutes,
   parseCommunityList,
+  pruneInstalledCommunity,
   parseCommunitySummary,
   parseInstalledCommunity,
   type InstalledCommunityRoute,
@@ -253,7 +255,9 @@ export function refreshCommunityRoutes(
       const response = await listCommunityRoutes({ baseUrl, fetchImpl: options.fetchImpl });
       const list = parseCommunityList(response);
       if (!list) return { checked: false, error: 'The community list is not in a format this app reads' };
-      saveState({ ...getState(), list, fetchedAt: now });
+      const pruned = pruneInstalledCommunity(list, getState().installed);
+      saveState({ ...getState(), list, fetchedAt: now, installed: pruned.installed });
+      for (const file of pruned.droppedFiles) deleteQuietly(file);
       return { checked: true };
     } catch (err) {
       return { checked: false, error: err instanceof Error ? err.message : String(err) };
@@ -282,25 +286,6 @@ export function forgetCommunityRoute(id: string): void {
   delete installed[id];
   saveState({ ...current, list, installed });
   if (entry) deleteQuietly(entry.file);
-}
-
-/**
- * Record a route whose trail JSON the device already holds (the hiker just
- * submitted it), so opening it needs no download.
- */
-export function installCommunityRouteCopy(raw: unknown, trail: unknown): void {
-  const summary = parseCommunitySummary(raw);
-  if (!summary || !isUsableCommunityTrail(trail)) return;
-  const file = communityFileName(summary.id, summary.md5);
-  try {
-    new File(ensureRoot(), file).write(JSON.stringify(trail));
-  } catch (err) {
-    console.warn('[community] could not keep a local copy', err);
-    return;
-  }
-  const current = getState();
-  const list = [...(current.list ?? []).filter((r) => r.id !== summary.id), summary];
-  saveState({ ...current, list, installed: { ...current.installed, [summary.id]: { summary, file } } });
 }
 
 // ---------------------------------------------------------------------------

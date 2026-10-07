@@ -3,6 +3,8 @@
   "name": "Shikoku Henro: Temples 1-23",
   "shortName": "Shikoku T1-23",
   "region": "Tokushima, Japan",
+  "country": "JP",
+  "states": [],
   "lengthKm": 154.1,
   "gpxFile": "shikoku-t1-t23.gpx",
   "description": "The first prefecture of the Shikoku 88 temple pilgrimage, walked clockwise from Temple 1 Ryozenji at Naruto to Temple 23 Yakuoji at Hiwasa: the Yoshino river plain, the mountain crossing to Temple 12 Shosanji, Tokushima city, the climbs to Temples 20 and 21, and the coast road south. Built from a personal CalTopo map with pilgrim huts, Henro Houses, temple lodgings, campgrounds and onsen within 3 km of the route; scripts/process-shikoku-caltopo.ts turns the map's export into the GPX. The out-and-back from Temple 12 to its Okunoin on the summit of Mt Shosanji is a side trip, not part of the route distance.",

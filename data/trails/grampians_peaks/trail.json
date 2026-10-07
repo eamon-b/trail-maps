@@ -3,6 +3,8 @@
   "name": "Grampians Peaks Trail",
   "shortName": "GPT",
   "region": "Grampians (Gariwerd) National Park (VIC)",
+  "country": "AU",
+  "states": ["VIC"],
   "lengthKm": 157.4,
   "gpxFile": "Grampians_Peaks_Trail.gpx",
   "dedupeWaypoints": true,

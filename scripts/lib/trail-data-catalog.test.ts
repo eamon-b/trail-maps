@@ -100,6 +100,21 @@ describe('buildCatalog', () => {
     expect(catalogKey('a', 'f'.repeat(32))).toBe('a.ffffffffffff.json');
     expect(CATALOG_KEY).toBe('trails/v1/catalog.json');
   });
+
+  it('carries country/states when the entry has them, and adds nothing when not', () => {
+    const grouped = { ...entry({ id: 'g' }), country: 'AU', states: ['VIC', 'NSW'] };
+    const catalog = buildCatalog([grouped, entry({ id: 'p' })], NOW);
+    expect(catalog.trails[0].country).toBe('AU');
+    expect(catalog.trails[0].states).toEqual(['VIC', 'NSW']);
+    expect('country' in catalog.trails[1]).toBe(false);
+    expect('states' in catalog.trails[1]).toBe(false);
+  });
+
+  it('counts a state change as a catalog change', () => {
+    const live = buildCatalog([{ ...entry(), country: 'AU', states: ['VIC'] }], NOW);
+    const local = buildCatalog([{ ...entry(), country: 'AU', states: ['NSW'] }], NOW);
+    expect(catalogsDiffer(diffCatalogs(local, live))).toBe(true);
+  });
 });
 
 describe('buildCatalog sourceCommit', () => {

@@ -59,6 +59,22 @@ const NAME_FIXES: Record<string, { name: string; shortName: string }> = {
   larapinta: { name: 'Larapinta Trail', shortName: 'Larapinta' },
 };
 
+/**
+ * Config fields that only group trails on a list (`@lib/trail-regions`). They
+ * ride in `index.json`, never in the per-trail file: a list-only change (a
+ * trail newly `featured`, a state code fixed) must not move that file's md5,
+ * or every installed app would download every trail again over the air.
+ */
+const LIST_ONLY_CONFIG_KEYS = ['country', 'states', 'featured'] as const;
+
+export function stripListOnlyConfig(config: Record<string, unknown>): Record<string, unknown> {
+  if (!LIST_ONLY_CONFIG_KEYS.some((key) => key in config)) return config;
+  const copy = { ...config };
+  for (const key of LIST_ONLY_CONFIG_KEYS) delete copy[key];
+  return copy;
+}
+
+
 export interface TrailJson {
   config: Record<string, unknown>;
   /** Present only for trails with a data/trails/<dir>/pois.json. Shipped slimmed. */
@@ -253,7 +269,7 @@ export function processTrail(trail: TrailJson): TrailJson {
 
   return {
     ...trail,
-    config: trail.config,
+    config: stripListOnlyConfig(trail.config),
     track: {
       points: truncatePoints(simplifiedPoints),
       // Both arrays are thinned here, so both of a break's indices are
@@ -291,6 +307,8 @@ export function main() {
     fs.existsSync(mobileIndexPath) ? fs.readFileSync(mobileIndexPath, 'utf-8') : undefined,
   );
   const now = new Date();
+  // Each entry also carries the trail's `country`/`states` (after `lengthKm`,
+  // via `mergeIndexEntry`) for the app's grouped My Guides list.
   const mobileIndex: MobileIndexEntry[] = [];
   let changedCount = 0;
 
@@ -345,6 +363,8 @@ export function main() {
         name: nameFix?.name ?? entry.name,
         shortName: nameFix?.shortName ?? entry.shortName,
         lengthKm: entry.lengthKm,
+        country: entry.country,
+        states: entry.states,
       },
       digestTrailFile(optimizedJson),
       previous,

@@ -3,6 +3,8 @@
   "name": "Great Ocean Walk",
   "shortName": "GOW",
   "region": "Otway coast (VIC)",
+  "country": "AU",
+  "states": ["VIC"],
   "lengthKm": 96.6,
   "gpxFile": "Great_Ocean_Walk.gpx",
   "dedupeWaypoints": true,

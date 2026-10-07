@@ -3,6 +3,8 @@
   "name": "Thorsborne Trail",
   "shortName": "Thorsborne",
   "region": "Hinchinbrook Island (QLD)",
+  "country": "AU",
+  "states": ["QLD"],
   "lengthKm": 28.8,
   "gpxFile": "Thorsborne_Trail.gpx",
   "dedupeWaypoints": true,

@@ -191,7 +191,10 @@ export function groupTrails<T extends GroupableTrail>(
     else byState.set(s, [t]);
   }
 
+  // Listed countries in list order, then unlisted ones by name, then "Other"
+  // (trails that gave no country) last.
   const order = (code: string) => {
+    if (code === 'XX') return COUNTRIES.length + 1;
     const i = COUNTRIES.findIndex((c) => c.code === code);
     return i === -1 ? COUNTRIES.length : i;
   };

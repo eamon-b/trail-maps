@@ -40,6 +40,10 @@ export interface TrailIndexBase {
   name: string;
   shortName: string;
   lengthKm: number;
+  /** ISO country code, for grouping the app's trail list (`@lib/trail-regions`). */
+  country?: string;
+  /** State/region codes in route order; the list groups a trail under the first. */
+  states?: string[];
 }
 
 /** One entry of `mobile/assets/trails/index.json`. */
@@ -90,6 +94,17 @@ export function digestTrailFile(content: string | Uint8Array): FileDigest {
 }
 
 /**
+ * `country`/`states` when the entry has them, and nothing otherwise, so an
+ * entry without them keeps the shape it always had.
+ */
+function listFields(entry: { country?: unknown; states?: unknown }): Pick<TrailIndexBase, 'country' | 'states'> {
+  const out: Pick<TrailIndexBase, 'country' | 'states'> = {};
+  if (typeof entry.country === 'string') out.country = entry.country;
+  if (Array.isArray(entry.states)) out.states = entry.states.filter((s): s is string => typeof s === 'string');
+  return out;
+}
+
+/**
  * The index entry for a freshly written trail file.
  *
  * Same md5 as the previous entry: the content has not changed, so the previous
@@ -115,6 +130,7 @@ export function mergeIndexEntry(
     name: base.name,
     shortName: base.shortName,
     lengthKm: base.lengthKm,
+    ...listFields(base),
     dataVersion,
     updatedAt,
     md5: digest.md5,
@@ -173,6 +189,7 @@ export function buildCatalog(
       name: entry.name,
       shortName: entry.shortName,
       lengthKm: entry.lengthKm,
+      ...listFields(entry),
       dataVersion: entry.dataVersion,
       updatedAt: entry.updatedAt,
       md5: entry.md5,
@@ -204,6 +221,8 @@ export function indexEntryProblems(entry: unknown): string[] {
   if (typeof e.name !== 'string' || e.name === '') problems.push(`${label}: name must be a non-empty string`);
   if (typeof e.shortName !== 'string' || e.shortName === '') problems.push(`${label}: shortName must be a non-empty string`);
   if (typeof e.lengthKm !== 'number' || !Number.isFinite(e.lengthKm)) problems.push(`${label}: lengthKm must be a number`);
+  if (e.country !== undefined && (typeof e.country !== 'string' || !/^[A-Z]{2}$/.test(e.country))) problems.push(`${label}: country must be a two-letter upper-case code`);
+  if (e.states !== undefined && (!Array.isArray(e.states) || !e.states.every((st) => typeof st === 'string'))) problems.push(`${label}: states must be an array of strings`);
   if (typeof e.dataVersion !== 'string' || !DATA_VERSION_RE.test(e.dataVersion)) {
     problems.push(`${label}: dataVersion must be YYYY-MM-DD`);
   }
@@ -287,6 +306,8 @@ function trailSignature(trail: CatalogTrail): string {
     trail.name,
     trail.shortName,
     trail.lengthKm,
+    trail.country ?? null,
+    trail.states ?? null,
     trail.dataVersion,
     trail.updatedAt,
     trail.md5,

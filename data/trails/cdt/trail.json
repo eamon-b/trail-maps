@@ -3,6 +3,8 @@
   "name": "Continental Divide Trail",
   "shortName": "CDT",
   "region": "United States (Waterton Lake to Crazy Cook)",
+  "country": "US",
+  "states": [],
   "lengthKm": 4874.7,
   "gpxFile": "cdt.gpx",
   "dedupeWaypoints": true,

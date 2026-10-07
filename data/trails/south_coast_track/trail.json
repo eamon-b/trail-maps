@@ -3,6 +3,8 @@
   "name": "South Coast Track",
   "shortName": "South Coast",
   "region": "Southwest National Park (TAS)",
+  "country": "AU",
+  "states": ["TAS"],
   "lengthKm": 85.5,
   "gpxFile": "South_Coast_Track.gpx",
   "dedupeWaypoints": true,

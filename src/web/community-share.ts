@@ -177,7 +177,7 @@ export function initCommunityShare(): CommunityShareController {
     if (!(err instanceof ApiError)) return `Could not share this route: ${err instanceof Error ? err.message : String(err)}`;
     switch (err.status) {
       case 409:
-        return 'This route has already been shared — the same track is in the community list.';
+        return 'This route has already been shared — the same track was shared before.';
       case 413:
         return 'This route is too large to share.';
       case 422:

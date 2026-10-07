@@ -87,7 +87,7 @@ export default function CommunityRouteScreen() {
         if (cancelled) return;
         setLoadError(
           err instanceof ApiError && err.status === 404
-            ? 'This route is no longer in the community list. The copy on this phone still works.'
+            ? 'This route is no longer in the community list. The copy on this phone is removed when the list next refreshes.'
             : apiErrorMessage(err, 'Couldn’t load this route’s details.'),
         );
       })

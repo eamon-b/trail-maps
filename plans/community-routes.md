@@ -43,8 +43,14 @@ submit ──► automatic checks ──fail──► 422 {checks}            (n
 ```
 
 - `hidden` routes are not listed and their GET returns 404 to everyone except
-  the owner and admins. `removed` is the owner's or an admin's delete
-  (tombstone; the R2 objects are purged best-effort).
+  the owner and admins. Hiding (by the AI review, reports or an admin) deletes
+  the route's public JSON, so a hidden route cannot be downloaded; owner and
+  admin detail then carries metadata only (`trailUrl: null`). An admin restore
+  republishes it from the private copy. `removed` is the owner's or an admin's
+  delete (tombstone; every R2 object of the route is purged best-effort).
+- Reports count towards the 3-report hide only when filed after the route's
+  last admin status change (`status_changed_at`), so a route an admin
+  restored is not hidden again by the reports the admin already weighed.
 - An owner can edit name/description/credit/region of their own route. Any
   edit of a `verified` route drops it back to `unverified` (the admin verified
   the old text), and re-runs the AI review.
@@ -68,9 +74,9 @@ Each check yields `{ id, level: 'pass' | 'warn' | 'fail', message }`. Any
 | `points` | < 20 points on the main route | point spacing median > 500 m (coarse, hand-drawn) |
 | `distance-consistency` | `distance` values disagree with a haversine recompute by > 2 % | — |
 | `speed` | — | timestamps present and median moving speed > 15 km/h (looks like a drive or ride) |
-| `elevation` | — | no elevation; or ascent per km > 250 m (noisy) |
+| `elevation` | — | no elevation; or ascent per km > 250 m (noisy). The ascent is recomputed from the points (3 m hysteresis, route breaks skipped); the client's `totalAscent`/`totalDescent` are never stored |
 | `gaps` | — | any jump between consecutive points > 2 km (not a recorded route break) |
-| `metadata` | name < 3 or > 80 chars; description < 20 or > 2,000 chars | description is mostly URLs |
+| `metadata` | name < 3 or > 80 chars; description < 20 or > 2,000 chars | description, or the waypoint descriptions taken together, mostly URLs |
 | `waypoints` | > 2,000 waypoints | none at all (fine, but the route will have no datasheet) |
 | `duplicate` | identical content hash already submitted (worker only, 409) | start and end within 200 m and length within 5 % of a live community route (worker only) |
 
@@ -86,7 +92,9 @@ worker secret `ANTHROPIC_API_KEY`; when it is unset the review is `skipped`.
 Input (all user text is fenced as untrusted data; the system prompt says the
 route's text may try to instruct the reviewer and must be ignored):
 name, description, credit, country/state chosen, length, ascent, the
-automatic checks, ≤ 200 waypoint names and types, the bbox, start/end and
+automatic checks, ≤ 200 waypoint names and types, a sample of waypoint
+descriptions (≤ 60, link-bearing ones first, each ≤ 200 chars, ≤ 8,000 chars
+in all), the names of ≤ 50 alternates/side trips, the bbox, start/end and
 ~40 evenly sampled coordinates.
 
 Output: `{ verdict: 'looks_good' | 'needs_human' | 'reject', confidence: 0..1,
@@ -114,17 +122,41 @@ All bodies JSON unless stated. Types in `src/lib/community-types.ts`.
 | POST | `/v1/admin/community/routes/:id/status` | admin | `{ status: 'verified' \| 'unverified' \| 'hidden', note? }`. |
 | POST | `/v1/admin/community/routes/:id/review` | admin | Re-run the AI review. |
 
-Rate limit: `communitySubmit` 10 per user per day (`rate_events`).
-Upload cap: 4 MB processed JSON, 20 MB raw GPX (the GPX is optional and kept
-for re-processing; it is base64 in the JSON body to keep one request).
+Rate limits (`rate_events`): `communitySubmitAttempt` 30 submit requests per
+user per day, spent before the body is parsed, failed ones included;
+`communitySubmit` 10 published routes per user per day, spent only after the
+checks pass.
+Upload cap: 4 MB processed JSON, 5 MB raw GPX (`COMMUNITY_LIMITS.gpxMaxBytes`;
+the GPX is optional and kept for re-processing; it is base64 in the JSON body
+to keep one request; the web share form leaves out a larger one).
+
+`GET /v1/community/routes/:id` sends `Cache-Control: private, no-store` to any
+request carrying a bearer token, and `Vary: Authorization` with the public
+`max-age=60`.
 
 Storage:
 - D1 `community_routes` (+ `community_route_reports`), migration `0005`.
-- R2 `community/v1/<id>.<md5[0..12]>.json` (the `ProcessedTrail`, content-addressed,
-  `Cache-Control: public, max-age=31536000, immutable`) and
-  `community/gpx/<id>.gpx` (raw upload, not linked publicly).
+- R2 (the PHOTOS bucket). The bucket has no private area — all of it is
+  served at `PHOTOS_PUBLIC_BASE` — so private objects are protected by
+  unguessable keys (128 random bits) that are recorded in the row and never
+  returned by the API; an R2 custom domain serves by exact key and does not
+  list.
+  - `community/private/<id>/<32 random hex>.json` (`private_key`): the
+    canonical `ProcessedTrail`, rewritten on every republish.
+  - `community/v1/<id>.<md5[0..12]>.json` (`r2_key`): the public copy, same
+    bytes, content-addressed, `Cache-Control: public, max-age=300` (short, so an edge copy
+    does not outlive a hide by more than a few minutes). Exists only while the route is `unverified`/`verified`
+    (`r2_key` is NULL while hidden).
+  - `community/private/<id>/<32 random hex>.gpx` (`gpx_key`): the raw upload.
+- A republish (owner edit, de-attribution) writes a new private and public
+  object and updates the row; it never deletes the old public object, because
+  lists cached for 60 s at the edge and up to 30 min on phones still name it.
+  Old versions go when the route is hidden (every object under
+  `community/v1/<id>.` is deleted) or removed (that prefix and
+  `community/private/<id>/` are purged).
 - Clients read the trail JSON from `PHOTOS_PUBLIC_BASE` + key (the same public
-  bucket domain as photos and the trail catalog).
+  bucket domain as photos and the trail catalog). The app drops a downloaded
+  route, file and all, when a freshly fetched list no longer has it.
 
 Ids: `c_` + 16 url-safe random chars. A community route is **not** in
 `ALLOWED_TRAILS`: comments, descriptions and plan sync are off for it (as for

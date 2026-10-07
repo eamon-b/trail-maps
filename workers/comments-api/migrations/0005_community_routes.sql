@@ -1,9 +1,14 @@
 -- FarOut comments API — community routes (`plans/community-routes.md`).
 --
--- A hiker's imported GPX, shared with everyone. The processed trail JSON lives
--- in R2 (`community/v1/<id>.<md5[0..12]>.json`, content-addressed, public) and
--- the raw GPX beside it (`community/gpx/<id>.gpx`, private); this table holds
--- what the lists and the moderation queue need without reading either.
+-- A hiker's imported GPX, shared with everyone. In R2 (the PHOTOS bucket):
+-- the canonical trail JSON at `community/private/<id>/<32 random hex>.json`
+-- (`private_key`); while the route is live, a public copy of it at
+-- `community/v1/<id>.<md5[0..12]>.json` (`r2_key`, content-addressed; NULL
+-- while hidden, when every public copy is deleted); and the optional raw GPX
+-- at `community/private/<id>/<32 random hex>.gpx` (`gpx_key`). The bucket is
+-- served whole at its public domain, so the random keys — never returned by
+-- the API — are what keep the private objects private. This table holds what
+-- the lists and the moderation queue need without reading any of them.
 --
 -- `status`: 'unverified' (public, passed the automatic checks), 'verified'
 -- (an admin approved it), 'hidden' (AI review, user reports or an admin took it
@@ -35,8 +40,9 @@ CREATE TABLE community_routes (
   content_hash TEXT NOT NULL,          -- sha256 of the route geometry + waypoints (config excluded)
   md5 TEXT NOT NULL,                   -- md5 of the stored JSON bytes
   bytes INTEGER NOT NULL,
-  r2_key TEXT NOT NULL,
-  gpx_key TEXT,                        -- NULL when no GPX was uploaded
+  r2_key TEXT,                         -- public copy; NULL while there is none (hidden)
+  private_key TEXT NOT NULL,           -- canonical JSON, random key, never returned
+  gpx_key TEXT,                        -- random key, never returned; NULL when no GPX was uploaded
   checks_json TEXT NOT NULL,           -- CommunityCheck[] from the server's run
   review_json TEXT,                    -- CommunityAiReview
   review_status TEXT NOT NULL DEFAULT 'pending'
@@ -45,6 +51,8 @@ CREATE TABLE community_routes (
   status_note TEXT,                    -- admin's note on the last status change
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
+  status_changed_at TEXT NOT NULL,     -- insert or last admin status change; reports
+                                       -- count towards a hide only when filed after it
   verified_at TEXT,
   verified_by TEXT,
   removed_at TEXT
@@ -68,5 +76,5 @@ CREATE TABLE community_route_reports (
   UNIQUE (route_id, user_id)           -- one report per reporter per route
 );
 
-CREATE INDEX idx_community_route_reports_route ON community_route_reports(route_id);
+CREATE INDEX idx_community_route_reports_route ON community_route_reports(route_id, created_at);
 CREATE INDEX idx_community_route_reports_user ON community_route_reports(user_id, created_at);

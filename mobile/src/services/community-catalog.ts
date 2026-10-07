@@ -130,9 +130,12 @@ export function parseInstalledCommunity(raw: unknown): InstalledCommunityRoute |
 
 /**
  * The routes My Guides lists: the last fetched list, plus any downloaded route
- * the list has since dropped (a hiker may be relying on it offline — the same
- * rule as a catalog-only trail). A downloaded route reports the list's current
- * name and status when the list still has it.
+ * it does not name — one opened from a link before the list was fetched, or
+ * listed while no fresh list has said otherwise. A route a fresh list has
+ * dropped (hidden, removed) is pruned from the device by
+ * {@link pruneInstalledCommunity} when that list arrives, so it does not
+ * linger here. A downloaded route reports the list's current name and status
+ * when the list still has it.
  */
 export function mergeCommunityRoutes(
   list: readonly CommunityRouteSummary[] | null,
@@ -149,6 +152,26 @@ export function mergeCommunityRoutes(
     out.push({ ...copy.summary, downloaded: true });
   }
   return out;
+}
+
+/**
+ * Apply a fresh, successfully fetched list to the downloaded routes: a route
+ * the list no longer has was hidden or removed, so it is dropped from the
+ * device rather than kept for offline use — what was taken down is not handed
+ * on. Returns what to keep and the files to delete.
+ */
+export function pruneInstalledCommunity(
+  list: readonly CommunityRouteSummary[],
+  installed: Readonly<Record<string, InstalledCommunityRoute>>,
+): { installed: Record<string, InstalledCommunityRoute>; droppedFiles: string[] } {
+  const listed = new Set(list.map((r) => r.id));
+  const kept: Record<string, InstalledCommunityRoute> = {};
+  const droppedFiles: string[] = [];
+  for (const [id, entry] of Object.entries(installed)) {
+    if (listed.has(id)) kept[id] = entry;
+    else droppedFiles.push(entry.file);
+  }
+  return { installed: kept, droppedFiles };
 }
 
 /**

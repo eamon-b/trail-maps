@@ -115,7 +115,7 @@ export function shareFailure(err: unknown): ShareFailure {
     if (err.status === 409) {
       return {
         message:
-          'This route has already been shared — the same track is in the community list.',
+          'This route has already been shared — the same track was shared before.',
       };
     }
     if (err.status === 429) {

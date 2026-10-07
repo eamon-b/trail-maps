@@ -383,6 +383,22 @@ async function loadDetail(id: string, session: WebSession | null): Promise<{
   }
 }
 
+/**
+ * The text, status and owner tools without the map: a hidden route has no
+ * public track (its owner and admins still see the details), and a download
+ * can fail. Save, Report and the exports need the track, so they go too.
+ */
+function showWithoutTrack(detail: CommunityRouteDetail, session: WebSession | null, note: string): void {
+  renderHeader(detail);
+  initOwnerTools(detail, session);
+  for (const id of ['save-btn', 'report-btn']) $(id)!.hidden = true;
+  $('trail-body')!.hidden = true;
+  const noteEl = $('no-track-note')!;
+  noteEl.textContent = note;
+  noteEl.hidden = false;
+  showPanel('trail-panel');
+}
+
 async function init(): Promise<void> {
   const id = getQueryParam(window.location.search, 'id');
   if (!id || !isCommunityRouteId(id) || !getApiBase()) {
@@ -413,8 +429,14 @@ async function init(): Promise<void> {
   try {
     trail = await fetchCommunityTrail(detail);
   } catch (err) {
-    console.error('Could not download the community route', err);
-    showMissing('Could not load this route', 'The route’s track could not be downloaded. Try again later.');
+    if (detail.trailUrl) console.error('Could not download the community route', err);
+    showWithoutTrack(
+      detail,
+      session,
+      detail.trailUrl
+        ? 'The route’s track could not be downloaded. Try reloading the page later.'
+        : 'This route is hidden, so its track is not published. Its details are shown here; the map returns if it is restored.',
+    );
     return;
   }
   trail.config = { ...trail.config, name: detail.name, shortName: detail.name };

@@ -11,8 +11,11 @@
  * shown here too.
  *
  * What is sent is the stored `ProcessedTrail` — the phone keeps no raw GPX.
- * On success the new route is cached and installed from the copy already on
- * the phone, and the guide opens under its community id.
+ * On success the new route is added to the cached list and the guide opens
+ * under its community id, downloading the server's copy from `trailUrl` like
+ * any other community route: the phone's pre-submit trail is not the server's
+ * rebuilt one (its config, climb and fields differ), so it is never filed
+ * under the server's md5.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -36,7 +39,7 @@ import { loadTrail, type TrailJson } from '../src/services/trail-loader';
 import { getBaseUrl } from '../src/api/client';
 import { submitCommunityRoute } from '../src/api/community';
 import { useIdentityStore } from '../src/state/identity-store';
-import { installCommunityRouteCopy } from '../src/services/community-routes';
+import { upsertCommunitySummary } from '../src/services/community-routes';
 import { validateDisplayName, MAX_DISPLAY_NAME_LENGTH } from '../src/features/comments/display-name';
 import {
   RIGHTS_TEXT,
@@ -154,7 +157,7 @@ export default function ShareRouteScreen() {
         { baseUrl, token: active.token },
         buildSubmitRequest(form, trail),
       );
-      installCommunityRouteCopy(detail, trail);
+      upsertCommunitySummary(detail);
       router.replace({ pathname: '/guide/[trailId]', params: { trailId: detail.id } });
     } catch (err) {
       setFailure(shareFailure(err));

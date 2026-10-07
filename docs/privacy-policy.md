@@ -44,14 +44,17 @@ enter, your display name at the time, and the original GPX file you imported.
 The route, its text and your display name are published publicly under
 [CC0](https://creativecommons.org/publicdomain/zero/1.0/) (public domain) on
 the website and in the app; the original GPX file is kept privately, for
-re-processing only, and is never linked publicly. Sharing is opt-in: an import
+re-processing only, under an unguessable address that is never linked or
+shown publicly. If a route is hidden by moderation, its published copy is
+taken down until it is restored. Sharing is opt-in: an import
 you do not share never leaves your device. A GPX recording can contain
 timestamps of when you walked — share only routes you are happy to make
 public.
 
 **Automated review of community routes.** Each shared route is checked
-automatically, and its text, region, summary statistics, waypoint names and a
-sample of its coordinates are sent to Anthropic's API (the Claude model) for an
+automatically, and its text, region, summary statistics, waypoint names, a
+sample of its waypoint descriptions, the names of its alternate routes and side
+trips, and a sample of its coordinates are sent to Anthropic's API (the Claude model) for an
 automated review that helps our admins spot spam, abuse or routes that are not
 walking routes. Anthropic processes this data to return the review; it is not
 used to identify you. The review's result is visible to you and to our admins,

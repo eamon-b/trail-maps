@@ -37,6 +37,17 @@ export const RATE_BUCKETS = {
     limit: COMMUNITY_LIMITS.submitsPerDay,
     windowMs: 24 * 60 * 60 * 1000,
   },
+  /**
+   * Every authenticated community submit per user per day, spent before the
+   * body is parsed, passing or not. A rejected submission is free of the
+   * `communitySubmit` allowance, but it still costs the worker a multi-MB
+   * parse and a full check run; this bounds how often an account can make it.
+   */
+  communitySubmitAttempt: {
+    bucket: 'community_submit_attempt',
+    limit: COMMUNITY_LIMITS.submitAttemptsPerDay,
+    windowMs: 24 * 60 * 60 * 1000,
+  },
 } as const;
 
 export type RateBucket = (typeof RATE_BUCKETS)[keyof typeof RATE_BUCKETS];

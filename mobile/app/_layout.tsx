@@ -90,6 +90,10 @@ function ThemedStack() {
         {/* Every route this account shared, hidden ones included (Settings,
             and the share screen's "already shared" message). */}
         <Stack.Screen name="my-shared-routes" options={{ title: 'My shared routes' }} />
+        {/* About a community route (status, report, delete, remove). Root
+            level, not in the guide stack, so it opens without the trail being
+            downloaded — offline included. */}
+        <Stack.Screen name="community-route" options={{ title: 'Community route' }} />
         {/* Modal: review an imported GPX before it becomes a guide. */}
         <Stack.Screen
           name="import"

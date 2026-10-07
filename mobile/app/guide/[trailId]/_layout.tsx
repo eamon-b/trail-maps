@@ -56,10 +56,7 @@ export default function GuideLayout() {
                     name="information-outline"
                     accessibilityLabel="About this community route"
                     onPress={() =>
-                      router.push({
-                        pathname: '/guide/[trailId]/community',
-                        params: { trailId },
-                      })
+                      router.push({ pathname: '/community-route', params: { id: trailId } })
                     }
                   />
                 )}
@@ -114,7 +111,6 @@ export default function GuideLayout() {
         <Stack.Screen name="downloads" options={{ title: 'Offline maps' }} />
         <Stack.Screen name="routes" options={{ title: 'Routes' }} />
         <Stack.Screen name="plan" options={{ title: 'Plan' }} />
-        <Stack.Screen name="community" options={{ title: 'Community route' }} />
         {/* A modal over the plan: 70 CDT rows want a header, a scroll and a
             back gesture, which a sheet has none of. */}
         <Stack.Screen

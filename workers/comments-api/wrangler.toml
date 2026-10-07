@@ -37,3 +37,8 @@ PHOTOS_PUBLIC_BASE = "https://data.contour-map-tiles.net"
 # `SITE_BASE/shared-plan.html?s=<shareId>`, so this must change the day the site
 # moves or every link minted after the move is dead. Tests override it.
 SITE_BASE = "https://trail-maps.vercel.app"
+
+# Secrets (not in this file): set with `wrangler secret put <NAME>`.
+#   ANTHROPIC_API_KEY — the community-route AI review (src/community-review.ts).
+#     `wrangler secret put ANTHROPIC_API_KEY`. Optional: without it every review
+#     is recorded as `skipped` and routes stay Unverified until an admin looks.

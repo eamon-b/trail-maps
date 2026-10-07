@@ -7,6 +7,7 @@ import type { Env } from './http';
 import { generateToken, requirePrimaryUser, requireUser, sha256Hex } from './auth';
 import type { UserRow } from './auth';
 import { deleteCommentPhotos } from './photos';
+import { deattributeStatement, deattributeStoredRoutes } from './community';
 import { RATE_BUCKETS, consumeRateLimit, ipRateKey } from './rate-limit';
 import { validateDisplayName } from './validation';
 import type {
@@ -119,6 +120,12 @@ const DELETED_DISPLAY_NAME = 'Deleted user';
  * Reports the user filed are deliberately kept: they are a moderation record and
  * only reference the now-scrubbed row.
  *
+ * Community routes stay up: they were released as CC0, so deleting the account
+ * does not take them down, but they are de-attributed — `submitted_by_name` is
+ * cleared here and the stored trail JSON is rewritten without the name off the
+ * response path. `user_id` keeps pointing at the scrubbed row, so the
+ * moderation record (and an admin's ability to remove them) is intact.
+ *
  * Plans are soft-deleted the same way comments are (their tombstones flow
  * through `GET /v1/plans`), and every device token — the phone's and any linked
  * browser's — is revoked, so no second device outlives the account. Only the
@@ -163,7 +170,10 @@ export async function deleteMe(
           SET display_name = ?, token_hash = ?, is_admin = 0, is_banned = 1
         WHERE id = ?`
     ).bind(DELETED_DISPLAY_NAME, deadTokenHash, user.id),
+    deattributeStatement(env, user.id),
   ]);
+
+  ctx.waitUntil(deattributeStoredRoutes(env, user.id));
 
   // Best-effort R2 cleanup off the response path, as with single-comment deletes.
   if (withPhotos.length > 0) {

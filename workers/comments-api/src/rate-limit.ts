@@ -11,6 +11,7 @@
 
 import { HttpError } from './http';
 import type { Env } from './http';
+import { COMMUNITY_LIMITS } from '../../../src/lib/community-types';
 
 /** Named limits. Add the constant here so every ceiling is in one place. */
 export const RATE_BUCKETS = {
@@ -26,6 +27,16 @@ export const RATE_BUCKETS = {
    * below 20; a script is not.
    */
   deviceRegister: { bucket: 'device_register', limit: 20, windowMs: 60 * 60 * 1000 },
+  /**
+   * Community route submissions per user per day (`plans/community-routes.md`).
+   * Spent only once a submission has passed its checks, so a hiker fixing a
+   * rejected upload is not charged for the attempts.
+   */
+  communitySubmit: {
+    bucket: 'community_submit',
+    limit: COMMUNITY_LIMITS.submitsPerDay,
+    windowMs: 24 * 60 * 60 * 1000,
+  },
 } as const;
 
 export type RateBucket = (typeof RATE_BUCKETS)[keyof typeof RATE_BUCKETS];

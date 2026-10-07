@@ -12,6 +12,7 @@ declare global {
       PHOTOS: R2Bucket;
       PHOTOS_PUBLIC_BASE: string;
       SITE_BASE: string;
+      ANTHROPIC_API_KEY?: string;
       TEST_MIGRATIONS: D1Migration[];
     }
   }

@@ -204,6 +204,21 @@ describe('generateGpx → parseGpx round trip', () => {
     );
     expect(xml).not.toContain('<type>');
   });
+
+  it('writes extra tracks after the main track, in order', () => {
+    const xml = generateGpx(
+      'Main',
+      [{ lat: 1, lon: 2, ele: 10, time: null }],
+      [],
+      [
+        { name: 'Alternative: Valley', points: [{ lat: 1.1, lon: 2.1, ele: 20, time: null }] },
+        { name: 'Spur', points: [{ lat: 1.2, lon: 2.2, ele: 0, time: null }] },
+      ]
+    );
+    const tracks = parseGpx(xml).tracks;
+    expect(tracks.map(t => t.name)).toEqual(['Main', 'Alternative: Valley', 'Spur']);
+    expect(tracks[1].segments[0].points[0]).toMatchObject({ lat: 1.1, lon: 2.1, ele: 20 });
+  });
 });
 
 describe('waypoint <extensions> (off-trail access)', () => {

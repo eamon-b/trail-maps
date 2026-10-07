@@ -12270,6 +12270,13 @@
       "lon": 134.308092
     },
     {
+      "id": "w_71921ac9",
+      "name": "Kamiyama Onsen-mae bus stop",
+      "type": "poi",
+      "lat": 33.974011,
+      "lon": 134.370151
+    },
+    {
       "id": "w_7b359365",
       "name": "No.8 Kumadaniji",
       "type": "poi",
@@ -12310,6 +12317,13 @@
       "type": "poi",
       "lat": 33.97178,
       "lon": 134.36982
+    },
+    {
+      "id": "w_87fa9a17",
+      "name": "Keimusho-mae bus stop",
+      "type": "poi",
+      "lat": 34.04294,
+      "lon": 134.430071
     },
     {
       "id": "w_891b096b",

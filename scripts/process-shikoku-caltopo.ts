@@ -23,6 +23,10 @@
  * Places the map lacks, closures and corrected descriptions live in
  * CURATED_WAYPOINTS / CLOSED_MARKERS / DESCRIPTION_OVERRIDES below and are
  * applied on every run; `--reapply` applies them to the committed GPX alone.
+ *
+ * The map has only the one walked line. Alternates are kept in
+ * scripts/data/ (ALTERNATES below) and written after it as extra `<trk>`s
+ * whose "Alternative:" names the build classifies as alternates.
  */
 
 import * as fs from 'fs';
@@ -39,6 +43,31 @@ const CORRIDOR_METERS = 3000;
 
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname);
 const DEFAULT_OUTPUT = path.resolve(SCRIPTS_DIR, '../data/trails/shikoku/shikoku-t1-t23.gpx');
+
+/**
+ * Alternate routes, each a `{ name, source, points: [lat, lon, ele][] }` file.
+ * Kamiyama: from Nabeiwa through Kamiyama town and past Kamiyama Onsen to the
+ * Akui river, instead of over Tamagatoge pass - henro.org's "alternative path
+ * through Kamiyama". Routed over OpenStreetMap roads, elevation from
+ * Copernicus GLO-30 (see the file's `source`).
+ */
+const ALTERNATES = [path.resolve(SCRIPTS_DIR, 'data/shikoku-kamiyama-alternate.json')];
+
+interface AlternateFile {
+  name: string;
+  source: string;
+  points: [number, number, number][];
+}
+
+function loadAlternates(): { name: string; points: GpxPoint[] }[] {
+  return ALTERNATES.map(file => {
+    const alternate = JSON.parse(fs.readFileSync(file, 'utf-8')) as AlternateFile;
+    return {
+      name: alternate.name,
+      points: alternate.points.map(([lat, lon, ele]) => ({ lat, lon, ele, time: null })),
+    };
+  });
+}
 
 interface CaltopoFeature {
   id: string;
@@ -109,6 +138,30 @@ const OKUNOIN: GpxWaypoint = {
  * and River Side Camp NEW-TA (Nyuta, near Temple 13).
  */
 const CURATED_WAYPOINTS: GpxWaypoint[] = [
+  // Bus stops: positions and timetables from Tokushima Bus's GTFS open data
+  // (gtfs-data.jp, timetable from 2026-10-08); neither stop is in OSM.
+  {
+    name: 'Kamiyama Onsen-mae bus stop',
+    lat: 33.974011,
+    lon: 134.370151,
+    ele: 0,
+    type: 'poi',
+    desc:
+      'Bus stop 神山温泉前 on Route 438 at Kamiyama Onsen, on the Kamiyama alternative. ' +
+      'Tokushima Bus Kamiyama (56) and Sanagochi (62) lines to Tokushima Station: 15 departures on weekdays, 11 at weekends, ' +
+      'first about 6:20, last 19:21 (Oct 2026).',
+  },
+  {
+    name: 'Keimusho-mae bus stop',
+    lat: 34.04294,
+    lon: 134.430071,
+    ele: 0,
+    type: 'poi',
+    desc:
+      'Bus stop 刑務所前 ("prison stop") beside Tokushima Prison, about 200 m off the path 3.6 km before Temple 13; buses start here. ' +
+      'Tokushima Bus Ichinomiya (18) and Amanohara-nishi (17) lines to Tokushima Station: 13 departures on weekdays, 11 at weekends, ' +
+      'first 6:45, last 19:25 on weekdays and 20:07 at weekends (Oct 2026).',
+  },
   {
     name: 'Sudachi-an',
     lat: 33.987025,
@@ -313,16 +366,17 @@ function distanceToLine(lat: number, lon: number, points: GpxPoint[]): number {
 }
 
 /**
- * Re-apply the curated waypoints to the committed GPX in place, for when they
- * change but there is no fresh CalTopo export to rebuild from. The track is
- * written back untouched (parse → generate round-trips this file byte for byte).
+ * Re-apply the curated waypoints and the alternates to the committed GPX in
+ * place, for when they change but there is no fresh CalTopo export to rebuild
+ * from. The main track is written back untouched (parse → generate round-trips
+ * this file byte for byte); the alternates are rewritten from scripts/data/.
  */
 function reapply(gpxPath: string): void {
   const gpx = parseGpx(fs.readFileSync(gpxPath, 'utf-8'), jsdomXmlAdapter);
   const points = gpx.tracks[0].segments.flatMap(segment => segment.points);
   const waypoints = applyCuratedWaypoints(gpx.waypoints);
-  fs.writeFileSync(gpxPath, generateGpx(TRACK_NAME, points, waypoints));
-  console.log(`✓ Re-applied curated waypoints: ${waypoints.length} waypoints → ${gpxPath}`);
+  fs.writeFileSync(gpxPath, generateGpx(TRACK_NAME, points, waypoints, loadAlternates()));
+  console.log(`✓ Re-applied curated waypoints and alternates: ${waypoints.length} waypoints → ${gpxPath}`);
 }
 
 function main(): void {
@@ -431,7 +485,7 @@ function main(): void {
   }
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, generateGpx(TRACK_NAME, points, curated));
+  fs.writeFileSync(outputPath, generateGpx(TRACK_NAME, points, curated, loadAlternates()));
 
   console.log(`✓ ${points.length} track points, ${curated.length} waypoints → ${outputPath}`);
   if (skippedFolders.size > 0) {

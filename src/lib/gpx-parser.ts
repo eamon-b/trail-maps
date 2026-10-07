@@ -229,12 +229,14 @@ ${fields.map(field => `      ${field}\n`).join('')}    </extensions>
 }
 
 /**
- * Generate GPX XML from structured data
+ * Generate GPX XML from structured data. `extraTracks` are written after the
+ * main track, one `<trk>` each (alternates, side trips), in the order given.
  */
 export function generateGpx(
   trackName: string,
   points: GpxPoint[],
-  waypoints: GpxWaypoint[]
+  waypoints: GpxWaypoint[],
+  extraTracks: { name: string; points: GpxPoint[] }[] = []
 ): string {
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="GPX Tools"
@@ -271,9 +273,17 @@ export function generateGpx(
 `;
   }
 
-  // Add track
-  xml += `  <trk>
-    <name>${escapeXml(trackName)}</name>
+  for (const track of [{ name: trackName, points }, ...extraTracks]) {
+    xml += trackXml(track.name, track.points);
+  }
+  xml += `</gpx>`;
+
+  return xml;
+}
+
+function trackXml(name: string, points: GpxPoint[]): string {
+  let xml = `  <trk>
+    <name>${escapeXml(name)}</name>
     <trkseg>
 `;
 
@@ -294,7 +304,6 @@ export function generateGpx(
 
   xml += `    </trkseg>
   </trk>
-</gpx>`;
-
+`;
   return xml;
 }

@@ -172,6 +172,11 @@ export interface CommunityPatchRequest {
 
 export interface CommunityListResponse {
   routes: CommunityRouteSummary[];
+  /**
+   * Keyset cursor for the next page (`?cursor=`), or null on the last page.
+   * Optional on the wire so a client also reads a server that predates paging.
+   */
+  nextCursor?: string | null;
 }
 
 export interface CommunityAdminListResponse {

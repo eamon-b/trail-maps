@@ -209,7 +209,8 @@ export function getBundledTrailJson(id: string): TrailJson | null {
  * A downloaded copy that cannot be read falls through to the bundle — the
  * guide opens on older data rather than not at all. Returns null for an
  * unknown id, for a remote trail not downloaded yet, AND for a torn import
- * whose registry row outlived its file.
+ * whose registry row outlived its file. A community route's copy that is on
+ * the phone but cannot be read throws (`readCommunityTrail`).
  */
 export async function loadTrail(id: string): Promise<TrailJson | null> {
   const downloaded = await readDownloadedTrail(id);

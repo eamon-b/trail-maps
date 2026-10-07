@@ -54,7 +54,11 @@ import { poiIconName } from '../../../../src/features/map/waypoint-icons';
 import { WAYPOINT_ICON_IMAGES } from '../../../../src/features/map/waypoint-icon-images';
 import { isPlaceOffTrail } from '../../../../src/features/guide/waypoint-detail';
 import { TripCard } from '../../../../src/features/guide/TripCard';
-import { mapsUrlFor, openUrlWithFallback } from '../../../../src/features/guide/poi-detail';
+import {
+  googleMapsUrl,
+  mapsUrlFor,
+  openUrlWithFallback,
+} from '../../../../src/features/guide/poi-detail';
 
 export default function PoiDetailScreen() {
   const { poiKey } = useLocalSearchParams<{ trailId: string; poiKey: string }>();
@@ -90,11 +94,15 @@ export default function PoiDetailScreen() {
   };
 
   // A device with no maps app is unusual but real (and `geo:`/`maps:` are not
-  // universally handled), so fall back to the OSM map view rather than failing
-  // silently. See `openUrlWithFallback` for why there is no canOpenURL check.
+  // universally handled), so fall back to the Google Maps web link rather than
+  // failing silently. See `openUrlWithFallback` for why there is no canOpenURL check.
   const openMaps = () => {
     const url = mapsUrlFor(poi.lat, poi.lon, name, Platform.OS);
-    void openUrlWithFallback((target) => Linking.openURL(target), url, osmUrl);
+    void openUrlWithFallback(
+      (target) => Linking.openURL(target),
+      url,
+      googleMapsUrl(poi.lat, poi.lon),
+    );
   };
 
   return (

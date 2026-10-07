@@ -8,6 +8,8 @@
  *    imported one renders a spinner INSTEAD of children until its file is read
  *    (so `trail` is never null for a consumer), and an id that resolves to
  *    nothing lands on the not-found state.
+ * 3. Newer data while open — the guide keeps its copy, reports a newer
+ *    installed one, and reloads it on request without the spinner.
  */
 
 import React from 'react';
@@ -21,6 +23,7 @@ import { GuideProvider, useGuide } from '../GuideContext';
 import { useSettingsStore } from '../../../state/settings-store';
 import { getTrailJson, loadTrail } from '../../../services/trail-loader';
 import { ensureTrailDownloaded } from '../../../services/trail-data-updates';
+import { useTrailDataStore } from '../../../state/trail-data-store';
 
 jest.mock('../../../theme', () => ({
   useTheme: () => ({ colors: new Proxy({}, { get: () => '#123456' }) }),
@@ -67,6 +70,7 @@ jest.mock('../../../services/trail-loader', () => {
 // provider's states around it matter.
 jest.mock('../../../services/trail-data-updates', () => ({
   ensureTrailDownloaded: jest.fn(async () => false),
+  trailDataVersion: jest.fn(() => null),
 }));
 
 jest.mock('../../../services/community-routes', () => {
@@ -87,6 +91,9 @@ const mockEnsureCommunity = communityMock.ensureCommunityRouteDownloaded;
 const mockGetTrailJson = getTrailJson as jest.Mock;
 const mockEnsureDownloaded = ensureTrailDownloaded as jest.Mock;
 const mockLoadTrail = loadTrail as jest.Mock;
+const mockTrailDataVersion = (
+  jest.requireMock('../../../services/trail-data-updates') as { trailDataVersion: jest.Mock }
+).trailDataVersion;
 const BUNDLED_TRAIL = (jest.requireMock('../../../services/trail-loader') as { __trail: unknown })
   .__trail;
 
@@ -552,5 +559,172 @@ describe('GuideProvider async resolution', () => {
       await second.promise;
     });
     expect(seenId).toBe('t');
+  });
+});
+
+describe('GuideProvider newer data while open', () => {
+  const NEWER_TRAIL = {
+    ...(BUNDLED_TRAIL as { waypoints: { name: string }[] }),
+    waypoints: [
+      { id: 'w_a', name: 'New start', lat: 0, lon: 0, type: 'trailhead', totalDistance: 0, elevation: 100 },
+    ],
+  };
+
+  let version: string | null;
+  let seen: { firstName: string; available: boolean; reloading: boolean; reload: () => void };
+  let mounts: number;
+
+  function Probe() {
+    const g = useGuide();
+    React.useEffect(() => {
+      mounts += 1;
+    }, []);
+    seen = {
+      firstName: g.trail.waypoints[0].name,
+      available: g.dataUpdate.available,
+      reloading: g.dataUpdate.reloading,
+      reload: g.dataUpdate.reload,
+    };
+    return null;
+  }
+
+  /** A download lands: the installed version moves and the store bumps. */
+  function installNewer(next: string) {
+    act(() => {
+      version = next;
+      useTrailDataStore.getState().bump();
+    });
+  }
+
+  beforeEach(() => {
+    version = 'bundle-md5';
+    mounts = 0;
+    mockTrailDataVersion.mockReset();
+    mockTrailDataVersion.mockImplementation(() => version);
+    mockGetTrailJson.mockReturnValue(BUNDLED_TRAIL);
+    mockLoadTrail.mockReset();
+    mockLoadTrail.mockResolvedValue(null);
+    act(() => {
+      useSettingsStore.setState({ perTrailDirection: {} });
+    });
+  });
+
+  it('keeps the copy it opened with and reports the newer one', () => {
+    act(() => {
+      TestRenderer.create(
+        <GuideProvider trailId="shikoku">
+          <Probe />
+        </GuideProvider>,
+      );
+    });
+    expect(seen.available).toBe(false);
+
+    installNewer('download-md5');
+
+    expect(seen.available).toBe(true);
+    expect(seen.firstName).toBe('Start');
+    expect(mockLoadTrail).not.toHaveBeenCalled();
+  });
+
+  it('does not report a bump that leaves the installed copy unchanged', () => {
+    act(() => {
+      TestRenderer.create(
+        <GuideProvider trailId="shikoku">
+          <Probe />
+        </GuideProvider>,
+      );
+    });
+    installNewer('bundle-md5');
+    expect(seen.available).toBe(false);
+  });
+
+  it('reloads the new copy without the spinner or remounting the screens', async () => {
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId="shikoku">
+          <Probe />
+        </GuideProvider>,
+      );
+    });
+    installNewer('download-md5');
+
+    const gate = deferred<unknown>();
+    mockLoadTrail.mockReturnValueOnce(gate.promise);
+    act(() => seen.reload());
+
+    expect(seen.reloading).toBe(true);
+    expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(0);
+    expect(seen.firstName).toBe('Start');
+
+    await act(async () => {
+      gate.resolve(NEWER_TRAIL);
+      await gate.promise;
+    });
+
+    expect(mockLoadTrail).toHaveBeenCalledWith('shikoku');
+    expect(seen.firstName).toBe('New start');
+    expect(seen.available).toBe(false);
+    expect(seen.reloading).toBe(false);
+    expect(mounts).toBe(1);
+
+    // A second update after the reload is offered again.
+    installNewer('newer-md5');
+    expect(seen.available).toBe(true);
+  });
+
+  it('keeps showing the open copy when the reload reads nothing', async () => {
+    act(() => {
+      TestRenderer.create(
+        <GuideProvider trailId="shikoku">
+          <Probe />
+        </GuideProvider>,
+      );
+    });
+    installNewer('download-md5');
+    mockLoadTrail.mockRejectedValueOnce(new Error('EACCES'));
+
+    await act(async () => {
+      seen.reload();
+    });
+
+    expect(seen.firstName).toBe('Start');
+    expect(seen.reloading).toBe(false);
+    expect(seen.available).toBe(true);
+  });
+
+  it('records the version of a copy read from disk', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    version = 'download-md5';
+    mockLoadTrail.mockResolvedValue(BUNDLED_TRAIL);
+
+    await act(async () => {
+      TestRenderer.create(
+        <GuideProvider trailId="shikoku">
+          <Probe />
+        </GuideProvider>,
+      );
+    });
+    expect(seen.available).toBe(false);
+
+    installNewer('newer-md5');
+    expect(seen.available).toBe(true);
+  });
+
+  it('never offers a reload for a trail with no catalog version', async () => {
+    mockGetTrailJson.mockReturnValue(null);
+    version = null;
+    mockLoadTrail.mockResolvedValue(BUNDLED_TRAIL);
+
+    await act(async () => {
+      TestRenderer.create(
+        <GuideProvider trailId="u_imported">
+          <Probe />
+        </GuideProvider>,
+      );
+    });
+    installNewer('something');
+    // Opened with no version: nothing to compare against.
+    expect(seen.available).toBe(false);
   });
 });

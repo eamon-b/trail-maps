@@ -5,12 +5,16 @@
  * A community route gets a one-line status banner above the panes (Verified /
  * Unverified, or "No longer shared" once the server has taken it down, and
  * what that means), tapping through to its About screen.
+ *
+ * Any guide gets the "Updated guide data" banner when a newer copy of its trail
+ * downloads while it is open (`GuideUpdateBanner`).
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { isCommunityRouteId } from '@lib/community-types';
 import { GuideView } from '../../../src/features/guide/GuideView';
+import { GuideUpdateBanner } from '../../../src/features/guide/GuideUpdateBanner';
 import { useTheme } from '../../../src/theme';
 import { spacing, typography } from '../../../src/tokens';
 import { getCommunityRouteInfo } from '../../../src/services/community-routes';
@@ -22,10 +26,10 @@ import { useTrailDataStore } from '../../../src/state/trail-data-store';
 
 export default function GuideScreen() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
-  if (!isCommunityRouteId(trailId)) return <GuideView />;
   return (
     <View style={styles.root}>
-      <CommunityBanner trailId={trailId} />
+      {isCommunityRouteId(trailId) ? <CommunityBanner trailId={trailId} /> : null}
+      <GuideUpdateBanner />
       <GuideView />
     </View>
   );

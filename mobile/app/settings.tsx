@@ -1,5 +1,5 @@
 /**
- * App settings — units, the account sections (rename the comment display name,
+ * App settings — units, "Check now" for guide updates, the account sections (rename the comment display name,
  * link a browser to this account's plans, the routes it shared to the
  * community, delete the account), and About, which
  * carries the privacy-policy link the app stores require in-app.
@@ -10,6 +10,7 @@ import { useTheme } from '../src/theme';
 import { KeyboardAwareScrollView } from '../src/navigation/KeyboardAwareScrollView';
 import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
+import { GuideUpdatesSection } from '../src/features/settings/GuideUpdatesSection';
 import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
 import { LinkedBrowsersSection } from '../src/features/settings/LinkedBrowsersSection';
 import { SharedRoutesSection } from '../src/features/settings/SharedRoutesSection';
@@ -41,6 +42,7 @@ export default function SettingsScreen() {
         />
       </View>
 
+      <GuideUpdatesSection />
       <DisplayNameSection />
       {/* Between the name and the delete button: both are about the account,
           and linking is the one that needs the account to exist first. */}

@@ -1320,13 +1320,25 @@ function attachVariants(drafts: DraftVariant[], alternateCount: number, main: Tr
     v.km = cumulativeKmOf(v.points);
   }
 
+  // The alternates attached so far, in the order they attached. A loose end
+  // only needs testing against those attached since its last test (`seen`
+  // records how many there were): every earlier one was already more than
+  // 500 m away and has not moved. Without this, a chain of 200 alternates
+  // each hanging off the next tested every loose end against every attached
+  // alternate once per round, for up to 400 rounds.
+  const attached: number[] = [];
+  for (let a = 0; a < alternateCount; a++) if (drafts[a].start) attached.push(a);
+  const seenStart = new Uint32Array(drafts.length);
+  const seenEnd = new Uint32Array(drafts.length);
+
   const latMargin = JUNCTION_M / METERS_PER_DEGREE_LAT;
-  const onParent = (p: { lat: number; lon: number }, self: number): Junction | null => {
+  const onParent = (p: { lat: number; lon: number }, self: number, from: number): Junction | null => {
     let best: { parent: number; point: number; meters: number } | null = null;
     const lonMargin = latMargin / Math.max(Math.cos((p.lat * Math.PI) / 180), 0.1);
-    for (let a = 0; a < alternateCount; a++) {
+    for (let k = from; k < attached.length; k++) {
+      const a = attached[k];
       const parent = drafts[a];
-      if (a === self || !parent.start) continue;
+      if (a === self) continue;
       const box = parent.bbox;
       if (
         p.lat < box.minLat - latMargin ||
@@ -1339,7 +1351,10 @@ function attachVariants(drafts: DraftVariant[], alternateCount: number, main: Tr
       parent.nearest ??= new NearestPoints(parent.points);
       const i = parent.nearest.nearest(p.lat, p.lon);
       const meters = haversineDistance(p.lat, p.lon, parent.points[i].lat, parent.points[i].lon);
-      if (meters <= JUNCTION_M && (best === null || meters < best.meters)) best = { parent: a, point: i, meters };
+      // Ties go to the lower index, whatever order the two attached in.
+      if (meters <= JUNCTION_M && (best === null || meters < best.meters || (meters === best.meters && a < best.parent))) {
+        best = { parent: a, point: i, meters };
+      }
     }
     if (!best) return null;
     const parent = drafts[best.parent];
@@ -1348,22 +1363,27 @@ function attachVariants(drafts: DraftVariant[], alternateCount: number, main: Tr
 
   // Each round attaches at least one end or stops, and there are at most two
   // loose ends per variant, so this ends after at most 2 × variants rounds.
-  for (let attached = true; attached; ) {
-    attached = false;
+  for (let progress = true; progress; ) {
+    progress = false;
     for (let i = 0; i < drafts.length; i++) {
       const v = drafts[i];
-      if (!v.start) {
-        const start = onParent(v.points[0], i);
+      if (!v.start && seenStart[i] < attached.length) {
+        const from = seenStart[i];
+        seenStart[i] = attached.length;
+        const start = onParent(v.points[0], i, from);
         if (start) {
           v.start = start;
-          attached = true;
+          if (i < alternateCount) attached.push(i);
+          progress = true;
         }
       }
-      if (!v.end && v.start && i < alternateCount) {
-        const end = onParent(v.points[v.points.length - 1], i);
+      if (!v.end && v.start && i < alternateCount && seenEnd[i] < attached.length) {
+        const from = seenEnd[i];
+        seenEnd[i] = attached.length;
+        const end = onParent(v.points[v.points.length - 1], i, from);
         if (end) {
           v.end = end;
-          attached = true;
+          progress = true;
         }
       }
     }

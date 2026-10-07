@@ -823,6 +823,40 @@ describe('variants', () => {
     expect(trip.startDistance).toBe(Math.round((alt.startDistance! + alongKm(alt.points, 50)) * 100) / 100);
   });
 
+  it('attaches a chain of alternates listed child first, one link per round', () => {
+    // Alternate k leaves from the far end of alternate k + 1, and the last one
+    // leaves the route: each round of the parent pass attaches one more link.
+    const t = thorsborne();
+    const m0 = t.track.points[0];
+    const N = 30;
+    const centre = { lat: m0.lat + 0.3, lon: m0.lon };
+    const start = (k: number) =>
+      k === N
+        ? latLon(m0)
+        : { lat: centre.lat + 0.1 * Math.cos(k / 6), lon: centre.lon + 0.1 * Math.sin(k / 6) };
+    t.alternates = Array.from({ length: N }, (_, k): RouteVariant => {
+      const way = [start(k + 1), centre, start(k)];
+      const points = [];
+      for (let s = 0; s < 2; s++) {
+        for (let i = 0; i < 10; i++) {
+          const g = i / 10;
+          points.push({ lat: way[s].lat + (way[s + 1].lat - way[s].lat) * g, lon: way[s].lon + (way[s + 1].lon - way[s].lon) * g, ele: 0 });
+        }
+      }
+      points.push({ ...start(k), ele: 0 });
+      return { name: `Link ${k}`, type: 'alternate', points, distance: 0, elevation: { ascent: 0, descent: 0 } };
+    });
+    t.sideTrips = [];
+    const result = runCommunityChecks(t, META);
+    expect(byId(result.checks, 'shape').level).toBe('pass');
+    const alts = result.trail!.alternates;
+    expect(alts[N - 1].startTrackIndex).toBe(0);
+    for (let k = 0; k < N - 1; k++) {
+      expect(alts[k].parent).toEqual({ name: `Link ${k + 1}`, index: k + 1 });
+      expect(alts[k].startDistance).toBe(Math.round((alts[k + 1].startDistance! + alongKm(alts[k + 1].points, 20)) * 100) / 100);
+    }
+  });
+
   it('gives a terminus no endDistance', () => {
     const t = thorsborne();
     const variant = slicedVariant(t, 100, 200, 'terminus');

@@ -67,10 +67,43 @@ breakdown:
 }
 ```
 
+## Contour smoothing
+
+Below each archive's maxzoom, tippecanoe simplified every contour to a few
+straight segments, which draws as a sawtooth at z9-z14. Rather than rebuild
+the archives, the Worker smooths line geometry as it serves a tile
+(`src/contour-smoothing.ts`): Chaikin corner cutting, then Douglas-Peucker at
+a sub-pixel tolerance to drop the points the passes add on straight runs. Only
+LineString geometry changes. Everything else in the tile is copied through byte
+for byte, line endpoints stay exactly where they were (so contours still meet
+across tile edges), and closed rings stay closed.
+
+| Source | Zooms smoothed | Passes / tolerance | Compressed size | CPU per tile miss |
+| --- | --- | --- | --- | --- |
+| `contours` | 9-14 | 3 / 2 | 1.3-2x | ~5-110 ms (densest z9) |
+| `world` | 9-11 | 2 / 1 | ~1.15x | up to ~140 ms (densest z10) |
+
+`world` was built with finer simplification and already draws smooth from z12,
+so it is left alone there. The `SMOOTHING` comment in `src/index.ts` records
+how these settings were chosen. Clients that read the archives directly from
+`data.contour-map-tiles.net` get the stored geometry, and so do the offline
+tile packs.
+
+Smoothed tiles carry `X-Contour-Smoothing: <version>`. Set the `CONTOUR_SMOOTHING`
+var to `off` (Cloudflare dashboard → Worker → Settings → Variables) to serve the
+stored geometry again without a code change. The edge cache key names which
+geometry it holds (`?geometry=<version>` or `?geometry=raw`), so switching
+never serves one kind for the other. Browsers and the app can still hold the
+other kind for up to `max-age` (24 h).
+
+When you change `SMOOTHING` or the algorithm, bump `SMOOTHING_VERSION`, so tiles
+cached under the old settings are not served.
+
 ## Edge caching
 
-Tile responses are stored in `caches.default`, keyed by URL (query string
-stripped, always a GET key so HEAD shares the same entry).
+Tile responses are stored in `caches.default`, keyed by URL path plus the
+geometry tag above (the request's own query string is stripped; always a GET
+key so HEAD shares the same entry).
 
 This is **live on `tiles.contour-map-tiles.net`** (verified 2026-08-19:
 requesting `/contours/12/3734/2493.pbf` twice flips `X-Edge-Cache` from `MISS`

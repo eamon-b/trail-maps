@@ -15,10 +15,13 @@ import {
   Source,
 } from 'pmtiles';
 import { parseTilePath } from './tile-path';
+import { smoothContourTile, type SmoothingOptions } from './contour-smoothing';
 
 interface Env {
   TILES_BUCKET: R2Bucket;
   ALLOWED_ORIGIN?: string; // e.g. 'https://trailmaps.example.com' — defaults to '*' for dev
+  /** 'off' serves the archives' geometry untouched (see SMOOTHING). */
+  CONTOUR_SMOOTHING?: string;
 }
 
 /** How long a browser may reuse a CORS preflight result. */
@@ -95,6 +98,43 @@ const SOURCES: Record<string, string> = {
   contours: 'contours/australia.pmtiles',
   world: 'contours/world.pmtiles',
 };
+
+/**
+ * Serve-time line smoothing per source (see contour-smoothing.ts), applied up
+ * to `maxZoom` and never at the archive's own maxzoom: those tiles keep full
+ * vertex detail already — they are what clients overzoom.
+ *
+ * Tuned per archive in 2026-10 on live tiles: measured at Mt Sonder, Mt
+ * Feathertop, Aoraki and the Colorado Front Range, and rendered in MapLibre
+ * (Mt Sonder against full-detail z15 tiles, the Front Range from `world`):
+ *
+ * - `contours` (australia.pmtiles) is coarse below z15 — median segment ~25 px
+ *   at z14, with ~40% of corners sharper than 45° at z13 — so it is smoothed
+ *   through z14 with three passes. Re-simplifying at tolerance 2 keeps the
+ *   growth to 1.3-2x compressed bytes; ~5-110 ms CPU per tile.
+ * - `world` (--simplification=2) already draws smooth from z12, so smoothing
+ *   there bought nothing visible for ~1.2x bytes. At z10-z11 it removes the
+ *   remaining kinks for ~1.15x bytes. Two passes at tolerance 1: tolerance 2
+ *   let close contours touch far more often (its segments are short), and
+ *   tolerance 0 nearly doubled tiles that already run to 800 KB at z10.
+ *   Up to ~140 ms CPU on the densest z10 tiles.
+ *
+ * A source with no entry is served as stored.
+ */
+const SMOOTHING: Record<string, { options: SmoothingOptions; maxZoom: number }> = {
+  contours: { options: { iterations: 3, tolerance: 2 }, maxZoom: 14 },
+  world: { options: { iterations: 2, tolerance: 1 }, maxZoom: 11 },
+};
+
+/**
+ * Names the geometry in the edge cache key, so tiles cached before a change to
+ * SMOOTHING or the algorithm are never served after it. Bump on any such change.
+ */
+const SMOOTHING_VERSION = 'chaikin-1';
+
+function smoothingEnabled(env: Env): boolean {
+  return env.CONTOUR_SMOOTHING !== 'off';
+}
 
 /** The source whose health decides the top-level `ok` of /health. */
 const DEFAULT_SOURCE = 'contours';
@@ -336,7 +376,12 @@ export default {
     // entries for byte-identical bytes.
     // Always a GET key — cache.put() rejects non-GET requests, and this lets a
     // HEAD be served from (and populate) the same entry a GET uses.
-    const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' });
+    // The one query parameter is ours: it names the geometry (smoothed with
+    // SMOOTHING_VERSION, or raw), so neither kind is ever served for the other.
+    const geometry = smoothingEnabled(env) ? SMOOTHING_VERSION : 'raw';
+    const cacheKey = new Request(`${url.origin}${url.pathname}?geometry=${geometry}`, {
+      method: 'GET',
+    });
 
     const cached = await cache.match(cacheKey);
     if (cached) {
@@ -374,9 +419,29 @@ export default {
         'Cache-Control': 'public, max-age=86400',
       };
 
+      let body: ArrayBuffer | Uint8Array = tileData.data;
+      const smoothing = SMOOTHING[tile.source];
+      if (
+        smoothing &&
+        smoothingEnabled(env) &&
+        tile.z <= smoothing.maxZoom &&
+        tile.z < header.maxZoom
+      ) {
+        try {
+          body = smoothContourTile(new Uint8Array(tileData.data), smoothing.options);
+          responseHeaders['X-Contour-Smoothing'] = SMOOTHING_VERSION;
+        } catch (error) {
+          // A tile the rewriter cannot parse is still a tile: serve it as stored.
+          console.error(
+            `Smoothing failed for ${tile.source}/${tile.z}/${tile.x}/${tile.y}, serving it unsmoothed: ` +
+              (error instanceof Error ? error.message : String(error))
+          );
+        }
+      }
+
       // PMTiles.getZxy() has already decompressed the tile payload, so do not
       // attach the archive's Content-Encoding to these response bytes.
-      return new Response(tileData.data, {
+      return new Response(body, {
         status: 200,
         headers: responseHeaders,
       });

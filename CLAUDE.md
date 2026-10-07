@@ -171,7 +171,7 @@ Built at build time:
 
 ### Contour Tile Worker (`workers/contour-tiles/`)
 
-Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: `/{source}/{z}/{x}/{y}.pbf`. Uses R2 bucket `aus-map-data` with PMTiles at `contours/australia.pmtiles`. Built with `wrangler`.
+Cloudflare Worker serving contour vector tiles from PMTiles on R2. URL pattern: `/{source}/{z}/{x}/{y}.pbf`. Uses R2 bucket `aus-map-data` with PMTiles at `contours/australia.pmtiles`. Built with `wrangler`. Below each archive's maxzoom it smooths the contour lines as it serves them (`src/contour-smoothing.ts`, Chaikin + sub-pixel Douglas-Peucker, settings per source in `SMOOTHING`), because tippecanoe left them as sawtooth polygons at z9-z14. Bump `SMOOTHING_VERSION` with any change to those settings: it is part of the edge cache key. The `CONTOUR_SMOOTHING=off` var turns it off. Tests: `src/lib/contour-smoothing.test.ts`.
 
 ## Key Patterns
 

@@ -66,7 +66,9 @@ export interface EncodedTrail {
  * allowance on it.
  */
 export async function encodeTrail(trail: ProcessedTrail): Promise<EncodedTrail> {
-  const body = new TextEncoder().encode(JSON.stringify(trail));
+  // TextEncoder always allocates a fresh ArrayBuffer; workers-types still
+  // declares the wider ArrayBufferLike, which crypto.subtle.digest refuses.
+  const body = new TextEncoder().encode(JSON.stringify(trail)) as Uint8Array<ArrayBuffer>;
   if (body.byteLength > COMMUNITY_LIMITS.trailJsonMaxBytes) {
     throw new HttpError(
       413,

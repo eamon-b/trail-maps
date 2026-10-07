@@ -1333,8 +1333,7 @@ export async function listMyCommunityRoutes(
   const binds: unknown[] = [user.id];
   appendPageCursor(new URL(request.url), where, binds);
   const { rows, nextCursor } = await runPage(env, where, binds, deps.pageSize ?? LIST_LIMIT);
-  // `CommunityAdminListResponse` has no `nextCursor` yet; it rides alongside.
-  const payload: CommunityAdminListResponse & { nextCursor: string | null } = {
+  const payload: CommunityAdminListResponse = {
     routes: rows.map((row) => toDetail(env, row, 'owner', true)),
     nextCursor,
   };

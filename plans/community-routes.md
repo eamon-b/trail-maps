@@ -46,11 +46,15 @@ submit ──► automatic checks ──fail──► 422 {checks}            (n
   the owner and admins. Hiding (by the AI review, reports or an admin) deletes
   the route's public JSON, so a hidden route cannot be downloaded; owner and
   admin detail then carries metadata only (`trailUrl: null`). An admin restore
-  from hidden always republishes it from the private copy (idempotent; 500
-  `trail_missing` if that copy is gone), and a hide re-reads the row after its
+  from hidden always republishes it from the private copy (idempotent; if that
+  copy is gone it re-reads the row: 404 when the owner removed it meanwhile,
+  409 `conflict` when it changed, else 500 `trail_missing`), and a hide re-reads the row after its
   purge and republishes a route a restore made live meanwhile. `removed` is the
   owner's or an admin's delete (tombstone; every R2 object of the route is
-  purged best-effort).
+  purged best-effort). The row records `removed_by`; a route an admin removed,
+  or one its owner deleted while an admin had it hidden, sets
+  `blocks_resubmit`, and a submit of the same track is refused 409
+  `duplicate` (without an id). An owner's ordinary delete stays resubmittable.
 - Reports count towards the 3-report hide only when filed after the route's
   last admin status change (`status_changed_at`), so a route an admin
   restored is not hidden again by the reports the admin already weighed. Only
@@ -74,7 +78,10 @@ upload page) and **again by the worker** on what was uploaded — the worker's
 result is the one that counts. The checks read the processed `ProcessedTrail`,
 never the client's `ImportReport` (which a client could forge). They first
 rebuild it: only coordinates, elevations, names, text and waypoint
-`trackIndex` are taken from the client. Point km, length, display points,
+`trackIndex` are taken from the client, and a `trackIndex` is kept only when
+that track point is within `buildTrail`'s match radius of the waypoint (500 m
+on the route, 200 m on a variant); otherwise the waypoint is placed as an
+import would place it — at its nearest point in range, else off-trail. Point km, length, display points,
 climb, waypoint and variant km, and variant junctions are recomputed as
 `buildTrail` computes them for an import. Route breaks, POIs,
 `cumAscent`/`cumDescent` and direction labels are dropped. Everything is
@@ -160,7 +167,8 @@ request carrying a bearer token, and `Vary: Authorization` with the public
 `max-age=60`.
 
 Storage:
-- D1 `community_routes` (+ `community_route_reports`), migration `0005`.
+- D1 `community_routes` (+ `community_route_reports`), migrations `0005` and
+  `0006` (`deattribute_pending`, `removed_by`, `blocks_resubmit`).
 - R2 (the PHOTOS bucket). The bucket has no private area — all of it is
   served at `PHOTOS_PUBLIC_BASE` — so private objects are protected by
   unguessable keys (128 random bits) that are recorded in the row and never
@@ -174,11 +182,21 @@ Storage:
     (`r2_key` is NULL while hidden).
   - `community/private/<id>/<32 random hex>.gpx` (`gpx_key`): the raw upload.
 - A republish (owner edit, de-attribution) writes a new private and public
-  object and updates the row; it never deletes the old public object, because
-  lists cached for 60 s at the edge and up to 30 min on phones still name it.
-  Old versions go when the route is hidden (every object under
-  `community/v1/<id>.` is deleted) or removed (that prefix and
-  `community/private/<id>/` are purged).
+  object and updates the row. After an owner edit, older public versions are
+  purged except the new one, the one it replaced (cached lists still name it)
+  and anything uploaded in the last 2 minutes; a de-attribution purges every
+  older version at once, since they name the deleted account. All versions go
+  when the route is hidden (every object under `community/v1/<id>.` is
+  deleted) or removed (that prefix and `community/private/<id>/` are purged).
+- De-attribution is durable: the statement that clears the name sets
+  `deattribute_pending`, which is cleared only once the route's objects are
+  rewritten. A Cron Trigger (`*/15 * * * *`, `runCommunityMaintenance`)
+  retries up to 20 pending de-attributions and re-runs up to 5 AI reviews left
+  `pending` for over 10 minutes (a review that lost a race writes nothing).
+- The public list and "my routes" are keyset-paged on (`created_at`, `id`):
+  `?cursor=` in, `nextCursor` out (null on the last page). Clients follow it
+  for up to 20 pages; the app skips probing unlisted downloads after a list it
+  had to cut short.
 - Clients read the trail JSON from `PHOTOS_PUBLIC_BASE` + key (the same public
   bucket domain as photos and the trail catalog). The app never deletes a
   downloaded route because a list leaves it out; it probes the route's detail

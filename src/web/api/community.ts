@@ -11,13 +11,18 @@
  *
  * `listCommunityRoutes` is the one call that tolerates a build without an API:
  * it returns null, so the landing page can simply skip the community tier.
+ *
+ * The list endpoints are paged by keyset cursor: each list call follows
+ * `nextCursor` (sent back as `?cursor=`) until it is null or absent — a server
+ * that predates paging sends none, and is read as one page — for at most
+ * `MAX_LIST_PAGES` pages. Every page goes out with the caller's signal, so a
+ * deadline on the call covers all of them.
  */
 
 import {
   isCommunityRouteId,
   type CommunityAdminListResponse,
   type CommunityCheck,
-  type CommunityListResponse,
   type CommunityPatchRequest,
   type CommunityReportReason,
   type CommunityRouteDetail,
@@ -52,6 +57,52 @@ function routePath(id: string): string {
 }
 
 const isStringOrNull = (v: unknown): v is string | null => v === null || typeof v === 'string';
+
+/** The most pages one list call follows before it settles for what it has. */
+export const MAX_LIST_PAGES = 20;
+
+/**
+ * Every row of a paged list endpoint, in server order: each page's `routes`
+ * (a page without a list adds nothing), following `nextCursor` until it is
+ * null, absent, empty or one already followed, or `MAX_LIST_PAGES` pages have
+ * been read. A row whose `id` an earlier page already returned is skipped. Any
+ * page's failure (an abort included) rejects the whole call.
+ */
+async function listAllPages(
+  path: string,
+  query: URLSearchParams,
+  options: { token?: string; fetchImpl?: FetchLike; signal?: AbortSignal },
+): Promise<unknown[]> {
+  const rows: unknown[] = [];
+  const ids = new Set<string>();
+  const cursors = new Set<string>();
+  let cursor: string | null = null;
+  for (let page = 0; page < MAX_LIST_PAGES; page++) {
+    const q = new URLSearchParams(query);
+    if (cursor !== null) q.set('cursor', cursor);
+    const qs = q.toString();
+    const response = await apiRequest<{ routes?: unknown; nextCursor?: unknown } | null>(
+      `${path}${qs ? `?${qs}` : ''}`,
+      options,
+    );
+    const routes = response?.routes;
+    if (Array.isArray(routes)) {
+      for (const row of routes) {
+        const id = typeof row === 'object' && row !== null ? (row as { id?: unknown }).id : undefined;
+        if (typeof id === 'string') {
+          if (ids.has(id)) continue;
+          ids.add(id);
+        }
+        rows.push(row);
+      }
+    }
+    const next = response?.nextCursor;
+    if (typeof next !== 'string' || next === '' || cursors.has(next)) break;
+    cursors.add(next);
+    cursor = next;
+  }
+  return rows;
+}
 
 /**
  * True when a list entry has the fields the landing page reads (name, length,
@@ -88,13 +139,11 @@ export async function listCommunityRoutes(
   if (filter.country) query.set('country', filter.country);
   if (filter.state) query.set('state', filter.state);
   if (filter.status) query.set('status', filter.status);
-  const qs = query.toString();
-  const response = await apiRequest<CommunityListResponse>(
-    `/v1/community/routes${qs ? `?${qs}` : ''}`,
-    { fetchImpl: deps.fetchImpl, signal: deps.signal },
-  );
-  const routes: unknown = response?.routes;
-  return Array.isArray(routes) ? routes.filter(isCommunityRouteSummary) : [];
+  const routes = await listAllPages('/v1/community/routes', query, {
+    fetchImpl: deps.fetchImpl,
+    signal: deps.signal,
+  });
+  return routes.filter(isCommunityRouteSummary);
 }
 
 /**
@@ -203,13 +252,12 @@ export async function listMyCommunityRoutes(
   session: WebSession,
   deps: CommunityApiDeps = {},
 ): Promise<CommunityRouteDetail[]> {
-  const response = await apiRequest<CommunityAdminListResponse>('/v1/me/community/routes', {
+  const routes = await listAllPages('/v1/me/community/routes', new URLSearchParams(), {
     token: session.token,
     fetchImpl: deps.fetchImpl,
     signal: deps.signal,
   });
-  const routes: unknown = response?.routes;
-  return Array.isArray(routes) ? routes.filter(isOwnCommunityRoute) : [];
+  return routes.filter(isOwnCommunityRoute);
 }
 
 /** The admin queue: everything not removed. 403 for a non-admin. */
@@ -217,11 +265,12 @@ export async function adminListCommunityRoutes(
   session: WebSession,
   deps: CommunityApiDeps = {},
 ): Promise<CommunityRouteDetail[]> {
-  const response = await apiRequest<CommunityAdminListResponse>('/v1/admin/community/routes', {
+  const routes = await listAllPages('/v1/admin/community/routes', new URLSearchParams(), {
     token: session.token,
     fetchImpl: deps.fetchImpl,
+    signal: deps.signal,
   });
-  return Array.isArray(response?.routes) ? response.routes : [];
+  return routes as CommunityAdminListResponse['routes'];
 }
 
 /** Verify / unverify / hide (or restore, which is `unverified`). */

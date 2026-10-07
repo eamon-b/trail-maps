@@ -181,6 +181,8 @@ export interface CommunityListResponse {
 
 export interface CommunityAdminListResponse {
   routes: CommunityRouteDetail[];
+  /** As on `CommunityListResponse`: the next page's cursor, null or absent on the last. */
+  nextCursor?: string | null;
 }
 
 /** 422 body from a submit that failed a check. */

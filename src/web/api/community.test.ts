@@ -19,6 +19,7 @@ import {
   isUsableCommunityTrail,
   listCommunityRoutes,
   listMyCommunityRoutes,
+  MAX_LIST_PAGES,
   patchCommunityRoute,
   reportCommunityRoute,
   submitCommunityRoute,
@@ -154,6 +155,81 @@ describe('listCommunityRoutes', () => {
   it('treats a body without routes as an empty list', async () => {
     const { impl } = mockFetch([{ status: 200, body: {} }]);
     expect(await listCommunityRoutes(undefined, { fetchImpl: impl })).toEqual([]);
+  });
+});
+
+describe('list paging', () => {
+  const route = (id: string) => ({ ...LIST_ROUTE, id });
+
+  it('follows nextCursor until it is null, keeping the filters on every page', async () => {
+    const { impl, calls } = mockFetch([
+      { status: 200, body: { routes: [route('c_1')], nextCursor: 'a+b/=' } },
+      { status: 200, body: { routes: [route('c_2')], nextCursor: 'next' } },
+      { status: 200, body: { routes: [route('c_3')], nextCursor: null } },
+    ]);
+    const controller = new AbortController();
+    const result = await listCommunityRoutes({ country: 'AU' }, { fetchImpl: impl, signal: controller.signal });
+    expect(result!.map(r => r.id)).toEqual(['c_1', 'c_2', 'c_3']);
+    expect(calls.map(c => c.url)).toEqual([
+      'https://api.example.test/v1/community/routes?country=AU',
+      'https://api.example.test/v1/community/routes?country=AU&cursor=a%2Bb%2F%3D',
+      'https://api.example.test/v1/community/routes?country=AU&cursor=next',
+    ]);
+    // One signal across every page, so the caller's deadline covers them all.
+    for (const c of calls) expect(c.init.signal).toBe(controller.signal);
+  });
+
+  it('reads a response without nextCursor as the only page', async () => {
+    const { impl, calls } = mockFetch([{ status: 200, body: { routes: [route('c_1')] } }]);
+    expect(await listCommunityRoutes({}, { fetchImpl: impl })).toHaveLength(1);
+    expect(calls).toHaveLength(1);
+  });
+
+  it(`stops after ${MAX_LIST_PAGES} pages, and on a cursor it has already followed`, async () => {
+    const endless = Array.from({ length: MAX_LIST_PAGES + 5 }, (_, i) => ({
+      status: 200,
+      body: { routes: [route(`c_${i}`)], nextCursor: `p${i}` },
+    }));
+    const paged = mockFetch(endless);
+    expect(await listCommunityRoutes({}, { fetchImpl: paged.impl })).toHaveLength(MAX_LIST_PAGES);
+    expect(paged.calls).toHaveLength(MAX_LIST_PAGES);
+
+    const looping = mockFetch([
+      { status: 200, body: { routes: [route('c_1')], nextCursor: 'same' } },
+      { status: 200, body: { routes: [route('c_1'), route('c_2')], nextCursor: 'same' } },
+      { status: 200, body: { routes: [route('c_3')], nextCursor: null } },
+    ]);
+    const result = await listCommunityRoutes({}, { fetchImpl: looping.impl });
+    // A row repeated across pages is listed once.
+    expect(result!.map(r => r.id)).toEqual(['c_1', 'c_2']);
+    expect(looping.calls).toHaveLength(2);
+  });
+
+  it('rejects when a later page fails', async () => {
+    const { impl } = mockFetch([
+      { status: 200, body: { routes: [route('c_1')], nextCursor: 'next' } },
+      { status: 503, body: { error: { code: 'unavailable', message: 'down' } } },
+    ]);
+    await expect(listCommunityRoutes({}, { fetchImpl: impl })).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('pages my routes and the admin queue with the token on every page', async () => {
+    const mine = { id: 'c_1', name: 'Mine', status: 'hidden', lengthKm: 12, country: 'AU', state: null };
+    const { impl, calls } = mockFetch([
+      { status: 200, body: { routes: [mine], nextCursor: 'm2' } },
+      { status: 200, body: { routes: [{ ...mine, id: 'c_2' }], nextCursor: null } },
+      { status: 200, body: { routes: [{ id: 'c_3' }], nextCursor: 'a2' } },
+      { status: 200, body: { routes: [{ id: 'c_4' }] } },
+    ]);
+    expect((await listMyCommunityRoutes(SESSION, { fetchImpl: impl })).map(r => r.id)).toEqual(['c_1', 'c_2']);
+    expect((await adminListCommunityRoutes(SESSION, { fetchImpl: impl })).map(r => r.id)).toEqual(['c_3', 'c_4']);
+    expect(calls.map(c => c.url)).toEqual([
+      'https://api.example.test/v1/me/community/routes',
+      'https://api.example.test/v1/me/community/routes?cursor=m2',
+      'https://api.example.test/v1/admin/community/routes',
+      'https://api.example.test/v1/admin/community/routes?cursor=a2',
+    ]);
+    for (const c of calls) expect(authHeader(c.init)).toBe('Bearer tok_secret');
   });
 });
 

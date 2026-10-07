@@ -101,18 +101,27 @@ export function wrapDomDocument(doc: DomLikeNode): XmlNode {
   return wrapDomNode(doc);
 }
 
+/** The slice of the platform `DOMParser` constructor this module uses. */
+type DomParserCtor = new () => {
+  parseFromString(xml: string, type: 'text/xml'): DomLikeNode;
+};
+
 /**
  * Adapter backed by the platform `DOMParser` (browsers, and any test
  * environment such as jsdom that installs one globally).
  */
 export const domParserXmlAdapter: XmlAdapter = (xml: string): XmlNode => {
-  if (typeof DOMParser === 'undefined') {
+  // Read off globalThis rather than naming the DOM global, so this module
+  // also type-checks where the DOM lib is absent (the comments-api worker
+  // reaches it through community-checks).
+  const DOMParser = (globalThis as { DOMParser?: DomParserCtor }).DOMParser;
+  if (DOMParser === undefined) {
     throw new Error(
       'No DOMParser available. Pass an XmlAdapter explicitly (jsdom in scripts, fast-xml-parser on mobile).'
     );
   }
   const doc = new DOMParser().parseFromString(xml, 'text/xml');
-  return wrapDomDocument(doc as unknown as DomLikeNode);
+  return wrapDomDocument(doc);
 };
 
 /**

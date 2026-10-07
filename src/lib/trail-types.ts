@@ -75,6 +75,19 @@ export interface TrailConfig {
   name: string;
   shortName: string;
   region: string;
+  /**
+   * ISO 3166-1 alpha-2 country code, for grouping on the trail list
+   * (`@lib/trail-regions`). Required on curated trails; an import omits it.
+   */
+  country?: string;
+  /**
+   * State/region codes from `@lib/trail-regions` the trail passes through, in
+   * route order. The list groups a trail under the first. Empty or absent for
+   * a country with no listed states.
+   */
+  states?: string[];
+  /** Pin the trail to the Featured row of the trail list. */
+  featured?: boolean;
   lengthKm: number;
   gpxFile: string;
   /** CalTopo GeoJSON file for alternates/side trips (build script only). */
@@ -104,8 +117,12 @@ export interface TrailConfig {
    * top of the rules every trail gets (`@lib/poi-noise`, `@lib/poi-urban`).
    */
   pois?: TrailPoiConfig;
-  /** Marks a trail produced by the runtime GPX importer rather than the build. */
-  source?: 'imported';
+  /**
+   * Marks a trail produced by the runtime GPX importer rather than the build:
+   * `'imported'` for a user's own import, `'community'` for a shared community
+   * route (`plans/community-routes.md`).
+   */
+  source?: 'imported' | 'community';
   /**
    * Where the track's elevations came from: the source file (`'gpx'`), a
    * terrain-API backfill (`'backfilled'`), or nowhere at all (`'none'` — the

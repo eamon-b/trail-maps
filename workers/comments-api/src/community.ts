@@ -3,12 +3,23 @@
  * Spec: `plans/community-routes.md`; wire types: `src/lib/community-types.ts`.
  *
  * A submission carries the client's processed trail. The worker trusts none of
- * it: `runCommunityChecks` rebuilds the trail from scratch and re-runs every
- * automatic check, the stats in the row come from that rebuilt copy, and the
- * stored JSON's `config` is rewritten here (id, name, source, region,
- * description, attribution). A passing route is public at once as
- * `unverified`; the AI review (`community-review.ts`) runs afterwards from
- * `ctx.waitUntil` and fails open.
+ * it: `runCommunityChecks` copies only coordinates, elevations, names and text
+ * from the client, recomputes distances, display points, elevation totals and
+ * waypoint/variant km itself, drops route breaks, POIs and cumulative
+ * elevation, and re-runs every automatic check (the `speed` check reads the
+ * raw GPX, when one came with the route). The stats in the row come from that
+ * rebuilt copy, and the stored JSON's `config` is rewritten here (id, name,
+ * source, region, description, attribution). A passing route is public at
+ * once as `unverified`; the AI review (`community-review.ts`) runs afterwards
+ * from `ctx.waitUntil` and fails open.
+ *
+ * Concurrency: every write that changes a row sets `updated_at` to a stamp
+ * strictly later than the one it read (`stampAfter`). A write computed from a
+ * row it loaded earlier — an owner's edit, a de-attribution, an admin's status
+ * change, the AI review — is guarded by `updated_at = <the value it read>`, so
+ * a decision made meanwhile (a hide, a restore, a delete) is never undone by
+ * stale state; the loser drops the objects it wrote. The review's own write
+ * leaves `updated_at` alone, or it would invalidate itself.
  *
  * Storage: a D1 row per route (migration 0005) and, in the PHOTOS bucket:
  *
@@ -39,6 +50,17 @@ import { RATE_BUCKETS, consumeRateLimit } from './rate-limit';
 import { isUniqueConstraintError } from './plans';
 import { reviewHides, runAiReview } from './community-review';
 import type { ReviewClient } from './community-review';
+import {
+  deleteObjects,
+  encodeTrail,
+  privateKey,
+  publishFromPrivate,
+  purgeAll,
+  purgePublic,
+  putTrail,
+  readStoredTrail,
+} from './community-storage';
+import type { StoredTrail } from './community-storage';
 import { runCommunityChecks } from '../../../src/lib/community-checks';
 import type { CommunityRouteStats } from '../../../src/lib/community-checks';
 import {
@@ -66,22 +88,32 @@ import type { ProcessedTrail } from '../../../src/lib/trail-types';
 // Constants
 // ---------------------------------------------------------------------------
 
-const TRAIL_PREFIX = 'community/v1/';
-/** Under `<id>/`: the canonical JSON and the raw GPX, at random keys (see the header). */
-const PRIVATE_PREFIX = 'community/private/';
-/**
- * Content-addressed, so a key never changes meaning, but short-lived at the
- * edge: hiding a route deletes its public objects, and an edge copy must not
- * outlive that by more than a few minutes. Clients verify the md5 and keep
- * their own copy, so a short max-age costs little.
- */
-const PUBLIC_TRAIL_CACHE = 'public, max-age=300';
+/** The text fields and JSON punctuation around the trail and the GPX. */
+const BODY_SLACK_BYTES = 64 * 1024;
 
 /** Whole request: the trail JSON, the GPX as base64 (4/3 of its size), and the text fields. */
 const MAX_BODY_BYTES =
-  COMMUNITY_LIMITS.trailJsonMaxBytes + Math.ceil((COMMUNITY_LIMITS.gpxMaxBytes * 4) / 3) + 64 * 1024;
+  COMMUNITY_LIMITS.trailJsonMaxBytes + Math.ceil((COMMUNITY_LIMITS.gpxMaxBytes * 4) / 3) + BODY_SLACK_BYTES;
+
+/**
+ * The request without its GPX: refused before it is parsed any further or
+ * checked, so a body padded out to the GPX allowance cannot buy a 10 MB trail.
+ */
+const MAX_BODY_WITHOUT_GPX = COMMUNITY_LIMITS.trailJsonMaxBytes + BODY_SLACK_BYTES;
+
+/**
+ * A report counts towards the automatic hide only when its reporter's account
+ * was at least this old when it was filed; a younger account's report is kept
+ * (admins see it) but counts for nothing, so three fresh registrations cannot
+ * take a route down.
+ */
+export const REPORTER_MIN_ACCOUNT_AGE_MS = 24 * 60 * 60 * 1000;
+
+/** How often a de-attribution retries a route that changed under it. */
+const DEATTRIBUTE_ATTEMPTS = 3;
 
 const MAX_REPORT_NOTE = 500;
+
 const MAX_STATUS_NOTE = 500;
 const REPORTS_PER_DAY = 20;
 const LIST_LIMIT = 1000;
@@ -295,7 +327,7 @@ function cleanRegion(rawCountry: unknown, rawState: unknown): { country: string;
 }
 
 /** Read the body under a byte cap: a 413 rather than buffering an unbounded upload. */
-async function readCappedJson(request: Request, maxBytes: number): Promise<Record<string, unknown>> {
+async function readCappedText(request: Request, maxBytes: number): Promise<string> {
   const declared = Number(request.headers.get('Content-Length') ?? NaN);
   if (Number.isFinite(declared) && declared > maxBytes) {
     throw new HttpError(413, 'too_large', 'The upload is too large');
@@ -306,6 +338,10 @@ async function readCappedJson(request: Request, maxBytes: number): Promise<Recor
   if (text.length > maxBytes || (text.length > maxBytes / 3 && new TextEncoder().encode(text).byteLength > maxBytes)) {
     throw new HttpError(413, 'too_large', 'The upload is too large');
   }
+  return text;
+}
+
+function parseJsonObject(text: string): Record<string, unknown> {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -319,7 +355,7 @@ async function readCappedJson(request: Request, maxBytes: number): Promise<Recor
 }
 
 async function readSmallJson(request: Request): Promise<Record<string, unknown>> {
-  return readCappedJson(request, 64 * 1024);
+  return parseJsonObject(await readCappedText(request, 64 * 1024));
 }
 
 const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
@@ -327,8 +363,18 @@ const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 /** How much of the decoded GPX is looked at for `<` / `<gpx`. */
 const GPX_SNIFF_BYTES = 1024;
 
-/** Decode and sanity-check the optional raw GPX. */
-function decodeGpx(raw: unknown): Uint8Array | null {
+interface DecodedGpx {
+  bytes: Uint8Array;
+  /** The file as text, for the `speed` check (the processed points carry no timestamps). */
+  text: string;
+}
+
+/**
+ * Decode and sanity-check the optional raw GPX. Malformed base64 is a 400 and
+ * an oversized file a 413, but a file that does not look like a GPX is
+ * dropped (null): the GPX is optional, and the route is judged on its trail.
+ */
+function decodeGpx(raw: unknown): DecodedGpx | null {
   if (raw === undefined || raw === null || raw === '') return null;
   if (typeof raw !== 'string') {
     throw new HttpError(400, 'invalid_gpx', 'gpxBase64 must be a base64 string');
@@ -346,27 +392,26 @@ function decodeGpx(raw: unknown): Uint8Array | null {
   // Decoding all of a 5 MB file to text just to look at its start would hold
   // a third copy of it for nothing.
   const head = binary.slice(0, GPX_SNIFF_BYTES).replace(/^\xEF\xBB\xBF/, '').trimStart();
-  if (head.charAt(0) !== '<' || !head.includes('<gpx')) {
-    throw new HttpError(400, 'invalid_gpx', 'gpxBase64 does not look like a GPX file');
-  }
+  if (head.charAt(0) !== '<' || !head.includes('<gpx')) return null;
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return { bytes, text: new TextDecoder().decode(bytes) };
 }
 
 // ---------------------------------------------------------------------------
-// Hashes, ids, storage
+// Hashes, ids, stamps, storage
 // ---------------------------------------------------------------------------
 
-function hex(buffer: ArrayBuffer): string {
-  let out = '';
-  for (const b of new Uint8Array(buffer)) out += b.toString(16).padStart(2, '0');
-  return out;
-}
-
-/** md5 hex; Workers' `crypto.subtle` supports MD5 as a non-standard extension. */
-async function md5Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  return hex(await crypto.subtle.digest('MD5', bytes));
+/**
+ * Now, as an ISO stamp strictly later than `previous`: the `updated_at` a
+ * write sets. Guarded writes compare `updated_at` for equality, so two writes
+ * in the same millisecond (or an isolate whose clock lags) must still leave
+ * different stamps.
+ */
+function stampAfter(previous: string): string {
+  const prev = Date.parse(previous);
+  const now = Date.now();
+  return new Date(Number.isFinite(prev) && now <= prev ? prev + 1 : now).toISOString();
 }
 
 /** `c_` + 16 url-safe random chars (12 random bytes). */
@@ -421,114 +466,23 @@ function withServerConfig(trail: ProcessedTrail, meta: StoredMeta): ProcessedTra
   };
 }
 
-/** 32 hex chars of randomness: the unguessable part of a private key. */
-function randomHex(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return hex(bytes.buffer);
-}
-
-function privateKey(id: string, ext: 'json' | 'gpx'): string {
-  return `${PRIVATE_PREFIX}${id}/${randomHex()}.${ext}`;
-}
-
-function publicKey(id: string, md5: string): string {
-  return `${TRAIL_PREFIX}${id}.${md5.slice(0, 12)}.json`;
-}
-
 function isLive(status: CommunityRouteStatus): boolean {
   return status === 'unverified' || status === 'verified';
 }
 
-interface StoredTrail {
-  /** The public copy, or null when none was written (the route is not live). */
-  publicKey: string | null;
-  privateKey: string;
-  md5: string;
-  bytes: number;
-}
-
-async function putPublic(env: Env, key: string, body: Uint8Array): Promise<void> {
-  await env.PHOTOS.put(key, body, {
-    httpMetadata: { contentType: 'application/json', cacheControl: PUBLIC_TRAIL_CACHE },
-  });
+function conflict(message = 'The route changed while you were editing it; reload and try again'): HttpError {
+  return new HttpError(409, 'conflict', message);
 }
 
 /**
- * Write a trail's canonical private copy and, when `publish`, its public copy
- * (the same bytes). Nothing is deleted here.
+ * After a guarded write lost its race: drop the objects it wrote, except any
+ * the row names now. A public key is content-addressed, so the winner may
+ * have written (and named) the very same one.
  */
-async function storeTrail(env: Env, id: string, trail: ProcessedTrail, publish: boolean): Promise<StoredTrail> {
-  const body = new TextEncoder().encode(JSON.stringify(trail));
-  if (body.byteLength > COMMUNITY_LIMITS.trailJsonMaxBytes) {
-    throw new HttpError(
-      413,
-      'trail_too_large',
-      `The processed route must be at most ${COMMUNITY_LIMITS.trailJsonMaxBytes} bytes`
-    );
-  }
-  const md5 = await md5Hex(body);
-  const priv = privateKey(id, 'json');
-  await env.PHOTOS.put(priv, body, { httpMetadata: { contentType: 'application/json' } });
-  let pub: string | null = null;
-  if (publish) {
-    pub = publicKey(id, md5);
-    await putPublic(env, pub, body);
-  }
-  return { publicKey: pub, privateKey: priv, md5, bytes: body.byteLength };
-}
-
-async function readStoredTrail(env: Env, key: string): Promise<ProcessedTrail | null> {
-  const object = await env.PHOTOS.get(key);
-  if (!object) return null;
-  try {
-    return (await object.json()) as ProcessedTrail;
-  } catch {
-    return null;
-  }
-}
-
-function deleteObjects(env: Env, keys: (string | null)[]): Promise<void> {
-  const live = keys.filter((k): k is string => !!k);
-  if (live.length === 0) return Promise.resolve();
-  return env.PHOTOS.delete(live).catch(() => {
-    /* best-effort: an orphaned object costs storage, never correctness */
-  });
-}
-
-/**
- * Delete every object under `prefix` except `keep` (paged; R2 deletes up to
- * 1,000 keys a call).
- */
-async function purgePrefix(env: Env, prefix: string, keep?: string | null): Promise<void> {
-  let cursor: string | undefined;
-  for (let page = 0; page < 100; page++) {
-    const listed = await env.PHOTOS.list({ prefix, cursor, limit: 1000 });
-    const keys = listed.objects.map((o) => o.key).filter((k) => k !== keep);
-    if (keys.length > 0) await env.PHOTOS.delete(keys);
-    if (!listed.truncated) return;
-    cursor = listed.cursor;
-  }
-}
-
-/**
- * Every public version of a route: the current one and any older ones a
- * republish left for cached lists. The trailing `.` keeps `c_abc` from
- * matching `c_abcd…`.
- */
-function purgePublic(env: Env, id: string, keep?: string | null): Promise<void> {
-  return purgePrefix(env, `${TRAIL_PREFIX}${id}.`, keep).catch((err) => {
-    console.error(`Purging public copies of ${id} failed: ${err instanceof Error ? err.message : String(err)}`);
-  });
-}
-
-function purgeAll(env: Env, id: string): Promise<void> {
-  return Promise.all([
-    purgePublic(env, id),
-    purgePrefix(env, `${PRIVATE_PREFIX}${id}/`).catch((err) => {
-      console.error(`Purging private copies of ${id} failed: ${err instanceof Error ? err.message : String(err)}`);
-    }),
-  ]).then(() => undefined);
+async function discardUnclaimed(env: Env, id: string, keys: (string | null)[]): Promise<void> {
+  const current = await loadRoute(env, id);
+  const named = new Set([current?.r2_key, current?.private_key, current?.gpx_key]);
+  await deleteObjects(env, keys.filter((k) => k && !named.has(k)));
 }
 
 /**
@@ -536,25 +490,32 @@ function purgeAll(env: Env, id: string): Promise<void> {
  * status change, from whichever path hid it (admin, AI review, reports). The
  * `status = 'hidden'` guard keeps a restore that raced ahead from losing its
  * fresh key.
+ *
+ * A restore can also land while the purge is running, and its public copy is
+ * content-addressed — quite possibly the very key being purged. So the row is
+ * read again afterwards, and a route that is live by then is put back on the
+ * public domain from its private copy.
  */
 async function unpublish(env: Env, id: string): Promise<void> {
   await env.DB.prepare(`UPDATE community_routes SET r2_key = NULL WHERE id = ? AND status = 'hidden'`)
     .bind(id)
     .run();
   await purgePublic(env, id);
-}
 
-/**
- * Put a route that is becoming live again back on the public domain, from its
- * private copy. Returns the public key, or null when the private copy is gone.
- */
-async function publishFromPrivate(env: Env, row: CommunityRouteRow): Promise<string | null> {
-  const object = await env.PHOTOS.get(row.private_key);
-  if (!object) return null;
-  const body = new Uint8Array(await object.arrayBuffer());
-  const key = publicKey(row.id, await md5Hex(body));
-  await putPublic(env, key, body);
-  return key;
+  const row = await loadRoute(env, id);
+  if (!row || !isLive(row.status)) return;
+  const key = await publishFromPrivate(env, row.id, row.private_key);
+  if (!key) {
+    console.error(`Republishing ${id} after a purge failed: its private copy is missing`);
+    return;
+  }
+  // A repair of the same version, so `updated_at` stays as it is.
+  await env.DB.prepare(
+    `UPDATE community_routes SET r2_key = ?
+      WHERE id = ? AND updated_at = ? AND status IN ('unverified', 'verified')`
+  )
+    .bind(key, id, row.updated_at)
+    .run();
 }
 
 /**
@@ -573,7 +534,7 @@ async function republish(
 ): Promise<StoredTrail | null> {
   const trail = await readStoredTrail(env, row.private_key);
   if (!trail) return null;
-  return storeTrail(env, row.id, withServerConfig(trail, { ...meta, id: row.id }), publish);
+  return putTrail(env, row.id, await encodeTrail(withServerConfig(trail, { ...meta, id: row.id })), publish);
 }
 
 // ---------------------------------------------------------------------------
@@ -586,15 +547,27 @@ export interface ReviewDeps {
   trail?: ProcessedTrail;
 }
 
+/** Test seam for the submit handler: the checks it runs (default `runCommunityChecks`). */
+export interface SubmitDeps extends Omit<ReviewDeps, 'trail'> {
+  runChecks?: typeof runCommunityChecks;
+}
+
 /**
  * Review a stored route and record the outcome. A confident reject hides an
  * `unverified` route; a verified or already hidden one is left to the admin.
  * Never throws (it runs from `waitUntil`).
+ *
+ * The verdict is about the row as it was read here. If anything changed it
+ * while the model was thinking — an owner's edit (which schedules its own
+ * review), an admin's restore or verify, a de-attribution — `updated_at` has
+ * moved and nothing is written: a stale verdict must not overwrite a newer
+ * one, nor hide a route an admin has just put back.
  */
 export async function reviewStoredRoute(env: Env, id: string, deps: ReviewDeps = {}): Promise<void> {
   try {
     const row = await loadRoute(env, id);
     if (!row || row.status === 'removed') return;
+    const version = row.updated_at;
     const trail = deps.trail ?? (await readStoredTrail(env, row.private_key));
     let review: CommunityAiReview;
     if (!trail) {
@@ -617,21 +590,23 @@ export async function reviewStoredRoute(env: Env, id: string, deps: ReviewDeps =
         { client: deps.client }
       );
     }
-    const now = new Date().toISOString();
     const hide = reviewHides(review);
-    // `status = 'unverified'` in the WHERE: an admin may have verified or
-    // hidden the route while the model was thinking, and that decision wins.
+    // Both guarded by the version read above. The first leaves `updated_at`
+    // alone, so the hide in the same batch still matches it; the hide is a
+    // status change and moves it. `status = 'unverified'`: a verified route
+    // is the admin's to take down.
     const results = await env.DB.batch([
       env.DB.prepare(
-        `UPDATE community_routes SET review_json = ?, review_status = ? WHERE id = ? AND status != 'removed'`
-      ).bind(JSON.stringify(review), review.status, id),
+        `UPDATE community_routes SET review_json = ?, review_status = ?
+          WHERE id = ? AND status != 'removed' AND updated_at = ?`
+      ).bind(JSON.stringify(review), review.status, id, version),
       ...(hide
         ? [
             env.DB.prepare(
               `UPDATE community_routes
                   SET status = 'hidden', status_note = ?, updated_at = ?
-                WHERE id = ? AND status = 'unverified'`
-            ).bind('Hidden by the automatic review', now, id),
+                WHERE id = ? AND status = 'unverified' AND updated_at = ?`
+            ).bind('Hidden by the automatic review', stampAfter(version), id, version),
           ]
         : []),
     ]);
@@ -659,13 +634,13 @@ async function nearDuplicateCheck(env: Env, stats: CommunityRouteStats): Promise
   const dLat = NEAR_DUPLICATE_M / 111_000 + 1e-6;
   const dLon = dLat / Math.max(0.01, Math.cos((stats.start.lat * Math.PI) / 180));
   const { results } = await env.DB.prepare(
-    `SELECT id, name, length_km, start_lat, start_lon, end_lat, end_lon FROM community_routes
+    `SELECT id, length_km, start_lat, start_lon, end_lat, end_lon FROM community_routes
       WHERE status IN ('unverified', 'verified')
         AND start_lat BETWEEN ? AND ? AND start_lon BETWEEN ? AND ?
       LIMIT 50`
   )
     .bind(stats.start.lat - dLat, stats.start.lat + dLat, stats.start.lon - dLon, stats.start.lon + dLon)
-    .all<{ id: string; name: string; length_km: number; start_lat: number; start_lon: number; end_lat: number; end_lon: number }>();
+    .all<{ id: string; length_km: number; start_lat: number; start_lon: number; end_lat: number; end_lon: number }>();
   for (const r of results) {
     const startM = haversineDistance(r.start_lat, r.start_lon, stats.start.lat, stats.start.lon);
     const endM = haversineDistance(r.end_lat, r.end_lon, stats.end.lat, stats.end.lon);
@@ -674,7 +649,9 @@ async function nearDuplicateCheck(env: Env, stats: CommunityRouteStats): Promise
       return {
         id: 'duplicate',
         level: 'warn',
-        message: `This looks like "${r.name}", which is already shared: it starts and ends in the same places and is about as long.`,
+        // The id, not the name: the name is someone else's text, and this
+        // message is shown back to the submitter and to the AI reviewer.
+        message: `This looks like community route ${r.id}, which is already shared: it starts and ends in the same places and is about as long.`,
       };
     }
   }
@@ -693,7 +670,7 @@ export async function submitCommunityRoute(
   request: Request,
   env: Env,
   ctx: ExecutionContext,
-  deps: ReviewDeps = {}
+  deps: SubmitDeps = {}
 ): Promise<Response> {
   const user = await requireUser(request, env, ctx);
   assertNotBanned(user, 'share routes');
@@ -709,7 +686,20 @@ export async function submitCommunityRoute(
     ctx
   );
 
-  const body = await readCappedJson(request, MAX_BODY_BYTES);
+  const text = await readCappedText(request, MAX_BODY_BYTES);
+  const body = parseJsonObject(text);
+  // The cap above allows for a 5 MB GPX. Without one, the trail must fit its
+  // own cap: refuse it before the checks spend any CPU on it. (UTF-16 length,
+  // so a non-ASCII trail can slip under here; the stored bytes are measured
+  // exactly before anything is written.)
+  const gpxChars = typeof body.gpxBase64 === 'string' ? body.gpxBase64.length : 0;
+  if (text.length - gpxChars > MAX_BODY_WITHOUT_GPX) {
+    throw new HttpError(
+      413,
+      'trail_too_large',
+      `The processed route must be at most ${COMMUNITY_LIMITS.trailJsonMaxBytes} bytes`
+    );
+  }
   const name = cleanText(body.name, 'name', COMMUNITY_LIMITS.nameMin, COMMUNITY_LIMITS.nameMax, false);
   const description = cleanText(
     body.description,
@@ -729,7 +719,8 @@ export async function submitCommunityRoute(
   }
   const gpx = decodeGpx(body.gpxBase64);
 
-  const result = runCommunityChecks(body.trail, { name, description });
+  const runChecks = deps.runChecks ?? runCommunityChecks;
+  const result = runChecks(body.trail, { name, description, gpxText: gpx?.text });
   if (!result.ok || !result.trail || !result.stats) {
     return checksFailed(result.checks, 'The route did not pass the automatic checks');
   }
@@ -737,11 +728,18 @@ export async function submitCommunityRoute(
 
   const hash = await contentHash(result.trail);
   const existing = await env.DB.prepare(
-    `SELECT id FROM community_routes WHERE content_hash = ? AND status != 'removed'`
+    `SELECT id, user_id FROM community_routes WHERE content_hash = ? AND status != 'removed'`
   )
     .bind(hash)
-    .first<{ id: string }>();
-  if (existing) return duplicateResponse(existing.id);
+    .first<DuplicateRow>();
+  if (existing) return duplicateResponse(existing, user);
+
+  const id = generateRouteId();
+  const submittedBy = user.display_name;
+  const stored = withServerConfig(result.trail, { id, name, description, credit, country, state, submittedBy });
+  // Measured before the day's allowance is spent: an oversized route is
+  // refused without costing the hiker one of their ten.
+  const encoded = await encodeTrail(stored);
 
   await consumeRateLimit(
     env,
@@ -752,14 +750,11 @@ export async function submitCommunityRoute(
     ctx
   );
 
-  const id = generateRouteId();
-  const submittedBy = user.display_name;
-  const stored = withServerConfig(result.trail, { id, name, description, credit, country, state, submittedBy });
-  const put = await storeTrail(env, id, stored, true);
+  const put = await putTrail(env, id, encoded, true);
   let gpxKey: string | null = null;
   if (gpx) {
     gpxKey = privateKey(id, 'gpx');
-    await env.PHOTOS.put(gpxKey, gpx, { httpMetadata: { contentType: 'application/gpx+xml' } });
+    await env.PHOTOS.put(gpxKey, gpx.bytes, { httpMetadata: { contentType: 'application/gpx+xml' } });
   }
 
   const stats = result.stats;
@@ -813,11 +808,11 @@ export async function submitCommunityRoute(
     if (isUniqueConstraintError(err)) {
       // Lost a race with an identical submission.
       const winner = await env.DB.prepare(
-        `SELECT id FROM community_routes WHERE content_hash = ? AND status != 'removed'`
+        `SELECT id, user_id FROM community_routes WHERE content_hash = ? AND status != 'removed'`
       )
         .bind(hash)
-        .first<{ id: string }>();
-      return duplicateResponse(winner?.id ?? null);
+        .first<DuplicateRow>();
+      return duplicateResponse(winner, user);
     }
     throw err;
   }
@@ -831,15 +826,22 @@ export async function submitCommunityRoute(
   return json(toDetail(env, row, 'owner', true), 201);
 }
 
+interface DuplicateRow {
+  id: string;
+  user_id: string;
+}
+
 /**
  * The existing route may be hidden (or someone else's), so the wording says
- * only that the track was shared before, never that it is in the list.
+ * only that the track was shared before, never that it is in the list. Its id
+ * goes back only to its own submitter: anyone else holding a copy of the
+ * track could otherwise find a hidden route's id.
  */
-function duplicateResponse(existingId: string | null): Response {
+function duplicateResponse(existing: DuplicateRow | null, user: AuthUser): Response {
   return json(
     {
       error: { code: 'duplicate', message: 'This exact track has been shared before' },
-      existingId,
+      ...(existing && existing.user_id === user.id ? { existingId: existing.id } : {}),
     },
     409
   );
@@ -960,6 +962,16 @@ export async function patchCommunityRoute(
     region.state === row.state;
   if (unchanged) return json(toDetail(env, row, 'owner', true));
 
+  // Each edit rewrites two R2 objects and re-runs the AI review.
+  await consumeRateLimit(
+    env,
+    RATE_BUCKETS.communityEdit,
+    user.id,
+    Date.now(),
+    `You can edit shared routes at most ${RATE_BUCKETS.communityEdit.limit} times a day`,
+    ctx
+  );
+
   const put = await republish(
     env,
     row,
@@ -978,14 +990,15 @@ export async function patchCommunityRoute(
   // The admin verified the old text: an edit sends it back to unverified.
   const status: CommunityRouteStatus = row.status === 'verified' ? 'unverified' : row.status;
   const review = initialReview(env);
-  const now = new Date().toISOString();
-  await env.DB.prepare(
+  // Guarded by the row this edit was computed from: an admin's hide or a
+  // delete that landed during the R2 writes must not be undone.
+  const written = await env.DB.prepare(
     `UPDATE community_routes
         SET name = ?, description = ?, credit = ?, country = ?, state = ?, status = ?,
             verified_at = CASE WHEN ? = 'verified' THEN verified_at ELSE NULL END,
             verified_by = CASE WHEN ? = 'verified' THEN verified_by ELSE NULL END,
             md5 = ?, bytes = ?, r2_key = ?, private_key = ?, review_json = ?, review_status = ?, updated_at = ?
-      WHERE id = ?`
+      WHERE id = ? AND status = ? AND updated_at = ?`
   )
     .bind(
       name,
@@ -1002,10 +1015,16 @@ export async function patchCommunityRoute(
       put.privateKey,
       review.json,
       review.status,
-      now,
-      id
+      stampAfter(row.updated_at),
+      id,
+      row.status,
+      row.updated_at
     )
     .run();
+  if (written.meta.changes === 0) {
+    await discardUnclaimed(env, id, [put.privateKey, put.publicKey]);
+    throw conflict();
+  }
   // The old public object stays for cached lists; the old private one is
   // named by nothing now.
   ctx.waitUntil(deleteObjects(env, [row.private_key]));
@@ -1034,7 +1053,9 @@ export async function deleteCommunityRoute(
   if (!row || (row.user_id !== user.id && !isAdmin)) throw notFound();
   if (row.status === 'removed') return noContent();
 
-  const now = new Date().toISOString();
+  // Unguarded: a delete wins over whatever else is in flight, and every
+  // guarded write that loses to it drops its own objects.
+  const now = stampAfter(row.updated_at);
   await env.DB.prepare(
     `UPDATE community_routes SET status = 'removed', removed_at = ?, updated_at = ? WHERE id = ?`
   )
@@ -1101,15 +1122,25 @@ export async function reportCommunityRoute(
     // looks. A verified one stays up — an admin has vouched for it — and
     // heads the admin queue with its report count instead. Only reports filed
     // since the last admin decision count: a route an admin restored is not
-    // hidden again by the reports the admin already weighed.
+    // hidden again by the reports the admin already weighed. And only
+    // reports from accounts that were a day old when they filed: registering
+    // is free, so three fresh accounts must not be able to take a route down.
     env.DB.prepare(
       `UPDATE community_routes
           SET status = 'hidden', status_note = ?, updated_at = ?
         WHERE id = ? AND status = 'unverified'
           AND (SELECT COUNT(*) FROM community_route_reports r
+                 JOIN users u ON u.id = r.user_id
                 WHERE r.route_id = community_routes.id
-                  AND r.created_at > community_routes.status_changed_at) >= ?`
-    ).bind(`Hidden after ${COMMUNITY_REPORTS_TO_HIDE} reports`, now, id, COMMUNITY_REPORTS_TO_HIDE),
+                  AND r.created_at > community_routes.status_changed_at
+                  AND (julianday(r.created_at) - julianday(u.created_at)) * 86400000.0 >= ?) >= ?`
+    ).bind(
+      `Hidden after ${COMMUNITY_REPORTS_TO_HIDE} reports`,
+      stampAfter(row.updated_at),
+      id,
+      REPORTER_MIN_ACCOUNT_AGE_MS,
+      COMMUNITY_REPORTS_TO_HIDE
+    ),
   ]);
   if (hidden.meta.changes > 0) await unpublish(env, id);
   return json({ ok: true }, inserted.meta.changes > 0 ? 201 : 200);
@@ -1202,20 +1233,27 @@ export async function adminSetCommunityStatus(
   const row = await loadRoute(env, id);
   if (!row || row.status === 'removed') throw notFound();
 
-  const now = new Date().toISOString();
+  const now = stampAfter(row.updated_at);
   const verified = status === 'verified';
   // Back on the public domain before the row says it is live; the copy comes
-  // from the private one, which hiding left in place.
+  // from the private one, which hiding left in place. A restore from hidden
+  // always puts it (idempotent: the key is content-addressed), whatever
+  // `r2_key` says — a hide's purge may still have been running when the row
+  // was read.
+  const publishing = status !== 'hidden' && (row.status === 'hidden' || !row.r2_key);
   let r2Key = status === 'hidden' ? null : row.r2_key;
-  if (status !== 'hidden' && !r2Key) {
-    r2Key = await publishFromPrivate(env, row);
+  if (publishing) {
+    r2Key = await publishFromPrivate(env, row.id, row.private_key);
     if (!r2Key) throw new HttpError(500, 'trail_missing', 'The stored route could not be read');
   }
-  await env.DB.prepare(
+  // Guarded by the row the admin's decision was made on: a delete, an
+  // owner's edit or another hide in the meantime is a conflict, not
+  // something to overwrite.
+  const written = await env.DB.prepare(
     `UPDATE community_routes
         SET status = ?, status_note = ?, updated_at = ?, status_changed_at = ?,
             verified_at = ?, verified_by = ?, r2_key = ?
-      WHERE id = ?`
+      WHERE id = ? AND status = ? AND updated_at = ?`
   )
     .bind(
       status,
@@ -1225,10 +1263,16 @@ export async function adminSetCommunityStatus(
       verified ? (row.status === 'verified' ? row.verified_at : now) : null,
       verified ? (row.status === 'verified' ? row.verified_by : admin.id) : null,
       r2Key,
-      id
+      id,
+      row.status,
+      row.updated_at
     )
     .run();
-  if (status === 'hidden') await purgePublic(env, id);
+  if (written.meta.changes === 0) {
+    if (publishing) await discardUnclaimed(env, id, [r2Key]);
+    throw conflict('The route changed while you were reviewing it; reload and try again');
+  }
+  if (status === 'hidden') await unpublish(env, id);
   const updated = await loadRoute(env, id);
   if (!updated) throw notFound();
   return json(toDetail(env, updated, 'admin', updated.user_id === admin.id, await reportsFor(env, id)));
@@ -1281,31 +1325,53 @@ export async function deattributeStoredRoutes(env: Env, userId: string): Promise
     .all<CommunityRouteRow>();
   for (const row of results) {
     try {
-      const put = await republish(
-        env,
-        row,
-        {
-          name: row.name,
-          description: row.description,
-          credit: row.credit,
-          country: row.country,
-          state: row.state,
-          submittedBy: null,
-        },
-        isLive(row.status)
-      );
-      if (!put) continue;
-      await env.DB.prepare(
-        `UPDATE community_routes SET md5 = ?, bytes = ?, r2_key = ?, private_key = ?, updated_at = ? WHERE id = ?`
-      )
-        .bind(put.md5, put.bytes, put.publicKey, put.privateKey, new Date().toISOString(), row.id)
-        .run();
-      // Every older copy names the account: drop the old private one and all
-      // public versions but the new one.
-      await deleteObjects(env, [row.private_key]);
-      await purgePublic(env, row.id, put.publicKey);
+      await deattributeRoute(env, row);
     } catch (err) {
       console.error(`De-attributing ${row.id} failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }
+
+/**
+ * One route's rewrite, guarded like an owner's edit. A route that changed
+ * under it (an admin hid or restored it, a review hid it) is read again and
+ * rewritten from its new state, a few times at most: the name must not
+ * survive in the JSON, and the change that won must not be undone.
+ */
+async function deattributeRoute(env: Env, first: CommunityRouteRow): Promise<void> {
+  let row: CommunityRouteRow | null = first;
+  for (let attempt = 0; attempt < DEATTRIBUTE_ATTEMPTS; attempt++) {
+    if (!row || row.status === 'removed') return;
+    const put: StoredTrail | null = await republish(
+      env,
+      row,
+      {
+        name: row.name,
+        description: row.description,
+        credit: row.credit,
+        country: row.country,
+        state: row.state,
+        submittedBy: null,
+      },
+      isLive(row.status)
+    );
+    if (!put) return;
+    const written = await env.DB.prepare(
+      `UPDATE community_routes SET md5 = ?, bytes = ?, r2_key = ?, private_key = ?, updated_at = ?
+        WHERE id = ? AND status = ? AND updated_at = ?`
+    )
+      .bind(put.md5, put.bytes, put.publicKey, put.privateKey, stampAfter(row.updated_at), row.id, row.status, row.updated_at)
+      .run();
+    if (written.meta.changes > 0) {
+      // Every older copy names the account: drop the old private one and all
+      // public versions but the new one.
+      await deleteObjects(env, [row.private_key]);
+      await purgePublic(env, row.id, put.publicKey);
+      return;
+    }
+    await discardUnclaimed(env, row.id, [put.privateKey, put.publicKey]);
+    row = await loadRoute(env, row.id);
+  }
+  console.error(`De-attributing ${first.id} gave up: the route kept changing`);
+}
+

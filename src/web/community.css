@@ -335,3 +335,8 @@ textarea.community-input {
     grid-template-columns: 1fr;
   }
 }
+
+.community-rights .community-hint {
+  display: block;
+  margin-top: 0.25rem;
+}

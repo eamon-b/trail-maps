@@ -1,5 +1,6 @@
-import { SELF } from 'cloudflare:test';
-import { authHeaders, url } from './helpers';
+import { SELF, env } from 'cloudflare:test';
+import { authHeaders, registerDevice, url } from './helpers';
+import type { Env } from '../src/http';
 import type { Device } from './helpers';
 import type { ProcessedTrail, TrackPoint } from '../../../src/lib/trail-types';
 import type { CommunitySubmitRequest } from '../../../src/lib/community-types';
@@ -118,4 +119,48 @@ export const GPX_TEXT =
 
 export function base64(text: string): string {
   return btoa(unescape(encodeURIComponent(text)));
+}
+
+/** Backdate an account's creation (the report hide counts only accounts a day old). */
+export async function ageAccount(userId: string, ageMs = 2 * 24 * 60 * 60 * 1000): Promise<void> {
+  await env.DB.prepare(`UPDATE users SET created_at = ? WHERE id = ?`)
+    .bind(new Date(Date.now() - ageMs).toISOString(), userId)
+    .run();
+}
+
+/** A device whose account is old enough for its reports to count. */
+export async function registerAgedDevice(): Promise<Device> {
+  const device = await registerDevice();
+  await ageAccount(device.userId);
+  return device;
+}
+
+/**
+ * The test env with its PHOTOS bucket wrapped: `hook` runs once, before the
+ * first call of `method`, so a test can land a concurrent request in the
+ * middle of a handler's R2 I/O. Pass the result to a handler called directly.
+ */
+export function envWithHook(method: 'put' | 'delete', hook: () => Promise<void>): Env {
+  const photos = env.PHOTOS;
+  let fired = false;
+  const before = async () => {
+    if (!fired) {
+      fired = true;
+      await hook();
+    }
+  };
+  const PHOTOS = {
+    put: async (...args: Parameters<R2Bucket['put']>) => {
+      if (method === 'put') await before();
+      return photos.put(...args);
+    },
+    delete: async (...args: Parameters<R2Bucket['delete']>) => {
+      if (method === 'delete') await before();
+      return photos.delete(...args);
+    },
+    get: (...args: Parameters<R2Bucket['get']>) => photos.get(...args),
+    head: (...args: Parameters<R2Bucket['head']>) => photos.head(...args),
+    list: (...args: Parameters<R2Bucket['list']>) => photos.list(...args),
+  } as unknown as R2Bucket;
+  return { ...(env as unknown as Env), PHOTOS };
 }

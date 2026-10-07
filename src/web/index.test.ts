@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import type { CommunityRouteSummary } from '@lib/community-types';
 import type { ImportedTrailSummary } from './imported-trails-db';
+import { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION } from './community-labels';
 import {
   FILTER_STORAGE_KEY,
   initLandingPage,
@@ -138,7 +139,7 @@ describe('renderCurated', () => {
     expect(count).toBe(5);
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const groups = [...doc.querySelectorAll('details.country-group')];
-    expect(groups.map((g) => g.querySelector('.country-heading')!.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+    expect(groups.map((g) => g.querySelector('summary')!.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
       'Australia 3',
       'New Zealand 1',
       'United States 1',
@@ -195,6 +196,19 @@ describe('community cards', () => {
     expect(html).toContain('by Sam &quot;the&quot; &lt;hiker&gt;');
     expect(html).toContain('list-badge-verified');
     expect(html).toContain('href="./community-route.html?id=c_AAAAAAAAAAAAAAAA"');
+  });
+
+  it('uses the shared status explanations as the badge tooltip', () => {
+    expect(renderCommunityCard(route({ status: 'verified' }))).toContain(`title="${VERIFIED_EXPLANATION}"`);
+    expect(renderCommunityCard(route({}))).toContain(`title="${UNVERIFIED_EXPLANATION}"`);
+  });
+
+  it('keeps headings out of the group summaries', () => {
+    const { html } = renderCommunity([route({})], base);
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const summary = doc.querySelector('summary')!;
+    expect(summary.querySelector('h1, h2, h3, h4, h5, h6')).toBeNull();
+    expect(summary.querySelector('.country-heading')!.textContent).toBe('Australia');
   });
 
   it('labels an unverified route and leaves out a missing submitter', () => {
@@ -270,6 +284,27 @@ describe('initLandingPage', () => {
     expect($('community-section').hidden).toBe(false);
     expect($('community-note').textContent).toBe('Community routes could not be loaded.');
     expect($('community-section').querySelector('a[href="./upload.html"]')!.textContent).toContain('Share a route');
+  });
+
+  it('gives up on a stalled community list, so "No trails match" can still show', async () => {
+    let signal: AbortSignal | undefined;
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: (s) => {
+        signal = s;
+        return new Promise(() => {}); // never answers
+      },
+      fetchImported: async () => [],
+      communityTimeoutMs: 20,
+    });
+    expect(signal?.aborted).toBe(true);
+    expect($('community-note').textContent).toBe('Community routes could not be loaded.');
+
+    const search = $('trail-search') as HTMLInputElement;
+    search.value = 'zzz';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    expect($('no-match').hidden).toBe(false);
   });
 
   it('filters all tiers, remembers the filter and says when nothing matches', async () => {

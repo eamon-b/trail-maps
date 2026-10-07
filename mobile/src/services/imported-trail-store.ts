@@ -30,10 +30,7 @@ import {
   upsertImportedTrail,
   type ImportedTrail,
 } from '../db/imported-trails-repo';
-import * as plansRepo from '../db/plans-repo';
-import { usePlanInputsStore } from '../features/plan/plan-inputs-store';
-import { usePlansStore } from '../state/plans-store';
-import { useSettingsStore } from '../state/settings-store';
+import { deleteLocalTrailData } from './local-trail-data';
 import type { TrailJson } from './trail-assets';
 
 /** Root directory for imported trail JSON: {documentDir}/trails/ */
@@ -135,9 +132,11 @@ export async function readImportedTrail(id: string): Promise<TrailJson | null> {
 /**
  * Delete an imported trail and everything local that referenced it.
  *
- * Registry row + the manual SQL cascade first (favorites, routes/route_points,
- * sync_state, comments, outbox, waypoint_meta — see `imported-trails-repo`),
- * then the JSON file, then the day plan and the plan-inputs preference entry.
+ * Registry row + the manual SQL cascade first (one transaction, see
+ * `imported-trails-repo`), then the JSON file, then the rest of the guide's
+ * local state — plan, cached stores, pace/hours, direction, the "Hiking now"
+ * pin — through `local-trail-data.deleteLocalTrailData` (whose SQL pass finds
+ * nothing left by then but the plan).
  *
  * The plan is HARD-deleted rather than tombstoned: an imported trail's plan is
  * local-only (its `u_` id is never sent to the server, exactly as its comments
@@ -155,10 +154,7 @@ export async function deleteImportedTrailEverywhere(
   const file = importedTrailFile(id);
   if (file.exists) file.delete();
 
-  await plansRepo.deleteForTrail(db, id);
-  usePlansStore.getState().clear(id);
-  usePlanInputsStore.getState().clearTrail(id);
-  useSettingsStore.getState().clearCurrentTrailIf(id);
+  await deleteLocalTrailData(db, id);
 }
 
 export type { ImportedTrail };

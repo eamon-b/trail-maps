@@ -12,8 +12,16 @@
  * cadence as the trail catalog, throttled to {@link COMMUNITY_REFRESH_MS}. A
  * route's JSON is downloaded the first time its guide is opened
  * (`GuideProvider`), checked for size, MD5 and shape on a `.part` file before
- * the state names it. A fresh list that no longer has a downloaded route (it
- * was hidden or removed) drops it from the device, file and all.
+ * the state names it, and downloaded again when a fresh list carries a
+ * different MD5 (an owner's edit, a de-attribution).
+ *
+ * A downloaded route is never deleted because a list leaves it out: a list can
+ * be truncated, partly unreadable, briefly empty or a cached copy, and the
+ * hiker may be walking that route with a plan on it. Each unlisted download is
+ * asked about instead (`GET /v1/community/routes/:id`, a few per refresh); a
+ * 404 marks it `takenDown` — shown as "No longer shared", file kept — and only
+ * the hiker removes it ({@link removeCommunityRouteFromDevice}). A list that
+ * names it again clears the flag.
  *
  * A community route is NOT server-known (`server-trails`): no comments, no
  * plan sync, no curated descriptions — the same as a `u_` import. Its offline
@@ -26,19 +34,25 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { isCommunityRouteId, type CommunityRouteSummary } from '@lib/community-types';
 
 import { getCommunityRoute, listCommunityRoutes } from '../api/community';
-import { getBaseUrl, type FetchLike } from '../api/client';
+import { ApiError, getBaseUrl, type FetchLike } from '../api/client';
+import { getDatabase } from '../db/database';
+import type { SqlDatabase } from '../db/sql-database';
 import { useTrailDataStore } from '../state/trail-data-store';
 import {
+  classifyCommunityProbe,
   communityFileName,
   isFetchableUrl,
   isUsableCommunityTrail,
   mergeCommunityRoutes,
   parseCommunityList,
-  pruneInstalledCommunity,
   parseCommunitySummary,
   parseInstalledCommunity,
+  planCommunitySync,
+  type CommunityProbe,
+  type CommunityRouteListing,
   type InstalledCommunityRoute,
 } from './community-catalog';
+import { deleteLocalTrailData } from './local-trail-data';
 import type { TrailJson } from './trail-assets';
 
 /** How often the launch/foreground refresh actually reaches the network. */
@@ -146,7 +160,7 @@ export function initCommunityRoutes(): void {
 // Reading
 // ---------------------------------------------------------------------------
 
-export type CommunityRouteInfo = CommunityRouteSummary & { downloaded: boolean };
+export type CommunityRouteInfo = CommunityRouteListing;
 
 /** Every community route the device can list: the cached list plus downloaded ones. */
 export function listCachedCommunityRoutes(): CommunityRouteInfo[] {
@@ -161,10 +175,11 @@ export function getCommunityRouteInfo(id: string): CommunityRouteInfo | null {
 }
 
 /**
- * Read a downloaded route. The trail's own `config.id` is the submitter's
- * import id (`u_…`), so it is rewritten to the community id — every per-trail
- * store on the device keys on the id the guide was opened under — and its name
- * to the listed one (an owner may have renamed it since).
+ * Read a downloaded route. The worker writes the community id into the
+ * trail's `config.id`, but the file is a stranger's and is not trusted for it:
+ * the id is set again to the one the guide was opened under — every per-trail
+ * store on the device keys on it — and the name to the listed one (an owner
+ * may have renamed it since the copy was downloaded).
  *
  * An unreadable copy is forgotten so the next open downloads it again.
  */
@@ -230,9 +245,58 @@ let inFlightRefresh: Promise<CommunityRefreshResult> | null = null;
 let lastAttemptAt = 0;
 
 /**
+ * Ask the server about one route (no token: the public view, so a route hidden
+ * from everyone else reads as gone to its owner's phone too). Never throws.
+ */
+async function probeCommunityRoute(
+  baseUrl: string,
+  id: string,
+  fetchImpl?: FetchLike,
+): Promise<CommunityProbe & { error?: unknown }> {
+  try {
+    const detail = await getCommunityRoute({ baseUrl, fetchImpl, cache: 'no-store' }, id);
+    return classifyCommunityProbe({ ok: true, detail });
+  } catch (err) {
+    const probe = classifyCommunityProbe({
+      ok: false,
+      status: err instanceof ApiError ? err.status : undefined,
+    });
+    return { ...probe, error: err };
+  }
+}
+
+/** Set or clear one download's `takenDown` flag (no-op when it is not downloaded). */
+function setTakenDown(id: string, takenDown: boolean): void {
+  const current = getState();
+  const entry = current.installed[id];
+  if (!entry || (entry.takenDown === true) === takenDown) return;
+  const next: InstalledCommunityRoute = { summary: entry.summary, file: entry.file };
+  if (takenDown) next.takenDown = true;
+  saveState({ ...current, installed: { ...current.installed, [id]: next } });
+}
+
+/**
+ * The server has said this route is no longer shared (a 404 from its detail
+ * or its download): drop it from the cached list and, when it is downloaded,
+ * flag the copy `takenDown` — kept, never deleted, until the hiker removes it.
+ */
+export function markCommunityRouteTakenDown(id: string): void {
+  const current = getState();
+  if (current.list?.some((r) => r.id === id)) {
+    saveState({ ...current, list: current.list.filter((r) => r.id !== id) });
+  }
+  setTakenDown(id, true);
+}
+
+/**
  * Fetch the public list and cache it. Throttled unless `force`, single-flight,
  * never throws. Without an API base URL this is a no-op and only routes
  * already on the device are listed.
+ *
+ * Then, for the downloaded routes: those the list names have `takenDown`
+ * cleared and are downloaded again when the list's MD5 differs; those it does
+ * not name are asked about one by one (at most `MAX_COMMUNITY_PROBES`), and
+ * only a positive "not shared" (404) flags them. Nothing is deleted here.
  */
 export function refreshCommunityRoutes(
   options: { force?: boolean; now?: number; fetchImpl?: FetchLike } = {},
@@ -255,9 +319,24 @@ export function refreshCommunityRoutes(
       const response = await listCommunityRoutes({ baseUrl, fetchImpl: options.fetchImpl });
       const list = parseCommunityList(response);
       if (!list) return { checked: false, error: 'The community list is not in a format this app reads' };
-      const pruned = pruneInstalledCommunity(list, getState().installed);
-      saveState({ ...getState(), list, fetchedAt: now, installed: pruned.installed });
-      for (const file of pruned.droppedFiles) deleteQuietly(file);
+      const plan = planCommunitySync(list, getState().installed);
+      saveState({ ...getState(), list, fetchedAt: now, installed: plan.installed });
+
+      for (const id of plan.probe) {
+        const probe = await probeCommunityRoute(baseUrl, id, options.fetchImpl);
+        if (probe.kind === 'gone') setTakenDown(id, true);
+        else if (probe.kind === 'live') setTakenDown(id, false);
+      }
+
+      // One at a time, like the trail catalog's updates. A failure keeps the
+      // copy already on the phone; the next refresh tries again.
+      for (const summary of plan.stale) {
+        try {
+          await downloadRoute(summary);
+        } catch (err) {
+          console.warn(`[community] update of ${summary.id} failed`, err);
+        }
+      }
       return { checked: true };
     } catch (err) {
       return { checked: false, error: err instanceof Error ? err.message : String(err) };
@@ -268,24 +347,55 @@ export function refreshCommunityRoutes(
   return inFlightRefresh;
 }
 
-/** Put a route into the cached list now (just submitted), replacing any row with its id. */
+/**
+ * Put a route into the cached list now (just submitted, or its detail was
+ * fetched), replacing any row with its id. A listed route is shared, so a
+ * downloaded copy's `takenDown` flag is cleared.
+ */
 export function upsertCommunitySummary(raw: unknown): void {
   const summary = parseCommunitySummary(raw);
   if (!summary) return;
   const current = getState();
   const list = [...(current.list ?? []).filter((r) => r.id !== summary.id), summary];
   saveState({ ...current, list });
+  setTakenDown(summary.id, false);
 }
 
-/** Drop a route from the list and the device (its owner deleted it). */
-export function forgetCommunityRoute(id: string): void {
+/**
+ * Remove a downloaded route from this phone — its file and every piece of
+ * local state about it (plan, favourites, custom routes, pace, direction, the
+ * "Hiking now" pin; `local-trail-data`). The cached list row stays, so a route
+ * that is still shared is listed again as "downloads when opened".
+ */
+export async function removeCommunityRouteFromDevice(
+  id: string,
+  options: { db?: SqlDatabase } = {},
+): Promise<void> {
+  if (!isCommunityRouteId(id)) return;
   const current = getState();
-  const list = current.list ? current.list.filter((r) => r.id !== id) : current.list;
   const entry = current.installed[id];
-  const installed = { ...current.installed };
-  delete installed[id];
-  saveState({ ...current, list, installed });
-  if (entry) deleteQuietly(entry.file);
+  if (entry) {
+    const installed = { ...current.installed };
+    delete installed[id];
+    saveState({ ...current, installed });
+    deleteQuietly(entry.file);
+  }
+  await deleteLocalTrailData(options.db ?? (await getDatabase()), id);
+}
+
+/**
+ * Drop a route from the list and the device (its owner deleted it): the same
+ * full cleanup as {@link removeCommunityRouteFromDevice}, and the list row too.
+ */
+export async function forgetCommunityRoute(
+  id: string,
+  options: { db?: SqlDatabase } = {},
+): Promise<void> {
+  const current = getState();
+  if (current.list?.some((r) => r.id === id)) {
+    saveState({ ...current, list: current.list.filter((r) => r.id !== id) });
+  }
+  await removeCommunityRouteFromDevice(id, options);
 }
 
 // ---------------------------------------------------------------------------
@@ -360,28 +470,80 @@ async function doDownload(summary: CommunityRouteSummary): Promise<void> {
 }
 
 /**
+ * The server says the route is no longer shared — what `GuideProvider` shows
+ * as "This route is no longer shared", with no retry.
+ */
+export class CommunityRouteTakenDownError extends Error {
+  constructor() {
+    super('This route is no longer shared.');
+    this.name = 'CommunityRouteTakenDownError';
+  }
+}
+
+/**
  * Make sure a community route is on the device, downloading it if needed —
  * what opening one does. Resolves true when a copy is ready to read, false
- * when no such route is known. Throws when the download fails.
+ * when no such route is known. Throws {@link CommunityRouteTakenDownError}
+ * when the server says the route is no longer shared, and the download's own
+ * error for anything else (usually: offline).
+ *
+ * A downloaded copy whose MD5 the list no longer carries is downloaded again
+ * first; when that fails the older copy is used.
  */
 export async function ensureCommunityRouteDownloaded(
   id: string,
   options: { fetchImpl?: FetchLike } = {},
 ): Promise<boolean> {
   if (!isCommunityRouteId(id)) return false;
-  if (getState().installed[id] && (await readCommunityTrail(id))) return true;
+  const listed = (getState().list ?? []).find((r) => r.id === id) ?? null;
+  const installed = getState().installed[id];
+  if (installed) {
+    if (listed && listed.md5 !== installed.summary.md5) {
+      try {
+        await downloadRoute(listed);
+        return true;
+      } catch (err) {
+        console.warn(`[community] update of ${id} failed; opening the copy on this phone`, err);
+      }
+    }
+    if (await readCommunityTrail(id)) return true;
+  }
 
-  let summary: CommunityRouteSummary | null =
-    (getState().list ?? []).find((r) => r.id === id) ?? null;
+  const baseUrl = getBaseUrl();
+  let summary: CommunityRouteSummary | null = listed;
   if (!summary) {
     // A link to a route this phone has never listed: ask the server.
-    const baseUrl = getBaseUrl();
     if (!baseUrl) return false;
-    summary = parseCommunitySummary(
-      await getCommunityRoute({ baseUrl, fetchImpl: options.fetchImpl }, id),
-    );
-    if (!summary) return false;
+    const probe = await probeCommunityRoute(baseUrl, id, options.fetchImpl);
+    if (probe.kind === 'gone') {
+      markCommunityRouteTakenDown(id);
+      throw new CommunityRouteTakenDownError();
+    }
+    if (probe.kind === 'unknown') {
+      // Offline or a 5xx: surface it (the guide offers a retry). An answer
+      // that is not a route at all reads as "not found".
+      if (probe.error) throw probe.error;
+      return false;
+    }
+    summary = probe.summary;
   }
-  await downloadRoute(summary);
+  try {
+    await downloadRoute(summary);
+  } catch (err) {
+    // The listed copy would not download. Ask whether the route is still
+    // shared: a 404 is the taken-down state, a newer copy is fetched instead.
+    if (!baseUrl) throw err;
+    const probe = await probeCommunityRoute(baseUrl, id, options.fetchImpl);
+    if (probe.kind === 'gone') {
+      markCommunityRouteTakenDown(id);
+      throw new CommunityRouteTakenDownError();
+    }
+    if (probe.kind === 'live' && probe.summary.md5 !== summary.md5) {
+      upsertCommunitySummary(probe.summary);
+      await downloadRoute(probe.summary);
+      return true;
+    }
+    throw err;
+  }
   return true;
 }

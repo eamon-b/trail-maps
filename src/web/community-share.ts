@@ -9,9 +9,15 @@
  * (through `api/session.ts`, which owns the token).
  *
  * The automatic checks (`@lib/community-checks`) run here live, on the very
- * trail that will be sent, so the hiker sees a failure before uploading. The
- * worker runs them again on what arrives, and its answer is the one that
- * counts: a 422 shows the server's list in place of ours.
+ * trail that will be sent (and on the GPX text, when it is being sent), so the
+ * hiker sees a failure before uploading. The worker runs them again on what
+ * arrives, and its answer is the one that counts: a 422 shows the server's
+ * list in place of ours.
+ *
+ * The raw GPX is optional ("Include the original GPX file", on by default):
+ * a raw file can carry the author's name, device and recording times, so the
+ * hiker may keep it back. A file over `COMMUNITY_LIMITS.gpxMaxBytes` is never
+ * sent.
  */
 
 import { runCommunityChecks } from '@lib/community-checks';
@@ -32,6 +38,13 @@ import {
   type RegionPicker,
 } from './community-ui';
 import { renderLinkForm } from './link-browser';
+
+/** The worker's own wording from an error envelope, when it sent one. */
+function serverErrorMessage(err: ApiError): string | null {
+  const body = err.body as { error?: { message?: unknown } } | undefined;
+  const message = body?.error?.message;
+  return typeof message === 'string' && message.trim() !== '' ? message.trim() : null;
+}
 
 /** What the share step sends: the saved trail, its name and the source file. */
 export interface CommunityShareSource {
@@ -71,6 +84,9 @@ export function initCommunityShare(): CommunityShareController {
   const stateSelect = byId<HTMLSelectElement>('community-state');
   const stateWrapper = byId('community-state-field');
   const rightsBox = byId<HTMLInputElement>('community-rights');
+  const includeGpxField = byId('community-include-gpx-field');
+  const includeGpxBox = byId<HTMLInputElement>('community-include-gpx');
+  const includeGpxNote = byId('community-include-gpx-note');
   const checksBox = byId('community-checks');
   const checksSource = byId('community-checks-source');
   const submitBtn = byId<HTMLButtonElement>('community-submit');
@@ -84,6 +100,8 @@ export function initCommunityShare(): CommunityShareController {
   creditInput.maxLength = COMMUNITY_LIMITS.creditMax;
 
   let source: CommunityShareSource | null = null;
+  /** Whether `source.gpxText` fits under the upload cap (measured once per open). */
+  let gpxFits = false;
   let session: WebSession | null = null;
   let localChecks: CommunityCheck[] = [];
   let checksOk = false;
@@ -125,9 +143,19 @@ export function initCommunityShare(): CommunityShareController {
       : 'Automatic checks (run again by the server when you share):';
   };
 
+  /** The GPX text that will go up with the route, or null when it will not. */
+  const gpxToSend = (): string | null =>
+    source?.gpxText && gpxFits && includeGpxBox.checked ? source.gpxText : null;
+
   const runChecks = (): void => {
     if (!source) return;
-    const meta = { name: nameInput.value.trim(), description: descInput.value.trim() };
+    // Only the GPX the server will also see: its checks are the ones that count.
+    const gpxText = gpxToSend();
+    const meta = {
+      name: nameInput.value.trim(),
+      description: descInput.value.trim(),
+      ...(gpxText ? { gpxText } : {}),
+    };
     try {
       const result = runCommunityChecks(source.trail, meta);
       localChecks = result.checks;
@@ -154,15 +182,20 @@ export function initCommunityShare(): CommunityShareController {
     }, 250);
   };
 
-  const renderIdentity = (): void => {
-    session = loadSession();
+  /**
+   * Show the form for a linked browser, else the link form. `linked` is the
+   * session the link form just produced: it is used as is rather than read
+   * back from storage, which may be refusing writes.
+   */
+  const renderIdentity = (linked?: WebSession): void => {
+    session = linked ?? loadSession();
     if (!session) {
       form.hidden = true;
       linkBox.hidden = false;
       renderLinkForm(
         linkBox,
         'Sharing a route needs your Tracknotes app identity, so that you can edit or delete it later and so that abuse can be dealt with. Link this browser to the app on your phone to continue.',
-        () => renderIdentity(),
+        next => renderIdentity(next),
       );
       return;
     }
@@ -175,15 +208,18 @@ export function initCommunityShare(): CommunityShareController {
   const describeSubmitError = (err: unknown): string => {
     if (err instanceof NetworkError) return 'Could not reach the server. Check your connection and try again.';
     if (!(err instanceof ApiError)) return `Could not share this route: ${err instanceof Error ? err.message : String(err)}`;
+    // The worker words these itself (the 30-attempt and 10-route daily limits
+    // differ, for one); the fallbacks cover a reply without its envelope.
+    const fromServer = serverErrorMessage(err);
     switch (err.status) {
       case 409:
-        return 'This route has already been shared — the same track was shared before.';
+        return fromServer ?? 'This route has already been shared — the same track was shared before.';
       case 413:
-        return 'This route is too large to share.';
+        return fromServer ?? 'This route is too large to share.';
       case 422:
         return 'The server’s checks did not pass. See the list above.';
       case 429:
-        return `You can share up to ${COMMUNITY_LIMITS.submitsPerDay} routes a day. Try again tomorrow.`;
+        return fromServer ?? 'You have reached today’s limit for sharing routes. Try again tomorrow.';
       default:
         return `Could not share this route (${err.code}): ${err.message}`;
     }
@@ -198,7 +234,7 @@ export function initCommunityShare(): CommunityShareController {
       updateSubmit();
       return;
     }
-    const current = loadSession();
+    const current = session;
     if (!current) {
       renderIdentity();
       return;
@@ -217,9 +253,8 @@ export function initCommunityShare(): CommunityShareController {
       setError('This route is too large to share (the processed trail is over 4 MB).');
       return;
     }
-    if (source.gpxText && utf8Bytes(source.gpxText) <= COMMUNITY_LIMITS.gpxMaxBytes) {
-      request.gpxBase64 = utf8ToBase64(source.gpxText);
-    }
+    const gpxText = gpxToSend();
+    if (gpxText) request.gpxBase64 = utf8ToBase64(gpxText);
 
     busy = true;
     submitBtn.textContent = 'Sharing…';
@@ -253,12 +288,14 @@ export function initCommunityShare(): CommunityShareController {
     scheduleChecks();
   });
   rightsBox.addEventListener('change', updateSubmit);
+  includeGpxBox.addEventListener('change', runChecks);
   form.addEventListener('submit', event => {
     event.preventDefault();
     void submit();
   });
   unlinkBtn.addEventListener('click', () => {
-    const current = loadSession();
+    const current = session;
+    session = null;
     unlinkBtn.disabled = true;
     void (current ? unlinkThisBrowser(current) : Promise.resolve()).finally(() => {
       unlinkBtn.disabled = false;
@@ -268,13 +305,37 @@ export function initCommunityShare(): CommunityShareController {
 
   return {
     open(next) {
+      // A fresh form per import: nothing typed for the previous route carries over.
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
       source = next;
       nameInput.value = next.name.slice(0, COMMUNITY_LIMITS.nameMax);
+      descInput.value = '';
+      creditInput.value = '';
+      rightsBox.checked = false;
+      picker.set(null, null);
+      checksBox.innerHTML = '';
+      checksSource.textContent = '';
+      localChecks = [];
+      checksOk = false;
+
+      gpxFits = next.gpxText !== null && utf8Bytes(next.gpxText) <= COMMUNITY_LIMITS.gpxMaxBytes;
+      includeGpxField.hidden = next.gpxText === null;
+      includeGpxBox.checked = gpxFits;
+      includeGpxBox.disabled = !gpxFits;
+      includeGpxNote.textContent = gpxFits
+        ? ''
+        : `The file is over ${Math.round(COMMUNITY_LIMITS.gpxMaxBytes / 1024 / 1024)} MB, so it is left out.`;
+      includeGpxNote.hidden = gpxFits;
+
       done.hidden = true;
       setError('');
       updateCounter();
       renderIdentity();
       runChecks();
+      updateSubmit();
       panel.hidden = false;
     },
     refresh(trail) {

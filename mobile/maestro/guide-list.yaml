@@ -2,8 +2,11 @@ appId: com.tracknotes.app
 ---
 # "My Guides" — the home list of bundled trails (mobile/app/index.tsx).
 #
-# Asserts the list renders every bundled guide from assets/trails/index.json,
-# scrolls to the last one, and that a fresh install reports no offline tiles.
+# Asserts the list renders the bundled guides from assets/trails/index.json in
+# their sections (`features/guide/guide-sections.ts`: Hiking now → one section
+# per country, Australia first and grouped by state in `@lib/trail-regions`
+# order — NSW, VIC, TAS, SA, WA, NT, QLD — then by name; Community; Imported),
+# scrolls down through them, and that a fresh install reports no offline tiles.
 #
 # Selectors: trail display names straight out of index.json (`name`, not
 # `shortName`) and the DownloadBadge's "Not downloaded" label. Deliberately
@@ -13,8 +16,10 @@ appId: com.tracknotes.app
     visible: "My Guides"
     timeout: 30000
 
-# First two cards, in index.json order.
-- assertVisible: "Australian Alps Walking Track"
+# First section and its first two cards: Australia, NSW, by name. (A fresh
+# install has nothing pinned, so there is no "Hiking now" section.)
+- assertVisible: "Australia"
+- assertVisible: "Great North Walk"
 - assertVisible: "Hume and Hovell Track"
 
 # A fresh state (launch-dev clears app data, which wipes the tile directory)
@@ -27,6 +32,18 @@ appId: com.tracknotes.app
 # The list is scrollable and every remaining guide is reachable. Each step
 # scrolls only as far as it needs to, so this stays robust to card height /
 # screen size (a single scroll to the last item could overshoot the others).
+# In list order: VIC, then SA (Heysen) before WA (Bibbulmun, Cape to Cape),
+# then NT, then the other countries.
+- scrollUntilVisible:
+    element:
+      text: "Australian Alps Walking Track"
+    direction: DOWN
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Heysen Trail"
+    direction: DOWN
+    timeout: 15000
 - scrollUntilVisible:
     element:
       text: "Bibbulmun Track"
@@ -39,12 +56,17 @@ appId: com.tracknotes.app
     timeout: 15000
 - scrollUntilVisible:
     element:
-      text: "Heysen Trail"
+      text: "Larapinta Trail"
     direction: DOWN
     timeout: 15000
 - scrollUntilVisible:
     element:
-      text: "Larapinta Trail"
+      text: "Te Araroa"
+    direction: DOWN
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Continental Divide Trail"
     direction: DOWN
     timeout: 15000
 - takeScreenshot: guide-list
@@ -55,4 +77,4 @@ appId: com.tracknotes.app
       text: "My Guides"
     direction: UP
     timeout: 15000
-- assertVisible: "Australian Alps Walking Track"
+- assertVisible: "Great North Walk"

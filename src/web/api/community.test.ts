@@ -65,6 +65,28 @@ const TRAIL = {
 
 const SUMMARY = { id: 'c_abcdefghijklmnop', trailUrl: 'https://data.example.test/community/v1/c_x.json' };
 
+const LIST_ROUTE: CommunityRouteSummary = {
+  id: 'c_1',
+  name: 'Loop',
+  status: 'unverified',
+  country: 'AU',
+  state: 'VIC',
+  lengthKm: 12.5,
+  ascentM: 300,
+  hasElevation: true,
+  waypointCount: 3,
+  bbox: [145, -37.01, 145.01, -37],
+  start: { lat: -37, lon: 145 },
+  submittedBy: 'Robin',
+  createdAt: '2026-10-01T00:00:00Z',
+  updatedAt: '2026-10-01T00:00:00Z',
+  verifiedAt: null,
+  reviewed: false,
+  trailUrl: 'https://data.example.test/community/v1/c_1.json',
+  md5: '0'.repeat(32),
+  bytes: 100,
+};
+
 beforeEach(() => {
   vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test/');
 });
@@ -89,12 +111,43 @@ describe('listCommunityRoutes', () => {
   });
 
   it('GETs the public list without a token, with filters as query params', async () => {
-    const routes = [{ id: 'c_1' }] as unknown as CommunityRouteSummary[];
+    const routes = [LIST_ROUTE];
     const { impl, calls } = mockFetch([{ status: 200, body: { routes } }]);
     const result = await listCommunityRoutes({ country: 'AU', state: 'VIC' }, { fetchImpl: impl });
     expect(result).toEqual(routes);
     expect(calls[0].url).toBe('https://api.example.test/v1/community/routes?country=AU&state=VIC');
     expect(authHeader(calls[0].init)).toBeUndefined();
+  });
+
+  it('drops entries of the wrong shape rather than handing them to the page', async () => {
+    const { impl } = mockFetch([
+      {
+        status: 200,
+        body: {
+          routes: [
+            LIST_ROUTE,
+            { ...LIST_ROUTE, id: 'c_2', name: 42 },
+            { ...LIST_ROUTE, id: 'c_3', lengthKm: 'far' },
+            { ...LIST_ROUTE, id: 'c_4', status: 'hidden' },
+            { ...LIST_ROUTE, id: 'c_5', country: null },
+            { ...LIST_ROUTE, id: 'c_6', state: 7 },
+            { ...LIST_ROUTE, id: 'c_7', submittedBy: {} },
+            null,
+            'c_8',
+            { ...LIST_ROUTE, id: 'c_9', state: null, submittedBy: null, status: 'verified' },
+          ],
+        },
+      },
+    ]);
+    const result = await listCommunityRoutes({}, { fetchImpl: impl });
+    expect(result!.map(r => r.id)).toEqual(['c_1', 'c_9']);
+  });
+
+  it('passes the abort signal to the request', async () => {
+    const { impl, calls } = mockFetch([{ status: 200, body: { routes: [] } }]);
+    const controller = new AbortController();
+    await listCommunityRoutes({}, { fetchImpl: impl, signal: controller.signal });
+    expect(calls[0].init.signal).toBe(controller.signal);
   });
 
   it('treats a body without routes as an empty list', async () => {

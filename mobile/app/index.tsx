@@ -6,11 +6,14 @@
  * trails — bundled, and published to the R2 catalog after this build (a
  * "downloads when opened" pill until first opened) — one section per country,
  * then "Community" (routes other hikers shared, with a Verified/Unverified
- * pill), then "Imported". A search field at the top filters every section by
- * name or region. Tapping a card opens that guide; long-pressing an imported
- * one offers to share it to the community or delete it. Pulling down checks
- * the catalog for newer trail data and the community list now rather than on
- * their schedules (`services/trail-data-updates`, `services/community-routes`).
+ * pill, or "No longer shared" for a downloaded one the server has since taken
+ * down — kept until the hiker removes it), then "Imported". A search field at
+ * the top filters every section by name or region. Tapping a card opens that
+ * guide; long-pressing an imported one offers to share it to the community or
+ * delete it, and long-pressing a community one offers its About screen
+ * (details, report) and, once downloaded, "Remove from this phone". Pulling
+ * down checks the catalog for newer trail data and the community list now
+ * rather than on their schedules (`services/trail-data-updates`, `services/community-routes`).
  *
  * The list reads only index metadata via `listAllTrails()` — it never eagerly
  * loads any full trail JSON, so it stays instant. (That metadata carries no
@@ -53,7 +56,10 @@ import { checkForTrailDataUpdates } from '../src/services/trail-data-updates';
 import { useTrailDataStore } from '../src/state/trail-data-store';
 import { launchTrailId } from '../src/features/guide/current-hike';
 import { buildGuideSections, regionSubtitle } from '../src/features/guide/guide-sections';
-import { refreshCommunityRoutes } from '../src/services/community-routes';
+import {
+  refreshCommunityRoutes,
+  removeCommunityRouteFromDevice,
+} from '../src/services/community-routes';
 import { isApiConfigured } from '../src/api/client';
 import { CommunityStatusPill } from '../src/features/community/CommunityUi';
 import { classifyIncomingUrl } from '../src/features/import/incoming-file';
@@ -228,6 +234,49 @@ export default function GuideListScreen() {
     ]);
   };
 
+  const confirmRemoveCommunity = (trail: TrailIndexEntry) => {
+    Alert.alert(
+      'Remove from this phone',
+      `Remove “${trail.name}” from this phone? Its plan, favourites and routes on this phone go with it. This can’t be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                await removeCommunityRouteFromDevice(trail.id);
+              } finally {
+                await refresh();
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  // Long-press on a community route: its About screen (details, report,
+  // the owner's delete) and, when a copy is on the phone, removing it.
+  const onCommunityLongPress = (trail: TrailIndexEntry) => {
+    const about = () =>
+      router.push({ pathname: '/guide/[trailId]/community', params: { trailId: trail.id } });
+    Alert.alert(trail.name, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'About & report', onPress: about },
+      ...(trail.downloaded
+        ? [
+            {
+              text: 'Remove from this phone…',
+              style: 'destructive' as const,
+              onPress: () => confirmRemoveCommunity(trail),
+            },
+          ]
+        : []),
+    ]);
+  };
+
   return (
     <SectionList
       sections={sections}
@@ -287,24 +336,40 @@ export default function GuideListScreen() {
         const current = item.id === currentTrailId;
         const subtitle = regionSubtitle(item);
         const verified = item.communityStatus === 'verified';
+        const takenDown = community && item.communityTakenDown === true;
         return (
           <Pressable
             onPress={() =>
               router.push({ pathname: '/guide/[trailId]', params: { trailId: item.id } })
             }
-            onLongPress={imported ? () => onImportedLongPress(item) : undefined}
+            onLongPress={
+              imported
+                ? () => onImportedLongPress(item)
+                : community
+                  ? () => onCommunityLongPress(item)
+                  : undefined
+            }
             accessibilityRole="button"
             accessibilityLabel={[
               item.name,
               subtitle,
               imported && 'imported',
-              community && (verified ? 'community route, verified' : 'community route, unverified'),
+              community &&
+                (takenDown
+                  ? 'community route, no longer shared'
+                  : verified
+                    ? 'community route, verified'
+                    : 'community route, unverified'),
               current && 'hiking now',
             ]
               .filter(Boolean)
               .join(', ')}
             accessibilityHint={
-              imported ? 'Long press to share or delete this imported guide' : undefined
+              imported
+                ? 'Long press to share or delete this imported guide'
+                : community
+                  ? 'Long press for details, reporting or removing it from this phone'
+                  : undefined
             }
             style={[
               styles.card,
@@ -369,7 +434,10 @@ export default function GuideListScreen() {
               </View>
             ) : community ? (
               <View style={styles.pillRow}>
-                <CommunityStatusPill status={item.communityStatus ?? 'unverified'} />
+                <CommunityStatusPill
+                  status={item.communityStatus ?? 'unverified'}
+                  takenDown={takenDown}
+                />
                 {!item.downloaded && (
                   <View style={[styles.importedPill, { borderColor: colors.accentMuted }]}>
                     <Text style={[styles.importedLabel, { color: colors.accentMuted }]}>

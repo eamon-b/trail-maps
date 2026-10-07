@@ -30,6 +30,8 @@ import type { WebSession } from './session';
 
 export interface CommunityApiDeps {
   fetchImpl?: FetchLike;
+  /** Aborts the request (the landing page's deadline). */
+  signal?: AbortSignal;
 }
 
 /** Optional narrowing of the public list. */
@@ -48,9 +50,33 @@ function routePath(id: string): string {
   return `/v1/community/routes/${encodeURIComponent(id)}`;
 }
 
+const isStringOrNull = (v: unknown): v is string | null => v === null || typeof v === 'string';
+
+/**
+ * True when a list entry has the fields the landing page reads (name, length,
+ * status, region, submitter) in the right types. The list is public and
+ * cached, so one malformed row is dropped rather than allowed to throw inside
+ * the page's render.
+ */
+export function isCommunityRouteSummary(value: unknown): value is CommunityRouteSummary {
+  if (typeof value !== 'object' || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    typeof r.id === 'string' &&
+    r.id !== '' &&
+    typeof r.name === 'string' &&
+    (r.status === 'verified' || r.status === 'unverified') &&
+    typeof r.lengthKm === 'number' &&
+    Number.isFinite(r.lengthKm) &&
+    typeof r.country === 'string' &&
+    (r.state === undefined || isStringOrNull(r.state)) &&
+    (r.submittedBy === undefined || isStringOrNull(r.submittedBy))
+  );
+}
+
 /**
  * Every live (unverified + verified) community route, or null when this build
- * has no API configured.
+ * has no API configured. Entries of the wrong shape are dropped.
  */
 export async function listCommunityRoutes(
   filter: CommunityListFilter = {},
@@ -64,9 +90,10 @@ export async function listCommunityRoutes(
   const qs = query.toString();
   const response = await apiRequest<CommunityListResponse>(
     `/v1/community/routes${qs ? `?${qs}` : ''}`,
-    { fetchImpl: deps.fetchImpl },
+    { fetchImpl: deps.fetchImpl, signal: deps.signal },
   );
-  return Array.isArray(response?.routes) ? response.routes : [];
+  const routes: unknown = response?.routes;
+  return Array.isArray(routes) ? routes.filter(isCommunityRouteSummary) : [];
 }
 
 /**

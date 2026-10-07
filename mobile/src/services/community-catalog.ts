@@ -6,7 +6,10 @@
  * `GET /v1/community/routes`, keeps the last list on disk so My Guides shows it
  * offline, and downloads a route's `ProcessedTrail` JSON from its `trailUrl`
  * the first time it is opened (`community-routes.ts` does that I/O, mirroring
- * `trail-data-updates.ts` for catalog-only trails).
+ * `trail-data-updates.ts` for catalog-only trails). What a fresh list means
+ * for the downloads is {@link planCommunitySync}: absence from a list is never
+ * evidence that a route was taken down — only its own detail's 404 is
+ * ({@link classifyCommunityProbe}).
  *
  * Everything here validates what came over the wire before it can become a
  * file name, a URL or a list row — the list is written by strangers.
@@ -112,6 +115,13 @@ export interface InstalledCommunityRoute {
   summary: CommunityRouteSummary;
   /** File name under the community directory. */
   file: string;
+  /**
+   * True once the server has said, positively, that the route is no longer
+   * shared (its detail answered 404, or a status the public list does not
+   * carry). The file is KEPT: the hiker may be walking it, with a plan and
+   * favourites on it. A list that names the route again clears the flag.
+   */
+  takenDown?: boolean;
 }
 
 /** `<id>.<md5[0..12]>.json` — content-addressed, like the trail catalog's keys. */
@@ -125,53 +135,116 @@ export function parseInstalledCommunity(raw: unknown): InstalledCommunityRoute |
   const summary = parseCommunitySummary(r.summary);
   if (!summary) return null;
   if (r.file !== communityFileName(summary.id, summary.md5)) return null;
-  return { summary, file: r.file };
+  return { summary, file: r.file, ...(r.takenDown === true ? { takenDown: true } : {}) };
 }
 
+/** A community route as My Guides lists it. */
+export type CommunityRouteListing = CommunityRouteSummary & {
+  downloaded: boolean;
+  /** Downloaded, and the server has said it is no longer shared. */
+  takenDown: boolean;
+};
+
 /**
- * The routes My Guides lists: the last fetched list, plus any downloaded route
- * it does not name — one opened from a link before the list was fetched, or
- * listed while no fresh list has said otherwise. A route a fresh list has
- * dropped (hidden, removed) is pruned from the device by
- * {@link pruneInstalledCommunity} when that list arrives, so it does not
- * linger here. A downloaded route reports the list's current name and status
- * when the list still has it.
+ * The routes My Guides lists: the last fetched list, plus every downloaded
+ * route it does not name — one opened from a link before the list was
+ * fetched, one a truncated or stale list left out, and one the server has
+ * since taken down (`takenDown`, kept on the phone until the hiker removes
+ * it). A downloaded route reports the list's current name and status when the
+ * list still has it.
  */
 export function mergeCommunityRoutes(
   list: readonly CommunityRouteSummary[] | null,
   installed: Readonly<Record<string, InstalledCommunityRoute>>,
-): (CommunityRouteSummary & { downloaded: boolean })[] {
-  const out: (CommunityRouteSummary & { downloaded: boolean })[] = [];
+): CommunityRouteListing[] {
+  const out: CommunityRouteListing[] = [];
   const seen = new Set<string>();
   for (const route of list ?? []) {
     seen.add(route.id);
-    out.push({ ...route, downloaded: !!installed[route.id] });
+    out.push({ ...route, downloaded: !!installed[route.id], takenDown: false });
   }
   for (const [id, copy] of Object.entries(installed)) {
     if (seen.has(id)) continue;
-    out.push({ ...copy.summary, downloaded: true });
+    out.push({ ...copy.summary, downloaded: true, takenDown: copy.takenDown === true });
   }
   return out;
 }
 
+/** At most this many unlisted downloads are asked about per refresh. */
+export const MAX_COMMUNITY_PROBES = 20;
+
+export interface CommunitySyncPlan {
+  /** The downloads, with `takenDown` cleared on every route the list names. */
+  installed: Record<string, InstalledCommunityRoute>;
+  /**
+   * Downloaded routes the list does not name, to ask the server about one by
+   * one (at most {@link MAX_COMMUNITY_PROBES}; never-flagged ones first). Absence
+   * from a list is NOT evidence: the list can be truncated, partly unreadable,
+   * briefly empty or a cached copy, so nothing is deleted or flagged on it.
+   */
+  probe: string[];
+  /** Listed routes whose downloaded copy is older than the list's (md5 differs). */
+  stale: CommunityRouteSummary[];
+}
+
 /**
- * Apply a fresh, successfully fetched list to the downloaded routes: a route
- * the list no longer has was hidden or removed, so it is dropped from the
- * device rather than kept for offline use — what was taken down is not handed
- * on. Returns what to keep and the files to delete.
+ * What a fresh, successfully fetched list means for the downloaded routes.
+ * Pure: the caller does the probing and downloading.
  */
-export function pruneInstalledCommunity(
+export function planCommunitySync(
   list: readonly CommunityRouteSummary[],
   installed: Readonly<Record<string, InstalledCommunityRoute>>,
-): { installed: Record<string, InstalledCommunityRoute>; droppedFiles: string[] } {
-  const listed = new Set(list.map((r) => r.id));
-  const kept: Record<string, InstalledCommunityRoute> = {};
-  const droppedFiles: string[] = [];
+): CommunitySyncPlan {
+  const listed = new Map(list.map((r) => [r.id, r]));
+  const next: Record<string, InstalledCommunityRoute> = {};
+  const unflagged: string[] = [];
+  const flagged: string[] = [];
+  const stale: CommunityRouteSummary[] = [];
   for (const [id, entry] of Object.entries(installed)) {
-    if (listed.has(id)) kept[id] = entry;
-    else droppedFiles.push(entry.file);
+    const row = listed.get(id);
+    if (row) {
+      next[id] = { summary: entry.summary, file: entry.file };
+      if (row.md5 !== entry.summary.md5) stale.push(row);
+    } else {
+      next[id] = entry;
+      (entry.takenDown ? flagged : unflagged).push(id);
+    }
   }
-  return { installed: kept, droppedFiles };
+  return {
+    installed: next,
+    probe: [...unflagged, ...flagged].slice(0, MAX_COMMUNITY_PROBES),
+    stale,
+  };
+}
+
+/** What asking the server about one route found. */
+export type CommunityProbe =
+  /** Shared and downloadable: the parsed summary. */
+  | { kind: 'live'; summary: CommunityRouteSummary }
+  /** Positively not shared: a 404, or a status the public list does not carry. */
+  | { kind: 'gone' }
+  /** No answer worth acting on (offline, 5xx, an unreadable body). */
+  | { kind: 'unknown' };
+
+/**
+ * Classify the detail endpoint's answer. `status` is the HTTP status of a
+ * failed request (undefined for a transport failure); `detail` the body of a
+ * successful one.
+ */
+export function classifyCommunityProbe(
+  outcome: { ok: true; detail: unknown } | { ok: false; status?: number },
+): CommunityProbe {
+  if (!outcome.ok) {
+    return outcome.status === 404 || outcome.status === 410 ? { kind: 'gone' } : { kind: 'unknown' };
+  }
+  const detail = outcome.detail;
+  if (!detail || typeof detail !== 'object') return { kind: 'unknown' };
+  const status = (detail as { status?: unknown }).status;
+  if (typeof status === 'string' && !LISTED_STATUSES.includes(status as CommunityRouteStatus)) {
+    return { kind: 'gone' };
+  }
+  const summary = parseCommunitySummary(detail);
+  return summary ? { kind: 'live', summary } : { kind: 'unknown' };
 }
 
 /**

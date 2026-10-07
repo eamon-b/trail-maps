@@ -42,7 +42,7 @@ import {
 } from './community-ui';
 import { getTrail, isIndexedDbAvailable, putTrail } from './imported-trails-db';
 import { renderLinkForm } from './link-browser';
-import { initTrailViewer } from './trails/trail-viewer';
+import { initTrailViewer, setTrailName } from './trails/trail-viewer';
 import { escapeHtml, getQueryParam } from './web-utils';
 
 const REPORT_LABELS: Record<CommunityReportReason, string> = {
@@ -55,6 +55,18 @@ const REPORT_LABELS: Record<CommunityReportReason, string> = {
 };
 
 type PanelId = 'loading-panel' | 'missing-panel' | 'trail-panel';
+
+/**
+ * The route as this page knows it right now. One object, shared by every
+ * control: an owner's edit replaces `detail`, and Save, the export and the
+ * title read it when they are used rather than keeping the name they were
+ * set up with. `session` is the linked browser in use (the one a link form
+ * just produced, never re-read from a storage that may refuse writes).
+ */
+interface RoutePage {
+  detail: CommunityRouteDetail;
+  session: WebSession | null;
+}
 
 function $(id: string): HTMLElement | null {
   return document.getElementById(id);
@@ -120,12 +132,20 @@ function renderHeader(detail: CommunityRouteDetail): void {
   }
 }
 
-/** Download a trail as the `.tracknotes.json` the app opens. */
-function initTracknotesExport(trail: ProcessedTrail): void {
+/** The pristine trail under the route's current name. */
+function namedCopy(pristine: ProcessedTrail, name: string): ProcessedTrail {
+  const copy: ProcessedTrail = structuredClone(pristine);
+  copy.config = { ...copy.config, name, shortName: name };
+  return copy;
+}
+
+/** Download the trail as the `.tracknotes.json` the app opens, under its current name. */
+function initTracknotesExport(page: RoutePage, pristine: ProcessedTrail): void {
   const button = $('export-tracknotes-btn') as HTMLButtonElement | null;
   if (!button) return;
   button.disabled = false;
   button.addEventListener('click', () => {
+    const trail = namedCopy(pristine, page.detail.name);
     const blob = new Blob([serializeTrailHandoff(trail)], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -138,10 +158,10 @@ function initTracknotesExport(trail: ProcessedTrail): void {
   });
 }
 
-function initSave(detail: CommunityRouteDetail, pristine: ProcessedTrail): void {
+function initSave(page: RoutePage, pristine: ProcessedTrail): void {
   const button = $('save-btn') as HTMLButtonElement;
   const note = $('save-note')!;
-  const localId = localCopyId(detail.id);
+  const localId = localCopyId(page.detail.id);
   const query = `?id=${encodeURIComponent(localId)}`;
   const savedHtml = (prefix: string): string =>
     `${escapeHtml(prefix)} <a href="./my-trail.html${query}">Open it</a> · <a href="./my-plan.html${query}">Plan it</a>`;
@@ -163,10 +183,10 @@ function initSave(detail: CommunityRouteDetail, pristine: ProcessedTrail): void 
 
   button.addEventListener('click', () => {
     button.disabled = true;
-    const name = detail.name;
+    const name = page.detail.name;
     const lengthKm = Math.round(pristine.track.totalDistance * 10) / 10;
-    const copy: ProcessedTrail = structuredClone(pristine);
-    copy.config = { ...copy.config, id: localId, name, shortName: name, lengthKm, source: 'community' };
+    const copy = namedCopy(pristine, name);
+    copy.config = { ...copy.config, id: localId, lengthKm, source: 'community' };
     void putTrail({ id: localId, name, lengthKm, createdAt: Date.now(), trail: copy })
       .then(() => {
         note.innerHTML = savedHtml('Saved in My trails on this browser.');
@@ -181,8 +201,18 @@ function initSave(detail: CommunityRouteDetail, pristine: ProcessedTrail): void 
   });
 }
 
-function initReport(detail: CommunityRouteDetail): void {
+/**
+ * Report: needs a linked browser, and is not offered to the owner (the
+ * server refuses a report of one's own route). It needs no track, so it
+ * stays when only the download failed.
+ */
+function initReport(page: RoutePage): void {
   const button = $('report-btn') as HTMLButtonElement;
+  if (page.detail.isOwner === true) {
+    button.hidden = true;
+    return;
+  }
+  button.hidden = false;
   const box = $('report-box')!;
   const linkBox = $('report-link')!;
   const form = $('report-form') as HTMLFormElement;
@@ -202,15 +232,17 @@ function initReport(detail: CommunityRouteDetail): void {
   };
 
   const render = (): void => {
-    const session = loadSession();
     setError('');
-    if (!session) {
+    if (!page.session) {
       form.hidden = true;
       linkBox.hidden = false;
       renderLinkForm(
         linkBox,
         'Reporting needs your Tracknotes app identity, so one person counts once. Link this browser to the app on your phone first.',
-        () => render(),
+        linked => {
+          page.session = linked;
+          render();
+        },
       );
     } else {
       linkBox.hidden = true;
@@ -230,14 +262,16 @@ function initReport(detail: CommunityRouteDetail): void {
 
   form.addEventListener('submit', event => {
     event.preventDefault();
-    const session = loadSession();
+    const session = page.session;
     if (!session) {
       render();
       return;
     }
     submit.disabled = true;
     setError('');
-    void reportCommunityRoute(session, detail.id, reason.value as CommunityReportReason, noteInput.value)
+    // A repeat report from the same account is answered 200 by the worker
+    // (it counts once), so there is no "already reported" case to word.
+    void reportCommunityRoute(session, page.detail.id, reason.value as CommunityReportReason, noteInput.value)
       .then(() => {
         form.hidden = true;
         done.hidden = false;
@@ -246,9 +280,8 @@ function initReport(detail: CommunityRouteDetail): void {
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.status === 401) {
           clearSession();
+          page.session = null;
           render();
-        } else if (err instanceof ApiError && err.status === 409) {
-          setError('You have already reported this route.');
         } else if (err instanceof ApiError && err.status === 429) {
           setError('Too many reports from this account today. Try again later.');
         } else if (err instanceof NetworkError) {
@@ -263,9 +296,9 @@ function initReport(detail: CommunityRouteDetail): void {
   });
 }
 
-function initOwnerTools(initial: CommunityRouteDetail, session: WebSession | null): void {
-  if (!initial.isOwner || !session) return;
-  let detail = initial;
+function initOwnerTools(page: RoutePage): void {
+  const session = page.session;
+  if (!page.detail.isOwner || !session) return;
   const form = $('edit-form') as HTMLFormElement;
   const nameInput = $('edit-name') as HTMLInputElement;
   const descInput = $('edit-description') as HTMLTextAreaElement;
@@ -290,6 +323,7 @@ function initOwnerTools(initial: CommunityRouteDetail, session: WebSession | nul
   };
 
   $('edit-btn')!.addEventListener('click', () => {
+    const detail = page.detail;
     nameInput.value = detail.name;
     descInput.value = detail.description;
     creditInput.value = detail.credit ?? '';
@@ -322,7 +356,7 @@ function initOwnerTools(initial: CommunityRouteDetail, session: WebSession | nul
     }
     submit.disabled = true;
     setError('');
-    void patchCommunityRoute(session, detail.id, {
+    void patchCommunityRoute(session, page.detail.id, {
       name,
       description,
       credit: creditInput.value.trim() || null,
@@ -331,8 +365,9 @@ function initOwnerTools(initial: CommunityRouteDetail, session: WebSession | nul
     })
       .then(updated => {
         // Keep owner-only fields if the PATCH reply leaves them out.
-        detail = { ...detail, ...updated, isOwner: true };
-        renderHeader(detail);
+        page.detail = { ...page.detail, ...updated, isOwner: true };
+        renderHeader(page.detail);
+        setTrailName(page.detail.name);
         form.hidden = true;
       })
       .catch((err: unknown) => {
@@ -354,9 +389,9 @@ function initOwnerTools(initial: CommunityRouteDetail, session: WebSession | nul
 
   const deleteBtn = $('delete-btn') as HTMLButtonElement;
   deleteBtn.addEventListener('click', () => {
-    if (!window.confirm(`Delete "${detail.name}" from the community list? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${page.detail.name}" from the community list? This cannot be undone.`)) return;
     deleteBtn.disabled = true;
-    void deleteCommunityRoute(session, detail.id)
+    void deleteCommunityRoute(session, page.detail.id)
       .then(() => {
         window.location.href = './';
       })
@@ -368,10 +403,7 @@ function initOwnerTools(initial: CommunityRouteDetail, session: WebSession | nul
 }
 
 /** The detail, retried without the token when a stale one is refused. */
-async function loadDetail(id: string, session: WebSession | null): Promise<{
-  detail: CommunityRouteDetail;
-  session: WebSession | null;
-}> {
+async function loadDetail(id: string, session: WebSession | null): Promise<RoutePage> {
   try {
     return { detail: await getCommunityRoute(id, session), session };
   } catch (err) {
@@ -386,12 +418,17 @@ async function loadDetail(id: string, session: WebSession | null): Promise<{
 /**
  * The text, status and owner tools without the map: a hidden route has no
  * public track (its owner and admins still see the details), and a download
- * can fail. Save, Report and the exports need the track, so they go too.
+ * can fail. Save, the exports and the direction toggle need the track, so
+ * they go. Report does not: it stays for a live route whose download failed,
+ * and goes for a hidden one (only its owner and admins can see it).
  */
-function showWithoutTrack(detail: CommunityRouteDetail, session: WebSession | null, note: string): void {
-  renderHeader(detail);
-  initOwnerTools(detail, session);
-  for (const id of ['save-btn', 'report-btn']) $(id)!.hidden = true;
+function showWithoutTrack(page: RoutePage, note: string): void {
+  renderHeader(page.detail);
+  initOwnerTools(page);
+  $('save-btn')!.hidden = true;
+  $('direction-meta')!.hidden = true;
+  if (page.detail.trailUrl && page.detail.status !== 'hidden') initReport(page);
+  else $('report-btn')!.hidden = true;
   $('trail-body')!.hidden = true;
   const noteEl = $('no-track-note')!;
   noteEl.textContent = note;
@@ -406,10 +443,9 @@ async function init(): Promise<void> {
     return;
   }
 
-  let detail: CommunityRouteDetail;
-  let session: WebSession | null;
+  let page: RoutePage;
   try {
-    ({ detail, session } = await loadDetail(id, loadSession()));
+    page = await loadDetail(id, loadSession());
   } catch (err) {
     if (err instanceof NetworkError) {
       showMissing('Could not load this route', 'The server could not be reached. Check your connection and reload.');
@@ -420,6 +456,7 @@ async function init(): Promise<void> {
     }
     return;
   }
+  const { detail } = page;
   if (detail.status === 'removed') {
     showMissing();
     return;
@@ -431,8 +468,7 @@ async function init(): Promise<void> {
   } catch (err) {
     if (detail.trailUrl) console.error('Could not download the community route', err);
     showWithoutTrack(
-      detail,
-      session,
+      page,
       detail.trailUrl
         ? 'The route’s track could not be downloaded. Try reloading the page later.'
         : 'This route is hidden, so its track is not published. Its details are shown here; the map returns if it is restored.',
@@ -445,10 +481,10 @@ async function init(): Promise<void> {
   const pristine = structuredClone(trail);
 
   renderHeader(detail);
-  initSave(detail, pristine);
-  initReport(detail);
-  initOwnerTools(detail, session);
-  initTracknotesExport(pristine);
+  initSave(page, pristine);
+  initReport(page);
+  initOwnerTools(page);
+  initTracknotesExport(page, pristine);
 
   showPanel('trail-panel');
   await initTrailViewer(detail.id, trail);

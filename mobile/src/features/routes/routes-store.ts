@@ -27,6 +27,8 @@ export interface RoutesState {
   remove: (trailId: string, id: string) => Promise<void>;
   /** Activate a route (loads its points) or clear the active route (null). */
   activate: (trailId: string, id: string | null) => Promise<void>;
+  /** Drop a trail's cached routes (its rows were deleted with the guide). */
+  forgetTrail: (trailId: string) => void;
 }
 
 export const useRoutesStore = create<RoutesState>((set, get) => ({
@@ -87,6 +89,17 @@ export const useRoutesStore = create<RoutesState>((set, get) => ({
       activePointsByTrail: { ...s.activePointsByTrail, [trailId]: points },
     }));
   },
+
+  forgetTrail: (trailId) =>
+    set((s) => {
+      const byTrail = { ...s.byTrail };
+      const activeIdByTrail = { ...s.activeIdByTrail };
+      const activePointsByTrail = { ...s.activePointsByTrail };
+      delete byTrail[trailId];
+      delete activeIdByTrail[trailId];
+      delete activePointsByTrail[trailId];
+      return { byTrail, activeIdByTrail, activePointsByTrail };
+    }),
 }));
 
 /** Reactive selector for a trail's active route id. */

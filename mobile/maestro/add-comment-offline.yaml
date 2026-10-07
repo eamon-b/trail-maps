@@ -29,6 +29,13 @@ appId: com.tracknotes.app
 #      comment appears immediately in the feed with the pending indicator
 #      "Waiting to send…" and the outbox drain stops on the network error.
 - runFlow: shared/launch-dev.yaml
+# My Guides is grouped (Hiking now → countries → Community → Imported), and
+# within Australia by state: Cape to Cape (WA) sits below the fold.
+- scrollUntilVisible:
+    element:
+      text: "Cape to Cape Track"
+    direction: DOWN
+    timeout: 20000
 - tapOn: "Cape to Cape Track"
 - extendedWaitUntil:
     visible: "Cape to Cape"

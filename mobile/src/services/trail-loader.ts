@@ -78,6 +78,11 @@ export interface TrailIndexEntry {
   states?: string[];
   /** Community routes only: Unverified until an admin verifies it. */
   communityStatus?: CommunityRouteStatus;
+  /**
+   * Community routes only: downloaded, and the server has since said it is no
+   * longer shared ("No longer shared"). The copy stays until the hiker removes it.
+   */
+  communityTakenDown?: boolean;
 }
 
 interface BundledIndexEntry {
@@ -134,6 +139,7 @@ function communityIndexEntry(route: CommunityRouteInfo): TrailIndexEntry {
     country: route.country,
     ...(route.state ? { states: [route.state] } : {}),
     communityStatus: route.status,
+    ...(route.takenDown ? { communityTakenDown: true } : {}),
   };
 }
 

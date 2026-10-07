@@ -51,6 +51,8 @@ export interface SettingsState {
   setUnits: (units: Units) => void;
   setDirection: (trailId: string, direction: Direction) => void;
   toggleDirection: (trailId: string) => void;
+  /** Forget a trail's direction (its guide left the phone). */
+  clearDirection: (trailId: string) => void;
   setPoiEnabled: (enabled: boolean) => void;
   setPoiCategory: (category: TrailPOICategory, visible: boolean) => void;
   setGpsOnGuideOpen: (on: boolean) => void;
@@ -87,6 +89,14 @@ export const useSettingsStore = create<SettingsState>()(
               [trailId]: current === 'default' ? 'reversed' : 'default',
             },
           };
+        }),
+
+      clearDirection: (trailId) =>
+        set((s) => {
+          if (!(trailId in s.perTrailDirection)) return s;
+          const perTrailDirection = { ...s.perTrailDirection };
+          delete perTrailDirection[trailId];
+          return { perTrailDirection };
         }),
 
       setPoiEnabled: (enabled) =>

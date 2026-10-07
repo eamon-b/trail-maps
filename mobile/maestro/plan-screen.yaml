@@ -10,6 +10,13 @@ appId: com.tracknotes.app
 - runFlow: shared/launch-dev.yaml
 
 # From the guide list, open the smallest/fastest trail.
+# My Guides is grouped (Hiking now → countries → Community → Imported), and
+# within Australia by state: Cape to Cape (WA) sits below the fold.
+- scrollUntilVisible:
+    element:
+      text: "Cape to Cape Track"
+    direction: DOWN
+    timeout: 20000
 - tapOn: "Cape to Cape Track"
 
 # Wait for the guide three-pane shell (Map | Elevation | List) to load.

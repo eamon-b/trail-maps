@@ -1,7 +1,7 @@
 /**
  * Small pieces shared by the community screens (`app/share-route.tsx`,
  * `app/guide/[trailId]/community.tsx`): the check results list, a row of
- * choice chips, and the Verified/Unverified pill.
+ * choice chips, and the Verified/Unverified/"No longer shared" pill.
  */
 
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -82,9 +82,31 @@ export function ChoiceChips({
   );
 }
 
-/** "Verified" (an admin approved it) or "Unverified" (passed the automatic checks only). */
-export function CommunityStatusPill({ status }: { status: CommunityRouteStatus }) {
+/**
+ * "Verified" (an admin approved it) or "Unverified" (passed the automatic
+ * checks only) — or "No longer shared" for a downloaded route the server has
+ * since taken down (`takenDown`), whatever status it was downloaded under.
+ */
+export function CommunityStatusPill({
+  status,
+  takenDown = false,
+}: {
+  status: CommunityRouteStatus;
+  takenDown?: boolean;
+}) {
   const { colors } = useTheme();
+  if (takenDown) {
+    return (
+      <View style={[styles.pill, { borderColor: colors.textSecondary }]}>
+        <MaterialCommunityIcons
+          name="cloud-off-outline"
+          size={glyphSizes.xs}
+          color={colors.textSecondary}
+        />
+        <Text style={[styles.pillLabel, { color: colors.textSecondary }]}>No longer shared</Text>
+      </View>
+    );
+  }
   const verified = status === 'verified';
   const tone = verified ? colors.success : colors.warning;
   const label = verified ? 'Verified' : status === 'unverified' ? 'Unverified' : 'Hidden';
@@ -101,7 +123,13 @@ export function CommunityStatusPill({ status }: { status: CommunityRouteStatus }
 }
 
 /** The one-line explanation that goes with the pill. */
-export function communityStatusExplanation(status: CommunityRouteStatus): string {
+export function communityStatusExplanation(
+  status: CommunityRouteStatus,
+  takenDown = false,
+): string {
+  if (takenDown) {
+    return 'No longer shared: it was removed or hidden. The copy on this phone still opens until you remove it.';
+  }
   if (status === 'verified') return 'Shared by a hiker and checked by the Tracknotes team.';
   if (status === 'hidden') return 'Hidden from the community list while it is looked at.';
   return 'Shared by a hiker. It passed automatic checks but no one has verified it.';

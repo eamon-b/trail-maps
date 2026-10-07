@@ -203,3 +203,214 @@ describe('upload.html community share', () => {
     expect($('community-done').hidden).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// The panel driven directly (no upload flow): resets, linking, the GPX choice
+// and the server's error wording.
+// ---------------------------------------------------------------------------
+
+describe('initCommunityShare', () => {
+  const SESSION = { userId: 'u1', token: 'tok', displayName: 'Robin', expiresAt: null };
+
+  async function openPanel(gpxText: string | null = GPX) {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test');
+    const checks = await import('@lib/community-checks');
+    const spy = vi.spyOn(checks, 'runCommunityChecks');
+    const { importGpx } = await import('@lib/gpx-import');
+    const { initCommunityShare } = await import('./community-share');
+    const share = initCommunityShare();
+    const trail = importGpx(GPX).trail;
+    share.open({ trail, name: 'Route A', gpxText });
+    return { share, trail, spy };
+  }
+
+  function fillIn(): void {
+    const desc = $<HTMLTextAreaElement>('community-description');
+    desc.value = 'Coastal walk from Cape Naturaliste to Cape Leeuwin along the ridge.';
+    desc.dispatchEvent(new Event('input'));
+    $<HTMLInputElement>('community-credit').value = 'Recorded by me';
+    const country = $<HTMLSelectElement>('community-country');
+    country.value = 'AU';
+    country.dispatchEvent(new Event('change'));
+    const state = $<HTMLSelectElement>('community-state');
+    state.value = 'WA';
+    state.dispatchEvent(new Event('change'));
+    const rights = $<HTMLInputElement>('community-rights');
+    rights.checked = true;
+    rights.dispatchEvent(new Event('change'));
+  }
+
+  function submitForm(): void {
+    $<HTMLFormElement>('community-form').dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+
+  function stubSubmit(status: number, body: unknown): Array<{ url: string; init: RequestInit }> {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit) => {
+        calls.push({ url, init });
+        return {
+          ok: status < 300,
+          status,
+          statusText: '',
+          text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
+        };
+      }),
+    );
+    return calls;
+  }
+
+  beforeEach(() => {
+    window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('opens blank for the next route after sharing one', async () => {
+    stubSubmit(201, { id: 'c_abcdefghijklmnop' });
+    const { share, trail } = await openPanel();
+    fillIn();
+    await new Promise(resolve => setTimeout(resolve, 300)); // the debounced checks
+    expect($<HTMLButtonElement>('community-submit').disabled).toBe(false);
+    submitForm();
+    await flush();
+    expect($('community-done').hidden).toBe(false);
+
+    share.open({ trail, name: 'Route B', gpxText: GPX });
+    expect($<HTMLInputElement>('community-name').value).toBe('Route B');
+    expect($<HTMLTextAreaElement>('community-description').value).toBe('');
+    expect($<HTMLInputElement>('community-credit').value).toBe('');
+    expect($<HTMLInputElement>('community-rights').checked).toBe(false);
+    expect($<HTMLSelectElement>('community-country').value).toBe('');
+    expect($('community-state-field').hidden).toBe(true);
+    expect($<HTMLInputElement>('community-include-gpx').checked).toBe(true);
+    expect($('community-done').hidden).toBe(true);
+    expect($('community-form').hidden).toBe(false);
+    expect($<HTMLButtonElement>('community-submit').disabled).toBe(true);
+    // The check list is the new route's (its description is empty again).
+    expect($('community-checks').textContent).toMatch(/Fail/);
+  });
+
+  it('checks and sends the GPX text, and leaves it out when unticked', async () => {
+    const calls = stubSubmit(201, { id: 'c_abcdefghijklmnop' });
+    const { spy } = await openPanel();
+    expect(spy.mock.calls.at(-1)![1].gpxText).toBe(GPX);
+
+    fillIn();
+    const include = $<HTMLInputElement>('community-include-gpx');
+    include.checked = false;
+    include.dispatchEvent(new Event('change'));
+    expect(spy.mock.calls.at(-1)![1].gpxText).toBeUndefined();
+
+    submitForm();
+    await flush();
+    const body = JSON.parse(String(calls[0].init.body));
+    expect(body.gpxBase64).toBeUndefined();
+    expect(spy.mock.calls.at(-1)![1].gpxText).toBeUndefined();
+  });
+
+  it('includes the GPX by default', async () => {
+    const calls = stubSubmit(201, { id: 'c_abcdefghijklmnop' });
+    const { spy } = await openPanel();
+    fillIn();
+    submitForm();
+    await flush();
+    expect(typeof JSON.parse(String(calls[0].init.body)).gpxBase64).toBe('string');
+    expect(spy.mock.calls.at(-1)![1].gpxText).toBe(GPX);
+  });
+
+  it('hides the GPX choice when there is no file text', async () => {
+    await openPanel(null);
+    expect($('community-include-gpx-field').hidden).toBe(true);
+  });
+
+  it('shows the server’s wording for a 429, with a fallback', async () => {
+    stubSubmit(429, {
+      error: { code: 'rate_limited', message: 'Too many share attempts today (at most 30). Try again tomorrow.' },
+    });
+    await openPanel();
+    fillIn();
+    submitForm();
+    await flush();
+    expect($('community-error').textContent).toBe('Too many share attempts today (at most 30). Try again tomorrow.');
+
+    stubSubmit(429, '');
+    submitForm();
+    await flush();
+    expect($('community-error').textContent).toBe('You have reached today’s limit for sharing routes. Try again tomorrow.');
+  });
+
+  it('shows the server’s wording for a 409 and a 413', async () => {
+    stubSubmit(409, { error: { code: 'duplicate', message: 'This exact track has been shared before' } });
+    await openPanel();
+    fillIn();
+    submitForm();
+    await flush();
+    expect($('community-error').textContent).toBe('This exact track has been shared before');
+
+    stubSubmit(413, { error: { code: 'gpx_too_large', message: 'The GPX file must be at most 5242880 bytes' } });
+    submitForm();
+    await flush();
+    expect($('community-error').textContent).toBe('The GPX file must be at most 5242880 bytes');
+  });
+
+  it('uses the session the link form produced when storage refuses to keep it', async () => {
+    window.localStorage.clear();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit = {}) => ({
+        ok: true,
+        status: 201,
+        statusText: '',
+        text: async () =>
+          JSON.stringify(
+            init.method === 'POST'
+              ? { userId: 'u9', token: 'tok_linked', displayName: 'Sam', expiresAt: null }
+              : { devices: [] },
+          ),
+      })),
+    );
+    await openPanel();
+    expect($('community-form').hidden).toBe(true);
+    // Storage accepts the write but never gives it back (as a partitioned or
+    // ephemeral store can): the page must not re-read it.
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+    const link = $('community-link');
+    link.querySelector<HTMLInputElement>('input[type="text"]')!.value = 'AB2D3F4G';
+    link.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect($('community-form').hidden).toBe(false);
+    expect($('community-identity').textContent).toContain('Sam');
+  });
+
+  it('shows the storage error when the link cannot be kept', async () => {
+    window.localStorage.clear();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit = {}) => ({
+        ok: true,
+        status: 201,
+        statusText: '',
+        text: async () =>
+          JSON.stringify(
+            init.method === 'POST'
+              ? { userId: 'u9', token: 'tok_linked', displayName: 'Sam', expiresAt: null }
+              : { devices: [] },
+          ),
+      })),
+    );
+    await openPanel();
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    const link = $('community-link');
+    link.querySelector<HTMLInputElement>('input[type="text"]')!.value = 'AB2D3F4G';
+    link.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect($('community-form').hidden).toBe(true);
+    expect(link.querySelector('[data-role="error"]')!.textContent).toContain('blocks site storage');
+  });
+});

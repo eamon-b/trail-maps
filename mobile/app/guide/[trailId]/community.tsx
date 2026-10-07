@@ -1,12 +1,15 @@
 /**
- * About a community route: its status (Verified / Unverified and what that
- * means), description, credit and licence, a Report form, and Delete for the
- * hiker who shared it. Reached from the guide header and the banner above a
- * community guide.
+ * About a community route: its status (Verified / Unverified, or "No longer
+ * shared" and what that means), description, credit and licence, a Report
+ * form for anyone but its owner, Delete for the hiker who shared it, and
+ * "Remove from this phone" for a downloaded copy. Reached from the guide
+ * header, the banner above a community guide and a long-press on its card.
  *
  * The detail is fetched with the device token when there is one, which is how
- * the server says `isOwner`. Offline, the cached list row is shown and the
- * actions that need the server wait.
+ * the server says `isOwner`; a 404 marks the copy on this phone taken down.
+ * Offline, the cached list row is shown and the actions that need the server
+ * wait. Delete and Remove both clear everything local about the route
+ * (`services/local-trail-data`).
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -27,9 +30,12 @@ import {
 } from '../../../src/api/community';
 import { useIdentityStore } from '../../../src/state/identity-store';
 import { useSettingsStore } from '../../../src/state/settings-store';
+import { useTrailDataStore } from '../../../src/state/trail-data-store';
 import {
   forgetCommunityRoute,
   getCommunityRouteInfo,
+  markCommunityRouteTakenDown,
+  removeCommunityRouteFromDevice,
   upsertCommunitySummary,
 } from '../../../src/services/community-routes';
 import {
@@ -52,6 +58,8 @@ export default function CommunityRouteScreen() {
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
+  // Re-read when the cached list or a download changes (a 404 flags it below).
+  useTrailDataStore((s) => s.revision);
   const cached = getCommunityRouteInfo(trailId);
 
   const session = useIdentityStore((s) => s.session);
@@ -85,9 +93,11 @@ export default function CommunityRouteScreen() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
+        const gone = err instanceof ApiError && err.status === 404;
+        if (gone) markCommunityRouteTakenDown(trailId);
         setLoadError(
-          err instanceof ApiError && err.status === 404
-            ? 'This route is no longer in the community list. The copy on this phone is removed when the list next refreshes.'
+          gone
+            ? 'This route is no longer shared. The copy on this phone keeps working until you remove it.'
             : apiErrorMessage(err, 'Couldn’t load this route’s details.'),
         );
       })
@@ -146,8 +156,8 @@ export default function CommunityRouteScreen() {
             void (async () => {
               try {
                 await deleteCommunityRoute({ baseUrl, token: session.token }, trailId);
-                forgetCommunityRoute(trailId);
-                useSettingsStore.getState().clearCurrentTrailIf(trailId);
+                // The route's file, plan, favourites, pin and the rest go too.
+                await forgetCommunityRoute(trailId);
                 router.dismissTo('/');
               } catch (err) {
                 Alert.alert(
@@ -161,6 +171,33 @@ export default function CommunityRouteScreen() {
       ],
     );
   }, [session, trailId, router]);
+
+  const onRemoveFromPhone = useCallback(() => {
+    Alert.alert(
+      'Remove from this phone',
+      'Remove this route from this phone? Its plan, favourites and routes on this phone go with it. This can’t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                await removeCommunityRouteFromDevice(trailId);
+                router.dismissTo('/');
+              } catch (err) {
+                Alert.alert(
+                  'Couldn’t remove the route',
+                  err instanceof Error ? err.message : 'Please try again.',
+                );
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }, [trailId, router]);
 
   const route = detail ?? cached;
   if (!route) {
@@ -181,6 +218,7 @@ export default function CommunityRouteScreen() {
     .filter(Boolean)
     .join(' · ');
   const apiConfigured = !!getBaseUrl();
+  const takenDown = !detail && cached?.takenDown === true;
 
   return (
     <KeyboardAwareScrollView
@@ -189,9 +227,10 @@ export default function CommunityRouteScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.section}>
-        <CommunityStatusPill status={route.status} />
+        <CommunityStatusPill status={route.status} takenDown={takenDown} />
         <Text style={[styles.body, { color: colors.textSecondary }]}>
-          {communityStatusExplanation(route.status)} Check conditions and access before relying on it.
+          {communityStatusExplanation(route.status, takenDown)} Check conditions and access before
+          relying on it.
         </Text>
       </View>
 
@@ -226,7 +265,9 @@ export default function CommunityRouteScreen() {
         </View>
       ) : null}
 
-      {apiConfigured && !detail?.isOwner ? (
+      {/* Only once the detail says who is asking: an owner must not be offered
+          a report form on their own route while it loads. */}
+      {apiConfigured && detail && !detail.isOwner ? (
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Report route</Text>
           {reportState.status === 'sent' ? (
@@ -305,6 +346,23 @@ export default function CommunityRouteScreen() {
         >
           <Text style={[styles.secondaryButtonText, { color: colors.danger }]}>
             Delete shared route
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {cached?.downloaded ? (
+        <Pressable
+          onPress={onRemoveFromPhone}
+          accessibilityRole="button"
+          accessibilityLabel="Remove from this phone"
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            { borderColor: colors.border },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={[styles.secondaryButtonText, { color: colors.textPrimary }]}>
+            Remove from this phone
           </Text>
         </Pressable>
       ) : null}

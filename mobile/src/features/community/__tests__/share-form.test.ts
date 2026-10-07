@@ -5,6 +5,7 @@ import {
   initialShareForm,
   isShareFormValid,
   shareFailure,
+  utf8ByteLength,
   validateShareForm,
   type ShareForm,
 } from '../share-form';
@@ -38,8 +39,9 @@ describe('validateShareForm', () => {
     expect(validateShareForm({ ...VALID, credit: 'x'.repeat(301) }).credit).toBeDefined();
   });
 
-  it('requires a region of the chosen country when it has any', () => {
-    expect(validateShareForm({ ...VALID, state: null }).state).toBeDefined();
+  it('accepts "not specified / several" (null) and refuses a region of another country', () => {
+    // The web form and the worker accept a route listed under its country alone.
+    expect(validateShareForm({ ...VALID, state: null })).toEqual({});
     expect(validateShareForm({ ...VALID, state: 'SI' }).state).toBeDefined();
     // Japan lists no regions: none is needed.
     expect(validateShareForm({ ...VALID, country: 'JP', state: null })).toEqual({});
@@ -67,6 +69,32 @@ describe('buildSubmitRequest', () => {
   });
 });
 
+describe('buildSubmitRequest with no region', () => {
+  it('sends state: null', () => {
+    expect(buildSubmitRequest({ ...VALID, state: null }, {}).state).toBeNull();
+  });
+});
+
+describe('utf8ByteLength', () => {
+  const samples = ['plain', 'Mt Kosciuszko — 2,228 m', '四国遍路', 'emoji 🥾 boot', ''];
+
+  it('counts UTF-8 bytes, not UTF-16 code units', () => {
+    for (const text of samples) expect(utf8ByteLength(text)).toBe(Buffer.byteLength(text, 'utf8'));
+    expect(utf8ByteLength('四国')).toBe(6);
+  });
+
+  it('counts the same without TextEncoder', () => {
+    const original = globalThis.TextEncoder;
+    // @ts-expect-error -- simulating a runtime without it
+    delete globalThis.TextEncoder;
+    try {
+      for (const text of samples) expect(utf8ByteLength(text)).toBe(Buffer.byteLength(text, 'utf8'));
+    } finally {
+      globalThis.TextEncoder = original;
+    }
+  });
+});
+
 describe('shareFailure', () => {
   it('shows the server’s checks on a 422', () => {
     const checks = [{ id: 'length', level: 'fail', message: 'Too short' }];
@@ -76,9 +104,31 @@ describe('shareFailure', () => {
     expect(f.checks).toEqual(checks);
   });
 
-  it('explains a duplicate and the daily limit', () => {
-    expect(shareFailure(new ApiError(409, 'duplicate', 'dup')).message).toMatch(/already been shared/);
-    expect(shareFailure(new ApiError(429, 'rate_limited', 'slow')).message).toMatch(/daily limit/);
+  it('shows the server’s own words for a duplicate and for each daily limit', () => {
+    const envelope = (code: string, message: string) => ({ error: { code, message } });
+    const attempts = 'Too many share attempts today (at most 30). Try again tomorrow.';
+    const published = 'You can share at most 10 routes a day. Try again tomorrow.';
+    const duplicate = 'This exact track has been shared before';
+    expect(
+      shareFailure(new ApiError(429, 'rate_limited', attempts, envelope('rate_limited', attempts))).message,
+    ).toBe(attempts);
+    expect(
+      shareFailure(new ApiError(429, 'rate_limited', published, envelope('rate_limited', published))).message,
+    ).toBe(published);
+    expect(
+      shareFailure(new ApiError(409, 'duplicate', duplicate, envelope('duplicate', duplicate))).message,
+    ).toBe(duplicate);
+  });
+
+  it('falls back to its own words when the server gives none', () => {
+    expect(shareFailure(new ApiError(409, 'duplicate', 'Conflict')).message).toMatch(/already been shared/);
+    expect(shareFailure(new ApiError(429, 'http_error', 'Too Many Requests')).message).toMatch(
+      /today’s limit/,
+    );
+    expect(
+      shareFailure(new ApiError(429, 'rate_limited', '', { error: { code: 'rate_limited', message: '  ' } }))
+        .message,
+    ).toMatch(/today’s limit/);
   });
 
   it('falls back to the connection message offline', () => {

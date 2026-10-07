@@ -16,6 +16,7 @@
  */
 
 import type { SqlDatabase } from './sql-database';
+import { deleteTrailScopedRows } from './trail-data-repo';
 import { withTransaction } from './transaction';
 
 /** A registry row for one imported trail. */
@@ -136,26 +137,16 @@ export async function upsertImportedTrail(
 /**
  * Delete an imported trail's registry row and every local row scoped to it.
  *
- * Manual cascade (no FK pragma in production): `favorites`, `route_points` via
- * `routes`, `routes`, `sync_state`, `comments`, `outbox`, `waypoint_meta`. All
+ * Manual cascade (no FK pragma in production): every row
+ * `trail-data-repo.deleteTrailScopedRows` clears, then the registry row. All
  * in one transaction so a failure mid-way cannot leave a half-deleted guide.
- * (`guides` is deliberately not swept — it is dead code that nothing writes.)
  *
- * Does NOT touch the trail JSON on disk or the plan-inputs AsyncStorage entry —
+ * Does NOT touch the trail JSON on disk, the plan or the per-trail preferences —
  * `services/imported-trail-store.deleteImportedTrailEverywhere` composes those.
  */
 export async function deleteImportedTrail(db: SqlDatabase, id: string): Promise<void> {
   await withTransaction(db, async () => {
-    await db.runAsync(
-      'DELETE FROM route_points WHERE route_id IN (SELECT id FROM routes WHERE trail_id = ?)',
-      [id],
-    );
-    await db.runAsync('DELETE FROM routes WHERE trail_id = ?', [id]);
-    await db.runAsync('DELETE FROM favorites WHERE trail_id = ?', [id]);
-    await db.runAsync('DELETE FROM sync_state WHERE trail_id = ?', [id]);
-    await db.runAsync('DELETE FROM comments WHERE trail_id = ?', [id]);
-    await db.runAsync('DELETE FROM outbox WHERE trail_id = ?', [id]);
-    await db.runAsync('DELETE FROM waypoint_meta WHERE trail_id = ?', [id]);
+    await deleteTrailScopedRows(db, id);
     await db.runAsync('DELETE FROM imported_trails WHERE id = ?', [id]);
   });
 }

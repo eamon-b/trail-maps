@@ -56,6 +56,12 @@ describe('listCommunityRoutes', () => {
     expect(headers(init).Authorization).toBeUndefined();
   });
 
+  it('is fetched no-store, so no HTTP cache answers with a stale list', async () => {
+    const fetchImpl = scriptedFetch([{ body: { routes: [] } }]);
+    await listCommunityRoutes({ baseUrl: BASE, fetchImpl });
+    expect((call(fetchImpl)[1] as RequestInit).cache).toBe('no-store');
+  });
+
   it('passes the filters as a query string', async () => {
     const fetchImpl = scriptedFetch([{ body: { routes: [] } }]);
     await listCommunityRoutes({ baseUrl: BASE, fetchImpl }, { country: 'AU', state: 'VIC' });
@@ -70,6 +76,8 @@ describe('authenticated routes', () => {
     const [url, init] = call(fetchImpl);
     expect(url).toBe(`${BASE}/v1/community/routes/${ID}`);
     expect(headers(init).Authorization).toBe('Bearer tok');
+    // The default cache mode unless the caller asks (the probes ask no-store).
+    expect((init as RequestInit).cache).toBeUndefined();
   });
 
   it('submitCommunityRoute POSTs the request body', async () => {

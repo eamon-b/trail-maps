@@ -501,6 +501,14 @@ describe('trail-loader', () => {
       });
     });
 
+    it('carries the "no longer shared" flag of a taken-down download', async () => {
+      mockListCommunity.mockReturnValue([{ ...COMMUNITY_ROUTE, downloaded: true, takenDown: true }]);
+      const all = await listAllTrails();
+      expect(all.find((t) => t.source === 'community')).toEqual(
+        expect.objectContaining({ downloaded: true, communityTakenDown: true }),
+      );
+    });
+
     it('getTrailIndexEntry answers a community id from the cached list', () => {
       mockGetCommunity.mockImplementation((id: string) =>
         id === COMMUNITY_ROUTE.id ? COMMUNITY_ROUTE : null,

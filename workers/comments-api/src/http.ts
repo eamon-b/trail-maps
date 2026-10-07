@@ -14,6 +14,12 @@ export interface Env {
   PHOTOS_PUBLIC_BASE: string;
   /** Origin of the deployed web site; share links are built from it. */
   SITE_BASE: string;
+  /**
+   * Secret: Anthropic API key for the community-route AI review
+   * (`community-review.ts`). Optional — when unset the review is `skipped`
+   * and routes stay Unverified until an admin looks.
+   */
+  ANTHROPIC_API_KEY?: string;
 }
 
 /** Wide-open CORS — this is a public, read-mostly hobby API. */

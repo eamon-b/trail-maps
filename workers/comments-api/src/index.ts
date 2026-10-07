@@ -28,6 +28,18 @@ import {
   unsharePlan,
 } from './plans';
 import { createLinkCode, linkDevice, listDevices, revokeDevice } from './link';
+import {
+  adminListCommunityRoutes,
+  adminRerunCommunityReview,
+  adminSetCommunityStatus,
+  deleteCommunityRoute,
+  getCommunityRoute,
+  listCommunityRoutes,
+  listMyCommunityRoutes,
+  patchCommunityRoute,
+  reportCommunityRoute,
+  submitCommunityRoute,
+} from './community';
 
 /**
  * Split a pathname into decoded, non-empty segments. A malformed escape
@@ -102,6 +114,51 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (rest.length === 3 && rest[0] === 'me' && rest[1] === 'devices') {
       if (method === 'DELETE') return await revokeDevice(request, env, ctx, rest[2]);
       return methodNotAllowed();
+    }
+
+    // /v1/me/community/routes
+    if (rest.length === 3 && rest[0] === 'me' && rest[1] === 'community' && rest[2] === 'routes') {
+      if (method === 'GET') return await listMyCommunityRoutes(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/community/routes
+    if (rest.length === 2 && rest[0] === 'community' && rest[1] === 'routes') {
+      if (method === 'GET') return await listCommunityRoutes(request, env);
+      if (method === 'POST') return await submitCommunityRoute(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/community/routes/:id
+    if (rest.length === 3 && rest[0] === 'community' && rest[1] === 'routes') {
+      if (method === 'GET') return await getCommunityRoute(request, env, ctx, rest[2]);
+      if (method === 'PATCH') return await patchCommunityRoute(request, env, ctx, rest[2]);
+      if (method === 'DELETE') return await deleteCommunityRoute(request, env, ctx, rest[2]);
+      return methodNotAllowed();
+    }
+
+    // /v1/community/routes/:id/report
+    if (rest.length === 4 && rest[0] === 'community' && rest[1] === 'routes' && rest[3] === 'report') {
+      if (method === 'POST') return await reportCommunityRoute(request, env, ctx, rest[2]);
+      return methodNotAllowed();
+    }
+
+    // /v1/admin/community/routes
+    if (rest.length === 3 && rest[0] === 'admin' && rest[1] === 'community' && rest[2] === 'routes') {
+      if (method === 'GET') return await adminListCommunityRoutes(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/admin/community/routes/:id/status and /review
+    if (rest.length === 5 && rest[0] === 'admin' && rest[1] === 'community' && rest[2] === 'routes') {
+      if (rest[4] === 'status') {
+        if (method === 'POST') return await adminSetCommunityStatus(request, env, ctx, rest[3]);
+        return methodNotAllowed();
+      }
+      if (rest[4] === 'review') {
+        if (method === 'POST') return await adminRerunCommunityReview(request, env, ctx, rest[3]);
+        return methodNotAllowed();
+      }
     }
 
     // /v1/plans

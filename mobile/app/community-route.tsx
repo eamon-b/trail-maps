@@ -1,9 +1,15 @@
 /**
- * About a community route: its status (Verified / Unverified, or "No longer
- * shared" and what that means), description, credit and licence, a Report
- * form for anyone but its owner, Delete for the hiker who shared it, and
- * "Remove from this phone" for a downloaded copy. Reached from the guide
- * header, the banner above a community guide and a long-press on its card.
+ * About a community route (`/community-route?id=<c_…>`): its status (Verified /
+ * Unverified, or "No longer shared" and what that means), description, credit
+ * and licence, a Report form for anyone but its owner, Delete for the hiker who
+ * shared it, and "Remove from this phone" for a downloaded copy. Reached from
+ * the guide header, the banner above a community guide and a long-press on its
+ * card.
+ *
+ * A root-level screen, not one inside `guide/[trailId]`: that stack's
+ * `GuideProvider` loads — for a community route, downloads — the trail before
+ * any child renders, and this page must open for a route that is not on the
+ * phone (a long-press on its card), offline included.
  *
  * The detail is fetched with the device token when there is one, which is how
  * the server says `isOwner`; a 404 marks the copy on this phone taken down.
@@ -15,49 +21,50 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { CommunityRouteDetail } from '@lib/community-types';
+import { isCommunityRouteId, type CommunityRouteDetail } from '@lib/community-types';
 import { formatDistance } from '@lib/format-distance';
 import { stateName, countryName } from '@lib/trail-regions';
-import { useTheme } from '../../../src/theme';
-import { KeyboardAwareScrollView } from '../../../src/navigation/KeyboardAwareScrollView';
-import { radii, spacing, typography } from '../../../src/tokens';
-import { ApiError, getBaseUrl } from '../../../src/api/client';
-import { apiErrorMessage } from '../../../src/api/error-message';
+import { useTheme } from '../src/theme';
+import { KeyboardAwareScrollView } from '../src/navigation/KeyboardAwareScrollView';
+import { radii, spacing, typography } from '../src/tokens';
+import { ApiError, getBaseUrl } from '../src/api/client';
+import { apiErrorMessage } from '../src/api/error-message';
 import {
   deleteCommunityRoute,
   getCommunityRoute,
   reportCommunityRoute,
-} from '../../../src/api/community';
-import { useIdentityStore } from '../../../src/state/identity-store';
-import { useSettingsStore } from '../../../src/state/settings-store';
-import { useTrailDataStore } from '../../../src/state/trail-data-store';
+} from '../src/api/community';
+import { useIdentityStore } from '../src/state/identity-store';
+import { useSettingsStore } from '../src/state/settings-store';
+import { useTrailDataStore } from '../src/state/trail-data-store';
 import {
   forgetCommunityRoute,
   getCommunityRouteInfo,
   markCommunityRouteTakenDown,
   removeCommunityRouteFromDevice,
   upsertCommunitySummary,
-} from '../../../src/services/community-routes';
+} from '../src/services/community-routes';
 import {
   ChoiceChips,
   CommunityStatusPill,
   communityStatusExplanation,
-} from '../../../src/features/community/CommunityUi';
+} from '../src/features/community/CommunityUi';
 import {
   MAX_REPORT_NOTE_LENGTH,
   REPORT_REASON_CHOICES,
   validateReport,
-} from '../../../src/features/community/community-route';
+} from '../src/features/community/community-route';
 import {
   MAX_DISPLAY_NAME_LENGTH,
   validateDisplayName,
-} from '../../../src/features/comments/display-name';
+} from '../src/features/comments/display-name';
 
 export default function CommunityRouteScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
-  const { trailId } = useLocalSearchParams<{ trailId: string }>();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const trailId = typeof params.id === 'string' ? params.id : '';
   // Re-read when the cached list or a download changes (a 404 flags it below).
   useTrailDataStore((s) => s.revision);
   const cached = getCommunityRouteInfo(trailId);
@@ -66,7 +73,7 @@ export default function CommunityRouteScreen() {
   const identityStatus = useIdentityStore((s) => s.status);
   const [detail, setDetail] = useState<CommunityRouteDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(() => !!getBaseUrl());
+  const [loading, setLoading] = useState(() => !!getBaseUrl() && isCommunityRouteId(trailId));
 
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -81,7 +88,7 @@ export default function CommunityRouteScreen() {
 
   useEffect(() => {
     const baseUrl = getBaseUrl();
-    if (!baseUrl) return;
+    if (!baseUrl || !isCommunityRouteId(trailId)) return;
     let cancelled = false;
     getCommunityRoute({ baseUrl, token: session?.token }, trailId)
       .then((d) => {

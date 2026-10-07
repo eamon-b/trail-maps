@@ -41,7 +41,7 @@ function CommunityBanner({ trailId }: { trailId: string }) {
   const takenDown = info?.takenDown === true;
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/guide/[trailId]/community', params: { trailId } })}
+      onPress={() => router.push({ pathname: '/community-route', params: { id: trailId } })}
       accessibilityRole="button"
       accessibilityHint={
         takenDown

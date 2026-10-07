@@ -261,7 +261,7 @@ export default function GuideListScreen() {
   // the owner's delete) and, when a copy is on the phone, removing it.
   const onCommunityLongPress = (trail: TrailIndexEntry) => {
     const about = () =>
-      router.push({ pathname: '/guide/[trailId]/community', params: { trailId: trail.id } });
+      router.push({ pathname: '/community-route', params: { id: trail.id } });
     Alert.alert(trail.name, undefined, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'About & report', onPress: about },

@@ -4,9 +4,8 @@
  *
  * A hidden route — by the automatic review, by reports or by a moderator —
  * leaves the public list, so My Guides never lists it, and it has no public
- * track, so it cannot open as a guide (and `guide/[trailId]/community` lives
- * inside one). This screen is where its owner still finds it, sees why it is
- * hidden and can delete it. Reached from Settings and from the share screen's
+ * track, so it cannot open as a guide. This screen is where its owner still
+ * finds it, sees why it is hidden and can delete it. Reached from Settings and from the share screen's
  * "already shared" message, which passes `?id=` to open that route's detail.
  *
  * Tapping a card expands its detail in place rather than pushing a screen: the

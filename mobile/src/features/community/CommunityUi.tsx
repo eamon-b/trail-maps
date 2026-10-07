@@ -1,6 +1,6 @@
 /**
  * Small pieces shared by the community screens (`app/share-route.tsx`,
- * `app/guide/[trailId]/community.tsx`, `app/my-shared-routes.tsx`): the check
+ * `app/community-route.tsx`, `app/my-shared-routes.tsx`): the check
  * results list, a row of choice chips, and the Verified/Unverified/Hidden/"No
  * longer shared" pill.
  */

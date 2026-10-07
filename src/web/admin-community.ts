@@ -132,15 +132,20 @@ function init(): void {
     toolbar.hidden = true;
     list.innerHTML = '';
     linkBox.hidden = false;
-    renderLinkForm(linkBox, 'The review queue needs an admin account. Link this browser to the Tracknotes app on that phone.', () => {
+    renderLinkForm(linkBox, 'The review queue needs an admin account. Link this browser to the Tracknotes app on that phone.', linked => {
       linkBox.hidden = true;
       linkBox.innerHTML = '';
-      void load();
+      void load(linked);
     });
   };
 
-  const load = async (): Promise<void> => {
-    session = loadSession();
+  /**
+   * (Re)load the queue. `linked` is the session the link form just produced;
+   * otherwise the one already in use, else the stored one. Never re-read
+   * after a link, since storage may be refusing writes.
+   */
+  const load = async (linked?: WebSession): Promise<void> => {
+    session = linked ?? session ?? loadSession();
     setError('');
     if (!session) {
       askToLink();
@@ -154,6 +159,7 @@ function init(): void {
       status.hidden = true;
       if (err instanceof ApiError && err.status === 401) {
         clearSession();
+        session = null;
         askToLink();
       } else if (err instanceof ApiError && err.status === 403) {
         setError('This account is not an admin.');

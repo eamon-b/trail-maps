@@ -69,15 +69,21 @@ jest.mock('../../../services/trail-data-updates', () => ({
   ensureTrailDownloaded: jest.fn(async () => false),
 }));
 
-jest.mock('../../../services/community-routes', () => ({
-  ensureCommunityRouteDownloaded: jest.fn(async () => false),
-}));
+jest.mock('../../../services/community-routes', () => {
+  class CommunityRouteTakenDownError extends Error {}
+  return {
+    CommunityRouteTakenDownError,
+    ensureCommunityRouteDownloaded: jest.fn(async () => false),
+    refreshCommunityRoutes: jest.fn(async () => ({ checked: true })),
+  };
+});
 
-const mockEnsureCommunity = (
-  jest.requireMock('../../../services/community-routes') as {
-    ensureCommunityRouteDownloaded: jest.Mock;
-  }
-).ensureCommunityRouteDownloaded;
+const communityMock = jest.requireMock('../../../services/community-routes') as {
+  CommunityRouteTakenDownError: new () => Error;
+  ensureCommunityRouteDownloaded: jest.Mock;
+  refreshCommunityRoutes: jest.Mock;
+};
+const mockEnsureCommunity = communityMock.ensureCommunityRouteDownloaded;
 const mockGetTrailJson = getTrailJson as jest.Mock;
 const mockEnsureDownloaded = ensureTrailDownloaded as jest.Mock;
 const mockLoadTrail = loadTrail as jest.Mock;
@@ -249,6 +255,50 @@ describe('GuideProvider async resolution', () => {
     expect(mockEnsureCommunity).toHaveBeenCalledWith(id);
     expect(mockEnsureDownloaded).not.toHaveBeenCalled();
     expect(mounted).toBe(true);
+  });
+
+  it('says a community route is no longer shared, with no retry, and refreshes the list', async () => {
+    const id = 'c_AbCdEfGhIjKlMnOp';
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockResolvedValue(null);
+    mockEnsureCommunity.mockRejectedValueOnce(new communityMock.CommunityRouteTakenDownError());
+    communityMock.refreshCommunityRoutes.mockClear();
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId={id}>
+          <Child />
+        </GuideProvider>,
+      );
+    });
+
+    const text = renderedText(tree);
+    expect(text).toContain('This route is no longer shared');
+    expect(text).not.toContain('Try again');
+    expect(text).not.toContain('Couldn’t download');
+    expect(communityMock.refreshCommunityRoutes).toHaveBeenCalledWith({ force: true });
+  });
+
+  it('keeps the retry for a community route that failed to download for another reason', async () => {
+    const id = 'c_AbCdEfGhIjKlMnOp';
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockResolvedValue(null);
+    mockEnsureCommunity.mockRejectedValueOnce(new Error('Network request failed'));
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <GuideProvider trailId={id}>
+          <Child />
+        </GuideProvider>,
+      );
+    });
+
+    const text = renderedText(tree);
+    expect(text).toContain('Couldn’t download this guide');
+    expect(text).toContain('Try again');
+    expect(text).not.toContain('no longer shared');
   });
 
   it('falls back to not-found when an id resolves to nothing', async () => {

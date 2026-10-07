@@ -5,9 +5,10 @@
  * on My Guides, with `?trailId=u_…`. The hiker names and describes the route,
  * picks its country and region, optionally credits a source, and ticks the CC0
  * confirmation. The shared automatic checks (`@lib/community-checks`) run on
- * the stored trail as they type, so a route that will be refused says so
- * before anything is sent; the worker runs the same checks again and its
- * answer (a 422 with checks, a 409 duplicate, a 429 over the daily limit) is
+ * the stored trail once, when it loads, and only the cheap `metadata` check is
+ * re-run as they type, so a route that will be refused says so before anything
+ * is sent; the worker runs the same checks again and its answer (a 422 with
+ * checks, a 409 duplicate, a 429 over a daily limit, in the server's words) is
  * shown here too.
  *
  * What is sent is the stored `ProcessedTrail` — the phone keeps no raw GPX.
@@ -18,7 +19,7 @@
  * under the server's md5.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -30,7 +31,12 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { COMMUNITY_LIMITS, type CommunityCheck } from '@lib/community-types';
-import { runCommunityChecks } from '@lib/community-checks';
+import {
+  checkCommunityMetadata,
+  hasFailures,
+  runCommunityChecks,
+  type CommunityChecksResult,
+} from '@lib/community-checks';
 import { COUNTRIES, findCountry } from '@lib/trail-regions';
 import { useTheme } from '../src/theme';
 import { KeyboardAwareScrollView } from '../src/navigation/KeyboardAwareScrollView';
@@ -42,25 +48,39 @@ import { useIdentityStore } from '../src/state/identity-store';
 import { upsertCommunitySummary } from '../src/services/community-routes';
 import { validateDisplayName, MAX_DISPLAY_NAME_LENGTH } from '../src/features/comments/display-name';
 import {
+  NO_STATE_CHOICE,
   RIGHTS_TEXT,
   buildSubmitRequest,
   initialShareForm,
   shareFailure,
+  utf8ByteLength,
   validateShareForm,
   type ShareForm,
 } from '../src/features/community/share-form';
 import { ChecksList, ChoiceChips } from '../src/features/community/CommunityUi';
 
-/** Re-run the checks this long after the last keystroke, not on every one. */
-const CHECK_DEBOUNCE_MS = 400;
+/**
+ * Text that passes the `metadata` check, for the one full run per trail. With
+ * it, that run's `metadata` entry is either a pass or the waypoint-text
+ * warning (`runCommunityChecks` reports the latter only when the text itself
+ * passes), so {@link withMetadata} can put the typed text's own result in its
+ * place without walking the track again on every keystroke.
+ */
+const PASSING_META = {
+  name: 'Route name',
+  description: 'A description that is long enough to pass the length check.',
+};
 
-function useDebounced<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(t);
-  }, [value, ms]);
-  return debounced;
+/** The trail's checks with the `metadata` entry re-checked against `meta`. */
+function withMetadata(
+  base: CommunityChecksResult,
+  meta: { name: string; description: string },
+): { checks: CommunityCheck[]; ok: boolean } {
+  const own = checkCommunityMetadata(meta);
+  const checks = base.checks.map((c) =>
+    c.id !== 'metadata' ? c : own.level === 'pass' && c.level !== 'pass' ? c : own,
+  );
+  return { checks, ok: !hasFailures(checks) };
 }
 
 const COUNTRY_CHOICES = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
@@ -83,6 +103,9 @@ export default function ShareRouteScreen() {
   const [displayName, setDisplayName] = useState('');
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Set synchronously, before the checks and the serialising: a second tap
+  // lands before React has re-rendered the disabled button.
+  const submittingRef = useRef(false);
   const [failure, setFailure] = useState<{ message: string; checks?: CommunityCheck[] } | null>(
     null,
   );
@@ -114,12 +137,19 @@ export default function ShareRouteScreen() {
     setForm((f) => ({ ...f, [key]: value }));
   }, []);
 
-  const debouncedName = useDebounced(form.name, CHECK_DEBOUNCE_MS);
-  const debouncedDescription = useDebounced(form.description, CHECK_DEBOUNCE_MS);
-  const checks = useMemo(() => {
-    if (!trail) return null;
-    return runCommunityChecks(trail, { name: debouncedName, description: debouncedDescription });
-  }, [trail, debouncedName, debouncedDescription]);
+  // The track checks walk every point: once per trail. The phone keeps no GPX,
+  // so no `gpxText` (the `speed` check has no timestamps to read).
+  const trackChecks = useMemo(
+    () => (trail ? runCommunityChecks(trail, PASSING_META) : null),
+    [trail],
+  );
+  const checks = useMemo(
+    () =>
+      trackChecks
+        ? withMetadata(trackChecks, { name: form.name, description: form.description })
+        : null,
+    [trackChecks, form.name, form.description],
+  );
 
   const errors = validateShareForm(form);
   const needsName = identityStatus !== 'registered';
@@ -128,25 +158,28 @@ export default function ShareRouteScreen() {
   const country = findCountry(form.country);
 
   const onSubmit = useCallback(async () => {
-    setShowErrors(true);
-    setFailure(null);
-    if (!trail || Object.keys(validateShareForm(form)).length > 0 || displayNameError) return;
-    const local = runCommunityChecks(trail, { name: form.name, description: form.description });
-    if (!local.ok) {
-      setFailure({ message: 'Fix the problems the checks found first.', checks: local.checks });
-      return;
-    }
-    const baseUrl = getBaseUrl();
-    if (!baseUrl) {
-      setFailure({ message: 'Sharing is not available in this build.' });
-      return;
-    }
-    if (JSON.stringify(trail).length > COMMUNITY_LIMITS.trailJsonMaxBytes) {
-      setFailure({ message: 'This route is too large to share.' });
-      return;
-    }
-    setSubmitting(true);
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
+      setShowErrors(true);
+      setFailure(null);
+      if (!trail || !trackChecks) return;
+      if (Object.keys(validateShareForm(form)).length > 0 || displayNameError) return;
+      const local = withMetadata(trackChecks, { name: form.name, description: form.description });
+      if (!local.ok) {
+        setFailure({ message: 'Fix the problems the checks found first.', checks: local.checks });
+        return;
+      }
+      const baseUrl = getBaseUrl();
+      if (!baseUrl) {
+        setFailure({ message: 'Sharing is not available in this build.' });
+        return;
+      }
+      if (utf8ByteLength(JSON.stringify(trail)) > COMMUNITY_LIMITS.trailJsonMaxBytes) {
+        setFailure({ message: 'This route is too large to share.' });
+        return;
+      }
+      setSubmitting(true);
       let active = session;
       if (!active) {
         const check = validateDisplayName(displayName);
@@ -162,9 +195,10 @@ export default function ShareRouteScreen() {
     } catch (err) {
       setFailure(shareFailure(err));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [trail, form, displayName, displayNameError, session, router]);
+  }, [trail, trackChecks, form, displayName, displayNameError, session, router]);
 
   if (trail === undefined) {
     return (
@@ -261,9 +295,12 @@ export default function ShareRouteScreen() {
         <View style={styles.field}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Region</Text>
           <ChoiceChips
-            choices={country.states.map((s) => ({ value: s.code, label: s.name }))}
-            selected={form.state}
-            onSelect={(code) => update('state', code)}
+            choices={[
+              ...country.states.map((s) => ({ value: s.code, label: s.name })),
+              { value: NO_STATE_CHOICE, label: 'Not specified / several' },
+            ]}
+            selected={form.state ?? NO_STATE_CHOICE}
+            onSelect={(code) => update('state', code === NO_STATE_CHOICE ? null : code)}
             accessibilityLabel="Region"
           />
           {fieldError(errors.state)}

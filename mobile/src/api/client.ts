@@ -65,6 +65,13 @@ export interface RequestConfig {
   fetchImpl?: FetchLike;
   /** Abort signal. */
   signal?: AbortSignal;
+  /**
+   * Fetch cache mode. `'no-store'` for reads whose answer decides something
+   * destructive or user-visible right now (the community list and its
+   * per-route probes): RN's fetch adds a cache-busting query parameter for it,
+   * so neither the OS HTTP cache nor an edge copy can answer with a stale body.
+   */
+  cache?: RequestCache;
 }
 
 export interface RequestOptions extends RequestConfig {
@@ -131,7 +138,7 @@ async function decodeResponse<T>(response: ResponseLike): Promise<T> {
  * and `ApiError` on any non-2xx response. Returns `undefined` for 204s.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions): Promise<T> {
-  const { baseUrl, token, fetchImpl, signal, method = 'GET', body } = options;
+  const { baseUrl, token, fetchImpl, signal, cache, method = 'GET', body } = options;
   const doFetch = fetchImpl ?? fetch;
 
   const headers: Record<string, string> = { Accept: 'application/json' };
@@ -145,6 +152,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions): Prom
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
+      ...(cache ? { cache } : {}),
     });
   } catch (cause) {
     throw new NetworkError(`Request to ${path} failed to reach the server`, cause);

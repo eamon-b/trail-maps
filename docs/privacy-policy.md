@@ -40,16 +40,18 @@ networks, or third-party trackers.
 **Community routes (optional).** If you choose to share an imported route
 with the community, we store the processed route (track, waypoints, distances
 and elevation), the name, description, credit line and country/region you
-enter, your display name at the time, and the original GPX file you imported.
-The route, its text and your display name are published publicly under
+enter, your display name at the time, and, if you include it, the original GPX
+file you imported (on the website, untick "Include the original GPX file" to
+leave it out). The route, its text and your display name are published publicly under
 [CC0](https://creativecommons.org/publicdomain/zero/1.0/) (public domain) on
 the website and in the app; the original GPX file is kept privately, for
 re-processing only, under an unguessable address that is never linked or
 shown publicly. If a route is hidden by moderation, its published copy is
 taken down until it is restored. Sharing is opt-in: an import
-you do not share never leaves your device. A GPX recording can contain
-timestamps of when you walked — share only routes you are happy to make
-public.
+you do not share never leaves your device. The published route carries no
+recording times: timestamps are dropped from the processed route before it is
+stored or published. A raw GPX file can still hold them, along with your name
+or device, which is why it is kept only privately and is yours to leave out.
 
 **Automated review of community routes.** Each shared route is checked
 automatically, and its text, region, summary statistics, waypoint names, a
@@ -66,7 +68,7 @@ not to the public.
   routes, plans, and a cached copy of comments (so the app works offline).
 - **On our servers:** posted comments, water reports, photos, display names,
   moderation reports, and any community routes you share (with their original
-  GPX file). These are stored with Cloudflare (D1 database and R2
+  GPX file, when you include it). These are stored with Cloudflare (D1 database and R2
   object storage). We request the Oceania location hint for the database;
   Cloudflare treats this as best-effort, so data may be stored or replicated
   in other regions (see `docs/data-residency.md` for the verification

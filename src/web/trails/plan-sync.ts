@@ -44,6 +44,7 @@ import {
   type WebSession,
 } from '../api/session';
 import { fetchMyPlan, putPlan, sharePlan, unsharePlan } from '../api/plans';
+import { linkErrorMessage } from '../link-browser';
 
 /** What the sync arm needs of the page it is bolted to. */
 export interface PlanSyncHost {
@@ -605,19 +606,7 @@ export function initPlanSync(host: PlanSyncHost): PlanSyncController {
       // so this is where it first goes up.
       await pull();
     } catch (err) {
-      if (err instanceof NetworkError) {
-        setLinkError('Could not reach the server. Check your connection and try again.');
-      } else if (err instanceof ApiError && err.code === 'code_invalid') {
-        setLinkError('That code is not valid or has expired. Ask your phone for a new one.');
-      } else if (err instanceof ApiError && err.code === 'primary_token_required') {
-        setLinkError('Only your phone can do that. Open Tracknotes on your phone and try there.');
-      } else if (err instanceof ApiError && err.code === 'rate_limited') {
-        setLinkError('Too many attempts. Wait a few minutes and try again.');
-      } else if (err instanceof ApiError) {
-        setLinkError(`Could not link this browser (${err.code}).`);
-      } else {
-        setLinkError('Could not link this browser.');
-      }
+      setLinkError(linkErrorMessage(err));
     } finally {
       if (submitBtn) submitBtn.disabled = false;
     }

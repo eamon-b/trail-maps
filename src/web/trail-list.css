@@ -144,9 +144,12 @@
   transform: rotate(45deg);
 }
 
+/* A span, not a heading: <summary> is a button to assistive tech, which
+   would swallow a heading's role inside it. */
 .country-heading {
-  margin: 0;
   font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .group-count {

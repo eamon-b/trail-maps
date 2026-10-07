@@ -388,6 +388,21 @@ function refreshPois(): void {
 }
 
 /**
+ * Rename the trail the viewer holds, in both directions. The community route
+ * page calls it after its owner edits the name, so the CSV and GPX exports
+ * (which read `config.name` when clicked) carry the new one. A no-op before
+ * `initTrailViewer`.
+ */
+export function setTrailName(name: string): void {
+  for (const trail of [trailState.originalTrail, trailState.reversedTrail]) {
+    if (!trail) continue;
+    trail.config.name = name;
+    const config = trail.config as { shortName?: string };
+    if (config.shortName !== undefined) config.shortName = name;
+  }
+}
+
+/**
  * Replace the trail's points of interest and re-render them.
  *
  * The hook for in-browser enrichment on the imported-trail page: run the

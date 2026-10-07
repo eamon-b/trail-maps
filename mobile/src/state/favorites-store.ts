@@ -17,6 +17,8 @@ export interface FavoritesState {
   hydrate: (trailId: string) => Promise<void>;
   toggle: (trailId: string, waypointId: string) => Promise<boolean>;
   isFavorite: (trailId: string, waypointId: string) => boolean;
+  /** Drop a trail's cached favourites (its rows were deleted with the guide). */
+  forgetTrail: (trailId: string) => void;
 }
 
 export const useFavoritesStore = create<FavoritesState>((set, get) => ({
@@ -43,6 +45,14 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
 
   isFavorite: (trailId: string, waypointId: string) =>
     (get().byTrail[trailId] ?? []).includes(waypointId),
+
+  forgetTrail: (trailId: string) =>
+    set((s) => {
+      if (!(trailId in s.byTrail)) return s;
+      const byTrail = { ...s.byTrail };
+      delete byTrail[trailId];
+      return { byTrail };
+    }),
 }));
 
 /** Reactive selector for a single waypoint's favorite state. */

@@ -20,14 +20,12 @@
  * names are user-supplied.
  */
 
-import type { CommunityRouteStatus, CommunityRouteSummary } from '@lib/community-types';
+import type { CommunityRouteSummary } from '@lib/community-types';
 import {
   LENGTH_BANDS,
-  countryName,
   groupTrails,
   matchesFilter,
   sortTrails,
-  stateName,
   type GroupableTrail,
   type LengthBand,
   type TrailFilter,
@@ -35,6 +33,7 @@ import {
   type TrailSort,
 } from '@lib/trail-regions';
 import { communityRouteHref, listCommunityRoutes } from './api/community';
+import { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION, placeLabel } from './community-labels';
 import { isIndexedDbAvailable, listTrailSummaries, type ImportedTrailSummary } from './imported-trails-db';
 import { escapeHtml, formatKm } from './web-utils';
 
@@ -171,11 +170,16 @@ export function lengthText(km: number): string {
   return `${Number(km.toFixed(1)).toString()} km`;
 }
 
-/** "Victoria, New South Wales, ACT" for a trail; the country when it has no states. */
-export function placeText(country: string | null | undefined, states: readonly string[] | null | undefined, withCountry = false): string {
-  const names = (states ?? []).map((s) => stateName(country, s) ?? s);
-  if (names.length === 0) return country ? countryName(country) : '';
-  return withCountry && country ? `${names.join(', ')}, ${countryName(country)}` : names.join(', ');
+/**
+ * "Victoria, New South Wales, ACT" for a trail; the country when it has no
+ * states. The country is left off inside a country group, whose heading says it.
+ */
+export function placeText(
+  country: string | null | undefined,
+  states: readonly string[] | null | undefined,
+  withCountry = false
+): string {
+  return placeLabel(country, states, withCountry);
 }
 
 export function renderCuratedCard(trail: CuratedTrailEntry, withCountry = false): string {
@@ -190,18 +194,14 @@ export function renderCuratedCard(trail: CuratedTrailEntry, withCountry = false)
     </a>`;
 }
 
-const STATUS_BADGES: Partial<Record<CommunityRouteStatus, { label: string; title: string }>> = {
-  verified: { label: 'Verified', title: 'Checked and approved by a Tracknotes admin.' },
-  unverified: {
-    label: 'Unverified',
-    title: 'Shared by a hiker and passed automatic checks; not yet checked by a person.',
-  },
-};
-
 export function renderCommunityCard(route: CommunityRouteSummary): string {
-  const badge = STATUS_BADGES[route.status] ?? STATUS_BADGES.unverified!;
+  // The public list holds only live routes; anything else reads as unverified.
+  const verified = route.status === 'verified';
+  const badge = verified
+    ? { label: 'Verified', title: VERIFIED_EXPLANATION }
+    : { label: 'Unverified', title: UNVERIFIED_EXPLANATION };
   const place = placeText(route.country, route.state ? [route.state] : []);
-  const statusClass = route.status === 'verified' ? 'verified' : 'unverified';
+  const statusClass = verified ? 'verified' : 'unverified';
   return `
     <a href="./${escapeHtml(communityRouteHref(route.id))}" class="trail-card list-card">
       <span class="list-card-title">${escapeHtml(route.name)}<span class="list-badge list-badge-${statusClass}" title="${escapeHtml(badge.title)}">${escapeHtml(badge.label)}</span></span>
@@ -256,7 +256,7 @@ export function renderGroups<T>(
         .join('');
       return `
       <details class="country-group" data-group="${escapeHtml(key)}"${collapsed.has(key) ? '' : ' open'}>
-        <summary><h3 class="country-heading">${escapeHtml(country.name)} <span class="group-count">${country.count}</span></h3></summary>
+        <summary><span class="country-heading">${escapeHtml(country.name)}</span> <span class="group-count">${country.count}</span></summary>
         <div class="country-body">${states}</div>
       </details>`;
     })
@@ -340,9 +340,33 @@ type Load<T> = { status: 'loading' } | { status: 'ready'; data: T } | { status: 
 
 export interface LandingDeps {
   fetchCurated?: () => Promise<CuratedTrailEntry[]>;
-  fetchCommunity?: () => Promise<CommunityRouteSummary[] | null>;
+  /** Given a signal that aborts at `communityTimeoutMs`. */
+  fetchCommunity?: (signal: AbortSignal) => Promise<CommunityRouteSummary[] | null>;
   fetchImported?: () => Promise<ImportedTrailSummary[]>;
   storage?: Storage | null;
+  /** How long the community list may take before the tier gives up. */
+  communityTimeoutMs?: number;
+}
+
+/** The community list's deadline: past it the tier shows its error note. */
+export const COMMUNITY_TIMEOUT_MS = 10_000;
+
+/**
+ * `load(signal)`, rejected once `ms` have passed. The signal aborts the
+ * request itself; the race makes sure the page stops waiting even for a
+ * loader that ignores it, so "No trails match" is never held back by a
+ * stalled API.
+ */
+export function withDeadline<T>(load: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Timed out after ${ms} ms`));
+    }, ms);
+  });
+  return Promise.race([load(controller.signal), deadline]).finally(() => clearTimeout(timer));
 }
 
 async function fetchCuratedDefault(): Promise<CuratedTrailEntry[]> {
@@ -517,7 +541,8 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
   render();
 
   const fetchCurated = deps.fetchCurated ?? fetchCuratedDefault;
-  const fetchCommunity = deps.fetchCommunity ?? (() => listCommunityRoutes());
+  const fetchCommunity = deps.fetchCommunity ?? ((signal: AbortSignal) => listCommunityRoutes({}, { signal }));
+  const communityTimeoutMs = deps.communityTimeoutMs ?? COMMUNITY_TIMEOUT_MS;
   const fetchImported = deps.fetchImported ?? fetchImportedDefault;
 
   await Promise.all([
@@ -525,7 +550,7 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
       (data) => (curated = { status: 'ready', data }),
       () => (curated = { status: 'error' })
     ).then(render),
-    fetchCommunity().then(
+    withDeadline(fetchCommunity, communityTimeoutMs).then(
       (data) => (community = { status: 'ready', data }),
       () => (community = { status: 'error' })
     ).then(render),

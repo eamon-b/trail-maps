@@ -5,7 +5,8 @@
  * Same shape as `api/plans.ts`: one function per route, no state, the same
  * `ApiContext`. The public list is the only route that never sends a token;
  * the detail sends one when it has it (an owner sees their own hidden route and
- * `isOwner`), and every write requires the device's primary token.
+ * `isOwner`), and every write requires a user token — the phone's primary one
+ * or a browser's linked one, which the worker accepts alike.
  */
 
 import type {
@@ -22,6 +23,8 @@ export interface ApiContext {
   baseUrl: string;
   fetchImpl?: FetchLike;
   token?: string;
+  /** Fetch cache mode for reads (`'no-store'` when the answer decides a deletion). */
+  cache?: RequestCache;
 }
 
 export interface ListCommunityParams {
@@ -34,7 +37,11 @@ function routePath(id: string): string {
   return `/v1/community/routes/${encodeURIComponent(id)}`;
 }
 
-/** The public list (`unverified` + `verified`). Never sends a token. */
+/**
+ * The public list (`unverified` + `verified`). Never sends a token, and is
+ * always fetched `no-store`: the worker sends `max-age=60`, and a stale list is
+ * what marks downloaded routes as taken down.
+ */
 export async function listCommunityRoutes(
   ctx: ApiContext,
   params: ListCommunityParams = {},
@@ -47,6 +54,7 @@ export async function listCommunityRoutes(
   return apiRequest<CommunityListResponse>(`/v1/community/routes${query ? `?${query}` : ''}`, {
     baseUrl: ctx.baseUrl,
     fetchImpl: ctx.fetchImpl,
+    cache: ctx.cache ?? 'no-store',
   });
 }
 
@@ -59,6 +67,7 @@ export async function getCommunityRoute(
     baseUrl: ctx.baseUrl,
     fetchImpl: ctx.fetchImpl,
     token: ctx.token,
+    ...(ctx.cache ? { cache: ctx.cache } : {}),
   });
 }
 

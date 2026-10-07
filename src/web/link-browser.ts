@@ -11,6 +11,7 @@
 import { ApiError, NetworkError } from './api/client';
 import {
   LINK_CODE_LENGTH,
+  SessionStorageError,
   linkDevice,
   normaliseLinkCode,
   thisBrowserLabel,
@@ -19,6 +20,9 @@ import {
 
 /** What to tell the reader when a link attempt fails. */
 export function linkErrorMessage(err: unknown): string {
+  if (err instanceof SessionStorageError) {
+    return `${err.message}. Allow site data for this site (or leave private browsing) and try again with a new code.`;
+  }
   if (err instanceof NetworkError) {
     return 'Could not reach the server. Check your connection and try again.';
   }
@@ -41,7 +45,8 @@ let formCounter = 0;
 
 /**
  * Render the link form into `container` (replacing its content). `onLinked`
- * runs once the code has been exchanged and the session stored.
+ * runs once the code has been exchanged and the session stored, with that
+ * session: callers use it rather than reading storage back.
  *
  * @param intro  One sentence saying why linking is needed here (plain text).
  */

@@ -3,9 +3,11 @@
  *
  * Tile packs are built server-side, one per *bundled* trail (a 20 km corridor
  * around its track, see `scripts/build-tiles.ts`), and downloaded into
- * `{documentDir}/tiles/{trailId}/`. A user-imported GPX has no pack of its own
- * and never will, so the app does the next best thing: if the import lies inside
- * a bundled trail's coverage, it reuses *that* trail's pack.
+ * `{documentDir}/tiles/{trailId}/`. A user-imported GPX — and a community route
+ * (`c_…`), which is someone else's import — has no pack of its own and never
+ * will, so the app does the next best thing: if the import or community route
+ * lies inside a bundled trail's coverage, it reuses *that* trail's pack. (Below,
+ * "import" covers both: both are the local-only guides `isServerKnown` refuses.)
  *
  * The reuse is an alias, not a copy. Directory names stay equal to the bundled
  * trail id (`tileManager.getDownloadedTrails()` enumerates dir names, so a

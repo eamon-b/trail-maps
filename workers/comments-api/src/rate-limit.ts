@@ -48,6 +48,13 @@ export const RATE_BUCKETS = {
     limit: COMMUNITY_LIMITS.submitAttemptsPerDay,
     windowMs: 24 * 60 * 60 * 1000,
   },
+  /**
+   * Owner edits of community routes per user per day. Each one rewrites the
+   * route's private and public JSON in R2 and re-runs the AI review, so it is
+   * bounded like a submission; a PATCH that changes nothing is free.
+   */
+  communityEdit: { bucket: 'community_edit', limit: 20, windowMs: 24 * 60 * 60 * 1000 },
+
 } as const;
 
 export type RateBucket = (typeof RATE_BUCKETS)[keyof typeof RATE_BUCKETS];

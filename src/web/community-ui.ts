@@ -8,12 +8,11 @@
 
 import type { CommunityAiReview, CommunityCheck, CommunityRouteStatus } from '@lib/community-types';
 import { hashString } from '@lib/gpx-import';
-import { COUNTRIES, countryName, findCountry, stateName } from '@lib/trail-regions';
+import { COUNTRIES, findCountry } from '@lib/trail-regions';
+import { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION } from './community-labels';
 import { escapeHtml } from './web-utils';
 
-export const UNVERIFIED_EXPLANATION =
-  'Unverified: shared by a hiker and passed automatic checks; not yet checked by a person.';
-export const VERIFIED_EXPLANATION = 'Verified: checked and approved by a Tracknotes admin.';
+export { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION, placeLabel, regionLabel } from './community-labels';
 
 const STATUS_LABELS: Record<CommunityRouteStatus, string> = {
   unverified: 'Unverified',
@@ -34,13 +33,6 @@ export function statusBadgeHtml(status: CommunityRouteStatus): string {
           : 'Removed.';
   const label = STATUS_LABELS[status] ?? String(status);
   return `<span class="community-badge community-badge-${escapeHtml(status)}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`;
-}
-
-/** "Victoria, Australia", "Japan", or the raw code for an unlisted country. */
-export function regionLabel(country: string | null | undefined, state: string | null | undefined): string {
-  const c = countryName(country);
-  const s = stateName(country, state);
-  return s ? `${s}, ${c}` : c;
 }
 
 const LEVEL_LABELS: Record<CommunityCheck['level'], string> = {

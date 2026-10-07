@@ -108,7 +108,7 @@ adb reverse tcp:8787 tcp:8787   # after
 | --- | --- | --- |
 | `app-launch.yaml` | Launch → "My Guides" renders. | **Green** — 2026-08-19, Pixel 7 emulator |
 | `plan-screen.yaml` | Guide → Plan: inputs card, summary, day splits, water carries. | **Green** — 2026-08-19 |
-| `guide-list.yaml` | My Guides lists all six bundled trails, badges read "Not downloaded", list scrolls. | **Green** — 2026-08-19 |
+| `guide-list.yaml` | My Guides lists the bundled trails in their sections, badges read "Not downloaded", list scrolls. | **Green** — 2026-08-19 |
 | `view-map.yaml` | Open a guide → map pane chrome (status pill, map key, FABs) mounts and survives pans + recenter. | **Green** — 2026-08-19 |
 | `toggle-views.yaml` | Map → Elevation → List segmented switching, plus the List filter chips. | **Green** — 2026-08-19 |
 | `waypoint-detail.yaml` | List → waypoint row → detail: name, stats, favorite round-trip, comments area. | **Green** — 2026-08-19 |
@@ -136,8 +136,13 @@ themselves are unchanged, but they have not been re-run against it yet.
 - Waypoint rows are buttons labelled `Open <waypoint name>`. Cape to Cape's
   km-0 waypoint, "Cape Leeuwin Lighthouse", is always the first row, so flows
   use it and never have to scroll the datasheet.
-- Flows prefer Cape to Cape (127 km, the smallest bundled trail) so trail load
-  and profile work stay fast.
+- Flows prefer Cape to Cape (127 km, one of the smallest bundled trails) so
+  trail load and profile work stay fast.
+- My Guides is sectioned (`features/guide/guide-sections.ts`): Hiking now, then
+  one section per country (Australia first, grouped by state in
+  `@lib/trail-regions` order, then by name), then Community, then Imported.
+  Cape to Cape (WA) is below the fold on a fresh install, so every flow
+  `scrollUntilVisible`s to it before tapping it.
 
 ## Known caveats
 

@@ -157,3 +157,119 @@ describe('community-route.html', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+describe('community-route.html: owner, report and the no-track view', () => {
+  const SESSION = { userId: 'u1', token: 'tok', displayName: 'Robin', expiresAt: null };
+
+  /** Route requests by method: GET detail, PATCH (echoing the new text), report, trail. */
+  function stubApi(detailBody: object, trailStatus = 200): Array<{ url: string; init: RequestInit }> {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit = {}) => {
+        calls.push({ url, init });
+        let status = 200;
+        let body: unknown;
+        if (!url.startsWith('https://api.example.test')) {
+          status = trailStatus;
+          body = trailStatus === 200 ? trail : { error: 'gone' };
+        } else if (init.method === 'PATCH') {
+          body = { ...detailBody, ...JSON.parse(String(init.body)) };
+        } else if (init.method === 'POST') {
+          body = { ok: true };
+        } else {
+          body = detailBody;
+        }
+        return { ok: status < 300, status, statusText: '', text: async () => JSON.stringify(body) };
+      }),
+    );
+    return calls;
+  }
+
+  it('hides Report from the owner, and an edit renames Save, the export and the title', async () => {
+    window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+    stubApi({ ...detail, isOwner: true, review: { status: 'skipped' } });
+    const blobs: Blob[] = [];
+    URL.createObjectURL = (blob: Blob) => {
+      blobs.push(blob);
+      return 'blob:x';
+    };
+    URL.revokeObjectURL = () => {};
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('report-btn').hidden).toBe(true);
+    expect($('edit-btn').hidden).toBe(false);
+
+    $('edit-btn').click();
+    (document.getElementById('edit-name') as HTMLInputElement).value = 'Cape Walk Renamed';
+    $('edit-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await waitFor(() => $('trail-title').textContent === 'Cape Walk Renamed');
+    expect($('trail-title').textContent).toBe('Cape Walk Renamed');
+    expect(document.title).toContain('Cape Walk Renamed');
+    expect($('edit-form').hidden).toBe(true);
+
+    $('save-btn').click();
+    await waitFor(() => ($('save-note').textContent ?? '').includes('Saved'));
+    const saved = await getTrail(localCopyId(ID));
+    expect(saved?.name).toBe('Cape Walk Renamed');
+    expect(saved?.trail.config.name).toBe('Cape Walk Renamed');
+
+    $('export-tracknotes-btn').click();
+    expect(blobs).toHaveLength(1);
+    const text = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(blobs[0]);
+    });
+    const handoff = JSON.parse(text);
+    expect(JSON.stringify(handoff)).toContain('Cape Walk Renamed');
+    expect(JSON.stringify(handoff)).not.toContain('Cape <b>to</b> Cape');
+  });
+
+  it('sends a report with the stored session and says thanks', async () => {
+    window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+    const calls = stubApi(detail);
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('report-btn').hidden).toBe(false);
+    $('report-btn').click();
+    expect($('report-form').hidden).toBe(false);
+    $('report-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await waitFor(() => !$('report-done').hidden);
+    const report = calls.find(c => c.url.endsWith('/report'))!;
+    expect((report.init.headers as Record<string, string>).Authorization).toBe('Bearer tok');
+    expect($('report-done').hidden).toBe(false);
+  });
+
+  it('keeps Report but drops the direction toggle when only the download failed', async () => {
+    stubApi(detail, 404);
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('trail-body').hidden).toBe(true);
+    expect($('direction-meta').hidden).toBe(true);
+    expect($('save-btn').hidden).toBe(true);
+    expect($('report-btn').hidden).toBe(false);
+    $('report-btn').click();
+    // Unlinked: the link form, not the report form.
+    expect($('report-form').hidden).toBe(true);
+    expect($('report-link').textContent).toContain('Link this browser');
+  });
+
+  it('offers no Report or direction toggle on a hidden route', async () => {
+    window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+    stubApi({ ...detail, status: 'hidden', trailUrl: null, isOwner: true, review: { status: 'skipped' } });
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('report-btn').hidden).toBe(true);
+    expect($('direction-meta').hidden).toBe(true);
+  });
+});

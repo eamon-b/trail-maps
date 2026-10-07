@@ -14,7 +14,7 @@ import {
   type CommunityCheck,
   type CommunitySubmitRequest,
 } from '@lib/community-types';
-import { findCountry, isValidCountry, isValidState } from '@lib/trail-regions';
+import { isValidCountry, isValidState } from '@lib/trail-regions';
 import { failedChecks } from '../../api/community';
 import { ApiError } from '../../api/client';
 import { apiErrorMessage } from '../../api/error-message';
@@ -29,7 +29,11 @@ export interface ShareForm {
   credit: string;
   /** ISO 3166-1 alpha-2, or null until chosen. */
   country: string | null;
-  /** A state code of the chosen country, or null. */
+  /**
+   * A state code of the chosen country, or null: "not specified / several",
+   * which the web form and the worker accept too (the route is listed under
+   * the country alone).
+   */
   state: string | null;
   rightsConfirmed: boolean;
 }
@@ -69,8 +73,6 @@ export function validateShareForm(form: ShareForm): ShareFormErrors {
     errors.country = 'Choose the country the route is in.';
   } else if (!isValidState(form.country, form.state)) {
     errors.state = 'Choose a region of that country.';
-  } else if (!form.state && (findCountry(form.country)?.states.length ?? 0) > 0) {
-    errors.state = 'Choose the region the route is in.';
   }
   if (!form.rightsConfirmed) {
     errors.rights = 'Tick the confirmation to share this route.';
@@ -96,10 +98,49 @@ export function buildSubmitRequest(form: ShareForm, trail: unknown): CommunitySu
   };
 }
 
+/**
+ * UTF-8 size of a string in bytes — what the worker's 4 MB trail cap counts,
+ * where `string.length` counts UTF-16 code units and under-reports every
+ * non-ASCII name and description. `TextEncoder` is built into Hermes (RN 0.74+)
+ * and Node; the hand count is the fallback for a runtime without it.
+ */
+export function utf8ByteLength(text: string): number {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(text).length;
+  let bytes = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 0x80) bytes += 1;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length) {
+      const next = text.charCodeAt(i + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        bytes += 4;
+        i++;
+      } else {
+        bytes += 3;
+      }
+    } else bytes += 3;
+  }
+  return bytes;
+}
+
 export interface ShareFailure {
   message: string;
   /** The server's checks, on a 422. */
   checks?: CommunityCheck[];
+}
+
+/** The picker's value for "Not specified / several" (the form holds null). */
+export const NO_STATE_CHOICE = '';
+
+/**
+ * The sentence the server put in its error envelope, if any. The worker words
+ * its limits itself — 30 share attempts a day versus 10 published routes a
+ * day, and the duplicate — so its text says which one was hit.
+ */
+function serverMessage(err: ApiError): string | null {
+  const message = (err.body as { error?: { message?: unknown } } | undefined)?.error?.message;
+  return typeof message === 'string' && message.trim().length > 0 ? message.trim() : null;
 }
 
 /** User-facing copy for a failed submit. */
@@ -115,12 +156,15 @@ export function shareFailure(err: unknown): ShareFailure {
     if (err.status === 409) {
       return {
         message:
+          serverMessage(err) ??
           'This route has already been shared — the same track was shared before.',
       };
     }
     if (err.status === 429) {
       return {
-        message: `You have shared ${COMMUNITY_LIMITS.submitsPerDay} routes today, the daily limit. Try again tomorrow.`,
+        message:
+          serverMessage(err) ??
+          'You have reached today’s limit for sharing routes. Try again tomorrow.',
       };
     }
     if (err.status === 413) {

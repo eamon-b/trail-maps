@@ -14,7 +14,10 @@
  * require() map, so it never renders a spinner frame. A trail only the R2
  * catalog knows about is downloaded the first time it is opened, behind the
  * same spinner, with a retry when that fails — and so is a community route
- * (`c_…`), from its public URL. Crucially the spinner is
+ * (`c_…`), from its public URL. A community route the server says is no longer
+ * shared (a 404) gets its own state, "This route is no longer shared", with no
+ * retry — trying again cannot bring it back — and the community list is
+ * refreshed at once so My Guides stops offering it. Crucially the spinner is
  * rendered **instead of `children`**: the context value is therefore never
  * partially loaded, `trail` stays non-null, and no consumer
  * (`useGuidePosition`, the panes, the plan screen) has to learn about loading.
@@ -31,7 +34,11 @@ import { radii, spacing, typography } from '../../tokens';
 import { getTrailJson, loadTrail, type TrailJson } from '../../services/trail-loader';
 import { ensureTrailDownloaded } from '../../services/trail-data-updates';
 import { isCatalogTrailId } from '../../services/trail-catalog';
-import { ensureCommunityRouteDownloaded } from '../../services/community-routes';
+import {
+  CommunityRouteTakenDownError,
+  ensureCommunityRouteDownloaded,
+  refreshCommunityRoutes,
+} from '../../services/community-routes';
 import { isCommunityRouteId } from '@lib/community-types';
 import { selectDirection, useSettingsStore, type Direction } from '../../state/settings-store';
 import { resolveGuideTrail } from './guide-trail';
@@ -61,6 +68,8 @@ export function GuideProvider({
     id: string;
     trail: TrailJson | null;
     error?: string;
+    /** A community route the server says is no longer shared. */
+    takenDown?: boolean;
   } | null>(null);
   const [attempt, setAttempt] = useState(0);
   // Tagged with its trail id, like `loaded`: a download cancelled by a route
@@ -93,6 +102,12 @@ export function GuideProvider({
         if (!cancelled) setLoaded({ id: trailId, trail });
       })
       .catch((err: unknown) => {
+        if (err instanceof CommunityRouteTakenDownError) {
+          // Past the 30-minute throttle: the cached list still offers it.
+          void refreshCommunityRoutes({ force: true });
+          if (!cancelled) setLoaded({ id: trailId, trail: null, takenDown: true });
+          return;
+        }
         // Only the download can throw here (usually: offline); it gets a retry.
         if (!cancelled) {
           setLoaded({
@@ -127,6 +142,7 @@ export function GuideProvider({
   }, [raw, trailId, direction]);
 
   if (raw === undefined) return <GuideLoading downloading={downloading} />;
+  if (!value && current?.takenDown) return <GuideTakenDown />;
   if (!value && current?.error) return <GuideDownloadFailed message={current.error} onRetry={retry} />;
   if (!value) return <GuideNotFound trailId={trailId} />;
 
@@ -170,6 +186,20 @@ function GuideDownloadFailed({ message, onRetry }: { message: string; onRetry: (
       >
         <Text style={[styles.retryLabel, { color: colors.accentText }]}>Try again</Text>
       </Pressable>
+    </View>
+  );
+}
+
+function GuideTakenDown() {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.centered, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>
+        This route is no longer shared
+      </Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        The hiker who shared it removed it, or it was hidden from the community list.
+      </Text>
     </View>
   );
 }

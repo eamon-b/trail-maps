@@ -19,6 +19,18 @@ import { apiRequest, getApiBase, type FetchLike } from './client';
 
 const SESSION_KEY = 'tracknotes.webSession';
 
+/**
+ * Linking worked on the server but this browser could not keep the token
+ * (site storage blocked or full). Thrown by `linkDevice` so the page can say
+ * so instead of re-rendering the link form with no explanation.
+ */
+export class SessionStorageError extends Error {
+  constructor(message = 'This browser blocks site storage, so the link cannot be kept') {
+    super(message);
+    this.name = 'SessionStorageError';
+  }
+}
+
 /** The persisted linked-browser identity. */
 export interface WebSession {
   userId: string;
@@ -154,6 +166,12 @@ export function thisBrowserLabel(): string {
  * Throws `ApiError` (`code_invalid` for an unknown, used or expired code;
  * `rate_limited` after too many attempts from one address) or `NetworkError`.
  * Nothing is persisted unless the exchange succeeded.
+ *
+ * When storage refuses the session the browser could not use the link past
+ * this page, so the freshly minted token is revoked (best effort, so the
+ * phone's device list does not gain a browser that is not linked) and a
+ * `SessionStorageError` is thrown. Callers use the returned session rather
+ * than reading storage back.
  */
 export async function linkDevice(
   code: string,
@@ -174,7 +192,10 @@ export async function linkDevice(
     displayName: response.displayName,
     expiresAt: response.expiresAt ?? null,
   };
-  saveSession(session);
+  if (!saveSession(session)) {
+    await unlinkThisBrowser(session, deps);
+    throw new SessionStorageError();
+  }
   return session;
 }
 

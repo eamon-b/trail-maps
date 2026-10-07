@@ -18,6 +18,7 @@ import {
   loadSession,
   normaliseLinkCode,
   saveSession,
+  SessionStorageError,
   unlinkThisBrowser,
   type WebSession,
 } from './session';
@@ -171,6 +172,32 @@ describe('linking this browser', () => {
       status: 404,
       code: 'code_invalid',
     });
+    expect(loadSession()).toBeNull();
+  });
+
+  it('throws when storage refuses the session, and revokes the token it was given', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    try {
+      const { impl, calls } = mockFetch([
+        { status: 201, body: { userId: 'u9', token: 'tok_linked', displayName: 'Robin', expiresAt: null } },
+        { status: 200, body: { devices: [{ id: 'd2', current: true }] } },
+        { status: 204 },
+      ]);
+      const attempt = linkDevice('AB2D3F4G', 'Chrome', { fetchImpl: impl });
+      await expect(attempt).rejects.toBeInstanceOf(SessionStorageError);
+      await expect(attempt).rejects.toThrow('This browser blocks site storage, so the link cannot be kept');
+      // The minted token goes back rather than lingering in the phone's list.
+      expect(calls.map(c => `${c.init.method ?? 'GET'} ${c.url}`)).toEqual([
+        'POST https://api.example.test/v1/devices/link',
+        'GET https://api.example.test/v1/me/devices',
+        'DELETE https://api.example.test/v1/me/devices/d2',
+      ]);
+      expect((calls[2].init.headers as Record<string, string>).Authorization).toBe('Bearer tok_linked');
+    } finally {
+      setItem.mockRestore();
+    }
     expect(loadSession()).toBeNull();
   });
 });

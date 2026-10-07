@@ -353,18 +353,23 @@ for everyone on the website and in the app, grouped by country and region.
   browser while you fill in the form and again on the server: the route must
   be a valid trail between 1 and 5,000 km with at least 20 points, its distances
   must add up, and the text must be the right length. Warnings — no elevation,
-  a large jump between points, speeds that look like a drive — don't stop you,
+  a large jump between points, speeds that look like a drive (read from the
+  GPX file's timestamps, so only when the file is included) — don't stop you,
   but are shown to reviewers. Any failure does, and the list says which.
 - **It is public domain.** You confirm that you recorded the track yourself or
   that it is openly licensed, and you release it under
   [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The route, its text
-  and your display name are public. The original GPX file is sent too, but is
-  kept privately for re-processing and is never published.
+  and your display name are public; recording times are not (they are dropped
+  from the processed route). The original GPX file is sent too unless you
+  untick **Include the original GPX file** — a raw file can carry your name,
+  device and recording times — and is kept privately for re-processing, never
+  published. A file over 5 MB is always left out.
 - **It is listed straight away as Unverified.** An automated review (Anthropic's
   Claude) reads the text and a summary of the route in the background, and a
   person marks it **Verified** after checking it. Until then the route carries an
-  Unverified label. Anyone can **Report** a route; one that collects several
-  reports is hidden until an admin looks.
+  Unverified label. Anyone with a linked browser (or the app) can **Report** a
+  route, except its owner; one that collects several reports is hidden until
+  an admin looks.
 - **You stay in charge of it.** The route's page lets you edit its name,
   description, credit and region (an edit to a Verified route returns it to
   Unverified), or delete it. To replace the track itself, share the new file and

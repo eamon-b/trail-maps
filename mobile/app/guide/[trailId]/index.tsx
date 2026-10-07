@@ -3,7 +3,8 @@
  * The GuideProvider (in _layout) supplies the loaded, direction-applied trail.
  *
  * A community route gets a one-line status banner above the panes (Verified /
- * Unverified and what that means), tapping through to its About screen.
+ * Unverified, or "No longer shared" once the server has taken it down, and
+ * what that means), tapping through to its About screen.
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -35,17 +36,23 @@ function CommunityBanner({ trailId }: { trailId: string }) {
   const router = useRouter();
   // Re-read when the cached list changes (the About screen refreshes the row).
   useTrailDataStore((s) => s.revision);
-  const status = getCommunityRouteInfo(trailId)?.status ?? 'unverified';
+  const info = getCommunityRouteInfo(trailId);
+  const status = info?.status ?? 'unverified';
+  const takenDown = info?.takenDown === true;
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/guide/[trailId]/community', params: { trailId } })}
       accessibilityRole="button"
-      accessibilityHint="Opens details, reporting and the route's licence"
+      accessibilityHint={
+        takenDown
+          ? 'Opens details and the option to remove it from this phone'
+          : "Opens details, reporting and the route's licence"
+      }
       style={[styles.banner, { backgroundColor: colors.surface, borderColor: colors.border }]}
     >
-      <CommunityStatusPill status={status} />
+      <CommunityStatusPill status={status} takenDown={takenDown} />
       <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={2}>
-        {communityStatusExplanation(status)}
+        {communityStatusExplanation(status, takenDown)}
       </Text>
     </Pressable>
   );

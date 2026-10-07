@@ -115,6 +115,13 @@ const DEATTRIBUTE_ATTEMPTS = 3;
 const MAX_REPORT_NOTE = 500;
 
 const MAX_STATUS_NOTE = 500;
+/**
+ * The `status_note` each automatic hide writes. `toDetail` reads them back as
+ * the owner's `hiddenReason`; any other note on a hidden route (an admin's own
+ * text, or none) means an admin hid it, so an admin may not write these.
+ */
+export const REVIEW_HIDE_NOTE = 'Hidden by the automatic review';
+export const REPORTS_HIDE_NOTE = `Hidden after ${COMMUNITY_REPORTS_TO_HIDE} reports`;
 const REPORTS_PER_DAY = 20;
 const LIST_LIMIT = 1000;
 
@@ -225,6 +232,13 @@ interface ReportRow {
 
 type Viewer = 'public' | 'owner' | 'admin';
 
+/** What hid a route, from the note its hide wrote; never the note itself. */
+function hiddenReasonOf(note: string | null): NonNullable<CommunityRouteDetail['hiddenReason']> {
+  if (note === REVIEW_HIDE_NOTE) return 'review';
+  if (note === REPORTS_HIDE_NOTE) return 'reports';
+  return 'admin';
+}
+
 function toDetail(
   env: Env,
   row: CommunityRouteRow,
@@ -242,6 +256,7 @@ function toDetail(
   if (viewer === 'owner' || viewer === 'admin') {
     detail.review = reviewOf(row);
     detail.isOwner = isOwner;
+    if (row.status === 'hidden') detail.hiddenReason = hiddenReasonOf(row.status_note);
   }
   if (viewer === 'admin') {
     detail.reportCount = reports.length;
@@ -606,7 +621,7 @@ export async function reviewStoredRoute(env: Env, id: string, deps: ReviewDeps =
               `UPDATE community_routes
                   SET status = 'hidden', status_note = ?, updated_at = ?
                 WHERE id = ? AND status = 'unverified' AND updated_at = ?`
-            ).bind('Hidden by the automatic review', stampAfter(version), id, version),
+            ).bind(REVIEW_HIDE_NOTE, stampAfter(version), id, version),
           ]
         : []),
     ]);
@@ -1135,7 +1150,7 @@ export async function reportCommunityRoute(
                   AND r.created_at > community_routes.status_changed_at
                   AND (julianday(r.created_at) - julianday(u.created_at)) * 86400000.0 >= ?) >= ?`
     ).bind(
-      `Hidden after ${COMMUNITY_REPORTS_TO_HIDE} reports`,
+      REPORTS_HIDE_NOTE,
       stampAfter(row.updated_at),
       id,
       REPORTER_MIN_ACCOUNT_AGE_MS,
@@ -1229,6 +1244,10 @@ export async function adminSetCommunityStatus(
   let note: string | null = null;
   if (body.note !== undefined && body.note !== null) {
     note = cleanText(body.note, 'note', 0, MAX_STATUS_NOTE, true) || null;
+  }
+  // Those two notes tell the owner an automatic hide did it.
+  if (note === REVIEW_HIDE_NOTE || note === REPORTS_HIDE_NOTE) {
+    throw new HttpError(400, 'invalid_note', 'That note is reserved for automatic hides');
   }
   const row = await loadRoute(env, id);
   if (!row || row.status === 'removed') throw notFound();

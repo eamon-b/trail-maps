@@ -87,6 +87,9 @@ function ThemedStack() {
           }}
         />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        {/* Every route this account shared, hidden ones included (Settings,
+            and the share screen's "already shared" message). */}
+        <Stack.Screen name="my-shared-routes" options={{ title: 'My shared routes' }} />
         {/* Modal: review an imported GPX before it becomes a guide. */}
         <Stack.Screen
           name="import"

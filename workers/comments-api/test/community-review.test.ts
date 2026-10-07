@@ -19,7 +19,7 @@ import {
   runAiReview,
 } from '../src/community-review';
 import type { ReviewClient, ReviewInput } from '../src/community-review';
-import { reviewStoredRoute } from '../src/community';
+import { REVIEW_HIDE_NOTE, reviewStoredRoute } from '../src/community';
 import type { Env } from '../src/http';
 import type { CommunityAiReview, CommunityRouteDetail } from '../../../src/lib/community-types';
 
@@ -340,6 +340,7 @@ describe('reviewStoredRoute', () => {
     expect(row.status).toBe('hidden');
     expect(row.review_status).toBe('done');
     expect(row.status_note).toBe('Hidden by the automatic review');
+    expect(row.status_note).toBe(REVIEW_HIDE_NOTE);
     const review = JSON.parse(row.review_json!) as CommunityAiReview;
     expect(review.concerns).toEqual(['phone number in text']);
     // Its public copies are gone; the private copy stays for a restore.
@@ -349,6 +350,27 @@ describe('reviewStoredRoute', () => {
     expect(keys!.r2_key).toBeNull();
     expect((await env.PHOTOS.list({ prefix: `community/v1/${route.id}.` })).objects).toHaveLength(0);
     expect(await env.PHOTOS.get(keys!.private_key)).not.toBeNull();
+  });
+
+  it("tells the owner, and only the owner, that the review hid it", async () => {
+    const owner = await registerDevice();
+    const res = await submitRoute(owner, submitBody());
+    expect(res.status).toBe(201);
+    const route = (await res.json()) as CommunityRouteDetail;
+    await reviewStoredRoute(env as unknown as Env, route.id, {
+      client: verdict({ verdict: 'reject', confidence: 0.95, concerns: ['advert'] }),
+    });
+    const ownerRes = await SELF.fetch(url(`/v1/community/routes/${route.id}`), { headers: authHeaders(owner) });
+    const asOwner = (await ownerRes.json()) as CommunityRouteDetail;
+    expect(asOwner.status).toBe('hidden');
+    expect(asOwner.hiddenReason).toBe('review');
+    expect(asOwner).not.toHaveProperty('statusNote');
+    expect(asOwner.review?.summary).toBe('A day walk.');
+    const mine = (await (
+      await SELF.fetch(url('/v1/me/community/routes'), { headers: authHeaders(owner) })
+    ).json()) as { routes: CommunityRouteDetail[] };
+    expect(mine.routes.find((r) => r.id === route.id)?.hiddenReason).toBe('review');
+    expect((await SELF.fetch(url(`/v1/community/routes/${route.id}`))).status).toBe(404);
   });
 
   it('leaves the route up on an unsure reject or a needs_human', async () => {

@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import type { CommunityRouteSummary } from '@lib/community-types';
+import type { CommunityRouteDetail, CommunityRouteSummary } from '@lib/community-types';
+import { ApiError } from './api/client';
 import type { ImportedTrailSummary } from './imported-trails-db';
 import { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION } from './community-labels';
 import {
@@ -17,6 +18,7 @@ import {
   renderCurated,
   renderFeatured,
   renderImported,
+  renderMyRouteCard,
   saveFilterState,
   type CuratedTrailEntry,
   type ListFilterState,
@@ -51,6 +53,18 @@ function route(over: Partial<CommunityRouteSummary>): CommunityRouteSummary {
     trailUrl: 'https://example.test/x.json',
     md5: '0'.repeat(32),
     bytes: 10,
+    ...over,
+  };
+}
+
+function mine(over: Partial<CommunityRouteDetail>): CommunityRouteDetail {
+  return {
+    ...route({}),
+    description: 'A route',
+    credit: null,
+    licence: 'CC0-1.0',
+    checks: [],
+    isOwner: true,
     ...over,
   };
 }
@@ -235,6 +249,42 @@ describe('community cards', () => {
   });
 });
 
+describe('Shared by me cards', () => {
+  it('escapes the name, links by encoded id and shows the shared badge', () => {
+    const html = renderMyRouteCard(mine({ id: 'c_AB&CD', name: 'Mine <img src=x>', status: 'verified' }));
+    expect(html).toContain('Mine &lt;img src=x&gt;');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('href="./community-route.html?id=c_AB%26CD"');
+    expect(html).toContain('community-badge-verified');
+    expect(html).toContain('Victoria, Australia');
+    expect(html).not.toContain('my-route-reason');
+  });
+
+  it('says why a hidden route is hidden, with the review summary escaped', () => {
+    const html = renderMyRouteCard(
+      mine({
+        status: 'hidden',
+        hiddenReason: 'review',
+        trailUrl: null,
+        review: { status: 'done', verdict: 'reject', summary: 'Looks like <b>spam</b>\nline two' },
+      })
+    );
+    expect(html).toContain('community-badge-hidden');
+    expect(html).toContain('>Hidden<');
+    expect(html).toContain('Hidden by the automatic review');
+    expect(html).toContain('Looks like &lt;b&gt;spam&lt;/b&gt;<br>line two');
+  });
+
+  it('words each reason, and leaves an unknown one out', () => {
+    expect(renderMyRouteCard(mine({ status: 'hidden', hiddenReason: 'reports' }))).toContain(
+      'Hidden after reports from other users'
+    );
+    expect(renderMyRouteCard(mine({ status: 'hidden', hiddenReason: 'admin' }))).toContain('Hidden by a moderator');
+    const odd = renderMyRouteCard(mine({ status: 'hidden', hiddenReason: 'toString' as never }));
+    expect(odd).not.toContain('my-route-reason');
+  });
+});
+
 describe('renderImported', () => {
   it('escapes names and filters by name and band', () => {
     const all = renderImported(imports, base);
@@ -355,6 +405,183 @@ describe('initLandingPage', () => {
     expect(chip('long').getAttribute('aria-pressed')).toBe('false');
     expect($('trail-list').querySelectorAll('.trail-card')).toHaveLength(5);
     expect(JSON.parse(storage.getItem(FILTER_STORAGE_KEY)!).bands).toEqual([]);
+  });
+
+  it('leaves "Shared by me" out when the browser is not linked', async () => {
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: async () => [route({})],
+      fetchImported: async () => imports,
+      fetchMyRoutes: async () => null,
+    });
+    expect($('my-community').hidden).toBe(true);
+    // The default (no API in the test build, no session) is the same.
+    document.body.innerHTML = readFileSync(resolve(__dirname, 'index.html'), 'utf-8').split('<body>')[1].split('</body>')[0];
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: async () => null,
+      fetchImported: async () => [],
+    });
+    expect($('my-community').hidden).toBe(true);
+  });
+
+  it('lists the reader’s own routes, hidden ones with why, and filters them', async () => {
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: async () => [route({ name: 'Live one' })],
+      fetchImported: async () => [],
+      fetchMyRoutes: async () => [
+        mine({ id: 'c_1', name: 'Live one' }),
+        mine({ id: 'c_2', name: 'Taken <down>', status: 'hidden', hiddenReason: 'reports', trailUrl: null }),
+      ],
+    });
+    const block = $('my-community');
+    expect(block.hidden).toBe(false);
+    const cards = block.querySelectorAll('.trail-card');
+    expect(cards).toHaveLength(2);
+    const hidden = [...cards].find((c) => c.getAttribute('href')!.includes('c_2'))!;
+    expect(hidden.querySelector('.community-badge')!.textContent).toBe('Hidden');
+    expect(hidden.textContent).toContain('Hidden after reports from other users');
+    expect(hidden.innerHTML).toContain('Taken &lt;down&gt;');
+    // The empty-imports invitation stays alongside.
+    expect($('no-my-trails').hidden).toBe(false);
+
+    const search = $('trail-search') as HTMLInputElement;
+    search.value = 'taken';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(block.querySelectorAll('.trail-card')).toHaveLength(1);
+    expect($('my-trails-section').hidden).toBe(false);
+    expect($('no-match').hidden).toBe(true);
+
+    search.value = 'zzz';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(block.hidden).toBe(true);
+    expect($('my-trails-section').hidden).toBe(true);
+  });
+
+  it('keeps the other tiers when the my-routes fetch fails', async () => {
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: async () => [route({ name: 'Live one' })],
+      fetchImported: async () => imports,
+      fetchMyRoutes: async () => {
+        throw new Error('offline');
+      },
+    });
+    expect($('trail-list').querySelectorAll('.trail-card')).toHaveLength(5);
+    expect($('community-list').querySelectorAll('.trail-card')).toHaveLength(1);
+    expect($('community-note').hidden).toBe(true);
+    expect($('my-trail-list').querySelectorAll('.trail-card')).toHaveLength(2);
+    expect($('my-community').hidden).toBe(false);
+    expect($('my-community-note').textContent).toBe('Your shared routes could not be loaded.');
+    expect($('my-community-link').hidden).toBe(true);
+  });
+
+  it('gives up on a stalled my-routes list at the deadline', async () => {
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: async () => [],
+      fetchImported: async () => [],
+      fetchMyRoutes: () => new Promise(() => {}),
+      communityTimeoutMs: 20,
+    });
+    expect($('my-community-note').textContent).toBe('Your shared routes could not be loaded.');
+    expect($('community-note').textContent).toBe('No community routes yet.');
+  });
+
+  it('says a revoked link is unlinked and offers to link again, then lists the routes', async () => {
+    let calls = 0;
+    let onLinked: ((s: { userId: string; token: string; displayName: string; expiresAt: null }) => void) | undefined;
+    await initLandingPage(document, {
+      storage: memoryStorage(),
+      fetchCurated: async () => curated,
+      fetchCommunity: async () => [],
+      fetchImported: async () => [],
+      fetchMyRoutes: async () => {
+        calls++;
+        if (calls === 1) throw new ApiError(401, 'unauthorized', 'Unauthorized');
+        return [mine({ id: 'c_9', name: 'Back again' })];
+      },
+      renderLinkForm: (container, _intro, linked) => {
+        container.innerHTML = '<form class="community-link-form"></form>';
+        onLinked = linked;
+      },
+    });
+    expect($('my-community').hidden).toBe(false);
+    expect($('my-community-note').textContent).toContain('no longer linked');
+    expect($('my-community-link').hidden).toBe(false);
+
+    $('my-community-link-btn').click();
+    expect($('my-community-link-form').hidden).toBe(false);
+    expect($('my-community-link-form').querySelector('form')).not.toBeNull();
+
+    onLinked!({ userId: 'u1', token: 't', displayName: 'R', expiresAt: null });
+    for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+    expect($('my-community-link-form').hidden).toBe(true);
+    expect($('my-community-note').hidden).toBe(true);
+    expect($('my-community-list').textContent).toContain('Back again');
+  });
+
+  describe('the default my-routes source', () => {
+    const SESSION = { userId: 'u1', token: 'tok_mine', displayName: 'Robin', expiresAt: null };
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+      window.localStorage.clear();
+    });
+
+    function stubMine(status: number, body: unknown): Array<{ url: string; init: RequestInit }> {
+      const calls: Array<{ url: string; init: RequestInit }> = [];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, init: RequestInit = {}) => {
+          calls.push({ url, init });
+          return { ok: status < 300, status, statusText: '', text: async () => JSON.stringify(body) };
+        })
+      );
+      return calls;
+    }
+
+    const boot = () =>
+      initLandingPage(document, {
+        storage: memoryStorage(),
+        fetchCurated: async () => curated,
+        fetchCommunity: async () => [],
+        fetchImported: async () => [],
+      });
+
+    it('asks nothing of the API for an unlinked browser', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test');
+      const calls = stubMine(200, { routes: [] });
+      await boot();
+      expect(calls).toHaveLength(0);
+      expect($('my-community').hidden).toBe(true);
+    });
+
+    it('lists a linked browser’s routes with its token', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test');
+      window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+      const calls = stubMine(200, { routes: [mine({ id: 'c_1', name: 'Mine', status: 'hidden', hiddenReason: 'admin' })] });
+      await boot();
+      expect(calls[0].url).toBe('https://api.example.test/v1/me/community/routes');
+      expect((calls[0].init.headers as Record<string, string>).Authorization).toBe('Bearer tok_mine');
+      expect($('my-community').hidden).toBe(false);
+      expect($('my-community-list').textContent).toContain('Hidden by a moderator');
+    });
+
+    it('forgets a revoked token and says so', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test');
+      window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+      stubMine(401, { error: { code: 'unauthorized', message: 'Unauthorized' } });
+      await boot();
+      expect(window.localStorage.getItem('tracknotes.webSession')).toBeNull();
+      expect($('my-community-note').textContent).toContain('no longer linked');
+    });
   });
 
   it('shows the empty state when the trail index cannot be read', async () => {

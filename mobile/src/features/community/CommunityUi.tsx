@@ -1,7 +1,8 @@
 /**
  * Small pieces shared by the community screens (`app/share-route.tsx`,
- * `app/guide/[trailId]/community.tsx`): the check results list, a row of
- * choice chips, and the Verified/Unverified/"No longer shared" pill.
+ * `app/guide/[trailId]/community.tsx`, `app/my-shared-routes.tsx`): the check
+ * results list, a row of choice chips, and the Verified/Unverified/Hidden/"No
+ * longer shared" pill.
  */
 
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -86,6 +87,7 @@ export function ChoiceChips({
  * "Verified" (an admin approved it) or "Unverified" (passed the automatic
  * checks only) — or "No longer shared" for a downloaded route the server has
  * since taken down (`takenDown`), whatever status it was downloaded under.
+ * "Hidden" is only ever seen by the route's owner (`app/my-shared-routes.tsx`).
  */
 export function CommunityStatusPill({
   status,
@@ -107,9 +109,19 @@ export function CommunityStatusPill({
       </View>
     );
   }
+  if (status === 'hidden' || status === 'removed') {
+    return (
+      <View style={[styles.pill, { borderColor: colors.danger }]}>
+        <MaterialCommunityIcons name="eye-off-outline" size={glyphSizes.xs} color={colors.danger} />
+        <Text style={[styles.pillLabel, { color: colors.danger }]}>
+          {status === 'hidden' ? 'Hidden' : 'Removed'}
+        </Text>
+      </View>
+    );
+  }
   const verified = status === 'verified';
   const tone = verified ? colors.success : colors.warning;
-  const label = verified ? 'Verified' : status === 'unverified' ? 'Unverified' : 'Hidden';
+  const label = verified ? 'Verified' : 'Unverified';
   return (
     <View style={[styles.pill, { borderColor: tone }]}>
       <MaterialCommunityIcons

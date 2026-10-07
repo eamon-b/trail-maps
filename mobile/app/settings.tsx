@@ -1,6 +1,7 @@
 /**
  * App settings — units, the account sections (rename the comment display name,
- * link a browser to this account's plans, delete the account), and About, which
+ * link a browser to this account's plans, the routes it shared to the
+ * community, delete the account), and About, which
  * carries the privacy-policy link the app stores require in-app.
  */
 
@@ -11,6 +12,7 @@ import { spacing, typography } from '../src/tokens';
 import { SegmentedControl } from '../src/features/guide/SegmentedControl';
 import { DisplayNameSection } from '../src/features/settings/DisplayNameSection';
 import { LinkedBrowsersSection } from '../src/features/settings/LinkedBrowsersSection';
+import { SharedRoutesSection } from '../src/features/settings/SharedRoutesSection';
 import { DeleteAccountSection } from '../src/features/settings/DeleteAccountSection';
 import { AboutSection } from '../src/features/settings/AboutSection';
 import { useSettingsStore, type Units } from '../src/state/settings-store';
@@ -43,6 +45,7 @@ export default function SettingsScreen() {
       {/* Between the name and the delete button: both are about the account,
           and linking is the one that needs the account to exist first. */}
       <LinkedBrowsersSection />
+      <SharedRoutesSection />
       <DeleteAccountSection />
       {/* Last: About is always visible, while the two account sections above
           hide themselves on a device with no identity. */}

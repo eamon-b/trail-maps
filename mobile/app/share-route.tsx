@@ -9,7 +9,9 @@
  * re-run as they type, so a route that will be refused says so before anything
  * is sent; the worker runs the same checks again and its answer (a 422 with
  * checks, a 409 duplicate, a 429 over a daily limit, in the server's words) is
- * shown here too.
+ * shown here too. A 409 that names the hiker's own earlier route (`existingId`:
+ * a lost 201, or the track shared before) offers "View my shared routes",
+ * which opens that route's detail even when it is hidden.
  *
  * What is sent is the stored `ProcessedTrail` — the phone keeps no raw GPX.
  * On success the new route is added to the cached list and the guide opens
@@ -55,9 +57,11 @@ import {
   shareFailure,
   utf8ByteLength,
   validateShareForm,
+  type ShareFailure,
   type ShareForm,
 } from '../src/features/community/share-form';
 import { ChecksList, ChoiceChips } from '../src/features/community/CommunityUi';
+import { ShareFailureCard } from '../src/features/community/ShareFailureCard';
 
 /**
  * Text that passes the `metadata` check, for the one full run per trail. With
@@ -106,9 +110,7 @@ export default function ShareRouteScreen() {
   // Set synchronously, before the checks and the serialising: a second tap
   // lands before React has re-rendered the disabled button.
   const submittingRef = useRef(false);
-  const [failure, setFailure] = useState<{ message: string; checks?: CommunityCheck[] } | null>(
-    null,
-  );
+  const [failure, setFailure] = useState<ShareFailure | null>(null);
 
   const identityStatus = useIdentityStore((s) => s.status);
   const session = useIdentityStore((s) => s.session);
@@ -348,10 +350,12 @@ export default function ShareRouteScreen() {
       )}
 
       {failure && (
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.danger }]}>
-          <Text style={[styles.cardTitle, { color: colors.danger }]}>{failure.message}</Text>
-          {failure.checks && <ChecksList checks={failure.checks} />}
-        </View>
+        <ShareFailureCard
+          failure={failure}
+          onViewMyRoutes={(id) =>
+            router.replace({ pathname: '/my-shared-routes', params: { id } })
+          }
+        />
       )}
 
       <Pressable

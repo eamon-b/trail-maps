@@ -11,6 +11,7 @@
 
 import {
   COMMUNITY_LIMITS,
+  isCommunityRouteId,
   type CommunityCheck,
   type CommunitySubmitRequest,
 } from '@lib/community-types';
@@ -128,6 +129,12 @@ export interface ShareFailure {
   message: string;
   /** The server's checks, on a 422. */
   checks?: CommunityCheck[];
+  /**
+   * On a 409 duplicate, the id of the route already shared — sent only when it
+   * is the caller's own (a lost 201, or the same track shared twice), so the
+   * screen can offer "View my shared routes". It may be hidden.
+   */
+  existingId?: string;
 }
 
 /** The picker's value for "Not specified / several" (the form holds null). */
@@ -154,10 +161,12 @@ export function shareFailure(err: unknown): ShareFailure {
   }
   if (err instanceof ApiError) {
     if (err.status === 409) {
+      const existingId = (err.body as { existingId?: unknown } | undefined)?.existingId;
       return {
         message:
           serverMessage(err) ??
           'This route has already been shared — the same track was shared before.',
+        ...(typeof existingId === 'string' && isCommunityRouteId(existingId) ? { existingId } : {}),
       };
     }
     if (err.status === 429) {

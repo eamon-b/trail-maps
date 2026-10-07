@@ -120,6 +120,22 @@ describe('shareFailure', () => {
     ).toBe(duplicate);
   });
 
+  it('carries the existing id of the caller’s own duplicate, and only a community id', () => {
+    const duplicate = 'This exact track has been shared before';
+    const body = (extra: object) => ({ error: { code: 'duplicate', message: duplicate }, ...extra });
+    const own = shareFailure(
+      new ApiError(409, 'duplicate', duplicate, body({ existingId: 'c_AAAAAAAAAAAAAAAA' })),
+    );
+    expect(own).toEqual({ message: duplicate, existingId: 'c_AAAAAAAAAAAAAAAA' });
+    // Someone else's route: the worker sends no id, and the message stands alone.
+    expect(shareFailure(new ApiError(409, 'duplicate', duplicate, body({})))).toEqual({
+      message: duplicate,
+    });
+    expect(
+      shareFailure(new ApiError(409, 'duplicate', duplicate, body({ existingId: '../x' }))).existingId,
+    ).toBeUndefined();
+  });
+
   it('falls back to its own words when the server gives none', () => {
     expect(shareFailure(new ApiError(409, 'duplicate', 'Conflict')).message).toMatch(/already been shared/);
     expect(shareFailure(new ApiError(429, 'http_error', 'Too Many Requests')).message).toMatch(

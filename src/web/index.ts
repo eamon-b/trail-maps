@@ -7,7 +7,11 @@
  * 2. Community routes, from the API when this build has one
  *    (`VITE_API_BASE_URL`), grouped the same way with a Verified/Unverified
  *    badge. Hidden entirely when there is no API.
- * 3. My trails: imports kept in this browser's IndexedDB.
+ * 3. My trails: imports kept in this browser's IndexedDB, and — when this
+ *    build has an API and the browser is linked to the phone's identity —
+ *    "Shared by me": the reader's own community routes, hidden ones included
+ *    (with why), since a hidden route is in no public list and its page is
+ *    otherwise reachable only from the one-time link after sharing.
  *
  * The search, length bands and sort apply to all three. Empty groups and
  * tiers disappear; when nothing matches at all the page says so. The filter
@@ -20,7 +24,7 @@
  * names are user-supplied.
  */
 
-import type { CommunityRouteSummary } from '@lib/community-types';
+import type { CommunityRouteDetail, CommunityRouteSummary } from '@lib/community-types';
 import {
   LENGTH_BANDS,
   groupTrails,
@@ -32,8 +36,17 @@ import {
   type TrailGroupCountry,
   type TrailSort,
 } from '@lib/trail-regions';
-import { communityRouteHref, listCommunityRoutes } from './api/community';
-import { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION, placeLabel } from './community-labels';
+import { ApiError, getApiBase } from './api/client';
+import { communityRouteHref, listCommunityRoutes, listMyCommunityRoutes } from './api/community';
+import { clearSession, loadSession, type WebSession } from './api/session';
+import {
+  UNVERIFIED_EXPLANATION,
+  VERIFIED_EXPLANATION,
+  hiddenReasonText,
+  multilineHtml,
+  placeLabel,
+  statusBadgeHtml,
+} from './community-labels';
 import { isIndexedDbAvailable, listTrailSummaries, type ImportedTrailSummary } from './imported-trails-db';
 import { escapeHtml, formatKm } from './web-utils';
 
@@ -143,6 +156,24 @@ export function filterCommunity(
     .filter((item) => matchesFilter(item, filter, item.route.submittedBy ?? ''));
 }
 
+/** The reader's own routes the filter keeps, in the page's sort order. */
+export function filterMyRoutes(
+  routes: readonly CommunityRouteDetail[],
+  state: ListFilterState
+): CommunityRouteDetail[] {
+  const filter = toTrailFilter(state);
+  const items = routes
+    .map((route) => ({
+      name: route.name,
+      lengthKm: route.lengthKm,
+      country: route.country,
+      states: route.state ? [route.state] : [],
+      route,
+    }))
+    .filter((item) => matchesFilter(item, filter));
+  return sortTrails(items, state.sort).map((item) => item.route);
+}
+
 export function filterImported(
   summaries: readonly ImportedTrailSummary[],
   state: ListFilterState
@@ -211,6 +242,39 @@ export function renderCommunityCard(route: CommunityRouteSummary): string {
         ${route.submittedBy ? `<span class="trail-by">by ${escapeHtml(route.submittedBy)}</span>` : ''}
       </span>
     </a>`;
+}
+
+/**
+ * One of the reader's own community routes: its status badge, and for a
+ * hidden one why it was hidden and what the review said, so the owner can
+ * decide whether to edit it or ask for it back.
+ */
+export function renderMyRouteCard(route: CommunityRouteDetail): string {
+  const place = placeLabel(route.country, route.state ? [route.state] : []);
+  const reason = hiddenReasonText(route);
+  const summary = route.status === 'hidden' && typeof route.review?.summary === 'string' ? route.review.summary.trim() : '';
+  const hiddenLines =
+    route.status === 'hidden'
+      ? `${reason ? `<span class="my-route-reason">${escapeHtml(reason)}</span>` : ''}${
+          summary ? `<span class="my-route-review">${multilineHtml(summary)}</span>` : ''
+        }`
+      : '';
+  return `
+    <a href="./${escapeHtml(communityRouteHref(route.id))}" class="trail-card list-card my-route-card">
+      <span class="list-card-title">${escapeHtml(route.name)}${statusBadgeHtml(route.status)}</span>
+      <span class="trail-meta">
+        <span class="trail-length">${escapeHtml(lengthText(route.lengthKm))}</span>
+        ${place ? `<span class="trail-place">${escapeHtml(place)}</span>` : ''}
+      </span>${hiddenLines}
+    </a>`;
+}
+
+export function renderMyRoutes(
+  routes: readonly CommunityRouteDetail[],
+  state: ListFilterState
+): { html: string; count: number } {
+  const matched = filterMyRoutes(routes, state);
+  return { html: matched.map(renderMyRouteCard).join(''), count: matched.length };
 }
 
 export function renderImportedCard(trail: ImportedTrailSummary): string {
@@ -343,6 +407,17 @@ export interface LandingDeps {
   /** Given a signal that aborts at `communityTimeoutMs`. */
   fetchCommunity?: (signal: AbortSignal) => Promise<CommunityRouteSummary[] | null>;
   fetchImported?: () => Promise<ImportedTrailSummary[]>;
+  /**
+   * The reader's own community routes, given a signal that aborts at
+   * `communityTimeoutMs`; null when the block is not shown (no API, or this
+   * browser is not linked). A 401 `ApiError` means the link was revoked.
+   */
+  fetchMyRoutes?: (signal: AbortSignal) => Promise<CommunityRouteDetail[] | null>;
+  /**
+   * Draws the link form into `container` after a 401; `onLinked` refetches.
+   * Default: `link-browser.ts`, loaded only when it is needed.
+   */
+  renderLinkForm?: (container: HTMLElement, intro: string, onLinked: (session: WebSession) => void) => void;
   storage?: Storage | null;
   /** How long the community list may take before the tier gives up. */
   communityTimeoutMs?: number;
@@ -386,6 +461,34 @@ async function fetchImportedDefault(): Promise<ImportedTrailSummary[]> {
   }
 }
 
+/**
+ * The default "Shared by me" source: null unless this build has an API and
+ * the browser holds a linked session. A 401 forgets the revoked token before
+ * it is reported, as every other page does.
+ */
+function myRoutesFetcher(session: () => WebSession | null) {
+  return async (signal: AbortSignal): Promise<CommunityRouteDetail[] | null> => {
+    if (!getApiBase()) return null;
+    const current = session();
+    if (!current) return null;
+    try {
+      return await listMyCommunityRoutes(current, { signal });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) clearSession();
+      throw err;
+    }
+  };
+}
+
+async function renderLinkFormLazily(
+  container: HTMLElement,
+  intro: string,
+  onLinked: (session: WebSession) => void
+): Promise<void> {
+  const { renderLinkForm } = await import('./link-browser');
+  renderLinkForm(container, intro, onLinked);
+}
+
 function localStorageOrNull(): Storage | null {
   try {
     return globalThis.localStorage ?? null;
@@ -414,6 +517,8 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
   // null data = no API configured: the tier is not shown at all.
   let community: Load<CommunityRouteSummary[] | null> = { status: 'loading' };
   let imported: Load<ImportedTrailSummary[]> = { status: 'loading' };
+  // null data = not shown (no API or not linked); 'unlinked' = a 401.
+  let myRoutes: Load<CommunityRouteDetail[] | null> | { status: 'unlinked' } = { status: 'loading' };
 
   const filterBar = byId(doc, 'trail-filter');
   if (filterBar) filterBar.innerHTML = renderFilterBar(state);
@@ -472,6 +577,39 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
       setHidden(communitySection, count === 0 && (active || !none));
     }
 
+    // Shared by me (inside My trails). Its failures stay inside the block.
+    const sharedBlock = byId(doc, 'my-community');
+    const sharedList = byId(doc, 'my-community-list');
+    const sharedNote = byId(doc, 'my-community-note');
+    const sharedLink = byId(doc, 'my-community-link');
+    let sharedShown = false;
+    let sharedCount = 0;
+    if (myRoutes.status === 'loading') {
+      settled = false;
+    } else if (myRoutes.status === 'ready' && myRoutes.data !== null) {
+      const { html, count } = renderMyRoutes(myRoutes.data, state);
+      sharedCount = count;
+      if (sharedList) sharedList.innerHTML = html;
+      sharedShown = count > 0;
+      setHidden(sharedList, false);
+      setHidden(sharedNote, true);
+      setHidden(sharedLink, true);
+    } else if (myRoutes.status === 'error' || myRoutes.status === 'unlinked') {
+      if (sharedList) sharedList.innerHTML = '';
+      setHidden(sharedList, true);
+      if (sharedNote) {
+        sharedNote.textContent =
+          myRoutes.status === 'unlinked'
+            ? 'This browser is no longer linked to your Tracknotes app, so the routes you shared cannot be listed.'
+            : 'Your shared routes could not be loaded.';
+      }
+      setHidden(sharedNote, false);
+      setHidden(sharedLink, myRoutes.status !== 'unlinked');
+      sharedShown = true;
+    }
+    total += sharedCount;
+    setHidden(sharedBlock, !sharedShown);
+
     // My trails
     const mySection = byId(doc, 'my-trails-section');
     const myList = byId(doc, 'my-trail-list');
@@ -487,7 +625,7 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
       setHidden(myEmpty, data.length > 0);
       // With a filter on, a tier with nothing to show steps aside; without
       // one, the empty state's "Import a GPX" invitation stays.
-      setHidden(mySection, active && count === 0);
+      setHidden(mySection, active && count === 0 && !sharedShown);
     }
 
     const noMatch = byId(doc, 'no-match');
@@ -544,6 +682,34 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
   const fetchCommunity = deps.fetchCommunity ?? ((signal: AbortSignal) => listCommunityRoutes({}, { signal }));
   const communityTimeoutMs = deps.communityTimeoutMs ?? COMMUNITY_TIMEOUT_MS;
   const fetchImported = deps.fetchImported ?? fetchImportedDefault;
+  // The session the link form hands back, if the reader re-links here; never
+  // re-read from a storage that may refuse to keep it.
+  let linked: WebSession | null = null;
+  const fetchMyRoutes = deps.fetchMyRoutes ?? myRoutesFetcher(() => linked ?? loadSession());
+  const drawLinkForm = deps.renderLinkForm ?? ((c, intro, onLinked) => void renderLinkFormLazily(c, intro, onLinked));
+
+  const loadMyRoutes = (): Promise<void> =>
+    withDeadline(fetchMyRoutes, communityTimeoutMs)
+      .then(
+        (data) => (myRoutes = { status: 'ready', data }),
+        (err: unknown) =>
+          (myRoutes = err instanceof ApiError && err.status === 401 ? { status: 'unlinked' } : { status: 'error' })
+      )
+      .then(render, () => undefined);
+
+  byId(doc, 'my-community-link-btn')?.addEventListener('click', () => {
+    const box = byId(doc, 'my-community-link-form');
+    if (!box) return;
+    setHidden(box, false);
+    drawLinkForm(box, 'Link this browser to the Tracknotes app on your phone again to list the routes you shared.', (session) => {
+      linked = session;
+      box.innerHTML = '';
+      setHidden(box, true);
+      myRoutes = { status: 'loading' };
+      render();
+      void loadMyRoutes();
+    });
+  });
 
   await Promise.all([
     fetchCurated().then(
@@ -558,6 +724,7 @@ export async function initLandingPage(doc: Document = document, deps: LandingDep
       (data) => (imported = { status: 'ready', data }),
       () => (imported = { status: 'ready', data: [] })
     ).then(render),
+    loadMyRoutes(),
   ]);
 }
 

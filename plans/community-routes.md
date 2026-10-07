@@ -123,7 +123,7 @@ uses a 20 s timeout and 1 retry so a review fits the `waitUntil` budget.
 - `reject` with confidence ≥ 0.8 → `hidden` (spam, abuse, not a walking route,
   personal data in the text). The admin page lists these first.
 - Anything else leaves the status alone. The verdict and summary are shown to
-  admins; the public sees only "Reviewed" vs not.
+  the owner and admins; the public sees only "Reviewed" vs not.
 
 ## API (comments-api worker)
 
@@ -133,13 +133,13 @@ All bodies JSON unless stated. Types in `src/lib/community-types.ts`.
 |---|---|---|---|
 | POST | `/v1/community/routes` | user | Submit. Body `CommunitySubmitRequest`. 201 `CommunityRouteDetail`; 422 `{error, checks}`; 409 duplicate; 413 `trail_too_large`. |
 | GET | `/v1/community/routes` | none | List live (`unverified` + `verified`). Query `country`, `state`, `status`. `Cache-Control: public, max-age=60`. |
-| GET | `/v1/community/routes/:id` | optional | One route's detail (owner/admin also see `hidden` and the review). |
+| GET | `/v1/community/routes/:id` | optional | One route's detail (owner/admin also see `hidden`, the review and, when hidden, `hiddenReason`: `review`/`reports`/`admin`). |
 | PATCH | `/v1/community/routes/:id` | owner | Edit metadata. 409 `conflict` if the route changed during the edit. |
 | DELETE | `/v1/community/routes/:id` | owner or admin | Remove. |
 | POST | `/v1/community/routes/:id/report` | user | Report (`spam`/`offensive`/`inaccurate`/`unsafe`/`copyright`/`other`). Not one's own route (400 `own_route`); a repeat report from the same user is answered 200 and counts once. |
-| GET | `/v1/me/community/routes` | user | My submissions, any status, with checks and review. |
+| GET | `/v1/me/community/routes` | user | My submissions, any status, with checks, review and `hiddenReason` for hidden ones. |
 | GET | `/v1/admin/community/routes` | admin | Queue: everything not `removed`, with review, reports, checks. |
-| POST | `/v1/admin/community/routes/:id/status` | admin | `{ status: 'verified' \| 'unverified' \| 'hidden', note? }`. 409 `conflict` if the route changed meanwhile. |
+| POST | `/v1/admin/community/routes/:id/status` | admin | `{ status: 'verified' \| 'unverified' \| 'hidden', note? }`. 409 `conflict` if the route changed meanwhile. 400 `invalid_note` for a note equal to an automatic hide's note. |
 | POST | `/v1/admin/community/routes/:id/review` | admin | Re-run the AI review. |
 
 Rate limits (`rate_events`): `communitySubmitAttempt` 30 submit requests per
@@ -207,14 +207,18 @@ Web landing page:
 3. Curated trails grouped Country → State, collapsible, counts in headings.
 4. Community routes (from the API when `VITE_API_BASE_URL` is set), grouped the
    same way, with Verified/Unverified badges and a "Share a route" link.
-5. My trails (IndexedDB), as now.
+5. My trails (IndexedDB), as now, plus a "Shared by me" block for a linked browser:
+   the reader's own routes, any status, with why a hidden one was hidden.
 
 The filter applies to all three tiers. Grouping is computed by
 `groupTrails()` in `trail-regions.ts`, shared with mobile.
 
 Mobile "My Guides": a SectionList — Hiking now, then sections per country
 (state as a subtitle on each card), then Community (online list, cached),
-then Imported. A search field filters by name.
+then Imported. A search field filters by name. Settings → My shared routes
+lists the account's own routes, any status, with the hidden reason, and is
+where a route hidden by the review, reports or a moderator can still be
+deleted.
 
 ## Follow-ups (not in this PR)
 

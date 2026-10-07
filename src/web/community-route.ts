@@ -33,6 +33,7 @@ import {
   UNVERIFIED_EXPLANATION,
   VERIFIED_EXPLANATION,
   checksListHtml,
+  hiddenReasonText,
   initRegionPicker,
   localCopyId,
   multilineHtml,
@@ -115,6 +116,13 @@ function renderHeader(detail: CommunityRouteDetail): void {
       : detail.status === 'unverified'
         ? UNVERIFIED_EXPLANATION
         : 'Hidden: this route is not listed publicly. Only its owner and the Tracknotes admins can see it.';
+  // Why it is hidden: the owner and admins get `hiddenReason` for a hidden route.
+  const reason = hiddenReasonText(detail);
+  const reasonEl = $('hidden-reason');
+  if (reasonEl) {
+    reasonEl.textContent = reason ? `${reason}.` : '';
+    reasonEl.hidden = reason === '';
+  }
 
   $('route-description')!.innerHTML = multilineHtml(detail.description);
   $('route-licence')!.innerHTML =

@@ -199,6 +199,12 @@ textarea.community-input {
   color: var(--text-muted);
 }
 
+.community-hidden-reason {
+  margin-top: -0.5rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
 .community-description {
   margin: 0 0 0.75rem;
   line-height: 1.55;

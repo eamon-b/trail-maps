@@ -17,10 +17,11 @@ so a file imports identically everywhere.
   button are also accepted on mobile; they skip the pipeline below and load
   as already-built trails.
 
-Nothing is uploaded to a server. The file is processed on your device and the
-result is stored locally (IndexedDB in the browser, the app's documents
-directory on mobile). The one optional network call is elevation backfill
-(below).
+Nothing is uploaded to a server unless you choose to
+[share the route with the community](#sharing-with-the-community). The file is
+processed on your device and the result is stored locally (IndexedDB in the
+browser, the app's documents directory on mobile). The other optional network
+calls are elevation backfill and the points-of-interest search (below).
 
 ## Step by step
 
@@ -335,6 +336,42 @@ proper waypoint and re-import.
 Point-of-interest data is © OpenStreetMap contributors and is used under the
 [Open Database License](https://opendatacommons.org/licenses/odbl/); the
 attribution is shown on the trail page whenever POIs are loaded.
+
+## Sharing with the community
+
+Once a trail is saved, the upload page offers **Share with the community**
+(when the site is connected to the Tracknotes service). A shared route is listed
+for everyone on the website and in the app, grouped by country and region.
+
+- **It needs your app identity.** Sharing is tied to the Tracknotes app on your
+  phone: if this browser is not linked yet, the page asks for the code from
+  Settings → Linked browsers. That is what lets you edit or delete the route
+  later.
+- **You describe it.** A name, a description (at least 20 characters), an
+  optional credit or source line, and the country and state or region it is in.
+- **It is checked before it goes up.** The same automatic checks run in your
+  browser while you fill in the form and again on the server: the route must
+  be a valid trail between 1 and 5,000 km with at least 20 points, its distances
+  must add up, and the text must be the right length. Warnings — no elevation,
+  a large jump between points, speeds that look like a drive — don't stop you,
+  but are shown to reviewers. Any failure does, and the list says which.
+- **It is public domain.** You confirm that you recorded the track yourself or
+  that it is openly licensed, and you release it under
+  [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The route, its text
+  and your display name are public. The original GPX file is sent too, but is
+  kept privately for re-processing and is never published.
+- **It is listed straight away as Unverified.** An automated review (Anthropic's
+  Claude) reads the text and a summary of the route in the background, and a
+  person marks it **Verified** after checking it. Until then the route carries an
+  Unverified label. Anyone can **Report** a route; one that collects several
+  reports is hidden until an admin looks.
+- **You stay in charge of it.** The route's page lets you edit its name,
+  description, credit and region (an edit to a Verified route returns it to
+  Unverified), or delete it. To replace the track itself, share the new file and
+  delete the old route.
+
+Anyone can open a community route's page, see it on the map and profile, and
+**Save to my trails** to plan with it like one of their own imports.
 
 ## Reading the "Worth knowing" notes
 

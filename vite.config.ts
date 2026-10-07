@@ -123,6 +123,10 @@ export default defineConfig({
         'my-plan': resolve(__dirname, 'src/web/my-plan.html'),
         // The read-only view of a plan somebody shared a link to (`?s=<id>`).
         'shared-plan': resolve(__dirname, 'src/web/shared-plan.html'),
+        // A community route's public page (`?id=c_…`) and the admin review
+        // queue (unlinked, noindex). Spec: plans/community-routes.md.
+        'community-route': resolve(__dirname, 'src/web/community-route.html'),
+        'admin-community': resolve(__dirname, 'src/web/admin-community.html'),
         // Dynamically include all generated trail pages
         ...getTrailInputs(),
       },

@@ -1,0 +1,248 @@
+/**
+ * The landing page's trail list (index.html, src/web/index.ts): the filter
+ * bar, the Country → State groups and the cards of all three tiers.
+ *
+ * Built on the theme tokens in styles.css only, so it follows light and dark
+ * without a block of its own.
+ */
+
+/* ---- Filter bar ---- */
+.trail-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.filter-search input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.filter-search input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-chip {
+  padding: 0.35rem 0.8rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--primary);
+}
+
+.filter-chip[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.filter-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.filter-sort select {
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.link-button {
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.list-note {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ---- Country → State groups ---- */
+.country-group {
+  margin-bottom: 1.25rem;
+}
+
+.country-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  list-style: none;
+}
+
+.country-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A chevron that turns with the group. */
+.country-group > summary::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+
+.country-group[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.country-heading {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.group-count {
+  display: inline-block;
+  min-width: 1.6rem;
+  padding: 0.05rem 0.45rem;
+  margin-left: 0.25rem;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.country-body {
+  padding-top: 0.75rem;
+}
+
+.state-heading {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.country-body > .state-heading:first-child {
+  margin-top: 0;
+}
+
+/* ---- Cards ---- */
+.trail-grid.list-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 0.75rem;
+}
+
+.list-card {
+  padding: 1rem 1.25rem;
+}
+
+.list-card-title {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.list-card .trail-meta {
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.list-card .imported-badge {
+  background: var(--tint-accent-strong);
+  color: var(--text);
+}
+
+.list-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.list-badge-verified {
+  background: var(--tint-success);
+  color: var(--tint-success-text);
+}
+
+.list-badge-unverified {
+  background: var(--tint-warn);
+  color: var(--tint-warn-text);
+}
+
+@media (max-width: 480px) {
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-sort select {
+    flex: 1;
+  }
+}
+
+/* `.trail-grid` sets `display: grid`, which outranks the user-agent
+   `[hidden]` rule; an empty tier's grid must really go. */
+.trail-grid[hidden] {
+  display: none;
+}

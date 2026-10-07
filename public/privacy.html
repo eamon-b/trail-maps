@@ -23,7 +23,7 @@
 </head>
 <body>
   <h1>Tracknotes Privacy Policy</h1>
-  <p class="updated">Last updated: 19 August 2026</p>
+  <p class="updated">Last updated: 7 October 2026</p>
 
   <p>Tracknotes is a hiking guide app for Australian long-distance trails. It is
   designed to work offline-first and to collect as little personal information
@@ -45,19 +45,38 @@
   share sheet.</p>
   <p><strong>No analytics, no advertising.</strong> The app contains no
   analytics SDKs, ad networks, or third-party trackers.</p>
+  <p><strong>Community routes (optional).</strong> If you choose to share an
+  imported route with the community, we store the processed route (track,
+  waypoints, distances and elevation), the name, description, credit line and
+  country/region you enter, your display name at the time, and the original GPX
+  file you imported. The route, its text and your display name are published
+  publicly under <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>
+  (public domain) on the website and in the app; the original GPX file is kept
+  privately, for re-processing only, and is never linked publicly. Sharing is
+  opt-in: an import you do not share never leaves your device. A GPX recording
+  can contain timestamps of when you walked — share only routes you are happy
+  to make public.</p>
+  <p><strong>Automated review of community routes.</strong> Each shared route
+  is checked automatically, and its text, region, summary statistics, waypoint
+  names and a sample of its coordinates are sent to Anthropic's API (the Claude
+  model) for an automated review that helps our admins spot spam, abuse or
+  routes that are not walking routes. Anthropic processes this data to return
+  the review; it is not used to identify you. The review's result is visible to
+  you and to our admins, not to the public.</p>
 
   <h2>Where data is stored</h2>
   <p><strong>On your device:</strong> downloaded maps, trail guides, your
   settings, favorites, routes, plans, and a cached copy of comments (so the app
   works offline).</p>
   <p><strong>On our servers:</strong> posted comments, water reports, photos,
-  display names, and moderation reports. These are stored with Cloudflare (D1
+  display names, moderation reports, and any community routes you share (with
+  their original GPX file). These are stored with Cloudflare (D1
   database and R2 object storage). We request Oceania placement and it is
   where our storage currently runs, but Cloudflare treats placement as
   best-effort, so data may be stored or replicated in other regions.</p>
 
   <h2>Moderation and reporting</h2>
-  <p>Every comment has a <strong>Report</strong> action. Reports are reviewed
+  <p>Every comment and every community route has a <strong>Report</strong> action. Reports are reviewed
   and content that is abusive, unsafe, or spam is removed. Repeat abuse may
   result in a device being blocked from posting.</p>
 
@@ -65,7 +84,13 @@
   <p>Settings → Account → <strong>Delete account</strong> removes your device
   identity from our servers, deletes every comment you posted (they disappear
   from all devices on their next sync), and deletes your uploaded photos. This
-  is immediate and irreversible. Local data on your own device (favorites,
+  is immediate and irreversible. A community route you shared can be deleted
+  at any time from its page (<strong>Delete</strong>); this removes it from the
+  public list and deletes the stored route and GPX file. Because shared routes
+  are released as CC0, copies others have already downloaded or saved may
+  remain on their devices. Deleting your account leaves the routes you shared
+  public but removes your display name from them; delete them first if you
+  want them gone. Local data on your own device (favorites,
   routes, downloaded maps) stays on your device until you clear it or
   uninstall.</p>
 

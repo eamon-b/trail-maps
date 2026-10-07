@@ -13,6 +13,10 @@
  * - **remote** (`source: 'remote'`): a trail published to the catalog after
  *   this build was made. Listed from the last catalog; its JSON is downloaded
  *   the first time the guide is opened (`GuideProvider`).
+ * - **community** (`source: 'community'`): a route another hiker shared
+ *   (`plans/community-routes.md`). Listed from the cached public list
+ *   (`services/community-routes`), downloaded the first time it is opened.
+ *   Local-only as far as comments and plan sync go, like an import.
  * - **imported** (`source: 'imported'`): a user's GPX, ingested at runtime and
  *   written to `{documentDir}/trails/{id}.json` with a registry row in
  *   `imported_trails` (see `services/imported-trail-store.ts`).
@@ -40,11 +44,18 @@ import {
   readDownloadedTrail,
   type RemoteTrailInfo,
 } from './trail-data-updates';
+import {
+  getCommunityRouteInfo,
+  listCachedCommunityRoutes,
+  readCommunityTrail,
+  type CommunityRouteInfo,
+} from './community-routes';
+import type { CommunityRouteStatus } from '@lib/community-types';
 
 export type { TrailJson } from './trail-assets';
 
 /** Where a trail's JSON comes from. */
-export type TrailSource = 'bundled' | 'remote' | 'imported';
+export type TrailSource = 'bundled' | 'remote' | 'community' | 'imported';
 
 export interface TrailIndexEntry {
   id: string;
@@ -57,10 +68,16 @@ export interface TrailIndexEntry {
   /** Bundled by default — index.json predates imports and carries no field. */
   source: TrailSource;
   /**
-   * Remote trails only: false until the JSON has been downloaded, i.e. the
-   * guide needs a connection to open the first time.
+   * Remote and community trails only: false until the JSON has been
+   * downloaded, i.e. the guide needs a connection to open the first time.
    */
   downloaded?: boolean;
+  /** ISO 3166-1 alpha-2 (`@lib/trail-regions`), when the source gives one. */
+  country?: string;
+  /** State/region codes, the first being the group the trail is listed under. */
+  states?: string[];
+  /** Community routes only: Unverified until an admin verifies it. */
+  communityStatus?: CommunityRouteStatus;
 }
 
 interface BundledIndexEntry {
@@ -70,6 +87,8 @@ interface BundledIndexEntry {
   lengthKm: number;
   dataVersion?: string;
   updatedAt?: string;
+  country?: string;
+  states?: string[];
 }
 
 const bundledIndex: readonly BundledIndexEntry[] = require('../../assets/trails/index.json');
@@ -86,6 +105,8 @@ function toIndexEntry(
     lengthKm: info.lengthKm,
     ...(info.dataVersion ? { dataVersion: info.dataVersion } : {}),
     ...(info.updatedAt ? { updatedAt: info.updatedAt } : {}),
+    ...(typeof info.country === 'string' && info.country ? { country: info.country } : {}),
+    ...(Array.isArray(info.states) && info.states.length > 0 ? { states: [...info.states] } : {}),
     source,
     ...(downloaded === undefined ? {} : { downloaded }),
   };
@@ -95,12 +116,35 @@ function remoteIndexEntry(info: RemoteTrailInfo): TrailIndexEntry {
   return toIndexEntry(info, 'remote', info.downloaded);
 }
 
+/** The bundled index's region fields for an id — the fallback when a download carries none. */
+function bundledRegion(id: string): Pick<BundledIndexEntry, 'country' | 'states'> {
+  const entry = bundledIndex.find((e) => e.id === id);
+  return { country: entry?.country, states: entry?.states };
+}
+
+function communityIndexEntry(route: CommunityRouteInfo): TrailIndexEntry {
+  return {
+    id: route.id,
+    name: route.name,
+    shortName: route.name,
+    lengthKm: route.lengthKm,
+    ...(route.updatedAt ? { updatedAt: route.updatedAt } : {}),
+    source: 'community',
+    downloaded: route.downloaded,
+    country: route.country,
+    ...(route.state ? { states: [route.state] } : {}),
+    communityStatus: route.status,
+  };
+}
+
 /**
  * All bundled trails' index metadata, in bundle order. A trail with a newer
  * downloaded copy reports that copy's name and length.
  */
 export function listTrails(): TrailIndexEntry[] {
-  return bundledIndex.map((entry) => toIndexEntry(activeDownload(entry.id) ?? entry, 'bundled'));
+  return bundledIndex.map((entry) =>
+    toIndexEntry({ ...bundledRegion(entry.id), ...(activeDownload(entry.id) ?? entry) }, 'bundled'),
+  );
 }
 
 /**
@@ -109,7 +153,11 @@ export function listTrails(): TrailIndexEntry[] {
  */
 export function getTrailIndexEntry(id: string): TrailIndexEntry | null {
   const bundled = bundledIndex.find((entry) => entry.id === id);
-  if (bundled) return toIndexEntry(activeDownload(id) ?? bundled, 'bundled');
+  if (bundled) {
+    return toIndexEntry({ ...bundledRegion(id), ...(activeDownload(id) ?? bundled) }, 'bundled');
+  }
+  const community = getCommunityRouteInfo(id);
+  if (community) return communityIndexEntry(community);
   const remote = getRemoteTrail(id);
   return remote ? remoteIndexEntry(remote) : null;
 }
@@ -162,12 +210,14 @@ export async function loadTrail(id: string): Promise<TrailJson | null> {
   if (downloaded) return downloaded;
   const bundled = TRAIL_DATA[id];
   if (bundled) return bundled;
+  if (id.startsWith('c_')) return readCommunityTrail(id);
   return readImportedTrail(id);
 }
 
 /**
  * Every trail the app can list: bundled first (stable bundle order), then
- * catalog-only ones (catalog order), then imported ones newest-first.
+ * catalog-only ones (catalog order), then community routes (cached list order),
+ * then imported ones newest-first.
  *
  * A database failure degrades to the bundled list rather than an empty guide
  * list — the shipped trails are readable with no database at all, and a broken
@@ -187,7 +237,18 @@ export async function listAllTrails(): Promise<TrailIndexEntry[]> {
   } catch {
     imported = [];
   }
-  return [...listTrails(), ...listRemoteTrails().map(remoteIndexEntry), ...imported];
+  let community: TrailIndexEntry[] = [];
+  try {
+    community = listCachedCommunityRoutes().map(communityIndexEntry);
+  } catch {
+    community = [];
+  }
+  return [
+    ...listTrails(),
+    ...listRemoteTrails().map(remoteIndexEntry),
+    ...community,
+    ...imported,
+  ];
 }
 
 /**

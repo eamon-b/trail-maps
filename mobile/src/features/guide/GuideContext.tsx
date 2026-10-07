@@ -13,7 +13,8 @@
  * trail with no newer download still resolves synchronously from the Metro
  * require() map, so it never renders a spinner frame. A trail only the R2
  * catalog knows about is downloaded the first time it is opened, behind the
- * same spinner, with a retry when that fails. Crucially the spinner is
+ * same spinner, with a retry when that fails — and so is a community route
+ * (`c_…`), from its public URL. Crucially the spinner is
  * rendered **instead of `children`**: the context value is therefore never
  * partially loaded, `trail` stays non-null, and no consumer
  * (`useGuidePosition`, the panes, the plan screen) has to learn about loading.
@@ -30,6 +31,8 @@ import { radii, spacing, typography } from '../../tokens';
 import { getTrailJson, loadTrail, type TrailJson } from '../../services/trail-loader';
 import { ensureTrailDownloaded } from '../../services/trail-data-updates';
 import { isCatalogTrailId } from '../../services/trail-catalog';
+import { ensureCommunityRouteDownloaded } from '../../services/community-routes';
+import { isCommunityRouteId } from '@lib/community-types';
 import { selectDirection, useSettingsStore, type Direction } from '../../state/settings-store';
 import { resolveGuideTrail } from './guide-trail';
 
@@ -73,9 +76,16 @@ export function GuideProvider({
     const read = () => loadTrail(trailId).catch(() => null);
     (async () => {
       const trail = await read();
+      if (trail) return trail;
+      // A community route another hiker shared: fetched from its public URL
+      // the first time it is opened (`services/community-routes`).
+      if (isCommunityRouteId(trailId)) {
+        if (!cancelled) setDownloadingId(trailId);
+        return (await ensureCommunityRouteDownloaded(trailId)) ? read() : null;
+      }
       // Not on the device: a trail published after this build was made is
       // fetched now. Imported ids are never asked for — they exist nowhere else.
-      if (trail || !isCatalogTrailId(trailId)) return trail;
+      if (!isCatalogTrailId(trailId)) return trail;
       if (!cancelled) setDownloadingId(trailId);
       return (await ensureTrailDownloaded(trailId)) ? read() : null;
     })()

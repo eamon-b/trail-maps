@@ -92,6 +92,11 @@ function ThemedStack() {
           name="import"
           options={{ title: 'Import GPX', presentation: 'modal' }}
         />
+        {/* Modal: share an imported guide to the community. */}
+        <Stack.Screen
+          name="share-route"
+          options={{ title: 'Share to community', presentation: 'modal' }}
+        />
         {/* A plan someone shared: `tracknotes://plan/<shareId>`. Expo Router
             resolves the deep link off app.json's `scheme`, so no manifest work
             and no associated domain is involved. */}

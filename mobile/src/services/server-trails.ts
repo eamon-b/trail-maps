@@ -20,6 +20,11 @@
  * publishing a trail means adding it to the allowlist. `trail-data-updates`
  * registers their ids here whenever it loads or refreshes the catalog — pushed
  * in rather than pulled, so this module still imports nothing.
+ *
+ * Community routes (`c_<16>`, `services/community-routes`) are the other
+ * exception the other way round: they live on the server, but outside the
+ * allowlist, so they are local-only here exactly like `u_` imports
+ * ({@link isLocalOnlyTrailId}).
  */
 
 const SERVER_TRAIL_IDS: ReadonlySet<string> = new Set(
@@ -37,16 +42,28 @@ let remoteTrailIds: ReadonlySet<string> = new Set();
  * best and create orphan rows at worst.
  */
 export function isServerKnown(id: string): boolean {
+  // Community routes (`c_…`) exist on the server, but not in `ALLOWED_TRAILS`:
+  // comments, descriptions and plan sync are off for them, as for imports.
+  if (isLocalOnlyTrailId(id)) return false;
   return SERVER_TRAIL_IDS.has(id) || remoteTrailIds.has(id);
 }
 
 /**
+ * Ids that must never reach a comments/plans route: user imports (`u_`) and
+ * community routes (`c_`, `plans/community-routes.md`). Checked by prefix
+ * rather than by the full id shape so a malformed id is refused too.
+ */
+export function isLocalOnlyTrailId(id: string): boolean {
+  return id.startsWith('u_') || id.startsWith('c_');
+}
+
+/**
  * Replace the set of catalog-only trail ids (published to R2, not bundled).
- * Called by `trail-data-updates`, which has already refused `u_` ids — they are
- * refused again here, because this set is the gate on every network path.
+ * Called by `trail-data-updates`, which has already refused `u_` and `c_` ids —
+ * they are refused again here, because this set is the gate on every network path.
  */
 export function registerRemoteTrailIds(ids: Iterable<string>): void {
-  remoteTrailIds = new Set([...ids].filter((id) => !id.startsWith('u_')));
+  remoteTrailIds = new Set([...ids].filter((id) => !isLocalOnlyTrailId(id)));
 }
 
 /** The bundled trail ids, in bundle order. */

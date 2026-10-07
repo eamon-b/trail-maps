@@ -53,6 +53,8 @@ describe('isCatalogTrailId', () => {
     expect(isCatalogTrailId('shikoku')).toBe(true);
     expect(isCatalogTrailId('hume-and-hovell')).toBe(true);
     expect(isCatalogTrailId('u_abc123')).toBe(false);
+    // Community routes are fetched from their own URL, never the catalog.
+    expect(isCatalogTrailId('c_AbCdEfGhIjKlMnOp')).toBe(false);
     expect(isCatalogTrailId('../etc')).toBe(false);
     expect(isCatalogTrailId('a/b')).toBe(false);
     expect(isCatalogTrailId('')).toBe(false);
@@ -68,6 +70,20 @@ describe('parseCatalog', () => {
     });
     expect(catalog?.trails).toEqual([entry('shikoku', T3, MD5_A)]);
     expect(catalog?.generatedAt).toBe(T3);
+  });
+
+  it('reads country and states leniently, never rejecting the entry for them', () => {
+    const catalog = parseCatalog({
+      format: TRAIL_DATA_FORMAT,
+      trails: [
+        { ...entry('aawt', T3, MD5_A), country: 'au', states: ['VIC', 'NSW', 42] },
+        { ...entry('heysen', T3, MD5_B), country: 'Australia', states: 'SA' },
+      ],
+    });
+    expect(catalog?.trails[0]).toEqual(
+      expect.objectContaining({ country: 'AU', states: ['VIC', 'NSW'] }),
+    );
+    expect(catalog?.trails[1]).toEqual(entry('heysen', T3, MD5_B));
   });
 
   it('refuses another format and non-catalogs', () => {

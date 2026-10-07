@@ -136,3 +136,52 @@ describe('server-boundary gating for imported trails', () => {
     expect(await outboxRepo.listPending(d)).toHaveLength(0);
   });
 });
+
+/**
+ * Community routes (`c_…`, `plans/community-routes.md`) live on the server but
+ * outside `ALLOWED_TRAILS`: comments and plan sync are off for them exactly as
+ * for an import, so the same three doors must stay shut.
+ */
+describe('server-boundary gating for community routes', () => {
+  const COMMUNITY = 'c_AbCdEfGhIjKlMnOp';
+  const realFetch = global.fetch;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    global.fetch = forbiddenFetch();
+  });
+
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  it('opening a community guide issues no comment request and subscribes to nothing', () => {
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = TestRenderer.create(<Probe trailId={COMMUNITY} />);
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(Network.addNetworkStateListener).not.toHaveBeenCalled();
+    act(() => {
+      tree!.unmount();
+    });
+  });
+
+  it('pullTrail short-circuits before any fetch', async () => {
+    const fetchImpl = forbiddenFetch();
+    const res = await pullTrail(COMMUNITY, { db: await db(), baseUrl: BASE, fetchImpl });
+    expect(res).toEqual({ outcome: 'not-server-trail', applied: 0, syncedAt: null });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('submitComment refuses a community route and queues nothing', async () => {
+    const d = await db();
+    await rejectionMessage(() =>
+      submitComment(
+        { trailId: COMMUNITY, waypointId: 'uw_9f8e7d6c', text: 'water is on', session: SESSION },
+        { db: d, baseUrl: BASE, fetchImpl: forbiddenFetch(), getSessionFn: async () => SESSION },
+      ),
+    );
+    expect(await outboxRepo.listPending(d)).toHaveLength(0);
+  });
+});

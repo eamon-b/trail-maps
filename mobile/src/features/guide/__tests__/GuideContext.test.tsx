@@ -69,6 +69,15 @@ jest.mock('../../../services/trail-data-updates', () => ({
   ensureTrailDownloaded: jest.fn(async () => false),
 }));
 
+jest.mock('../../../services/community-routes', () => ({
+  ensureCommunityRouteDownloaded: jest.fn(async () => false),
+}));
+
+const mockEnsureCommunity = (
+  jest.requireMock('../../../services/community-routes') as {
+    ensureCommunityRouteDownloaded: jest.Mock;
+  }
+).ensureCommunityRouteDownloaded;
 const mockGetTrailJson = getTrailJson as jest.Mock;
 const mockEnsureDownloaded = ensureTrailDownloaded as jest.Mock;
 const mockLoadTrail = loadTrail as jest.Mock;
@@ -215,6 +224,31 @@ describe('GuideProvider async resolution', () => {
 
     expect(mounted).toBe(true);
     expect(tree.root.findAllByType(ActivityIndicator)).toHaveLength(0);
+  });
+
+  it('downloads a community route on first open, never through the trail catalog', async () => {
+    const id = 'c_AbCdEfGhIjKlMnOp';
+    mockGetTrailJson.mockReturnValue(null);
+    mockLoadTrail.mockResolvedValueOnce(null).mockResolvedValueOnce(BUNDLED_TRAIL);
+    mockEnsureCommunity.mockResolvedValueOnce(true);
+
+    let mounted = false;
+    function CommunityChild() {
+      mounted = true;
+      useGuide();
+      return null;
+    }
+    await act(async () => {
+      TestRenderer.create(
+        <GuideProvider trailId={id}>
+          <CommunityChild />
+        </GuideProvider>,
+      );
+    });
+
+    expect(mockEnsureCommunity).toHaveBeenCalledWith(id);
+    expect(mockEnsureDownloaded).not.toHaveBeenCalled();
+    expect(mounted).toBe(true);
   });
 
   it('falls back to not-found when an id resolves to nothing', async () => {

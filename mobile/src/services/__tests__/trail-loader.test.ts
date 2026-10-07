@@ -18,13 +18,26 @@ import {
   listRemoteTrails,
   readDownloadedTrail,
 } from '../trail-data-updates';
+import {
+  getCommunityRouteInfo,
+  listCachedCommunityRoutes,
+  readCommunityTrail,
+} from '../community-routes';
 
 // The loader resolves bundled trail JSON straight from the require() map.
 // Mock both the asset map and the index so the test is isolated from the
 // (large) real bundled JSON and deterministic.
 
 const INDEX_JSON = [
-  { id: 'bibbulmun', name: 'Bibbulmun Track', shortName: 'Bibb', lengthKm: 981.6, dataVersion: '2026-07-29' },
+  {
+    id: 'bibbulmun',
+    name: 'Bibbulmun Track',
+    shortName: 'Bibb',
+    lengthKm: 981.6,
+    dataVersion: '2026-07-29',
+    country: 'AU',
+    states: ['WA'],
+  },
   { id: 'heysen', name: 'Heysen Trail', shortName: 'Heysen', lengthKm: 1200, dataVersion: '2026-07-29' },
 ];
 
@@ -90,6 +103,29 @@ jest.mock('../trail-data-updates', () => ({
   readDownloadedTrail: jest.fn(async () => null),
 }));
 
+// Community routes are stubbed at their service boundary too (own spec:
+// `community-routes.test.ts`).
+jest.mock('../community-routes', () => ({
+  getCommunityRouteInfo: jest.fn(() => null),
+  listCachedCommunityRoutes: jest.fn(() => []),
+  readCommunityTrail: jest.fn(async () => null),
+}));
+
+const mockGetCommunity = getCommunityRouteInfo as jest.Mock;
+const mockListCommunity = listCachedCommunityRoutes as jest.Mock;
+const mockReadCommunity = readCommunityTrail as jest.Mock;
+
+const COMMUNITY_ROUTE = {
+  id: 'c_AbCdEfGhIjKlMnOp',
+  name: 'Lake Loop',
+  status: 'verified',
+  country: 'AU',
+  state: 'VIC',
+  lengthKm: 12,
+  updatedAt: '2026-10-05T00:00:00Z',
+  downloaded: false,
+};
+
 const mockActiveDownload = activeDownload as jest.Mock;
 const mockGetRemoteTrail = getRemoteTrail as jest.Mock;
 const mockListRemoteTrails = listRemoteTrails as jest.Mock;
@@ -128,6 +164,9 @@ beforeEach(() => {
   mockGetRemoteTrail.mockReturnValue(null);
   mockListRemoteTrails.mockReturnValue([]);
   mockReadDownloaded.mockResolvedValue(null);
+  mockGetCommunity.mockReturnValue(null);
+  mockListCommunity.mockReturnValue([]);
+  mockReadCommunity.mockResolvedValue(null);
 });
 
 /** A downloaded copy of Heysen, newer than the bundle, as the state file records it. */
@@ -169,6 +208,22 @@ describe('trail-loader', () => {
       expect(trails.map((t) => t.id)).toEqual(['bibbulmun', 'heysen']);
       expect(trails[0]).toEqual(
         expect.objectContaining({ id: 'bibbulmun', shortName: 'Bibb', dataVersion: '2026-07-29' }),
+      );
+    });
+  });
+
+  describe('regions', () => {
+    it('carries country and states through from the bundled index', () => {
+      expect(listTrails()[0]).toEqual(expect.objectContaining({ country: 'AU', states: ['WA'] }));
+      expect(listTrails()[1]).not.toHaveProperty('country');
+    });
+
+    it('keeps the bundled region when a newer download is active', () => {
+      mockActiveDownload.mockImplementation((id: string) =>
+        id === 'bibbulmun' ? { ...HEYSEN_DOWNLOAD, id: 'bibbulmun' } : null,
+      );
+      expect(getTrailIndexEntry('bibbulmun')).toEqual(
+        expect.objectContaining({ country: 'AU', states: ['WA'] }),
       );
     });
   });
@@ -414,6 +469,56 @@ describe('trail-loader', () => {
       mockGetDatabase.mockRejectedValue(new Error('disk I/O error'));
       const all = await listAllTrails();
       expect(all.map((t) => t.id)).toEqual(['bibbulmun', 'heysen', 'gamma']);
+    });
+  });
+
+  describe('community routes', () => {
+    it('listAllTrails lists them between catalog-only and imported trails', async () => {
+      mockListRemoteTrails.mockReturnValue([GAMMA_REMOTE]);
+      mockListCommunity.mockReturnValue([COMMUNITY_ROUTE]);
+      mockListImported.mockResolvedValue([IMPORTED_ROW]);
+
+      const all = await listAllTrails();
+
+      expect(all.map((t) => t.source)).toEqual([
+        'bundled',
+        'bundled',
+        'remote',
+        'community',
+        'imported',
+      ]);
+      expect(all[3]).toEqual({
+        id: 'c_AbCdEfGhIjKlMnOp',
+        name: 'Lake Loop',
+        shortName: 'Lake Loop',
+        lengthKm: 12,
+        updatedAt: '2026-10-05T00:00:00Z',
+        source: 'community',
+        downloaded: false,
+        country: 'AU',
+        states: ['VIC'],
+        communityStatus: 'verified',
+      });
+    });
+
+    it('getTrailIndexEntry answers a community id from the cached list', () => {
+      mockGetCommunity.mockImplementation((id: string) =>
+        id === COMMUNITY_ROUTE.id ? COMMUNITY_ROUTE : null,
+      );
+      expect(getTrailIndexEntry(COMMUNITY_ROUTE.id)).toEqual(
+        expect.objectContaining({ source: 'community', communityStatus: 'verified' }),
+      );
+    });
+
+    it('loadTrail reads a community id from the community store, never the import store', async () => {
+      const json = { ...IMPORTED_JSON, config: { ...IMPORTED_JSON.config, id: COMMUNITY_ROUTE.id } };
+      mockReadCommunity.mockResolvedValue(json);
+      await expect(loadTrail(COMMUNITY_ROUTE.id)).resolves.toBe(json);
+      expect(mockReadImported).not.toHaveBeenCalled();
+    });
+
+    it('a community route is never server-known', () => {
+      expect(isServerKnown(COMMUNITY_ROUTE.id)).toBe(false);
     });
   });
 });

@@ -12,7 +12,9 @@
 
 import { createHash } from 'crypto';
 import { newPlan } from '@lib/plan-editor';
+import { File as FsFile } from 'expo-file-system';
 import {
+  CommunityCopyUnreadableError,
   CommunityRouteTakenDownError,
   ensureCommunityRouteDownloaded,
   forgetCommunityRoute,
@@ -522,6 +524,45 @@ describe('downloading on open', () => {
     expect(await ensureCommunityRouteDownloaded('u_abc')).toBe(false);
     expect(await ensureCommunityRouteDownloaded('heysen')).toBe(false);
     expect(mockDownloadTargets).toEqual([]);
+  });
+});
+
+describe('reading a damaged copy', () => {
+  it('forgets a corrupt copy of a listed route so the next open downloads it again', async () => {
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
+    await ensureCommunityRouteDownloaded(ID);
+    mockFiles[fileOf(ID)!] = '{ not json';
+
+    expect(await readCommunityTrail(ID)).toBeNull();
+    expect(fileOf(ID)).toBeUndefined();
+    expect(await ensureCommunityRouteDownloaded(ID)).toBe(true);
+    expect((await readCommunityTrail(ID))?.config.id).toBe(ID);
+  });
+
+  it('keeps a corrupt copy of a route that is no longer shared, and says so', async () => {
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
+    await ensureCommunityRouteDownloaded(ID);
+    markCommunityRouteTakenDown(ID);
+    const file = fileOf(ID)!;
+    mockFiles[file] = '{ not json';
+
+    await expect(readCommunityTrail(ID)).rejects.toBeInstanceOf(CommunityCopyUnreadableError);
+    expect(mockFiles[file]).toBe('{ not json');
+    expect(getCommunityRouteInfo(ID)).toMatchObject({ downloaded: true, takenDown: true });
+  });
+
+  it('keeps the copy when the read itself fails', async () => {
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
+    await ensureCommunityRouteDownloaded(ID);
+    const file = fileOf(ID)!;
+    const spy = jest
+      .spyOn(FsFile.prototype as unknown as { text(): Promise<string> }, 'text')
+      .mockRejectedValueOnce(new Error('EIO'));
+
+    await expect(readCommunityTrail(ID)).rejects.toBeInstanceOf(CommunityCopyUnreadableError);
+    spy.mockRestore();
+    expect(mockFiles[file]).toBeDefined();
+    expect((await readCommunityTrail(ID))?.config.id).toBe(ID);
   });
 });
 

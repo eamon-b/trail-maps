@@ -175,41 +175,79 @@ export function getCommunityRouteInfo(id: string): CommunityRouteInfo | null {
 }
 
 /**
+ * The copy of a route on this phone exists but cannot be read, and is kept:
+ * an I/O error may pass, and a corrupt copy of a route that is no longer
+ * shared cannot be downloaded again (`GuideProvider` shows it with a retry).
+ */
+export class CommunityCopyUnreadableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CommunityCopyUnreadableError';
+  }
+}
+
+/**
  * Read a downloaded route. The worker writes the community id into the
  * trail's `config.id`, but the file is a stranger's and is not trusted for it:
  * the id is set again to the one the guide was opened under — every per-trail
  * store on the device keys on it — and the name to the listed one (an owner
  * may have renamed it since the copy was downloaded).
  *
- * An unreadable copy is forgotten so the next open downloads it again.
+ * Null when there is no copy. A copy whose file is missing is forgotten. A
+ * corrupt copy of a route the cached list still offers is forgotten and
+ * deleted, so the next open downloads it again. Anything else throws
+ * {@link CommunityCopyUnreadableError} and keeps the file: a read that failed
+ * (it may work next time), and a corrupt copy of a route that is not listed —
+ * "No longer shared" or not yet known either way — which could not be
+ * downloaded again: a download is never deleted except by the hiker.
  */
 export async function readCommunityTrail(id: string): Promise<TrailJson | null> {
   if (!isCommunityRouteId(id)) return null;
   const installed = getState().installed[id];
   if (!installed) return null;
+  const file = new File(communityRoot(), installed.file);
+  let text: string;
   try {
-    const file = new File(communityRoot(), installed.file);
-    if (file.exists) {
-      const json = JSON.parse(await file.text()) as unknown;
-      if (isUsableCommunityTrail(json)) {
-        const trail = json as TrailJson;
-        const name = getCommunityRouteInfo(id)?.name ?? installed.summary.name;
-        return {
-          ...trail,
-          config: {
-            ...trail.config,
-            id,
-            name,
-            shortName: name,
-          },
-        } as TrailJson;
-      }
+    if (!file.exists) {
+      if (getState().installed[id]?.file === installed.file) forgetInstalled(id);
+      return null;
     }
-  } catch {
-    // Fall through: treated the same as a missing file.
+    text = await file.text();
+  } catch (err) {
+    console.warn(`[community] could not read ${installed.file}`, err);
+    throw new CommunityCopyUnreadableError('The copy of this route on this phone could not be read.');
   }
-  if (getState().installed[id]?.file === installed.file) forgetInstalled(id);
-  return null;
+
+  let json: unknown = null;
+  try {
+    json = JSON.parse(text) as unknown;
+  } catch {
+    // Corrupt: handled below with a parse that is not a trail.
+  }
+  if (isUsableCommunityTrail(json)) {
+    const trail = json as TrailJson;
+    const name = getCommunityRouteInfo(id)?.name ?? installed.summary.name;
+    return {
+      ...trail,
+      config: {
+        ...trail.config,
+        id,
+        name,
+        shortName: name,
+      },
+    } as TrailJson;
+  }
+
+  const current = getState();
+  const entry = current.installed[id];
+  const stillListed = current.list?.some((r) => r.id === id) === true;
+  if (entry?.file === installed.file && stillListed && entry.takenDown !== true) {
+    forgetInstalled(id);
+    return null;
+  }
+  throw new CommunityCopyUnreadableError(
+    'The copy of this route on this phone is damaged, and the route can’t be downloaded again.',
+  );
 }
 
 function forgetInstalled(id: string): void {

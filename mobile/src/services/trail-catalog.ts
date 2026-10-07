@@ -35,7 +35,7 @@ const SAFE_CATALOG_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MD5 = /^[0-9a-f]{32}$/;
 
 export function isCatalogTrailId(id: string): boolean {
-  return SAFE_CATALOG_ID.test(id) && !id.startsWith('u_');
+  return SAFE_CATALOG_ID.test(id) && !id.startsWith('u_') && !id.startsWith('c_');
 }
 
 /** What the guide list needs to show a trail, from any source. */
@@ -50,6 +50,10 @@ export interface TrailVersionInfo {
   /** MD5 of the trail file's exact bytes. */
   md5?: string;
   bytes?: number;
+  /** ISO 3166-1 alpha-2, for grouping on My Guides (`@lib/trail-regions`). */
+  country?: string;
+  /** State/region codes; the first is the group the trail is listed under. */
+  states?: string[];
 }
 
 /** One published trail. */
@@ -82,6 +86,24 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+/**
+ * The optional region fields, read leniently: a malformed value is dropped on
+ * its own and never rejects the entry — grouping is cosmetic, updates are not.
+ */
+function regionFields(e: Record<string, unknown>): { country?: string; states?: string[] } {
+  const out: { country?: string; states?: string[] } = {};
+  if (typeof e.country === 'string' && /^[A-Za-z]{2}$/.test(e.country)) {
+    out.country = e.country.toUpperCase();
+  }
+  if (Array.isArray(e.states)) {
+    const states = e.states.filter(
+      (s): s is string => typeof s === 'string' && /^[A-Za-z0-9-]{1,16}$/.test(s),
+    );
+    if (states.length > 0) out.states = states;
+  }
+  return out;
+}
+
 function parseEntry(raw: unknown): CatalogEntry | null {
   if (!raw || typeof raw !== 'object') return null;
   const e = raw as Record<string, unknown>;
@@ -101,6 +123,7 @@ function parseEntry(raw: unknown): CatalogEntry | null {
     shortName: e.shortName,
     lengthKm: e.lengthKm,
     ...(typeof e.dataVersion === 'string' ? { dataVersion: e.dataVersion } : {}),
+    ...regionFields(e),
     updatedAt: e.updatedAt,
     md5: e.md5,
     bytes: e.bytes,

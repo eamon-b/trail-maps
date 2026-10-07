@@ -290,6 +290,8 @@ function stripKey(entry: CatalogEntry): TrailVersionInfo {
     updatedAt: entry.updatedAt,
     md5: entry.md5,
     bytes: entry.bytes,
+    ...(entry.country ? { country: entry.country } : {}),
+    ...(entry.states ? { states: entry.states } : {}),
   };
 }
 

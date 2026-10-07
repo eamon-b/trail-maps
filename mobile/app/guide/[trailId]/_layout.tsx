@@ -4,7 +4,8 @@
  * Wraps its screens in a GuideProvider so `index` and `downloads` share a
  * single loaded (and direction-applied) trail. The header exposes the guide
  * title plus icon-only quick actions: routes, plan, offline maps and app
- * settings.
+ * settings — and, for a community route, "About this route" (status, report,
+ * delete), or for an import, "Share to community".
  */
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,12 +17,17 @@ import {
 import { GuideProvider } from '../../../src/features/guide/GuideContext';
 import { useTrailTitle } from '../../../src/features/guide/use-trail-title';
 import { GuidePositionProvider } from '../../../src/features/guide/GuidePositionContext';
+import { isCommunityRouteId } from '@lib/community-types';
+import { isApiConfigured } from '../../../src/api/client';
 
 export default function GuideLayout() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
   const { colors } = useTheme();
   const router = useRouter();
   const title = useTrailTitle(trailId);
+  const community = isCommunityRouteId(trailId);
+  // Only an import can be shared (a community route already is one).
+  const shareable = trailId.startsWith('u_') && isApiConfigured();
 
   return (
     <GuideProvider trailId={trailId}>
@@ -45,6 +51,27 @@ export default function GuideLayout() {
             // app-wide settings the root header also links to.
             headerRight: () => (
               <HeaderActions>
+                {community && (
+                  <HeaderIconButton
+                    name="information-outline"
+                    accessibilityLabel="About this community route"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/guide/[trailId]/community',
+                        params: { trailId },
+                      })
+                    }
+                  />
+                )}
+                {shareable && (
+                  <HeaderIconButton
+                    name="share-variant"
+                    accessibilityLabel="Share to community"
+                    onPress={() =>
+                      router.push({ pathname: '/share-route', params: { trailId } })
+                    }
+                  />
+                )}
                 <HeaderIconButton
                   name="routes"
                   accessibilityLabel="Routes"
@@ -87,6 +114,7 @@ export default function GuideLayout() {
         <Stack.Screen name="downloads" options={{ title: 'Offline maps' }} />
         <Stack.Screen name="routes" options={{ title: 'Routes' }} />
         <Stack.Screen name="plan" options={{ title: 'Plan' }} />
+        <Stack.Screen name="community" options={{ title: 'Community route' }} />
         {/* A modal over the plan: 70 CDT rows want a header, a scroll and a
             back gesture, which a sheet has none of. */}
         <Stack.Screen

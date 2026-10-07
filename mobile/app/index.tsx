@@ -1,12 +1,16 @@
 /**
  * "My Guides" — the FarOut-style guide list.
  *
- * One card per trail (name, unit-aware length, offline-status badge): bundled
- * trails first, then trails published to the R2 catalog after this build (a
- * "Download" pill until first opened), then user-imported ones. Tapping a card
- * opens that guide; long-pressing an imported one offers to delete it. Pulling
- * down checks the catalog for newer trail data now rather than on the six-hour
- * schedule (`services/trail-data-updates`).
+ * One card per trail (name, region, unit-aware length, offline-status badge),
+ * in sections (`features/guide/guide-sections`): "Hiking now", then the curated
+ * trails — bundled, and published to the R2 catalog after this build (a
+ * "downloads when opened" pill until first opened) — one section per country,
+ * then "Community" (routes other hikers shared, with a Verified/Unverified
+ * pill), then "Imported". A search field at the top filters every section by
+ * name or region. Tapping a card opens that guide; long-pressing an imported
+ * one offers to share it to the community or delete it. Pulling down checks
+ * the catalog for newer trail data and the community list now rather than on
+ * their schedules (`services/trail-data-updates`, `services/community-routes`).
  *
  * The list reads only index metadata via `listAllTrails()` — it never eagerly
  * loads any full trail JSON, so it stays instant. (That metadata carries no
@@ -16,14 +20,23 @@
  * data changes, since a background update can rename a trail or add one.
  *
  * The pin on each card marks the trail being hiked now (`currentTrailId` in the
- * settings store): that card leads the list with a "Hiking now" pill, and a
+ * settings store): that card leads the list in its own section, and a
  * fresh launch opens straight into its guide — pushed over this screen, so Back
  * still lands here. That happens once per launch, so backing out to the list
  * leaves you on it.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -38,7 +51,11 @@ import { useDownloadsStore } from '../src/state/downloads-store';
 import { DownloadBadge } from '../src/features/guide/DownloadBadge';
 import { checkForTrailDataUpdates } from '../src/services/trail-data-updates';
 import { useTrailDataStore } from '../src/state/trail-data-store';
-import { launchTrailId, orderWithCurrentFirst } from '../src/features/guide/current-hike';
+import { launchTrailId } from '../src/features/guide/current-hike';
+import { buildGuideSections, regionSubtitle } from '../src/features/guide/guide-sections';
+import { refreshCommunityRoutes } from '../src/services/community-routes';
+import { isApiConfigured } from '../src/api/client';
+import { CommunityStatusPill } from '../src/features/community/CommunityUi';
 import { classifyIncomingUrl } from '../src/features/import/incoming-file';
 
 // Once per app process: the launch has been offered its current-trail guide.
@@ -128,15 +145,20 @@ export default function GuideListScreen() {
     };
   }, [navigation, router]);
 
-  const orderedTrails = useMemo(
-    () => orderWithCurrentFirst(trails, currentTrailId),
-    [trails, currentTrailId],
+  const [query, setQuery] = useState('');
+  const sections = useMemo(
+    () => buildGuideSections(trails, currentTrailId, query),
+    [trails, currentTrailId, query],
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const result = await checkForTrailDataUpdates({ force: true });
+      const [result] = await Promise.all([
+        checkForTrailDataUpdates({ force: true }),
+        // Best effort: an offline community list keeps showing the cached one.
+        refreshCommunityRoutes({ force: true }),
+      ]);
       await refresh();
       if (result.error) {
         Alert.alert('Couldn’t check for trail updates', result.error);
@@ -153,15 +175,18 @@ export default function GuideListScreen() {
 
   // Offline-tile statuses, for bundled and catalog trails only: tile packs are
   // built server-side per published trailId, so no directory is ever named
-  // after an imported id and asking the tile manager about one is a pointless probe.
+  // after an imported or community id and asking the tile manager about one is
+  // a pointless probe.
   //
-  // An import can still *borrow* a bundled pack when its track sits inside that
-  // trail's coverage (`services/offline-pack-resolver`) — but the borrowed
-  // pack's status is hydrated under the bundled id, which is already in this
-  // list. Known gap: the imported card shows an "Imported" pill instead of a
+  // An import or community route can still *borrow* a bundled pack when its
+  // track sits inside that trail's coverage (`services/offline-pack-resolver`)
+  // — but the borrowed pack's status is hydrated under the bundled id, which is
+  // already in this list. Known gap: those cards show a pill instead of a
   // DownloadBadge, so a borrowed pack is not reflected here.
   useEffect(() => {
-    hydrate(trails.filter((t) => t.source !== 'imported').map((t) => t.id));
+    hydrate(
+      trails.filter((t) => t.source === 'bundled' || t.source === 'remote').map((t) => t.id),
+    );
   }, [hydrate, trails]);
 
   const confirmDelete = (trail: TrailIndexEntry) => {
@@ -186,12 +211,31 @@ export default function GuideListScreen() {
     );
   };
 
+  // Long-press on an imported guide: share it to the community (when the API is
+  // configured) or delete it. Android's Alert takes at most three buttons.
+  const onImportedLongPress = (trail: TrailIndexEntry) => {
+    if (!isApiConfigured()) {
+      confirmDelete(trail);
+      return;
+    }
+    Alert.alert(trail.name, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Share to community',
+        onPress: () => router.push({ pathname: '/share-route', params: { trailId: trail.id } }),
+      },
+      { text: 'Delete…', style: 'destructive', onPress: () => confirmDelete(trail) },
+    ]);
+  };
+
   return (
-    <FlatList
-      data={orderedTrails}
+    <SectionList
+      sections={sections}
       keyExtractor={(t) => t.id}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
+      stickySectionHeadersEnabled={false}
+      keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -201,22 +245,67 @@ export default function GuideListScreen() {
         />
       }
       ListHeaderComponent={
-        <Text style={[styles.heading, { color: colors.textPrimary }]}>My Guides</Text>
+        <View style={styles.header}>
+          <Text style={[styles.heading, { color: colors.textPrimary }]}>My Guides</Text>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by name or region"
+            placeholderTextColor={colors.textSecondary}
+            accessibilityLabel="Search guides"
+            autoCorrect={false}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+            returnKeyType="search"
+            style={[
+              styles.search,
+              {
+                color: colors.textPrimary,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+            ]}
+          />
+        </View>
       }
+      ListEmptyComponent={
+        <Text style={[styles.empty, { color: colors.textSecondary }]}>
+          {query.trim() ? `No guides match “${query.trim()}”.` : 'No guides yet.'}
+        </Text>
+      }
+      renderSectionHeader={({ section }) => (
+        <Text
+          accessibilityRole="header"
+          style={[styles.sectionTitle, { color: colors.textSecondary }]}
+        >
+          {section.title}
+        </Text>
+      )}
       renderItem={({ item }) => {
         const imported = item.source === 'imported';
+        const community = item.source === 'community';
         const current = item.id === currentTrailId;
+        const subtitle = regionSubtitle(item);
+        const verified = item.communityStatus === 'verified';
         return (
           <Pressable
             onPress={() =>
               router.push({ pathname: '/guide/[trailId]', params: { trailId: item.id } })
             }
-            onLongPress={imported ? () => confirmDelete(item) : undefined}
+            onLongPress={imported ? () => onImportedLongPress(item) : undefined}
             accessibilityRole="button"
-            accessibilityLabel={[item.name, imported && 'imported', current && 'hiking now']
+            accessibilityLabel={[
+              item.name,
+              subtitle,
+              imported && 'imported',
+              community && (verified ? 'community route, verified' : 'community route, unverified'),
+              current && 'hiking now',
+            ]
               .filter(Boolean)
               .join(', ')}
-            accessibilityHint={imported ? 'Long press to delete this imported guide' : undefined}
+            accessibilityHint={
+              imported ? 'Long press to share or delete this imported guide' : undefined
+            }
             style={[
               styles.card,
               {
@@ -243,6 +332,14 @@ export default function GuideListScreen() {
                 <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={2}>
                   {item.name}
                 </Text>
+                {subtitle ? (
+                  <Text
+                    style={[styles.subtitle, { color: colors.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {subtitle}
+                  </Text>
+                ) : null}
                 <Text style={[styles.length, { color: colors.textSecondary }]}>
                   {formatDistance(item.lengthKm, units)}
                 </Text>
@@ -270,6 +367,17 @@ export default function GuideListScreen() {
               <View style={[styles.importedPill, { borderColor: colors.accentMuted }]}>
                 <Text style={[styles.importedLabel, { color: colors.accentMuted }]}>Imported</Text>
               </View>
+            ) : community ? (
+              <View style={styles.pillRow}>
+                <CommunityStatusPill status={item.communityStatus ?? 'unverified'} />
+                {!item.downloaded && (
+                  <View style={[styles.importedPill, { borderColor: colors.accentMuted }]}>
+                    <Text style={[styles.importedLabel, { color: colors.accentMuted }]}>
+                      Downloads when opened
+                    </Text>
+                  </View>
+                )}
+              </View>
             ) : item.source === 'remote' && !item.downloaded ? (
               // Published after this build: the guide itself is fetched on
               // first open, so offline-map status would be premature.
@@ -293,9 +401,35 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
+  header: {
+    gap: spacing.md,
+  },
   heading: {
     ...typography.displayLarge,
-    marginBottom: spacing.sm,
+  },
+  search: {
+    ...typography.body,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  sectionTitle: {
+    ...typography.titleSmall,
+    marginTop: spacing.md,
+  },
+  empty: {
+    ...typography.body,
+    textAlign: 'center',
+    marginTop: spacing.xl,
+  },
+  subtitle: {
+    ...typography.bodySmall,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   card: {
     borderRadius: radii.lg,

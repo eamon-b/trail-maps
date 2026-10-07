@@ -5,7 +5,12 @@
  * the bundle but missed in the index would silently lose its comments.
  */
 
-import { isServerKnown, registerRemoteTrailIds, serverTrailIds } from '../server-trails';
+import {
+  isLocalOnlyTrailId,
+  isServerKnown,
+  registerRemoteTrailIds,
+  serverTrailIds,
+} from '../server-trails';
 import {
   hasTrail,
   isServerKnown as loaderIsServerKnown,
@@ -23,6 +28,14 @@ describe('isServerKnown', () => {
     expect(isServerKnown('u_1a2b3c4d')).toBe(false);
     expect(isServerKnown('not-a-trail')).toBe(false);
     expect(isServerKnown('')).toBe(false);
+  });
+
+  it('rejects community route ids: no comments, descriptions or plan sync for them', () => {
+    expect(isServerKnown('c_AbCdEfGhIjKlMnOp')).toBe(false);
+    expect(isServerKnown('c_short')).toBe(false);
+    expect(isLocalOnlyTrailId('c_AbCdEfGhIjKlMnOp')).toBe(true);
+    expect(isLocalOnlyTrailId('u_1a2b3c4d')).toBe(true);
+    expect(isLocalOnlyTrailId('heysen')).toBe(false);
   });
 
   it('agrees with the bundled require() map', () => {
@@ -63,6 +76,11 @@ describe('registerRemoteTrailIds', () => {
     registerRemoteTrailIds(['u_1a2b3c4d', 'catalog-only-trail']);
     expect(isServerKnown('u_1a2b3c4d')).toBe(false);
     expect(isServerKnown('catalog-only-trail')).toBe(true);
+  });
+
+  it('refuses community (c_) ids even when handed one', () => {
+    registerRemoteTrailIds(['c_AbCdEfGhIjKlMnOp']);
+    expect(isServerKnown('c_AbCdEfGhIjKlMnOp')).toBe(false);
   });
 
   it('never removes the bundled trails', () => {

@@ -297,6 +297,13 @@ describe('the plan outbox branch', () => {
     );
     expect(await outboxRepo.count(d)).toBe(0);
   });
+
+  it('refuses to queue a plan for a community route (not in the allowlist)', async () => {
+    const d = await db();
+    const id = 'c_AbCdEfGhIjKlMnOp';
+    await expect(enqueuePlan(id, doc({ trailId: id }), { db: d })).rejects.toThrow();
+    expect(await outboxRepo.count(d)).toBe(0);
+  });
 });
 
 describe('coalescing', () => {

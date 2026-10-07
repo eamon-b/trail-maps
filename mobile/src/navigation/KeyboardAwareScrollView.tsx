@@ -17,6 +17,9 @@
  *   content by the keyboard and scrolls the focused field into view natively,
  *   in window coordinates, so it is right in a sheet-presented modal too.
  *
+ * The content is also padded for the bottom system bar (`bottom-inset.ts`), so
+ * every screen built on this can scroll its last item clear of it.
+ *
  * Lives in `src/navigation/` beside the other screen chrome because screens in
  * both stacks, and screens of several features, use it.
  */
@@ -30,18 +33,21 @@ import {
   StyleSheet,
   type ScrollViewProps,
 } from 'react-native';
+import { useBottomInsetContentStyle } from './bottom-inset';
 
 export const KeyboardAwareScrollView = forwardRef<ScrollView, ScrollViewProps>(
   function KeyboardAwareScrollView(props, ref) {
     // The context rather than `useHeaderHeight()`, which throws outside a
     // navigator (tests render screens without one); no header is 0.
     const headerHeight = useContext(HeaderHeightContext) ?? 0;
+    const contentContainerStyle = useBottomInsetContentStyle(props.contentContainerStyle);
     const scroll = (
       <ScrollView
         ref={ref}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         {...props}
+        contentContainerStyle={contentContainerStyle}
       />
     );
     if (Platform.OS === 'ios') return scroll;

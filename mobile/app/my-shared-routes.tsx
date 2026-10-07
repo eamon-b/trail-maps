@@ -40,9 +40,11 @@ import {
   deleteSharedRouteMessage,
   isLiveRoute,
 } from '../src/features/community/my-shared-routes';
+import { useBottomInsetContentStyle } from '../src/navigation/bottom-inset';
 
 export default function MySharedRoutesScreen() {
   const { colors } = useTheme();
+  const contentStyle = useBottomInsetContentStyle(styles.content);
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -114,7 +116,7 @@ export default function MySharedRoutesScreen() {
   return (
     <FlatList
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={contentStyle}
       data={state.routes}
       keyExtractor={(r) => r.id}
       refreshControl={

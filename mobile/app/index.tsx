@@ -63,6 +63,7 @@ import {
 import { isApiConfigured } from '../src/api/client';
 import { CommunityStatusPill } from '../src/features/community/CommunityUi';
 import { classifyIncomingUrl } from '../src/features/import/incoming-file';
+import { useBottomInsetContentStyle } from '../src/navigation/bottom-inset';
 
 // Once per app process: the launch has been offered its current-trail guide.
 // Module-level so remounting this screen never opens it a second time.
@@ -81,6 +82,7 @@ function settingsHydrated(): Promise<void> {
 
 export default function GuideListScreen() {
   const { colors } = useTheme();
+  const contentStyle = useBottomInsetContentStyle(styles.content);
   const router = useRouter();
   const units = useSettingsStore((s) => s.units);
   const hydrate = useDownloadsStore((s) => s.hydrate);
@@ -282,7 +284,7 @@ export default function GuideListScreen() {
       sections={sections}
       keyExtractor={(t) => t.id}
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={contentStyle}
       stickySectionHeadersEnabled={false}
       keyboardShouldPersistTaps="handled"
       refreshControl={

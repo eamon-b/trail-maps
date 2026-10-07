@@ -134,15 +134,27 @@ export function deleteObjects(env: Env, keys: (string | null | undefined)[]): Pr
   });
 }
 
+/** Keys a purge leaves in place: one, several, or none. */
+export type KeepKeys = string | null | undefined | readonly (string | null | undefined)[];
+
+function keepSet(keep: KeepKeys): Set<string> {
+  const list = Array.isArray(keep) ? keep : [keep];
+  return new Set(list.filter((k): k is string => !!k));
+}
+
 /**
- * Delete every object under `prefix` except `keep` (paged; R2 deletes up to
- * 1,000 keys a call).
+ * Delete every object under `prefix` except those in `keep`, and, when
+ * `uploadedBefore` is given, except any uploaded at or after it (paged; R2
+ * deletes up to 1,000 keys a call).
  */
-async function purgePrefix(env: Env, prefix: string, keep?: string | null): Promise<void> {
+async function purgePrefix(env: Env, prefix: string, keep?: KeepKeys, uploadedBefore?: Date): Promise<void> {
+  const kept = keepSet(keep);
   let cursor: string | undefined;
   for (let page = 0; page < 100; page++) {
     const listed = await env.PHOTOS.list({ prefix, cursor, limit: 1000 });
-    const keys = listed.objects.map((o) => o.key).filter((k) => k !== keep);
+    const keys = listed.objects
+      .filter((o) => !kept.has(o.key) && (!uploadedBefore || o.uploaded < uploadedBefore))
+      .map((o) => o.key);
     if (keys.length > 0) await env.PHOTOS.delete(keys);
     if (!listed.truncated) return;
     cursor = listed.cursor;
@@ -152,12 +164,26 @@ async function purgePrefix(env: Env, prefix: string, keep?: string | null): Prom
 /**
  * Every public version of a route: the current one and any older ones a
  * republish left for cached lists. The trailing `.` keeps `c_abc` from
- * matching `c_abcd…`. Never throws.
+ * matching `c_abcd…`. `keep` survives; so does anything uploaded at or after
+ * `uploadedBefore`, when given. Never throws.
  */
-export function purgePublic(env: Env, id: string, keep?: string | null): Promise<void> {
-  return purgePrefix(env, `${TRAIL_PREFIX}${id}.`, keep).catch((err) => {
+export function purgePublic(env: Env, id: string, keep?: KeepKeys, uploadedBefore?: Date): Promise<void> {
+  return purgePublicOrThrow(env, id, keep, uploadedBefore).catch((err) => {
     console.error(`Purging public copies of ${id} failed: ${err instanceof Error ? err.message : String(err)}`);
   });
+}
+
+/** `purgePublic` for a caller that must know whether it finished. */
+export function purgePublicOrThrow(env: Env, id: string, keep?: KeepKeys, uploadedBefore?: Date): Promise<void> {
+  return purgePrefix(env, `${TRAIL_PREFIX}${id}.`, keep, uploadedBefore);
+}
+
+/**
+ * A route's private objects (canonical JSON and raw GPX) except `keep`, and
+ * except any uploaded at or after `uploadedBefore`. Throws on failure.
+ */
+export function purgePrivateOrThrow(env: Env, id: string, keep: KeepKeys, uploadedBefore: Date): Promise<void> {
+  return purgePrefix(env, `${PRIVATE_PREFIX}${id}/`, keep, uploadedBefore);
 }
 
 /** Both prefixes: a removed route. Never throws. */

@@ -54,6 +54,13 @@ export const RATE_BUCKETS = {
    * bounded like a submission; a PATCH that changes nothing is free.
    */
   communityEdit: { bucket: 'community_edit', limit: 20, windowMs: 24 * 60 * 60 * 1000 },
+  /**
+   * Community route reports per user per day. Spent only by a report that is
+   * new (a repeat of one already filed is free), through the event log rather
+   * than a count of `community_route_reports`, so parallel reports cannot all
+   * read "one below the limit" before any of them is stored.
+   */
+  communityReport: { bucket: 'community_report', limit: 20, windowMs: 24 * 60 * 60 * 1000 },
 
 } as const;
 

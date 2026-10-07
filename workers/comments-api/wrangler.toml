@@ -26,6 +26,12 @@ database_id = "2d1504b2-13c4-422b-829b-af3a3536a5bd"
 binding = "PHOTOS"
 bucket_name = "aus-map-data"
 
+# Community-route maintenance (`runCommunityMaintenance` in src/community.ts):
+# retries de-attributions an account deletion left pending and re-runs AI
+# reviews stuck at `pending`, a bounded batch each run.
+[triggers]
+crons = ["*/15 * * * *"]
+
 [vars]
 # Public read base for R2 objects: the bucket's custom domain (the old
 # pub-….r2.dev URL still resolves but is rate-limited and uncached). The worker

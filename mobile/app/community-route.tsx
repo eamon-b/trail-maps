@@ -29,16 +29,11 @@ import { KeyboardAwareScrollView } from '../src/navigation/KeyboardAwareScrollVi
 import { radii, spacing, typography } from '../src/tokens';
 import { ApiError, getBaseUrl } from '../src/api/client';
 import { apiErrorMessage } from '../src/api/error-message';
-import {
-  deleteCommunityRoute,
-  getCommunityRoute,
-  reportCommunityRoute,
-} from '../src/api/community';
+import { getCommunityRoute, reportCommunityRoute } from '../src/api/community';
 import { useIdentityStore } from '../src/state/identity-store';
 import { useSettingsStore } from '../src/state/settings-store';
 import { useTrailDataStore } from '../src/state/trail-data-store';
 import {
-  forgetCommunityRoute,
   getCommunityRouteInfo,
   markCommunityRouteTakenDown,
   removeCommunityRouteFromDevice,
@@ -54,6 +49,11 @@ import {
   REPORT_REASON_CHOICES,
   validateReport,
 } from '../src/features/community/community-route';
+import {
+  DELETE_SHARED_ROUTE_TITLE,
+  deleteMySharedRoute,
+  deleteSharedRouteMessage,
+} from '../src/features/community/my-shared-routes';
 import {
   MAX_DISPLAY_NAME_LENGTH,
   validateDisplayName,
@@ -152,8 +152,8 @@ export default function CommunityRouteScreen() {
     const baseUrl = getBaseUrl();
     if (!baseUrl || !session) return;
     Alert.alert(
-      'Delete shared route',
-      'Remove this route from the community list for everyone? The guide you imported stays on this phone.',
+      DELETE_SHARED_ROUTE_TITLE,
+      deleteSharedRouteMessage(detail?.name ?? cached?.name),
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -162,9 +162,9 @@ export default function CommunityRouteScreen() {
           onPress: () => {
             void (async () => {
               try {
-                await deleteCommunityRoute({ baseUrl, token: session.token }, trailId);
-                // The route's file, plan, favourites, pin and the rest go too.
-                await forgetCommunityRoute(trailId);
+                // A 404 is already deleted; the route's file, plan,
+                // favourites, pin and the rest go too.
+                await deleteMySharedRoute({ baseUrl, token: session.token }, trailId);
                 router.dismissTo('/');
               } catch (err) {
                 Alert.alert(
@@ -177,7 +177,7 @@ export default function CommunityRouteScreen() {
         },
       ],
     );
-  }, [session, trailId, router]);
+  }, [session, trailId, router, detail?.name, cached?.name]);
 
   const onRemoveFromPhone = useCallback(() => {
     Alert.alert(

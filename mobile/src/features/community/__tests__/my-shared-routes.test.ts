@@ -5,6 +5,7 @@ import {
   HIDDEN_UNKNOWN_TEXT,
   MY_ROUTES_LOAD_FAILED,
   deleteMySharedRoute,
+  deleteSharedRouteMessage,
   hiddenReasonText,
   isLiveRoute,
   mySharedRoutesError,
@@ -92,5 +93,19 @@ describe('deleteMySharedRoute', () => {
       }),
     ).rejects.toBeInstanceOf(NetworkError);
     expect(forget).not.toHaveBeenCalled();
+  });
+});
+
+describe('deleteSharedRouteMessage', () => {
+  it('says the downloaded community copy and its plan leave this phone', () => {
+    const text = deleteSharedRouteMessage('Ridge Loop');
+    expect(text).toContain('“Ridge Loop”');
+    expect(text).toMatch(/community copy is downloaded on this phone, it is removed too/);
+    expect(text).toMatch(/plan/);
+    expect(text).toMatch(/guide you imported and shared from stays/);
+  });
+
+  it('reads without a name', () => {
+    expect(deleteSharedRouteMessage()).toMatch(/^Remove this route from the community/);
   });
 });

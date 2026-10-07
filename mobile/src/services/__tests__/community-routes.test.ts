@@ -15,6 +15,7 @@ import { newPlan } from '@lib/plan-editor';
 import { File as FsFile } from 'expo-file-system';
 import {
   CommunityCopyUnreadableError,
+  CommunityDownloadCancelledError,
   CommunityRouteTakenDownError,
   ensureCommunityRouteDownloaded,
   forgetCommunityRoute,
@@ -617,6 +618,93 @@ describe('removing a route from this phone', () => {
 
     await removeCommunityRouteFromDevice(ID, { db: db as never });
     expect(listCachedCommunityRoutes()).toEqual([]);
+  });
+});
+
+describe('removing a route while it downloads', () => {
+  /** Hold the next download until `release()`; the real fake then runs. */
+  function holdNextDownload(): { started: Promise<void>; release: () => void } {
+    const download = (FsFile as unknown as { downloadFileAsync: jest.Mock }).downloadFileAsync;
+    const real = download.getMockImplementation()!;
+    let release!: () => void;
+    let started!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const startedP = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    download.mockImplementationOnce(async (...args: unknown[]) => {
+      started();
+      await gate;
+      return real(...args);
+    });
+    return { started: startedP, release };
+  }
+
+  it('wins over the download an open started', async () => {
+    const db = await createMigratedTestDb();
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
+    const hold = holdNextDownload();
+    const opening = ensureCommunityRouteDownloaded(ID).then(
+      () => 'opened',
+      (err: unknown) => err,
+    );
+    await hold.started;
+
+    const removing = removeCommunityRouteFromDevice(ID, { db: db as never });
+    hold.release();
+    await removing;
+
+    expect(await opening).toBeInstanceOf(CommunityDownloadCancelledError);
+    expect(fileOf(ID)).toBeUndefined();
+    expect(Object.keys(mockFiles).filter((k) => k.endsWith('.part'))).toEqual([]);
+    expect(getCommunityRouteInfo(ID)?.downloaded).toBe(false);
+    // It survives a restart: the state on disk does not name it either.
+    resetCommunityStateForTests();
+    expect(getCommunityRouteInfo(ID)?.downloaded).toBe(false);
+
+    // Opening it again afterwards downloads it as usual.
+    expect(await ensureCommunityRouteDownloaded(ID)).toBe(true);
+    expect(getCommunityRouteInfo(ID)?.downloaded).toBe(true);
+  });
+
+  it('starts afresh when it is opened again before the cancelled download settles', async () => {
+    const db = await createMigratedTestDb();
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
+    const hold = holdNextDownload();
+    const first = ensureCommunityRouteDownloaded(ID).then(
+      () => 'opened',
+      (err: unknown) => err,
+    );
+    await hold.started;
+    await removeCommunityRouteFromDevice(ID, { db: db as never });
+
+    const second = ensureCommunityRouteDownloaded(ID);
+    hold.release();
+    expect(await first).toBeInstanceOf(CommunityDownloadCancelledError);
+    expect(await second).toBe(true);
+    expect(getCommunityRouteInfo(ID)?.downloaded).toBe(true);
+    expect((await readCommunityTrail(ID))?.config.id).toBe(ID);
+  });
+
+  it('wins over an update a refresh started', async () => {
+    const db = await createMigratedTestDb();
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
+    await ensureCommunityRouteDownloaded(ID);
+    const edited = trailBody('c_edited');
+    const row = publish(ID, { trailUrl: `https://data.test/community/v1/${ID}.v2.json` }, edited);
+    mockRemote[row.trailUrl as string] = edited;
+
+    const hold = holdNextDownload();
+    const refreshing = refreshCommunityRoutes({ now: T0 + 1, force: true, fetchImpl: listFetch([row]) });
+    await hold.started;
+    const removing = removeCommunityRouteFromDevice(ID, { db: db as never });
+    hold.release();
+    await Promise.all([refreshing, removing]);
+
+    expect(fileOf(ID)).toBeUndefined();
+    expect(getCommunityRouteInfo(ID)?.downloaded).toBe(false);
   });
 });
 

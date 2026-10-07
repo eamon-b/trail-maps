@@ -149,6 +149,7 @@ export function resetCommunityStateForTests(): void {
   inFlightRefresh = null;
   lastAttemptAt = 0;
   inFlightDownloads.clear();
+  removals.clear();
 }
 
 /** Load the cached list now (cheap; called once at launch). */
@@ -369,6 +370,8 @@ export function refreshCommunityRoutes(
       // One at a time, like the trail catalog's updates. A failure keeps the
       // copy already on the phone; the next refresh tries again.
       for (const summary of plan.stale) {
+        // Removed from this phone since the plan was made: not an update.
+        if (!getState().installed[summary.id]) continue;
         try {
           await downloadRoute(summary);
         } catch (err) {
@@ -410,6 +413,9 @@ export async function removeCommunityRouteFromDevice(
   options: { db?: SqlDatabase } = {},
 ): Promise<void> {
   if (!isCommunityRouteId(id)) return;
+  // A download already running for it must not put it back: it sees the
+  // count move and throws away what it fetched (`doDownload`).
+  removals.set(id, removalCount(id) + 1);
   const current = getState();
   const entry = current.installed[id];
   if (entry) {
@@ -448,21 +454,53 @@ export class CommunityIntegrityError extends Error {
   }
 }
 
-const inFlightDownloads = new Map<string, Promise<void>>();
+/** A download cancelled because the hiker removed the route while it ran. */
+export class CommunityDownloadCancelledError extends Error {
+  constructor() {
+    super('This route was removed from this phone while it downloaded.');
+    this.name = 'CommunityDownloadCancelledError';
+  }
+}
 
-function downloadRoute(summary: CommunityRouteSummary): Promise<void> {
+/** Each running download, with the removal count it will commit under. */
+const inFlightDownloads = new Map<string, { run: Promise<void>; removal: number }>();
+/**
+ * How many times each route has been removed from this phone this session. A
+ * download notes the count when it starts and commits only if it has not
+ * moved, so removing a route always wins over a download in flight.
+ */
+const removals = new Map<string, number>();
+
+function removalCount(id: string): number {
+  return removals.get(id) ?? 0;
+}
+
+/**
+ * Download one route (single-flight per id). `removal` is the removal count the
+ * caller started from — an open that began before the hiker removed the route
+ * must not put it back either.
+ */
+function downloadRoute(
+  summary: CommunityRouteSummary,
+  removal = removalCount(summary.id),
+): Promise<void> {
   const existing = inFlightDownloads.get(summary.id);
-  if (existing) return existing;
-  const run = doDownload(summary).finally(() => {
+  if (existing) {
+    if (existing.removal >= removal) return existing.run;
+    // A download the hiker has since cancelled by removing the route: let it
+    // settle (it throws its work away), then start afresh.
+    return existing.run.catch(() => {}).then(() => downloadRoute(summary, removal));
+  }
+  const run = doDownload(summary, removal).finally(() => {
     inFlightDownloads.delete(summary.id);
     useTrailDataStore.getState().setDownloading(summary.id, false);
   });
   useTrailDataStore.getState().setDownloading(summary.id, true);
-  inFlightDownloads.set(summary.id, run);
+  inFlightDownloads.set(summary.id, { run, removal });
   return run;
 }
 
-async function doDownload(summary: CommunityRouteSummary): Promise<void> {
+async function doDownload(summary: CommunityRouteSummary, removal: number): Promise<void> {
   if (!isCommunityRouteId(summary.id)) throw new Error(`Refusing route id "${summary.id}".`);
   if (!isFetchableUrl(summary.trailUrl)) throw new Error('This route has no download link.');
   const root = ensureRoot();
@@ -490,6 +528,8 @@ async function doDownload(summary: CommunityRouteSummary): Promise<void> {
     if (!isUsableCommunityTrail(json)) {
       throw new CommunityIntegrityError('The downloaded file is not a trail');
     }
+    // No await from here to the state write below, so this check holds.
+    if (removalCount(summary.id) !== removal) throw new CommunityDownloadCancelledError();
     const dest = new File(root, fileName);
     if (dest.exists) dest.delete();
     part.rename(fileName);
@@ -522,8 +562,10 @@ export class CommunityRouteTakenDownError extends Error {
  * Make sure a community route is on the device, downloading it if needed —
  * what opening one does. Resolves true when a copy is ready to read, false
  * when no such route is known. Throws {@link CommunityRouteTakenDownError}
- * when the server says the route is no longer shared, and the download's own
- * error for anything else (usually: offline).
+ * when the server says the route is no longer shared,
+ * {@link CommunityDownloadCancelledError} when the hiker removed it from this
+ * phone meanwhile, and the download's own error for anything else (usually:
+ * offline).
  *
  * A downloaded copy whose MD5 the list no longer carries is downloaded again
  * first; when that fails the older copy is used.
@@ -533,14 +575,16 @@ export async function ensureCommunityRouteDownloaded(
   options: { fetchImpl?: FetchLike } = {},
 ): Promise<boolean> {
   if (!isCommunityRouteId(id)) return false;
+  const removal = removalCount(id);
   const listed = (getState().list ?? []).find((r) => r.id === id) ?? null;
   const installed = getState().installed[id];
   if (installed) {
     if (listed && listed.md5 !== installed.summary.md5) {
       try {
-        await downloadRoute(listed);
+        await downloadRoute(listed, removal);
         return true;
       } catch (err) {
+        if (err instanceof CommunityDownloadCancelledError) throw err;
         console.warn(`[community] update of ${id} failed; opening the copy on this phone`, err);
       }
     }
@@ -566,8 +610,9 @@ export async function ensureCommunityRouteDownloaded(
     summary = probe.summary;
   }
   try {
-    await downloadRoute(summary);
+    await downloadRoute(summary, removal);
   } catch (err) {
+    if (err instanceof CommunityDownloadCancelledError) throw err;
     // The listed copy would not download. Ask whether the route is still
     // shared: a 404 is the taken-down state, a newer copy is fetched instead.
     if (!baseUrl) throw err;
@@ -578,7 +623,7 @@ export async function ensureCommunityRouteDownloaded(
     }
     if (probe.kind === 'live' && probe.summary.md5 !== summary.md5) {
       upsertCommunitySummary(probe.summary);
-      await downloadRoute(probe.summary);
+      await downloadRoute(probe.summary, removal);
       return true;
     }
     throw err;

@@ -105,8 +105,13 @@ The app checks the catalog on launch and when it returns to the foreground, at
 most once every 6 hours (5 minutes after a failed check, e.g. offline).
 Pull-to-refresh on My Guides forces a check. Newer copies of trails the phone
 already has (bundled, or downloaded earlier) are downloaded in the background,
-one at a time. A guide that is already open keeps the data it opened with, and
-picks up the new data the next time it is opened.
+one at a time. A guide that is already open keeps the data it opened with
+until the hiker says otherwise: once a newer copy of its trail is installed, the
+guide shows an "Updated guide data has downloaded" banner. Reload swaps the new
+copy in without leaving the guide; "Not now" hides the banner until the next
+update, and reopening the guide picks up the new data as before. Settings →
+Guide updates → Check now runs the same forced check as pull-to-refresh, for
+when you know a fix was just published.
 
 Trails in the catalog that this build does not bundle are listed on My Guides
 with a "New · downloads when opened" pill, and are fetched the first time the

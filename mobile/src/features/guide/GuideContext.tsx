@@ -25,6 +25,18 @@
  *
  * The provider re-applies direction (from the settings store) whenever it
  * changes, re-reversing the trail as needed.
+ *
+ * Newer data for an open guide. The guide keeps the copy it opened with, even
+ * when a newer one downloads in the background: changing the data under a
+ * hiker mid-hike could move the waypoint they are reading or drop the screen
+ * they are on. Instead the provider remembers which copy it opened
+ * (`trailDataVersion`, the md5) and, when the installed copy moves past it,
+ * reports `dataUpdate.available`; the guide home shows a banner whose Reload
+ * swaps the new copy in **without** the spinner, so the navigator and its
+ * screens stay mounted. Plans and positions are km along the route and
+ * waypoint ids are stable, so nothing the hiker saved depends on the old copy.
+ * Imports and community routes never update this way (no background download
+ * replaces them), so their version is null and no banner shows.
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -32,7 +44,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { getTrailJson, loadTrail, type TrailJson } from '../../services/trail-loader';
-import { ensureTrailDownloaded } from '../../services/trail-data-updates';
+import { ensureTrailDownloaded, trailDataVersion } from '../../services/trail-data-updates';
+import { useTrailDataStore } from '../../state/trail-data-store';
 import { isCatalogTrailId } from '../../services/trail-catalog';
 import {
   CommunityRouteTakenDownError,
@@ -48,6 +61,19 @@ export interface GuideContextValue {
   /** Trail with the current direction applied. */
   trail: TrailJson;
   direction: Direction;
+  /** A newer copy of this trail is on the phone than the one the guide shows. */
+  dataUpdate: GuideDataUpdate;
+}
+
+export interface GuideDataUpdate {
+  /** True while the installed copy is newer than the one shown. */
+  available: boolean;
+  /** The installed copy's md5, so a dismissal can be scoped to it. */
+  version: string | null;
+  /** A reload is reading the new copy. */
+  reloading: boolean;
+  /** Swap the newer copy in, keeping every screen mounted. */
+  reload: () => void;
 }
 
 const GuideContext = createContext<GuideContextValue | null>(null);
@@ -59,7 +85,12 @@ export function GuideProvider({
   trailId: string;
   children: React.ReactNode;
 }) {
-  const bundled = useMemo(() => getTrailJson(trailId), [trailId]);
+  // Read together, synchronously: a bundled hit means no download is active,
+  // so the version is the bundle's.
+  const { bundled, bundledVersion } = useMemo(
+    () => ({ bundled: getTrailJson(trailId), bundledVersion: trailDataVersion(trailId) }),
+    [trailId],
+  );
   // The async result carries the id it belongs to. That is what makes a read
   // still in flight when the route param changes harmless: its result fails the
   // `=== trailId` check below and is ignored, so the screen falls back to the
@@ -67,6 +98,8 @@ export function GuideProvider({
   const [loaded, setLoaded] = useState<{
     id: string;
     trail: TrailJson | null;
+    /** `trailDataVersion` when the read started. */
+    version: string | null;
     error?: string;
     /** A community route the server says is no longer shared. */
     takenDown?: boolean;
@@ -82,7 +115,13 @@ export function GuideProvider({
     let cancelled = false;
     // A read that throws is indistinguishable from a missing file to the user:
     // the guide cannot be opened either way.
-    const read = () => loadTrail(trailId).catch(() => null);
+    // The version is taken before the read: a download landing mid-read can
+    // then only cause a needless Reload offer, never a missed one.
+    let version: string | null = null;
+    const read = () => {
+      version = trailDataVersion(trailId);
+      return loadTrail(trailId).catch(() => null);
+    };
     (async () => {
       const trail = await read();
       if (trail) return trail;
@@ -99,13 +138,13 @@ export function GuideProvider({
       return (await ensureTrailDownloaded(trailId)) ? read() : null;
     })()
       .then((trail) => {
-        if (!cancelled) setLoaded({ id: trailId, trail });
+        if (!cancelled) setLoaded({ id: trailId, trail, version });
       })
       .catch((err: unknown) => {
         if (err instanceof CommunityRouteTakenDownError) {
           // Past the 30-minute throttle: the cached list still offers it.
           void refreshCommunityRoutes({ force: true });
-          if (!cancelled) setLoaded({ id: trailId, trail: null, takenDown: true });
+          if (!cancelled) setLoaded({ id: trailId, trail: null, version: null, takenDown: true });
           return;
         }
         // Only the download can throw here (usually: offline); it gets a retry.
@@ -113,6 +152,7 @@ export function GuideProvider({
           setLoaded({
             id: trailId,
             trail: null,
+            version: null,
             error: err instanceof Error ? err.message : 'The download failed.',
           });
         }
@@ -130,16 +170,54 @@ export function GuideProvider({
     setAttempt((n) => n + 1);
   }, []);
 
+  // A reloaded copy, tagged with its trail id like `loaded`. It wins over the
+  // first read, and the spinner is never shown for it.
+  const [reloaded, setReloaded] = useState<{
+    id: string;
+    trail: TrailJson;
+    version: string | null;
+  } | null>(null);
+  const [reloadingId, setReloadingId] = useState<string | null>(null);
+  const reloading = reloadingId === trailId;
+
+  const reload = useCallback(() => {
+    const id = trailId;
+    setReloadingId(id);
+    const version = trailDataVersion(id);
+    loadTrail(id)
+      .catch(() => null)
+      .then((trail) => {
+        // Nothing readable: keep showing what is open rather than nothing.
+        if (trail) setReloaded({ id, trail, version });
+      })
+      .finally(() => setReloadingId((current) => (current === id ? null : current)));
+  }, [trailId]);
+
   const direction = useSettingsStore(selectDirection(trailId));
+  // Bumped by every catalog check and download: re-read the installed version.
+  useTrailDataStore((s) => s.revision);
+  const latestVersion = trailDataVersion(trailId);
 
   // undefined = still resolving; null = no such trail.
   const current = loaded?.id === trailId ? loaded : null;
-  const raw: TrailJson | null | undefined = bundled ?? (current ? current.trail : undefined);
+  const fresh = reloaded?.id === trailId ? reloaded : null;
+  const raw: TrailJson | null | undefined =
+    fresh?.trail ?? bundled ?? (current ? current.trail : undefined);
+  const shownVersion = fresh ? fresh.version : bundled ? bundledVersion : (current?.version ?? null);
+  const available = shownVersion !== null && latestVersion !== null && latestVersion !== shownVersion;
 
+  // Apart from the value: a banner state change must not re-reverse the trail
+  // or hand every consumer a new trail object.
+  const trail = useMemo(() => (raw ? resolveGuideTrail(raw, direction) : null), [raw, direction]);
   const value = useMemo<GuideContextValue | null>(() => {
-    if (!raw) return null;
-    return { trailId, trail: resolveGuideTrail(raw, direction), direction };
-  }, [raw, trailId, direction]);
+    if (!trail) return null;
+    return {
+      trailId,
+      trail,
+      direction,
+      dataUpdate: { available, version: latestVersion, reloading, reload },
+    };
+  }, [trail, trailId, direction, available, latestVersion, reloading, reload]);
 
   if (raw === undefined) return <GuideLoading downloading={downloading} />;
   if (!value && current?.takenDown) return <GuideTakenDown />;

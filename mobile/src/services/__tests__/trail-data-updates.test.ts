@@ -22,6 +22,7 @@ import { createHash } from 'crypto';
 
 import {
   activeDownload,
+  trailDataVersion,
   checkForTrailDataUpdates,
   ensureTrailDownloaded,
   initTrailData,
@@ -420,6 +421,24 @@ describe('updating a bundled trail', () => {
     expect(filesInRoot()).toEqual([v3.key, 'state.json'].sort());
     expect(savedState().installed.alpha.file).toBe(v3.key);
     expect(activeDownload('alpha')?.updatedAt).toBe('2026-10-05T00:00:00.000Z');
+  });
+});
+
+describe('trailDataVersion', () => {
+  it('is the bundle md5, then the download md5 once one supersedes it', async () => {
+    expect(trailDataVersion('alpha')).toBe('a'.repeat(32));
+
+    const entry = publish('alpha', '2026-10-01T00:00:00.000Z');
+    serveCatalog([entry]);
+    await checkForTrailDataUpdates({ now: T0 });
+
+    expect(trailDataVersion('alpha')).toBe(entry.md5);
+    expect(trailDataVersion('beta')).toBe('b'.repeat(32));
+  });
+
+  it('is null for an id neither the bundle nor a download knows', () => {
+    expect(trailDataVersion('gamma')).toBeNull();
+    expect(trailDataVersion('u_imported')).toBeNull();
   });
 });
 

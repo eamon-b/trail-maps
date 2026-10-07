@@ -16,7 +16,9 @@
  * on the next successful check.
  *
  * A guide that is open keeps the data it opened with — a download takes effect
- * the next time the guide is opened (`GuideProvider` reads once per mount).
+ * the next time the guide is opened (`GuideProvider` reads once per mount), or
+ * when the hiker taps Reload on the banner the open guide shows once
+ * {@link trailDataVersion} moves past the copy it is showing.
  *
  * Keep this module free of `trail-loader` imports: the loader depends on it.
  */
@@ -228,6 +230,16 @@ export function activeDownload(id: string): InstalledTrail | null {
   const installed = getState().installed[id];
   if (!installed) return null;
   return downloadSupersedesBundle(installed, bundledVersions().get(id)) ? installed : null;
+}
+
+/**
+ * Which copy of a bundled or catalog trail the app reads now: the md5 of the
+ * active download, else of the bundle. Null for an id neither knows (an import,
+ * a community route, a catalog-only trail not downloaded yet). An open guide
+ * compares it with the copy it opened to offer a reload.
+ */
+export function trailDataVersion(id: string): string | null {
+  return activeDownload(id)?.md5 ?? bundledVersions().get(id)?.md5 ?? null;
 }
 
 /**

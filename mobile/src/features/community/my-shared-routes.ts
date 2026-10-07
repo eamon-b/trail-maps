@@ -47,6 +47,23 @@ export function mySharedRoutesError(err: unknown): string {
   return apiErrorMessage(err, MY_ROUTES_LOAD_FAILED);
 }
 
+export const DELETE_SHARED_ROUTE_TITLE = 'Delete shared route';
+
+/**
+ * The owner's delete confirmation, on both screens that offer it. Deleting
+ * also removes the downloaded community copy from this phone, with its plan,
+ * favourites, routes and "Hiking now" pin (`forgetCommunityRoute`), so it says
+ * so; the `u_` guide the route was shared from is a different trail and stays.
+ */
+export function deleteSharedRouteMessage(name?: string | null): string {
+  const what = name ? `“${name}”` : 'this route';
+  return (
+    `Remove ${what} from the community for everyone? ` +
+    'If the community copy is downloaded on this phone, it is removed too, along with its plan, favourites and routes. ' +
+    'The guide you imported and shared from stays on this phone.'
+  );
+}
+
 export interface DeleteMySharedRouteDeps {
   deleteRoute?: typeof deleteCommunityRoute;
   forget?: (id: string) => Promise<void>;

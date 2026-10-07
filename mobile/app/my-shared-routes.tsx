@@ -35,7 +35,9 @@ import {
   MySharedRouteDetail,
 } from '../src/features/community/MySharedRoutes';
 import {
+  DELETE_SHARED_ROUTE_TITLE,
   MY_ROUTE_DELETE_FAILED,
+  deleteSharedRouteMessage,
   isLiveRoute,
 } from '../src/features/community/my-shared-routes';
 
@@ -51,8 +53,8 @@ export default function MySharedRoutesScreen() {
   const onDelete = useCallback(
     (route: CommunityRouteDetail) => {
       Alert.alert(
-        'Delete shared route',
-        `Remove “${route.name}” from the community for everyone? Any copy of it on this phone goes too. A guide you imported stays.`,
+        DELETE_SHARED_ROUTE_TITLE,
+        deleteSharedRouteMessage(route.name),
         [
           { text: 'Cancel', style: 'cancel' },
           {

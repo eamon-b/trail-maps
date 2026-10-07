@@ -82,7 +82,7 @@ const SELF_RETRACE_WARN_KM = 2;
 // being on that variant. Deliberately tighter than the main route's
 // `waypointMaxDistance`: variants are short and run close to the main route, so
 // a loose threshold pulls in waypoints that belong to the through-route.
-const VARIANT_WAYPOINT_MAX_DISTANCE_METERS = 200;
+export const VARIANT_WAYPOINT_MAX_DISTANCE_METERS = 200;
 
 /** Target point count for the map-display copy of the main track. */
 export const DEFAULT_TARGET_DISPLAY_POINTS = 3000;

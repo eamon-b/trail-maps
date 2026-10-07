@@ -13,9 +13,20 @@
  * What is taken from the client, validated (finite numbers, coordinates in
  * range, bounded arrays and strings) but otherwise as sent: the coordinates
  * and elevations of every point, the order of the points, each waypoint's
- * name, type, text, position and `trackIndex` (which point of the line it is
- * listed at), off-trail access fields, the variants' names and types, and the
- * config's id, name, region, description and `elevationSource`.
+ * name, type, text, position and access fields, the variants' names and
+ * types, and the config's id, name, region, description and `elevationSource`.
+ *
+ * A waypoint's `trackIndex` (which point of the line it is listed at; on a
+ * variant, `variantTrackIndex`) is kept only when that point is within the
+ * radius `buildTrail` matches waypoints at: 500 m on the main route, 200 m on
+ * a variant. The index is not simply recomputed as the nearest point because
+ * on a route that retraces itself an import lists one place at each pass, and
+ * only one of those is the nearest. A waypoint whose point is further away
+ * (a "water tank" listed at km 0.1 and placed 300 km off) is placed as an
+ * import would place it: at its nearest point of the main route when that is
+ * in range, otherwise in `offTrailWaypoints` (a variant's waypoint first tries
+ * its own variant). Off-trail waypoints may lie any distance from the route,
+ * as an import's do; only their `distanceFromTrail` is rebuilt.
  *
  * What is rebuilt from that geometry, the way `trail-ingest.ts`'s `buildTrail`
  * builds an import, with the client's figures ignored:
@@ -25,7 +36,8 @@
  *   tolerance, taken back by index so their `dist` ladder is the points');
  * - `track.totalAscent`/`totalDescent` (3 m hysteresis), and no point keeps a
  *   `cumAscent`/`cumDescent`, which `track-geometry` would otherwise prefer;
- * - each waypoint's km, leg, climb and elevation, from its `trackIndex`;
+ * - each waypoint's km, leg, climb and elevation, from its (checked)
+ *   `trackIndex`;
  * - each off-trail waypoint's `distanceFromTrail`;
  * - each variant's length, climb, junction km, track indices and `parent`.
  *   A variant must branch off the route (or off an alternate that does)
@@ -54,6 +66,8 @@ import {
   calculateAdaptiveTolerance,
   DEFAULT_MAX_JUNCTION_DISTANCE_METERS,
   DEFAULT_TARGET_DISPLAY_POINTS,
+  DEFAULT_WAYPOINT_MAX_DISTANCE_METERS,
+  VARIANT_WAYPOINT_MAX_DISTANCE_METERS,
 } from './trail-ingest';
 import { ACCESS_MODES } from './types';
 import type { AccessMode } from './types';
@@ -1105,6 +1119,88 @@ function variantWaypoint(raw: unknown, path: string, pointCount: number): Varian
   return out;
 }
 
+/**
+ * How far a listed waypoint may sit from the point it is listed at: the radius
+ * `buildTrail` matches it within, plus a few metres for an export that
+ * rounded coordinates (`truncatePoint` keeps 6 decimals, ~0.1 m).
+ */
+const WAYPOINT_SLACK_M = 5;
+const MAIN_WAYPOINT_M = DEFAULT_WAYPOINT_MAX_DISTANCE_METERS + WAYPOINT_SLACK_M;
+const VARIANT_WAYPOINT_M = VARIANT_WAYPOINT_MAX_DISTANCE_METERS + WAYPOINT_SLACK_M;
+
+/**
+ * Keep each row whose listed point is within `maxM` of it; move one whose
+ * point is not to its nearest point of the line when that is in range, and
+ * hand the rest to `misplaced`. Returns the rows kept.
+ */
+function placeOnLine<W extends { lat: number; lon: number }>(
+  rows: W[],
+  line: readonly { lat: number; lon: number }[],
+  index: { get: (w: W) => number; set: (w: W, i: number) => void },
+  nearest: () => NearestPoints,
+  maxM: number,
+  misplaced: (w: W) => void
+): W[] {
+  const kept: W[] = [];
+  for (const w of rows) {
+    const at = line[index.get(w)];
+    if (at && haversineDistance(w.lat, w.lon, at.lat, at.lon) <= maxM) {
+      kept.push(w);
+      continue;
+    }
+    const i = nearest().nearest(w.lat, w.lon);
+    if (i >= 0 && haversineDistance(w.lat, w.lon, line[i].lat, line[i].lon) <= maxM) {
+      index.set(w, i);
+      kept.push(w);
+    } else {
+      misplaced(w);
+    }
+  }
+  return kept;
+}
+
+/** A waypoint as an off-trail row; `distanceFromTrail` is rebuilt by the caller. */
+function asOffTrail(w: EnrichedWaypoint | VariantWaypoint): OffTrailWaypoint {
+  const out: OffTrailWaypoint = { name: w.name, lat: w.lat, lon: w.lon, type: w.type, distanceFromTrail: 0 };
+  if (w.id !== undefined) out.id = w.id;
+  if (w.description !== undefined) out.description = w.description;
+  if (w.mergedIds !== undefined) out.mergedIds = w.mergedIds;
+  copyAccessFields(w, out);
+  return out;
+}
+
+/** A variant's waypoint as a main-route row with no usable `trackIndex` yet. */
+function asMainRoute(w: VariantWaypoint): EnrichedWaypoint {
+  const out: EnrichedWaypoint = {
+    name: w.name,
+    lat: w.lat,
+    lon: w.lon,
+    type: w.type,
+    elevation: 0,
+    distance: 0,
+    totalDistance: 0,
+    ascent: 0,
+    descent: 0,
+    totalAscent: 0,
+    totalDescent: 0,
+    trackIndex: -1,
+  };
+  if (w.id !== undefined) out.id = w.id;
+  if (w.description !== undefined) out.description = w.description;
+  if (w.mergedIds !== undefined) out.mergedIds = w.mergedIds;
+  copyAccessFields(w, out);
+  return out;
+}
+
+type AccessFields = { offTrailKm?: number; accessMode?: AccessMode; acceptsBoxes?: boolean; accessName?: string };
+
+function copyAccessFields(from: AccessFields, to: AccessFields): void {
+  if (from.offTrailKm !== undefined) to.offTrailKm = from.offTrailKm;
+  if (from.accessMode !== undefined) to.accessMode = from.accessMode;
+  if (from.acceptsBoxes !== undefined) to.acceptsBoxes = from.acceptsBoxes;
+  if (from.accessName !== undefined) to.accessName = from.accessName;
+}
+
 const VARIANT_TYPES: readonly RouteVariant['type'][] = ['alternate', 'side-trip', 'terminus'];
 
 /** A variant as read, before its junctions and figures are rebuilt. */
@@ -1360,7 +1456,7 @@ export function sanitiseCommunityTrail(
     if (alternates.length + sideTrips.length > S.variants) {
       fail('alternates and sideTrips', `have more than ${S.variants} routes between them`);
     }
-    const waypoints = arr(t.waypoints ?? [], 'waypoints', S.waypoints).map((w, i) =>
+    let waypoints = arr(t.waypoints ?? [], 'waypoints', S.waypoints).map((w, i) =>
       enrichedWaypoint(w, `waypoints[${i}]`, points.length)
     );
     const offTrailWaypoints = arr(t.offTrailWaypoints ?? [], 'offTrailWaypoints', S.offTrailWaypoints).map((w, i) =>
@@ -1380,9 +1476,31 @@ export function sanitiseCommunityTrail(
     // A nearest-point search is the one per-waypoint cost that is not O(1)
     // (and O(n) at worst, see NearestPoints), so a file over the waypoint
     // limit, which fails `waypoints` and is never stored, keeps the client's
-    // validated figure rather than paying for up to 10,000 of them.
+    // validated placement and figures rather than paying for up to 10,000 of
+    // them.
     const total = waypoints.length + offTrailWaypoints.length + drafts.reduce((s, v) => s + (v.waypoints?.length ?? 0), 0);
     if (total <= COMMUNITY_CHECK_THRESHOLDS.maxWaypoints) {
+      // Variants first: a waypoint that is not on its variant joins the main
+      // route's rows, to be placed there or moved off-trail below.
+      for (const v of drafts) {
+        if (!v.waypoints) continue;
+        v.waypoints = placeOnLine(
+          v.waypoints,
+          v.points,
+          { get: (w) => w.variantTrackIndex, set: (w, i) => (w.variantTrackIndex = i) },
+          () => (v.nearest ??= new NearestPoints(v.points)),
+          VARIANT_WAYPOINT_M,
+          (w) => waypoints.push(asMainRoute(w))
+        );
+      }
+      waypoints = placeOnLine(
+        waypoints,
+        points,
+        { get: (w) => w.trackIndex, set: (w, i) => (w.trackIndex = i) },
+        () => mainIndex,
+        MAIN_WAYPOINT_M,
+        (w) => offTrailWaypoints.push(asOffTrail(w))
+      );
       for (const w of offTrailWaypoints) {
         const near = points[mainIndex.nearest(w.lat, w.lon)];
         w.distanceFromTrail = Math.round(haversineDistance(w.lat, w.lon, near.lat, near.lon));

@@ -14,6 +14,11 @@ appId: com.tracknotes.app
 # so every assertion is positive. The pane-switch logic itself is unit-tested
 # (src/features/guide/__tests__).
 - runFlow: shared/launch-dev.yaml
+- scrollUntilVisible:
+    element:
+      text: "Cape to Cape Track"
+    direction: DOWN
+    timeout: 20000
 - tapOn: "Cape to Cape Track"
 - extendedWaitUntil:
     visible: "Cape to Cape"

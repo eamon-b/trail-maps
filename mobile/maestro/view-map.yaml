@@ -15,7 +15,13 @@ appId: com.tracknotes.app
 # assertion here is positive.
 - runFlow: shared/launch-dev.yaml
 
-# Cape to Cape (127 km) is the smallest bundled trail — fastest to load.
+# Cape to Cape (127 km) is the smallest bundled trail — fastest to load. It
+# sits below the fold in the grouped My Guides list, so scroll to it first.
+- scrollUntilVisible:
+    element:
+      text: "Cape to Cape Track"
+    direction: DOWN
+    timeout: 20000
 - tapOn: "Cape to Cape Track"
 
 # Guide header shows the trail's shortName; Map is the default pane.

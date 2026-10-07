@@ -18,9 +18,11 @@ import { useSettingsStore } from '../../../src/state/settings-store';
 import { useGuide } from '../../../src/features/guide/GuideContext';
 import { useRoutesStore } from '../../../src/features/routes/routes-store';
 import type { Route } from '../../../src/db/routes-repo';
+import { useBottomInsetContentStyle } from '../../../src/navigation/bottom-inset';
 
 export default function RoutesScreen() {
   const { colors } = useTheme();
+  const contentStyle = useBottomInsetContentStyle(styles.content);
   const { trailId } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const router = useRouter();
@@ -49,7 +51,7 @@ export default function RoutesScreen() {
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={contentStyle}
     >
       {routes.length === 0 ? (
         <View style={styles.empty}>

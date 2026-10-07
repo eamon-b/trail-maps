@@ -7,7 +7,7 @@
 
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, type ViewStyle } from 'react-native';
 import { HeaderHeightContext } from 'expo-router/react-navigation';
 import {
   KeyboardAvoidingModalContent,
@@ -62,6 +62,19 @@ describe('KeyboardAwareScrollView', () => {
     const tree = render(withHeader(96, <KeyboardAwareScrollView />));
     expect(tree.root.findAllByType(KeyboardAvoidingView)).toHaveLength(0);
     expect(tree.root.findAllByType(ScrollView)[0].props.automaticallyAdjustKeyboardInsets).toBe(true);
+  });
+
+  it('pads its content for the bottom system bar', () => {
+    setOS('android');
+    const insets = jest
+      .spyOn(jest.requireMock('react-native-safe-area-context'), 'useSafeAreaInsets')
+      .mockReturnValue({ top: 0, right: 0, bottom: 48, left: 0 });
+    const tree = render(<KeyboardAwareScrollView contentContainerStyle={{ padding: 16 }} />);
+    const style = StyleSheet.flatten<ViewStyle>(
+      tree.root.findAllByType(ScrollView)[0].props.contentContainerStyle as ViewStyle,
+    );
+    expect(style.paddingBottom).toBe(64);
+    insets.mockRestore();
   });
 
   it('forwards the ref to the ScrollView', () => {

@@ -474,3 +474,19 @@ describe('processTrail cumulative climb', () => {
     expect(out.track.points.every(p => p.cumAscent === 0 && p.cumDescent === 0)).toBe(true);
   });
 });
+
+describe('processTrail list-only config', () => {
+  it('leaves country/states/featured out of the per-trail file', () => {
+    const trail = trailJson();
+    trail.config = { ...trail.config, region: 'Somewhere', country: 'AU', states: ['VIC'], featured: true };
+    const out = processTrail(trail);
+    expect(out.config).toEqual({ id: 'test', name: 'Test Trail', region: 'Somewhere' });
+    // The input is not mutated.
+    expect(trail.config.country).toBe('AU');
+  });
+
+  it('keeps a config without them as it was', () => {
+    const trail = trailJson();
+    expect(processTrail(trail).config).toBe(trail.config);
+  });
+});

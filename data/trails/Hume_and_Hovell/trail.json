@@ -3,6 +3,8 @@
   "name": "Hume and Hovell Track",
   "shortName": "H&H",
   "region": "NSW Southern Tablelands",
+  "country": "AU",
+  "states": ["NSW"],
   "lengthKm": 426,
   "gpxFile": "Hume_and_Hovell.gpx",
   "geojsonFile": "Hume_and_Hovell.json",

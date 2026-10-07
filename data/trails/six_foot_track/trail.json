@@ -3,6 +3,8 @@
   "name": "Six Foot Track",
   "shortName": "Six Foot",
   "region": "Blue Mountains (NSW)",
+  "country": "AU",
+  "states": ["NSW"],
   "lengthKm": 44.5,
   "gpxFile": "Six_Foot_Track.gpx",
   "dedupeWaypoints": true,

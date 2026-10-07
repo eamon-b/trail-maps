@@ -3,6 +3,8 @@
   "name": "Kep Track",
   "shortName": "Kep",
   "region": "Mundaring to Northam (WA)",
+  "country": "AU",
+  "states": ["WA"],
   "lengthKm": 72.5,
   "gpxFile": "Kep_Track.gpx",
   "dedupeWaypoints": true,

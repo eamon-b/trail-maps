@@ -3,6 +3,8 @@
   "name": "Te Araroa",
   "shortName": "Te Araroa",
   "region": "New Zealand (Cape Reinga to Bluff)",
+  "country": "NZ",
+  "states": ["NI", "SI"],
   "lengthKm": 3056.8,
   "gpxFile": "te-araroa-sobo.gpx",
   "dedupeWaypoints": true,

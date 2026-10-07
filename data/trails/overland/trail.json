@@ -3,6 +3,8 @@
   "name": "Overland Track",
   "shortName": "Overland",
   "region": "Cradle Mountain–Lake St Clair National Park (TAS)",
+  "country": "AU",
+  "states": ["TAS"],
   "lengthKm": 62.1,
   "gpxFile": "Overland_Track.gpx",
   "dedupeWaypoints": true,

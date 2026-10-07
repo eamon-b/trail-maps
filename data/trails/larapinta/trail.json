@@ -3,6 +3,8 @@
   "name": "Larapinta Trail",
   "shortName": "larapinta",
   "region": "West MacDonnell Ranges",
+  "country": "AU",
+  "states": ["NT"],
   "lengthKm": 215.8,
   "gpxFile": "Larapinta_Trail.gpx",
   "geojsonFile": "Larapinta_Trail.json",

@@ -3,6 +3,8 @@
   "name": "Great North Walk",
   "shortName": "GNW",
   "region": "Sydney to Newcastle (NSW)",
+  "country": "AU",
+  "states": ["NSW"],
   "lengthKm": 257,
   "gpxFile": "Great_North_Walk.gpx",
   "dedupeWaypoints": true,

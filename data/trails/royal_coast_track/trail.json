@@ -3,6 +3,8 @@
   "name": "The Coast Track",
   "shortName": "Coast Track",
   "region": "Royal National Park (NSW)",
+  "country": "AU",
+  "states": ["NSW"],
   "lengthKm": 25.3,
   "gpxFile": "Royal_Coast_Track.gpx",
   "dedupeWaypoints": true,

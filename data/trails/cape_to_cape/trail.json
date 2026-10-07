@@ -3,6 +3,8 @@
   "name": "Cape to Cape Track",
   "shortName": "Cape to Cape",
   "region": "South West WA",
+  "country": "AU",
+  "states": ["WA"],
   "lengthKm": 126.9,
   "gpxFile": "Cape_to_Cape_Track.gpx",
   "geojsonFile": "Cape_to_Cape_Track.json",

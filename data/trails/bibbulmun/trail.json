@@ -3,6 +3,8 @@
   "name": "bibbulmun Track",
   "shortName": "bibb",
   "region": "South West WA",
+  "country": "AU",
+  "states": ["WA"],
   "lengthKm": 981.6,
   "gpxFile": "Bibbulmun_Track.gpx",
   "geojsonFile": "Bibbulmun_Track.json",

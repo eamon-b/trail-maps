@@ -3,6 +3,8 @@
   "name": "Heysen Trail",
   "shortName": "Heysen",
   "region": "South Australia",
+  "country": "AU",
+  "states": ["SA"],
   "lengthKm": 39.6,
   "gpxFile": "Heysen.gpx",
   "description": "Trail data auto-generated from Heysen.gpx.",

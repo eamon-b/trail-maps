@@ -3,6 +3,8 @@
   "name": "Great South West Walk",
   "shortName": "GSWW",
   "region": "Portland to Nelson (VIC)",
+  "country": "AU",
+  "states": ["VIC"],
   "lengthKm": 253.7,
   "gpxFile": "Great_South_West_Walk.gpx",
   "dedupeWaypoints": true,

@@ -3,6 +3,8 @@
   "name": "Three Capes Track",
   "shortName": "Three Capes",
   "region": "Tasman National Park (TAS)",
+  "country": "AU",
+  "states": ["TAS"],
   "lengthKm": 22.7,
   "gpxFile": "Three_Capes_Track.gpx",
   "dedupeWaypoints": true,

@@ -177,12 +177,47 @@ function generateTrailConfig(trailDir: string, gpxFile: string, gpxData: ParsedG
     name,
     shortName: dirName.toUpperCase(),
     region: 'Unknown',  // User should fill this in
+    // `country` is left out on purpose (the list shows the trail under
+    // "Other" and the build warns); fill in `country` and `states` from
+    // @lib/trail-regions. scripts/trail-regions-data.test.ts insists on them.
+    states: [],
     lengthKm: Math.round(totalDistance * 10) / 10,
     gpxFile,
     description: `Trail data auto-generated from ${gpxFile}. Edit trail.json to customize.`,
   };
 }
 
+
+/**
+ * One entry of `public/data/generated/index.json`, the landing page's list.
+ * `country`/`states` group it (`@lib/trail-regions`); `featured` is present
+ * only when true. An auto-generated config has no country yet: `null` groups
+ * it under "Other" until someone fills trail.json in.
+ */
+interface TrailIndexEntry {
+  id: string;
+  name: string;
+  shortName: string;
+  lengthKm: number;
+  region: string;
+  country: string | null;
+  states: string[];
+  featured?: true;
+}
+
+function trailIndexEntry(config: TrailConfig): TrailIndexEntry {
+  const entry: TrailIndexEntry = {
+    id: config.id,
+    name: config.name,
+    shortName: config.shortName,
+    lengthKm: config.lengthKm,
+    region: config.region,
+    country: config.country ? config.country.toUpperCase() : null,
+    states: config.states ?? [],
+  };
+  if (config.featured === true) entry.featured = true;
+  return entry;
+}
 
 function validateDataDirectory(): void {
   if (!fs.existsSync(DATA_DIR)) {
@@ -282,6 +317,7 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
       name: gpxData.name || path.basename(trailDir),
       shortName: path.basename(trailDir).toUpperCase(),
       region: 'Unknown',
+      states: [],
       lengthKm: 0,
       gpxFile,
     };
@@ -606,7 +642,7 @@ async function main() {
     }
   }
 
-  const trailIndex: { id: string; name: string; shortName: string; lengthKm: number }[] = [];
+  const trailIndex: TrailIndexEntry[] = [];
   const failedTrails: string[] = [];
 
   for (const trailDir of trailDirs) {
@@ -671,12 +707,10 @@ async function main() {
       generateClimatePage(processed);
       generatePlanPage(processed);
 
-      trailIndex.push({
-        id: processed.config.id,
-        name: processed.config.name,
-        shortName: processed.config.shortName,
-        lengthKm: processed.config.lengthKm,
-      });
+      trailIndex.push(trailIndexEntry(processed.config));
+      if (!processed.config.country) {
+        console.warn(`  ! ${trailId}: trail.json has no "country"; the trail list will show it under "Other"`);
+      }
     } catch (error) {
       console.error(`  ✗ Error processing ${trailId}:`, error);
       failedTrails.push(trailId);

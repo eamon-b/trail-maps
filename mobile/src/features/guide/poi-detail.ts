@@ -25,11 +25,11 @@ import type { TrailPOI } from '@lib/trail-types';
  *   `q=lat,lon(label)` form is what makes a *pin* appear with a name on it
  *   (a `geo:` URI without `q` drops the marker entirely on Google Maps).
  * - iOS: `maps:` opens Apple Maps; `ll` positions it and `q` names the pin.
- * - Anything else (web, an unknown platform): fall back to OpenStreetMap's own
- *   map view, which needs no app at all.
+ * - Anything else (web, an unknown platform): the Google Maps web link.
  *
- * The caller opens it through `openUrlWithFallback`, with the OSM URL as the
- * fallback — a device with no maps app installed is unusual but real.
+ * The caller opens it through `openUrlWithFallback`, with `googleMapsUrl` as
+ * the fallback — a device with nothing to handle `geo:`/`maps:` is unusual but
+ * real, and the web link still opens the Google Maps app where it is installed.
  */
 export function mapsUrlFor(
   lat: number,
@@ -41,7 +41,19 @@ export function mapsUrlFor(
   const q = encodeURIComponent(label);
   if (platform === 'android') return `geo:${coords}?q=${coords}(${q})`;
   if (platform === 'ios') return `maps:?ll=${coords}&q=${q}`;
-  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
+  return googleMapsUrl(lat, lon);
+}
+
+/**
+ * Google Maps' cross-platform search link, pinned at the coordinates.
+ *
+ * The query is the coordinates alone, not the name: a name turns it into a
+ * place search, which can land on a different place that shares the name.
+ * Android and iOS hand this URL to the Google Maps app when it is installed
+ * and to the browser otherwise.
+ */
+export function googleMapsUrl(lat: number, lon: number): string {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
 }
 
 /**

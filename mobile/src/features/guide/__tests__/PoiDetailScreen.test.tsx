@@ -15,7 +15,7 @@ import React from 'react';
 import { Linking, Platform } from 'react-native';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import type { TrailPOI } from '@lib/trail-types';
-import { mapsUrlFor } from '../poi-detail';
+import { googleMapsUrl, mapsUrlFor } from '../poi-detail';
 import PoiDetailScreen from '../../../../app/guide/[trailId]/poi/[poiKey]';
 
 // Mutated per test, then returned by the mocked router hook.
@@ -214,7 +214,7 @@ describe('PoiDetailScreen', () => {
     expect(Linking.openURL).toHaveBeenCalledWith('https://www.openstreetmap.org/node/1');
   });
 
-  it('hands the platform maps app the POI, falling back to OSM when it cannot open', async () => {
+  it('hands the platform maps app the POI, falling back to Google Maps when it cannot open', async () => {
     const press = controls(render()).get('Open in Maps');
     expect(press).toBeDefined();
 
@@ -223,12 +223,12 @@ describe('PoiDetailScreen', () => {
       mapsUrlFor(-34.9285, 138.6007, 'Mount Lofty Tank', Platform.OS),
     );
 
-    // No maps app: opening the geo:/maps: URL rejects, and the web map opens.
+    // No maps app: opening the geo:/maps: URL rejects, and the Google Maps link opens.
     // (canOpenURL is never asked — it says no on Android 11+ without <queries>.)
     jest.mocked(Linking.openURL).mockRejectedValueOnce(new Error('No activity'));
     const fallback = controls(render()).get('Open in Maps');
     await act(async () => fallback?.());
-    expect(Linking.openURL).toHaveBeenLastCalledWith('https://www.openstreetmap.org/node/1');
+    expect(Linking.openURL).toHaveBeenLastCalledWith(googleMapsUrl(-34.9285, 138.6007));
   });
 
   it('links a website tag the shared guards cleared', () => {

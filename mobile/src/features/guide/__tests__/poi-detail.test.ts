@@ -4,7 +4,7 @@
  */
 
 import { summarisePoiTags } from '@lib/poi-display';
-import { mapsUrlFor, openUrlWithFallback, poiDetailLines } from '../poi-detail';
+import { googleMapsUrl, mapsUrlFor, openUrlWithFallback, poiDetailLines } from '../poi-detail';
 
 describe('mapsUrlFor', () => {
   it('uses the geo: scheme on Android, with a labelled pin', () => {
@@ -19,9 +19,15 @@ describe('mapsUrlFor', () => {
     );
   });
 
-  it('falls back to an OpenStreetMap map view on any other platform', () => {
+  it('uses the Google Maps web link on any other platform', () => {
     expect(mapsUrlFor(-34.9285, 138.6007, 'Mount Lofty', 'web')).toBe(
-      'https://www.openstreetmap.org/?mlat=-34.9285&mlon=138.6007#map=16/-34.9285/138.6007',
+      googleMapsUrl(-34.9285, 138.6007),
+    );
+  });
+
+  it('pins the Google Maps link at the coordinates, not a name search', () => {
+    expect(googleMapsUrl(-34.9285, 138.6007)).toBe(
+      'https://www.google.com/maps/search/?api=1&query=-34.9285,138.6007',
     );
   });
 

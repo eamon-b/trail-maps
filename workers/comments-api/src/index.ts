@@ -3,7 +3,8 @@
  *
  * Hand-rolled router (no framework), mirroring the sibling `contour-tiles`
  * worker: wide-open CORS, a JSON `/health` endpoint, and a single `fetch`
- * entrypoint. All application errors surface as `{ error: { code, message } }`.
+ * entrypoint, plus a `scheduled` one for the Cron Trigger. All application
+ * errors surface as `{ error: { code, message } }`.
  */
 
 import { CORS_HEADERS, HttpError, errorResponse, json } from './http';
@@ -38,6 +39,7 @@ import {
   listMyCommunityRoutes,
   patchCommunityRoute,
   reportCommunityRoute,
+  runCommunityMaintenance,
   submitCommunityRoute,
 } from './community';
 
@@ -279,5 +281,15 @@ export default {
       console.error(`Unhandled error: ${message}`);
       return errorResponse(500, 'internal_error', 'Internal server error');
     }
+  },
+
+  /**
+   * The Cron Trigger (`[triggers] crons` in wrangler.toml): retries the
+   * community-route work that runs from `waitUntil` and may not have
+   * finished — de-attributions after an account deletion, and AI reviews
+   * left `pending` — a bounded batch per run.
+   */
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runCommunityMaintenance(env));
   },
 };

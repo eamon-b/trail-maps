@@ -140,7 +140,7 @@ export async function registerAgedDevice(): Promise<Device> {
  * first call of `method`, so a test can land a concurrent request in the
  * middle of a handler's R2 I/O. Pass the result to a handler called directly.
  */
-export function envWithHook(method: 'put' | 'delete', hook: () => Promise<void>): Env {
+export function envWithHook(method: 'put' | 'delete' | 'get', hook: () => Promise<void>): Env {
   const photos = env.PHOTOS;
   let fired = false;
   const before = async () => {
@@ -158,7 +158,10 @@ export function envWithHook(method: 'put' | 'delete', hook: () => Promise<void>)
       if (method === 'delete') await before();
       return photos.delete(...args);
     },
-    get: (...args: Parameters<R2Bucket['get']>) => photos.get(...args),
+    get: async (...args: Parameters<R2Bucket['get']>) => {
+      if (method === 'get') await before();
+      return photos.get(...args);
+    },
     head: (...args: Parameters<R2Bucket['head']>) => photos.head(...args),
     list: (...args: Parameters<R2Bucket['list']>) => photos.list(...args),
   } as unknown as R2Bucket;

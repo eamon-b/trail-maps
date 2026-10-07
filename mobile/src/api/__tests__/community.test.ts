@@ -9,6 +9,7 @@ import {
   getCommunityRoute,
   listCommunityRoutes,
   listMyCommunityRoutes,
+  MAX_COMMUNITY_LIST_PAGES,
   patchCommunityRoute,
   reportCommunityRoute,
   submitCommunityRoute,
@@ -67,6 +68,54 @@ describe('listCommunityRoutes', () => {
     await listCommunityRoutes({ baseUrl: BASE, fetchImpl }, { country: 'AU', state: 'VIC' });
     expect(call(fetchImpl)[0]).toBe(`${BASE}/v1/community/routes?country=AU&state=VIC`);
   });
+
+  it('follows nextCursor to the last page, keeping the filters', async () => {
+    const fetchImpl = scriptedFetch([
+      { body: { routes: [{ id: 'a' }], nextCursor: 'c1' } },
+      { body: { routes: [{ id: 'b' }], nextCursor: 'c 2' } },
+      { body: { routes: [{ id: 'c' }], nextCursor: null } },
+    ]);
+    const res = await listCommunityRoutes({ baseUrl: BASE, fetchImpl }, { country: 'AU' });
+    expect(res.routes.map((r) => r.id)).toEqual(['a', 'b', 'c']);
+    expect(res.complete).toBe(true);
+    expect(call(fetchImpl, 0)[0]).toBe(`${BASE}/v1/community/routes?country=AU`);
+    expect(call(fetchImpl, 1)[0]).toBe(`${BASE}/v1/community/routes?country=AU&cursor=c1`);
+    expect(call(fetchImpl, 2)[0]).toBe(`${BASE}/v1/community/routes?country=AU&cursor=c+2`);
+  });
+
+  it('reads a server without nextCursor as one complete page', async () => {
+    const fetchImpl = scriptedFetch([{ body: { routes: [{ id: 'a' }] } }]);
+    const res = await listCommunityRoutes({ baseUrl: BASE, fetchImpl });
+    expect(res).toEqual({ routes: [{ id: 'a' }], complete: true });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops at the page cap, and on a repeated cursor, and says the list is incomplete', async () => {
+    let n = 0;
+    const endless = jest.fn(async () => {
+      n += 1;
+      return {
+        ok: true,
+        status: 200,
+        statusText: '',
+        text: async () => JSON.stringify({ routes: [{ id: `r${n}` }], nextCursor: `c${n}` }),
+      };
+    }) as unknown as typeof fetch;
+    const capped = await listCommunityRoutes({ baseUrl: BASE, fetchImpl: endless });
+    expect(endless).toHaveBeenCalledTimes(MAX_COMMUNITY_LIST_PAGES);
+    expect(capped.routes).toHaveLength(MAX_COMMUNITY_LIST_PAGES);
+    expect(capped.complete).toBe(false);
+
+    const looping = scriptedFetch([{ body: { routes: [{ id: 'a' }], nextCursor: 'same' } }]);
+    const looped = await listCommunityRoutes({ baseUrl: BASE, fetchImpl: looping });
+    expect(looping).toHaveBeenCalledTimes(2);
+    expect(looped.complete).toBe(false);
+  });
+
+  it('throws when the first page is not a list', async () => {
+    const fetchImpl = scriptedFetch([{ body: { nope: true } }]);
+    await expect(listCommunityRoutes({ baseUrl: BASE, fetchImpl })).rejects.toThrow(/format/);
+  });
 });
 
 describe('authenticated routes', () => {
@@ -115,6 +164,17 @@ describe('authenticated routes', () => {
     const routes = await listMyCommunityRoutes({ baseUrl: BASE, fetchImpl, token: 'tok' });
     expect(call(fetchImpl)[0]).toBe(`${BASE}/v1/me/community/routes`);
     expect(routes.map((r) => r.id)).toEqual([ID]);
+  });
+
+  it('listMyCommunityRoutes follows nextCursor with the token on every page', async () => {
+    const fetchImpl = scriptedFetch([
+      { body: { routes: [{ id: 'a' }], nextCursor: 'c1' } },
+      { body: { routes: [{ id: 'b' }], nextCursor: null } },
+    ]);
+    const routes = await listMyCommunityRoutes({ baseUrl: BASE, fetchImpl, token: 'tok' });
+    expect(routes.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(call(fetchImpl, 1)[0]).toBe(`${BASE}/v1/me/community/routes?cursor=c1`);
+    expect(headers(call(fetchImpl, 1)[1]).Authorization).toBe('Bearer tok');
   });
 });
 

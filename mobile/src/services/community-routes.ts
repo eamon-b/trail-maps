@@ -332,10 +332,12 @@ export function markCommunityRouteTakenDown(id: string): void {
  * never throws. Without an API base URL this is a no-op and only routes
  * already on the device are listed.
  *
- * Then, for the downloaded routes: those the list names have `takenDown`
- * cleared and are downloaded again when the list's MD5 differs; those it does
- * not name are asked about one by one (at most `MAX_COMMUNITY_PROBES`), and
- * only a positive "not shared" (404) flags them. Nothing is deleted here.
+ * The list is read page by page (`nextCursor`, at most
+ * `MAX_COMMUNITY_LIST_PAGES`). Then, for the downloaded routes: those the list
+ * names have `takenDown` cleared and are downloaded again when the list's MD5
+ * differs; those it does not name are asked about one by one (at most
+ * `MAX_COMMUNITY_PROBES`) — only after a list read to its last page — and only
+ * a positive "not shared" (404) flags them. Nothing is deleted here.
  */
 export function refreshCommunityRoutes(
   options: { force?: boolean; now?: number; fetchImpl?: FetchLike } = {},
@@ -361,7 +363,10 @@ export function refreshCommunityRoutes(
       const plan = planCommunitySync(list, getState().installed);
       saveState({ ...getState(), list, fetchedAt: now, installed: plan.installed });
 
-      for (const id of plan.probe) {
+      // A list cut short (the page cap) leaves routes out that are still
+      // shared: asking about them would be wasted at best, so wait for a
+      // refresh that reads every page.
+      for (const id of response.complete ? plan.probe : []) {
         const probe = await probeCommunityRoute(baseUrl, id, options.fetchImpl);
         if (probe.kind === 'gone') setTakenDown(id, true);
         else if (probe.kind === 'live') setTakenDown(id, false);

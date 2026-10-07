@@ -434,6 +434,29 @@ describe('refreshCommunityRoutes', () => {
     expect(getCommunityRouteInfo(ID)?.takenDown).toBe(false);
   });
 
+  it('asks about nothing the list leaves out when the list was cut short at the page cap', async () => {
+    await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID), publish(ID2)]) });
+    await ensureCommunityRouteDownloaded(ID);
+
+    // Every page names ID2 and points at another page: the walk stops at the
+    // cap, and ID (gone from the server) may just be on a page not fetched.
+    const base = listFetch([], {});
+    let page = 0;
+    const fetchImpl = jest.fn(async (url: string) => {
+      if (url.startsWith(`${API}/v1/community/routes?`) || url === `${API}/v1/community/routes`) {
+        page += 1;
+        const body = { routes: [publish(ID2)], nextCursor: `p${page}` };
+        return { ok: true, status: 200, statusText: '', text: async () => JSON.stringify(body) };
+      }
+      return (base as unknown as (u: string) => Promise<unknown>)(url);
+    }) as unknown as typeof fetch;
+
+    const res = await refreshCommunityRoutes({ now: T0 + 1, force: true, fetchImpl });
+    expect(res.checked).toBe(true);
+    expect(detailCalls(fetchImpl, ID)).toBe(0);
+    expect(getCommunityRouteInfo(ID)).toMatchObject({ downloaded: true, takenDown: false });
+  });
+
   it('changes nothing when the list fetch fails', async () => {
     await refreshCommunityRoutes({ now: T0, fetchImpl: listFetch([publish(ID)]) });
     await ensureCommunityRouteDownloaded(ID);

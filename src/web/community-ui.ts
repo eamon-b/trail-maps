@@ -6,34 +6,22 @@
  * Every string that came from a user or the server goes through `escapeHtml`.
  */
 
-import type { CommunityAiReview, CommunityCheck, CommunityRouteStatus } from '@lib/community-types';
+import type { CommunityAiReview, CommunityCheck } from '@lib/community-types';
 import { hashString } from '@lib/gpx-import';
 import { COUNTRIES, findCountry } from '@lib/trail-regions';
-import { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION } from './community-labels';
+import { multilineHtml } from './community-labels';
 import { escapeHtml } from './web-utils';
 
-export { UNVERIFIED_EXPLANATION, VERIFIED_EXPLANATION, placeLabel, regionLabel } from './community-labels';
-
-const STATUS_LABELS: Record<CommunityRouteStatus, string> = {
-  unverified: 'Unverified',
-  verified: 'Verified',
-  hidden: 'Hidden',
-  removed: 'Removed',
-};
-
-/** A pill for a route's status, with the explanation as its tooltip. */
-export function statusBadgeHtml(status: CommunityRouteStatus): string {
-  const title =
-    status === 'verified'
-      ? VERIFIED_EXPLANATION
-      : status === 'unverified'
-        ? UNVERIFIED_EXPLANATION
-        : status === 'hidden'
-          ? 'Hidden: not listed publicly; only its owner and admins can see it.'
-          : 'Removed.';
-  const label = STATUS_LABELS[status] ?? String(status);
-  return `<span class="community-badge community-badge-${escapeHtml(status)}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`;
-}
+export {
+  HIDDEN_EXPLANATION,
+  UNVERIFIED_EXPLANATION,
+  VERIFIED_EXPLANATION,
+  hiddenReasonText,
+  multilineHtml,
+  placeLabel,
+  regionLabel,
+  statusBadgeHtml,
+} from './community-labels';
 
 const LEVEL_LABELS: Record<CommunityCheck['level'], string> = {
   pass: 'Pass',
@@ -132,11 +120,6 @@ export function initRegionPicker(
     },
   };
   return picker;
-}
-
-/** Description text with line breaks kept, escaped. */
-export function multilineHtml(text: string): string {
-  return escapeHtml(text).replace(/\r?\n/g, '<br>');
 }
 
 /** Encode text as UTF-8 base64 (btoa alone only takes Latin-1). */

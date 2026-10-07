@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./my-trails.css">
   <link rel="stylesheet" href="./trail-list.css">
+  <link rel="stylesheet" href="./community.css">
   <!-- Applies the saved theme before first paint so the page never flashes. See theme.ts. -->
   <script>
     (function () {
@@ -83,6 +84,16 @@
       <div id="no-my-trails" class="no-results">
         <p>No imported trails yet.</p>
         <p><a href="./upload.html">Import a GPX file</a> to get a full trail page and trip planner for your own route.</p>
+      </div>
+
+      <!-- Shown only when this build has an API and the browser is linked. See index.ts. -->
+      <div id="my-community" class="my-community" hidden>
+        <h3>Shared by me</h3>
+        <p class="list-note">Routes you shared with the community, including any that are hidden from the public list.</p>
+        <p id="my-community-note" class="list-note" hidden></p>
+        <p id="my-community-link" hidden><button type="button" id="my-community-link-btn" class="link-button">Link this browser again</button></p>
+        <div id="my-community-link-form" hidden></div>
+        <div id="my-community-list" class="trail-grid list-grid"></div>
       </div>
     </section>
 

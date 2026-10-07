@@ -16,6 +16,8 @@ import {
   deattributeStatement,
   deattributeStoredRoutes,
   patchCommunityRoute,
+  REPORTS_HIDE_NOTE,
+  REVIEW_HIDE_NOTE,
   submitCommunityRoute,
 } from '../src/community';
 import { runCommunityChecks } from '../../../src/lib/community-checks';
@@ -493,9 +495,14 @@ describe('GET /v1/community/routes/:id', () => {
 
     expect((await getRoute(route.id)).status).toBe(404);
     expect((await getRoute(route.id, await registerDevice())).status).toBe(404);
-    expect((await getRoute(route.id, owner)).status).toBe(200);
+    const ownerRes = await getRoute(route.id, owner);
+    expect(ownerRes.status).toBe(200);
+    const asOwner = (await ownerRes.json()) as CommunityRouteDetail;
+    expect(asOwner.hiddenReason).toBe('admin');
+    expect(asOwner).not.toHaveProperty('statusNote');
     const asAdmin = (await (await getRoute(route.id, admin)).json()) as CommunityRouteDetail;
     expect(asAdmin.statusNote).toBe('checking');
+    expect(asAdmin.hiddenReason).toBe('admin');
     expect(asAdmin.reportCount).toBe(0);
     expect((await list()).routes.map((r) => r.id)).not.toContain(route.id);
   });
@@ -711,6 +718,10 @@ describe('POST /v1/community/routes/:id/report', () => {
     const r = await row(route.id);
     expect(r.status).toBe('hidden');
     expect(r.status_note).toBe('Hidden after 3 reports');
+    expect(REPORTS_HIDE_NOTE).toBe('Hidden after 3 reports');
+    const asOwner = (await (await getRoute(route.id, owner)).json()) as CommunityRouteDetail;
+    expect(asOwner.hiddenReason).toBe('reports');
+    expect(asOwner).not.toHaveProperty('statusNote');
     expect((await getRoute(route.id)).status).toBe(404);
     expect(await publicKeys(route.id)).toEqual([]);
   });
@@ -806,7 +817,63 @@ describe('GET /v1/me/community/routes', () => {
     expect(ids).toEqual(expect.arrayContaining([a.id, b.id]));
     expect(ids).not.toContain(c.id);
     expect(body.routes.every((r) => r.isOwner === true && r.review !== undefined)).toBe(true);
+    expect(body.routes.find((r) => r.id === b.id)?.hiddenReason).toBe('admin');
+    expect(body.routes.find((r) => r.id === a.id)).not.toHaveProperty('hiddenReason');
+    expect(body.routes.every((r) => !('statusNote' in r))).toBe(true);
     expect((await SELF.fetch(url('/v1/me/community/routes'))).status).toBe(401);
+  });
+
+  it('carries why each hidden route was hidden', async () => {
+    const owner = await registerDevice();
+    const reported = await submitOk(owner);
+    for (let i = 0; i < 3; i++) {
+      expect((await report(await registerAgedDevice(), reported.id)).status).toBe(201);
+    }
+    const res = await SELF.fetch(url('/v1/me/community/routes'), { headers: authHeaders(owner) });
+    const body = (await res.json()) as CommunityAdminListResponse;
+    expect(body.routes.find((r) => r.id === reported.id)?.hiddenReason).toBe('reports');
+  });
+});
+
+describe('hiddenReason', () => {
+  it('is never on a live route, nor on the public or a stranger\'s view', async () => {
+    const owner = await registerDevice();
+    const route = await submitOk(owner);
+    expect(route).not.toHaveProperty('hiddenReason');
+    const asOwner = (await (await getRoute(route.id, owner)).json()) as CommunityRouteDetail;
+    expect(asOwner).not.toHaveProperty('hiddenReason');
+    const asPublic = (await (await getRoute(route.id)).json()) as CommunityRouteDetail;
+    expect(asPublic).not.toHaveProperty('hiddenReason');
+    const asStranger = (await (await getRoute(route.id, await registerDevice())).json()) as CommunityRouteDetail;
+    expect(asStranger).not.toHaveProperty('hiddenReason');
+    expect((await list()).routes.every((r) => !('hiddenReason' in r))).toBe(true);
+  });
+
+  it('is gone after a restore, and the restore overwrites the hide note', async () => {
+    const owner = await registerDevice();
+    const admin = await registerDevice();
+    await makeAdmin(admin.userId);
+    const route = await submitOk(owner);
+    for (let i = 0; i < 3; i++) await report(await registerAgedDevice(), route.id);
+    expect((await row(route.id)).status_note).toBe(REPORTS_HIDE_NOTE);
+    expect((await setStatus(admin, route.id, { status: 'unverified' })).status).toBe(200);
+    expect((await row(route.id)).status_note).toBeNull();
+    const asOwner = (await (await getRoute(route.id, owner)).json()) as CommunityRouteDetail;
+    expect(asOwner.status).toBe('unverified');
+    expect(asOwner).not.toHaveProperty('hiddenReason');
+  });
+
+  it('refuses an admin note that would pass for an automatic hide', async () => {
+    const owner = await registerDevice();
+    const admin = await registerDevice();
+    await makeAdmin(admin.userId);
+    const route = await submitOk(owner);
+    for (const note of [REVIEW_HIDE_NOTE, REPORTS_HIDE_NOTE]) {
+      const res = await setStatus(admin, route.id, { status: 'hidden', note });
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as { error: { code: string } }).error.code).toBe('invalid_note');
+    }
+    expect((await row(route.id)).status).toBe('unverified');
   });
 });
 

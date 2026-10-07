@@ -233,6 +233,41 @@
   color: var(--tint-warn-text);
 }
 
+/* ---- Shared by me (inside My trails) ---- */
+.my-community {
+  margin-top: 1.5rem;
+}
+
+.my-community > h3 {
+  margin-bottom: 0.25rem;
+}
+
+.my-community[hidden],
+.my-community [hidden] {
+  display: none;
+}
+
+.list-card .community-badge {
+  margin-left: 0.5rem;
+}
+
+.my-route-reason,
+.my-route-review {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.my-route-reason {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.my-route-review {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 480px) {
   .filter-row {
     flex-direction: column;

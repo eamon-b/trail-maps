@@ -262,6 +262,53 @@ describe('community-route.html: owner, report and the no-track view', () => {
     expect($('report-link').textContent).toContain('Link this browser');
   });
 
+  it('keeps Edit and Delete for the owner of a hidden route and says why it is hidden', async () => {
+    window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
+    const calls = stubApi({
+      ...detail,
+      status: 'hidden',
+      hiddenReason: 'reports',
+      trailUrl: null,
+      isOwner: true,
+      review: { status: 'done', verdict: 'looks_good', summary: 'Fine <i>route</i>' },
+    });
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+
+    expect($('status-badge').textContent).toBe('Hidden');
+    expect($('hidden-reason').hidden).toBe(false);
+    expect($('hidden-reason').textContent).toBe('Hidden after reports from other users.');
+    expect($('owner-review').innerHTML).toContain('Fine &lt;i&gt;route&lt;/i&gt;');
+    expect($('edit-btn').hidden).toBe(false);
+    expect($('delete-btn').hidden).toBe(false);
+
+    // Edit is wired in the no-track view: the PATCH goes out with the token.
+    $('edit-btn').click();
+    expect($('edit-form').hidden).toBe(false);
+    (document.getElementById('edit-name') as HTMLInputElement).value = 'Renamed while hidden';
+    $('edit-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await waitFor(() => $('trail-title').textContent === 'Renamed while hidden');
+    const patch = calls.find(c => c.init.method === 'PATCH')!;
+    expect((patch.init.headers as Record<string, string>).Authorization).toBe('Bearer tok');
+    // Still hidden, still saying why.
+    expect($('hidden-reason').textContent).toBe('Hidden after reports from other users.');
+
+    // Delete is wired too.
+    window.confirm = () => true;
+    $('delete-btn').click();
+    await waitFor(() => calls.some(c => c.init.method === 'DELETE'));
+    expect(calls.some(c => c.init.method === 'DELETE')).toBe(true);
+  });
+
+  it('shows no hidden reason on a live route', async () => {
+    stubApi({ ...detail, hiddenReason: 'review' });
+    loadPage(`?id=${ID}`);
+    await import('./community-route');
+    await waitFor(() => !$('trail-panel').hidden);
+    expect($('hidden-reason').hidden).toBe(true);
+  });
+
   it('offers no Report or direction toggle on a hidden route', async () => {
     window.localStorage.setItem('tracknotes.webSession', JSON.stringify(SESSION));
     stubApi({ ...detail, status: 'hidden', trailUrl: null, isOwner: true, review: { status: 'skipped' } });

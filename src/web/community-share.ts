@@ -28,7 +28,7 @@ import {
 } from '@lib/community-types';
 import type { ProcessedTrail } from '@lib/trail-types';
 import { ApiError, NetworkError } from './api/client';
-import { checksFromError, communityRouteHref, submitCommunityRoute } from './api/community';
+import { checksFromError, communityRouteHref, duplicateRouteId, submitCommunityRoute } from './api/community';
 import { clearSession, loadSession, unlinkThisBrowser, type WebSession } from './api/session';
 import {
   checksListHtml,
@@ -111,6 +111,16 @@ export function initCommunityShare(): CommunityShareController {
   const setError = (message: string): void => {
     errorEl.textContent = message;
     errorEl.hidden = message === '';
+  };
+
+  /** The error, then a link to a route page (built from an encoded id, never from the reply's text). */
+  const setErrorWithLink = (message: string, routeId: string, linkText: string): void => {
+    setError(message);
+    errorEl.append(' ');
+    const link = document.createElement('a');
+    link.href = `./${communityRouteHref(routeId)}`;
+    link.textContent = linkText;
+    errorEl.append(link);
   };
 
   const updateSubmit = (): void => {
@@ -274,7 +284,18 @@ export function initCommunityShare(): CommunityShareController {
       }
       const serverChecks = checksFromError(err);
       if (serverChecks) showChecks(serverChecks, true);
-      setError(describeSubmitError(err));
+      // A duplicate of the caller's own route: point at it rather than stop
+      // at "shared before" (the worker names only the caller's own route).
+      const existingId = duplicateRouteId(err);
+      if (existingId) {
+        setErrorWithLink(
+          `${describeSubmitError(err).replace(/\.?$/, '.')} You shared it yourself:`,
+          existingId,
+          'Open your route',
+        );
+      } else {
+        setError(describeSubmitError(err));
+      }
     } finally {
       busy = false;
       submitBtn.textContent = 'Share route';

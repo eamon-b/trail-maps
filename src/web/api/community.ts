@@ -13,16 +13,17 @@
  * it returns null, so the landing page can simply skip the community tier.
  */
 
-import type {
-  CommunityAdminListResponse,
-  CommunityCheck,
-  CommunityListResponse,
-  CommunityPatchRequest,
-  CommunityReportReason,
-  CommunityRouteDetail,
-  CommunityRouteStatus,
-  CommunityRouteSummary,
-  CommunitySubmitRequest,
+import {
+  isCommunityRouteId,
+  type CommunityAdminListResponse,
+  type CommunityCheck,
+  type CommunityListResponse,
+  type CommunityPatchRequest,
+  type CommunityReportReason,
+  type CommunityRouteDetail,
+  type CommunityRouteStatus,
+  type CommunityRouteSummary,
+  type CommunitySubmitRequest,
 } from '@lib/community-types';
 import type { ProcessedTrail } from '@lib/trail-types';
 import { ApiError, NetworkError, apiRequest, getApiBase, type FetchLike } from './client';
@@ -174,7 +175,30 @@ export async function reportCommunityRoute(
   });
 }
 
-/** This user's submissions, any status, with checks and review. */
+/**
+ * True when one of the caller's own routes has the fields the landing page's
+ * "Shared by me" rows read. Like `isCommunityRouteSummary`, but a hidden
+ * route is expected here (the API never returns removed ones).
+ */
+export function isOwnCommunityRoute(value: unknown): value is CommunityRouteDetail {
+  if (typeof value !== 'object' || value === null) return false;
+  const r = value as Record<string, unknown>;
+  return (
+    typeof r.id === 'string' &&
+    r.id !== '' &&
+    typeof r.name === 'string' &&
+    (r.status === 'verified' || r.status === 'unverified' || r.status === 'hidden') &&
+    typeof r.lengthKm === 'number' &&
+    Number.isFinite(r.lengthKm) &&
+    typeof r.country === 'string' &&
+    (r.state === undefined || isStringOrNull(r.state))
+  );
+}
+
+/**
+ * This user's submissions, any status but removed, with checks and review.
+ * Entries of the wrong shape are dropped.
+ */
 export async function listMyCommunityRoutes(
   session: WebSession,
   deps: CommunityApiDeps = {},
@@ -182,8 +206,10 @@ export async function listMyCommunityRoutes(
   const response = await apiRequest<CommunityAdminListResponse>('/v1/me/community/routes', {
     token: session.token,
     fetchImpl: deps.fetchImpl,
+    signal: deps.signal,
   });
-  return Array.isArray(response?.routes) ? response.routes : [];
+  const routes: unknown = response?.routes;
+  return Array.isArray(routes) ? routes.filter(isOwnCommunityRoute) : [];
 }
 
 /** The admin queue: everything not removed. 403 for a non-admin. */
@@ -244,6 +270,18 @@ export function checksFromError(err: unknown): CommunityCheck[] | null {
       typeof (c as CommunityCheck).message === 'string' &&
       ['pass', 'warn', 'fail'].includes((c as CommunityCheck).level),
   );
+}
+
+/**
+ * The id of the caller's own earlier copy from a 409 `duplicate`, or null.
+ * The worker sends `existingId` only when the route it matched is the
+ * caller's (anyone else's id stays private), so a link to it is safe to show.
+ */
+export function duplicateRouteId(err: unknown): string | null {
+  if (!(err instanceof ApiError) || err.status !== 409) return null;
+  const body = err.body as { existingId?: unknown } | undefined;
+  const id = body?.existingId;
+  return typeof id === 'string' && isCommunityRouteId(id) ? id : null;
 }
 
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);

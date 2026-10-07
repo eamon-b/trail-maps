@@ -13,6 +13,7 @@ import {
   checksFromError,
   communityRouteHref,
   deleteCommunityRoute,
+  duplicateRouteId,
   fetchCommunityTrail,
   getCommunityRoute,
   isUsableCommunityTrail,
@@ -222,7 +223,16 @@ describe('authenticated calls', () => {
 
   it('my routes and the admin endpoints', async () => {
     const { impl, calls } = mockFetch([
-      { status: 200, body: { routes: [{ id: 'c_1' }] } },
+      {
+        status: 200,
+        body: {
+          routes: [
+            { id: 'c_1', name: 'Mine', status: 'hidden', lengthKm: 12, country: 'AU', state: null },
+            { id: 'c_bad', name: 'No length', status: 'hidden', country: 'AU' },
+            { id: 'c_gone', name: 'Removed', status: 'removed', lengthKm: 1, country: 'AU' },
+          ],
+        },
+      },
       { status: 200, body: { routes: [{ id: 'c_2' }] } },
       { status: 200, body: {} },
       { status: 200, body: {} },
@@ -276,5 +286,19 @@ describe('fetchCommunityTrail', () => {
     expect(isUsableCommunityTrail({ ...TRAIL, waypoints: undefined })).toBe(false);
     expect(isUsableCommunityTrail({ ...TRAIL, track: { ...TRAIL.track, points: [TRAIL.track.points[0]] } })).toBe(false);
     expect(isUsableCommunityTrail(null)).toBe(false);
+  });
+});
+
+describe('duplicateRouteId', () => {
+  it('reads the caller’s own route id from a 409 duplicate', () => {
+    const body = { error: { code: 'duplicate', message: 'x' }, existingId: 'c_abcdefghijklmnop' };
+    expect(duplicateRouteId(new ApiError(409, 'duplicate', 'x', body))).toBe('c_abcdefghijklmnop');
+  });
+
+  it('is null without an id, with a malformed one, or for another status', () => {
+    expect(duplicateRouteId(new ApiError(409, 'duplicate', 'x', { error: {} }))).toBeNull();
+    expect(duplicateRouteId(new ApiError(409, 'duplicate', 'x', { existingId: '../admin' }))).toBeNull();
+    expect(duplicateRouteId(new ApiError(422, 'checks_failed', 'x', { existingId: 'c_abcdefghijklmnop' }))).toBeNull();
+    expect(duplicateRouteId(new Error('x'))).toBeNull();
   });
 });

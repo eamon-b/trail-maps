@@ -357,6 +357,29 @@ describe('initCommunityShare', () => {
     expect($('community-error').textContent).toBe('The GPX file must be at most 5242880 bytes');
   });
 
+  it('links a 409 duplicate to the caller’s own route when the server names it', async () => {
+    stubSubmit(409, {
+      error: { code: 'duplicate', message: 'This exact track has been shared before' },
+      existingId: 'c_abcdefghijklmnop',
+    });
+    await openPanel();
+    fillIn();
+    submitForm();
+    await flush();
+    const error = $('community-error');
+    expect(error.hidden).toBe(false);
+    expect(error.textContent).toContain('This exact track has been shared before.');
+    const link = error.querySelector('a')!;
+    expect(link.getAttribute('href')).toBe('./community-route.html?id=c_abcdefghijklmnop');
+    expect(link.textContent).toBe('Open your route');
+
+    // Without an id (someone else's route) it stays plain text.
+    stubSubmit(409, { error: { code: 'duplicate', message: 'This exact track has been shared before' } });
+    submitForm();
+    await flush();
+    expect(error.querySelector('a')).toBeNull();
+  });
+
   it('uses the session the link form produced when storage refuses to keep it', async () => {
     window.localStorage.clear();
     vi.stubGlobal(

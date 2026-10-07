@@ -140,6 +140,8 @@ export interface CommunityRouteDetail extends CommunityRouteSummary {
   reports?: { reason: CommunityReportReason; note: string | null; createdAt: string }[];
   /** Present only for admins: the last status change note. */
   statusNote?: string | null;
+  /** Present for the owner and admins when status is 'hidden': what hid the route. */
+  hiddenReason?: 'review' | 'reports' | 'admin';
 }
 
 export interface CommunitySubmitRequest {

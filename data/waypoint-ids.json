@@ -12025,11 +12025,32 @@
       "lon": 134.388518
     },
     {
+      "id": "w_06b8c6f1",
+      "name": "Iyashitei Koku",
+      "type": "accommodation",
+      "lat": 33.863096,
+      "lon": 134.501404
+    },
+    {
+      "id": "w_083215d5",
+      "name": "Sakura Ryokan",
+      "type": "accommodation",
+      "lat": 34.072183,
+      "lon": 134.355807
+    },
+    {
       "id": "w_0dc9094b",
       "name": "No.17 Idoji",
       "type": "poi",
       "lat": 34.085241,
       "lon": 134.485488
+    },
+    {
+      "id": "w_0e173c31",
+      "name": "Minshuku Yukiso",
+      "type": "accommodation",
+      "lat": 33.769471,
+      "lon": 134.590388
     },
     {
       "id": "w_0f019df0",
@@ -12044,6 +12065,13 @@
       "type": "accommodation",
       "lat": 34.132415,
       "lon": 134.426462
+    },
+    {
+      "id": "w_110e1bb6",
+      "name": "Minshuku Sazanka",
+      "type": "accommodation",
+      "lat": 33.851633,
+      "lon": 134.582863
     },
     {
       "id": "w_138f7741",
@@ -12067,11 +12095,25 @@
       "lon": 134.348104
     },
     {
+      "id": "w_168ff3b6",
+      "name": "Business Hotel Access Awa",
+      "type": "accommodation",
+      "lat": 34.102736,
+      "lon": 134.344869
+    },
+    {
       "id": "w_17e8de14",
       "name": "Tainohama Station Azumaya",
       "type": "campsite",
       "lat": 33.772771,
       "lon": 134.583838
+    },
+    {
+      "id": "w_18e6e9d7",
+      "name": "Self-inn Tokushima Higashisenba",
+      "type": "accommodation",
+      "lat": 34.069618,
+      "lon": 134.549469
     },
     {
       "id": "w_1a186903",
@@ -12081,11 +12123,32 @@
       "lon": 134.3884768
     },
     {
+      "id": "w_1b95d1fc",
+      "name": "Minshuku Aoi",
+      "type": "accommodation",
+      "lat": 33.920111,
+      "lon": 134.557678
+    },
+    {
       "id": "w_1cc049dd",
       "name": "Ebisuhama Camp Village",
       "type": "campsite",
       "lat": 33.742121,
       "lon": 134.555647
+    },
+    {
+      "id": "w_1d324358",
+      "name": "Minpaku Hinomaru Shoten",
+      "type": "accommodation",
+      "lat": 33.850397,
+      "lon": 134.586148
+    },
+    {
+      "id": "w_1de02078",
+      "name": "Self-inn Tokushima Kuramoto-ekimae",
+      "type": "accommodation",
+      "lat": 34.078728,
+      "lon": 134.51889
     },
     {
       "id": "w_1e9aaab7",
@@ -12095,11 +12158,53 @@
       "lon": 134.35851
     },
     {
+      "id": "w_1fb57982",
+      "name": "Kanbaien",
+      "type": "accommodation",
+      "lat": 34.166212,
+      "lon": 134.502136
+    },
+    {
+      "id": "w_20896e0e",
+      "name": "3980 Yen Tabi-no-yado",
+      "type": "accommodation",
+      "lat": 34.098908,
+      "lon": 134.336202
+    },
+    {
+      "id": "w_2454eeef",
+      "name": "Guest House Naruto Ohenro",
+      "type": "accommodation",
+      "lat": 34.157374,
+      "lon": 134.50225
+    },
+    {
       "id": "w_24c36f7d",
       "name": "No.21 Tairyuji",
       "type": "poi",
       "lat": 33.882512,
       "lon": 134.521848
+    },
+    {
+      "id": "w_2504f736",
+      "name": "Hostel Coliberty",
+      "type": "accommodation",
+      "lat": 34.061165,
+      "lon": 134.546454
+    },
+    {
+      "id": "w_25a5f858",
+      "name": "Kuni-Masuda Farm Minshuku",
+      "type": "accommodation",
+      "lat": 33.74741,
+      "lon": 134.557386
+    },
+    {
+      "id": "w_28c976bb",
+      "name": "Tabibito-no-yado Michishirube",
+      "type": "accommodation",
+      "lat": 34.152507,
+      "lon": 134.465059
     },
     {
       "id": "w_2e2f538d",
@@ -12116,6 +12221,13 @@
       "lon": 134.53216
     },
     {
+      "id": "w_30a4fc00",
+      "name": "Minshuku Juen",
+      "type": "accommodation",
+      "lat": 33.768959,
+      "lon": 134.577242
+    },
+    {
       "id": "w_3341701b",
       "name": "Ebisuhama Ohenro Rest Hut",
       "type": "campsite",
@@ -12123,11 +12235,39 @@
       "lon": 134.556272
     },
     {
+      "id": "w_3436bff7",
+      "name": "Business Ryokan Sakuraso",
+      "type": "accommodation",
+      "lat": 34.073069,
+      "lon": 134.553734
+    },
+    {
+      "id": "w_361966fb",
+      "name": "GuestHouse017 Tokushima",
+      "type": "accommodation",
+      "lat": 34.065884,
+      "lon": 134.548248
+    },
+    {
       "id": "w_36eaa79c",
       "name": "Ryokan Yoshino",
       "type": "accommodation",
       "lat": 34.055767,
       "lon": 134.353997
+    },
+    {
+      "id": "w_370a6516",
+      "name": "Century Plaza Hotel",
+      "type": "accommodation",
+      "lat": 34.056309,
+      "lon": 134.554494
+    },
+    {
+      "id": "w_37328e20",
+      "name": "Pilgrimage Lodge Otsuru",
+      "type": "accommodation",
+      "lat": 33.944288,
+      "lon": 134.549144
     },
     {
       "id": "w_38fcb6e3",
@@ -12144,6 +12284,13 @@
       "lon": 134.550785
     },
     {
+      "id": "w_3ce153b4",
+      "name": "Farm Guesthouse Morian Loft",
+      "type": "accommodation",
+      "lat": 33.987671,
+      "lon": 134.327615
+    },
+    {
       "id": "w_3e784129",
       "name": "No.12 Shosanji",
       "type": "poi",
@@ -12158,11 +12305,39 @@
       "lon": 134.50145
     },
     {
+      "id": "w_3f112a2b",
+      "name": "Guest House Cycle & Stay",
+      "type": "accommodation",
+      "lat": 34.071176,
+      "lon": 134.545636
+    },
+    {
+      "id": "w_40ba6080",
+      "name": "Mikan no Yado",
+      "type": "accommodation",
+      "lat": 33.929296,
+      "lon": 134.518211
+    },
+    {
       "id": "w_44bd565d",
       "name": "Natural Hot Spring Goshonokyō",
       "type": "poi",
       "lat": 34.1238,
       "lon": 134.35366
+    },
+    {
+      "id": "w_46ad2156",
+      "name": "Katsuura Ebisu-no-sato",
+      "type": "accommodation",
+      "lat": 33.927841,
+      "lon": 134.495557
+    },
+    {
+      "id": "w_4870540e",
+      "name": "Hotel Sunroute Tokushima",
+      "type": "accommodation",
+      "lat": 34.073303,
+      "lon": 134.550768
     },
     {
       "id": "w_4a2fdde6",
@@ -12177,6 +12352,27 @@
       "type": "hut",
       "lat": 34.067298,
       "lon": 134.318565
+    },
+    {
+      "id": "w_51714573",
+      "name": "Cotton Inn Kamiyama-dori",
+      "type": "accommodation",
+      "lat": 33.973319,
+      "lon": 134.369564
+    },
+    {
+      "id": "w_55a55b4f",
+      "name": "Minshuku Chiba",
+      "type": "accommodation",
+      "lat": 33.988041,
+      "lon": 134.581007
+    },
+    {
+      "id": "w_55bc08df",
+      "name": "Subaruyado Yoshino",
+      "type": "accommodation",
+      "lat": 34.072896,
+      "lon": 134.550781
     },
     {
       "id": "w_594eb1e9",
@@ -12214,11 +12410,25 @@
       "lon": 134.586758
     },
     {
+      "id": "w_5ff1f3ca",
+      "name": "Minpaku Pandaya",
+      "type": "accommodation",
+      "lat": 33.847623,
+      "lon": 134.578883
+    },
+    {
       "id": "w_601597ba",
       "name": "No.4 Dainichiji",
       "type": "poi",
       "lat": 34.1515688,
       "lon": 134.4308846
+    },
+    {
+      "id": "w_60f55baf",
+      "name": "Onyado Matsumotoya",
+      "type": "accommodation",
+      "lat": 34.08455,
+      "lon": 134.48547
     },
     {
       "id": "w_6330254a",
@@ -12235,11 +12445,32 @@
       "lon": 134.52989
     },
     {
+      "id": "w_679fd8b4",
+      "name": "Henroyado Sora",
+      "type": "accommodation",
+      "lat": 33.930263,
+      "lon": 134.521241
+    },
+    {
+      "id": "w_68c6d754",
+      "name": "Guesthouse Green House",
+      "type": "accommodation",
+      "lat": 33.848369,
+      "lon": 134.586401
+    },
+    {
       "id": "w_6988cc53",
       "name": "No.10 Kirihataji",
       "type": "poi",
       "lat": 34.107754,
       "lon": 134.304342
+    },
+    {
+      "id": "w_69dbf1f8",
+      "name": "Business Hotel Access Kamojima",
+      "type": "accommodation",
+      "lat": 34.067518,
+      "lon": 134.355622
     },
     {
       "id": "w_6a622147",
@@ -12263,6 +12494,34 @@
       "lon": 134.580497
     },
     {
+      "id": "w_6c0c0923",
+      "name": "Hotel Sunshine Tokushima",
+      "type": "accommodation",
+      "lat": 34.077144,
+      "lon": 134.544432
+    },
+    {
+      "id": "w_6d4a4baf",
+      "name": "Yadoya Hiwasa Tokushima",
+      "type": "accommodation",
+      "lat": 34.071778,
+      "lon": 134.545078
+    },
+    {
+      "id": "w_6d97df58",
+      "name": "Minshuku Awarakuya",
+      "type": "accommodation",
+      "lat": 34.065509,
+      "lon": 134.319271
+    },
+    {
+      "id": "w_6dae47cd",
+      "name": "Hotel AZ Tokushima Itano",
+      "type": "accommodation",
+      "lat": 34.137198,
+      "lon": 134.474165
+    },
+    {
       "id": "w_6ed03d9f",
       "name": "Pilgrim Hut No.45 Kukaian ⸱ Kirihata",
       "type": "hut",
@@ -12277,11 +12536,46 @@
       "lon": 134.370151
     },
     {
+      "id": "w_74dd2c4d",
+      "name": "Minpaku Funanosato",
+      "type": "accommodation",
+      "lat": 33.969264,
+      "lon": 134.600903
+    },
+    {
+      "id": "w_763a354c",
+      "name": "Tokushima Grandvrio Hotel",
+      "type": "accommodation",
+      "lat": 34.065002,
+      "lon": 134.561325
+    },
+    {
+      "id": "w_7707cb15",
+      "name": "Otoriien Ryokan",
+      "type": "accommodation",
+      "lat": 34.159722,
+      "lon": 134.501924
+    },
+    {
       "id": "w_7b359365",
       "name": "No.8 Kumadaniji",
       "type": "poi",
       "lat": 34.1227308,
       "lon": 134.3400517
+    },
+    {
+      "id": "w_7c9c76b2",
+      "name": "Minshuku Hotaru-no-yado",
+      "type": "accommodation",
+      "lat": 33.885922,
+      "lon": 134.544127
+    },
+    {
+      "id": "w_7fa602a9",
+      "name": "Donari Onsen Tabi-no-yado",
+      "type": "accommodation",
+      "lat": 34.120834,
+      "lon": 134.37508
     },
     {
       "id": "w_80c5feba",
@@ -12312,6 +12606,13 @@
       "lon": 134.302789
     },
     {
+      "id": "w_86734cc0",
+      "name": "Hostel PAQ Tokushima",
+      "type": "accommodation",
+      "lat": 34.070612,
+      "lon": 134.55174
+    },
+    {
       "id": "w_871bb8d4",
       "name": "Kamiyama hot spring",
       "type": "poi",
@@ -12333,6 +12634,13 @@
       "lon": 134.518354
     },
     {
+      "id": "w_89dc3494",
+      "name": "Agnes Hotel Tokushima",
+      "type": "accommodation",
+      "lat": 34.07468,
+      "lon": 134.548399
+    },
+    {
       "id": "w_8ad53fb3",
       "name": "Roadside Station Hiwasa",
       "type": "hut",
@@ -12345,6 +12653,13 @@
       "type": "accommodation",
       "lat": 34.037973,
       "lon": 134.463297
+    },
+    {
+      "id": "w_8e6e27ea",
+      "name": "Hostel OE",
+      "type": "accommodation",
+      "lat": 34.072929,
+      "lon": 134.356022
     },
     {
       "id": "w_8fa57d6f",
@@ -12382,6 +12697,13 @@
       "lon": 134.556972
     },
     {
+      "id": "w_99245896",
+      "name": "Business Hotel Cairns",
+      "type": "accommodation",
+      "lat": 33.728887,
+      "lon": 134.531072
+    },
+    {
       "id": "w_99dd45b6",
       "name": "Motomachiyu",
       "type": "poi",
@@ -12394,6 +12716,13 @@
       "type": "poi",
       "lat": 34.1371936,
       "lon": 134.4319428
+    },
+    {
+      "id": "w_9d9e1c32",
+      "name": "Smile Hotel Tokushima",
+      "type": "accommodation",
+      "lat": 34.073452,
+      "lon": 134.548674
     },
     {
       "id": "w_9e826bff",
@@ -12415,6 +12744,27 @@
       "type": "poi",
       "lat": 33.73148,
       "lon": 134.52847
+    },
+    {
+      "id": "w_9f31ce02",
+      "name": "Business Hotel Road Side",
+      "type": "accommodation",
+      "lat": 34.070897,
+      "lon": 134.368452
+    },
+    {
+      "id": "w_9fa1440c",
+      "name": "Anrakuji Shukubo",
+      "type": "accommodation",
+      "lat": 34.11804,
+      "lon": 134.388312
+    },
+    {
+      "id": "w_a1382edb",
+      "name": "Cotton Field Campground",
+      "type": "campsite",
+      "lat": 33.96881,
+      "lon": 134.36924
     },
     {
       "id": "w_a21fbed9",
@@ -12445,6 +12795,13 @@
       "lon": 134.503199
     },
     {
+      "id": "w_a8836020",
+      "name": "Hotel Astoria Tokushima",
+      "type": "accommodation",
+      "lat": 34.072294,
+      "lon": 134.552795
+    },
+    {
       "id": "w_a9ca76de",
       "name": "Pilgrim Hut No.11 Katsuura",
       "type": "hut",
@@ -12466,6 +12823,20 @@
       "lon": 134.462662
     },
     {
+      "id": "w_ac0c27b0",
+      "name": "Jurakuji Shukubo",
+      "type": "accommodation",
+      "lat": 34.120721,
+      "lon": 134.378018
+    },
+    {
+      "id": "w_ac493af1",
+      "name": "Hotel AZ Tokushima Komatsushima",
+      "type": "accommodation",
+      "lat": 33.990365,
+      "lon": 134.604292
+    },
+    {
       "id": "w_ac6e4a13",
       "name": "Pilgrim Hut No.4 Kaneuchi",
       "type": "hut",
@@ -12480,6 +12851,20 @@
       "lon": 134.34938
     },
     {
+      "id": "w_adfcc0df",
+      "name": "Ryokan Urokoro",
+      "type": "accommodation",
+      "lat": 34.068965,
+      "lon": 134.478398
+    },
+    {
+      "id": "w_b1f5b08b",
+      "name": "Otsuru Ryokan",
+      "type": "accommodation",
+      "lat": 34.065784,
+      "lon": 134.550569
+    },
+    {
       "id": "w_b3f929a0",
       "name": "No.18 Onzanji",
       "type": "poi",
@@ -12487,11 +12872,32 @@
       "lon": 134.578268
     },
     {
+      "id": "w_b444e732",
+      "name": "Ichi The Hostel",
+      "type": "accommodation",
+      "lat": 33.73231,
+      "lon": 134.532222
+    },
+    {
       "id": "w_b49d6731",
       "name": "Kamojima Hot Spring",
       "type": "poi",
       "lat": 34.06949,
       "lon": 134.36377
+    },
+    {
+      "id": "w_b87755fc",
+      "name": "Tsurugisan Hotel",
+      "type": "accommodation",
+      "lat": 34.069878,
+      "lon": 134.551103
+    },
+    {
+      "id": "w_ba13740e",
+      "name": "Toyoko Inn Tokushima Ekimae",
+      "type": "accommodation",
+      "lat": 34.071384,
+      "lon": 134.552868
     },
     {
       "id": "w_bb9f161d",
@@ -12530,6 +12936,13 @@
       "lon": 134.532251
     },
     {
+      "id": "w_c5385870",
+      "name": "Daiwa Roynet Hotel Tokushima Ekimae",
+      "type": "accommodation",
+      "lat": 34.073542,
+      "lon": 134.551857
+    },
+    {
       "id": "w_c5c7ba41",
       "name": "No.11 Fujiidera",
       "type": "poi",
@@ -12537,11 +12950,53 @@
       "lon": 134.348502
     },
     {
+      "id": "w_c6e2fbfb",
+      "name": "Oyado Hiwasa",
+      "type": "accommodation",
+      "lat": 33.733021,
+      "lon": 134.534164
+    },
+    {
+      "id": "w_c96a85d1",
+      "name": "Ryokan Business Hotel Yawata",
+      "type": "accommodation",
+      "lat": 34.092721,
+      "lon": 134.307997
+    },
+    {
+      "id": "w_caa8a5ab",
+      "name": "Toyoko Inn Tokushima-eki Bizan-guchi",
+      "type": "accommodation",
+      "lat": 34.068996,
+      "lon": 134.546953
+    },
+    {
       "id": "w_ce8cd67c",
       "name": "Seifu Business Hotel",
       "type": "accommodation",
       "lat": 34.071569,
       "lon": 134.550519
+    },
+    {
+      "id": "w_d145891a",
+      "name": "JR Hotel Clement Tokushima",
+      "type": "accommodation",
+      "lat": 34.074641,
+      "lon": 134.550877
+    },
+    {
+      "id": "w_d331605a",
+      "name": "Onyado Kiryu",
+      "type": "accommodation",
+      "lat": 33.908802,
+      "lon": 134.518292
+    },
+    {
+      "id": "w_d8adf36d",
+      "name": "Minshuku Kotobuki Shokudo",
+      "type": "accommodation",
+      "lat": 34.123847,
+      "lon": 134.404335
     },
     {
       "id": "w_da2a513e",
@@ -12558,6 +13013,13 @@
       "lon": 134.5467
     },
     {
+      "id": "w_daa3d65a",
+      "name": "Super Hotel Tokushima Komatsushima",
+      "type": "accommodation",
+      "lat": 34.012962,
+      "lon": 134.579514
+    },
+    {
       "id": "w_dab90f88",
       "name": "Henro House NISHIMURA",
       "type": "accommodation",
@@ -12565,11 +13027,32 @@
       "lon": 134.57648
     },
     {
+      "id": "w_dcc8695b",
+      "name": "Tokushima Washington Hotel Plaza",
+      "type": "accommodation",
+      "lat": 34.06696,
+      "lon": 134.547138
+    },
+    {
       "id": "w_de1f7976",
       "name": "Pilgrim Hut No.36 Kamiyama",
       "type": "hut",
       "lat": 33.993373,
       "lon": 134.353391
+    },
+    {
+      "id": "w_de86ad4a",
+      "name": "Hotel Taiyo Noen Tokushima Kenchomae",
+      "type": "accommodation",
+      "lat": 34.065063,
+      "lon": 134.558044
+    },
+    {
+      "id": "w_e1d8e603",
+      "name": "Central Hotel Kamojima",
+      "type": "accommodation",
+      "lat": 34.073923,
+      "lon": 134.357373
     },
     {
       "id": "w_e347fcd5",
@@ -12607,6 +13090,20 @@
       "lon": 134.58282
     },
     {
+      "id": "w_ec2fa345",
+      "name": "Minpaku Tomako",
+      "type": "accommodation",
+      "lat": 33.838728,
+      "lon": 134.587983
+    },
+    {
+      "id": "w_ed6cfdb6",
+      "name": "Tatsueji Shukubo",
+      "type": "accommodation",
+      "lat": 33.96814,
+      "lon": 134.606461
+    },
+    {
       "id": "w_eee3785e",
       "name": "Ryusuian Rest Area",
       "type": "hut",
@@ -12635,6 +13132,13 @@
       "lon": 134.346941
     },
     {
+      "id": "w_f6357533",
+      "name": "Henroyado Sakura-no-yado",
+      "type": "accommodation",
+      "lat": 33.928907,
+      "lon": 134.51844
+    },
+    {
       "id": "w_f7226c4b",
       "name": "Henro House HS JAPAN AWA",
       "type": "accommodation",
@@ -12647,6 +13151,13 @@
       "type": "accommodation",
       "lat": 34.13569,
       "lon": 134.43204
+    },
+    {
+      "id": "w_f7cbadd1",
+      "name": "B&B m4",
+      "type": "accommodation",
+      "lat": 33.734638,
+      "lon": 134.53334
     },
     {
       "id": "w_fc08c820",
@@ -12668,6 +13179,13 @@
       "type": "poi",
       "lat": 34.147453,
       "lon": 134.4685024
+    },
+    {
+      "id": "w_fd08b7ac",
+      "name": "Minshuku Meizanso",
+      "type": "accommodation",
+      "lat": 33.772752,
+      "lon": 134.585775
     }
   ],
   "six_foot_track": [

@@ -127,16 +127,23 @@ interface Candidate {
 /**
  * Assign a stable id to each built waypoint, mutating `registry` in place.
  *
- * For each waypoint (in input order):
+ * First, every waypoint whose exact name is on an unclaimed registry entry of
+ * the same `type` within {@link MATCH_RADIUS_METERS} claims that entry (the
+ * nearest, if several). A waypoint therefore keeps its id even when a newcomer
+ * of the same type lands within the radius and comes before it in the input.
+ *
+ * Then, for each remaining waypoint (in input order):
  *  - Find unclaimed registry entries of the same `type` within
  *    {@link MATCH_RADIUS_METERS} — a retired entry only when its name is the
  *    waypoint's exact name. Rank them by exact name match, then by proximity,
  *    then by id (deterministic tie-break).
  *  - Match → reuse the entry's id, refresh its stored name/lat/lon, and clear
  *    any `retired` flag.
- *  - No candidate entries at all → mint a new id and append an entry.
+ *  - No candidate entries at all, or only entries their own exact names
+ *    claimed in the first step → mint a new id and append an entry.
  *  - Had candidate entries but every one was already claimed by another
- *    built waypoint this run → throw (ambiguous identity; needs a human).
+ *    built waypoint this run, by proximity or under this waypoint's own name
+ *    → throw (ambiguous identity; needs a human).
  *
  * Afterwards every pre-existing entry of this trail that no waypoint claimed
  * is marked `retired`. Call it once per trail per build, with every waypoint
@@ -161,8 +168,8 @@ export function assignWaypointIds(
   const claimedBy = new Map<number, number>();
   const results: string[] = new Array(waypoints.length);
 
-  waypoints.forEach((wp, wpIndex) => {
-    // Gather candidate registry entries: same type, within radius.
+  // Gather candidate registry entries for a waypoint: same type, within radius.
+  const candidatesFor = (wp: WaypointForId): Candidate[] => {
     const candidates: Candidate[] = [];
     for (let entryIndex = 0; entryIndex < initialEntryCount; entryIndex++) {
       const entry = entries[entryIndex];
@@ -186,22 +193,43 @@ export function assignWaypointIds(
       if (a.distance !== b.distance) return a.distance - b.distance;
       return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
     });
+    return candidates;
+  };
 
+  // Matched an existing entry: reuse id, refresh drifted coordinates/name.
+  const claim = (wp: WaypointForId, wpIndex: number, entryIndex: number): void => {
+    const entry = entries[entryIndex];
+    entry.name = wp.name;
+    entry.lat = wp.lat;
+    entry.lon = wp.lon;
+    delete entry.retired;
+    claimedBy.set(entryIndex, wpIndex);
+    results[wpIndex] = entry.id;
+  };
+
+  // Pass 1: exact names claim their own entries before proximity can.
+  const claimedByName = new Set<number>();
+  waypoints.forEach((wp, wpIndex) => {
+    const own = candidatesFor(wp).find((c) => c.exactName && !claimedBy.has(c.entryIndex));
+    if (own) {
+      claim(wp, wpIndex, own.entryIndex);
+      claimedByName.add(own.entryIndex);
+    }
+  });
+
+  waypoints.forEach((wp, wpIndex) => {
+    if (results[wpIndex] !== undefined) return;
+    const candidates = candidatesFor(wp);
     const pick = candidates.find((c) => !claimedBy.has(c.entryIndex));
 
     if (pick) {
-      // Matched an existing entry: reuse id, refresh drifted coordinates/name.
-      const entry = entries[pick.entryIndex];
-      entry.name = wp.name;
-      entry.lat = wp.lat;
-      entry.lon = wp.lon;
-      delete entry.retired;
-      claimedBy.set(pick.entryIndex, wpIndex);
-      results[wpIndex] = entry.id;
+      claim(wp, wpIndex, pick.entryIndex);
       return;
     }
 
-    if (candidates.length > 0) {
+    // Entries their own names claimed say nothing about this waypoint: it is
+    // a different place nearby. Anything else claimed first is ambiguous.
+    if (candidates.some((c) => c.exactName || !claimedByName.has(c.entryIndex))) {
       // Every nearby same-type entry was already claimed by another waypoint.
       const conflict = candidates[0];
       const otherWpIndex = claimedBy.get(conflict.entryIndex);

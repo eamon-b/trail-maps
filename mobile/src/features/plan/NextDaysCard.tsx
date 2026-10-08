@@ -11,6 +11,10 @@
  * - *Hours & pace*: the daily hours and pace from the card above.
  * - *Distance & climb*: km, ascent and hours ranges, each switchable.
  *
+ * The card folds to its heading (`expanded` / `onExpandedChange`). Its inputs
+ * are set once and then rarely touched, and the Plan screen keeps it folded
+ * so the days and stops are not below a screenful of steppers.
+ *
  * Presentational: the screen runs the search and owns the plan.
  */
 
@@ -64,6 +68,10 @@ export interface NextDaysCardProps {
   blocked: string | null;
   onSuggest: () => void;
   onApply: (plan: SuggestedPlan<SearchCandidate>) => void;
+  /** Whether the inputs are shown. Defaults to open, for a caller that does not fold it. */
+  expanded?: boolean;
+  /** Fold or unfold. Without it the heading is not a button. */
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 export function NextDaysCard(props: NextDaysCardProps) {
@@ -74,9 +82,54 @@ export function NextDaysCard(props: NextDaysCardProps) {
   const kmStep = units === 'mi' ? KM_PER_MILE : 1;
   const ascentStep = units === 'mi' ? 250 * METRES_PER_FOOT : 100;
 
+  const expanded = props.expanded ?? true;
+  const heading = (
+    <Text style={[styles.heading, { color: colors.textPrimary }]}>Plan the next few days</Text>
+  );
+
+  if (props.onExpandedChange && !expanded) {
+    const onExpandedChange = props.onExpandedChange;
+    return (
+      <Pressable
+        onPress={() => onExpandedChange(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Plan the next few days"
+        accessibilityState={{ expanded: false }}
+        style={({ pressed }) => [
+          styles.card,
+          styles.headRow,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          pressed && styles.pressed,
+        ]}
+      >
+        <View style={styles.fromBody}>
+          {heading}
+          <Text style={[styles.hint, { color: colors.textSecondary }]} numberOfLines={1}>
+            {`Suggested stops from ${startLabel(start)} · ${formatDistance(start.km, units)}`}
+          </Text>
+        </View>
+        <Text style={[styles.chevron, { color: colors.accent }]}>▾</Text>
+      </Pressable>
+    );
+  }
+
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[styles.heading, { color: colors.textPrimary }]}>Plan the next few days</Text>
+      {props.onExpandedChange ? (
+        <Pressable
+          onPress={() => props.onExpandedChange?.(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Hide next few days"
+          accessibilityState={{ expanded: true }}
+          hitSlop={spacing.sm}
+          style={({ pressed }) => [styles.headRow, pressed && styles.pressed]}
+        >
+          <View style={styles.fromBody}>{heading}</View>
+          <Text style={[styles.chevron, { color: colors.accent }]}>▴</Text>
+        </Pressable>
+      ) : (
+        heading
+      )}
 
       <View style={styles.row}>
         <View style={styles.fromBody}>
@@ -416,6 +469,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   heading: { ...typography.titleSmall },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  chevron: { fontSize: glyphSizes.lg },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

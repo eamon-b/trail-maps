@@ -320,6 +320,40 @@ describe('planToRoute / planFromRoute', () => {
     expect(edited.stops[0]).toMatchObject({ alternate: ALT, nights: 2, km: 35 });
   });
 
+  it('an edit keeps the stops the route view cannot show', () => {
+    // A main stop on the stretch the alternate bypasses (another device wrote
+    // it), and a stop on an alternate a later build renamed.
+    const doc = plan(
+      [stop(12, 'Old Camp', 'w_old', 'Alt: Renamed'), stop(35, 'Camp 35', 'w_camp35')],
+      ['Alt: Renamed', ALT],
+    );
+    const route = buildPlannedRoute(trail, doc.alternates);
+    expect(planToRoute(doc, route).stops).toEqual([]);
+    const next = editPlanOnRoute(doc, trail, p =>
+      toggleStop(p, { id: 'w_camp10', km: 10, name: 'Camp 10' }, { now, totalKm: 110 }),
+    );
+    expect(next.stops.map(s => [s.name, s.km, s.alternate])).toEqual([
+      ['Camp 10', 10, undefined],
+      ['Old Camp', 12, 'Alt: Renamed'],
+      ['Camp 35', 35, undefined],
+    ]);
+  });
+
+  it('an edit keeps both of two stops on different lines at one route km', () => {
+    const doc = plan(
+      [stop(20, 'Main junction camp'), stop(20.0005, 'Alt junction camp', undefined, ALT), stop(50, 'Camp 50', 'w_camp50')],
+      [ALT],
+    );
+    const route = buildPlannedRoute(trail, doc.alternates);
+    expect(planToRoute(doc, route).stops.map(s => s.name)).toEqual(['Main junction camp', 'Camp 50']);
+    const next = editPlanOnRoute(doc, trail, p => setNights(p, { waypointId: 'w_camp50', km: 60 }, 2, { now }));
+    expect(next.stops.map(s => [s.name, s.alternate, s.nights])).toEqual([
+      ['Main junction camp', undefined, 1],
+      ['Alt junction camp', ALT, 1],
+      ['Camp 50', undefined, 2],
+    ]);
+  });
+
   it('days are measured along the alternate', () => {
     const doc = plan([stop(35, 'High Camp', 'w_altcamp', ALT)], [ALT]);
     const route = buildPlannedRoute(trail, doc.alternates);
@@ -372,6 +406,13 @@ describe('setPlanAlternate', () => {
     expect(setPlanAlternate(empty, trail, 'Nope', true)).toBe(empty);
   });
 
+  it('keeps a stop on an alternate the trail no longer offers', () => {
+    const doc = plan([stop(12, 'Old Camp', 'w_old', 'Alt: Renamed')], ['Alt: Renamed']);
+    const next = setPlanAlternate(doc, trail, ALT, true, { now });
+    expect(next.alternates).toEqual([ALT, 'Alt: Renamed']);
+    expect(next.stops).toEqual([stop(12, 'Old Camp', 'w_old', 'Alt: Renamed')]);
+  });
+
   it('taking an alternate drops one it overlaps', () => {
     const overlapping = trailFixture({
       alternates: [bowAlternate(), bowAlternate('Low Route', 30, 45)],
@@ -393,6 +434,12 @@ describe('alternateMarkers', () => {
       ['branch', false, 20],
     ]);
     expect(alternateMarkers(trail, route, 'SOBO').map(m => [m.kind, m.activeKm])).toEqual([['branch', 60]]);
+  });
+
+  it('two alternates branching at one junction keep the trail\'s order', () => {
+    const twoAtOnce = trailFixture({ alternates: [bowAlternate('B Route', 20, 45), bowAlternate('A Route', 20, 40)] });
+    const route = buildPlannedRoute(twoAtOnce, []);
+    expect(alternateMarkers(twoAtOnce, route, 'NOBO').map(m => m.alternate.name)).toEqual(['B Route', 'A Route']);
   });
 
   it('branch and rejoin cards around a taken alternate, in walking order', () => {

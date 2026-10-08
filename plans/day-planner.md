@@ -511,6 +511,9 @@ some of it say "via …" (web).
   along it — the `totalDistance` its waypoints already have). `PlanDocument.alternates` lists the
   names taken, sorted.
 - The pages edit in route km: `planToRoute` / `planFromRoute` (`editPlanOnRoute` for one edit).
+  A stored stop the view cannot show (on a stretch the route bypasses, on an alternate a later
+  build renamed, or the second of two stops on different lines at one route km) is left out of the
+  view and carried back unchanged by `planFromRoute(view, route, stored)`, so no edit loses it.
   `setPlanAlternate` changes the route: taking one drops any alternate it overlaps and the stops on
   the main route it bypasses, going back drops the alternate's stops, and a stop at a place both
   lines share (same waypoint id) moves rather than goes.
@@ -521,8 +524,11 @@ The server accepts `alternates` (≤ 100 names, ≤ 200 chars, no repeats) and a
 `alternate` (must be one of them). Deploy the worker before the clients: an older worker rebuilds
 the document field by field and would drop both.
 
-Not yet: the waypoint detail screen's "Stop here", the phone's map rings and elevation-profile
-ticks still work on the main route (a stop on an alternate gets no tick); nested alternates.
+The phone's GPS km is snapped again to the planned route on the Plan screen, and the waypoint
+detail screen's "Stop here" edits in route km (no stop is offered on a bypassed stretch).
+
+Not yet: the phone's map rings and elevation-profile ticks still work on the main route (a stop
+on an alternate gets no tick); nested alternates.
 
 ## Out of scope (recorded so they are not lost)
 

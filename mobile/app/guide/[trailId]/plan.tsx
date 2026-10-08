@@ -91,7 +91,11 @@ import {
   type SearchCandidate,
 } from '../../../src/features/plan/plan-suggest';
 import { NextDaysCard } from '../../../src/features/plan/NextDaysCard';
-import { plannableTrail, usePlanRoute } from '../../../src/features/plan/use-plan-route';
+import {
+  plannableTrail,
+  routeKmOfFix,
+  usePlanRoute,
+} from '../../../src/features/plan/use-plan-route';
 import { sectionOptions } from '../../../src/features/plan/plan-section';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
 import { usePlanSyncError } from '../../../src/features/plan/use-plan-sync-error';
@@ -128,8 +132,15 @@ export default function PlanScreen() {
   const setSuggestPrefs = usePlanInputsStore((s) => s.setSuggestPrefs);
   const position = useGuidePositionContext();
   // Only an on-trail fix is a place to plan from; off-trail km is the nearest
-  // point of a trail the hiker is not on.
-  const currentKm = position.status === 'fix' ? position.currentKm : null;
+  // point of a trail the hiker is not on. The guide snaps to the main route,
+  // so once the plan takes an alternate the fix is snapped again to the route
+  // as planned: its km is what the Stops list and Next days read, and a hiker
+  // walking the alternate is on it, not off the main route.
+  const { status: fixStatus, currentKm: guideKm, position: fix } = position;
+  const currentKm = useMemo(
+    () => routeKmOfFix({ status: fixStatus, currentKm: guideKm, position: fix }, route, trail),
+    [fixStatus, guideKm, fix, route, trail],
+  );
 
   // The two ways a plan can be out of step with itself, in the order that
   // matters: an edit this screen refused, then a write the server did.

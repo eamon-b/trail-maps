@@ -104,7 +104,7 @@ function mintId(opts?: PlanCreateOptions): string {
  * second behind the server would otherwise stamp its edit *older* than the
  * document it edited, and last-writer-wins would throw the edit away.
  */
-function stamp(opts?: PlanEditOptions, previous?: string): string {
+export function stamp(opts?: PlanEditOptions, previous?: string): string {
   const now = (opts?.now ?? (() => new Date().toISOString()))();
   if (previous === undefined) return now;
   const nowMs = Date.parse(now);

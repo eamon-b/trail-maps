@@ -226,6 +226,9 @@ export function initNextDays(container: HTMLElement, host: NextDaysHost): NextDa
       host.dailyHours(),
       host.baseKmh(),
       host.plan().direction,
+      // The route: taking an alternate the same length as the stretch it
+      // replaces leaves every other input as it was.
+      host.plan().alternates ?? [],
       trail.track.totalDistance,
     ]);
   };

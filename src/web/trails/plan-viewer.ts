@@ -638,9 +638,8 @@ function initMap(): void {
   stopMarkers = L.layerGroup().addTo(map);
   previewLayer = L.layerGroup().addTo(map);
 
-  // The lines a plan does not walk: the alternates beside the route, dashed,
-  // and the main route itself, which `redrawRouteLine` draws over when the
-  // plan takes an alternate. Drawn once — they never change.
+  // The alternates beside the route, dashed. Drawn once — they never change.
+  // The main route a taken alternate bypasses is drawn by `redrawRouteLine`.
   for (const variant of trail.alternates ?? []) {
     if (!Array.isArray(variant.points) || variant.points.length < 2) continue;
     L.polyline(variant.points.map(p => [p.lat, p.lon] as [number, number]), {
@@ -671,6 +670,19 @@ function redrawRouteLine(): void {
   if (!map) return;
   routeLineLayer?.remove();
   routeLineLayer = L.layerGroup().addTo(map);
+  // A plan that takes an alternate leaves part of the main route unwalked:
+  // draw the main route dashed underneath, so the line "Stay on the main
+  // route" would go back to is still on the map.
+  if (plannedRoute.alternates.length > 0) {
+    const main = trail.track;
+    const mainPoints = main.displayPoints ?? main.points;
+    const mainWhich = main.displayPoints ? 'displayPoints' : 'points';
+    L.polyline(
+      splitAtRouteBreaks(mainPoints, main.breaks, mainWhich).map(stretch =>
+        stretch.map(p => [p.lat, p.lon] as [number, number])),
+      { color: '#aaa', weight: 2, opacity: 0.6, dashArray: '4 6' },
+    ).addTo(routeLineLayer).bringToBack();
+  }
   const { track } = routeTrail;
   const displayPoints = track.displayPoints ?? track.points;
   const which = track.displayPoints ? 'displayPoints' : 'points';
@@ -1309,9 +1321,18 @@ function renderStopList(): void {
   }
 }
 
-/** The branch and rejoin cards of the planned route, in active km. */
+let markerCache: { route: PlannedRoute; direction: string; markers: AlternateMarker[] } | null = null;
+
+/**
+ * The branch and rejoin cards of the planned route, in active km. Cached per
+ * route and direction: every day card asks, and neither changes between them.
+ */
 function currentAlternateMarkers(): AlternateMarker[] {
-  return alternateMarkers(trail, plannedRoute, direction());
+  const dir = direction();
+  if (markerCache?.route !== plannedRoute || markerCache.direction !== dir) {
+    markerCache = { route: plannedRoute, direction: dir, markers: alternateMarkers(trail, plannedRoute, dir) };
+  }
+  return markerCache.markers;
 }
 
 /**
@@ -1352,10 +1373,11 @@ function alternateCardHtml(marker: AlternateMarker): string {
 /** Names of the alternates a day walks some of, for its card. */
 function alternatesWalkedBetween(startKm: number, endKm: number): string[] {
   const markers = currentAlternateMarkers().filter(m => m.taken);
+  const rejoins = new Map(markers.filter(m => m.kind === 'rejoin').map(m => [m.alternate.name, m]));
   const names: string[] = [];
   for (const branch of markers) {
     if (branch.kind !== 'branch') continue;
-    const rejoin = markers.find(m => m.kind === 'rejoin' && m.alternate.name === branch.alternate.name);
+    const rejoin = rejoins.get(branch.alternate.name);
     if (!rejoin) continue;
     if (startKm < rejoin.activeKm - KM_EPSILON && endKm > branch.activeKm + KM_EPSILON) {
       names.push(branch.alternate.name);
@@ -1717,7 +1739,7 @@ function tryEdit(edit: () => PlanDocument, options: { render?: boolean } = {}): 
  */
 function applyEdit(next: PlanDocument, options: { render?: boolean } = {}): void {
   if (next === plan) return;
-  adoptStoredPlan(planFromRoute(next, plannedRoute));
+  adoptStoredPlan(planFromRoute(next, plannedRoute, storedPlan));
   scheduleSave();
   if (options.render !== false) renderAll();
 }

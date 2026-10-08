@@ -42,6 +42,7 @@ import { haversineDistance } from './distance';
 import { KM_EPSILON } from './plan-direction';
 import type { PlanDocument, PlanStop } from './plan-types';
 import { PLAN_LIMITS } from './plan-types';
+import { stamp } from './plan-editor';
 import { routeBreakStarts } from './route-breaks';
 import { calculateElevationBetween, findNearestByDistance } from './track-geometry';
 
@@ -620,34 +621,54 @@ function omitAlternate(stop: PlanStop): PlanStop {
 }
 
 /**
+ * Split a stored plan for a route: the stops the route view shows (at their
+ * route km, no `alternate`, sorted) and the stored stops it cannot show — one
+ * on a stretch the route bypasses, one on an alternate the trail no longer has
+ * or no longer offers, or the second of two stops on different lines that meet
+ * at one route km. Those are kept as stored, so a round trip through the view
+ * (`planFromRoute` with the stored plan) never loses them.
+ */
+function splitForRoute(plan: PlanDocument, route: PlannedRoute): { shown: PlanStop[]; hidden: PlanStop[] } {
+  const placed: Array<{ stored: PlanStop; view: PlanStop }> = [];
+  const hidden: PlanStop[] = [];
+  for (const stop of plan.stops) {
+    const km = stopRouteKm(route, stop);
+    if (km === null) hidden.push(stop);
+    else placed.push({ stored: stop, view: { ...omitAlternate(stop), km } });
+  }
+  placed.sort((a, b) => a.view.km - b.view.km);
+  const { kept, dropped } = partitionDuplicates(placed, entry => entry.view, () => '');
+  return { shown: kept.map(entry => entry.view), hidden: [...hidden, ...dropped.map(entry => entry.stored)] };
+}
+
+/**
  * The plan with every stop at its route km and no `alternate` on any — the
  * document the planner's editors and calculators work on. A stop the route
- * does not pass is left out (the alternates editor never leaves one behind).
+ * cannot show is left out of the view; pass the stored plan to `planFromRoute`
+ * so saving the view keeps it.
  *
  * Returns `plan` itself when it takes no alternate and has no stop on one.
  */
 export function planToRoute(plan: PlanDocument, route: PlannedRoute): PlanDocument {
   if (route.alternates.length === 0 && plan.stops.every(stop => stop.alternate === undefined)) return plan;
-  const stops: PlanStop[] = [];
-  for (const stop of plan.stops) {
-    const km = stopRouteKm(route, stop);
-    if (km === null) continue;
-    stops.push({ ...omitAlternate(stop), km });
-  }
-  stops.sort((a, b) => a.km - b.km);
-  return { ...plan, stops: dedupeStops(stops, () => '') };
+  return { ...plan, stops: splitForRoute(plan, route).shown };
 }
 
-/** Convert a route-space plan (from `planToRoute`, then edited) back to the stored form. */
-export function planFromRoute(routePlan: PlanDocument, route: PlannedRoute): PlanDocument {
-  if (route.alternates.length === 0) return routePlan;
+/**
+ * Convert a route-space plan (from `planToRoute`, then edited) back to the
+ * stored form. With `stored` — the plan the view was made from — the stops the
+ * view could not show are carried over unchanged; without it they are lost.
+ */
+export function planFromRoute(routePlan: PlanDocument, route: PlannedRoute, stored?: PlanDocument): PlanDocument {
+  const hidden = stored ? splitForRoute(stored, route).hidden : [];
+  if (route.alternates.length === 0 && hidden.length === 0) return routePlan;
   const stops = routePlan.stops.map(stop => {
     const position = routeKmToPlan(route, stop.km);
     return position.alternate === undefined
       ? { ...omitAlternate(stop), km: position.km }
       : { ...omitAlternate(stop), km: position.km, alternate: position.alternate };
   });
-  return { ...routePlan, stops: sortPlanStops(stops) };
+  return { ...routePlan, stops: sortPlanStops([...stops, ...hidden]) };
 }
 
 /** The stored order: by km, a main-route stop before an alternate's at the same km. */
@@ -659,23 +680,36 @@ export function sortPlanStops(stops: readonly PlanStop[]): PlanStop[] {
 }
 
 /**
- * Drop the second of any two stops that are one place: the same waypoint id,
- * or within `KM_EPSILON` on the same line (`lineOf`). Input sorted by km.
+ * Split off the second of any two stops that are one place: the same waypoint
+ * id, or within `KM_EPSILON` on the same line (`lineOf`). Input sorted by km.
  */
-function dedupeStops(stops: PlanStop[], lineOf: (stop: PlanStop) => string): PlanStop[] {
+function partitionDuplicates<E>(
+  entries: E[],
+  stopOf: (entry: E) => PlanStop,
+  lineOf: (stop: PlanStop) => string,
+): { kept: E[]; dropped: E[] } {
   const ids = new Set<string>();
   const lastKm = new Map<string, number>();
-  return stops.filter(stop => {
-    if (stop.waypointId) {
-      if (ids.has(stop.waypointId)) return false;
-    }
+  const kept: E[] = [];
+  const dropped: E[] = [];
+  for (const entry of entries) {
+    const stop = stopOf(entry);
     const line = lineOf(stop);
     const previous = lastKm.get(line);
-    if (previous !== undefined && Math.abs(stop.km - previous) < KM_EPSILON) return false;
+    if ((stop.waypointId && ids.has(stop.waypointId))
+      || (previous !== undefined && Math.abs(stop.km - previous) < KM_EPSILON)) {
+      dropped.push(entry);
+      continue;
+    }
     if (stop.waypointId) ids.add(stop.waypointId);
     lastKm.set(line, stop.km);
-    return true;
-  });
+    kept.push(entry);
+  }
+  return { kept, dropped };
+}
+
+function dedupeStops(stops: PlanStop[], lineOf: (stop: PlanStop) => string): PlanStop[] {
+  return partitionDuplicates(stops, stop => stop, lineOf).kept;
 }
 
 /** The names of the alternates a plan takes (as stored; unknown names included). */
@@ -721,20 +755,12 @@ export function editPlanOnRoute(
   const routePlan = planToRoute(plan, route);
   const next = edit(routePlan);
   if (next === routePlan) return plan;
-  return planFromRoute(next, route);
+  return planFromRoute(next, route, plan);
 }
 
 // ---------------------------------------------------------------------------
 // Taking and dropping an alternate
 // ---------------------------------------------------------------------------
-
-function stamp(previous: string, now?: () => string): string {
-  const current = (now ?? (() => new Date().toISOString()))();
-  const currentMs = Date.parse(current);
-  const previousMs = Date.parse(previous);
-  if (!Number.isFinite(currentMs) || !Number.isFinite(previousMs) || currentMs > previousMs) return current;
-  return new Date(previousMs + 1).toISOString();
-}
 
 /**
  * Take an alternate, or go back to the main route.
@@ -794,7 +820,10 @@ export function setPlanAlternate(
 
   const stops: PlanStop[] = [];
   for (const stop of plan.stops) {
-    if (stopRouteKm(route, stop) !== null) {
+    // A stop on an alternate the trail does not offer (renamed or dropped by a
+    // later build) is not this edit's to drop: it stays as stored, out of view.
+    const unknownLine = stop.alternate !== undefined && !options.some(o => o.name === stop.alternate);
+    if (unknownLine || stopRouteKm(route, stop) !== null) {
       stops.push(stop);
       continue;
     }
@@ -810,7 +839,7 @@ export function setPlanAlternate(
   const result: PlanDocument = {
     ...plan,
     stops: dedupeStops(sorted, stop => stop.alternate ?? ''),
-    updatedAt: stamp(plan.updatedAt, opts?.now),
+    updatedAt: stamp(opts, plan.updatedAt),
   };
   if (next.length > 0) result.alternates = next;
   else delete result.alternates;
@@ -876,5 +905,9 @@ export function alternateMarkers(
       activeKm: Math.min(toActive(start), toActive(end)),
     });
   }
-  return markers.sort((a, b) => a.activeKm - b.activeKm || (a.kind === 'rejoin' ? -1 : 1));
+  // At one km a rejoin comes before a branch (the route comes back, then
+  // leaves again); two of a kind keep the trail's order of alternates.
+  const kindRank = (m: AlternateMarker) => (m.kind === 'rejoin' ? 0 : 1);
+  return markers.sort((a, b) =>
+    a.activeKm - b.activeKm || kindRank(a) - kindRank(b) || a.alternate.index - b.alternate.index);
 }

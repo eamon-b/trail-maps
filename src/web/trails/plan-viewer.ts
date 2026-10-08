@@ -38,12 +38,22 @@ import {
 } from '@lib/plan-editor';
 import { findNearestByDistance } from '@lib/track-geometry';
 import {
+  alternateMarkers,
+  plannedRouteFor,
+  plannedRouteTrail,
+  planFromRoute,
+  planToRoute,
+  setPlanAlternate,
+  type AlternateMarker,
+  type PlannedRoute,
+} from '@lib/plan-alternates';
+import {
   routeBreakCrossings,
   routeBreakStarts,
   sliceAcrossRouteBreaks,
   splitAtRouteBreaks,
 } from '@lib/route-breaks';
-import type { RouteBreak, TrailPOI } from '@lib/trail-types';
+import type { RouteBreak, RouteVariant, TrailPOI } from '@lib/trail-types';
 import { OSM_ATTRIBUTION } from '@lib/poi-display';
 import {
   allResupplyOptionIds,
@@ -110,6 +120,9 @@ interface Trail {
     breaks?: RouteBreak[];
   };
   waypoints?: PlanWaypoint[];
+  /** Other ways between two points of the route; a plan may take one (`@lib/plan-alternates`). */
+  alternates?: RouteVariant[];
+  sideTrips?: RouteVariant[];
   /**
    * OSM points of interest, on the same km scale as the waypoints. Absent when
    * the trail has never been fetched for them (CDT, Te Araroa) — which is not
@@ -133,13 +146,27 @@ const DEFAULT_DAILY_HOURS = 8;
 const MIN_DAILY_HOURS = 1;
 const MAX_DAILY_HOURS = 16;
 
+/** The trail as built: the main route, alternates beside it. */
 let trail: Trail;
-/** Lazily-built reversed copy of `trail`; only computed when SOBO is first viewed. */
+/**
+ * The route the plan walks — the main route with the plan's alternates spliced
+ * in (`@lib/plan-alternates`), in route km. `trail` itself when it takes none.
+ * Everything the page draws or computes reads this (through `activeTrail()`).
+ */
+let routeTrail: Trail;
+let plannedRoute: PlannedRoute;
+/** Lazily-built reversed copy of `routeTrail`; only computed when SOBO is first viewed. */
 let reversedTrail: Trail | null = null;
 /**
- * The plan being edited. Replaced wholesale by every edit — `@lib/plan-editor`
- * never mutates, so this binding is the only thing that changes, and a render
- * always reads one consistent document.
+ * The plan as stored: main-route stops in main-route km, a stop on an
+ * alternate on that alternate's own scale. What is saved and synced.
+ */
+let storedPlan: PlanDocument;
+/**
+ * The plan being edited, in route km (`planToRoute(storedPlan)`). Replaced
+ * wholesale by every edit — `@lib/plan-editor` never mutates, so this binding
+ * is the only thing that changes, and a render always reads one consistent
+ * document. Edits made to it are converted back by `applyEdit`.
  */
 let plan: PlanDocument;
 let currentDays: ComputedDay[] = [];
@@ -181,6 +208,8 @@ let booted = false;
 // Leaflet
 let map: L.Map | null = null;
 let basePolyline: L.Polyline | null = null;
+/** The base line and its break crossings, replaced when the route changes. */
+let routeLineLayer: L.LayerGroup | null = null;
 let dayPolylines: L.Polyline[] = [];
 let stopMarkers: L.LayerGroup | null = null;
 let waypointMarkers: Array<{ marker: L.Marker; waypoint: PlanWaypoint }> = [];
@@ -349,9 +378,26 @@ function dailyHours(): number {
   return uiPrefs.dailyHours ?? DEFAULT_DAILY_HOURS;
 }
 
-/** The trail oriented in the active direction. */
+/** The planned route oriented in the active direction. */
 function activeTrail(): Trail {
-  return direction() === 'SOBO' ? (reversedTrail ??= createReversedTrail(trail)) : trail;
+  return direction() === 'SOBO' ? (reversedTrail ??= createReversedTrail(routeTrail)) : routeTrail;
+}
+
+/**
+ * Take a stored document as the page's plan: rebuild the planned route when its
+ * alternates changed, and derive the route-km view the editors work on.
+ */
+function adoptStoredPlan(doc: PlanDocument): void {
+  storedPlan = doc;
+  const route = plannedRouteFor(trail, doc);
+  if (route !== plannedRoute) {
+    plannedRoute = route;
+    routeTrail = plannedRouteTrail(trail, route);
+    reversedTrail = null;
+    resetResupplyCaches();
+    redrawRouteLine();
+  }
+  plan = planToRoute(doc, route);
 }
 
 /**
@@ -363,7 +409,7 @@ function activeTrail(): Trail {
 let cachedActiveStops: PlanStop[] = [];
 
 function refreshActiveStops(): void {
-  cachedActiveStops = stopsToActive(plan.stops, direction(), trail.track.totalDistance);
+  cachedActiveStops = stopsToActive(plan.stops, direction(), routeTrail.track.totalDistance);
 }
 
 /** Stored stops mapped into active-direction km, sorted ascending. */
@@ -380,7 +426,7 @@ function activeStops(): PlanStop[] {
 function stopKeyFor(waypoint: { id?: string; km: number }): StopKey {
   return {
     ...(waypoint.id ? { waypointId: waypoint.id } : {}),
-    km: toNoboKm(waypoint.km, direction(), trail.track.totalDistance),
+    km: toNoboKm(waypoint.km, direction(), routeTrail.track.totalDistance),
   };
 }
 
@@ -592,17 +638,46 @@ function initMap(): void {
   stopMarkers = L.layerGroup().addTo(map);
   previewLayer = L.layerGroup().addTo(map);
 
-  // Base trail polyline (always visible, muted). One line per walkable stretch,
-  // so a route break is not drawn as trail; each crossing gets the trail page's
-  // dashed grey line instead. The geometry is the same in both directions, so
-  // this is drawn once.
-  const { track } = activeTrail();
+  // The lines a plan does not walk: the alternates beside the route, dashed,
+  // and the main route itself, which `redrawRouteLine` draws over when the
+  // plan takes an alternate. Drawn once — they never change.
+  for (const variant of trail.alternates ?? []) {
+    if (!Array.isArray(variant.points) || variant.points.length < 2) continue;
+    L.polyline(variant.points.map(p => [p.lat, p.lon] as [number, number]), {
+      color: '#aaa', weight: 2, opacity: 0.6, dashArray: '4 6',
+    })
+      .addTo(map)
+      .bindTooltip(escapeHtml(variant.name));
+  }
+  redrawRouteLine();
+
+  // Fit map
+  if (basePolyline && basePolyline.getLatLngs().length > 0) {
+    map.fitBounds(basePolyline.getBounds(), { padding: [20, 20] });
+  }
+
+  // Waypoint markers (clickable to add/remove stop)
+  drawWaypointMarkers();
+}
+
+/**
+ * The planned route's muted base line (always visible). One line per walkable
+ * stretch, so a route break is not drawn as trail; each crossing gets the trail
+ * page's dashed grey line instead. The geometry is the same in both
+ * directions, so this is redrawn only when the route itself changes — when the
+ * plan takes or drops an alternate.
+ */
+function redrawRouteLine(): void {
+  if (!map) return;
+  routeLineLayer?.remove();
+  routeLineLayer = L.layerGroup().addTo(map);
+  const { track } = routeTrail;
   const displayPoints = track.displayPoints ?? track.points;
   const which = track.displayPoints ? 'displayPoints' : 'points';
   const latLngs = splitAtRouteBreaks(displayPoints, track.breaks, which).map(stretch =>
     stretch.map(p => [p.lat, p.lon] as [number, number])
   );
-  basePolyline = L.polyline(latLngs, { color: '#aaa', weight: 3, opacity: 0.55 }).addTo(map);
+  basePolyline = L.polyline(latLngs, { color: '#aaa', weight: 3, opacity: 0.55 }).addTo(routeLineLayer);
   for (const crossing of routeBreakCrossings(displayPoints, track.breaks, which)) {
     L.polyline(
       [
@@ -611,20 +686,13 @@ function initMap(): void {
       ],
       { color: '#9e9e9e', weight: 2, opacity: 0.9, dashArray: '6 6' }
     )
-      .addTo(map)
+      .addTo(routeLineLayer)
       .bindPopup(
         `<strong>Trail break</strong><br>${crossing.straightLineKm.toFixed(1)} km, not walked ` +
           'and not counted in the trail distance.'
       );
   }
-
-  // Fit map
-  if (displayPoints.length > 0) {
-    map.fitBounds(basePolyline.getBounds(), { padding: [20, 20] });
-  }
-
-  // Waypoint markers (clickable to add/remove stop)
-  drawWaypointMarkers();
+  basePolyline.bringToBack();
 }
 
 function drawWaypointMarkers(): void {
@@ -1018,6 +1086,7 @@ function renderDayList(): void {
           ${waterStr}
           ${planned ? plannedBadge(plannedNames) : ''}
         </div>
+        ${viaLine(day)}
         ${restLine}
         ${stopFooterHtml(stopAtActiveKm(day.endKm))}
       </div>`;
@@ -1032,6 +1101,14 @@ function renderDayList(): void {
 
   renderResupplySection();
   renderWaterCarrySection();
+}
+
+/** "via Mt Bogong", for a day that walks some of an alternate the plan takes. */
+function viaLine(day: ComputedDay): string {
+  const names = alternatesWalkedBetween(day.startKm, day.endKm);
+  return names.length === 0
+    ? ''
+    : `<div class="day-card-via">via ${names.map(escapeHtml).join(', ')}</div>`;
 }
 
 /**
@@ -1182,6 +1259,18 @@ function renderStopList(): void {
     ? ''
     : `<div class="stops-here" id="stops-here">${escapeHtml(hereLabel(here))}</div>`;
 
+  // Where an alternate branches off and rejoins, between the places either
+  // side of it: a branch after the places at its km, a rejoin before them.
+  const cards = new Map<number, string[]>();
+  for (const marker of currentAlternateMarkers()) {
+    const index = marker.kind === 'branch'
+      ? waypoints.findIndex(wp => (wp.totalDistance ?? 0) > marker.activeKm + KM_EPSILON / 2)
+      : waypoints.findIndex(wp => (wp.totalDistance ?? 0) >= marker.activeKm - KM_EPSILON / 2);
+    const at = index === -1 ? waypoints.length : index;
+    cards.set(at, [...(cards.get(at) ?? []), alternateCardHtml(marker)]);
+  }
+  const cardsAt = (i: number) => (cards.get(i) ?? []).join('');
+
   container.innerHTML = waypoints.map((wp, i) => {
     const km = wp.totalDistance ?? 0;
     const stop = findStop(plan, stopKeyFor({ id: wp.id, km }));
@@ -1195,7 +1284,7 @@ function renderStopList(): void {
     const planned = isPlannedResupply(wp);
     const idAttr = wp.id ? ` data-id="${escapeHtml(wp.id)}"` : '';
     const rowClass = `stop-row${selected ? ' is-stop' : ''}${planned ? ' planned-resupply' : ''}`;
-    return `${i === hereIndex ? hereDivider : ''}<div class="stop-item${selected ? ' is-stop' : ''}" data-km="${km}"${idAttr}>
+    return `${cardsAt(i)}${i === hereIndex ? hereDivider : ''}<div class="stop-item${selected ? ' is-stop' : ''}" data-km="${km}"${idAttr}>
       <div class="${rowClass}" data-km="${km}"${idAttr}>
         <div class="stop-line">
           <span class="stop-check">${checkmark}</span>
@@ -1209,7 +1298,7 @@ function renderStopList(): void {
       </div>
       ${stop ? stopEditorHtml(stop) : ''}
     </div>`;
-  }).join('') + (hereIndex === waypoints.length ? hereDivider : '');
+  }).join('') + cardsAt(waypoints.length) + (hereIndex === waypoints.length ? hereDivider : '');
 
   if (scrollStopsToHere) {
     const divider = document.getElementById('stops-here');
@@ -1218,6 +1307,61 @@ function renderStopList(): void {
       divider.scrollIntoView?.({ block: 'center' });
     }
   }
+}
+
+/** The branch and rejoin cards of the planned route, in active km. */
+function currentAlternateMarkers(): AlternateMarker[] {
+  return alternateMarkers(trail, plannedRoute, direction());
+}
+
+/**
+ * A card in the Stops list where an alternate leaves the line walked, or
+ * comes back to it.
+ *
+ * The branch card says what the alternate is against the main route it
+ * replaces, and carries the one control: take it, or go back to the main route.
+ * Taking it lists the alternate's own places after the card, with the
+ * distances along it, and adds the rejoin card where it comes back.
+ */
+function alternateCardHtml(marker: AlternateMarker): string {
+  const { alternate, taken, kind } = marker;
+  const name = escapeHtml(alternate.name);
+  const data = `data-alternate="${name}"`;
+  if (kind === 'rejoin') {
+    return `<div class="alt-card is-rejoin" ${data}>
+      <div class="alt-card-title"><span class="alt-card-glyph" aria-hidden="true">↩</span>${name} rejoins the main route</div>
+    </div>`;
+  }
+  const delta = alternate.distanceKm - alternate.mainDistanceKm;
+  const deltaText = Math.abs(delta) < 0.05
+    ? 'the same distance as the main route'
+    : `${Math.abs(delta).toFixed(1)} km ${delta > 0 ? 'longer' : 'shorter'} than the main route`;
+  const stats = `${alternate.distanceKm.toFixed(1)} km · +${alternate.ascentM} m / −${alternate.descentM} m · ${deltaText}`;
+  const button = readOnly
+    ? ''
+    : `<button type="button" class="alt-card-btn${taken ? ' is-taken' : ''}" data-alt-take="${taken ? '0' : '1'}">
+        ${taken ? 'Stay on the main route' : 'Take this alternate'}
+      </button>`;
+  return `<div class="alt-card is-branch${taken ? ' is-taken' : ''}" ${data}>
+    <div class="alt-card-title"><span class="alt-card-glyph" aria-hidden="true">⑂</span>${taken ? `Taking ${name}` : `${name} branches off here`}</div>
+    <div class="alt-card-stats">${escapeHtml(stats)}</div>
+    ${button}
+  </div>`;
+}
+
+/** Names of the alternates a day walks some of, for its card. */
+function alternatesWalkedBetween(startKm: number, endKm: number): string[] {
+  const markers = currentAlternateMarkers().filter(m => m.taken);
+  const names: string[] = [];
+  for (const branch of markers) {
+    if (branch.kind !== 'branch') continue;
+    const rejoin = markers.find(m => m.kind === 'rejoin' && m.alternate.name === branch.alternate.name);
+    if (!rejoin) continue;
+    if (startKm < rejoin.activeKm - KM_EPSILON && endKm > branch.activeKm + KM_EPSILON) {
+      names.push(branch.alternate.name);
+    }
+  }
+  return names;
 }
 
 /**
@@ -1532,12 +1676,12 @@ function selectDay(index: number | null): void {
  */
 function toggleStop(km: number, name: string, id?: string): void {
   if (readOnly) return;
-  const noboKm = toNoboKm(km, direction(), trail.track.totalDistance);
+  const noboKm = toNoboKm(km, direction(), routeTrail.track.totalDistance);
   tryEdit(() =>
     editToggleStop(
       plan,
       { ...(id ? { id } : {}), km: noboKm, name },
-      { totalKm: trail.track.totalDistance },
+      { totalKm: routeTrail.track.totalDistance },
     ),
   );
 }
@@ -1573,9 +1717,29 @@ function tryEdit(edit: () => PlanDocument, options: { render?: boolean } = {}): 
  */
 function applyEdit(next: PlanDocument, options: { render?: boolean } = {}): void {
   if (next === plan) return;
-  plan = next;
+  adoptStoredPlan(planFromRoute(next, plannedRoute));
   scheduleSave();
   if (options.render !== false) renderAll();
+}
+
+/**
+ * Take an alternate, or go back to the main route. An edit to the stored
+ * document (the route itself changes), so it does not go through `applyEdit`.
+ */
+function setAlternate(name: string, take: boolean): void {
+  if (readOnly) return;
+  let next: PlanDocument;
+  try {
+    next = setPlanAlternate(storedPlan, trail, name, take);
+  } catch (err) {
+    setEditError(err);
+    return;
+  }
+  if (next === storedPlan) return;
+  selectedDayIndex = null;
+  adoptStoredPlan(next);
+  scheduleSave();
+  renderAll();
 }
 
 /** Nights at a stop, by the row's − / + buttons. Clamped by the editor. */
@@ -1702,7 +1866,7 @@ function commitSave(): void {
   // is what `flushPendingSave` reads.
   saveDebounceTimer = null;
   if (readOnly) return;
-  const ok = savePlanDocument(trail.config.id, plan);
+  const ok = savePlanDocument(trail.config.id, storedPlan);
   setSaveStatus(ok ? 'saved' : 'error');
   syncController?.onLocalSave();
 }
@@ -1969,6 +2133,13 @@ function initStopsControls(): void {
     const target = event.target as HTMLElement | null;
     if (!target) return;
 
+    const altButton = target.closest<HTMLElement>('.alt-card-btn');
+    if (altButton) {
+      const name = altButton.closest<HTMLElement>('.alt-card')?.dataset.alternate;
+      if (name !== undefined) setAlternate(name, altButton.dataset.altTake === '1');
+      return;
+    }
+
     const nights = target.closest<HTMLElement>('.nights-btn');
     if (nights) {
       const found = stopKeyFromRow(nights);
@@ -2056,7 +2227,7 @@ function initResupplyControls(): void {
 function planSyncHost(trailId: string): PlanSyncHost {
   return {
     trailId,
-    getPlan: () => plan,
+    getPlan: () => storedPlan,
     adoptServerPlan(next: PlanDocument): void {
       // The server's copy wins outright (last writer wins, as for comments),
       // so it is stored and drawn exactly as it arrived — no `scheduleSave`,
@@ -2064,22 +2235,22 @@ function planSyncHost(trailId: string): PlanSyncHost {
       // still pending would do the same, so it is dropped (the sync arm has
       // already flushed and weighed it before deciding to adopt).
       cancelPendingSave();
-      plan = next;
-      savePlanDocument(trail.config.id, plan);
+      adoptStoredPlan(next);
+      savePlanDocument(trail.config.id, storedPlan);
       setSaveStatus('saved');
       refreshHeaderInputs();
       renderAll();
     },
     stampPlan(patch: Partial<PlanDocument>): void {
-      plan = { ...plan, ...patch };
-      savePlanDocument(trail.config.id, plan);
+      adoptStoredPlan({ ...storedPlan, ...patch });
+      savePlanDocument(trail.config.id, storedPlan);
     },
     flushPendingSave(): boolean {
       if (saveDebounceTimer === null) return false;
       cancelPendingSave();
       // The local write `commitSave` would have made, minus its `onLocalSave`:
       // the sync arm is asking because it is about to reconcile this edit.
-      const ok = savePlanDocument(trail.config.id, plan);
+      const ok = savePlanDocument(trail.config.id, storedPlan);
       setSaveStatus(ok ? 'saved' : 'error');
       return true;
     },
@@ -2202,13 +2373,14 @@ export async function initPlanViewer(
   }
 
   trail = data;
+  routeTrail = data;
   readOnly = options.readOnly === true;
 
   // The document handed in (a shared plan), else the stored one, a one-off
   // migration of the pre-day-planner `trail-plan-<id>` save, or a fresh empty
   // plan. A newer server copy replaces it a moment after the first render —
   // see `plan-sync.ts`; the page is drawn first and never waits on the network.
-  plan = options.preloadedPlan ?? loadOrMigratePlan(trailId, trail).plan;
+  const stored = options.preloadedPlan ?? loadOrMigratePlan(trailId, trail).plan;
   // Read in read-only mode too, so a shared plan's days are timed at the
   // reader's own pace and hours; `setUiPrefs` never writes them back there.
   uiPrefs = loadPlanUiPrefs(trailId);
@@ -2216,6 +2388,8 @@ export async function initPlanViewer(
   // Start from a clean slate rather than trusting the module's initial values.
   reversedTrail = null;
   resetResupplyCaches();
+  plannedRoute = plannedRouteFor(trail, undefined);
+  adoptStoredPlan(stored);
   activeTab = 'days';
   resupplyFilter = '';
   stopsFilter = '';

@@ -15,6 +15,12 @@
  * once in the footer, because "no services" and "we cannot answer" are not the
  * same claim to make about a water source.
  *
+ * Where the trail has an alternate, a card sits where it branches off the
+ * line walked, saying what it is against the main route it replaces, with the
+ * one control: take it, or stay on the main route. Taking it lists its own
+ * places after the card, with their distances along it, and a second card
+ * where it rejoins (`@lib/plan-alternates` `alternateMarkers`).
+ *
  * Presentational: every edit goes back out through the callbacks, which the
  * screen turns into `plans-store.apply` calls.
  */
@@ -24,6 +30,8 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import { findStop, servicesAtStop, type StopServices } from '@lib/plan-editor';
 import { OSM_ATTRIBUTION } from '@lib/poi-display';
+import { KM_EPSILON } from '@lib/plan-direction';
+import type { AlternateMarker } from '@lib/plan-alternates';
 import type { PlanDocument, PlanStop } from '@lib/plan-types';
 import type { TrailPOI } from '@lib/trail-types';
 import { useTheme } from '../../theme';
@@ -74,6 +82,31 @@ export interface StopsSectionProps {
   currentKm?: number | null;
   /** Called with the divider once it is laid out, so the screen can scroll to it. */
   onHereLayout?: (marker: View) => void;
+  /** Branch and rejoin cards, in active km (`alternateMarkers`). */
+  alternates?: AlternateMarker[];
+  /** Take an alternate (`true`) or go back to the main route. */
+  onAlternate?: (name: string, take: boolean) => void;
+}
+
+/**
+ * Where each card goes among the candidates: a branch after the places at its
+ * km, a rejoin before them. Keyed by the index of the row it precedes
+ * (`candidates.length` for after the last).
+ */
+export function alternateCardSlots(
+  candidates: readonly Pick<StopCandidate, 'activeKm'>[],
+  markers: readonly AlternateMarker[],
+): Map<number, AlternateMarker[]> {
+  const slots = new Map<number, AlternateMarker[]>();
+  for (const marker of markers) {
+    const index =
+      marker.kind === 'branch'
+        ? candidates.findIndex((c) => c.activeKm > marker.activeKm + KM_EPSILON / 2)
+        : candidates.findIndex((c) => c.activeKm >= marker.activeKm - KM_EPSILON / 2);
+    const at = index === -1 ? candidates.length : index;
+    slots.set(at, [...(slots.get(at) ?? []), marker]);
+  }
+  return slots;
 }
 
 export function StopsSection(props: StopsSectionProps) {
@@ -104,6 +137,21 @@ export function StopsSection(props: StopsSectionProps) {
   const visible = candidates.slice(0, shown);
   const remaining = candidates.length - visible.length;
 
+  const slots = useMemo(
+    () => alternateCardSlots(candidates, props.alternates ?? []),
+    [candidates, props.alternates],
+  );
+  const cardsAt = (index: number) =>
+    (slots.get(index) ?? []).map((marker) => (
+      <AlternateCard
+        key={`${marker.kind}:${marker.alternate.name}`}
+        marker={marker}
+        units={units}
+        showClimb={props.showClimb}
+        onAlternate={props.onAlternate}
+      />
+    ));
+
   return (
     <View style={styles.root}>
       <View style={styles.headRow}>
@@ -123,6 +171,7 @@ export function StopsSection(props: StopsSectionProps) {
       ) : (
         visible.map((candidate, i) => (
           <React.Fragment key={candidate.key}>
+            {cardsAt(i)}
             {i === hereIndex && (
               <HereMarker
                 ref={markerRef}
@@ -144,6 +193,7 @@ export function StopsSection(props: StopsSectionProps) {
           </React.Fragment>
         ))
       )}
+      {remaining === 0 && cardsAt(candidates.length)}
       {candidates.length > 0 && hereIndex === candidates.length && (
         <HereMarker
           ref={markerRef}
@@ -187,6 +237,71 @@ const HereMarker = React.forwardRef<View, { onLayout: () => void }>(function Her
     </View>
   );
 });
+
+/** Where an alternate leaves the line walked, or comes back to it. */
+function AlternateCard({
+  marker,
+  units,
+  showClimb,
+  onAlternate,
+}: {
+  marker: AlternateMarker;
+  units: Units;
+  showClimb: boolean;
+  onAlternate?: (name: string, take: boolean) => void;
+}) {
+  const { colors } = useTheme();
+  const { alternate, taken, kind } = marker;
+  const borderColor = taken || kind === 'rejoin' ? colors.accent : colors.border;
+  if (kind === 'rejoin') {
+    return (
+      <View
+        style={[styles.altCard, { backgroundColor: colors.surfaceElevated, borderColor }]}
+        accessibilityLabel={`${alternate.name} rejoins the main route`}
+      >
+        <Text style={[styles.altTitle, { color: colors.textPrimary }]}>
+          {`↩ ${alternate.name} rejoins the main route`}
+        </Text>
+      </View>
+    );
+  }
+  const delta = alternate.distanceKm - alternate.mainDistanceKm;
+  const deltaText =
+    Math.abs(delta) < 0.05
+      ? 'same distance as the main route'
+      : `${formatDistance(Math.abs(delta), units)} ${delta > 0 ? 'longer' : 'shorter'} than the main route`;
+  const climb = showClimb
+    ? ` · ↑ ${formatElevation(alternate.ascentM, units)} · ↓ ${formatElevation(alternate.descentM, units)}`
+    : '';
+  const action = taken ? 'Stay on the main route' : 'Take this alternate';
+  return (
+    <View
+      style={[
+        styles.altCard,
+        taken ? styles.altTaken : styles.altOffered,
+        { backgroundColor: colors.surfaceElevated, borderColor },
+      ]}
+    >
+      <Text style={[styles.altTitle, { color: colors.textPrimary }]}>
+        {taken ? `⑂ Taking ${alternate.name}` : `⑂ ${alternate.name} branches off here`}
+      </Text>
+      <Text style={[styles.km, { color: colors.textSecondary }]}>
+        {`${formatDistance(alternate.distanceKm, units)}${climb} · ${deltaText}`}
+      </Text>
+      {onAlternate && (
+        <Pressable
+          onPress={() => onAlternate(alternate.name, !taken)}
+          accessibilityRole="button"
+          accessibilityLabel={`${action}: ${alternate.name}`}
+          hitSlop={spacing.xs}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          <Text style={[styles.altAction, { color: colors.accent }]}>{action}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
 
 function StopRow({
   candidate,
@@ -331,6 +446,16 @@ const styles = StyleSheet.create({
   hereRule: { flex: 1, height: 2 },
   hereLabel: { ...typography.caption, fontWeight: '700' },
   more: { ...typography.bodySmall, fontWeight: '700', paddingVertical: spacing.xs },
+  altCard: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  altOffered: { borderStyle: 'dashed' },
+  altTaken: { borderStyle: 'solid' },
+  altTitle: { ...typography.bodySmall, fontWeight: '700' },
+  altAction: { ...typography.bodySmall, fontWeight: '700', paddingTop: spacing.xs },
   footer: { ...typography.caption },
   pressed: { opacity: 0.6 },
 });

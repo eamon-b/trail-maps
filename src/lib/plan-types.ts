@@ -85,6 +85,13 @@ export interface PlanStop {
   /** Free text, <= 500 chars after trimming. */
   note?: string;
   booked?: boolean;
+  /**
+   * The alternate this stop is on (`PlanDocument.alternates` names it). Absent
+   * for a stop on the main route. On an alternate `km` is the alternate's own
+   * absolute scale — branch km plus km along it — not main-route km; see
+   * `plan-alternates.ts`.
+   */
+  alternate?: string;
 }
 
 /** Limits enforced on a `PlanDocument` by the editor, the web page and the server alike. */
@@ -96,6 +103,10 @@ export const PLAN_LIMITS = {
   stopsMax: 500,
   /** Entries in `resupplyStops`. */
   resupplyStopsMax: 500,
+  /** Entries in `alternates`. */
+  alternatesMax: 100,
+  /** An alternate's name, as `alternates` and a stop's `alternate` hold it. */
+  alternateNameMax: 200,
   nightsMax: 14,
   /** Serialised JSON byte ceiling. */
   documentBytes: 64 * 1024,
@@ -126,6 +137,11 @@ export interface PlanDocument {
   stops: PlanStop[];
   /** Ticked resupply options, as waypoint ids — unchanged from `PlanState`. */
   resupplyStops?: string[];
+  /**
+   * The alternates this plan takes instead of the main route, by name (sorted).
+   * Absent = the main route all the way. See `plan-alternates.ts`.
+   */
+  alternates?: string[];
   /** Server clock on the copy that last came from or went to the server; the client's own clock before that. */
   updatedAt: string;
   version: 1;

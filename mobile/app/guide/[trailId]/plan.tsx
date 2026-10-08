@@ -44,6 +44,12 @@ import type { PlanTrail } from '@lib/day-calculator';
 import { isSearchable, type SuggestDaysResult, type SuggestedPlan } from '@lib/day-suggest';
 import type { PlanDocument, SectionConfig } from '@lib/plan-types';
 import {
+  alternateMarkers,
+  editPlanOnRoute,
+  planToRoute,
+  setPlanAlternate,
+} from '@lib/plan-alternates';
+import {
   computePlanDays,
   setDirection,
   setNights,
@@ -85,6 +91,7 @@ import {
   type SearchCandidate,
 } from '../../../src/features/plan/plan-suggest';
 import { NextDaysCard } from '../../../src/features/plan/NextDaysCard';
+import { plannableTrail, usePlanRoute } from '../../../src/features/plan/use-plan-route';
 import { sectionOptions } from '../../../src/features/plan/plan-section';
 import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan-inputs-store';
 import { usePlanSyncError } from '../../../src/features/plan/use-plan-sync-error';
@@ -99,11 +106,15 @@ import { formatFoodWeight } from '../../../src/features/plan/plan-format';
 export default function PlanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { trail, trailId, direction } = useGuide();
+  const { trailId, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const planDirection = planDirectionOf(direction);
 
   const plan = usePlansStore(selectPlan(trailId));
+  // The route the plan walks: the guide trail with the plan's alternates
+  // spliced in, in route km. Everything below measures along it; the stored
+  // document is converted to it (`planToRoute`) and every edit back from it.
+  const { route, trail, baseTrail } = usePlanRoute(plan);
   const hydratePlan = usePlansStore((s) => s.hydrate);
   const applyEdit = usePlansStore((s) => s.apply);
 
@@ -139,7 +150,7 @@ export default function PlanScreen() {
   // and fall back to the full trail *during render* when it changes — a
   // direction flip changes the km behind every index, and an effect-driven
   // reset would show one render of the old indices against the new options.
-  const optionsKey = `${direction}:${options.length}`;
+  const optionsKey = `${direction}:${options.length}:${route.alternates.map((a) => a.name).join('|')}`;
   const [section, setSection] = useState({ key: optionsKey, startIdx: 0, endIdx: lastIdx });
   const active =
     section.key === optionsKey ? section : { key: optionsKey, startIdx: 0, endIdx: lastIdx };
@@ -166,7 +177,7 @@ export default function PlanScreen() {
   // Its direction is forced to the guide's for THIS render. The effect below
   // persists that, but an effect runs after the paint, and rendering one frame
   // of stops mirrored about the wrong end would visibly jump.
-  const displayPlan = useMemo<PlanDocument>(() => {
+  const storedDisplayPlan = useMemo<PlanDocument>(() => {
     const base: PlanDocument = plan ?? {
       id: '',
       trailId,
@@ -179,6 +190,11 @@ export default function PlanScreen() {
     };
     return base.direction === planDirection ? base : { ...base, direction: planDirection };
   }, [plan, planDirection, trailId]);
+  // The same document in route km, for the calculators and the Stops list.
+  const displayPlan = useMemo(
+    () => planToRoute(storedDisplayPlan, route),
+    [storedDisplayPlan, route],
+  );
 
   useEffect(() => {
     if (plan && plan.direction !== planDirection) {
@@ -279,9 +295,22 @@ export default function PlanScreen() {
   const distanceOnly = !trailElevationIsUsable(trail);
 
   const planDefaults = { name: trail.config.name, direction: planDirection };
+  // Every editor works in route km; the stored document is converted for it
+  // and back, from the document the store hands over when the edit runs.
   const edit = (fn: (p: PlanDocument) => PlanDocument) => {
-    void applyEdit(trailId, fn, planDefaults);
+    void applyEdit(trailId, (p) => editPlanOnRoute(p, plannableTrail(baseTrail), fn), planDefaults);
   };
+  const setAlternate = (name: string, take: boolean) => {
+    void applyEdit(
+      trailId,
+      (p) => setPlanAlternate(p, plannableTrail(baseTrail), name, take),
+      planDefaults,
+    );
+  };
+  const alternates = useMemo(
+    () => alternateMarkers(plannableTrail(baseTrail), route, planDirection),
+    [baseTrail, route, planDirection],
+  );
 
   // --- Next days -----------------------------------------------------------
   const suggestPrefs = prefs.suggest ?? defaultSuggestPrefs(prefs.dailyHours, baseKmh);
@@ -463,7 +492,9 @@ export default function PlanScreen() {
             >
               <StopsSection
                 candidates={candidates}
-                plan={plan}
+                plan={plan ? displayPlan : undefined}
+                alternates={alternates}
+                onAlternate={setAlternate}
                 pois={trail.pois}
                 units={units}
                 legs={legs}

@@ -60,6 +60,11 @@ export interface GuideContextValue {
   trailId: string;
   /** Trail with the current direction applied. */
   trail: TrailJson;
+  /**
+   * The trail as stored (NOBO). For what has to work in the data's own km —
+   * the planner splices a plan's alternates into it (`plan/use-plan-route`).
+   */
+  baseTrail: TrailJson;
   direction: Direction;
   /** A newer copy of this trail is on the phone than the one the guide shows. */
   dataUpdate: GuideDataUpdate;
@@ -210,14 +215,15 @@ export function GuideProvider({
   // or hand every consumer a new trail object.
   const trail = useMemo(() => (raw ? resolveGuideTrail(raw, direction) : null), [raw, direction]);
   const value = useMemo<GuideContextValue | null>(() => {
-    if (!trail) return null;
+    if (!trail || !raw) return null;
     return {
       trailId,
       trail,
+      baseTrail: raw,
       direction,
       dataUpdate: { available, version: latestVersion, reloading, reload },
     };
-  }, [trail, trailId, direction, available, latestVersion, reloading, reload]);
+  }, [trail, raw, trailId, direction, available, latestVersion, reloading, reload]);
 
   if (raw === undefined) return <GuideLoading downloading={downloading} />;
   if (!value && current?.takenDown) return <GuideTakenDown />;

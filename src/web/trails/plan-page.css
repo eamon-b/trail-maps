@@ -241,6 +241,12 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
   flex-wrap: wrap;
 }
 .day-card-stats .water-info { color: var(--water); }
+.day-card-via {
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
 .day-card-rest {
   margin-top: 0.3rem;
   font-size: 0.72rem;
@@ -337,6 +343,32 @@ html, body { height: 100%; margin: 0; overflow: hidden; }
 .stop-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stop-km { color: var(--text-secondary); white-space: nowrap; }
 .stop-gap { color: var(--text-secondary); font-size: 0.72rem; white-space: nowrap; }
+
+/* Stops tab: where an alternate branches off the line walked, and rejoins it. */
+.alt-card {
+  margin: 0.35rem 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  background: var(--row-alternate);
+  font-size: 0.8rem;
+}
+.alt-card.is-taken, .alt-card.is-rejoin { border-style: solid; border-color: var(--tint-warn-border); }
+.alt-card-title { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+.alt-card-glyph { font-size: 1rem; flex-shrink: 0; }
+.alt-card-stats { margin-top: 0.2rem; color: var(--text-secondary); font-size: 0.72rem; }
+.alt-card-btn {
+  margin-top: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  background: var(--accent-color);
+  color: var(--on-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.alt-card-btn.is-taken { background: transparent; color: var(--accent-color); }
 
 /* Services at a stop: six glyphs, greyed where the service is absent. The
    glyphs are the information, so the "off" state is dimmed rather than hidden —

@@ -44,7 +44,7 @@ jest.mock('../../../theme', () => ({
 }));
 
 jest.mock('../../guide/GuideContext', () => ({
-  useGuide: () => ({ trailId: 'cdt', direction: 'default', trail }),
+  useGuide: () => ({ trailId: 'cdt', direction: 'default', trail, baseTrail: trail }),
 }));
 
 jest.mock('../../../state/settings-store', () => ({

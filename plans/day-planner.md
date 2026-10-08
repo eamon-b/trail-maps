@@ -491,6 +491,39 @@ Subagent brief must include: edit `.ts`/`.json` via Bash, not the Edit tool (the
 hook rewrites whole files); `ALLOWED_TRAILS` stays equal to the bundled index; `src/lib` stays
 RN-safe (no DOM, no Node); `comments-api-types.ts` stays plain types; rebase, never merge.
 
+## Alternates (added 2026-10)
+
+A plan can take any of a trail's alternates — one that branches off the main route and rejoins
+it (`type: 'alternate'`, both junctions, no `parent`). The Stops list carries a card where each
+one branches off ("⑂ … branches off here": its length and climb, how much longer or shorter
+than the main route it replaces, and **Take this alternate**). Taking it lists the alternate's
+own places after the card, with their distances along it, then a "↩ … rejoins the main route"
+card; the branch card then reads "Taking …" with **Stay on the main route**. Day cards that walk
+some of it say "via …" (web).
+
+`src/lib/plan-alternates.ts` holds the whole rule:
+
+- `buildPlannedRoute` / `plannedRouteTrail` splice the alternate into the main line, giving a
+  trail of the same shape in **route km** (points, display points, cumulative climb, breaks,
+  waypoints, POIs, side trips). Every planner calculator runs on it unchanged.
+- The document keeps its km contract. A main-route stop stays NOBO-absolute main km; a stop on an
+  alternate carries `alternate: <name>` and the alternate's own absolute km (branch km + km
+  along it — the `totalDistance` its waypoints already have). `PlanDocument.alternates` lists the
+  names taken, sorted.
+- The pages edit in route km: `planToRoute` / `planFromRoute` (`editPlanOnRoute` for one edit).
+  `setPlanAlternate` changes the route: taking one drops any alternate it overlaps and the stops on
+  the main route it bypasses, going back drops the alternate's stops, and a stop at a place both
+  lines share (same waypoint id) moves rather than goes.
+- One stop per place is checked per line (the main route, or one alternate), on the client and the
+  server, since an alternate's km overlaps the main route's.
+
+The server accepts `alternates` (≤ 100 names, ≤ 200 chars, no repeats) and a stop's
+`alternate` (must be one of them). Deploy the worker before the clients: an older worker rebuilds
+the document field by field and would drop both.
+
+Not yet: the waypoint detail screen's "Stop here", the phone's map rings and elevation-profile
+ticks still work on the main route (a stop on an alternate gets no tick); nested alternates.
+
 ## Out of scope (recorded so they are not lost)
 
 - Multiple named plans per trail (offered, not chosen). The schema's unique index is the one

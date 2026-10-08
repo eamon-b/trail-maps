@@ -66,7 +66,10 @@ export function plannedStopKms(
   totalKm: number,
 ): number[] {
   if (!plan || plan.stops.length === 0) return [];
-  return stopsToActive(plan.stops, direction, totalKm)
+  // The profile is the main route's: a stop on an alternate the plan takes is
+  // not on it (`@lib/plan-alternates`), and its km is the alternate's own.
+  const onMainRoute = plan.stops.filter((stop) => stop.alternate === undefined);
+  return stopsToActive(onMainRoute, direction, totalKm)
     .map((stop) => stop.km)
     .sort((a, b) => a - b);
 }

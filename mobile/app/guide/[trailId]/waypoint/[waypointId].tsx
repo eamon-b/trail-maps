@@ -86,6 +86,8 @@ import {
   toggleStop,
 } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
+import { editPlanOnRoute, mainKmToRoute, planToRoute } from '@lib/plan-alternates';
+import { plannableTrail, usePlanRoute } from '../../../../src/features/plan/use-plan-route';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
 import { useWaypointResupplyPlan } from '../../../../src/features/plan/use-planned-resupply';
@@ -184,25 +186,34 @@ export default function WaypointDetailScreen() {
     void hydratePlan(trailId);
   }, [hydratePlan, trailId]);
 
-  const stopCandidate = useMemo(
-    () =>
-      waypoint
-        ? stopCandidateOf(waypoint, planDirectionOf(direction), trail.track.totalDistance)
-        : null,
-    [waypoint, direction, trail.track.totalDistance],
-  );
-  const planStop = plan && stopCandidate ? findStop(plan, stopKeyOf(stopCandidate)) : undefined;
+  // The plan's route: once it takes an alternate, stops are edited in km along
+  // that route (`@lib/plan-alternates`), as on the Plan screen. A waypoint on a
+  // stretch an alternate bypasses is not on the route, so it offers no stop.
+  const { route, baseTrail } = usePlanRoute(plan);
+  const stopCandidate = useMemo(() => {
+    if (!waypoint) return null;
+    const candidate = stopCandidateOf(waypoint, planDirectionOf(direction), trail.track.totalDistance);
+    const routeKm = mainKmToRoute(route, candidate.noboKm);
+    return routeKm === null ? null : { ...candidate, noboKm: routeKm };
+  }, [waypoint, direction, trail.track.totalDistance, route]);
+  const routePlan = useMemo(() => (plan ? planToRoute(plan, route) : undefined), [plan, route]);
+  const planStop =
+    routePlan && stopCandidate ? findStop(routePlan, stopKeyOf(stopCandidate)) : undefined;
   // `toggleStop` refuses a stop at either end of the trail, and this screen has
   // no plan notice to show the refusal on, so the toggle is not offered there.
   // A stop already sitting at an end (an older plan) can still be taken out.
   const canToggleStop =
     stopCandidate !== null &&
-    (planStop !== undefined || !isTrailEnd(stopCandidate.noboKm, trail.track.totalDistance));
+    (planStop !== undefined || !isTrailEnd(stopCandidate.noboKm, route.totalDistance));
   const editPlan = useCallback(
     (fn: (p: PlanDocument) => PlanDocument) => {
-      void applyPlanEdit(trailId, fn, planDefaults);
+      void applyPlanEdit(
+        trailId,
+        (p) => editPlanOnRoute(p, plannableTrail(baseTrail), fn),
+        planDefaults,
+      );
     },
-    [applyPlanEdit, planDefaults, trailId],
+    [applyPlanEdit, planDefaults, trailId, baseTrail],
   );
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
@@ -387,7 +398,7 @@ export default function WaypointDetailScreen() {
                   onPress={() =>
                     editPlan((p) =>
                       toggleStop(p, toggleTargetOf(stopCandidate), {
-                        totalKm: trail.track.totalDistance,
+                        totalKm: route.totalDistance,
                       }),
                     )
                   }

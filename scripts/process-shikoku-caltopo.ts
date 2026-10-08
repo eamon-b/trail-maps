@@ -23,6 +23,8 @@
  * Places the map lacks, closures and corrected descriptions live in
  * CURATED_WAYPOINTS / CLOSED_MARKERS / DESCRIPTION_OVERRIDES below and are
  * applied on every run; `--reapply` applies them to the committed GPX alone.
+ * So is henroyado.com's list of Tokushima inns (HENROYADO_FILE below): the
+ * inns the map lacks, and its details for the ones it has.
  *
  * The map has only the one walked line. Alternates are kept in
  * scripts/data/ (ALTERNATES below) and written after it as extra `<trk>`s
@@ -134,8 +136,8 @@ const OKUNOIN: GpxWaypoint = {
  * association's inn list) and henro.org; positions from henro.org's place
  * pages or OpenStreetMap. Prices and phone numbers date from then.
  *
- * Left out for want of a position: Morian Loft (Nabeiwa; status unconfirmed)
- * and River Side Camp NEW-TA (Nyuta, near Temple 13).
+ * Left out for want of a position: River Side Camp NEW-TA (Nyuta, near
+ * Temple 13). Morian Loft at Nabeiwa is in the henroyado.com list below.
  */
 const CURATED_WAYPOINTS: GpxWaypoint[] = [
   // Bus stops: positions and timetables from Tokushima Bus's GTFS open data
@@ -288,6 +290,38 @@ const DESCRIPTION_OVERRIDES: Record<string, string> = {
     'Tel: 088-678-0981 https://www.karuizawa-camp.com/',
 };
 
+/**
+ * The places to stay that henroyado.com lists for Tokushima, read 2026-10-08:
+ * `inns` are added as waypoints (each with the source of its position, since
+ * henroyado.com publishes none), and `listed` adds henroyado.com's details to
+ * markers the source map already has. Inns it lists without a usable position
+ * are in the file's `omitted`, with the reason.
+ */
+const HENROYADO_FILE = path.resolve(SCRIPTS_DIR, 'data/shikoku-henroyado-inns.json');
+
+interface HenroyadoFile {
+  inns: { name: string; lat: number; lon: number; type: string; position: string; desc: string }[];
+  listed: Record<string, string>;
+}
+
+const HENROYADO = JSON.parse(fs.readFileSync(HENROYADO_FILE, 'utf-8')) as HenroyadoFile;
+const HENROYADO_PREFIX = 'henroyado.com (Oct 2026): ';
+
+const HENROYADO_INNS: GpxWaypoint[] = HENROYADO.inns.map(({ name, lat, lon, type, desc }) => ({
+  name,
+  lat,
+  lon,
+  ele: 0,
+  type,
+  desc,
+}));
+
+/** A marker's description with henroyado.com's line (re)appended last. */
+function withHenroyadoLine(desc: string | undefined, line: string): string {
+  const own = (desc ?? '').split('\n').filter(l => !l.startsWith('henroyado.com ('));
+  return [...own, HENROYADO_PREFIX + line].filter(Boolean).join('\n');
+}
+
 /** Source-map markers for places that have closed, with the evidence. */
 const CLOSED_MARKERS: Record<string, string> = {
   'Kamojima Onsen Iyashi-no-Ya': 'free pilgrim huts; henro.org lists them as permanently closed (checked 2026-10-04)',
@@ -298,11 +332,20 @@ const CLOSED_MARKERS: Record<string, string> = {
  * over a fresh CalTopo export or over the committed GPX (`--reapply`).
  */
 export function applyCuratedWaypoints(waypoints: GpxWaypoint[]): GpxWaypoint[] {
-  const curatedNames = new Set(CURATED_WAYPOINTS.map(w => w.name));
+  const curated = [...CURATED_WAYPOINTS, ...HENROYADO_INNS];
+  const curatedNames = new Set(curated.map(w => w.name));
+  if (curatedNames.size !== curated.length) {
+    throw new Error('Two curated waypoints share a name');
+  }
   const kept = waypoints
     .filter(w => !(w.name in CLOSED_MARKERS) && !curatedNames.has(w.name))
-    .map(w => (w.name in DESCRIPTION_OVERRIDES ? { ...w, desc: DESCRIPTION_OVERRIDES[w.name] } : w));
-  return sortWaypoints([...kept, ...CURATED_WAYPOINTS.map(w => ({ ...w }))]);
+    .map(w => (w.name in DESCRIPTION_OVERRIDES ? { ...w, desc: DESCRIPTION_OVERRIDES[w.name] } : w))
+    .map(w => (w.name in HENROYADO.listed ? { ...w, desc: withHenroyadoLine(w.desc, HENROYADO.listed[w.name]) } : w));
+  const missing = Object.keys(HENROYADO.listed).filter(name => !kept.some(w => w.name === name));
+  if (missing.length > 0) {
+    throw new Error(`henroyado.com details for markers that are not on the map: ${missing.join(', ')}`);
+  }
+  return sortWaypoints([...kept, ...curated.map(w => ({ ...w }))]);
 }
 
 /**

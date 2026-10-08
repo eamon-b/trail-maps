@@ -127,6 +127,21 @@ Water on the temple grounds. The temple lodging (shukubo) is closed, confirmed b
     <type>poi</type>
     <desc>Temple 23 of the 88 (薬王寺).</desc>
   </wpt>
+  <wpt lat="34.098908" lon="134.336202">
+    <name>3980 Yen Tabi-no-yado</name>
+    <type>accommodation</type>
+    <desc>Inn 3980円 旅の宿 about 1 km south-east of Temple 9. Five rooms, no meals; check-in 15:00. Booked through Rakuten Travel. Tel: 080-3920-3826 https://travel.rakuten.co.jp/HOTEL/189411/189411.html</desc>
+  </wpt>
+  <wpt lat="34.07468" lon="134.548399">
+    <name>Agnes Hotel Tokushima</name>
+    <type>accommodation</type>
+    <desc>Hotel アグネスホテル徳島 about 100 m from Tokushima Station. Check-in 15:00, check-out 11:00. Cards accepted. Tel: 088-655-1212 https://www.agneshotel.jp</desc>
+  </wpt>
+  <wpt lat="34.11804" lon="134.388312">
+    <name>Anrakuji Shukubo</name>
+    <type>accommodation</type>
+    <desc>Temple lodging 安楽寺宿坊 at Temple 6, with an onsen bath; 57 rooms. From ¥6,000 room only, from ¥8,500 with dinner and breakfast (Oct 2026); vegetarian meals on request. Evening service for guests at 19:00 (or 17:30). Check-in 15:00-20:00, check-out 9:00. Cards accepted; English spoken. Tel: 088-694-2046 https://shikoku6.or.jp/shukubo/</desc>
+  </wpt>
   <wpt lat="34.11808" lon="134.388518">
     <name>Anrakuji Tsuyado</name>
     <type>accommodation</type>
@@ -134,6 +149,66 @@ Water on the temple grounds. The temple lodging (shukubo) is closed, confirmed b
 安楽寺通夜堂
 https://www.henro.org/place/anraku-ji-tsuyado
 Tel: 0886942046</desc>
+  </wpt>
+  <wpt lat="33.734638" lon="134.53334">
+    <name>B&amp;B m4</name>
+    <type>accommodation</type>
+    <desc>B&amp;B Ｂ＆Ｂ ｍ４ (エムの４乗) in an old house in Hiwasa&apos;s Shōwa-era streets. Two rooms, ¥4,000 room only, breakfast ¥500 (Oct 2026). Check-in 15:00. Cash or PayPay. Bookings by email to masakomatsumura@gmail.com. Tel: 0884-70-1642</desc>
+  </wpt>
+  <wpt lat="34.102736" lon="134.344869">
+    <name>Business Hotel Access Awa</name>
+    <type>accommodation</type>
+    <desc>Business hotel アクセス阿波 about 1 km off the route between Temples 8 and 9. Listed by henroyado.com without details. Tel: 088-695-2200</desc>
+  </wpt>
+  <wpt lat="34.067518" lon="134.355622">
+    <name>Business Hotel Access Kamojima</name>
+    <type>accommodation</type>
+    <desc>Business hotel アクセス鴨島 about 2 km from Temple 11. 35 rooms, ¥5,800 with breakfast (Oct 2026). Check-in 15:00. Cards accepted. Tel: 050-3161-9615 https://access-kamojima.com/</desc>
+  </wpt>
+  <wpt lat="33.728887" lon="134.531072">
+    <name>Business Hotel Cairns</name>
+    <type>accommodation</type>
+    <desc>Business hotel ビジネスホテル ケアンズ in front of JR Hiwasa Station, 300 m from Temple 23. Check-in 16:00, check-out 10:00. Cash only. Tel: 0884-77-1211 https://hotel.travel.rakuten.co.jp/hinfo/30831/</desc>
+  </wpt>
+  <wpt lat="34.070897" lon="134.368452">
+    <name>Business Hotel Road Side</name>
+    <type>accommodation</type>
+    <desc>Business hotel ロードサイド on National Route 192, about 3.5 km north-east of Temple 11. Sixteen rooms, ¥5,500 room only, breakfast ¥850 (Oct 2026). Check-in 15:00. Cards accepted. Tel: 0883-22-1088 https://www.hotelroadside.com/</desc>
+  </wpt>
+  <wpt lat="34.073069" lon="134.553734">
+    <name>Business Ryokan Sakuraso</name>
+    <type>accommodation</type>
+    <desc>Business ryokan ビジネス旅館さくら荘 a 3-minute walk from Tokushima Station. Twelve rooms, ¥3,300 room only (Oct 2026). Free washer and dryer; luggage kept free for pilgrims during the walk. Check-in 16:00, check-out 9:00. Cash only. Bookings by phone. Tel: 088-652-9575</desc>
+  </wpt>
+  <wpt lat="34.073923" lon="134.357373">
+    <name>Central Hotel Kamojima</name>
+    <type>accommodation</type>
+    <desc>Business hotel セントラルホテル鴨島 in Kamojima. No meals; cards accepted. Tel: 0883-24-8989 https://www.central-kamojima.jp/</desc>
+  </wpt>
+  <wpt lat="34.056309" lon="134.554494">
+    <name>Century Plaza Hotel</name>
+    <type>accommodation</type>
+    <desc>Business hotel センチュリープラザホテル in southern Tokushima city. Check-in 15:00, check-out 10:00. English spoken. Tel: 088-655-3333 https://century-ph.com/</desc>
+  </wpt>
+  <wpt lat="33.96881" lon="134.36924">
+    <name>Cotton Field Campground</name>
+    <type>campsite</type>
+    <desc>Campground コットンフィールド with log cottages and dormitories, a 7-minute walk from Kamiyama Onsen on the Kamiyama alternative, about 10 km from Temple 12. Dormitory ¥4,400, own tent ¥1,650 (Oct 2026). Shower, coin washer and dryer. Check-in 14:00. Cash only. A Henro House. Tel: 088-676-0803 https://henrohouse.jp/en/houses/79</desc>
+  </wpt>
+  <wpt lat="33.973319" lon="134.369564">
+    <name>Cotton Inn Kamiyama-dori</name>
+    <type>accommodation</type>
+    <desc>Inn コットン・イン神山通り near Kamiyama Onsen on the Kamiyama alternative, run with Cotton Field. Private and shared rooms; breakfast available. Check-in 15:00, check-out 10:00. Cash only. Tel: 088-676-0803 https://travel.rakuten.co.jp/HOTEL/201832/201832.html</desc>
+  </wpt>
+  <wpt lat="34.073542" lon="134.551857">
+    <name>Daiwa Roynet Hotel Tokushima Ekimae</name>
+    <type>accommodation</type>
+    <desc>Business hotel ダイワロイネットホテル徳島駅前, a minute from Tokushima Station. Check-in 14:00, check-out 11:00. Cards accepted. Tel: 088-611-8455 https://www.daiwaroynet.jp/tokushimaekimae/</desc>
+  </wpt>
+  <wpt lat="34.120834" lon="134.37508">
+    <name>Donari Onsen Tabi-no-yado</name>
+    <type>accommodation</type>
+    <desc>Rental house 土成温泉 旅の宿 near Temple 7, for up to six; about ¥4,000 each for five (Oct 2026). No meals; check-in 15:00. Cash only. Booked through Rakuten Travel. Tel: 080-3920-3826 https://travel.rakuten.co.jp/HOTEL/189890/189890.html</desc>
   </wpt>
   <wpt lat="33.742121" lon="134.555647">
     <name>Ebisuhama Camp Village</name>
@@ -153,6 +228,21 @@ ebisuhama.web.fc2.com</desc>
 Purpose-built pilgrim rest hut at Ebisuhama on the T22→T23 coast road, ~2.5km before Hiwasa. 2022 nojuku candidate. Sea-facing/windy. Paid Ebisuhama Camp Village ~200m south if you&apos;d rather pay.
 Source: mititabi.com 2022; OSM (2022)</desc>
   </wpt>
+  <wpt lat="33.987671" lon="134.327615">
+    <name>Farm Guesthouse Morian Loft</name>
+    <type>accommodation</type>
+    <desc>Farm guesthouse 農園G.H.もりあんLoft at Nabeiwa, about 16 km past Temple 11. Three rooms; dinner and breakfast (6:00). Check-in 15:00 (flexible by arrangement), check-out 8:00. Cash only. Bookings by email to morian.loft2017@gmail.com. Tel: 088-668-4670</desc>
+  </wpt>
+  <wpt lat="34.071176" lon="134.545636">
+    <name>Guest House Cycle &amp; Stay</name>
+    <type>accommodation</type>
+    <desc>Guesthouse CYCLE&amp;STAY, a 10-minute walk from Tokushima Station, with indoor bicycle storage and bike servicing. Eight rooms from ¥5,500 room only (Oct 2026). Check-in 15:30. English spoken; cards accepted. Tel: 090-6381-0763 cycleandstay.tokuhima@gmail.com</desc>
+  </wpt>
+  <wpt lat="34.157374" lon="134.50225">
+    <name>Guest House Naruto Ohenro</name>
+    <type>accommodation</type>
+    <desc>Guesthouse ゲストハウス鳴門おへんろ 200 m from Temple 1. Private rooms, no meals; check-in 15:00. English spoken; cards accepted. Booked through Booking.com. Tel: 080-6390-2138</desc>
+  </wpt>
   <wpt lat="34.080281" lon="134.532251">
     <name>Guest House OGaGa</name>
     <type>accommodation</type>
@@ -160,7 +250,18 @@ Source: mititabi.com 2022; OSM (2022)</desc>
 ゲストハウスオガガ
 https://www.henro.org/place/guest-house-ogaga-tokushima-tokushima
 Features: Air conditioning, Bike rental, Dryer, Parking, Refrigerator, Towels, Washer, WIFI
-Tel: 09013264030</desc>
+Tel: 09013264030
+henroyado.com (Oct 2026): Shared rooms, no meals. Cash only. Tel: 090-1326-4030</desc>
+  </wpt>
+  <wpt lat="33.848369" lon="134.586401">
+    <name>Guesthouse Green House</name>
+    <type>accommodation</type>
+    <desc>Guesthouse and cafe G.H. グリーンハウス with shared rooms in a green building about 500 m from Temple 22. English spoken; cash only. Tel: 0884-49-5099 https://www.ghcgreenhouse.com/</desc>
+  </wpt>
+  <wpt lat="34.065884" lon="134.548248">
+    <name>GuestHouse017 Tokushima</name>
+    <type>accommodation</type>
+    <desc>Guesthouse with private and shared rooms in central Tokushima. No meals; cards accepted. Tel: 088-661-6699 https://guesthouse017.com/</desc>
   </wpt>
   <wpt lat="33.72887" lon="134.530409">
     <name>Hashimoto Drive-In</name>
@@ -174,44 +275,52 @@ Tel: 0884770880</desc>
   <wpt lat="33.961689" lon="134.586758">
     <name>Henro House Fun Farm</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/54</desc>
+    <desc>https://henrohouse.jp/en/houses/54
+henroyado.com (Oct 2026): Room only; cash only. Tel: 0885-37-3022</desc>
   </wpt>
   <wpt lat="34.08002" lon="134.34938">
     <name>Henro House Guest House Channel-kan</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/37</desc>
+    <desc>https://henrohouse.jp/en/houses/37
+henroyado.com (Oct 2026): Guesthouse チャンネルカン 2.5 km south-east of Temple 9 and 3.5 km north of Temple 11: men&apos;s and women&apos;s dormitories and Japanese-style private rooms, from ¥3,800 room only (Oct 2026). Convenience store a minute away; shuttle to the temples by arrangement. Check-in 15:30-21:00, check-out 9:30. Cards accepted; English spoken. Tel: 0883-24-7059 https://sites.google.com/site/guesthousechannelkan/</desc>
   </wpt>
   <wpt lat="33.923667" lon="134.557102">
     <name>Henro House Guest house RAKUFU</name>
     <type>accommodation</type>
     <desc>https://henrohouse.jp/en/houses/100
 ¥4,000 cash only (pilgrims)
-Private room, cap 4. English-speaking owner. Self-catering, washer/dryer, Wi-Fi. 8km from T19 Tatsueji, 11km from T20 Kakurinji. Reserve by 13:00 same day; check-in 16:00.</desc>
+Private room, cap 4. English-speaking owner. Self-catering, washer/dryer, Wi-Fi. 8km from T19 Tatsueji, 11km from T20 Kakurinji. Reserve by 13:00 same day; check-in 16:00.
+henroyado.com (Oct 2026): Tel: 090-8168-9774</desc>
   </wpt>
   <wpt lat="33.73211" lon="134.53216">
     <name>Henro House Guest House Sakura-an</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/68</desc>
+    <desc>https://henrohouse.jp/en/houses/68
+henroyado.com (Oct 2026): Guesthouse in a house over 100 years old in front of the gate of Temple 23. Six rooms from ¥3,800 room only (Oct 2026); breakfast available; a small bar. Check-in 16:00. English spoken; cash only. Tel: 080-7817-2258 http://guesthousesakura-an.com/</desc>
   </wpt>
   <wpt lat="34.132415" lon="134.426462">
     <name>Henro House HOTEL MORIMOTOYA</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/93</desc>
+    <desc>https://henrohouse.jp/en/houses/93
+henroyado.com (Oct 2026): Business hotel HOTEL MORIMOTOYA 板野店: 19 rooms, no meals. Coin washer and dryer. Cards accepted. Tel: 088-694-8210 https://www.hotel-morimotoya.com/</desc>
   </wpt>
   <wpt lat="34.08888" lon="134.29868">
     <name>Henro House HS JAPAN AWA</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/35</desc>
+    <desc>https://henrohouse.jp/en/houses/35
+henroyado.com (Oct 2026): HS Japan guesthouse. Room only. Check-in 16:00, check-out 9:00. Cards accepted. Tel: 090-2821-1307</desc>
   </wpt>
   <wpt lat="34.15669" lon="134.50205">
     <name>Henro House Ichiban-monzen-dori</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/20</desc>
+    <desc>https://henrohouse.jp/en/houses/20
+henroyado.com (Oct 2026): Three private rooms, ¥3,000 room only (Oct 2026). Check-in 16:00, check-out 9:00. Shower, coin washer. English spoken; cash only. Tel: 090-5096-1859</desc>
   </wpt>
   <wpt lat="34.13569" lon="134.43204">
     <name>Henro House Morimotoya</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/38</desc>
+    <desc>https://henrohouse.jp/en/houses/38
+henroyado.com (Oct 2026): Long-established pilgrim inn おんやど森本や near Temple 5. Private and shared rooms; dinner and breakfast available. Cash only. Tel: 088-672-3568</desc>
   </wpt>
   <wpt lat="33.9413" lon="134.57648">
     <name>Henro House NISHIMURA</name>
@@ -221,7 +330,8 @@ Private room, cap 4. English-speaking owner. Self-catering, washer/dryer, Wi-Fi.
   <wpt lat="34.12122" lon="134.35851">
     <name>Henro House Okudaya</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/74</desc>
+    <desc>https://henrohouse.jp/en/houses/74
+henroyado.com (Oct 2026): Minshuku 民宿 越久田屋, run by the priest of Aizen-in, the inner temple of Temple 3. Seven rooms, room only. Car pickup from a nearby convenience store and lifts to the Gosho no Sato hot spring. Check-in 16:00-19:00. English spoken; cash only. Tel: 088-660-4301</desc>
   </wpt>
   <wpt lat="34.053055" lon="134.35032">
     <name>Henro House Oyado Eleven</name>
@@ -231,17 +341,75 @@ Private room, cap 4. English-speaking owner. Self-catering, washer/dryer, Wi-Fi.
   <wpt lat="34.080466" lon="134.345292">
     <name>Henro House Pine house</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/91</desc>
+    <desc>https://henrohouse.jp/en/houses/91
+henroyado.com (Oct 2026): Private lodging 民泊パインハウス. Room only. Check-in 15:00, check-out 10:00. Cash only. Tel: 090-5910-1952</desc>
   </wpt>
   <wpt lat="34.092484" lon="134.302789">
     <name>Henro House Sakuraya</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/92</desc>
+    <desc>https://henrohouse.jp/en/houses/92
+henroyado.com (Oct 2026): Farmhouse inn 民宿 桜や near Temple 10. Room only; cash only. Bookings by phone. Tel: 080-8106-1544</desc>
   </wpt>
   <wpt lat="34.07867" lon="134.52989">
     <name>Henro House Yado Bizan</name>
     <type>accommodation</type>
-    <desc>https://henrohouse.jp/en/houses/52</desc>
+    <desc>https://henrohouse.jp/en/houses/52
+henroyado.com (Oct 2026): Inn 歩き遍路 宿びざん for walking pilgrims. Three rooms, ¥5,000 room only, ¥9,000 for two sharing (Oct 2026). Check-in 15:00-17:00, check-out 8:00. English spoken; cash only. Information on the Nankai ferry to Wakayama for Mt Koya. Tel: 088-635-1478</desc>
+  </wpt>
+  <wpt lat="33.928907" lon="134.51844">
+    <name>Henroyado Sakura-no-yado</name>
+    <type>accommodation</type>
+    <desc>Pilgrim lodging 遍路宿桜の宿 at the foot of the climb to Temple 20. Room only; cash only. Bookings by email by the day before, to ksau8167@yahoo.ne.jp. Tel: 090-4419-0376</desc>
+  </wpt>
+  <wpt lat="33.930263" lon="134.521241">
+    <name>Henroyado Sora</name>
+    <type>accommodation</type>
+    <desc>Pilgrim lodging へんろ宿 Sora in a 70-year-old house, reinforced and renovated, about 300 m from the start of the climb to Temple 20; run by a former walking pilgrim. Two rooms, ¥5,300 room only, ¥8,000 with dinner and breakfast (Oct 2026). Check-in 15:00, check-out 9:00. Cash only. henroyadosora@gmail.com https://sites.google.com/view/henroyadosora</desc>
+  </wpt>
+  <wpt lat="34.061165" lon="134.546454">
+    <name>Hostel Coliberty</name>
+    <type>accommodation</type>
+    <desc>Hostel with shared rooms in Tokushima city. Shower. English spoken; cards accepted. Tel: 090-6118-2008 https://www.hostelcoliberty.com/</desc>
+  </wpt>
+  <wpt lat="34.072929" lon="134.356022">
+    <name>Hostel OE</name>
+    <type>accommodation</type>
+    <desc>Hostel in front of JR Kamojima Station, above a yakiniku restaurant. Eight rooms, ¥4,500 room only (Oct 2026). Check-in 16:00-19:00. Coin washer. English spoken; cards accepted. Tel: 0883-26-0117 https://hosteloekamojima.com/hostel-oe</desc>
+  </wpt>
+  <wpt lat="34.070612" lon="134.55174">
+    <name>Hostel PAQ Tokushima</name>
+    <type>accommodation</type>
+    <desc>Hostel with dormitories and private rooms, a 7-minute walk from Tokushima Station. Dormitory from ¥3,000 (Oct 2026); breakfast available. Check-in 15:00-22:00. Cards accepted; English spoken. Tel: 088-679-8990 https://www.hostelpaq.com</desc>
+  </wpt>
+  <wpt lat="34.072294" lon="134.552795">
+    <name>Hotel Astoria Tokushima</name>
+    <type>accommodation</type>
+    <desc>Hotel ホテルアストリア徳島 about 200 m from Tokushima Station. Cards accepted. Tel: 088-653-6151 https://www.astoria-tokushima.com</desc>
+  </wpt>
+  <wpt lat="34.137198" lon="134.474165">
+    <name>Hotel AZ Tokushima Itano</name>
+    <type>accommodation</type>
+    <desc>Business hotel ホテルAZ徳島板野店 about 1 km off the route between Temples 2 and 3. Breakfast included; cards accepted. Tel: 088-672-2611 https://www.az-hotel.com/itano/</desc>
+  </wpt>
+  <wpt lat="33.990365" lon="134.604292">
+    <name>Hotel AZ Tokushima Komatsushima</name>
+    <type>accommodation</type>
+    <desc>Business hotel ホテルAZ徳島小松島店, about 2 km off the route near Temple 18. Breakfast included. Check-in 15:00, check-out 10:00. https://www.az-hotel.com/komatsushima/</desc>
+  </wpt>
+  <wpt lat="34.073303" lon="134.550768">
+    <name>Hotel Sunroute Tokushima</name>
+    <type>accommodation</type>
+    <desc>Business hotel ホテルサンルート徳島 in front of Tokushima Station, with the Bizan-no-yu hot-spring bath on the top floor. Check-in 14:00, check-out 10:00. Cards accepted. https://www.sunroute-tokushima.com/</desc>
+  </wpt>
+  <wpt lat="34.077144" lon="134.544432">
+    <name>Hotel Sunshine Tokushima</name>
+    <type>accommodation</type>
+    <desc>Business hotel ホテルサンシャイン徳島 on National Route 192, 500 m from Tokushima Station, with a large bath on the top floor. From ¥6,600 room only, from ¥9,730 with dinner and breakfast (Oct 2026). Check-in 15:00. Cards accepted. Tel: 088-622-2333 http://hotel-sunshine.co.jp/</desc>
+  </wpt>
+  <wpt lat="34.065063" lon="134.558044">
+    <name>Hotel Taiyo Noen Tokushima Kenchomae</name>
+    <type>accommodation</type>
+    <desc>Farmer-run business hotel ホテルたいよう農園 徳島県庁前 in front of the prefectural office, known for its meals. From ¥6,500 room only, from ¥8,000 with dinner and breakfast (Oct 2026). Check-in 15:00, check-out 11:00. Cards accepted; English spoken. Tel: 088-655-5151 https://hotel.taiyo-noen.com/tokushima/</desc>
   </wpt>
   <wpt lat="34.068108" lon="134.550785">
     <name>Hyper inn Tokushima Ryogokubashi</name>
@@ -252,6 +420,11 @@ https://www.henro.org/place/hyper-inn-tokushima-ryogokubashi-tokushima-city-toku
 Features: Bike rental, Body wash, Breakfast buffet, Conditioner, Dryer, Hair dryer, Humidifier, Iron, Kettle, Microwave, Parking ¥700, Phone, Public computers, Razor, Refrigerator, Restaurant, Shampoo, Slippers, Tea set, Towels, TV, Vending machines, Washer, WIFI
 Tel: 0886251288
 hyper-inn.net</desc>
+  </wpt>
+  <wpt lat="33.73231" lon="134.532222">
+    <name>Ichi The Hostel</name>
+    <type>accommodation</type>
+    <desc>Guesthouse 壱 THE HOSTEL in front of Temple 23, with shared rooms for 15. From ¥4,000 room only (Oct 2026). Check-in 15:00. English spoken; cards accepted. Tel: 070-4412-5317 https://ichithehostel.com/</desc>
   </wpt>
   <wpt lat="34.08509" lon="134.485524">
     <name>Ido-ji Temple Tsuyado</name>
@@ -274,6 +447,11 @@ Tel: 0886421324</desc>
 https://www.henro.org/place/iyadani-kanon-rest-stop-anan-tokushima
 Features: Running water, Toilet</desc>
   </wpt>
+  <wpt lat="33.863096" lon="134.501404">
+    <name>Iyashitei Koku</name>
+    <type>accommodation</type>
+    <desc>Inn いやし亭 心空 at the foot of the Tairyuji ropeway, about 3 km off the walking path. Sixteen Japanese and Japanese-Western rooms, from ¥6,000 room only, from ¥10,000 with dinner and breakfast (Oct 2026); large bath. Check-in 14:00. Cards accepted; English spoken. Tel: 0884-63-0320 https://www.shirakuco.jp/</desc>
+  </wpt>
   <wpt lat="34.059146" lon="134.503199">
     <name>Jizoin Ikerikuchi Rest Area</name>
     <type>hut</type>
@@ -282,6 +460,16 @@ Features: Running water, Toilet</desc>
 https://www.henro.org/place/jizoin-ikerikuchi-rest-area
 Features: Running water, Toilet
 ~1.2km off route</desc>
+  </wpt>
+  <wpt lat="34.074641" lon="134.550877">
+    <name>JR Hotel Clement Tokushima</name>
+    <type>accommodation</type>
+    <desc>City hotel JRホテルクレメント徳島 above Tokushima Station. From ¥8,100 room only, from ¥15,000 with dinner and breakfast (Oct 2026). Coin laundry. Check-in 14:00. Cards accepted. Tel: 088-656-3111 https://www.jrclement.co.jp/tokushima/</desc>
+  </wpt>
+  <wpt lat="34.120721" lon="134.378018">
+    <name>Jurakuji Shukubo</name>
+    <type>accommodation</type>
+    <desc>Temple lodging 十楽寺宿坊 (Komyo Kaikan, a modern building) at Temple 7. Dinner and breakfast. Cards accepted. Tel: 088-695-2150 https://jyuurakuji.com/</desc>
   </wpt>
   <wpt lat="34.037973" lon="134.463297">
     <name>Kadoya Ryokan</name>
@@ -308,10 +496,20 @@ Features: Running water, Toilet
     <name>Kamojima Hot Spring</name>
     <type>poi</type>
   </wpt>
+  <wpt lat="34.166212" lon="134.502136">
+    <name>Kanbaien</name>
+    <type>accommodation</type>
+    <desc>Minshuku 観梅苑 on the approach to Ōasahiko Shrine (Awa Ichinomiya), 700 m from Temple 1. Seven rooms; dinner and breakfast (7:00) available. Pickup from JR Bando Station and the Naruto-nishi highway bus stop; luggage kept for pilgrims during the walk. Check-in 15:00-19:00, check-out 9:30. Cards accepted. Tel: 088-689-0697 https://travel.rakuten.co.jp/HOTEL/197880/197880.html</desc>
+  </wpt>
   <wpt lat="34.03411" lon="134.40632">
     <name>Karuizawa Camp</name>
     <type>campsite</type>
     <desc>Campground 軽井沢キャンプ場 beside the Akui river, under 100 m from the path, 6.7 km before Temple 13. Own tent ¥1,000, shower ¥300, bath ¥500 (Oct 2026); kitchen and vending machines. Open March to November only; check-in from 13:00. Tel: 088-678-0981 https://www.karuizawa-camp.com/</desc>
+  </wpt>
+  <wpt lat="33.927841" lon="134.495557">
+    <name>Katsuura Ebisu-no-sato</name>
+    <type>accommodation</type>
+    <desc>Lodging 勝浦 夷の里 in Katsuura, about 2 km off the route on the way to the bangai temple Jigenji. Room only. Bookings by Instagram message (katsuura_ebisunosato). Tel: 0885-42-4655</desc>
   </wpt>
   <wpt lat="34.067298" lon="134.318565">
     <name>Kawashima Bridge Pilgrim Rest Area</name>
@@ -333,9 +531,84 @@ Features: Toilet</desc>
     <type>poi</type>
     <desc>Bus stop 刑務所前 (&quot;prison stop&quot;) beside Tokushima Prison, about 200 m off the path 3.6 km before Temple 13; buses start here. Tokushima Bus Ichinomiya (18) and Amanohara-nishi (17) lines to Tokushima Station: 13 departures on weekdays, 11 at weekends, first 6:45, last 19:25 on weekdays and 20:07 at weekends (Oct 2026).</desc>
   </wpt>
+  <wpt lat="33.74741" lon="134.557386">
+    <name>Kuni-Masuda Farm Minshuku</name>
+    <type>accommodation</type>
+    <desc>Farm minshuku 農家民宿 クニ舛田 at Ebisuhama, about 4 km before Temple 23. Four rooms; dinner and breakfast (from 6:30). Check-in 15:00, check-out 9:00. Cash only. Bookings by email to tomoioi707@gmail.com. Tel: 0884-77-2173 https://www.kuni-masuda.com/</desc>
+  </wpt>
   <wpt lat="33.9245" lon="134.49647">
     <name>Maekama Campground</name>
     <type>campsite</type>
+  </wpt>
+  <wpt lat="33.929296" lon="134.518211">
+    <name>Mikan no Yado</name>
+    <type>accommodation</type>
+    <desc>Minshuku みかんの宿 at the foot of the climb to Temple 20, 2.7 km below the temple. Three rooms, ¥5,500 room only, ¥8,800 with dinner and breakfast (Oct 2026). Check-in 15:00, check-out 9:00. Cash only. Bookings by phone. Tel: 090-1324-8952</desc>
+  </wpt>
+  <wpt lat="33.969264" lon="134.600903">
+    <name>Minpaku Funanosato</name>
+    <type>accommodation</type>
+    <desc>Pilgrim lodging 民泊鮒の里 near Temple 19, modelled on an old henro inn with an irori hearth, keeping guest books from the late Edo period on. Seven rooms, no meals. Pickups by arrangement. Check-in 15:00. Cash only. Bookings by phone. Tel: 0885-37-1127</desc>
+  </wpt>
+  <wpt lat="33.850397" lon="134.586148">
+    <name>Minpaku Hinomaru Shoten</name>
+    <type>accommodation</type>
+    <desc>Lodging 民泊日の丸商店 about 500 m from Temple 22. Three rooms, ¥4,500 room only (Oct 2026). Check-in 15:00. Cash only. Bookings by email by the day before, to hinomarubrand@gmail.com. Tel: 0884-36-2017</desc>
+  </wpt>
+  <wpt lat="33.847623" lon="134.578883">
+    <name>Minpaku Pandaya</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民泊パンダヤ near the shrine before Temple 22. Six rooms, ¥5,500 room only, ¥8,800 with dinner and breakfast (Oct 2026). Check-in 14:00-18:00, check-out 9:00. English and Chinese spoken; cash only. Bookings by email to pandaya.hide@docomo.ne.jp. Tel: 090-1573-6581</desc>
+  </wpt>
+  <wpt lat="33.838728" lon="134.587983">
+    <name>Minpaku Tomako</name>
+    <type>accommodation</type>
+    <desc>Lodging 体験民宿とまこ on the path 1.6 km south of Temple 22. Two rooms, ¥5,000 room only, ¥8,000 with dinner and breakfast (Oct 2026). Check-in 15:30. Cash only. Bookings by email by the day before, to tomakominpaku@gmail.com. Tel: 080-3836-2028</desc>
+  </wpt>
+  <wpt lat="33.920111" lon="134.557678">
+    <name>Minshuku Aoi</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民宿 碧 on an orchard, about 3 km off the current route, on the old path to Temple 21 (Kamo-dō, a national historic site). Three rooms, room only; breakfast free. Free washer and dryer; shuttle to the current route at Asebi. Check-in 15:00-18:00, check-out 10:00. English spoken; cash only. Tel: 0884-25-0267 https://aoi-kajyu.com/</desc>
+  </wpt>
+  <wpt lat="34.065509" lon="134.319271">
+    <name>Minshuku Awarakuya</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民宿 あわらくや 6 km from Temple 10, a five-minute walk past the Kawashima submersible bridge. Three rooms; dinner and breakfast (6:00). Pickups by arrangement. Check-in from 16:00, check-out 9:00. Cards accepted; English spoken. Tel: 0883-25-3699</desc>
+  </wpt>
+  <wpt lat="33.988041" lon="134.581007">
+    <name>Minshuku Chiba</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民宿ちば at the Niomon gate of Temple 18, 500 m below the main hall. Six rooms; dinner and breakfast (6:00). Check-in 15:00-19:00, check-out 9:00. Cash only. Bookings by email to minshuku.chiba18@gmail.com. Tel: 0885-33-1508</desc>
+  </wpt>
+  <wpt lat="33.885922" lon="134.544127">
+    <name>Minshuku Hotaru-no-yado</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民宿ほたるの宿 below Temple 21, on the Shikoku-no-michi path. Dinner and breakfast. Check-in 12:00, check-out 10:00. Cash only. Bookings by email to toshi.haru.11111@gmail.com. Tel: 090-4506-4506</desc>
+  </wpt>
+  <wpt lat="33.768959" lon="134.577242">
+    <name>Minshuku Juen</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民宿 樹園 about 500 m from Tainohama beach and the foot of the Kaidani pass path; local seafood. Seven rooms, ¥5,000 room only, ¥8,000 with dinner and breakfast (Oct 2026). Free washer. Check-in 15:00. Cash only. Bookings by phone. Tel: 0884-78-1695</desc>
+  </wpt>
+  <wpt lat="34.123847" lon="134.404335">
+    <name>Minshuku Kotobuki Shokudo</name>
+    <type>accommodation</type>
+    <desc>Minshuku 民宿 寿食堂 about 15 km from Temple 1, run by a family udon maker: handmade egg udon. Seven rooms; dinner and breakfast (6:30). Check-in 12:00-19:00. Cash only. Tel: 088-694-2024 https://www.minshuku-kotobuki.com/</desc>
+  </wpt>
+  <wpt lat="33.772752" lon="134.585775">
+    <name>Minshuku Meizanso</name>
+    <type>accommodation</type>
+    <desc>Minshuku 明山荘 at Tainohama beach, where the Kaidani pass path comes down; local seafood and a large bath. Seven rooms; dinner and breakfast (7:00). Check-in 15:00, check-out 9:00. Cards accepted. Tel: 0884-78-1717 https://meizansou.com/</desc>
+  </wpt>
+  <wpt lat="33.851633" lon="134.582863">
+    <name>Minshuku Sazanka</name>
+    <type>accommodation</type>
+    <desc>Pilgrim inn 民宿 山茶花 near the Niomon gate of Temple 22. Eight rooms, ¥5,500 room only, ¥8,800 with dinner and breakfast (Oct 2026). Free washer and dryer. Check-in 15:00-18:00, check-out 9:00. Cash only. Bookings by phone. Tel: 0884-36-3701</desc>
+  </wpt>
+  <wpt lat="33.769471" lon="134.590388">
+    <name>Minshuku Yukiso</name>
+    <type>accommodation</type>
+    <desc>Minshuku ゆき荘 at Tainohama. Listed by henroyado.com without details; cash only. Tel: 0884-78-0513</desc>
   </wpt>
   <wpt lat="34.132254" lon="134.420597">
     <name>Mizobuchi Kogyo Zenkonyado</name>
@@ -374,6 +647,31 @@ Source: pilgrim-shikoku.net/mizobuchiindustry-freelodging; yamap.com/moments/752
 https://www.henro.org/place/oi-pilgrim-rest-area
 --- research (2022): Free / Closed school opened to walking pilgrims by local residents&apos; assoc - the standard camp between T20 Kakurinji (~3km) and T21 Tairyuji (~4km). Sleep under gym eaves; water + toilets. Rules: do NOT enter classrooms, NO fires, pack out rubbish. No booking.
 Source: mitizoi.exblog.jp/15376328; mititabi.com 2022</desc>
+  </wpt>
+  <wpt lat="33.908802" lon="134.518292">
+    <name>Onyado Kiryu</name>
+    <type>accommodation</type>
+    <desc>Guesthouse 御宿亀龍 on the path between Temples 20 and 21. Three rooms; dinner and breakfast, vegetarian on request. Check-in 15:00, check-out 9:00. English spoken; cash only. Bookings by email by the day before, to onyado.kiryu@docomo.ne.jp. Tel: 090-3204-8821 https://kiryu-shikoku.jp/</desc>
+  </wpt>
+  <wpt lat="34.08455" lon="134.48547">
+    <name>Onyado Matsumotoya</name>
+    <type>accommodation</type>
+    <desc>Pilgrim inn おんやど松本屋 beside the gate of Temple 17. Four rooms, ¥6,000 room only, ¥8,800 with dinner and breakfast (Oct 2026). Free washer and dryer; no Wi-Fi. Check-in 15:00-19:00, check-out 9:00. Cash only. Bookings by phone. Tel: 088-642-3772</desc>
+  </wpt>
+  <wpt lat="34.159722" lon="134.501924">
+    <name>Otoriien Ryokan</name>
+    <type>accommodation</type>
+    <desc>Ryokan 旅館 大鳥居苑 beside Temple 1. Seven rooms; dinner and breakfast (7:00) available. Check-in 15:00 (earlier by arrangement), check-out 10:00. Cards accepted; washer and dryer free. Tel: 088-689-3523 https://ootoriien.com/</desc>
+  </wpt>
+  <wpt lat="34.065784" lon="134.550569">
+    <name>Otsuru Ryokan</name>
+    <type>accommodation</type>
+    <desc>Ryokan 大鶴旅館 in Tokushima city, much used by walking pilgrims. Four rooms, ¥3,000 room only (Oct 2026). Free washer and dryer; no Wi-Fi. Check-in 15:00-19:00. Cash only. Bookings by phone. Tel: 088-653-0768</desc>
+  </wpt>
+  <wpt lat="33.733021" lon="134.534164">
+    <name>Oyado Hiwasa</name>
+    <type>accommodation</type>
+    <desc>Inn お宿日和佐 in a restored old house in Hiwasa, about 600 m from Temple 23; guest kitchen. Room only. English and French spoken; cards accepted. Tel: 080-9830-3920 http://oyadohiwasa.com/</desc>
   </wpt>
   <wpt lat="33.932422" lon="134.522667">
     <name>Pilgrim Hut No.11 Katsuura</name>
@@ -460,6 +758,11 @@ Features: Running water, Toilet</desc>
 https://www.henro.org/place/pilgrim-hut-no-57-donari
 Features: Running water, Toilet</desc>
   </wpt>
+  <wpt lat="33.944288" lon="134.549144">
+    <name>Pilgrimage Lodge Otsuru</name>
+    <type>accommodation</type>
+    <desc>Inn きちん宿 お鶴 in an old Japanese house, about 7 km before Temple 20; open since February 2024. Four rooms, ¥5,500 room only, ¥8,800 with dinner and breakfast (Oct 2026). Check-in 15:00-19:00, check-out 9:00. Cards accepted. Tel: 090-3183-8155 jumbomami1507yo@yahoo.co.jp</desc>
+  </wpt>
   <wpt lat="33.73029" lon="134.530247">
     <name>Roadside Station Hiwasa</name>
     <type>hut</type>
@@ -483,10 +786,20 @@ Features: Running water, Toilet</desc>
     <type>waypoint</type>
     <desc>Note on the source map: the henro-michi website and the base map disagree with this line after here. The source map also carries a separate 3.6 km &quot;Henro from T17&quot; line for this stretch.</desc>
   </wpt>
+  <wpt lat="34.092721" lon="134.307997">
+    <name>Ryokan Business Hotel Yawata</name>
+    <type>accommodation</type>
+    <desc>Ryokan and business hotel 手打ちうどん旅館ビジネスホテル八幡, 2 km from Temple 10, with an udon restaurant. 30 rooms, from ¥5,830 room only (Oct 2026). Check-in 16:00-19:00, check-out 10:00. Cash only. Tel: 0883-36-5327 https://www.u-yawata.com/</desc>
+  </wpt>
   <wpt lat="33.9675" lon="134.346941">
     <name>Ryokan Sakuraya</name>
     <type>accommodation</type>
     <desc>Ryokan さくらや旅館 in central Kamiyama beside the Yorii-naka bus stop (buses to Tokushima Station, last 19:15). ¥6,000 room only, ¥8,500 with dinner and breakfast (Oct 2026). Cash only. Tel: 088-676-0036</desc>
+  </wpt>
+  <wpt lat="34.068965" lon="134.478398">
+    <name>Ryokan Urokoro</name>
+    <type>accommodation</type>
+    <desc>Ryokan 鱗楼, about 120 years old and known for its dinners, near Temple 16. Five rooms, ¥5,500 room only, ¥9,350 with dinner and breakfast (Oct 2026). Pickups around Temple 13 and nearby. Check-in 15:00. Cards accepted; English spoken. Tel: 088-642-4337 https://urokorou.com/</desc>
   </wpt>
   <wpt lat="34.055767" lon="134.353997">
     <name>Ryokan Yoshino</name>
@@ -498,6 +811,11 @@ Features: Running water, Toilet</desc>
     <type>hut</type>
     <desc>Rest hut at about 500 m on the Temple 11 → 12 climb, with a reliable spring (柳の水) and a toilet. A posted notice allows overnight stays in emergencies only; futon and power outlets inside (2022 report). The source map notes a possible tent spot further on at the Ipponsugi-an mountain hut (34.00759, 134.30514). 柳水庵休憩所 https://www.henro.org/place/ryusuian-rest-area-kamiyama-tokushima</desc>
   </wpt>
+  <wpt lat="34.072183" lon="134.355807">
+    <name>Sakura Ryokan</name>
+    <type>accommodation</type>
+    <desc>Shōwa-era ryokan さくら旅館 in front of JR Kamojima Station, about 2.5 km before Temple 11. Twelve rooms, ¥5,000 room only, ¥7,000 with dinner and breakfast (Oct 2026); rice balls for the next day. Check-in 15:00-19:00. Cash only; English spoken. Bookings by phone. Tel: 0883-24-2404</desc>
+  </wpt>
   <wpt lat="34.071569" lon="134.550519">
     <name>Seifu Business Hotel</name>
     <type>accommodation</type>
@@ -506,6 +824,16 @@ Features: Running water, Toilet</desc>
 https://www.henro.org/place/seifu-business-hotel
 Features: Bidet, Bike rental, Body wash, Hair dryer, Iron, Kettle, Parking, Postal services, Shampoo, Towels, TV, WIFI, Yukata / bathrobe
 Tel: 0886255708</desc>
+  </wpt>
+  <wpt lat="34.069618" lon="134.549469">
+    <name>Self-inn Tokushima Higashisenba</name>
+    <type>accommodation</type>
+    <desc>Business hotel セルフイン徳島東船場, 15 minutes&apos; walk from Tokushima Station, close to the route. From ¥4,300 (Oct 2026); breakfast 7:00. Free washer and dryer. Check-in 16:00-21:00, check-out 10:00. Cards accepted. Tel: 088-626-0818</desc>
+  </wpt>
+  <wpt lat="34.078728" lon="134.51889">
+    <name>Self-inn Tokushima Kuramoto-ekimae</name>
+    <type>accommodation</type>
+    <desc>Business hotel セルフイン徳島蔵本駅前 in front of JR Kuramoto Station, about 4 km past Temple 17. From ¥4,700 (Oct 2026); breakfast 6:30. Free washer and dryer. Check-in 16:00-21:00, check-out 10:00. Cards accepted. Tel: 088-676-2818</desc>
   </wpt>
   <wpt lat="34.06859" lon="134.5467">
     <name>Shinmachi Onsen</name>
@@ -516,10 +844,20 @@ Tel: 0886255708</desc>
     <type>mountain</type>
     <desc>Inner shrine of Temple 12 (焼山寺 奥の院 蔵王大権現) beside the summit of Mt Shosanji (938 m). An out-and-back from the temple. Position from OpenStreetMap.</desc>
   </wpt>
+  <wpt lat="34.073452" lon="134.548674">
+    <name>Smile Hotel Tokushima</name>
+    <type>accommodation</type>
+    <desc>Business hotel スマイルホテル徳島 a 5-minute walk from Tokushima Station. From ¥5,500 room only (Oct 2026). Check-in 15:00. Cards accepted. Tel: 088-626-0889 https://smile-hotels.com/hotels/show/tokushima</desc>
+  </wpt>
   <wpt lat="34.07321" lon="134.55062">
     <name>Spa Bizan no Yu</name>
     <type>poi</type>
     <desc>https://sunroute-tokushima.com/</desc>
+  </wpt>
+  <wpt lat="34.072896" lon="134.550781">
+    <name>Subaruyado Yoshino</name>
+    <type>accommodation</type>
+    <desc>Japanese-style inn 阿波の国・昴宿よしの a 3-minute walk from Tokushima Station. No meals. Cards accepted. Tel: 088-654-2255 https://www.subaruyado-yoshino.com/</desc>
   </wpt>
   <wpt lat="33.987025" lon="134.326663">
     <name>Sudachi-an</name>
@@ -533,6 +871,16 @@ Tel: 0886255708</desc>
 須見肥料店遍路小屋
 https://www.henro.org/place/sumi-fertilizer-warehouse-pilgrim-hut-awa-tokushima
 Features: Toilet</desc>
+  </wpt>
+  <wpt lat="34.012962" lon="134.579514">
+    <name>Super Hotel Tokushima Komatsushima</name>
+    <type>accommodation</type>
+    <desc>Chain business hotel スーパーホテル徳島・小松島天然温泉 with a natural hot-spring bath, about 1 km off the route before Temple 18. Check-in 15:00. Cards accepted. Tel: 0885-32-9001 https://www.superhotel.co.jp/s_hotels/komatsushima/</desc>
+  </wpt>
+  <wpt lat="34.152507" lon="134.465059">
+    <name>Tabibito-no-yado Michishirube</name>
+    <type>accommodation</type>
+    <desc>Inn 旅人の宿 道しるべ near Temple 3. Dinner and breakfast available. Cash only. Bookings by email at least four days ahead to lamp-an@m5.dion.ne.jp. Tel: 088-672-6171</desc>
   </wpt>
   <wpt lat="33.770981" lon="134.580497">
     <name>Tai no Hama Pilgrim Rest Hut</name>
@@ -555,6 +903,36 @@ Source: hagimorilist.com PDF 2026-02-18; mititabi.com 2022 (2026)</desc>
     <type>water</type>
     <desc>Rest hut on Tamagatoge pass (玉ヶ峠, about 450 m) between Temple 12 and Temple 13. Water tap (working Nov 2025); toilet closed. Signs on the hut forbid camping. https://www.henro.org/place/tamagatao-rest-stop-kamiyama-tokushima</desc>
   </wpt>
+  <wpt lat="33.96814" lon="134.606461">
+    <name>Tatsueji Shukubo</name>
+    <type>accommodation</type>
+    <desc>Temple lodging 立江寺宿坊 at Temple 19. ¥5,500 room only, ¥7,000 with dinner and breakfast (Oct 2026). Check-in by 16:30; prayers at 17:00; check-out 8:00. Free washer. Cash only. Tel: 0885-37-1019 https://www.tatsueji.com/stay</desc>
+  </wpt>
+  <wpt lat="34.065002" lon="134.561325">
+    <name>Tokushima Grandvrio Hotel</name>
+    <type>accommodation</type>
+    <desc>Hotel 徳島グランヴィリオホテル in Tokushima city. Check-in 15:00, check-out 11:00. English spoken. Tel: 088-624-1111 https://www.grandvrio-hotelresort.com/tokushima/</desc>
+  </wpt>
+  <wpt lat="34.06696" lon="134.547138">
+    <name>Tokushima Washington Hotel Plaza</name>
+    <type>accommodation</type>
+    <desc>Hotel 徳島ワシントンホテルプラザ in central Tokushima. Check-in 14:00, check-out 10:00. Cards accepted. Tel: 088-653-7111 https://www.washingtonhotel.co.jp/whp/tokushima/</desc>
+  </wpt>
+  <wpt lat="34.071384" lon="134.552868">
+    <name>Toyoko Inn Tokushima Ekimae</name>
+    <type>accommodation</type>
+    <desc>Chain business hotel 東横INN徳島駅前 by Tokushima Station. Breakfast included. Check-in 15:00, check-out 10:00. Cards accepted. https://www.toyoko-inn.com/search/detail/00192/</desc>
+  </wpt>
+  <wpt lat="34.068996" lon="134.546953">
+    <name>Toyoko Inn Tokushima-eki Bizan-guchi</name>
+    <type>accommodation</type>
+    <desc>Chain business hotel 東横INN徳島駅眉山口 near Tokushima Station. Check-in 14:00, check-out 10:00. Cards accepted. https://www.toyoko-inn.com/search/detail/00116/</desc>
+  </wpt>
+  <wpt lat="34.069878" lon="134.551103">
+    <name>Tsurugisan Hotel</name>
+    <type>accommodation</type>
+    <desc>Business hotel 剣山ホテル near Tokushima Station. No meals; cards accepted. Tel: 088-654-3331 https://travel.rakuten.co.jp/HOTEL/8722/8722.html</desc>
+  </wpt>
   <wpt lat="34.008519" lon="134.374847">
     <name>Uemura Ryokan</name>
     <type>accommodation</type>
@@ -564,6 +942,11 @@ Source: hagimorilist.com PDF 2026-02-18; mititabi.com 2022 (2026)</desc>
     <name>WEEK Kamiyama</name>
     <type>accommodation</type>
     <desc>Inn at Shimobun, about 1.7 km off the path. ¥11,000 with breakfast, ¥14,300 with dinner and breakfast (Oct 2026). Tel: 088-677-0313 https://week-kamiyama.jp</desc>
+  </wpt>
+  <wpt lat="34.071778" lon="134.545078">
+    <name>Yadoya Hiwasa Tokushima</name>
+    <type>accommodation</type>
+    <desc>Business hotel Yadoya Hiwasa 徳島 at the foot of Mt Bizan. 35 rooms, ¥4,500 room only (Oct 2026). Check-in 16:00. Cards accepted. Tel: 088-661-1381 https://yadoyahiwasa.com/</desc>
   </wpt>
   <wpt lat="33.73148" lon="134.52847">
     <name>Yakuoji Onsen</name>

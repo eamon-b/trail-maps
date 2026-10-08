@@ -137,6 +137,22 @@ describe('assignWaypointIds', () => {
     );
   });
 
+  it('keeps an id when a same-type newcomer lands within the radius and comes first', () => {
+    // A temple's free hut is on the map; its lodging is added 20 m away later
+    // and sorts before it. The hut keeps its id and the lodging mints its own.
+    const registry: WaypointRegistry = {};
+    const hut = { name: 'Anrakuji Tsuyado', type: 'accommodation', lat: 34.11808, lon: 134.388518 };
+    const [hutId] = assignWaypointIds(TRAIL, [hut], registry);
+
+    const lodging = { name: 'Anrakuji Shukubo', type: 'accommodation', lat: movedNorth(34.11808, 20), lon: 134.388518 };
+    const ids = assignWaypointIds(TRAIL, [lodging, hut], registry);
+
+    expect(ids[1]).toBe(hutId);
+    expect(ids[0]).not.toBe(hutId);
+    expect(registry[TRAIL]).toHaveLength(2);
+    expect(registry[TRAIL].some((e) => e.retired)).toBe(false);
+  });
+
   it('two genuinely-distinct nearby waypoints each mint their own id on a first build', () => {
     // Both within the match radius, same type, but registry starts empty, so
     // there is no pre-existing entry to be ambiguous about — each mints.

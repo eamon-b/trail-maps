@@ -9,7 +9,8 @@ import TestRenderer, { act, type ReactTestRenderer, type TestInstance } from 're
 import type { PlanDocument } from '@lib/plan-types';
 import type { TrailPOI } from '@lib/trail-types';
 import { toggleStop } from '@lib/plan-editor';
-import { StopsSection } from '../StopsSection';
+import type { AlternateMarker, PlanAlternate } from '@lib/plan-alternates';
+import { StopsSection, alternateCardSlots } from '../StopsSection';
 import type { StopCandidate } from '../plan-stops';
 
 jest.mock('../../../theme', () => ({
@@ -310,3 +311,63 @@ function one(tree: ReactTestRenderer, label: string): TestInstance {
   expect(found).toHaveLength(1);
   return found[0];
 }
+
+describe('StopsSection alternates', () => {
+  const alternate: PlanAlternate = {
+    name: 'Alt: Ridge',
+    index: 0,
+    startKm: 20,
+    endKm: 40,
+    distanceKm: 30,
+    mainDistanceKm: 20,
+    ascentM: 300,
+    descentM: 280,
+  };
+  const branch = (taken: boolean, activeKm = 20): AlternateMarker => ({
+    alternate,
+    taken,
+    kind: 'branch',
+    activeKm,
+  });
+  const rejoin: AlternateMarker = { alternate, taken: true, kind: 'rejoin', activeKm: 50 };
+  const press = (tree: ReactTestRenderer, label: string) => {
+    const node = byLabel(tree, label).find((n) => typeof n.props.onPress === 'function');
+    if (!node) throw new Error(`nothing to press for ${label}`);
+    act(() => (node.props.onPress as () => void)());
+  };
+
+  it('puts a branch after the places at its km and a rejoin before them', () => {
+    const at = [{ activeKm: 10 }, { activeKm: 20 }, { activeKm: 35 }, { activeKm: 50 }];
+    const slots = alternateCardSlots(at, [branch(true), rejoin]);
+    expect([...slots.entries()].map(([i, m]) => [i, m.map((x) => x.kind)])).toEqual([
+      [2, ['branch']],
+      [3, ['rejoin']],
+    ]);
+    expect([...alternateCardSlots(at, [branch(false, 99)]).keys()]).toEqual([4]);
+  });
+
+  it('offers an alternate where it branches off, with what it changes', () => {
+    const onAlternate = jest.fn();
+    const tree = render({ alternates: [branch(false)], onAlternate });
+    const text = allText(tree);
+    expect(text).toContain('⑂ Alt: Ridge branches off here');
+    expect(text).toContain('30.0 km · ↑ 300 m · ↓ 280 m · 10.0 km longer than the main route');
+    // Between the rows either side of km 20.
+    expect(text.indexOf('Ellery Creek')).toBeLessThan(text.indexOf('branches off'));
+    expect(text.indexOf('branches off')).toBeLessThan(text.indexOf('Serpentine Chalet'));
+    const take = hostByLabel(tree, 'Take this alternate: Alt: Ridge');
+    expect(take).toHaveLength(1);
+    press(tree, 'Take this alternate: Alt: Ridge');
+    expect(onAlternate).toHaveBeenCalledWith('Alt: Ridge', true);
+  });
+
+  it('a taken alternate has a way back and a rejoin card', () => {
+    const onAlternate = jest.fn();
+    const tree = render({ alternates: [branch(true), rejoin], onAlternate });
+    const text = allText(tree);
+    expect(text).toContain('⑂ Taking Alt: Ridge');
+    expect(text).toContain('↩ Alt: Ridge rejoins the main route');
+    press(tree, 'Stay on the main route: Alt: Ridge');
+    expect(onAlternate).toHaveBeenCalledWith('Alt: Ridge', false);
+  });
+});

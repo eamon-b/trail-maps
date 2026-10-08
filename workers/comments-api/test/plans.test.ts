@@ -365,6 +365,47 @@ describe('PUT /v1/plans/:id', () => {
     ).toBe(201);
   });
 
+  it('stores the alternates a plan takes and the stops on them', async () => {
+    const device = await registerDevice('Alternates');
+    const id = crypto.randomUUID();
+    const stops = [
+      { km: 35, name: 'Camp 35', nights: 1 },
+      // Same km on the alternate's own scale: a different place.
+      { km: 35, name: 'Ridge Camp', nights: 1, alternate: 'Alt: Ridge' },
+      { km: 50, name: 'Hut', nights: 1 },
+    ];
+    const res = await putPlan(device, id, planBody(id, { alternates: ['Alt: Ridge'], stops }));
+    expect(res.status).toBe(201);
+    const { document } = (await res.json()) as PlanSyncEntry;
+    expect(document.alternates).toEqual(['Alt: Ridge']);
+    expect(document.stops).toEqual(stops);
+  });
+
+  it('rejects a stop on an alternate the plan does not take, and bad alternates', async () => {
+    const device = await registerDevice('Bad alternates');
+    const cases: Array<[Partial<Omit<PlanDocument, 'updatedAt'>>, string]> = [
+      [{ stops: [{ km: 35, name: 'Ridge Camp', nights: 1, alternate: 'Alt: Ridge' }] }, 'invalid_stop'],
+      [{ alternates: ['Alt: Ridge', 'Alt: Ridge'] }, 'invalid_alternates'],
+      [{ alternates: [''] }, 'invalid_alternate'],
+      [
+        {
+          alternates: ['Alt: Ridge'],
+          stops: [
+            { km: 35, name: 'A', nights: 1, alternate: 'Alt: Ridge' },
+            { km: 35.001, name: 'B', nights: 1, alternate: 'Alt: Ridge' },
+          ],
+        },
+        'duplicate_stop_km',
+      ],
+    ];
+    for (const [overrides, code] of cases) {
+      const planId = crypto.randomUUID();
+      const res = await putPlan(device, planId, planBody(planId, overrides));
+      expect(res.status, code).toBe(400);
+      expect(((await res.json()) as { error: { code: string } }).error.code).toBe(code);
+    }
+  });
+
   it('accepts an empty plan name — the mobile client mints plans unnamed', async () => {
     const device = await registerDevice('Unnamed');
     const id = crypto.randomUUID();

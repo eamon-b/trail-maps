@@ -1021,12 +1021,36 @@ export function assertPlanDocumentWithinLimits(plan: PlanDocument): void {
       }
     }
   }
-  for (let i = 1; i < plan.stops.length; i++) {
-    if (Math.abs(plan.stops[i].km - plan.stops[i - 1].km) < KM_EPSILON) {
+  if (plan.alternates !== undefined) {
+    if (plan.alternates.length > PLAN_LIMITS.alternatesMax) {
       throw new Error(
-        `plan-editor: two stops share km ${plan.stops[i].km} ("${plan.stops[i - 1].name}" and "${plan.stops[i].name}")`,
+        `plan-editor: ${plan.alternates.length} alternates exceeds ${PLAN_LIMITS.alternatesMax}`,
       );
     }
+    for (const name of plan.alternates) {
+      if (name.trim().length === 0 || name.length > PLAN_LIMITS.alternateNameMax) {
+        throw new Error(`plan-editor: invalid alternate name ${JSON.stringify(name)}`);
+      }
+    }
+  }
+  // One stop per place on each line: a stop on an alternate is measured on the
+  // alternate's own scale, which overlaps the main route's km, so only stops on
+  // the same line can be the same place.
+  const lastOnLine = new Map<string, PlanStop>();
+  for (const stop of plan.stops) {
+    if (stop.alternate !== undefined) {
+      if (!plan.alternates?.includes(stop.alternate)) {
+        throw new Error(`plan-editor: "${stop.name}" is on an alternate the plan does not take`);
+      }
+    }
+    const line = stop.alternate ?? '';
+    const previous = lastOnLine.get(line);
+    if (previous && Math.abs(stop.km - previous.km) < KM_EPSILON) {
+      throw new Error(
+        `plan-editor: two stops share km ${stop.km} ("${previous.name}" and "${stop.name}")`,
+      );
+    }
+    lastOnLine.set(line, stop);
   }
   const bytes = planDocumentBytes(plan);
   if (bytes > PLAN_LIMITS.documentBytes) {
@@ -1046,6 +1070,7 @@ function isPlanStop(value: unknown): value is PlanStop {
   if (typeof value.nights !== 'number' || !Number.isInteger(value.nights) || value.nights < 1) return false;
   if (value.note !== undefined && typeof value.note !== 'string') return false;
   if (value.booked !== undefined && typeof value.booked !== 'boolean') return false;
+  if (value.alternate !== undefined && typeof value.alternate !== 'string') return false;
   return true;
 }
 
@@ -1077,6 +1102,12 @@ export function isPlanDocument(value: unknown): value is PlanDocument {
   if (
     value.resupplyStops !== undefined &&
     (!Array.isArray(value.resupplyStops) || !value.resupplyStops.every(id => typeof id === 'string'))
+  ) {
+    return false;
+  }
+  if (
+    value.alternates !== undefined &&
+    (!Array.isArray(value.alternates) || !value.alternates.every(name => typeof name === 'string'))
   ) {
     return false;
   }

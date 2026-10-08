@@ -104,6 +104,7 @@ export async function putPlan(
     stops: document.stops,
     version: document.version,
     ...(document.resupplyStops === undefined ? {} : { resupplyStops: document.resupplyStops }),
+    ...(document.alternates === undefined ? {} : { alternates: document.alternates }),
   };
   return apiRequest<PlanSyncEntry>(`/v1/plans/${encodeURIComponent(document.id)}`, {
     method: 'PUT',

@@ -44,6 +44,8 @@ import { getTrailIndexEntry, loadTrail, type TrailJson } from '../../src/service
 import { ensureTrailDownloaded } from '../../src/services/trail-data-updates';
 import { isCatalogTrailId } from '../../src/services/trail-catalog';
 import { resolveGuideTrail } from '../../src/features/guide/guide-trail';
+import { plannableTrail, planRouteOf } from '../../src/features/plan/use-plan-route';
+import { plannedRouteFor, planToRoute } from '@lib/plan-alternates';
 import { useSettingsStore } from '../../src/state/settings-store';
 import { usePlansStore } from '../../src/state/plans-store';
 import { selectPrefs, usePlanInputsStore } from '../../src/features/plan/plan-inputs-store';
@@ -131,13 +133,25 @@ export default function SharedPlanScreen() {
   // out of their NOBO-absolute storage, but it cannot reverse a track, so a
   // SOBO plan needs the reversed guide trail.
   const trailResolved = !!shared && rawTrail?.id === shared.trailId;
-  const trail = useMemo<TrailJson | null>(() => {
+  // Along the route the plan walks: the alternates it takes are spliced in
+  // (`@lib/plan-alternates`), and its stops read in that route's km.
+  const routed = useMemo<{ trail: TrailJson; plan: PlanDocument } | null>(() => {
     if (!shared || !trailResolved || !rawTrail?.trail) return null;
-    return resolveGuideTrail(
-      rawTrail.trail,
-      shared.document.direction === 'SOBO' ? 'reversed' : 'default',
-    );
+    const route = plannedRouteFor(plannableTrail(rawTrail.trail), shared.document);
+    return {
+      trail: planRouteOf(
+        rawTrail.trail,
+        resolveGuideTrail(
+          rawTrail.trail,
+          shared.document.direction === 'SOBO' ? 'reversed' : 'default',
+        ),
+        shared.document.direction === 'SOBO' ? 'reversed' : 'default',
+        route,
+      ),
+      plan: planToRoute(shared.document, route),
+    };
   }, [shared, trailResolved, rawTrail]);
+  const trail = routed?.trail ?? null;
 
   // Estimated at the reader's own pace and hours for this trail (defaults
   // until they set some): the estimates are for whoever is reading the plan.
@@ -147,8 +161,8 @@ export default function SharedPlanScreen() {
   // yet" unless it fits in a day — a plan shared a few days in is not one
   // enormous final day.
   const { days, unplanned } = useMemo<{ days: PlanDay[]; unplanned: PlanDay | null }>(() => {
-    if (!shared || !trail) return { days: [], unplanned: null };
-    const computed = computePlanDays(trail as unknown as PlanTrail, shared.document, {
+    if (!shared || !routed || !trail) return { days: [], unplanned: null };
+    const computed = computePlanDays(trail as unknown as PlanTrail, routed.plan, {
       baseKmh: PACE_KMH[prefs.pace],
     });
     const split = splitUnplannedTail(computed, finalDayMaxHours(prefs.dailyHours));
@@ -162,7 +176,7 @@ export default function SharedPlanScreen() {
       days: split.days.map(toPlanDay),
       unplanned: split.unplanned ? toPlanDay(split.unplanned) : null,
     };
-  }, [shared, trail, prefs.pace, prefs.dailyHours]);
+  }, [shared, routed, trail, prefs.pace, prefs.dailyHours]);
 
   const save = useCallback(
     async (doc: PlanDocument, trailId: string) => {

@@ -80,4 +80,15 @@ describe('plannedStopKms', () => {
   it('is empty without a plan', () => {
     expect(plannedStopKms(undefined, 'NOBO', TOTAL)).toEqual([]);
   });
+
+  it('leaves out a stop on an alternate, which is not on the main profile', () => {
+    const withAlternate = plan({
+      alternates: ['Alt: Ridge'],
+      stops: [
+        { waypointId: 'w_1', km: 20, name: 'Hut', nights: 1 },
+        { waypointId: 'w_ridge', km: 35, name: 'Ridge Camp', nights: 1, alternate: 'Alt: Ridge' },
+      ],
+    });
+    expect(plannedStopKms(withAlternate, 'NOBO', TOTAL)).toEqual([20]);
+  });
 });

@@ -30,11 +30,15 @@ import {
   resupplyGroupsFor,
   saveResupplyStops,
 } from '../../../src/features/plan/use-planned-resupply';
-import { selectResupplyStops, usePlansStore } from '../../../src/state/plans-store';
+import { selectPlan, selectResupplyStops, usePlansStore } from '../../../src/state/plans-store';
+import { usePlanRoute } from '../../../src/features/plan/use-plan-route';
 import { useSettingsStore } from '../../../src/state/settings-store';
 
 export default function ResupplyStopsScreen() {
-  const { trail, trailId, direction } = useGuide();
+  const { trailId, direction } = useGuide();
+  // The route the plan walks, so a town on an alternate the plan takes is
+  // offered, and the section's km (route km, from the Plan screen) line up.
+  const { trail } = usePlanRoute(usePlansStore(selectPlan(trailId)));
   const units = useSettingsStore((s) => s.units);
   const params = useLocalSearchParams<{ startKm?: string; endKm?: string }>();
 

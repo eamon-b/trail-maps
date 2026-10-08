@@ -305,7 +305,25 @@ function validatePlanStop(raw: unknown, index: number): PlanStop {
     if (value.booked) stop.booked = true;
   }
 
+  if (value.alternate !== undefined && value.alternate !== null) {
+    stop.alternate = validateAlternateName(value.alternate, `stops[${index}].alternate`);
+  }
+
   return stop;
+}
+
+/** An alternate's name, as `alternates` and a stop's `alternate` hold it. */
+function validateAlternateName(raw: unknown, field: string): string {
+  if (typeof raw !== 'string' || raw.trim().length === 0) {
+    throw planError('invalid_alternate', `${field} must be a non-empty string`);
+  }
+  if (raw.length > PLAN_LIMITS.alternateNameMax) {
+    throw planError(
+      'invalid_alternate',
+      `${field} must be at most ${PLAN_LIMITS.alternateNameMax} characters`
+    );
+  }
+  return raw;
 }
 
 /**
@@ -359,20 +377,50 @@ export function validatePlanDocument(
     throw planError('too_many_stops', `A plan may have at most ${PLAN_LIMITS.stopsMax} stops`);
   }
   const stops = body.stops.map((stop, i) => validatePlanStop(stop, i));
-  for (let i = 1; i < stops.length; i++) {
-    if (stops[i].km < stops[i - 1].km) {
-      throw planError('stops_unsorted', 'stops must be sorted by km ascending');
+
+  // The alternates the plan takes (plan-alternates.ts). Names are the trail's
+  // own and are not checked against it: the trail data can be rebuilt after a
+  // plan is made, and the clients ignore a name they do not know.
+  let alternates: string[] | undefined;
+  if (body.alternates !== undefined && body.alternates !== null) {
+    if (!Array.isArray(body.alternates)) {
+      throw planError('invalid_alternates', 'alternates must be an array of names');
     }
-    // The document's own rule (plans/day-planner.md): one stop per place. The
-    // list is ascending by here, so neighbours are the only pair that can
-    // collide, and `KM_EPSILON` is the same tolerance the editor matches with —
-    // two stops closer than that are one stop the client counted twice.
-    if (stops[i].km - stops[i - 1].km < KM_EPSILON) {
+    if (body.alternates.length > PLAN_LIMITS.alternatesMax) {
       throw planError(
-        'duplicate_stop_km',
-        `stops[${i}].km is the same place as stops[${i - 1}].km (within ${KM_EPSILON} km)`
+        'invalid_alternates',
+        `alternates may have at most ${PLAN_LIMITS.alternatesMax} entries`
       );
     }
+    alternates = body.alternates.map((name, i) => validateAlternateName(name, `alternates[${i}]`));
+    if (new Set(alternates).size !== alternates.length) {
+      throw planError('invalid_alternates', 'alternates must not repeat a name');
+    }
+  }
+
+  const lastOnLine = new Map<string, number>();
+  for (let i = 0; i < stops.length; i++) {
+    if (i > 0 && stops[i].km < stops[i - 1].km) {
+      throw planError('stops_unsorted', 'stops must be sorted by km ascending');
+    }
+    const line = stops[i].alternate;
+    if (line !== undefined && !alternates?.includes(line)) {
+      throw planError('invalid_stop', `stops[${i}].alternate is not one of the plan's alternates`);
+    }
+    // The document's own rule (plans/day-planner.md): one stop per place. The
+    // list is ascending by here, so on each line (the main route, or one
+    // alternate — whose km is its own scale, overlapping the main route's) the
+    // previous stop is the only one that can collide, and `KM_EPSILON` is the
+    // same tolerance the editor matches with — two stops closer than that are
+    // one stop the client counted twice.
+    const previous = lastOnLine.get(line ?? '');
+    if (previous !== undefined && stops[i].km - stops[previous].km < KM_EPSILON) {
+      throw planError(
+        'duplicate_stop_km',
+        `stops[${i}].km is the same place as stops[${previous}].km (within ${KM_EPSILON} km)`
+      );
+    }
+    lastOnLine.set(line ?? '', i);
   }
 
   const seenWaypoints = new Set<string>();
@@ -411,6 +459,10 @@ export function validatePlanDocument(
       );
     }
     document.resupplyStops = body.resupplyStops.map((id) => validateWaypointId(id));
+  }
+
+  if (alternates !== undefined && alternates.length > 0) {
+    document.alternates = alternates;
   }
 
   return document;

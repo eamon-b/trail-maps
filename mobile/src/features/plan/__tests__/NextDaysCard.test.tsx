@@ -404,3 +404,32 @@ describe('NextDaysCard', () => {
     });
   });
 });
+
+describe('NextDaysCard folded', () => {
+  it('folds to its heading and where it would start, and unfolds on a tap', () => {
+    const onExpandedChange = jest.fn();
+    const tree = render({ expanded: false, onExpandedChange });
+    const text = allText(tree);
+    expect(text).toContain('Plan the next few days');
+    expect(text).toContain('Suggested stops from Ellery Creek · 42.0 km');
+    expect(hostByLabel(tree, 'Suggest plans')).toHaveLength(0);
+    expect(hostByLabel(tree, 'More days')).toHaveLength(0);
+
+    press(tree, 'Plan the next few days');
+    expect(onExpandedChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it('can be folded again from its heading once open', () => {
+    const onExpandedChange = jest.fn();
+    const tree = render({ expanded: true, onExpandedChange });
+    expect(hostByLabel(tree, 'Suggest plans')).toHaveLength(1);
+    press(tree, 'Hide next few days');
+    expect(onExpandedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('stays open, with a plain heading, for a caller that does not fold it', () => {
+    const tree = render({ expanded: false });
+    expect(hostByLabel(tree, 'Suggest plans')).toHaveLength(1);
+    expect(hostByLabel(tree, 'Hide next few days')).toHaveLength(0);
+  });
+});

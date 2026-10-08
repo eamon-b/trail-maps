@@ -49,7 +49,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { formatDistance, formatElevation } from '@lib/format-distance';
 import { accessSummary } from '@lib/resupply-display';
@@ -80,6 +80,7 @@ import { TripCard } from '../../../../src/features/guide/TripCard';
 import {
   findStop,
   isTrailEnd,
+  overnightCandidates,
   setNights,
   setStopBooked,
   setStopNote,
@@ -87,12 +88,17 @@ import {
 } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import { editPlanOnRoute, mainKmToRoute, planToRoute } from '@lib/plan-alternates';
+import { toActiveKm } from '@lib/plan-direction';
 import { plannableTrail, usePlanRoute } from '../../../../src/features/plan/use-plan-route';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
 import { useWaypointResupplyPlan } from '../../../../src/features/plan/use-planned-resupply';
 import { selectPlan, usePlansStore } from '../../../../src/state/plans-store';
 import { StopEditor } from '../../../../src/features/plan/StopEditor';
+import { StopContextCard } from '../../../../src/features/plan/StopContextCard';
+import { PlanGlanceSheet } from '../../../../src/features/plan/PlanGlanceSheet';
+import { stopContextIfStopped } from '../../../../src/features/plan/plan-glance';
+import { usePlanGlance } from '../../../../src/features/plan/use-plan-glance';
 import {
   planDirectionOf,
   stopCandidateOf,
@@ -129,6 +135,7 @@ export default function WaypointDetailScreen() {
     waypointId: string;
   }>();
   const { colors } = useTheme();
+  const router = useRouter();
   const { trail, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const { currentKm, position, status } = useGuidePositionContext();
@@ -189,12 +196,20 @@ export default function WaypointDetailScreen() {
   // The plan's route: once it takes an alternate, stops are edited in km along
   // that route (`@lib/plan-alternates`), as on the Plan screen. A waypoint on a
   // stretch an alternate bypasses is not on the route, so it offers no stop.
-  const { route, baseTrail } = usePlanRoute(plan);
+  const { route, trail: routeTrail, baseTrail } = usePlanRoute(plan);
   const stopCandidate = useMemo(() => {
     if (!waypoint) return null;
-    const candidate = stopCandidateOf(waypoint, planDirectionOf(direction), trail.track.totalDistance);
+    const planDirection = planDirectionOf(direction);
+    const candidate = stopCandidateOf(waypoint, planDirection, trail.track.totalDistance);
     const routeKm = mainKmToRoute(route, candidate.noboKm);
-    return routeKm === null ? null : { ...candidate, noboKm: routeKm };
+    if (routeKm === null) return null;
+    // Both km of the candidate move to the route's scale: `noboKm` for the
+    // document, `activeKm` for the days the glance measures along the route.
+    return {
+      ...candidate,
+      noboKm: routeKm,
+      activeKm: toActiveKm(routeKm, planDirection, route.totalDistance),
+    };
   }, [waypoint, direction, trail.track.totalDistance, route]);
   const routePlan = useMemo(() => (plan ? planToRoute(plan, route) : undefined), [plan, route]);
   const planStop =
@@ -214,6 +229,35 @@ export default function WaypointDetailScreen() {
       );
     },
     [applyPlanEdit, planDefaults, trailId, baseTrail],
+  );
+  const toggleThisStop = useCallback(() => {
+    if (!stopCandidate) return;
+    editPlan((p) =>
+      toggleStop(p, toggleTargetOf(stopCandidate), { totalKm: route.totalDistance }),
+    );
+  }, [editPlan, stopCandidate, route.totalDistance]);
+
+  // The days either side of this place — as planned when it is a stop, as they
+  // would be with it added when it is a place to sleep that is not one yet — so
+  // ticking a campsite shows what it did to the days right here, without a
+  // trip to the planner. Water, junctions and the like can still be made a stop
+  // with the ⛺, but get no "if you stop here" card: it would be on every one.
+  // The glance measures along the route as planned, so the what-if is run on
+  // the same route trail, with the candidate's route km.
+  const glance = usePlanGlance();
+  const [glanceOpen, setGlanceOpen] = useState(false);
+  const isOvernightPlace = useMemo(
+    () => (waypoint ? overnightCandidates([waypoint]).length > 0 : false),
+    [waypoint],
+  );
+  const isStop = planStop !== undefined;
+  const showStopContext = stopCandidate !== null && (isStop || (canToggleStop && isOvernightPlace));
+  const stopContext = useMemo(
+    () =>
+      showStopContext && stopCandidate
+        ? stopContextIfStopped(routeTrail, glance.plan, stopCandidate, isStop, glance.options)
+        : null,
+    [showStopContext, stopCandidate, routeTrail, glance.plan, glance.options, isStop],
   );
 
   const [comments, setComments] = useState<CommentWithSyncState[] | null>(null);
@@ -393,16 +437,7 @@ export default function WaypointDetailScreen() {
                 }}
               />
               {stopCandidate && canToggleStop && (
-                <StopHereToggle
-                  isStop={planStop !== undefined}
-                  onPress={() =>
-                    editPlan((p) =>
-                      toggleStop(p, toggleTargetOf(stopCandidate), {
-                        totalKm: route.totalDistance,
-                      }),
-                    )
-                  }
-                />
+                <StopHereToggle isStop={isStop} onPress={toggleThisStop} />
               )}
               <FavoriteHeart
                 filled={isFav}
@@ -460,21 +495,31 @@ export default function WaypointDetailScreen() {
           )}
         </View>
 
-        {/* A stop of the plan: nights here (two is a rest day), a note, and the
-            hand-ticked "booked". Same controls as the Plan screen's Stops
-            list — one component, so "2 nights" means the same in both. */}
-        {planStop && stopCandidate && (
-          <View style={[styles.stopCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.stopTitle, { color: colors.textPrimary }]}>Stop on your plan</Text>
-            <StopEditor
-              stop={planStop}
-              onNights={(nights) => editPlan((p) => setNights(p, stopKeyOf(stopCandidate), nights))}
-              onNote={(note) => editPlan((p) => setStopNote(p, stopKeyOf(stopCandidate), note))}
-              onBooked={(booked) =>
-                editPlan((p) => setStopBooked(p, stopKeyOf(stopCandidate), booked))
-              }
-            />
-          </View>
+        {/* The place in the plan: the day that ends here and the one that
+            leaves from it, and for a stop its nights / note / booked — the
+            same controls as the Plan screen's Stops list, one component, so
+            "2 nights" means the same in both. */}
+        {showStopContext && stopCandidate && (
+          <StopContextCard
+            isStop={isStop}
+            context={stopContext}
+            units={units}
+            onStopHere={isStop ? undefined : toggleThisStop}
+            onViewPlan={() => setGlanceOpen(true)}
+          >
+            {planStop && (
+              <StopEditor
+                stop={planStop}
+                onNights={(nights) =>
+                  editPlan((p) => setNights(p, stopKeyOf(stopCandidate), nights))
+                }
+                onNote={(note) => editPlan((p) => setStopNote(p, stopKeyOf(stopCandidate), note))}
+                onBooked={(booked) =>
+                  editPlan((p) => setStopBooked(p, stopKeyOf(stopCandidate), booked))
+                }
+              />
+            )}
+          </StopContextCard>
         )}
 
         {/* The OSM records this waypoint's place duplicates — hidden everywhere
@@ -601,6 +646,16 @@ export default function WaypointDetailScreen() {
       )}
 
       <PhotoViewer uri={viewerUri} onClose={() => setViewerUri(null)} />
+
+      <PlanGlanceSheet
+        visible={glanceOpen}
+        onClose={() => setGlanceOpen(false)}
+        glance={glance}
+        units={units}
+        onOpenPlanner={() =>
+          router.push({ pathname: '/guide/[trailId]/plan', params: { trailId } })
+        }
+      />
     </View>
   );
 }
@@ -1007,13 +1062,6 @@ const styles = StyleSheet.create({
   hero: { gap: spacing.sm },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  stopCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  stopTitle: { ...typography.titleSmall },
   typeChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

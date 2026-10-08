@@ -24,6 +24,12 @@
  * converts at the edges (`plan-stops.ts`) and keeps the document's `direction`
  * in step with the guide's — flipping direction never moves a stop.
  *
+ * The plan's settings — name, start date, section, pace and daily hours — are
+ * entered once and then rarely touched, so they live behind one summary row
+ * (and the ⚙ in the header) that opens `PlanSettingsSheet`, and the Next days
+ * card starts folded. The screen opens on the summary stats, the days and the
+ * stops, not on a screenful of inputs to scroll past.
+ *
  * The section steppers, pace and daily hours stay. Pace and hours drive the
  * Naismith estimates on the day cards and the Next days suggestions; the
  * section scopes the whole screen, including the resupply and water cards,
@@ -33,7 +39,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { formatDistance } from '@lib/format-distance';
 import { routeBreakStarts } from '@lib/route-breaks';
 import { resupplySummaryText } from '@lib/resupply-display';
@@ -61,6 +67,7 @@ import {
   toggleStop,
 } from '@lib/plan-editor';
 import { useTheme } from '../../../src/theme';
+import { HeaderActions, HeaderIconButton } from '../../../src/navigation/HeaderIconButton';
 import { KeyboardAwareScrollView } from '../../../src/navigation/KeyboardAwareScrollView';
 import { radii, spacing, typography } from '../../../src/tokens';
 import { useSettingsStore, type Units } from '../../../src/state/settings-store';
@@ -101,6 +108,10 @@ import { selectPrefs, usePlanInputsStore } from '../../../src/features/plan/plan
 import { usePlanSyncError } from '../../../src/features/plan/use-plan-sync-error';
 import { PlanHeaderCard } from '../../../src/features/plan/PlanHeaderCard';
 import { PlanInputsCard } from '../../../src/features/plan/PlanInputsCard';
+import {
+  PlanSettingsSheet,
+  PlanSettingsSummary,
+} from '../../../src/features/plan/PlanSettingsSheet';
 import { DaySplitList } from '../../../src/features/plan/DaySplitList';
 import { StopsSection } from '../../../src/features/plan/StopsSection';
 import { ResupplyCard } from '../../../src/features/plan/ResupplyCard';
@@ -179,6 +190,16 @@ export default function PlanScreen() {
     endName: endOption?.name ?? `${trail.config.name} End`,
   };
   const baseKmh = PACE_KMH[prefs.pace];
+  const isFullTrail = options.length < 2 || (startIdx === 0 && endIdx === lastIdx);
+  const sectionLabel = isFullTrail
+    ? 'Whole trail'
+    : `${sectionConfig.startName} → ${sectionConfig.endName}`;
+  const directionLabel = getDirectionLabel(trail.config.direction, planDirection, {
+    default: 'Start → End',
+    reversed: 'End → Start',
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nextDaysOpen, setNextDaysOpen] = useState(false);
 
   // The document the screen renders. A trail with no plan yet shows an empty
   // one (the whole section as a single day) rather than a blank screen — the
@@ -398,16 +419,28 @@ export default function PlanScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
     >
       <View ref={contentRef} style={styles.content}>
-        <PlanHeaderCard
-          name={displayPlan.name}
-          namePlaceholder={trail.config.name}
+        <Stack.Screen
+          options={{
+            headerRight: () => (
+              <HeaderActions>
+                <HeaderIconButton
+                  name="cog"
+                  accessibilityLabel="Plan settings"
+                  onPress={() => setSettingsOpen(true)}
+                />
+              </HeaderActions>
+            ),
+          }}
+        />
+
+        <PlanSettingsSummary
+          name={displayPlan.name || trail.config.name}
           startDate={displayPlan.startDate}
-          directionLabel={getDirectionLabel(trail.config.direction, planDirection, {
-            default: 'Start → End',
-            reversed: 'End → Start',
-          })}
-          onName={(name) => edit((p) => setPlanName(p, name))}
-          onStartDate={(iso) => edit((p) => setStartDate(p, iso))}
+          pace={prefs.pace}
+          dailyHours={prefs.dailyHours}
+          sectionLabel={sectionLabel}
+          directionLabel={directionLabel}
+          onPress={() => setSettingsOpen(true)}
         />
 
         {notice !== null && (
@@ -416,19 +449,29 @@ export default function PlanScreen() {
           </Text>
         )}
 
-        <PlanInputsCard
-          options={options}
-          startIdx={startIdx}
-          endIdx={endIdx}
-          dailyHours={prefs.dailyHours}
-          pace={prefs.pace}
-          units={units}
-          onStartIdx={setStartIdx}
-          onEndIdx={setEndIdx}
-          onDailyHours={(h) => setDailyHours(trailId, h)}
-          onPace={(p) => setPace(trailId, p)}
-          onResetSection={resetSection}
-        />
+        <PlanSettingsSheet visible={settingsOpen} onClose={() => setSettingsOpen(false)}>
+          <PlanHeaderCard
+            name={displayPlan.name}
+            namePlaceholder={trail.config.name}
+            startDate={displayPlan.startDate}
+            directionLabel={directionLabel}
+            onName={(name) => edit((p) => setPlanName(p, name))}
+            onStartDate={(iso) => edit((p) => setStartDate(p, iso))}
+          />
+          <PlanInputsCard
+            options={options}
+            startIdx={startIdx}
+            endIdx={endIdx}
+            dailyHours={prefs.dailyHours}
+            pace={prefs.pace}
+            units={units}
+            onStartIdx={setStartIdx}
+            onEndIdx={setEndIdx}
+            onDailyHours={(h) => setDailyHours(trailId, h)}
+            onPace={(p) => setPace(trailId, p)}
+            onResetSection={resetSection}
+          />
+        </PlanSettingsSheet>
 
         {!validSection ? (
           <View
@@ -479,6 +522,8 @@ export default function PlanScreen() {
               }
               onSuggest={runSuggest}
               onApply={applyChosen}
+              expanded={nextDaysOpen}
+              onExpandedChange={setNextDaysOpen}
             />
 
             <Section

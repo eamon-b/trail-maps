@@ -16,6 +16,10 @@
  * button, opening PoiLayersSheet over the map; the markers themselves come from
  * `useVisiblePois`, the one filter every POI surface reads.
  *
+ * Once the plan has a stop, a ⛺ button opens PlanGlanceSheet: the planned
+ * days over the map, so ticking a campsite and checking the days around it
+ * never needs the full planner.
+ *
  * The pane also translates its viewport to and from the guide's shared focus
  * window (see guide-focus): leaving the map reports the km range on screen, and
  * arriving fits the camera to whatever range the previous pane was showing.
@@ -55,6 +59,8 @@ import {
 import { GuideMap, type GuideMapHandle, type ViewportBounds } from './GuideMap';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import { PoiLayersSheet } from './PoiLayersSheet';
+import { PlanGlanceSheet } from '../plan/PlanGlanceSheet';
+import { usePlanGlance } from '../plan/use-plan-glance';
 import { ScaleBar, type ScaleBarHandle } from './ScaleBar';
 import {
   degradationMessage,
@@ -225,6 +231,15 @@ export function MapPane() {
   const [layersOpen, setLayersOpen] = useState(false);
   const openLayers = useCallback(() => setLayersOpen(true), []);
   const closeLayers = useCallback(() => setLayersOpen(false), []);
+
+  const planGlance = usePlanGlance();
+  const [planOpen, setPlanOpen] = useState(false);
+  const openPlan = useCallback(() => setPlanOpen(true), []);
+  const closePlan = useCallback(() => setPlanOpen(false), []);
+  const openPlanner = useCallback(
+    () => router.push({ pathname: '/guide/[trailId]/plan', params: { trailId } }),
+    [router, trailId],
+  );
 
   // --- Route builder + active-route overlay --------------------------------
   const [building, setBuilding] = useState(false);
@@ -528,6 +543,24 @@ export function MapPane() {
             </Pressable>
           )}
 
+          {/* The plan at a glance — only once there is one to glance at. Sits on
+              top of the stack, above the layers button when there is one. */}
+          {planGlance.hasStops && (
+            <Pressable
+              onPress={openPlan}
+              accessibilityRole="button"
+              accessibilityLabel="View plan"
+              style={({ pressed }) => [
+                styles.fab,
+                { bottom: fabBottom(trailHasPois ? 4 : 3) },
+                { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.buttonIcon, { color: colors.waypointCamp }]}>⛺</Text>
+            </Pressable>
+          )}
+
           {/* Draw route: enter the tap-to-add-point builder */}
           <Pressable
             onPress={startBuilding}
@@ -575,6 +608,14 @@ export function MapPane() {
           </Pressable>
         </>
       )}
+
+      <PlanGlanceSheet
+        visible={planOpen}
+        onClose={closePlan}
+        glance={planGlance}
+        units={units}
+        onOpenPlanner={openPlanner}
+      />
 
       {trailHasPois && (
         <PoiLayersSheet visible={layersOpen} onClose={closeLayers} pois={trail.pois ?? []} />
@@ -630,6 +671,11 @@ function DegradedMapBanner({
       </View>
     </View>
   );
+}
+
+/** The `bottom` of the FAB in `slot` (0 = the recenter button at the foot of the stack). */
+function fabBottom(slot: number): number {
+  return spacing.xl + (44 + spacing.sm) * slot;
 }
 
 const styles = StyleSheet.create({
@@ -712,6 +758,16 @@ const styles = StyleSheet.create({
   layers: {
     position: 'absolute',
     bottom: spacing.xl + (44 + spacing.sm) * 3,
+    right: spacing.lg,
+    width: 44,
+    height: 44,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fab: {
+    position: 'absolute',
     right: spacing.lg,
     width: 44,
     height: 44,

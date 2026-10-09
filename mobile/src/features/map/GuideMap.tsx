@@ -339,6 +339,8 @@ export interface GuideMapProps {
   builderMode?: boolean;
   /** A raw map tap (lat/lon) while in builder mode. */
   onMapPress?: (lat: number, lon: number) => void;
+  /** A long-press anywhere on the map (lat/lon) — adds a hiker waypoint there. */
+  onMapLongPress?: (lat: number, lon: number) => void;
   /**
    * Reports what actually mounted each time the style is resolved, so the pane
    * can surface a degraded basemap to the user. Fired on every resolution,
@@ -512,6 +514,7 @@ export const GuideMap = memo(
       routeOverlay,
       builderMode,
       onMapPress,
+      onMapLongPress,
       onStyleResolved,
       onVisibleBoundsChange,
       onCameraChange,
@@ -1087,6 +1090,15 @@ export const GuideMap = memo(
       [builderMode, onMapPress, onBackgroundPress],
     );
 
+    const handleMapLongPress = useCallback(
+      (event: NativeSyntheticEvent<PressEvent>) => {
+        const lngLat = event.nativeEvent.lngLat;
+        if (!lngLat || !onMapLongPress) return;
+        onMapLongPress(lngLat[1], lngLat[0]);
+      },
+      [onMapLongPress],
+    );
+
     if (!resolved || resolved.theme !== mapTheme) {
       return (
         <View style={[styles.loading, { backgroundColor: colors.background }]}>
@@ -1105,6 +1117,7 @@ export const GuideMap = memo(
         attribution={false}
         compass
         onPress={builderMode || onBackgroundPress ? handleMapPress : undefined}
+        onLongPress={onMapLongPress ? handleMapLongPress : undefined}
         onRegionIsChanging={onCameraChange ? reportCamera : undefined}
         onRegionDidChange={
           onVisibleBoundsChange || onCameraChange ? handleRegionDidChange : undefined

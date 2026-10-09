@@ -126,8 +126,8 @@ const DELETED_DISPLAY_NAME = 'Deleted user';
  * response path. `user_id` keeps pointing at the scrubbed row, so the
  * moderation record (and an admin's ability to remove them) is intact.
  *
- * Plans are soft-deleted the same way comments are (their tombstones flow
- * through `GET /v1/plans`), and every device token — the phone's and any linked
+ * Plans and shared waypoints are soft-deleted the same way comments are (their
+ * tombstones flow through `GET /v1/plans` and `GET /v1/trails/:id/waypoints`), and every device token — the phone's and any linked
  * browser's — is revoked, so no second device outlives the account. Only the
  * phone may ask: a linked browser is a window onto the account, not the account.
  */
@@ -157,6 +157,11 @@ export async function deleteMe(
     ).bind(now, now, user.id),
     env.DB.prepare(
       `UPDATE plans SET deleted_at = ?, updated_at = ? WHERE user_id = ? AND deleted_at IS NULL`
+    ).bind(now, now, user.id),
+    // Shared waypoints go the way of comments: tombstoned, so phones drop them.
+    env.DB.prepare(
+      `UPDATE shared_waypoints SET deleted_at = ?, deleted_by = 'owner', updated_at = ?
+        WHERE user_id = ? AND deleted_at IS NULL`
     ).bind(now, now, user.id),
     env.DB.prepare(
       `UPDATE device_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL`

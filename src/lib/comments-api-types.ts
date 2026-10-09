@@ -130,6 +130,72 @@ export interface UpsertDescriptionRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Shared hiker waypoints (see `user-waypoints.ts`)
+// ---------------------------------------------------------------------------
+
+/**
+ * PUT /v1/waypoints/:id request body — create, or the owner's edit. `:id` is
+ * the client-minted `hw_<uuid>`, the idempotency key as for comments.
+ */
+export interface PutSharedWaypointRequest {
+  trailId: string;
+  name: string;
+  /** One of `USER_WAYPOINT_TYPES`. */
+  type: string;
+  lat: number;
+  lon: number;
+  description?: string | null;
+}
+
+/** A live shared waypoint, as the API returns it. */
+export interface SharedWaypoint {
+  id: string;
+  trailId: string;
+  name: string;
+  type: string;
+  lat: number;
+  lon: number;
+  /** '' when there is none. */
+  description: string;
+  displayName: string;
+  /** The caller's own waypoint (only set when the request carried a token). */
+  mine?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A shared waypoint that was deleted or hidden since the client's `since`. */
+export interface SharedWaypointTombstone {
+  id: string;
+  deleted: true;
+  updatedAt: string;
+}
+
+export type SharedWaypointEntry = SharedWaypoint | SharedWaypointTombstone;
+
+/**
+ * GET /v1/trails/:trailId/waypoints?since=<iso> response. Same delta semantics
+ * as the descriptions channel; tombstones only in delta mode.
+ */
+export interface SharedWaypointsResponse {
+  waypoints: SharedWaypointEntry[];
+  syncedAt: string;
+}
+
+/** POST /v1/waypoints/:id/report request body. */
+export interface ReportSharedWaypointRequest {
+  reason: ReportReason;
+  detail?: string | null;
+}
+
+/** Narrowing helper: is a shared-waypoint entry a tombstone? */
+export function isSharedWaypointTombstone(
+  entry: SharedWaypointEntry,
+): entry is SharedWaypointTombstone {
+  return (entry as SharedWaypointTombstone).deleted === true;
+}
+
+// ---------------------------------------------------------------------------
 // Comments — write
 // ---------------------------------------------------------------------------
 

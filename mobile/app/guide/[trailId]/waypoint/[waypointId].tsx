@@ -30,6 +30,10 @@
  * place, its tags are offered in a collapsed "From OpenStreetMap" section. That
  * is local trail data, so it works for an imported guide too.
  *
+ * A waypoint a hiker added (`@lib/user-waypoints`) says so under its name: its
+ * own ("only on this phone" or shared), with Edit, or another hiker's shared
+ * one, with Report. A private one has no comments — nobody else can see it.
+ *
  * None of that channel exists for a user-imported guide (`services/server-trails`):
  * its ids are local-only, so the whole comments block collapses to a one-line
  * note and no SQLite read or request is issued for it. The favorite heart, the
@@ -55,6 +59,7 @@ import { formatDistance, formatElevation } from '@lib/format-distance';
 import { accessSummary } from '@lib/resupply-display';
 import { isAccessMode } from '@lib/types';
 import { waypointTypeLabel } from '@lib/waypoint-taxonomy';
+import { userWaypointInfo } from '@lib/user-waypoints';
 import type { WaterStatus } from '@lib/comments-api-types';
 import { OSM_ATTRIBUTION, poiOsmUrl, summarisePoiTags } from '@lib/poi-display';
 import type { TrailPOI } from '@lib/trail-types';
@@ -107,6 +112,7 @@ import {
 } from '../../../../src/features/plan/plan-stops';
 import { isServerKnown } from '../../../../src/services/server-trails';
 import { getDatabase } from '../../../../src/db/database';
+import * as outboxRepo from '../../../../src/db/outbox-repo';
 import * as commentsRepo from '../../../../src/db/comments-repo';
 import type { CommentWithSyncState } from '../../../../src/db/comments-repo';
 import * as waypointMetaRepo from '../../../../src/db/waypoint-meta-repo';
@@ -125,6 +131,11 @@ import {
   submitReport,
 } from '../../../../src/sync/comment-sync';
 import { onSyncChange } from '../../../../src/sync/sync-events';
+import { reportUserWaypoint } from '../../../../src/sync/waypoint-sync';
+import {
+  selectUserWaypoint,
+  useUserWaypointsStore,
+} from '../../../../src/state/user-waypoints-store';
 
 /** Comments revealed per "show earlier" tap (and in the initial window). */
 const COMMENT_PAGE_SIZE = 20;
@@ -155,7 +166,40 @@ export default function WaypointDetailScreen() {
   // none) and a stable waypoint id. Null here switches the whole block off:
   // no SQLite read, no pull, no composer.
   const serverKnown = isServerKnown(trailId);
-  const commentWaypointId = serverKnown ? (waypoint?.id ?? null) : null;
+  // A hiker's private waypoint is invisible to everyone else, so a comment on
+  // it would be a public note on a place nobody can find.
+  const hikerWaypoint = waypoint ? userWaypointInfo(waypoint) : null;
+  const userWaypoint = useUserWaypointsStore(selectUserWaypoint(trailId, waypoint?.id));
+  const commentWaypointId =
+    serverKnown && hikerWaypoint?.visibility !== 'private' ? (waypoint?.id ?? null) : null;
+  const [reportingWaypoint, setReportingWaypoint] = useState(false);
+  const [waypointReported, setWaypointReported] = useState(false);
+  // A share the server refused for good (the daily limit, a ban) stays queued
+  // as failed; say so, or the hiker believes everyone can see it.
+  const [shareFailure, setShareFailure] = useState<string | null>(null);
+  const watchShare = hikerWaypoint?.mine === true && hikerWaypoint.visibility === 'shared';
+  useEffect(() => {
+    if (!watchShare || !waypoint?.id) return;
+    const id = waypoint.id;
+    let cancelled = false;
+    const read = () => {
+      getDatabase()
+        .then((db) => outboxRepo.lastFailure(db, 'waypoint', id))
+        .then((error) => {
+          // Stored as `code: message`; the message is the server's words.
+          if (!cancelled) setShareFailure(error ? error.slice(error.indexOf(': ') + 2) : null);
+        })
+        .catch(() => {});
+    };
+    read();
+    const off = onSyncChange((change) => {
+      if (change.trailId === trailId) read();
+    });
+    return () => {
+      cancelled = true;
+      off();
+    };
+  }, [watchShare, waypoint?.id, trailId]);
 
   const identityStatus = useIdentityStore((s) => s.status);
   const session = useIdentityStore((s) => s.session);
@@ -455,6 +499,50 @@ export default function WaypointDetailScreen() {
               </Text>
             </View>
           )}
+          {hikerWaypoint && (
+            <View style={styles.hikerRow}>
+              <Text style={[styles.accessLine, styles.flex, { color: colors.textSecondary }]}>
+                {hikerWaypoint.mine
+                  ? hikerWaypoint.visibility === 'shared'
+                    ? 'Added by you · shared with everyone'
+                    : 'Added by you · only on this phone'
+                  : `Added by ${hikerWaypoint.authorName ?? 'a hiker'} · not checked by Tracknotes`}
+              </Text>
+              {hikerWaypoint.mine ? (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/guide/[trailId]/waypoint-edit',
+                      params: { trailId, id: waypointId },
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit waypoint"
+                  style={({ pressed }) => [styles.hikerAction, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.hikerActionText, { color: colors.accent }]}>Edit</Text>
+                </Pressable>
+              ) : userWaypoint && !waypointReported ? (
+                <Pressable
+                  onPress={() => setReportingWaypoint(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Report waypoint"
+                  style={({ pressed }) => [styles.hikerAction, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.hikerActionText, { color: colors.textSecondary }]}>
+                    Report
+                  </Text>
+                </Pressable>
+              ) : waypointReported ? (
+                <Text style={[styles.accessLine, { color: colors.textSecondary }]}>Reported</Text>
+              ) : null}
+            </View>
+          )}
+          {watchShare && shareFailure ? (
+            <Text style={[styles.accessLine, { color: colors.danger }]} accessibilityRole="alert">
+              {`Not shared yet: ${shareFailure}`}
+            </Text>
+          ) : null}
           {/* Curated descriptions arrive over the sync channel; the bundled
               trail JSON is the fallback. */}
           {description ? (
@@ -536,6 +624,8 @@ export default function WaypointDetailScreen() {
           <EmptyNote text="Comments aren’t available for imported trails." />
         ) : !isApiConfigured() ? (
           <EmptyNote text="Comments are unavailable — no server is configured for this build." />
+        ) : hikerWaypoint?.visibility === 'private' ? (
+          <EmptyNote text="This waypoint is only on your phone, so it has no comments. Share it to let other hikers comment." />
         ) : !commentWaypointId ? (
           <EmptyNote text="Comments aren’t supported for this waypoint." />
         ) : comments === null && feedError ? (
@@ -641,6 +731,24 @@ export default function WaypointDetailScreen() {
             });
             setReportedIds((ids) => [...ids, reportTarget.id]);
             setReportTarget(null);
+          }}
+        />
+      )}
+
+      {reportingWaypoint && userWaypoint && (
+        <ReportDialog
+          commentId={userWaypoint.id}
+          title="Report this waypoint"
+          registered={identityStatus === 'registered'}
+          onCancel={() => setReportingWaypoint(false)}
+          onSubmit={async ({ reason, detail, displayName }) => {
+            if (!session) {
+              if (!displayName) return; // guarded by the dialog's name step
+              await useIdentityStore.getState().register(displayName);
+            }
+            await reportUserWaypoint({ waypoint: userWaypoint, reason, detail });
+            setWaypointReported(true);
+            setReportingWaypoint(false);
           }}
         />
       )}
@@ -1072,6 +1180,9 @@ const styles = StyleSheet.create({
   name: { ...typography.displaySmall },
   description: { ...typography.body },
   accessLine: { ...typography.bodySmall },
+  hikerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  hikerAction: { paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
+  hikerActionText: { ...typography.titleSmall },
 
   plannedBanner: {
     alignSelf: 'flex-start',

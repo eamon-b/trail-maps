@@ -11,7 +11,8 @@
  *                         It also pulls curated waypoint descriptions on their
  *                         own high-water mark (`sync_state.meta_synced_at`) —
  *                         independently, so a failure there never fails the
- *                         comment pull.
+ *                         comment pull — and, the same way, the trail's shared
+ *                         hiker waypoints (`sync_state.waypoints_synced_at`).
  *
  *   pullPlans()         — GET this user's day plans since
  *                         `sync_state.__plans__.plans_synced_at`, apply them
@@ -41,6 +42,11 @@
  *                         re-stamps the local copy with the server clock, with
  *                         one id adoption on 409 `plan_exists`; a `plan-delete`
  *                         is settled by a 204 and equally by a 404.
+ *                         The shared hiker waypoint kinds mirror them: a
+ *                         `waypoint` PUT (a 410 means it was deleted server-side
+ *                         and drops the local copy), a `waypoint-delete` settled
+ *                         by 204 or 404, and a `waypoint-report` settled like a
+ *                         comment report.
  *
  * Retry backoff is `min(2^attempts * 30s, 1h)` measured from the item's
  * `created_at`; attempts start at 0 (send immediately), and each 4xx, 5xx or
@@ -51,10 +57,16 @@ import type {
   PhotoContentType,
   PlanSyncEntry,
   PutCommentRequest,
+  PutSharedWaypointRequest,
+  ReportSharedWaypointRequest,
   ReportReason,
   WaterStatus,
 } from '@lib/comments-api-types';
-import { isPlanTombstone, isSyncTombstone } from '@lib/comments-api-types';
+import {
+  isPlanTombstone,
+  isSharedWaypointTombstone,
+  isSyncTombstone,
+} from '@lib/comments-api-types';
 import { isPlanDocument } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
 import { getDatabase } from '../db/database';
@@ -64,9 +76,11 @@ import type { CommentSource } from '../db/comments-repo';
 import * as outboxRepo from '../db/outbox-repo';
 import * as plansRepo from '../db/plans-repo';
 import * as waypointMetaRepo from '../db/waypoint-meta-repo';
+import * as userWaypointsRepo from '../db/user-waypoints-repo';
 import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/client';
 import * as commentsApi from '../api/comments';
 import * as plansApi from '../api/plans';
+import * as waypointsApi from '../api/waypoints';
 import { getSession, verifySession, type Session } from '../api/auth';
 import { usePlansStore } from '../state/plans-store';
 import { useIdentityStore } from '../state/identity-store';
@@ -378,6 +392,54 @@ async function pullTrailMeta(
   return rows.map((row) => row.waypointId).filter((id): id is string => !!id);
 }
 
+/** Payload of a `kind='waypoint'` outbox row. */
+export interface WaypointOutboxPayload {
+  id: string;
+  request: PutSharedWaypointRequest;
+}
+
+/** Payload of a `kind='waypoint-report'` outbox row. */
+export interface WaypointReportOutboxPayload extends ReportSharedWaypointRequest {
+  id: string;
+}
+
+/**
+ * Pull the trail's shared hiker waypoints (delta since `waypoints_synced_at`)
+ * and mirror them locally. A waypoint this device has a write or delete still
+ * queued for is skipped: the queued write is the newer word on it.
+ *
+ * Sends the token when there is one, so the server can say which waypoints are
+ * this account's own. Returns how many rows it applied; throws on failure, which
+ * `pullTrail` swallows like the descriptions channel.
+ */
+async function pullTrailWaypoints(
+  db: SqlDatabase,
+  trailId: string,
+  ctx: commentsApi.ApiContext,
+): Promise<number> {
+  const since = await userWaypointsRepo.readSyncedAt(db, trailId);
+  const result = await waypointsApi.listTrailSharedWaypoints(ctx, { trailId, since });
+  let applied = 0;
+  for (const entry of result.waypoints ?? []) {
+    if (
+      (await outboxRepo.hasQueued(db, 'waypoint', entry.id)) ||
+      (await outboxRepo.hasQueued(db, 'waypoint-delete', entry.id))
+    ) {
+      continue;
+    }
+    if (isSharedWaypointTombstone(entry)) {
+      await userWaypointsRepo.applyTombstone(db, entry.id);
+    } else if (entry.trailId === trailId) {
+      await userWaypointsRepo.applyServer(db, entry);
+    } else {
+      continue;
+    }
+    applied += 1;
+  }
+  await userWaypointsRepo.writeSyncedAt(db, trailId, result.syncedAt);
+  return applied;
+}
+
 // ---------------------------------------------------------------------------
 // pullTrail
 // ---------------------------------------------------------------------------
@@ -463,9 +525,26 @@ export async function pullTrail(trailId: string, deps: SyncDeps = {}): Promise<P
     // Keep the comment pull's outcome; the meta high-water mark is unchanged.
   }
 
+  // Shared hiker waypoints: a third channel on the same trigger, swallowed the
+  // same way. The token is optional (it only marks this account's own).
+  let waypointsApplied = 0;
+  try {
+    const session = await (deps.getSessionFn ?? getSession)().catch(() => null);
+    waypointsApplied = await pullTrailWaypoints(db, trailId, {
+      ...ctx,
+      token: session?.token,
+    });
+  } catch {
+    // Retried on the next pull; the high-water mark is unchanged.
+  }
+
   // Nudge any mounted feed for this trail to re-read the freshly-applied rows.
-  if (applied > 0 || metaApplied > 0) {
-    emitSyncChange({ trailId, waypointIds: [...changedWaypoints] });
+  if (applied > 0 || metaApplied > 0 || waypointsApplied > 0) {
+    emitSyncChange({
+      trailId,
+      waypointIds: [...changedWaypoints],
+      ...(waypointsApplied > 0 ? { userWaypoints: true } : {}),
+    });
   }
   return { outcome: 'pulled', applied, syncedAt: result.syncedAt };
 }
@@ -704,6 +783,7 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   // drain finished cleanly or bailed early), nudging any mounted feed to re-read.
   const changedWaypoints = new Set<string>();
   let changedTrail: string | undefined;
+  let userWaypointsChanged = false;
   const noteChange = (item: {
     kind: outboxRepo.OutboxKind;
     trailId: string | null;
@@ -714,13 +794,18 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
     const isPlan = item.kind === 'plan' || item.kind === 'plan-delete';
     if (item.waypointId && !isPlan) changedWaypoints.add(item.waypointId);
     if (item.trailId) changedTrail = item.trailId;
+    if (item.kind === 'waypoint' || item.kind === 'waypoint-delete') userWaypointsChanged = true;
   };
   const finish = (outcome: DrainOutcome): DrainResult => {
     // Failures announce themselves too: the row that failed is what a screen
     // reads to say a write has not landed (`outboxRepo.lastFailure`), and it is
     // the only change a drain that sent nothing made.
     if (sent > 0 || failed > 0) {
-      emitSyncChange({ trailId: changedTrail, waypointIds: [...changedWaypoints] });
+      emitSyncChange({
+        trailId: changedTrail,
+        waypointIds: [...changedWaypoints],
+        ...(userWaypointsChanged ? { userWaypoints: true } : {}),
+      });
     }
     return { outcome, sent, failed };
   };
@@ -819,6 +904,25 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
       } else if (item.kind === 'plan-delete') {
         const { id } = JSON.parse(item.payloadJson) as { id: string };
         await plansApi.deletePlan(ctx, id);
+      } else if (item.kind === 'waypoint') {
+        const payload = JSON.parse(item.payloadJson) as WaypointOutboxPayload;
+        const server = await waypointsApi.putSharedWaypoint(ctx, payload.id, payload.request);
+        // Settled first, so the check below sees only writes queued behind it:
+        // an edit made while this PUT was in flight keeps the row 'local' until
+        // it lands too, and no pull can put the older copy back meanwhile.
+        await outboxRepo.remove(db, item.id);
+        if (!(await outboxRepo.hasQueued(db, 'waypoint', payload.id))) {
+          await userWaypointsRepo.confirmServer(db, payload.id, {
+            displayName: server.displayName,
+            updatedAt: server.updatedAt,
+          });
+        }
+      } else if (item.kind === 'waypoint-delete') {
+        const { id } = JSON.parse(item.payloadJson) as { id: string };
+        await waypointsApi.deleteSharedWaypoint(ctx, id);
+      } else if (item.kind === 'waypoint-report') {
+        const { id, reason, detail } = JSON.parse(item.payloadJson) as WaypointReportOutboxPayload;
+        await waypointsApi.reportSharedWaypoint(ctx, id, { reason, detail });
       } else {
         const payload = JSON.parse(item.payloadJson) as PutCommentRequest;
         const server = await commentsApi.putComment(ctx, item.id, payload);
@@ -849,6 +953,28 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
         // Already gone server-side — the delete is a no-op success.
         await commentsRepo.deleteById(db, item.id);
         await outboxRepo.remove(db, item.id);
+        noteChange(item);
+        sent += 1;
+        continue;
+      }
+      if (
+        e instanceof ApiError &&
+        ((item.kind === 'waypoint-delete' && e.status === 404) ||
+          (item.kind === 'waypoint-report' && (e.status === 404 || e.status === 410)))
+      ) {
+        // Already gone server-side: what the delete asked for, and nothing
+        // left for a report to moderate.
+        await outboxRepo.remove(db, item.id);
+        noteChange(item);
+        sent += 1;
+        continue;
+      }
+      if (e instanceof ApiError && e.status === 410 && item.kind === 'waypoint') {
+        // Deleted server-side (reports, an admin, another device): the edit
+        // has nothing to land on, so the local copy goes too.
+        const { id } = JSON.parse(item.payloadJson) as WaypointOutboxPayload;
+        await outboxRepo.remove(db, item.id);
+        await userWaypointsRepo.deleteById(db, id);
         noteChange(item);
         sent += 1;
         continue;

@@ -47,11 +47,14 @@ export interface ReportSubmitArgs {
 export function ReportDialog({
   commentId,
   registered,
+  title = 'Report this comment',
   onCancel,
   onSubmit,
 }: {
+  /** What is reported: a comment's id, or a shared waypoint's. */
   commentId: string;
   registered: boolean;
+  title?: string;
   onCancel: () => void;
   onSubmit: (args: ReportSubmitArgs) => Promise<void>;
 }) {
@@ -127,7 +130,7 @@ export function ReportDialog({
       <KeyboardAvoidingModalContent>
         <View style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
           <View style={[styles.card, { backgroundColor: colors.surfaceElevated }]}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>Report this comment</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
 
             {needsName ? (
               <>

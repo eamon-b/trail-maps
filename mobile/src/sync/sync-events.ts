@@ -19,6 +19,8 @@ export interface SyncChange {
   trailId?: string;
   /** Waypoints whose feeds changed, when known. */
   waypointIds?: string[];
+  /** The trail's hiker-added waypoints changed (`db/user-waypoints-repo`). */
+  userWaypoints?: boolean;
 }
 
 type SyncListener = (change: SyncChange) => void;

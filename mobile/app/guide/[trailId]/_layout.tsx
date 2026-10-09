@@ -119,6 +119,11 @@ export default function GuideLayout() {
         />
         {/* Title is overridden with the waypoint name from within the screen. */}
         <Stack.Screen name="waypoint/[waypointId]" options={{ title: 'Waypoint' }} />
+        {/* Add / edit a hiker waypoint; the screen sets its own title. */}
+        <Stack.Screen
+          name="waypoint-edit"
+          options={{ title: 'New waypoint', presentation: 'modal' }}
+        />
         {/* Title is overridden with the POI name from within the screen. */}
         <Stack.Screen name="poi/[poiKey]" options={{ title: 'Point of interest' }} />
       </Stack>

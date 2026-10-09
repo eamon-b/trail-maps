@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { withTransaction } from './transaction';
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 // Fresh v1 schema for Tracknotes. Waypoints and track geometry stay OUT of
 // SQLite — bundled trails ship as JSON assets, and user-imported trails are
@@ -272,6 +272,43 @@ const MIGRATIONS: Record<number, string> = {
     CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status, created_at);
 
     UPDATE schema_version SET version = 6;
+  `,
+
+  // Migration 7: hiker-added waypoints (`@lib/user-waypoints`).
+  //
+  // One table for both kinds. A `private` row is the only copy there is and
+  // never leaves the phone. A `shared` row is also on the server: `source` says
+  // whether it is this device's write still queued in the outbox ('local') or
+  // the server's copy ('server'), exactly as for comments, so a pull never
+  // overwrites an edit that has not been sent. `mine` marks the rows this
+  // account made (the only ones it may edit or delete); `author_name` is the
+  // sharer's display name. A server tombstone deletes the row outright: unlike
+  // a plan, nothing local has to outlive it.
+  //
+  // `sync_state.waypoints_synced_at` is the shared-waypoint high-water mark, one
+  // more per-channel column beside comments, descriptions and plans.
+  7: `
+    CREATE TABLE IF NOT EXISTS user_waypoints (
+      id TEXT PRIMARY KEY NOT NULL,
+      trail_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      lat REAL NOT NULL,
+      lon REAL NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      visibility TEXT NOT NULL CHECK (visibility IN ('private', 'shared')),
+      mine INTEGER NOT NULL DEFAULT 1,
+      author_name TEXT,
+      source TEXT NOT NULL DEFAULT 'local' CHECK (source IN ('local', 'server')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_user_waypoints_trail ON user_waypoints(trail_id);
+
+    ALTER TABLE sync_state ADD COLUMN waypoints_synced_at TEXT;
+
+    UPDATE schema_version SET version = 7;
   `,
 };
 

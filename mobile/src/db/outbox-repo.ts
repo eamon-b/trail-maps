@@ -28,8 +28,21 @@ import type { SqlDatabase } from './sql-database';
  * `plan` is a FULL REPLACE of one plan document, so only the newest row for a
  * plan is worth sending — see {@link replacePending}, which the plan enqueue
  * path calls first. `plan-delete` tombstones it server-side.
+ *
+ * `waypoint` is the same kind of full replace for a shared hiker waypoint (the
+ * row's `id` is a fresh uuid, `waypoint_id` the waypoint), `waypoint-delete`
+ * its tombstone and `waypoint-report` a report against someone else's.
  */
-export type OutboxKind = 'comment' | 'delete' | 'photo' | 'report' | 'plan' | 'plan-delete';
+export type OutboxKind =
+  | 'comment'
+  | 'delete'
+  | 'photo'
+  | 'report'
+  | 'plan'
+  | 'plan-delete'
+  | 'waypoint'
+  | 'waypoint-delete'
+  | 'waypoint-report';
 export type OutboxStatus = 'pending' | 'sending' | 'failed';
 
 export interface OutboxItem {

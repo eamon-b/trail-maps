@@ -361,7 +361,7 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
     // Stable ids come from the committed registry (entries are never deleted;
     // ones this build does not match are marked retired).
     mintWaypointIds: (waypoints, resolvedConfig) =>
-      assignWaypointIds(resolvedConfig.id, waypoints, registry),
+      assignWaypointIds(resolvedConfig.id, waypoints, registry, message => console.warn(message)),
 
     // Curated descriptions are keyed by the ids just assigned.
     afterWaypointIds: (waypoints, resolvedConfig) =>

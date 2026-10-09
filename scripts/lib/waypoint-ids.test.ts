@@ -153,6 +153,51 @@ describe('assignWaypointIds', () => {
     expect(registry[TRAIL].some((e) => e.retired)).toBe(false);
   });
 
+  it('lets the waypoint standing on a shared-name entry keep it, and stops on the newcomer', () => {
+    const registry: WaypointRegistry = {};
+    const toilet = { name: 'Toilet', type: 'toilet', lat: -33.0, lon: 150.0 };
+    assignWaypointIds(TRAIL, [toilet], registry);
+
+    // A second "Toilet" 60 m away comes first: the build stops, and the
+    // position it reports is the newcomer's, which is the one to deal with.
+    const newcomer = { ...toilet, lat: movedNorth(-33.0, 60) };
+    expect(() => assignWaypointIds(TRAIL, [newcomer, toilet], registry)).toThrow(
+      `"Toilet" (${newcomer.lat.toFixed(5)}, 150.00000)`,
+    );
+  });
+
+  it('warns when a newcomer mints beside an entry its own name kept', () => {
+    const registry: WaypointRegistry = {};
+    const hut = { name: 'Anrakuji Tsuyado', type: 'accommodation', lat: 34.11808, lon: 134.388518 };
+    assignWaypointIds(TRAIL, [hut], registry);
+
+    const lodging = { name: 'Anrakuji Shukubo', type: 'accommodation', lat: movedNorth(34.11808, 20), lon: 134.388518 };
+    const warnings: string[] = [];
+    assignWaypointIds(TRAIL, [lodging, hut], registry, (m) => warnings.push(m));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/"Anrakuji Shukubo".*"Anrakuji Tsuyado" \(20 m\)/);
+
+    // Next build both keep their ids by name: nothing to say.
+    warnings.length = 0;
+    assignWaypointIds(TRAIL, [lodging, hut], registry, (m) => warnings.push(m));
+    expect(warnings).toEqual([]);
+  });
+
+  it('names the entry actually in conflict, not one another name kept', () => {
+    const registry: WaypointRegistry = {};
+    const hut = { name: 'Hut', type: 'hut', lat: -33.0, lon: 150.0 };
+    const camp = { name: 'Old Camp', type: 'hut', lat: movedNorth(-33.0, 90), lon: 150.0 };
+    const [, campId] = assignWaypointIds(TRAIL, [hut, camp], registry);
+
+    // "Old Camp" is renamed and moved beside the hut; another newcomer takes
+    // its entry by proximity first.
+    const taker = { name: 'Taker', type: 'hut', lat: movedNorth(-33.0, 90), lon: 150.0 };
+    const renamed = { name: 'New Camp', type: 'hut', lat: movedNorth(-33.0, 10), lon: 150.0 };
+    expect(() => assignWaypointIds(TRAIL, [hut, taker, renamed], registry)).toThrow(
+      new RegExp(`entry ${campId} which was already claimed by "Taker"`),
+    );
+  });
+
   it('two genuinely-distinct nearby waypoints each mint their own id on a first build', () => {
     // Both within the match radius, same type, but registry starts empty, so
     // there is no pre-existing entry to be ambiguous about — each mints.

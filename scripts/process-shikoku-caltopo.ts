@@ -322,14 +322,16 @@ function readHenroyadoFile(file: string): HenroyadoFile {
     if (typeof inn?.position !== 'string' || !inn.position.trim()) problems.push(`${label}: no \`position\` source`);
     if (typeof inn?.desc !== 'string') problems.push(`${label}: no desc`);
   }
-  if (typeof data.listed !== 'object' || data.listed === null) problems.push('`listed` is not an object');
-  else for (const [name, line] of Object.entries(data.listed)) {
+  if (typeof data.listed !== 'object' || data.listed === null || Array.isArray(data.listed)) {
+    problems.push('`listed` is not an object of marker name -> details');
+  } else for (const [name, line] of Object.entries(data.listed)) {
     if (typeof line !== 'string' || !line.trim()) problems.push(`listed "${name}": no details`);
   }
   if (problems.length > 0) throw new Error(`${path.basename(file)}:\n  ${problems.join('\n  ')}`);
   return data;
 }
 const HENROYADO_PREFIX = 'henroyado.com (Oct 2026): ';
+const HENROYADO_LINE = /^henroyado\.com \([A-Z][a-z]{2} \d{4}\): /;
 
 const HENROYADO_INNS: GpxWaypoint[] = HENROYADO.inns.map(({ name, lat, lon, type, desc }) => ({
   name,
@@ -346,8 +348,12 @@ const HENROYADO_INNS: GpxWaypoint[] = HENROYADO.inns.map(({ name, lat, lon, type
  * `listed` loses its old line on the next run instead of keeping it for good.
  */
 function withHenroyadoLine(desc: string, line: string | undefined): string {
-  const own = desc.split('\n').filter(l => !l.startsWith('henroyado.com ('));
-  return [...own, ...(line === undefined ? [] : [HENROYADO_PREFIX + line])].filter(Boolean).join('\n');
+  // Only lines in the shape this script writes (any list date), so a marker's
+  // own text, blank lines included, passes through untouched.
+  const own = desc.split('\n').filter(l => !HENROYADO_LINE.test(l));
+  while (own.length > 0 && own[own.length - 1] === '') own.pop();
+  if (line !== undefined) own.push(HENROYADO_PREFIX + line);
+  return own.join('\n');
 }
 
 /** Source-map markers for places that have closed, with the evidence. */

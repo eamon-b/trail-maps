@@ -133,7 +133,7 @@ describe('assignWaypointIds', () => {
       { name: 'Shared Camp', type: 'campsite', lat: movedNorth(-33.0, 30), lon: 150.0 },
     ];
     expect(() => assignWaypointIds(TRAIL, twoWaypoints, registry)).toThrow(
-      /Ambiguous waypoint identity/,
+      /Duplicate waypoint name.*need distinct names/,
     );
   });
 
@@ -158,12 +158,42 @@ describe('assignWaypointIds', () => {
     const toilet = { name: 'Toilet', type: 'toilet', lat: -33.0, lon: 150.0 };
     assignWaypointIds(TRAIL, [toilet], registry);
 
-    // A second "Toilet" 60 m away comes first: the build stops, and the
-    // position it reports is the newcomer's, which is the one to deal with.
+    // A second "Toilet" 60 m away comes first: the build stops, reports the
+    // newcomer's position (the one to deal with) and asks for distinct names.
     const newcomer = { ...toilet, lat: movedNorth(-33.0, 60) };
     expect(() => assignWaypointIds(TRAIL, [newcomer, toilet], registry)).toThrow(
-      `"Toilet" (${newcomer.lat.toFixed(5)}, 150.00000)`,
+      new RegExp(
+        `"Toilet" at \\(${newcomer.lat.toFixed(5)}, 150\\.00000\\) is 60 m .*need distinct names \\(e\\.g\\. "Toilet 2"\\)`,
+      ),
     );
+  });
+
+  it('throws rather than swap ids when two same-name waypoints have both moved', () => {
+    // Tanks A and B 60 m apart. Both move: B to 25 m from A's entry (35 m
+    // from its own), A to 30 m from its entry (90 m from B's). Nearest-first
+    // alone would give B A's id and A B's.
+    const registry: WaypointRegistry = {};
+    const tankA = { name: 'Water tank', type: 'water', lat: -33.0, lon: 150.0 };
+    const tankB = { ...tankA, lat: movedNorth(-33.0, 60) };
+    const [idA, idB] = assignWaypointIds(TRAIL, [tankA, tankB], registry);
+    expect(idA).not.toBe(idB);
+
+    const movedA = { ...tankA, lat: movedNorth(-33.0, -30) };
+    const movedB = { ...tankB, lat: movedNorth(-33.0, 25) };
+    expect(() => assignWaypointIds(TRAIL, [movedA, movedB], registry)).toThrow(
+      new RegExp(`"Water tank" have both moved.*(${idA} and ${idB}|${idB} and ${idA})`),
+    );
+  });
+
+  it('pairs same-name waypoints by distance while one still stands on its entry', () => {
+    const registry: WaypointRegistry = {};
+    const tankA = { name: 'Water tank', type: 'water', lat: -33.0, lon: 150.0 };
+    const tankB = { ...tankA, lat: movedNorth(-33.0, 60) };
+    const [idA, idB] = assignWaypointIds(TRAIL, [tankA, tankB], registry);
+
+    // Only B moves, to 25 m from A's entry: A is still on its own, so the ids stay put.
+    const movedB = { ...tankB, lat: movedNorth(-33.0, 25) };
+    expect(assignWaypointIds(TRAIL, [tankA, movedB], registry)).toEqual([idA, idB]);
   });
 
   it('warns when a newcomer mints beside an entry its own name kept', () => {

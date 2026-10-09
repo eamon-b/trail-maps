@@ -290,6 +290,12 @@ function validateTrailDirectory(trailDir: string): { errors: string[]; needsAuto
   return { errors, needsAutoConfig };
 }
 
+/**
+ * Waypoint-id warnings from this build, repeated at the end: one fires only on
+ * the build that mints the id, so it must not scroll past unseen.
+ */
+const waypointIdWarnings: string[] = [];
+
 async function processTrail(trailDir: string, registry: WaypointRegistry, autoGenConfig: boolean = false): Promise<ProcessedTrail> {
   const configPath = path.join(trailDir, 'trail.json');
 
@@ -361,7 +367,10 @@ async function processTrail(trailDir: string, registry: WaypointRegistry, autoGe
     // Stable ids come from the committed registry (entries are never deleted;
     // ones this build does not match are marked retired).
     mintWaypointIds: (waypoints, resolvedConfig) =>
-      assignWaypointIds(resolvedConfig.id, waypoints, registry, message => console.warn(message)),
+      assignWaypointIds(resolvedConfig.id, waypoints, registry, message => {
+        console.warn(message);
+        waypointIdWarnings.push(message);
+      }),
 
     // Curated descriptions are keyed by the ids just assigned.
     afterWaypointIds: (waypoints, resolvedConfig) =>
@@ -731,6 +740,14 @@ async function main() {
     `Waypoint-id registry written to ${WAYPOINT_IDS_PATH} ` +
       `(${registryEntries.length} entries, ${retiredCount} retired)`
   );
+  if (waypointIdWarnings.length > 0) {
+    console.warn(
+      `\n${waypointIdWarnings.length} new waypoint id(s) were minted beside ` +
+        `another waypoint of the same type. This build is the only one that ` +
+        `reports them, so check each before committing ${WAYPOINT_IDS_PATH}:`
+    );
+    for (const message of waypointIdWarnings) console.warn(message);
+  }
 
   // A trail that threw wrote no output, so the generated data is stale/absent
   // for it — fail the build rather than letting a silent gap ship.

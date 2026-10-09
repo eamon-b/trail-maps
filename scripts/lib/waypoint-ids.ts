@@ -29,6 +29,10 @@ import { haversineDistance } from '../../src/lib/distance';
  * considered the same waypoint. */
 export const MATCH_RADIUS_METERS = 100;
 
+/** A waypoint this close to its registry entry has not moved since the last
+ * build (claiming an entry copies the waypoint's coordinates into it). */
+const UNMOVED_METERS = 1;
+
 /** Ids must be URL/comment-safe and reasonably short. */
 export const ID_PATTERN = /^[a-z0-9_-]{4,64}$/;
 
@@ -132,7 +136,9 @@ interface Candidate {
  * across the whole trail (ties by input order, then id). A waypoint therefore
  * keeps its id even when a newcomer of the same type lands within the radius
  * and comes before it in the input; of two waypoints under one name, the one
- * standing on the entry keeps it and the other is reported below.
+ * standing on the entry keeps it and the other is reported below. If two
+ * waypoints under one name have both moved and each is in range of the
+ * other's entry, nearest-first could swap their ids, so it throws instead.
  *
  * Then, for each remaining waypoint (in input order):
  *  - Find unclaimed registry entries of the same `type` within
@@ -145,10 +151,14 @@ interface Candidate {
  *    claimed in the first step → mint a new id and append an entry. In the
  *    second case `warn` names the entries it sat next to: a different place
  *    nearby is the usual reason, but so is one place entered twice under two
- *    names, which only a human can tell apart.
+ *    names, which only a human can tell apart. The warning comes only on the
+ *    build that mints: afterwards the waypoint claims its own entry by name.
+ *  - An entry under this waypoint's own type and name was kept by another
+ *    waypoint → throw, asking for distinct names (the registry cannot tell a
+ *    second place from the first entered twice).
  *  - Had candidate entries but every one was already claimed by another
- *    built waypoint this run, by proximity or under this waypoint's own name
- *    → throw (ambiguous identity; needs a human).
+ *    built waypoint this run by proximity → throw (ambiguous identity; needs
+ *    a human).
  *
  * Afterwards every pre-existing entry of this trail that no waypoint claimed
  * is marked `retired`. Call it once per trail per build, with every waypoint
@@ -227,11 +237,44 @@ export function assignWaypointIds(
     return a.c.id < b.c.id ? -1 : a.c.id > b.c.id ? 1 : 0;
   });
   const claimedByName = new Set<number>();
+  const namePicks: { wpIndex: number; c: Candidate }[] = [];
   for (const { wpIndex, c } of namePairs) {
     if (results[wpIndex] !== undefined || claimedBy.has(c.entryIndex)) continue;
-    claim(waypoints[wpIndex], wpIndex, c.entryIndex);
+    namePicks.push({ wpIndex, c });
     claimedByName.add(c.entryIndex);
+    claimedBy.set(c.entryIndex, wpIndex);
+    results[wpIndex] = c.id;
   }
+
+  // Nearest-first is right while one of two same-name waypoints still stands
+  // on its entry (the registry is refreshed every build, so an unchanged
+  // waypoint is 0 m from it). When both have moved and each is in range of the
+  // other's entry, distance alone could hand them each other's ids, and their
+  // comments with them: stop rather than guess.
+  for (let i = 0; i < namePicks.length; i++) {
+    for (let j = i + 1; j < namePicks.length; j++) {
+      const a = namePicks[i];
+      const b = namePicks[j];
+      if (waypoints[a.wpIndex].name !== waypoints[b.wpIndex].name) continue;
+      if (a.c.distance <= UNMOVED_METERS || b.c.distance <= UNMOVED_METERS) continue;
+      const aToB = candidatesByWaypoint[a.wpIndex].find((c) => c.exactName && c.entryIndex === b.c.entryIndex);
+      const bToA = candidatesByWaypoint[b.wpIndex].find((c) => c.exactName && c.entryIndex === a.c.entryIndex);
+      if (!aToB || !bToA) continue;
+      const wpA = waypoints[a.wpIndex];
+      const wpB = waypoints[b.wpIndex];
+      throw new Error(
+        `Ambiguous waypoint identity for trail "${trailId}": two ${wpA.type} ` +
+          `waypoints named "${wpA.name}" have both moved, to ` +
+          `(${wpA.lat.toFixed(5)}, ${wpA.lon.toFixed(5)}) and ` +
+          `(${wpB.lat.toFixed(5)}, ${wpB.lon.toFixed(5)}), and each is within ` +
+          `${MATCH_RADIUS_METERS} m of both registry entries ${a.c.id} and ` +
+          `${b.c.id}, so their positions cannot say which id is whose. Set each ` +
+          `entry's lat/lon in data/waypoint-ids.json to its waypoint's new ` +
+          `position (or give the two waypoints distinct names) and build again.`,
+      );
+    }
+  }
+  for (const { wpIndex, c } of namePicks) claim(waypoints[wpIndex], wpIndex, c.entryIndex);
 
   waypoints.forEach((wp, wpIndex) => {
     if (results[wpIndex] !== undefined) return;
@@ -246,6 +289,21 @@ export function assignWaypointIds(
     // Entries their own names claimed say nothing about this waypoint: it is
     // a different place nearby. Anything else claimed first is ambiguous.
     const conflict = candidates.find((c) => c.exactName || !claimedByName.has(c.entryIndex));
+    if (conflict?.exactName) {
+      // Another waypoint of this type and name kept the entry: names are the
+      // only identity the registry has inside the radius, so it cannot tell a
+      // second place from the first one entered twice.
+      const other = waypoints[claimedBy.get(conflict.entryIndex)!];
+      throw new Error(
+        `Duplicate waypoint name for trail "${trailId}": ${wp.type} "${wp.name}" ` +
+          `at (${wp.lat.toFixed(5)}, ${wp.lon.toFixed(5)}) is ` +
+          `${Math.round(conflict.distance)} m from registry entry ${conflict.id}, ` +
+          `which another ${wp.type} of the same name at ` +
+          `(${other.lat.toFixed(5)}, ${other.lon.toFixed(5)}) keeps. Within ` +
+          `${MATCH_RADIUS_METERS} m, two places of one type need distinct names ` +
+          `(e.g. "${wp.name} 2"); if they are the same place, drop the duplicate.`,
+      );
+    }
     if (conflict) {
       // Every nearby same-type entry was already claimed by another waypoint.
       const otherWpIndex = claimedBy.get(conflict.entryIndex);
@@ -260,6 +318,9 @@ export function assignWaypointIds(
       );
     }
 
+    // Only entries other names claimed are nearby: say so, because this is the
+    // one build that can. From the next one on, this waypoint claims the entry
+    // minted below by its own name and looks like any other.
     if (candidates.length > 0) {
       const neighbours = candidates
         .map((c) => `"${waypoints[claimedBy.get(c.entryIndex)!].name}" (${Math.round(c.distance)} m)`)
@@ -271,7 +332,7 @@ export function assignWaypointIds(
       );
     }
 
-  // No candidate: mint a fresh deterministic id and append an entry.
+    // Mint a fresh deterministic id and append an entry.
     const id = mintId(trailId, wp, existingIds);
     existingIds.add(id);
     const newEntry: WaypointRegistryEntry = {

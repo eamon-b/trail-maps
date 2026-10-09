@@ -12,6 +12,7 @@
 import { HttpError } from './http';
 import type { Env } from './http';
 import { COMMUNITY_LIMITS } from '../../../src/lib/community-types';
+import { USER_WAYPOINT_LIMITS } from '../../../src/lib/user-waypoints';
 
 /** Named limits. Add the constant here so every ceiling is in one place. */
 export const RATE_BUCKETS = {
@@ -61,6 +62,20 @@ export const RATE_BUCKETS = {
    * read "one below the limit" before any of them is stored.
    */
   communityReport: { bucket: 'community_report', limit: 20, windowMs: 24 * 60 * 60 * 1000 },
+  /** New shared hiker waypoints per user per day (`src/lib/user-waypoints.ts`). */
+  sharedWaypointCreate: {
+    bucket: 'shared_waypoint_create',
+    limit: USER_WAYPOINT_LIMITS.sharesPerDay,
+    windowMs: 24 * 60 * 60 * 1000,
+  },
+  /** Owner edits of shared waypoints per user per day; an edit that changes nothing is free. */
+  sharedWaypointEdit: { bucket: 'shared_waypoint_edit', limit: 60, windowMs: 24 * 60 * 60 * 1000 },
+  /** Shared-waypoint reports per user per day; a repeat of one already filed is free. */
+  sharedWaypointReport: {
+    bucket: 'shared_waypoint_report',
+    limit: 20,
+    windowMs: 24 * 60 * 60 * 1000,
+  },
 
 } as const;
 

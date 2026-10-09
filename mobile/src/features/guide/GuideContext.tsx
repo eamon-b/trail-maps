@@ -54,6 +54,8 @@ import {
 } from '../../services/community-routes';
 import { isCommunityRouteId } from '@lib/community-types';
 import { selectDirection, useSettingsStore, type Direction } from '../../state/settings-store';
+import { selectUserWaypoints, useUserWaypointsStore } from '../../state/user-waypoints-store';
+import { placeUserWaypoints } from '@lib/user-waypoints';
 import { resolveGuideTrail } from './guide-trail';
 
 export interface GuideContextValue {
@@ -211,19 +213,35 @@ export function GuideProvider({
   const shownVersion = fresh ? fresh.version : bundled ? bundledVersion : (current?.version ?? null);
   const available = shownVersion !== null && latestVersion !== null && latestVersion !== shownVersion;
 
+  // The hiker's own waypoints (private and shared) are placed into the trail as
+  // stored, before direction: from here on every screen — map, list, profile,
+  // detail, planner — reads them as ordinary waypoints.
+  const hydrateUserWaypoints = useUserWaypointsStore((s) => s.hydrate);
+  useEffect(() => {
+    void hydrateUserWaypoints(trailId).catch(() => {});
+  }, [hydrateUserWaypoints, trailId]);
+  const userWaypoints = useUserWaypointsStore(selectUserWaypoints(trailId));
+  const placed = useMemo(
+    () => (raw ? placeUserWaypoints(raw, userWaypoints) : raw),
+    [raw, userWaypoints],
+  );
+
   // Apart from the value: a banner state change must not re-reverse the trail
   // or hand every consumer a new trail object.
-  const trail = useMemo(() => (raw ? resolveGuideTrail(raw, direction) : null), [raw, direction]);
+  const trail = useMemo(
+    () => (placed ? resolveGuideTrail(placed, direction) : null),
+    [placed, direction],
+  );
   const value = useMemo<GuideContextValue | null>(() => {
-    if (!trail || !raw) return null;
+    if (!trail || !raw || !placed) return null;
     return {
       trailId,
       trail,
-      baseTrail: raw,
+      baseTrail: placed,
       direction,
       dataUpdate: { available, version: latestVersion, reloading, reload },
     };
-  }, [trail, raw, trailId, direction, available, latestVersion, reloading, reload]);
+  }, [trail, raw, placed, trailId, direction, available, latestVersion, reloading, reload]);
 
   if (raw === undefined) return <GuideLoading downloading={downloading} />;
   if (!value && current?.takenDown) return <GuideTakenDown />;

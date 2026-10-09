@@ -16,6 +16,9 @@
  * button, opening PoiLayersSheet over the map; the markers themselves come from
  * `useVisiblePois`, the one filter every POI surface reads.
  *
+ * A long-press on the map, or the ＋ button (at the GPS fix), opens the form
+ * for a new hiker waypoint there (`app/guide/[trailId]/waypoint-edit`).
+ *
  * Once the plan has a stop, a ⛺ button opens PlanGlanceSheet: the planned
  * days over the map, so ticking a campsite and checking the days around it
  * never needs the full planner.
@@ -28,6 +31,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { routeBreakStarts } from '@lib/route-breaks';
 import { useTheme } from '../../theme';
 import { glyphSizes, radii, spacing, touchTarget, typography } from '../../tokens';
@@ -364,6 +368,21 @@ export function MapPane() {
     [router, trailId],
   );
 
+  // A new hiker waypoint: where the map was long-pressed, or at the GPS fix.
+  const addWaypointAt = useCallback(
+    (lat: number | null, lon: number | null) => {
+      router.push({
+        pathname: '/guide/[trailId]/waypoint-edit',
+        params: lat !== null && lon !== null ? { trailId, lat: String(lat), lon: String(lon) } : { trailId },
+      });
+    },
+    [router, trailId],
+  );
+  const onMapLongPress = useCallback(
+    (lat: number, lon: number) => addWaypointAt(lat, lon),
+    [addWaypointAt],
+  );
+
   const onPoiTap = useCallback(
     (routeKey: string) => {
       router.push({
@@ -439,6 +458,7 @@ export function MapPane() {
           routeOverlay={routeOverlay}
           builderMode={building}
           onMapPress={onMapPress}
+          onMapLongPress={building ? undefined : onMapLongPress}
           onStyleResolved={onStyleResolved}
           onVisibleBoundsChange={onVisibleBoundsChange}
           onCameraChange={onCameraChange}
@@ -534,7 +554,8 @@ export function MapPane() {
               accessibilityRole="button"
               accessibilityLabel="Map layers"
               style={({ pressed }) => [
-                styles.layers,
+                styles.fab,
+                { bottom: fabBottom(4) },
                 { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
                 pressed && styles.pressed,
               ]}
@@ -552,7 +573,7 @@ export function MapPane() {
               accessibilityLabel="View plan"
               style={({ pressed }) => [
                 styles.fab,
-                { bottom: fabBottom(trailHasPois ? 4 : 3) },
+                { bottom: fabBottom(trailHasPois ? 5 : 4) },
                 { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
                 pressed && styles.pressed,
               ]}
@@ -560,6 +581,22 @@ export function MapPane() {
               <Text style={[styles.buttonIcon, { color: colors.waypointCamp }]}>⛺</Text>
             </Pressable>
           )}
+
+          {/* Add a waypoint at the GPS fix (a long-press adds one anywhere). */}
+          <Pressable
+            onPress={() => addWaypointAt(position?.lat ?? null, position?.lon ?? null)}
+            accessibilityRole="button"
+            accessibilityLabel="Add a waypoint"
+            accessibilityHint="Adds one at your location. Long-press the map to add one anywhere."
+            style={({ pressed }) => [
+              styles.fab,
+              { bottom: fabBottom(3) },
+              { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+              pressed && styles.pressed,
+            ]}
+          >
+            <MaterialCommunityIcons name="map-marker-plus" size={22} color={colors.accent} />
+          </Pressable>
 
           {/* Draw route: enter the tap-to-add-point builder */}
           <Pressable
@@ -747,17 +784,6 @@ const styles = StyleSheet.create({
   centerOnMe: {
     position: 'absolute',
     bottom: spacing.xl + 44 + spacing.sm,
-    right: spacing.lg,
-    width: 44,
-    height: 44,
-    borderRadius: radii.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  layers: {
-    position: 'absolute',
-    bottom: spacing.xl + (44 + spacing.sm) * 3,
     right: spacing.lg,
     width: 44,
     height: 44,

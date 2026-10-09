@@ -395,7 +395,7 @@ describe('schema v6 — ISO outbox timestamps', () => {
        VALUES ('iso', 'comment', 'heysen', 'w_1', '{}', '2026-10-06T01:00:00.000Z')`
     );
 
-    await migrateDatabase(db as never);
+    await migrateDatabase(db as never, 6);
 
     const rows = await db.getAllAsync<Record<string, unknown>>(
       'SELECT * FROM outbox ORDER BY created_at, id'

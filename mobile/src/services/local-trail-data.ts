@@ -29,6 +29,7 @@ import { usePlanInputsStore } from '../features/plan/plan-inputs-store';
 import { useRoutesStore } from '../features/routes/routes-store';
 import { useFavoritesStore } from '../state/favorites-store';
 import { usePlansStore } from '../state/plans-store';
+import { useUserWaypointsStore } from '../state/user-waypoints-store';
 import { useSettingsStore } from '../state/settings-store';
 import { isLocalOnlyTrailId } from './server-trails';
 
@@ -42,6 +43,7 @@ export async function deleteLocalTrailData(db: SqlDatabase, trailId: string): Pr
   usePlansStore.getState().clear(trailId);
   useFavoritesStore.getState().forgetTrail(trailId);
   useRoutesStore.getState().forgetTrail(trailId);
+  useUserWaypointsStore.getState().forgetTrail(trailId);
   usePlanInputsStore.getState().clearTrail(trailId);
   const settings = useSettingsStore.getState();
   settings.clearDirection(trailId);

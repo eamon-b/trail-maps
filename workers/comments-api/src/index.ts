@@ -21,6 +21,13 @@ import {
 } from './comments';
 import { uploadCommentPhoto } from './photos';
 import {
+  adminListSharedWaypoints,
+  deleteSharedWaypoint,
+  getTrailSharedWaypoints,
+  putSharedWaypoint,
+  reportSharedWaypoint,
+} from './shared-waypoints';
+import {
   deletePlan,
   getSharedPlan,
   listPlans,
@@ -209,6 +216,25 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return methodNotAllowed();
     }
 
+    // /v1/waypoints/:id — shared hiker waypoints
+    if (rest.length === 2 && rest[0] === 'waypoints') {
+      if (method === 'PUT') return await putSharedWaypoint(request, env, ctx, rest[1]);
+      if (method === 'DELETE') return await deleteSharedWaypoint(request, env, ctx, rest[1]);
+      return methodNotAllowed();
+    }
+
+    // /v1/waypoints/:id/report
+    if (rest.length === 3 && rest[0] === 'waypoints' && rest[2] === 'report') {
+      if (method === 'POST') return await reportSharedWaypoint(request, env, ctx, rest[1]);
+      return methodNotAllowed();
+    }
+
+    // /v1/admin/waypoints
+    if (rest.length === 2 && rest[0] === 'admin' && rest[1] === 'waypoints') {
+      if (method === 'GET') return await adminListSharedWaypoints(request, env, ctx);
+      return methodNotAllowed();
+    }
+
     // /v1/admin/comments
     if (rest.length === 2 && rest[0] === 'admin' && rest[1] === 'comments') {
       if (method === 'GET') return await getAdminComments(request, env, ctx);
@@ -237,6 +263,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     // /v1/trails/:trailId/comments
     if (rest.length === 3 && rest[0] === 'trails' && rest[2] === 'comments') {
       if (method === 'GET') return await getBulkSync(request, env, rest[1]);
+      return methodNotAllowed();
+    }
+
+    // /v1/trails/:trailId/waypoints — shared hiker waypoints, full or delta
+    if (rest.length === 3 && rest[0] === 'trails' && rest[2] === 'waypoints') {
+      if (method === 'GET') return await getTrailSharedWaypoints(request, env, ctx, rest[1]);
       return methodNotAllowed();
     }
 

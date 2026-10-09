@@ -36,6 +36,7 @@ import * as path from 'path';
 import { haversineDistance } from '../src/lib/distance.js';
 import { generateGpx, parseGpx } from '../src/lib/gpx-parser.js';
 import { jsdomXmlAdapter } from './lib/xml-adapter-jsdom.js';
+import { WAYPOINT_TYPES } from '../src/lib/waypoint-taxonomy.js';
 import type { GpxPoint, GpxWaypoint } from '../src/lib/types.js';
 
 const TRACK_TITLE = '88 Temple Pilgrimage';
@@ -304,7 +305,30 @@ interface HenroyadoFile {
   listed: Record<string, string>;
 }
 
-const HENROYADO = JSON.parse(fs.readFileSync(HENROYADO_FILE, 'utf-8')) as HenroyadoFile;
+const HENROYADO = readHenroyadoFile(HENROYADO_FILE);
+
+/** The inns file is hand-edited: check what goes into the GPX before it does. */
+function readHenroyadoFile(file: string): HenroyadoFile {
+  const data = JSON.parse(fs.readFileSync(file, 'utf-8')) as HenroyadoFile;
+  const problems: string[] = [];
+  if (!Array.isArray(data.inns)) problems.push('`inns` is not a list');
+  for (const [i, inn] of (Array.isArray(data.inns) ? data.inns : []).entries()) {
+    const label = typeof inn?.name === 'string' && inn.name ? `"${inn.name}"` : `inns[${i}]`;
+    if (typeof inn?.name !== 'string' || !inn.name.trim()) problems.push(`${label}: no name`);
+    if (!(WAYPOINT_TYPES as readonly string[]).includes(inn?.type)) problems.push(`${label}: unknown type "${inn?.type}"`);
+    // Within Tokushima, so a swapped or mistyped coordinate cannot slip through.
+    if (!(Number.isFinite(inn?.lat) && inn.lat > 33.5 && inn.lat < 34.5)) problems.push(`${label}: lat ${inn?.lat} is not in Tokushima`);
+    if (!(Number.isFinite(inn?.lon) && inn.lon > 133.5 && inn.lon < 135)) problems.push(`${label}: lon ${inn?.lon} is not in Tokushima`);
+    if (typeof inn?.position !== 'string' || !inn.position.trim()) problems.push(`${label}: no \`position\` source`);
+    if (typeof inn?.desc !== 'string') problems.push(`${label}: no desc`);
+  }
+  if (typeof data.listed !== 'object' || data.listed === null) problems.push('`listed` is not an object');
+  else for (const [name, line] of Object.entries(data.listed)) {
+    if (typeof line !== 'string' || !line.trim()) problems.push(`listed "${name}": no details`);
+  }
+  if (problems.length > 0) throw new Error(`${path.basename(file)}:\n  ${problems.join('\n  ')}`);
+  return data;
+}
 const HENROYADO_PREFIX = 'henroyado.com (Oct 2026): ';
 
 const HENROYADO_INNS: GpxWaypoint[] = HENROYADO.inns.map(({ name, lat, lon, type, desc }) => ({
@@ -316,10 +340,14 @@ const HENROYADO_INNS: GpxWaypoint[] = HENROYADO.inns.map(({ name, lat, lon, type
   desc,
 }));
 
-/** A marker's description with henroyado.com's line (re)appended last. */
-function withHenroyadoLine(desc: string | undefined, line: string): string {
-  const own = (desc ?? '').split('\n').filter(l => !l.startsWith('henroyado.com ('));
-  return [...own, HENROYADO_PREFIX + line].filter(Boolean).join('\n');
+/**
+ * A marker's description with any henroyado.com line taken out and, when the
+ * marker is in `listed`, the current one appended last: a marker dropped from
+ * `listed` loses its old line on the next run instead of keeping it for good.
+ */
+function withHenroyadoLine(desc: string, line: string | undefined): string {
+  const own = desc.split('\n').filter(l => !l.startsWith('henroyado.com ('));
+  return [...own, ...(line === undefined ? [] : [HENROYADO_PREFIX + line])].filter(Boolean).join('\n');
 }
 
 /** Source-map markers for places that have closed, with the evidence. */
@@ -340,7 +368,7 @@ export function applyCuratedWaypoints(waypoints: GpxWaypoint[]): GpxWaypoint[] {
   const kept = waypoints
     .filter(w => !(w.name in CLOSED_MARKERS) && !curatedNames.has(w.name))
     .map(w => (w.name in DESCRIPTION_OVERRIDES ? { ...w, desc: DESCRIPTION_OVERRIDES[w.name] } : w))
-    .map(w => (w.name in HENROYADO.listed ? { ...w, desc: withHenroyadoLine(w.desc, HENROYADO.listed[w.name]) } : w));
+    .map(w => ({ ...w, desc: withHenroyadoLine(w.desc, Object.prototype.hasOwnProperty.call(HENROYADO.listed, w.name) ? HENROYADO.listed[w.name] : undefined) }));
   const missing = Object.keys(HENROYADO.listed).filter(name => !kept.some(w => w.name === name));
   if (missing.length > 0) {
     throw new Error(`henroyado.com details for markers that are not on the map: ${missing.join(', ')}`);

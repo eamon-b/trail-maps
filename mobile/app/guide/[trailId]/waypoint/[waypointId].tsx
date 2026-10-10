@@ -30,6 +30,15 @@
  * place, its tags are offered in a collapsed "From OpenStreetMap" section. That
  * is local trail data, so it works for an imported guide too.
  *
+ * A waypoint can be on one of the trail's alternates as well as on the main
+ * route — the Today screen and the plan open those too. Its place relative to
+ * the alternates gets a card (`plan/waypoint-alternates`): the alternate it is
+ * on, one that leaves or rejoins the main route here, or the one the plan takes
+ * past it. Each says where the alternate leaves and rejoins the main route and
+ * offers the planner's "Take this alternate" / "Stay on the main route". A
+ * place on an alternate the plan takes can be a stop, and its trip is measured
+ * along the route as planned; on one it does not take, neither.
+ *
  * A waypoint a hiker added (`@lib/user-waypoints`) says so under its name: its
  * own ("only on this phone" or shared), with Edit, or another hiker's shared
  * one, with Report. A private one has no comments — nobody else can see it.
@@ -73,7 +82,6 @@ import { useGuidePositionContext } from '../../../../src/features/guide/GuidePos
 import { LinkifiedText } from '../../../../src/features/guide/LinkifiedText';
 import { ShareIconButton } from '../../../../src/features/share/ShareIconButton';
 import { useCheckInShare } from '../../../../src/features/share/use-check-in-share';
-import { orderedWaypoints } from '../../../../src/features/guide/guide-trail';
 import { waypointColor } from '../../../../src/features/elevation/waypoint-category';
 import {
   duplicatePoisFor,
@@ -92,9 +100,23 @@ import {
   toggleStop,
 } from '@lib/plan-editor';
 import type { PlanDocument } from '@lib/plan-types';
-import { editPlanOnRoute, mainKmToRoute, planToRoute } from '@lib/plan-alternates';
+import {
+  editPlanOnRoute,
+  mainKmToRoute,
+  planToRoute,
+  setPlanAlternate,
+} from '@lib/plan-alternates';
 import { toActiveKm } from '@lib/plan-direction';
-import { plannableTrail, usePlanRoute } from '../../../../src/features/plan/use-plan-route';
+import {
+  plannableTrail,
+  routeKmOfFix,
+  usePlanRoute,
+} from '../../../../src/features/plan/use-plan-route';
+import {
+  findGuideWaypoint,
+  waypointAlternates,
+} from '../../../../src/features/plan/waypoint-alternates';
+import { WaypointAlternateCard } from '../../../../src/features/plan/WaypointAlternateCard';
 import { useIdentityStore } from '../../../../src/state/identity-store';
 import { selectIsFavorite, useFavoritesStore } from '../../../../src/state/favorites-store';
 import { useWaypointResupplyPlan } from '../../../../src/features/plan/use-planned-resupply';
@@ -149,17 +171,15 @@ export default function WaypointDetailScreen() {
   const router = useRouter();
   const { trail, direction } = useGuide();
   const units = useSettingsStore((s) => s.units);
-  const { currentKm, position, status } = useGuidePositionContext();
+  const guidePosition = useGuidePositionContext();
+  const { currentKm, position, status } = guidePosition;
   const shareCheckIn = useCheckInShare();
 
-  const waypoint = useMemo(() => {
-    const list = orderedWaypoints(trail);
-    return (
-      list.find((w, i) => (w.id ?? `${w.name}-${i}`) === waypointId) ??
-      list.find((w) => w.id === waypointId) ??
-      null
-    );
-  }, [trail, waypointId]);
+  // The main route's waypoints, then every alternate's: the route as planned
+  // can take the hiker to either.
+  const found = useMemo(() => findGuideWaypoint(trail, waypointId), [trail, waypointId]);
+  const waypoint = found?.waypoint ?? null;
+  const onAlternate = found !== null && found.alternateIndex !== null;
   // Before the not-found return below: a hook cannot sit after it.
 
   // The comments channel needs BOTH a server-side trail (imported guides have
@@ -241,9 +261,23 @@ export default function WaypointDetailScreen() {
   // that route (`@lib/plan-alternates`), as on the Plan screen. A waypoint on a
   // stretch an alternate bypasses is not on the route, so it offers no stop.
   const { route, trail: routeTrail, baseTrail } = usePlanRoute(plan);
+  // A place on an alternate is on the route only while the plan takes it; then
+  // it is one of the route trail's waypoints, already in route km.
+  const routeWaypoint = useMemo(
+    () =>
+      onAlternate && waypoint?.id
+        ? (routeTrail.waypoints.find((w) => w.id === waypoint.id) ?? null)
+        : null,
+    [onAlternate, waypoint, routeTrail],
+  );
   const stopCandidate = useMemo(() => {
     if (!waypoint) return null;
     const planDirection = planDirectionOf(direction);
+    if (onAlternate) {
+      return routeWaypoint
+        ? stopCandidateOf(routeWaypoint, planDirection, route.totalDistance)
+        : null;
+    }
     const candidate = stopCandidateOf(waypoint, planDirection, trail.track.totalDistance);
     const routeKm = mainKmToRoute(route, candidate.noboKm);
     if (routeKm === null) return null;
@@ -254,7 +288,7 @@ export default function WaypointDetailScreen() {
       noboKm: routeKm,
       activeKm: toActiveKm(routeKm, planDirection, route.totalDistance),
     };
-  }, [waypoint, direction, trail.track.totalDistance, route]);
+  }, [waypoint, direction, trail.track.totalDistance, route, onAlternate, routeWaypoint]);
   const routePlan = useMemo(() => (plan ? planToRoute(plan, route) : undefined), [plan, route]);
   const planStop =
     routePlan && stopCandidate ? findStop(routePlan, stopKeyOf(stopCandidate)) : undefined;
@@ -274,6 +308,36 @@ export default function WaypointDetailScreen() {
     },
     [applyPlanEdit, planDefaults, trailId, baseTrail],
   );
+  // The alternates this place is on, at the junctions of, or bypassed by.
+  const alternateCards = useMemo(
+    () => (found ? waypointAlternates(trail, baseTrail, route, found) : []),
+    [found, trail, baseTrail, route],
+  );
+  const setAlternate = useCallback(
+    (name: string, take: boolean) => {
+      void applyPlanEdit(
+        trailId,
+        (p) => setPlanAlternate(p, plannableTrail(baseTrail), name, take),
+        planDefaults,
+      );
+    },
+    [applyPlanEdit, trailId, baseTrail, planDefaults],
+  );
+  const openPlace = useCallback(
+    (id: string) =>
+      router.push({
+        pathname: '/guide/[trailId]/waypoint/[waypointId]',
+        params: { trailId, waypointId: id },
+      }),
+    [router, trailId],
+  );
+  // The hiker's km on the route as planned, for the trip to a place on a taken
+  // alternate (the guide's own km is along the main route).
+  const routeFixKm = useMemo(
+    () => (routeWaypoint ? routeKmOfFix(guidePosition, route, routeTrail) : null),
+    [routeWaypoint, guidePosition, route, routeTrail],
+  );
+
   const toggleThisStop = useCallback(() => {
     if (!stopCandidate) return;
     editPlan((p) =>
@@ -407,10 +471,13 @@ export default function WaypointDetailScreen() {
 
   // How far the place itself is from the line, so the trip card never calls a
   // lodging two kilometres off the route "here".
-  const placeOffTrailM = useMemo(
-    () => (waypoint ? waypointOffTrailMeters(waypoint, trail.track.points) : null),
-    [waypoint, trail],
-  );
+  const placeOffTrailM = useMemo(() => {
+    if (!waypoint) return null;
+    if (onAlternate) {
+      return routeWaypoint ? waypointOffTrailMeters(waypoint, routeTrail.track.points) : null;
+    }
+    return waypointOffTrailMeters(waypoint, trail.track.points);
+  }, [waypoint, trail, onAlternate, routeWaypoint, routeTrail]);
 
   if (!waypoint) {
     return (
@@ -429,6 +496,7 @@ export default function WaypointDetailScreen() {
   const remaining = Math.max(totalComments - (comments?.length ?? 0), 0);
   const duplicatePois = duplicatePoisFor(trail, waypoint.id);
   const km = waypoint.totalDistance ?? 0;
+  const onCard = alternateCards.find((a) => a.role === 'on');
   return (
     <View style={styles.flex}>
       <Stack.Screen options={{ title: waypoint.name }} />
@@ -436,12 +504,23 @@ export default function WaypointDetailScreen() {
         style={[styles.flex, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
       >
-        {/* How far, and how much up and down, from where the hiker stands. */}
-        <TripCard
-          placeKm={km}
-          placeOffTrailM={placeOffTrailM}
-          placeAccessMode={isAccessMode(waypoint.accessMode) ? waypoint.accessMode : undefined}
-        />
+        {/* How far, and how much up and down, from where the hiker stands.
+            A place on an alternate is measured along the route as planned, so
+            only once the plan takes it. */}
+        {!onAlternate ? (
+          <TripCard
+            placeKm={km}
+            placeOffTrailM={placeOffTrailM}
+            placeAccessMode={isAccessMode(waypoint.accessMode) ? waypoint.accessMode : undefined}
+          />
+        ) : routeWaypoint ? (
+          <TripCard
+            placeKm={routeWaypoint.totalDistance ?? 0}
+            placeOffTrailM={placeOffTrailM}
+            placeAccessMode={isAccessMode(waypoint.accessMode) ? waypoint.accessMode : undefined}
+            along={{ trail: routeTrail, currentKm: routeFixKm }}
+          />
+        ) : null}
 
         {/* Hero header */}
         <View style={styles.hero}>
@@ -577,11 +656,30 @@ export default function WaypointDetailScreen() {
 
         {/* Stats row */}
         <View style={styles.stats}>
-          <Stat label="Distance" value={formatDistance(km, units)} />
+          {onCard ? (
+            onCard.kmAlong !== null && (
+              <Stat label="Along the alternate" value={formatDistance(onCard.kmAlong, units)} />
+            )
+          ) : (
+            <Stat label="Distance" value={formatDistance(km, units)} />
+          )}
           {waypoint.elevation != null && (
             <Stat label="Elevation" value={formatElevation(waypoint.elevation, units)} />
           )}
         </View>
+
+        {/* Its alternates: where each leaves and rejoins the main route, and
+            the planner's choice to take it or stay on the main route. */}
+        {alternateCards.map((alternate) => (
+          <WaypointAlternateCard
+            key={`${alternate.role}:${alternate.name}`}
+            alternate={alternate}
+            units={units}
+            currentWaypointId={waypoint.id}
+            onAlternate={setAlternate}
+            onOpenPlace={openPlace}
+          />
+        ))}
 
         {/* The place in the plan: the day that ends here and the one that
             leaves from it, and for a stop its nights / note / booked — the

@@ -45,4 +45,12 @@ describe('LinkifiedText', () => {
     expect(links(renderer)).toHaveLength(0);
     expect(renderer.root.findAllByType(Text)[0].props.children).toEqual(['Water tank, reliable']);
   });
+
+  it('lets the description be selected and copied', () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<LinkifiedText text="Tel 0888-12-3456, inn@example.jp" />);
+    });
+    expect(renderer.root.findAllByType(Text)[0].props.selectable).toBe(true);
+  });
 });

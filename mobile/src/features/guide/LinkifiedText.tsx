@@ -4,6 +4,9 @@
  *
  * The links are nested `Text`, so they wrap with the prose around them. Only
  * the http(s) hrefs `@lib/text-links` hands back ever reach `Linking.openURL`.
+ *
+ * The text is selectable (long-press → copy), so a hut's phone number or an
+ * inn's email address can be pasted into the dialler or a mail app.
  */
 
 import { Linking, StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
@@ -13,7 +16,7 @@ import { useTheme } from '../../theme';
 export function LinkifiedText({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
   const { colors } = useTheme();
   return (
-    <Text style={style}>
+    <Text selectable style={style}>
       {splitTextLinks(text).map((segment, i) =>
         segment.href ? (
           <Text

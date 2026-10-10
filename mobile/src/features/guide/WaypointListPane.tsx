@@ -21,12 +21,17 @@
  * row throughout — no favourite, no water status, no comments — and the list
  * carries the OSM credit line as a footer whenever one is on screen.
  *
+ * Once there is a fix, the list opens on what is still ahead: rows the hiker
+ * has already passed are folded behind a "Show N previous" button at the top
+ * (and folded again with "Hide previous"). Without a fix nothing is behind, so
+ * the whole trail is listed.
+ *
  * The rows on screen are also this pane's contribution to the guide's shared
  * focus window (see guide-focus): leaving the list reports the km range they
  * span, and arriving scrolls to the first row in the incoming range.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -46,11 +51,12 @@ import { usePlannedResupplyIds } from '../plan/use-planned-resupply';
 import type { TrailJson } from '../../services/trail-loader';
 import { useGuide } from './GuideContext';
 import { useGuidePaneFocus } from './GuideFocusContext';
-import { firstIndexInFocus, focusFromItems } from './guide-focus';
+import { firstIndexInFocus, focusFromItems, type FocusWindow } from './guide-focus';
 import { orderedWaypoints } from './guide-trail';
 import {
   interleaveListRows,
   rowKm,
+  rowsAhead,
   toWaypointRows,
   type ListRow,
 } from './list-rows';
@@ -94,6 +100,8 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   // comments are filed against; legacy waypoints without one carry no reports).
   const waterByWaypoint = useWaterStatus(trailId);
   const [family, setFamily] = useState<WaypointFamily>('all');
+  // Rows behind the hiker stay folded until asked for.
+  const [showPrevious, setShowPrevious] = useState(false);
   const listRef = useRef<FlatList<ListRow>>(null);
   // Already filtered by the global POI switches; the chips narrow it further.
   const visiblePois = useVisiblePois(trail);
@@ -120,7 +128,7 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
   const activeFamily: WaypointFamily =
     family === 'planned' && plannedIds == null ? 'all' : family;
 
-  const data = useMemo(() => {
+  const allRows = useMemo(() => {
     const waypointRows = toWaypointRows(orderedWaypoints(trail)).filter((row) =>
       matchesFamily(
         row.waypoint.type,
@@ -134,6 +142,11 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
     const pois = visiblePois.filter((poi) => matchesPoiFamily(poi.category, activeFamily));
     return interleaveListRows(waypointRows, pois);
   }, [trail, activeFamily, favoriteSet, plannedIds, visiblePois]);
+
+  // What the hiker has already walked past, within the active filter.
+  const ahead = useMemo(() => rowsAhead(allRows, currentKm), [allRows, currentKm]);
+  const passedCount = ahead.passedCount;
+  const data = showPrevious ? allRows : ahead.rows;
 
   const hasPoiRows = useMemo(() => data.some((row) => row.kind === 'poi'), [data]);
 
@@ -190,16 +203,36 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
     };
   });
 
+  const scrollToFocus = useCallback((rows: readonly ListRow[], focus: FocusWindow) => {
+    const index = firstIndexInFocus(rows, focus, rowKm);
+    if (index < 0) return;
+    // Not animated: this lands while the pane is being revealed, and an
+    // animated scroll from the old offset would be a distracting fly-past.
+    listRef.current?.scrollToIndex({ index, viewPosition: 0, animated: false });
+  }, []);
+
+  // A focus that reaches back into the folded rows (the hiker was looking
+  // behind themselves on the map or profile) unfolds them first, then scrolls
+  // once the list has re-rendered with them in it.
+  const pendingFocusRef = useRef<FocusWindow | null>(null);
+  useEffect(() => {
+    const focus = pendingFocusRef.current;
+    if (!focus || !showPrevious) return;
+    pendingFocusRef.current = null;
+    scrollToFocus(data, focus);
+  }, [data, showPrevious, scrollToFocus]);
+
   // `useGuidePaneFocus` re-reads these handlers on every render, so `apply` can
   // close over `data` directly rather than mirroring it into a ref.
   useGuidePaneFocus('list', {
     capture: () => focusFromItems(visibleItemsRef.current, totalKm, undefined, rowKm),
     apply: (focus) => {
-      const index = firstIndexInFocus(data, focus, rowKm);
-      if (index < 0) return;
-      // Not animated: this lands while the pane is being revealed, and an
-      // animated scroll from the old offset would be a distracting fly-past.
-      listRef.current?.scrollToIndex({ index, viewPosition: 0, animated: false });
+      if (!showPrevious && passedCount > 0 && focus.startKm <= allRows[passedCount - 1].km) {
+        pendingFocusRef.current = focus;
+        setShowPrevious(true);
+        return;
+      }
+      scrollToFocus(data, focus);
     },
   });
 
@@ -298,13 +331,34 @@ export function WaypointListPane({ trail }: { trail: TrailJson }) {
         // Variable-height rows (POI rows, chips and water status come and go),
         // so there is no fixed `getItemLayout` to give.
         ItemSeparatorComponent={RowSeparator}
+        // Rows the hiker has passed are folded until this is pressed.
+        ListHeaderComponent={
+          passedCount > 0 ? (
+            <Pressable
+              onPress={() => setShowPrevious((shown) => !shown)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showPrevious }}
+              style={({ pressed }) => [
+                styles.previousButton,
+                { borderColor: colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.previousButtonText, { color: colors.accent }]}>
+                {showPrevious ? 'Hide previous' : `Show ${passedCount} previous`}
+              </Text>
+            </Pressable>
+          ) : null
+        }
         ListEmptyComponent={
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {activeFamily === 'favorites'
-              ? 'No favorites yet. Tap the heart on a waypoint to save it here.'
-              : activeFamily === 'planned'
-                ? 'No planned resupply stops. Choose them from the Plan screen.'
-                : 'No waypoints match this filter.'}
+            {passedCount > 0
+              ? 'Nothing ahead matches this filter.'
+              : activeFamily === 'favorites'
+                ? 'No favorites yet. Tap the heart on a waypoint to save it here.'
+                : activeFamily === 'planned'
+                  ? 'No planned resupply stops. Choose them from the Plan screen.'
+                  : 'No waypoints match this filter.'}
           </Text>
         }
         // The credit line rides with the rows: it only owes OSM a mention when
@@ -481,6 +535,17 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+  },
+  previousButton: {
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+    borderRadius: radii.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  previousButtonText: {
+    ...typography.dataSmall,
   },
   emptyText: {
     ...typography.bodySmall,

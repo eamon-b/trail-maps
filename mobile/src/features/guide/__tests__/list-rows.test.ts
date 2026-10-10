@@ -7,6 +7,7 @@ import type { TrailPOI } from '@lib/trail-types';
 import {
   interleaveListRows,
   rowKm,
+  rowsAhead,
   toWaypointRows,
   waypointKey,
   type ListRow,
@@ -80,5 +81,21 @@ describe('interleaveListRows', () => {
 
   it('reports the km the focus helpers scroll by', () => {
     expect(rows.map((row: ListRow) => rowKm(row))).toEqual([0, 4, 8, 12, 12]);
+  });
+});
+
+describe('rowsAhead', () => {
+  const rows = [{ km: 0 }, { km: 5 }, { km: 9.97 }, { km: 12 }];
+
+  it('keeps every row without a position', () => {
+    expect(rowsAhead(rows, null)).toEqual({ rows, passedCount: 0 });
+  });
+
+  it('drops rows behind the hiker but keeps one level with them', () => {
+    expect(rowsAhead(rows, 10)).toEqual({ rows: [{ km: 9.97 }, { km: 12 }], passedCount: 2 });
+  });
+
+  it('drops everything past the last row', () => {
+    expect(rowsAhead(rows, 20)).toEqual({ rows: [], passedCount: 4 });
   });
 });

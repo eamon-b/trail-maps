@@ -21,7 +21,7 @@ import {
   type LocationUpdate,
   type PermissionStatus,
 } from '../services/location-service';
-import { snapToTrail, type SnapPoint } from '../services/position-on-trail';
+import { snapToTrail, type SnapPoint } from '@lib/position-on-trail';
 
 export interface SnappedLocation {
   /** Raw GPS coordinates. */

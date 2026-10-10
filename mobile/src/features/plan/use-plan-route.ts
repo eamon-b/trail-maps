@@ -22,7 +22,7 @@ import {
 import type { PlanDocument } from '@lib/plan-types';
 import { routeBreakStarts } from '@lib/route-breaks';
 import type { GuidePosition } from '../../hooks/useGuidePosition';
-import { isOffTrail, snapToTrail } from '../../services/position-on-trail';
+import { isOffTrail, snapToTrail } from '@lib/position-on-trail';
 import type { TrailJson } from '../../services/trail-assets';
 import type { Direction } from '../../state/settings-store';
 import { useGuide } from '../guide/GuideContext';

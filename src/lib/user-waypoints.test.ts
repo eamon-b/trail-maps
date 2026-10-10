@@ -10,6 +10,7 @@ import {
 } from './user-waypoints';
 import { createReversedTrail } from './trail-reverse';
 import { isResupplyWaypoint, isWaterWaypoint } from './waypoint-taxonomy';
+import { snapToTrail } from './position-on-trail';
 
 // A straight line due north along lon 138, ~1.11 km per 0.01° of latitude,
 // climbing 10 m per point.
@@ -86,6 +87,17 @@ describe('placeOnTrack', () => {
     expect(at.km).toBeCloseTo(2.78, 1);
     expect(at.metres).toBeGreaterThan(85);
     expect(at.metres).toBeLessThan(95);
+  });
+});
+
+describe('placeOnTrack and the GPS snap', () => {
+  it('read the same km and distance off the line for one spot', () => {
+    for (const [lat, lon] of [[-34.97, 138.001], [-34.9512, 137.996], [-35.01, 138], [-34.89, 138.02]]) {
+      const placed = placeOnTrack(lat, lon, points)!;
+      const snap = snapToTrail(lat, lon, points)!;
+      expect(placed.km).toBe(snap.currentKm);
+      expect(placed.metres).toBe(Math.round(snap.offTrailMeters));
+    }
   });
 });
 

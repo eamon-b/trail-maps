@@ -2,8 +2,9 @@ import { createMigratedTestDb } from '../../db/__tests__/test-helpers';
 import type { SqlDatabase } from '../../db/sql-database';
 import * as outboxRepo from '../../db/outbox-repo';
 import * as userWaypointsRepo from '../../db/user-waypoints-repo';
+import * as favoritesRepo from '../../db/favorites-repo';
 import type { Session } from '../../api/auth';
-import { pullTrail, resetSyncStateForTests } from '../comment-sync';
+import { drainOutbox, pullTrail, resetSyncStateForTests } from '../comment-sync';
 import { deleteUserWaypoint, reportUserWaypoint, saveUserWaypoint } from '../waypoint-sync';
 import { useIdentityStore } from '../../state/identity-store';
 import { onSyncChange, type SyncChange } from '../sync-events';
@@ -164,7 +165,7 @@ describe('saveUserWaypoint', () => {
     });
   });
 
-  it('drops the local copy when the server says it was deleted (410)', async () => {
+  it('keeps the hiker’s copy, as private, when the server refuses the share (410)', async () => {
     const d = await db();
     const { fetchImpl } = routedFetch(() => ({
       status: 410,
@@ -175,8 +176,35 @@ describe('saveUserWaypoint', () => {
       { db: d, baseUrl: BASE, fetchImpl, getSessionFn },
     );
     await drain;
-    expect(await userWaypointsRepo.getById(d, waypoint.id)).toBeNull();
+    expect(await userWaypointsRepo.getById(d, waypoint.id)).toMatchObject({
+      visibility: 'private',
+      authorName: null,
+      name: 'Creek',
+    });
     expect(await outboxRepo.count(d)).toBe(0);
+  });
+
+  it('announces a waypoint change on every trail the drain touched', async () => {
+    const d = await db();
+    let online = false;
+    const { fetchImpl } = routedFetch((call) => {
+      if (!online) return 'offline';
+      return call.url.includes('/waypoints/')
+        ? { status: 410, body: { error: { code: 'waypoint_deleted', message: 'gone' } } }
+        : { body: {} };
+    });
+    const deps = { db: d, baseUrl: BASE, fetchImpl, getSessionFn };
+    const a = await saveUserWaypoint({ trailId: 'heysen', input: INPUT, visibility: 'shared' }, deps);
+    await a.drain;
+    const b = await saveUserWaypoint({ trailId: 'larapinta', input: INPUT, visibility: 'shared' }, deps);
+    await b.drain;
+    online = true;
+    const events: SyncChange[] = [];
+    const off = onSyncChange((c) => events.push(c));
+    await drainOutbox(deps);
+    off();
+    const trails = events.filter((e) => e.userWaypoints).map((e) => e.trailId);
+    expect(trails.sort()).toEqual(['heysen', 'larapinta']);
   });
 });
 
@@ -186,10 +214,12 @@ describe('deleteUserWaypoint', () => {
     const { fetchImpl, calls } = routedFetch(() => ({}));
     const deps = { db: d, baseUrl: BASE, fetchImpl, getSessionFn };
     const { waypoint } = await saveUserWaypoint({ trailId: 'heysen', input: INPUT, visibility: 'private' }, deps);
+    await favoritesRepo.toggle(d, 'heysen', waypoint.id);
     const { drain } = await deleteUserWaypoint(waypoint, deps);
     expect(drain).toBeNull();
     expect(calls).toHaveLength(0);
     expect(await userWaypointsRepo.getById(d, waypoint.id)).toBeNull();
+    expect(await favoritesRepo.list(d, 'heysen')).toEqual([]);
   });
 
   it('cancels an unsent share and settles the DELETE’s 404', async () => {
@@ -270,6 +300,50 @@ describe('pullTrail — shared waypoints', () => {
       `/v1/trails/heysen/waypoints?since=${encodeURIComponent('2026-10-02T00:00:00.000Z')}`,
     );
     expect(await userWaypointsRepo.listForTrail(d, 'heysen')).toEqual([]);
+  });
+
+  it('keeps this account’s own waypoint, as private, when a tombstone arrives', async () => {
+    const d = await db();
+    const first = pullFetch([serverCopy('hw_mine')]);
+    await pullTrail('heysen', { db: d, baseUrl: BASE, fetchImpl: first.fetchImpl, getSessionFn });
+    const second = pullFetch([{ id: 'hw_mine', deleted: true, updatedAt: '2026-10-03T00:00:00.000Z' }]);
+    await pullTrail('heysen', { db: d, baseUrl: BASE, fetchImpl: second.fetchImpl, getSessionFn });
+    expect(await userWaypointsRepo.getById(d, 'hw_mine')).toMatchObject({
+      visibility: 'private',
+      mine: true,
+    });
+  });
+
+  it('reads every page of a long delta', async () => {
+    const d = await db();
+    const { fetchImpl, calls } = routedFetch((call) => {
+      if (call.url.startsWith('/v1/trails/heysen/waypoints')) {
+        return call.url.includes('cursor=')
+          ? { body: { waypoints: [serverCopy('hw_b', { mine: false })], nextCursor: null, syncedAt: 'later' } }
+          : {
+              body: {
+                waypoints: [serverCopy('hw_a', { mine: false })],
+                nextCursor: 'c1',
+                syncedAt: '2026-10-02T00:00:00.000Z',
+              },
+            };
+      }
+      if (call.url.startsWith('/v1/trails/heysen/descriptions')) {
+        return { body: { descriptions: [], syncedAt: '2026-10-02T00:00:00.000Z' } };
+      }
+      return { body: { comments: [], nextCursor: null, syncedAt: '2026-10-02T00:00:00.000Z' } };
+    });
+    await pullTrail('heysen', { db: d, baseUrl: BASE, fetchImpl, getSessionFn });
+    expect(calls.filter((c) => c.url.includes('/waypoints')).map((c) => c.url)).toEqual([
+      '/v1/trails/heysen/waypoints',
+      '/v1/trails/heysen/waypoints?cursor=c1',
+    ]);
+    expect((await userWaypointsRepo.listForTrail(d, 'heysen')).map((w) => w.id).sort()).toEqual([
+      'hw_a',
+      'hw_b',
+    ]);
+    // The first page's clock is the mark.
+    expect(await userWaypointsRepo.readSyncedAt(d, 'heysen')).toBe('2026-10-02T00:00:00.000Z');
   });
 
   it('never overwrites a waypoint with a write still queued', async () => {

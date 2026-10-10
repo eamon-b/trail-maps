@@ -24,6 +24,18 @@ export interface UserWaypointsState {
 
 const EMPTY: UserWaypoint[] = [];
 
+/** Field-for-field equality of two lists (a few dozen small rows at most). */
+function sameWaypoints(a: readonly UserWaypoint[], b: readonly UserWaypoint[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((w, i) => {
+    const o = b[i];
+    return (
+      (Object.keys(w) as (keyof UserWaypoint)[]).every((k) => w[k] === o[k]) &&
+      Object.keys(o).length === Object.keys(w).length
+    );
+  });
+}
+
 export const useUserWaypointsStore = create<UserWaypointsState>((set) => ({
   byTrail: {},
 
@@ -31,7 +43,14 @@ export const useUserWaypointsStore = create<UserWaypointsState>((set) => ({
     const db = await getDatabase();
     const rows = await userWaypointsRepo.listForTrail(db, trailId);
     const list: UserWaypoint[] = rows.map(({ source: _source, ...waypoint }) => waypoint);
-    set((s) => ({ byTrail: { ...s.byTrail, [trailId]: list } }));
+    // Keep the old array when nothing changed: a new one re-places and
+    // re-reverses the whole trail and re-renders every pane of the guide, and
+    // most sync changes (a drain confirming a send) leave the rows as they were.
+    set((s) => {
+      const previous = s.byTrail[trailId];
+      if (previous && sameWaypoints(previous, list)) return s;
+      return { byTrail: { ...s.byTrail, [trailId]: list } };
+    });
   },
 
   forgetTrail: (trailId: string) =>

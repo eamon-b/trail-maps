@@ -43,8 +43,8 @@
  *                         one id adoption on 409 `plan_exists`; a `plan-delete`
  *                         is settled by a 204 and equally by a 404.
  *                         The shared hiker waypoint kinds mirror them: a
- *                         `waypoint` PUT (a 410 means it was deleted server-side
- *                         and drops the local copy), a `waypoint-delete` settled
+ *                         `waypoint` PUT (a 410 means reports or an admin hid
+ *                         it, and the local copy is kept as a private one), a `waypoint-delete` settled
  *                         by 204 or 404, and a `waypoint-report` settled like a
  *                         comment report.
  *
@@ -77,6 +77,7 @@ import * as outboxRepo from '../db/outbox-repo';
 import * as plansRepo from '../db/plans-repo';
 import * as waypointMetaRepo from '../db/waypoint-meta-repo';
 import * as userWaypointsRepo from '../db/user-waypoints-repo';
+import { withTransaction } from '../db/transaction';
 import { ApiError, NetworkError, getBaseUrl, type FetchLike } from '../api/client';
 import * as commentsApi from '../api/comments';
 import * as plansApi from '../api/plans';
@@ -419,25 +420,35 @@ async function pullTrailWaypoints(
 ): Promise<number> {
   const since = await userWaypointsRepo.readSyncedAt(db, trailId);
   const result = await waypointsApi.listTrailSharedWaypoints(ctx, { trailId, since });
-  let applied = 0;
-  for (const entry of result.waypoints ?? []) {
-    if (
-      (await outboxRepo.hasQueued(db, 'waypoint', entry.id)) ||
-      (await outboxRepo.hasQueued(db, 'waypoint-delete', entry.id))
-    ) {
-      continue;
-    }
-    if (isSharedWaypointTombstone(entry)) {
-      await userWaypointsRepo.applyTombstone(db, entry.id);
-    } else if (entry.trailId === trailId) {
-      await userWaypointsRepo.applyServer(db, entry);
-    } else {
-      continue;
-    }
-    applied += 1;
+  if (result.waypoints.length === 0) {
+    await userWaypointsRepo.writeSyncedAt(db, trailId, result.syncedAt);
+    return 0;
   }
-  await userWaypointsRepo.writeSyncedAt(db, trailId, result.syncedAt);
-  return applied;
+  // One read of what is queued, and one transaction for the rows: a first pull
+  // of a busy trail is thousands of entries.
+  return withTransaction(db, async () => {
+    const queued = new Set(
+      (
+        await db.getAllAsync<{ waypoint_id: string }>(
+          "SELECT DISTINCT waypoint_id FROM outbox WHERE kind IN ('waypoint', 'waypoint-delete') AND waypoint_id IS NOT NULL",
+        )
+      ).map((row) => row.waypoint_id),
+    );
+    let applied = 0;
+    for (const entry of result.waypoints) {
+      if (queued.has(entry.id)) continue;
+      if (isSharedWaypointTombstone(entry)) {
+        await userWaypointsRepo.applyTombstone(db, entry.id);
+      } else if (entry.trailId === trailId) {
+        await userWaypointsRepo.applyServer(db, entry);
+      } else {
+        continue;
+      }
+      applied += 1;
+    }
+    await userWaypointsRepo.writeSyncedAt(db, trailId, result.syncedAt);
+    return applied;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -783,7 +794,8 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
   // drain finished cleanly or bailed early), nudging any mounted feed to re-read.
   const changedWaypoints = new Set<string>();
   let changedTrail: string | undefined;
-  let userWaypointsChanged = false;
+  /** Every trail whose hiker waypoints a drained item changed. */
+  const userWaypointTrails = new Set<string>();
   const noteChange = (item: {
     kind: outboxRepo.OutboxKind;
     trailId: string | null;
@@ -794,7 +806,9 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
     const isPlan = item.kind === 'plan' || item.kind === 'plan-delete';
     if (item.waypointId && !isPlan) changedWaypoints.add(item.waypointId);
     if (item.trailId) changedTrail = item.trailId;
-    if (item.kind === 'waypoint' || item.kind === 'waypoint-delete') userWaypointsChanged = true;
+    if ((item.kind === 'waypoint' || item.kind === 'waypoint-delete') && item.trailId) {
+      userWaypointTrails.add(item.trailId);
+    }
   };
   const finish = (outcome: DrainOutcome): DrainResult => {
     // Failures announce themselves too: the row that failed is what a screen
@@ -804,8 +818,13 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
       emitSyncChange({
         trailId: changedTrail,
         waypointIds: [...changedWaypoints],
-        ...(userWaypointsChanged ? { userWaypoints: true } : {}),
+        ...(changedTrail && userWaypointTrails.has(changedTrail) ? { userWaypoints: true } : {}),
       });
+      // The event names one trail; any other trail whose hiker waypoints moved
+      // gets its own, or its open guide would keep the stale list.
+      for (const trailId of userWaypointTrails) {
+        if (trailId !== changedTrail) emitSyncChange({ trailId, userWaypoints: true });
+      }
     }
     return { outcome, sent, failed };
   };
@@ -970,11 +989,13 @@ async function drainOutboxNow(deps: SyncDeps = {}): Promise<DrainResult> {
         continue;
       }
       if (e instanceof ApiError && e.status === 410 && item.kind === 'waypoint') {
-        // Deleted server-side (reports, an admin, another device): the edit
-        // has nothing to land on, so the local copy goes too.
+        // Hidden server-side (reports or an admin): the share has nothing to
+        // land on. The hiker's own copy stays, on this phone only — it may be
+        // the only record of the place. (A waypoint the hiker made private and
+        // shares again is revived by the server, not refused.)
         const { id } = JSON.parse(item.payloadJson) as WaypointOutboxPayload;
         await outboxRepo.remove(db, item.id);
-        await userWaypointsRepo.deleteById(db, id);
+        await userWaypointsRepo.keepAsPrivate(db, id);
         noteChange(item);
         sent += 1;
         continue;

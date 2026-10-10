@@ -20,7 +20,8 @@ CREATE TABLE shared_waypoints (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,            -- bumped on every edit/delete; drives delta sync
   deleted_at TEXT,
-  deleted_by TEXT CHECK (deleted_by IN ('owner', 'admin', 'reports'))
+  deleted_by TEXT CHECK (deleted_by IN ('owner', 'admin', 'reports')),
+  restored_at TEXT                     -- last admin restore: only reports filed after it count
 );
 
 CREATE INDEX idx_shared_waypoints_sync ON shared_waypoints(trail_id, updated_at, id);

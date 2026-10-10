@@ -179,6 +179,8 @@ export type SharedWaypointEntry = SharedWaypoint | SharedWaypointTombstone;
  */
 export interface SharedWaypointsResponse {
   waypoints: SharedWaypointEntry[];
+  /** Pass back as `cursor` (with the same `since`) for the next page; null on the last. */
+  nextCursor: string | null;
   syncedAt: string;
 }
 

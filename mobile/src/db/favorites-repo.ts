@@ -33,6 +33,14 @@ export async function toggle(
   return true;
 }
 
+/** Drop a star whatever its state (the waypoint itself is gone). */
+export async function remove(db: SqlDatabase, trailId: string, waypointId: string): Promise<void> {
+  await db.runAsync('DELETE FROM favorites WHERE trail_id = ? AND waypoint_id = ?', [
+    trailId,
+    waypointId,
+  ]);
+}
+
 /** Whether a waypoint is starred. */
 export async function isFavorite(
   db: SqlDatabase,

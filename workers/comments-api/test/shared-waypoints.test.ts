@@ -1,6 +1,7 @@
 import { SELF, env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { authHeaders, banUser, deleteMe, makeAdmin, registerDevice, url, type Device } from './helpers';
+import { registerAgedDevice } from './community-fixtures';
 import type {
   SharedWaypoint,
   SharedWaypointsResponse,
@@ -43,8 +44,16 @@ function report(device: Device, id: string): Promise<Response> {
   });
 }
 
-async function read(trailId: string, since?: string, device?: Device): Promise<SharedWaypointsResponse> {
-  const query = since === undefined ? '' : `?since=${encodeURIComponent(since)}`;
+async function read(
+  trailId: string,
+  since?: string,
+  device?: Device,
+  cursor?: string
+): Promise<SharedWaypointsResponse> {
+  const qs = new URLSearchParams();
+  if (since !== undefined) qs.set('since', since);
+  if (cursor !== undefined) qs.set('cursor', cursor);
+  const query = qs.size > 0 ? `?${qs}` : '';
   const res = await SELF.fetch(url(`/v1/trails/${trailId}/waypoints${query}`), {
     headers: device ? authHeaders(device) : {},
   });
@@ -150,6 +159,39 @@ describe('GET /v1/trails/:trailId/waypoints', () => {
     expect(snapshot.waypoints.map((w) => w.id)).not.toContain(gone);
   });
 
+  it('pages past rows that share one updated_at', async () => {
+    const device = await registerDevice();
+    const trailId = 'six_foot_track';
+    const ids = [newId(), newId(), newId()];
+    for (const id of ids) await put(device, id, { ...WATER, trailId });
+    // Seed past one page directly, all on a single stamp (as an account
+    // deletion tombstones them).
+    const stamp = '2030-01-01T00:00:00.000Z';
+    const user = await env.DB.prepare(`SELECT user_id FROM shared_waypoints WHERE id = ?`)
+      .bind(ids[0])
+      .first<{ user_id: string }>();
+    const rows = Array.from({ length: 2001 }, () => newId());
+    for (let i = 0; i < rows.length; i += 100) {
+      await env.DB.batch(
+        rows.slice(i, i + 100).map((id) =>
+          env.DB.prepare(
+            `INSERT INTO shared_waypoints
+               (id, trail_id, user_id, name, type, lat, lon, description, created_at, updated_at)
+             VALUES (?, ?, ?, 'x', 'water', 0, 0, '', ?, ?)`
+          ).bind(id, trailId, user!.user_id, stamp, stamp)
+        )
+      );
+    }
+    const first = await read(trailId, stamp);
+    expect(first.waypoints).toHaveLength(2000);
+    expect(first.nextCursor).not.toBeNull();
+    const second = await read(trailId, stamp, undefined, first.nextCursor!);
+    expect(second.waypoints).toHaveLength(1);
+    expect(second.nextCursor).toBeNull();
+    const seen = new Set([...first.waypoints, ...second.waypoints].map((w) => w.id));
+    expect(seen.size).toBe(2001);
+  });
+
   it('tells a signed-in reader which are theirs', async () => {
     const owner = await registerDevice();
     const reader = await registerDevice();
@@ -181,8 +223,25 @@ describe('DELETE /v1/waypoints/:id', () => {
       .first<{ deleted_by: string }>();
     expect(row?.deleted_by).toBe('admin');
     expect((await del(owner, newId())).status).toBe(404);
-    // A deleted waypoint cannot be written back.
-    expect((await put(owner, a, { ...WATER, name: 'Back' })).status).toBe(410);
+    // One an admin deleted cannot be written back by its owner.
+    expect((await put(owner, b, { ...WATER, name: 'Back' })).status).toBe(410);
+  });
+
+  it('lets the owner share a waypoint again after taking it down', async () => {
+    const owner = await registerDevice('Sharer');
+    const id = newId();
+    await put(owner, id, { ...WATER, trailId: 'hume-and-hovell' });
+    expect((await del(owner, id)).status).toBe(204);
+    const before = await read('hume-and-hovell');
+    expect(before.waypoints.map((w) => w.id)).not.toContain(id);
+
+    const res = await put(owner, id, { ...WATER, trailId: 'hume-and-hovell', name: 'Back again' });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as SharedWaypoint).name).toBe('Back again');
+    const after = await read('hume-and-hovell', before.syncedAt);
+    expect(after.waypoints).toEqual([expect.objectContaining({ id, name: 'Back again' })]);
+    // Still nobody else's to revive.
+    expect((await put(await registerDevice(), id, WATER)).status).toBe(409);
   });
 
   it('tombstones them when the account is deleted', async () => {
@@ -204,22 +263,84 @@ describe('POST /v1/waypoints/:id/report', () => {
     await put(owner, id, { ...WATER, trailId: 'three_capes' });
     expect((await report(owner, id)).status).toBe(400);
 
-    const reporters = [await registerDevice(), await registerDevice(), await registerDevice()];
+    const reporters = [
+      await registerAgedDevice(),
+      await registerAgedDevice(),
+      await registerAgedDevice(),
+    ];
     expect((await report(reporters[0], id)).status).toBe(201);
     expect((await report(reporters[0], id)).status).toBe(200); // replay
     expect((await report(reporters[1], id)).status).toBe(201);
-    let row = await env.DB.prepare(`SELECT deleted_at FROM shared_waypoints WHERE id = ?`)
+    let row = await env.DB.prepare(`SELECT deleted_at, deleted_by FROM shared_waypoints WHERE id = ?`)
       .bind(id)
-      .first<{ deleted_at: string | null }>();
+      .first<{ deleted_at: string | null; deleted_by: string | null }>();
     expect(row?.deleted_at).toBeNull();
 
     expect((await report(reporters[2], id)).status).toBe(201);
     row = await env.DB.prepare(`SELECT deleted_at, deleted_by FROM shared_waypoints WHERE id = ?`)
       .bind(id)
-      .first<{ deleted_at: string | null; deleted_by: string }>();
+      .first<{ deleted_at: string | null; deleted_by: string | null }>();
     expect(row?.deleted_at).not.toBeNull();
     expect(row?.deleted_by).toBe('reports');
     expect((await report(await registerDevice(), id)).status).toBe(410);
+  });
+
+  it('does not let accounts under a day old hide one', async () => {
+    const owner = await registerDevice();
+    const id = newId();
+    await put(owner, id, WATER);
+    for (let i = 0; i < 3; i++) {
+      expect((await report(await registerDevice(), id)).status).toBe(201);
+    }
+    const row = await env.DB.prepare(`SELECT deleted_at FROM shared_waypoints WHERE id = ?`)
+      .bind(id)
+      .first<{ deleted_at: string | null }>();
+    expect(row?.deleted_at).toBeNull();
+  });
+});
+
+describe('POST /v1/admin/waypoints/:id/restore', () => {
+  it('undoes a report hide, and only later reports count', async () => {
+    const owner = await registerDevice();
+    const admin = await registerDevice();
+    await makeAdmin(admin.userId);
+    const id = newId();
+    await put(owner, id, WATER);
+    for (let i = 0; i < 3; i++) await report(await registerAgedDevice(), id);
+    const deletedAt = async () =>
+      (
+        await env.DB.prepare(`SELECT deleted_at FROM shared_waypoints WHERE id = ?`)
+          .bind(id)
+          .first<{ deleted_at: string | null }>()
+      )?.deleted_at;
+    expect(await deletedAt()).not.toBeNull();
+
+    const restore = (device: Device) =>
+      SELF.fetch(url(`/v1/admin/waypoints/${id}/restore`), {
+        method: 'POST',
+        headers: authHeaders(device),
+      });
+    expect((await restore(owner)).status).toBe(403);
+    expect((await restore(admin)).status).toBe(204);
+    expect(await deletedAt()).toBeNull();
+
+    // One more report does not tip it straight back over.
+    await report(await registerAgedDevice(), id);
+    expect(await deletedAt()).toBeNull();
+  });
+
+  it('refuses a waypoint its owner deleted', async () => {
+    const owner = await registerDevice();
+    const admin = await registerDevice();
+    await makeAdmin(admin.userId);
+    const id = newId();
+    await put(owner, id, WATER);
+    await del(owner, id);
+    const res = await SELF.fetch(url(`/v1/admin/waypoints/${id}/restore`), {
+      method: 'POST',
+      headers: authHeaders(admin),
+    });
+    expect(res.status).toBe(409);
   });
 });
 

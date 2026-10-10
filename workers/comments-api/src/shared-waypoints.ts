@@ -6,20 +6,26 @@
  * `src/lib/user-waypoints.ts`, which the phone runs first, so the two refuse the
  * same things. Post-moderated like comments: anyone signed in may share, every
  * write is tombstoned rather than deleted so offline phones learn it is gone,
- * an owner or admin can delete, and `reportsToHide` distinct reporters hide one.
+ * an owner or admin can delete, and `reportsToHide` distinct reporters hide one
+ * (counting only accounts a day old, and only reports since an admin restore).
+ * An owner who deleted their own waypoint (made it private) may share it again
+ * under the same id; one hidden by an admin or by reports stays gone until an
+ * admin restores it.
  *
  *   PUT    /v1/waypoints/:id             create, or the owner's edit (idempotent)
  *   DELETE /v1/waypoints/:id             owner or admin soft delete
  *   POST   /v1/waypoints/:id/report      report (one per reporter)
  *   GET    /v1/trails/:trailId/waypoints public full / delta read
  *   GET    /v1/admin/waypoints           admin listing, reported first
+ *   POST   /v1/admin/waypoints/:id/restore admin undo of an admin or report hide
  */
 
 import { HttpError, json, noContent, readJson } from './http';
 import type { Env } from './http';
 import { getUser, requireAdmin, requireUser } from './auth';
-import { appendSinceFilter } from './cursor';
+import { appendSinceFilter, decodeCursor, encodeCursor } from './cursor';
 import { RATE_BUCKETS, consumeRateLimit } from './rate-limit';
+import { REPORTER_MIN_ACCOUNT_AGE_MS } from './community';
 import {
   parseLimit,
   validateReportDetail,
@@ -37,7 +43,7 @@ import type {
   SharedWaypointsResponse,
 } from '../../../src/lib/comments-api-types';
 
-/** Rows one read returns; a longer delta resumes from the last row's stamp. */
+/** Rows one read returns; a longer read continues from `nextCursor`. */
 const SYNC_PAGE_LIMIT = 2000;
 const ADMIN_DEFAULT_LIMIT = 100;
 const ADMIN_MAX_LIMIT = 500;
@@ -55,6 +61,7 @@ interface SharedWaypointRow {
   updated_at: string;
   deleted_at: string | null;
   deleted_by: 'owner' | 'admin' | 'reports' | null;
+  restored_at: string | null;
 }
 
 function toSharedWaypoint(
@@ -80,6 +87,22 @@ function toSharedWaypoint(
 function assertWaypointId(id: string): void {
   if (!isUserWaypointId(id)) {
     throw new HttpError(400, 'invalid_id', 'Waypoint id must be hw_ followed by a uuid v4');
+  }
+}
+
+/**
+ * The `updated_at` for a write, taken immediately before the statement that
+ * commits it. A stamp taken earlier (before the reads and rate-limit round
+ * trips) can predate a concurrent reader's `syncedAt`, and the delta feed would
+ * then never return the write.
+ */
+function writeStamp(): string {
+  return new Date().toISOString();
+}
+
+function assertMayShare(user: { is_banned: number }): void {
+  if (user.is_banned === 1) {
+    throw new HttpError(403, 'banned', 'This account may not share waypoints');
   }
 }
 
@@ -113,18 +136,47 @@ export async function putSharedWaypoint(
   if (!check.ok) throw new HttpError(400, `invalid_${check.field}`, check.message);
   const value = check.value;
   const nowMs = Date.now();
-  const nowIso = new Date(nowMs).toISOString();
 
   const existing = await readRow(env, id);
   if (existing) {
     if (existing.user_id !== user.id) {
       throw new HttpError(409, 'id_conflict', 'This waypoint id belongs to another user');
     }
-    if (existing.deleted_at !== null) {
-      throw new HttpError(410, 'waypoint_deleted', 'This waypoint has been deleted');
-    }
     if (existing.trail_id !== trailId) {
       throw new HttpError(400, 'invalid_trail', 'A waypoint cannot move to another trail');
+    }
+    if (existing.deleted_at !== null) {
+      // The owner took it down themselves (made it private): sharing it again
+      // revives the same row, so the phone's copy keeps its id. Counted as a
+      // new share. A waypoint an admin or reports hid stays gone.
+      if (existing.deleted_by !== 'owner') {
+        throw new HttpError(410, 'waypoint_deleted', 'This waypoint has been deleted');
+      }
+      assertMayShare(user);
+      await consumeRateLimit(
+        env,
+        RATE_BUCKETS.sharedWaypointCreate,
+        user.id,
+        nowMs,
+        `You can share up to ${RATE_BUCKETS.sharedWaypointCreate.limit} waypoints a day`,
+        ctx
+      );
+      const revived = await env.DB.prepare(
+        `UPDATE shared_waypoints
+            SET name = ?, type = ?, lat = ?, lon = ?, description = ?,
+                updated_at = ?, deleted_at = NULL, deleted_by = NULL
+          WHERE id = ? AND user_id = ? AND deleted_by = 'owner'
+          RETURNING *`
+      )
+        .bind(value.name, value.type, value.lat, value.lon, value.description, writeStamp(), id, user.id)
+        .first<SharedWaypointRow>();
+      if (revived) return json(toSharedWaypoint(revived, user.display_name, user.id), 200);
+      // Changed under us: answer from what is there now.
+      const now = await readRow(env, id);
+      if (!now || now.deleted_at !== null) {
+        throw new HttpError(410, 'waypoint_deleted', 'This waypoint has been deleted');
+      }
+      return json(toSharedWaypoint(now, user.display_name, user.id), 200);
     }
     const unchanged =
       existing.name === value.name &&
@@ -137,9 +189,7 @@ export async function putSharedWaypoint(
     // the ban and the rate limit — an outbox retry must always settle.
     if (unchanged) return json(toSharedWaypoint(existing, user.display_name, user.id), 200);
 
-    if (user.is_banned === 1) {
-      throw new HttpError(403, 'banned', 'This account may not share waypoints');
-    }
+    assertMayShare(user);
     await consumeRateLimit(
       env,
       RATE_BUCKETS.sharedWaypointEdit,
@@ -155,15 +205,13 @@ export async function putSharedWaypoint(
         WHERE id = ? AND user_id = ? AND deleted_at IS NULL
         RETURNING *`
     )
-      .bind(value.name, value.type, value.lat, value.lon, value.description, nowIso, id, user.id)
+      .bind(value.name, value.type, value.lat, value.lon, value.description, writeStamp(), id, user.id)
       .first<SharedWaypointRow>();
     if (!updated) throw new HttpError(410, 'waypoint_deleted', 'This waypoint has been deleted');
     return json(toSharedWaypoint(updated, user.display_name, user.id), 200);
   }
 
-  if (user.is_banned === 1) {
-    throw new HttpError(403, 'banned', 'This account may not share waypoints');
-  }
+  assertMayShare(user);
   await consumeRateLimit(
     env,
     RATE_BUCKETS.sharedWaypointCreate,
@@ -173,6 +221,7 @@ export async function putSharedWaypoint(
     ctx
   );
 
+  const nowIso = writeStamp();
   const inserted = await env.DB.prepare(
     `INSERT INTO shared_waypoints
        (id, trail_id, user_id, name, type, lat, lon, description, created_at, updated_at)
@@ -285,13 +334,21 @@ export async function reportSharedWaypoint(
   }
 
   // Enough distinct reporters hide it. One statement, so two reports landing
-  // together cannot both miss the threshold.
+  // together cannot both miss the threshold. Registering is free, so only
+  // accounts that were a day old when they reported count (as for community
+  // routes), and only reports since an admin last restored it: the admin has
+  // already weighed the earlier ones.
+  const hideStamp = writeStamp();
   await env.DB.prepare(
     `UPDATE shared_waypoints SET deleted_at = ?, deleted_by = 'reports', updated_at = ?
       WHERE id = ? AND deleted_at IS NULL
-        AND (SELECT COUNT(*) FROM shared_waypoint_reports WHERE waypoint_id = ?) >= ?`
+        AND (SELECT COUNT(*) FROM shared_waypoint_reports r
+               JOIN users u ON u.id = r.user_id
+              WHERE r.waypoint_id = shared_waypoints.id
+                AND (shared_waypoints.restored_at IS NULL OR r.created_at > shared_waypoints.restored_at)
+                AND (julianday(r.created_at) - julianday(u.created_at)) * 86400000.0 >= ?) >= ?`
   )
-    .bind(nowIso, nowIso, id, id, USER_WAYPOINT_LIMITS.reportsToHide)
+    .bind(hideStamp, hideStamp, id, REPORTER_MIN_ACCOUNT_AGE_MS, USER_WAYPOINT_LIMITS.reportsToHide)
     .run();
 
   return json({ reportId: inserted.id }, 201);
@@ -313,7 +370,8 @@ export async function getTrailSharedWaypoints(
   const viewer = await getUser(request, env, ctx);
   const url = new URL(request.url);
   const since = url.searchParams.get('since');
-  const nowIso = new Date().toISOString();
+  const cursor = decodeCursor(url.searchParams.get('cursor'));
+  const syncedAt = new Date().toISOString();
 
   const conditions = ['w.trail_id = ?'];
   const binds: unknown[] = [trailId];
@@ -321,6 +379,12 @@ export async function getTrailSharedWaypoints(
     appendSinceFilter(conditions, binds, 'w.updated_at', since);
   } else {
     conditions.push('w.deleted_at IS NULL');
+  }
+  if (cursor) {
+    // Ascending keyset on (updated_at, id): rows sharing one stamp (an
+    // account deletion tombstones all of its waypoints at once) still page.
+    conditions.push('(w.updated_at > ? OR (w.updated_at = ? AND w.id > ?))');
+    binds.push(cursor.sortValue, cursor.sortValue, cursor.id);
   }
 
   const { results } = await env.DB.prepare(
@@ -333,12 +397,13 @@ export async function getTrailSharedWaypoints(
     .bind(...binds, SYNC_PAGE_LIMIT + 1)
     .all<SharedWaypointRow & { display_name: string }>();
 
-  // A longer delta than one page: answer the page and hand back the last row's
-  // stamp as the mark. `since` is inclusive, so the next read resumes there.
-  let syncedAt = nowIso;
+  // A longer read than one page continues from the cursor with the same
+  // `since`; the client keeps the first page's `syncedAt` as its mark.
+  let nextCursor: string | null = null;
   if (results.length > SYNC_PAGE_LIMIT) {
     results.length = SYNC_PAGE_LIMIT;
-    syncedAt = results[results.length - 1].updated_at;
+    const last = results[results.length - 1];
+    nextCursor = encodeCursor(last.updated_at, last.id);
   }
 
   const waypoints: SharedWaypointEntry[] = results.map((row) =>
@@ -346,7 +411,7 @@ export async function getTrailSharedWaypoints(
       ? { id: row.id, deleted: true as const, updatedAt: row.updated_at }
       : toSharedWaypoint(row, row.display_name, viewer?.id ?? null)
   );
-  const payload: SharedWaypointsResponse = { waypoints, syncedAt };
+  const payload: SharedWaypointsResponse = { waypoints, nextCursor, syncedAt };
   return json(payload, 200, { 'Cache-Control': 'no-store' });
 }
 
@@ -380,4 +445,38 @@ export async function adminListSharedWaypoints(
       reportCount: row.report_count,
     })),
   });
+}
+
+// ---------------------------------------------------------------------------
+// POST /v1/admin/waypoints/:id/restore
+// ---------------------------------------------------------------------------
+
+/**
+ * Undo an admin or report hide. Reports filed before the restore no longer
+ * count towards hiding it again. A waypoint its owner deleted is theirs to
+ * share again, not an admin's to publish, so it is refused.
+ */
+export async function adminRestoreSharedWaypoint(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  id: string
+): Promise<Response> {
+  assertWaypointId(id);
+  await requireAdmin(request, env, ctx);
+  const row = await readRow(env, id);
+  if (!row) throw new HttpError(404, 'not_found', 'Waypoint not found');
+  if (row.deleted_at === null) return noContent();
+  if (row.deleted_by === 'owner') {
+    throw new HttpError(409, 'owner_deleted', 'Its owner deleted this waypoint');
+  }
+  const now = writeStamp();
+  await env.DB.prepare(
+    `UPDATE shared_waypoints
+        SET deleted_at = NULL, deleted_by = NULL, restored_at = ?, updated_at = ?
+      WHERE id = ? AND deleted_by IN ('admin', 'reports')`
+  )
+    .bind(now, now, id)
+    .run();
+  return noContent();
 }

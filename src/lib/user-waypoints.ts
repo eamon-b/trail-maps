@@ -63,7 +63,30 @@ export const USER_WAYPOINT_LIMITS = {
   sharesPerDay: 20,
   /** Distinct reports that hide a shared waypoint. */
   reportsToHide: 3,
+  /**
+   * Beyond this many metres from the route a waypoint is a place you leave the
+   * trail for, not one you walk past: `buildTrail`'s match radius for curated
+   * waypoints on the main route.
+   */
+  onRouteMetres: 500,
 } as const;
+
+/**
+ * Types whose off-route copy must not count as the place itself: water must
+ * never satisfy `isWaterWaypoint` from down a side valley (the carry calculator
+ * would split a dry stretch at a source nobody walks past), and a campsite,
+ * hut or town off the line is a turn-off, as Te Araroa's curated ones are. The
+ * rest (a trailhead, a junction, a point of interest) feed no calculator.
+ */
+const TURN_OFF_TYPES: ReadonlySet<string> = new Set([
+  'water',
+  'campsite',
+  'hut',
+  'resupply',
+  'food',
+  'accommodation',
+  'town',
+]);
 
 /** The id prefix every hiker waypoint carries. */
 export const USER_WAYPOINT_ID_PREFIX = 'hw_';
@@ -187,6 +210,7 @@ export interface PlaceableTrackPoint extends ElevationPoint {
 
 /** The waypoint fields the placement reads and writes. */
 export interface PlaceableWaypoint {
+  offTrailKm?: number;
   id?: string;
   name: string;
   type: string;
@@ -302,6 +326,13 @@ export function placeOnTrack(
  * (distance, ascent, descent) re-measured from it, so the list's legs still
  * add up. Nothing else about the curated waypoints changes.
  *
+ * One further than `onRouteMetres` from the line is placed as a turn-off at
+ * that km, the way curated data marks a place you leave the route for: a
+ * water, campsite, hut, food or town type becomes `<type>-access` with the
+ * straight-line distance as `offTrailKm`, so the calculators never count it
+ * as a place on the route. (The walk is at least that far; the hiker's note
+ * says the rest.) The hiker's own record keeps the type they chose.
+ *
  * Works on the trail as stored (NOBO); apply direction afterwards, as the guide
  * does for everything else. A waypoint further than `maxKmFromTrail` from the
  * route is left out. Returns the same trail object when there is nothing to
@@ -323,10 +354,13 @@ export function placeUserWaypoints<T extends PlaceableTrail>(
     if (!at || at.metres > USER_WAYPOINT_LIMITS.maxKmFromTrail * 1000) continue;
     const km = Math.round(at.km * 100) / 100;
     const climb = calculateElevationBetween(0, km, points, breakStarts);
+    const offRoute = at.metres > USER_WAYPOINT_LIMITS.onRouteMetres;
+    const turnOff = offRoute && TURN_OFF_TYPES.has(uw.type);
     placed.push({
       id: uw.id,
       name: uw.name,
-      type: uw.type,
+      type: turnOff ? `${uw.type}-access` : uw.type,
+      ...(turnOff ? { offTrailKm: Math.round(at.metres / 100) / 10 } : {}),
       lat: uw.lat,
       lon: uw.lon,
       ...(uw.description ? { description: uw.description } : {}),

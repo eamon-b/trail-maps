@@ -19,6 +19,7 @@ import { useTrailTitle } from '../../../src/features/guide/use-trail-title';
 import { GuidePositionProvider } from '../../../src/features/guide/GuidePositionContext';
 import { isCommunityRouteId } from '@lib/community-types';
 import { isApiConfigured } from '../../../src/api/client';
+import { TodayHeaderButton } from '../../../src/features/plan/TodayHeaderButton';
 
 export default function GuideLayout() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
@@ -46,6 +47,7 @@ export default function GuideLayout() {
           name="index"
           options={{
             title,
+            // `calendar-today` for today's plan (only when there is one),
             // `routes` (a branching path) for alternates, `calendar-check` for
             // the day-split planner, `download` for tile packs, `cog` for the
             // app-wide settings the root header also links to.
@@ -69,6 +71,8 @@ export default function GuideLayout() {
                     }
                   />
                 )}
+                {/* Only while the plan has a day dated today. */}
+                <TodayHeaderButton trailId={trailId} />
                 <HeaderIconButton
                   name="routes"
                   accessibilityLabel="Routes"
@@ -111,6 +115,7 @@ export default function GuideLayout() {
         <Stack.Screen name="downloads" options={{ title: 'Offline maps' }} />
         <Stack.Screen name="routes" options={{ title: 'Routes' }} />
         <Stack.Screen name="plan" options={{ title: 'Plan' }} />
+        <Stack.Screen name="today" options={{ title: 'Today' }} />
         {/* A modal over the plan: 70 CDT rows want a header, a scroll and a
             back gesture, which a sheet has none of. */}
         <Stack.Screen

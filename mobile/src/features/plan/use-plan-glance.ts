@@ -11,6 +11,7 @@
 import { useMemo } from 'react';
 import { planToRoute } from '@lib/plan-alternates';
 import type { PlanDocument } from '@lib/plan-types';
+import type { TrailJson } from '../../services/trail-assets';
 import { useGuide } from '../guide/GuideContext';
 import { selectPlan, usePlansStore } from '../../state/plans-store';
 import { PACE_KMH } from './plan-adapters';
@@ -26,6 +27,8 @@ export interface PlanGlanceState extends PlanGlance {
   hasStops: boolean;
   /** The options the days were computed with — for a what-if over the same figures. */
   options: PlanGlanceOptions;
+  /** The route the days are measured on (`use-plan-route`), direction applied. */
+  trail: TrailJson;
 }
 
 export function usePlanGlance(): PlanGlanceState {
@@ -45,6 +48,7 @@ export function usePlanGlance(): PlanGlanceState {
       plan,
       hasStops: plan.stops.length > 0,
       options,
+      trail,
     };
   }, [saved, route, trail, trailId, planDirection, baseKmh, dailyHours]);
 }

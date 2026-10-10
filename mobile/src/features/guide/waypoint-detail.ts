@@ -12,7 +12,7 @@ import type { TrailPOI } from '@lib/trail-types';
 import { categoryToken } from '../elevation/waypoint-category';
 import type { TrailJson } from '../../services/trail-assets';
 import { tripAlongTrail, type TrailTrip } from '../../services/distance-calculator';
-import { snapToTrail, type SnapPoint } from '../../services/position-on-trail';
+import { snapToTrail, type SnapPoint } from '@lib/position-on-trail';
 
 const MONTHS = [
   'Jan',

@@ -24,12 +24,13 @@
  * Distances to segments are measured in a local equirectangular projection
  * centred on the fix — accurate to well under a metre at the scale a snap
  * cares about — and the reported off-trail distance is the shared
- * `@lib/distance` haversine (metres) to the snapped point. `dist` on each point
- * is cumulative kilometres. Kept React-free so it is unit-testable and usable
- * from any hook or service.
+ * `distance.ts` haversine (metres) to the snapped point. `dist` on each point
+ * is cumulative kilometres. Platform-neutral: the phone's GPS snap, its custom
+ * routes and the placement of hiker waypoints (`user-waypoints.ts`) all use
+ * this one projection, so a waypoint and a fix at the same spot read the same km.
  */
 
-import { haversineDistance } from '@lib/distance';
+import { haversineDistance } from './distance';
 
 /** Minimal track-point shape needed to snap a coordinate. */
 export interface SnapPoint {

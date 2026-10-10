@@ -45,7 +45,7 @@ import {
 } from '@lib/track-geometry';
 import { sliceAcrossRouteBreaks } from '@lib/route-breaks';
 import { toActiveKm, toNoboKm, type PlanDirection } from '@lib/plan-direction';
-import { snapToTrail, type SnapPoint } from '../../services/position-on-trail';
+import { snapToTrail, type SnapPoint } from '@lib/position-on-trail';
 
 /** A track point the route is drawn over. */
 export interface RouteTrackPoint {

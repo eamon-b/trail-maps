@@ -30,7 +30,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGuide } from '../features/guide/GuideContext';
 import { routeBreakStarts } from '@lib/route-breaks';
 import { useLocation } from './useLocation';
-import { isOffTrail } from '../services/position-on-trail';
+import { isOffTrail } from '@lib/position-on-trail';
 import { useSettingsStore } from '../state/settings-store';
 
 export type GuidePositionStatus = 'no-permission' | 'acquiring' | 'fix' | 'off-trail';

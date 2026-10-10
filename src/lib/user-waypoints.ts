@@ -19,7 +19,7 @@
  * Platform-neutral (mobile via `@lib`, the worker relatively): no DOM, no Node.
  */
 
-import { haversineDistance } from './distance';
+import { snapToTrail } from './position-on-trail';
 import { calculateElevationBetween, type ElevationPoint } from './track-geometry';
 import { routeBreakStarts } from './route-breaks';
 import type { RouteBreak } from './trail-types';
@@ -256,10 +256,10 @@ export interface TrackPlacement {
 }
 
 /**
- * Project a position onto a track's line. A local equirectangular projection
- * per segment is plenty at these distances (a few km at most) and keeps this a
- * single O(n) pass over a phone's ≤ 5,000 points. Route breaks are skipped: the
- * gap between two landings is water, not trail.
+ * Project a position onto a track's line: `snapToTrail`'s segment projection,
+ * the one the phone's GPS position uses, so a waypoint and a fix at the same
+ * spot read the same km. Route breaks are skipped: the gap between two
+ * landings is water, not trail.
  */
 export function placeOnTrack(
   lat: number,
@@ -267,54 +267,17 @@ export function placeOnTrack(
   points: readonly PlaceableTrackPoint[],
   breaks?: RouteBreak[],
 ): TrackPlacement | null {
-  if (points.length === 0) return null;
-  const breakStarts = routeBreakStarts(breaks, 'points');
-  const cosLat = Math.cos((lat * Math.PI) / 180);
-  let bestI = 0;
-  let bestT = 0;
-  let bestSq = Infinity;
-
-  const consider = (i: number, t: number) => {
-    const a = points[i];
-    const b = points[Math.min(i + 1, points.length - 1)];
-    const dy = lat - (a.lat + (b.lat - a.lat) * t);
-    const dx = (lon - (a.lon + (b.lon - a.lon) * t)) * cosLat;
-    const sq = dx * dx + dy * dy;
-    if (sq < bestSq) {
-      bestSq = sq;
-      bestI = i;
-      bestT = t;
-    }
-  };
-
-  consider(points.length - 1, 0);
-  for (let i = 0; i < points.length - 1; i++) {
-    // The step into a break is the ferry: only its start vertex is trail.
-    if (breakStarts.has(i + 1)) {
-      consider(i, 0);
-      continue;
-    }
-    const a = points[i];
-    const b = points[i + 1];
-    const ex = (b.lon - a.lon) * cosLat;
-    const ey = b.lat - a.lat;
-    const lenSq = ex * ex + ey * ey;
-    const t =
-      lenSq > 0
-        ? Math.max(0, Math.min(1, (((lon - a.lon) * cosLat) * ex + (lat - a.lat) * ey) / lenSq))
-        : 0;
-    consider(i, t);
-  }
-
-  const a = points[bestI];
-  const b = points[Math.min(bestI + 1, points.length - 1)];
-  const index = bestT < 0.5 ? bestI : Math.min(bestI + 1, points.length - 1);
+  const snap = snapToTrail(lat, lon, points, undefined, routeBreakStarts(breaks, 'points'));
+  if (!snap) return null;
+  // `snap.index` starts the segment the point lies on; the waypoint takes the
+  // nearer of its two ends as its vertex.
+  const a = points[snap.index];
+  const b = points[snap.index + 1];
+  const index = b && b.dist - snap.currentKm < snap.currentKm - a.dist ? snap.index + 1 : snap.index;
   return {
     index,
-    km: a.dist + (b.dist - a.dist) * bestT,
-    metres: Math.round(
-      haversineDistance(lat, lon, a.lat + (b.lat - a.lat) * bestT, a.lon + (b.lon - a.lon) * bestT),
-    ),
+    km: snap.currentKm,
+    metres: Math.round(snap.offTrailMeters),
     elevation: points[index].ele,
   };
 }

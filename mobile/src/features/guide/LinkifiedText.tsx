@@ -1,9 +1,11 @@
 /**
- * Free text with its web links made tappable — a waypoint description that
- * carries a URL (Shikoku's henro.org pages) opens it in the phone's browser.
+ * Free text with its links made tappable — a waypoint description's URL
+ * (Shikoku's henro.org pages) opens in the phone's browser, an email address
+ * in the mail app and a phone number in the dialler.
  *
  * The links are nested `Text`, so they wrap with the prose around them. Only
- * the http(s) hrefs `@lib/text-links` hands back ever reach `Linking.openURL`.
+ * the http(s), `mailto:` and `tel:` hrefs `@lib/text-links` hands back ever
+ * reach `Linking.openURL`.
  *
  * The text is selectable (long-press → copy), so a hut's phone number or an
  * inn's email address can be pasted into the dialler or a mail app.
@@ -22,7 +24,9 @@ export function LinkifiedText({ text, style }: { text: string; style?: StyleProp
           <Text
             key={i}
             accessibilityRole="link"
-            onPress={() => void Linking.openURL(segment.href!)}
+            // A phone with no dialler or mail app rejects; the text stays
+            // selectable, so the hiker can still copy it.
+            onPress={() => void Linking.openURL(segment.href!).catch(() => undefined)}
             style={[styles.link, { color: colors.accent }]}
           >
             {segment.text}

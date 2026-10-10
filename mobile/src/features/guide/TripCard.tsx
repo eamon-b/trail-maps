@@ -8,6 +8,11 @@
  * time — and it never says "You are here" unless both are on the line.
  *
  * Renders nothing without a usable fix.
+ *
+ * `along` measures on another line than the guide's main route: the route as
+ * planned, for a place on an alternate the plan takes. Its `currentKm` is the
+ * fix on that line (null when the hiker is not on it, and then there is no
+ * card).
  */
 
 import React, { useMemo } from 'react';
@@ -19,6 +24,7 @@ import { useTheme } from '../../theme';
 import { radii, spacing, typography } from '../../tokens';
 import { useSettingsStore } from '../../state/settings-store';
 import { formatEtaMinutes } from '../../services/distance-calculator';
+import type { TrailJson } from '../../services/trail-assets';
 import { selectPaceBaseKmh, usePlanInputsStore } from '../plan/plan-inputs-store';
 import { useGuide } from './GuideContext';
 import { useGuidePositionContext } from './GuidePositionContext';
@@ -28,19 +34,27 @@ export function TripCard({
   placeKm,
   placeOffTrailM,
   placeAccessMode,
+  along,
 }: {
-  /** The place's km on the guide's direction-applied scale. */
+  /** The place's km on the guide's direction-applied scale (or on `along`'s). */
   placeKm: number;
   /** How far the place sits from the trail line, in metres (null: unknown). */
   placeOffTrailM: number | null;
   /** How the data says that distance is covered, when it says (a turn-off's `accessMode`). */
   placeAccessMode?: AccessMode;
+  /** Measure along this direction-applied trail, from this km of the fix on it. */
+  along?: { trail: TrailJson; currentKm: number | null };
 }) {
   const { colors } = useTheme();
-  const { trailId, trail } = useGuide();
+  const { trailId, trail: guideTrail } = useGuide();
   const units = useSettingsStore((s) => s.units);
   const baseKmh = usePlanInputsStore(selectPaceBaseKmh(trailId));
-  const { status, currentKm, offTrailMeters } = useGuidePositionContext();
+  const position = useGuidePositionContext();
+  const trail = along?.trail ?? guideTrail;
+  // On another line the hiker is either on it (a km) or there is nothing to say.
+  const status = along ? (along.currentKm != null ? 'fix' : 'acquiring') : position.status;
+  const currentKm = along ? along.currentKm : position.currentKm;
+  const offTrailMeters = along ? null : position.offTrailMeters;
 
   const hasFix = status === 'fix' || status === 'off-trail';
   const trip = useMemo(

@@ -11,7 +11,7 @@
  * waypoint screen.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { formatDistance, formatElevation } from '@lib/format-distance';
@@ -22,7 +22,6 @@ import { useSettingsStore, type Units } from '../../../src/state/settings-store'
 import { formatHours } from '../../../src/features/plan/plan-format';
 import { emptyMessage, type TodayRow } from '../../../src/features/plan/today-plan';
 import { useTodayPlan } from '../../../src/features/plan/use-today-plan';
-import { useGuide } from '../../../src/features/guide/GuideContext';
 
 export default function TodayScreen() {
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
@@ -30,14 +29,6 @@ export default function TodayScreen() {
   const { colors } = useTheme();
   const units = useSettingsStore((s) => s.units);
   const { today, rows, date, hasStartDate, hasStops } = useTodayPlan();
-  // The rows walk the route as planned, which can include a taken alternate's
-  // waypoints; the waypoint screen finds only the guide's own, so only those
-  // rows open it.
-  const { trail } = useGuide();
-  const openableIds = useMemo(
-    () => new Set(trail.waypoints.map((w) => w.id).filter((id): id is string => !!id)),
-    [trail],
-  );
 
   const openPlanner = () =>
     router.push({ pathname: '/guide/[trailId]/plan', params: { trailId } });
@@ -96,7 +87,9 @@ export default function TodayScreen() {
           row={item}
           units={units}
           onPress={
-            item.waypoint?.id && openableIds.has(item.waypoint.id)
+            // A taken alternate's places open too: the waypoint screen finds
+            // them on the alternate (`findGuideWaypoint`).
+            item.waypoint?.id
               ? () =>
                   router.push({
                     pathname: '/guide/[trailId]/waypoint/[waypointId]',

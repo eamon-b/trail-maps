@@ -5,6 +5,7 @@
 
 import React from 'react';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import type { TrailJson } from '../../../services/trail-assets';
 import { TripCard } from '../TripCard';
 
 jest.mock('../../../theme', () => ({
@@ -67,5 +68,29 @@ describe('TripCard — the way off the trail', () => {
     expect(text(<TripCard placeKm={20} placeOffTrailM={2000} />)).toContain(
       'Then 2.00 km off the trail to reach it',
     );
+  });
+});
+
+describe('TripCard — along the route as planned', () => {
+  const routeTrail = {
+    track: {
+      points: [
+        { lat: 0, lon: 0, ele: 0, dist: 0 },
+        { lat: 0, lon: 0.9, ele: 0, dist: 100 },
+      ],
+    },
+  } as unknown as TrailJson;
+
+  it('measures from the fix on that line, not the guide snap', () => {
+    // The guide reads km 10; on the planned route the hiker is at km 30.
+    expect(
+      text(<TripCard placeKm={70} placeOffTrailM={0} along={{ trail: routeTrail, currentKm: 30 }} />),
+    ).toContain('40.0 km ahead');
+  });
+
+  it('shows nothing while the hiker is not on that line', () => {
+    expect(
+      text(<TripCard placeKm={70} placeOffTrailM={0} along={{ trail: routeTrail, currentKm: null }} />),
+    ).toBe('');
   });
 });

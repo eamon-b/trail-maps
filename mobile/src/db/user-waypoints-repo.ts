@@ -162,9 +162,30 @@ export async function deleteById(db: SqlDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM user_waypoints WHERE id = ?', [id]);
 }
 
-/** A server tombstone: drops the shared copy, never a private row. */
+/**
+ * A server tombstone: drops someone else's shared copy, never a private row.
+ * One of this account's own (hidden by reports or an admin) is kept as a
+ * private waypoint instead: it may be the only record of a place the hiker
+ * marked, and only everyone else should lose it.
+ */
 export async function applyTombstone(db: SqlDatabase, id: string): Promise<void> {
-  await db.runAsync("DELETE FROM user_waypoints WHERE id = ? AND visibility = 'shared'", [id]);
+  await db.runAsync(
+    "DELETE FROM user_waypoints WHERE id = ? AND visibility = 'shared' AND mine = 0",
+    [id],
+  );
+  await keepAsPrivate(db, id);
+}
+
+/**
+ * The server will not take this account's shared waypoint (an admin or reports
+ * hid it): it stays on this phone as a private one.
+ */
+export async function keepAsPrivate(db: SqlDatabase, id: string): Promise<void> {
+  await db.runAsync(
+    `UPDATE user_waypoints SET visibility = 'private', author_name = NULL, source = 'local'
+      WHERE id = ? AND visibility = 'shared' AND mine = 1`,
+    [id],
+  );
 }
 
 export async function readSyncedAt(db: SqlDatabase, trailId: string): Promise<string | undefined> {

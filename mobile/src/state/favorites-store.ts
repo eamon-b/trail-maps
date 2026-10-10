@@ -19,6 +19,8 @@ export interface FavoritesState {
   isFavorite: (trailId: string, waypointId: string) => boolean;
   /** Drop a trail's cached favourites (its rows were deleted with the guide). */
   forgetTrail: (trailId: string) => void;
+  /** Drop one cached favourite (its waypoint was deleted). */
+  forgetWaypoint: (trailId: string, waypointId: string) => void;
 }
 
 export const useFavoritesStore = create<FavoritesState>((set, get) => ({
@@ -45,6 +47,15 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
 
   isFavorite: (trailId: string, waypointId: string) =>
     (get().byTrail[trailId] ?? []).includes(waypointId),
+
+  forgetWaypoint: (trailId: string, waypointId: string) =>
+    set((s) => {
+      const current = s.byTrail[trailId];
+      if (!current?.includes(waypointId)) return s;
+      return {
+        byTrail: { ...s.byTrail, [trailId]: current.filter((id) => id !== waypointId) },
+      };
+    }),
 
   forgetTrail: (trailId: string) =>
     set((s) => {

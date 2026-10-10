@@ -22,6 +22,7 @@ import {
 import { uploadCommentPhoto } from './photos';
 import {
   adminListSharedWaypoints,
+  adminRestoreSharedWaypoint,
   deleteSharedWaypoint,
   getTrailSharedWaypoints,
   putSharedWaypoint,
@@ -232,6 +233,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     // /v1/admin/waypoints
     if (rest.length === 2 && rest[0] === 'admin' && rest[1] === 'waypoints') {
       if (method === 'GET') return await adminListSharedWaypoints(request, env, ctx);
+      return methodNotAllowed();
+    }
+
+    // /v1/admin/waypoints/:id/restore
+    if (rest.length === 4 && rest[0] === 'admin' && rest[1] === 'waypoints' && rest[3] === 'restore') {
+      if (method === 'POST') return await adminRestoreSharedWaypoint(request, env, ctx, rest[2]);
       return methodNotAllowed();
     }
 

@@ -9,6 +9,7 @@ import {
   type UserWaypoint,
 } from './user-waypoints';
 import { createReversedTrail } from './trail-reverse';
+import { isResupplyWaypoint, isWaterWaypoint } from './waypoint-taxonomy';
 
 // A straight line due north along lon 138, ~1.11 km per 0.01° of latitude,
 // climbing 10 m per point.
@@ -89,6 +90,25 @@ describe('placeOnTrack', () => {
 });
 
 describe('placeUserWaypoints', () => {
+  it('places a water source or town well off the line as a turn-off', () => {
+    // ~1.8 km east of the line at km ~3.3.
+    const far = uw({ lon: 138.02, type: 'water' });
+    const water = placeUserWaypoints(trail(), [far]).waypoints.find((w) => w.id === far.id)!;
+    expect(water.type).toBe('water-access');
+    expect((water as { offTrailKm?: number }).offTrailKm).toBeCloseTo(1.8, 1);
+    expect(isWaterWaypoint(water.type)).toBe(false);
+
+    const town = uw({ lon: 138.02, type: 'town', name: 'Village' });
+    const placedTown = placeUserWaypoints(trail(), [town]).waypoints.find((w) => w.id === town.id)!;
+    expect(placedTown.type).toBe('town-access');
+    expect(isResupplyWaypoint(placedTown.type)).toBe(true);
+
+    // Close by, it is the place itself.
+    const near = placeUserWaypoints(trail(), [uw()]).waypoints.find((w) => w.id === uw().id)!;
+    expect(near.type).toBe('water');
+    expect(near).not.toHaveProperty('offTrailKm');
+  });
+
   it('returns the same trail when there is nothing to place', () => {
     const t = trail();
     expect(placeUserWaypoints(t, [])).toBe(t);

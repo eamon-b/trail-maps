@@ -24,6 +24,8 @@ import { getDatabase } from '../db/database';
 import type { SqlDatabase } from '../db/sql-database';
 import * as outboxRepo from '../db/outbox-repo';
 import * as userWaypointsRepo from '../db/user-waypoints-repo';
+import * as favoritesRepo from '../db/favorites-repo';
+import { useFavoritesStore } from '../state/favorites-store';
 import { uuidv4 } from '../api/uuid';
 import { isApiConfigured } from '../api/client';
 import { isServerKnown } from '../services/server-trails';
@@ -146,6 +148,9 @@ export async function deleteUserWaypoint(
   if (!waypoint.mine) throw new Error('Only the hiker who added a waypoint can delete it.');
   const db = await resolveDb(deps);
   await userWaypointsRepo.deleteById(db, waypoint.id);
+  // Its star goes with it, or the favourites would keep an id nothing names.
+  await favoritesRepo.remove(db, waypoint.trailId, waypoint.id);
+  useFavoritesStore.getState().forgetWaypoint(waypoint.trailId, waypoint.id);
   let queued = false;
   if (waypoint.visibility === 'shared') {
     await outboxRepo.replacePending(db, 'waypoint', waypoint.id);

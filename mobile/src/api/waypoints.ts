@@ -60,10 +60,24 @@ export async function reportSharedWaypoint(
 export async function listTrailSharedWaypoints(
   ctx: ApiContext,
   params: { trailId: string; since?: string },
-): Promise<SharedWaypointsResponse> {
-  const query = params.since ? `?since=${encodeURIComponent(params.since)}` : '';
-  return apiRequest<SharedWaypointsResponse>(
-    `/v1/trails/${encodeURIComponent(params.trailId)}/waypoints${query}`,
-    { baseUrl: ctx.baseUrl, fetchImpl: ctx.fetchImpl, token: ctx.token },
-  );
+): Promise<Pick<SharedWaypointsResponse, 'waypoints' | 'syncedAt'>> {
+  const waypoints: SharedWaypointsResponse['waypoints'] = [];
+  let cursor: string | null = null;
+  let syncedAt: string | null = null;
+  do {
+    const qs = new URLSearchParams();
+    if (params.since) qs.set('since', params.since);
+    if (cursor) qs.set('cursor', cursor);
+    const query = qs.toString();
+    const page: SharedWaypointsResponse = await apiRequest<SharedWaypointsResponse>(
+      `/v1/trails/${encodeURIComponent(params.trailId)}/waypoints` + (query ? `?${query}` : ''),
+      { baseUrl: ctx.baseUrl, fetchImpl: ctx.fetchImpl, token: ctx.token },
+    );
+    waypoints.push(...(page.waypoints ?? []));
+    // The first page's clock is the conservative mark, as for comments: a row
+    // written while the pages were read comes again next time (idempotent).
+    if (syncedAt === null) syncedAt = page.syncedAt;
+    cursor = page.nextCursor ?? null;
+  } while (cursor);
+  return { waypoints, syncedAt: syncedAt ?? new Date(0).toISOString() };
 }

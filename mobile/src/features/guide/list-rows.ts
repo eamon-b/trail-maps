@@ -81,3 +81,27 @@ export function interleaveListRows(
         },
   );
 }
+
+/**
+ * How far behind the hiker a row may sit and still count as "here" rather than
+ * passed — the same 50 m `formatSignedDistance` collapses to "Here", so a row
+ * the list labels "Here" is never the one it hides.
+ */
+export const PASSED_TOLERANCE_KM = 0.05;
+
+/**
+ * The rows still ahead of the hiker, and how many were left behind.
+ *
+ * With no position (`currentKm` null) nothing is behind, so every row is kept.
+ * The rows must already be ordered by km, as `interleaveListRows` returns them.
+ */
+export function rowsAhead<T extends { km: number }>(
+  rows: readonly T[],
+  currentKm: number | null,
+): { rows: readonly T[]; passedCount: number } {
+  if (currentKm == null) return { rows, passedCount: 0 };
+  const cutoff = currentKm - PASSED_TOLERANCE_KM;
+  const first = rows.findIndex((row) => row.km >= cutoff);
+  const passedCount = first === -1 ? rows.length : first;
+  return { rows: passedCount === 0 ? rows : rows.slice(passedCount), passedCount };
+}

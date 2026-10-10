@@ -24,6 +24,11 @@ jest.mock('../../../state/settings-store', () => ({
   useSettingsStore: (selector: (s: unknown) => unknown) => selector({ units: 'km' }),
 }));
 
+let mockGuideWaypointIds = ['c1', 'wa', 'c2'];
+jest.mock('../../guide/GuideContext', () => ({
+  useGuide: () => ({ trail: { waypoints: mockGuideWaypointIds.map((id) => ({ id })) } }),
+}));
+
 let mockState: TodayPlanState;
 jest.mock('../use-today-plan', () => ({ useTodayPlan: () => mockState }));
 
@@ -59,6 +64,7 @@ const texts = (tree: ReactTestRenderer) =>
 beforeEach(() => {
   jest.useFakeTimers();
   mockPush.mockClear();
+  mockGuideWaypointIds = ['c1', 'wa', 'c2'];
 });
 
 afterEach(() => jest.useRealTimers());
@@ -91,6 +97,29 @@ it('lists the day camp to camp and opens a waypoint', () => {
     pathname: '/guide/[trailId]/waypoint/[waypointId]',
     params: { trailId: 'syn', waypointId: 'wa' },
   });
+});
+
+it("does not open a taken alternate's waypoint the waypoint screen cannot find", () => {
+  // `wa` sits on the alternate: on the planned route, not in the guide's trail.
+  mockGuideWaypointIds = ['c1', 'c2'];
+  mockState = {
+    ...base,
+    today: { kind: 'walk', day },
+    rows: [
+      { key: 's', waypoint: { id: 'c1', name: 'Camp A', lat: 0, lon: 0, type: 'campsite' }, name: 'Camp A', type: 'campsite', role: 'start', km: 20, fromStartKm: 0, legKm: 0, legAscentM: 0, legDescentM: 0, totalAscentM: 0, totalDescentM: 0 },
+      { key: 'v', waypoint: { id: 'wa', name: 'Creek', lat: 0, lon: 0, type: 'water' }, name: 'Creek', type: 'water', role: 'via', km: 30, fromStartKm: 10, legKm: 10, legAscentM: 100, legDescentM: 0, totalAscentM: 100, totalDescentM: 0 },
+    ],
+  };
+  const tree = render();
+  const pressable = (label: string) =>
+    tree.root.findAll(
+      (n) =>
+        typeof n.props.onPress === 'function' &&
+        typeof n.props.accessibilityLabel === 'string' &&
+        n.props.accessibilityLabel.startsWith(label),
+    );
+  expect(pressable('Creek')).toHaveLength(0);
+  expect(pressable('Camp A').length).toBeGreaterThan(0);
 });
 
 it('says why there is nothing for today', () => {

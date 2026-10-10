@@ -46,6 +46,29 @@ describe('LinkifiedText', () => {
     expect(renderer.root.findAllByType(Text)[0].props.children).toEqual(['Water tank, reliable']);
   });
 
+  it('opens an email address in the mail app and a phone number in the dialler', () => {
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<LinkifiedText text="Tel: 0885-42-4655, inn@example.jp" />);
+    });
+    const [phone, email] = links(renderer);
+    expect(phone.props.children).toBe('0885-42-4655');
+    act(() => (phone.props.onPress as () => void)());
+    expect(Linking.openURL).toHaveBeenCalledWith('tel:0885-42-4655');
+    expect(email.props.children).toBe('inn@example.jp');
+    act(() => (email.props.onPress as () => void)());
+    expect(Linking.openURL).toHaveBeenCalledWith('mailto:inn@example.jp');
+  });
+
+  it('swallows a phone with nothing to open the link', async () => {
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('No app'));
+    let renderer!: ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(<LinkifiedText text="Tel: 0885-42-4655" />);
+    });
+    await act(async () => (links(renderer)[0].props.onPress as () => void)());
+  });
+
   it('lets the description be selected and copied', () => {
     let renderer!: ReactTestRenderer;
     act(() => {

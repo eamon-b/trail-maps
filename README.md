@@ -20,6 +20,7 @@ The app informs the hiker's decisions and never makes them. Pace, hours per day 
 | 🇦🇺 Australia | Australian Alps Walking Track, Bibbulmun Track, Cape to Cape Track, Grampians Peaks Trail, Great North Walk, Great Ocean Walk, Great South West Walk, Heysen Trail, Hume and Hovell Track, Kep Track, Larapinta Trail, Overland Track, Six Foot Track, South Coast Track, The Coast Track, Thorsborne Trail, Three Capes Track |
 | 🇳🇿 New Zealand | Te Araroa |
 | 🇯🇵 Japan | Shikoku Henro (Temples 1–23) |
+| 🇳🇵 Nepal | Everest Three Passes from Jiri |
 | 🇺🇸 United States | Continental Divide Trail |
 
 Anyone can also import their own GPX file, and hikers can share routes with each other as **community routes**.

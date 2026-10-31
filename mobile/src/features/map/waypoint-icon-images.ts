@@ -28,6 +28,7 @@ export const WAYPOINT_ICON_IMAGES: Record<WaypointIconName, ImageRequireSource> 
   campsite: require('../../../assets/map-icons/campsite.png'),
   hut: require('../../../assets/map-icons/hut.png'),
   bed: require('../../../assets/map-icons/bed.png'),
+  teahouse: require('../../../assets/map-icons/teahouse.png'),
   town: require('../../../assets/map-icons/town.png'),
   resupply: require('../../../assets/map-icons/resupply.png'),
   trailhead: require('../../../assets/map-icons/trailhead.png'),

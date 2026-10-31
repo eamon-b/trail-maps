@@ -328,6 +328,14 @@ describe('overnightCandidates', () => {
     expect(overnightCandidates(waypoints).some(w => w.type === 'hut-access')).toBe(false);
   });
 
+  it('offers a teahouse as a night stop, but never its turn-off', () => {
+    const lodges: PlanWaypoint[] = [
+      { id: 'w_th', name: 'Lobuche', type: 'teahouse', totalDistance: 5 },
+      { id: 'w_th_access', name: 'Lodge turn-off', type: 'teahouse-access', totalDistance: 7 },
+    ];
+    expect(overnightCandidates(lodges, { includeTowns: false }).map(w => w.name)).toEqual(['Lobuche']);
+  });
+
   it('can leave towns out, for the phone day-boundary snapper', () => {
     expect(overnightCandidates(waypoints, { includeTowns: false }).map(w => w.name)).toEqual([
       'Big4',

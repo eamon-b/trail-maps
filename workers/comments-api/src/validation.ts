@@ -45,6 +45,7 @@ export const ALLOWED_TRAILS: readonly string[] = [
   'te_araroa',
   'thorsborne',
   'three_capes',
+  'three_passes',
 ];
 
 const WAYPOINT_ID_RE = /^[a-z0-9_-]{4,64}$/;

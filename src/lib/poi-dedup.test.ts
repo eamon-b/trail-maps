@@ -117,6 +117,13 @@ describe('isCompatibleType', () => {
     expect(isCompatibleType('restaurant', 'food')).toBe(true);
   });
 
+  it('lets an OSM hut or restaurant duplicate a teahouse', () => {
+    expect(isCompatibleType('camping', 'teahouse')).toBe(true);
+    expect(isCompatibleType('restaurant', 'teahouse')).toBe(true);
+    expect(isCompatibleType('water', 'teahouse')).toBe(false);
+    expect(isCompatibleType('resupply', 'teahouse')).toBe(false);
+  });
+
   it('never treats a town as a dedup target', () => {
     // A town waypoint marks an area, so every shop in it carries its name.
     expect(isCompatibleType('resupply', 'town')).toBe(false);

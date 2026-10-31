@@ -221,11 +221,39 @@ describe('waypoint-taxonomy', () => {
   });
 
   describe('families are disjoint', () => {
-    it('no type is both water and resupply', () => {
+    it('no type but teahouse is both water and resupply', () => {
       const all = [...WATER_TYPES, ...WATER_TYPE_ALIASES, ...RESUPPLY_TYPES, ...RESUPPLY_TYPE_ALIASES];
       for (const type of all) {
+        if (type === 'teahouse') continue;
         expect(isWaterWaypoint(type) && isResupplyWaypoint(type), `${type} is in both families`).toBe(false);
       }
+    });
+  });
+
+  describe('teahouse', () => {
+    it('is a canonical type with its own label, turn-off included', () => {
+      expect(isKnownWaypointType('teahouse')).toBe(true);
+      expect(isKnownWaypointType('teahouse-access')).toBe(true);
+      expect(waypointTypeLabel('teahouse')).toBe('Teahouse');
+      expect(waypointTypeLabel('teahouse-access')).toBe('Teahouse (turn-off)');
+    });
+
+    it('is both a water stop and a resupply', () => {
+      // Every lodge village on a teahouse trek sells water and meals.
+      expect(isWaterWaypoint('teahouse')).toBe(true);
+      expect(isResupplyWaypoint('teahouse')).toBe(true);
+      expect(WATER_TYPES.has('teahouse')).toBe(true);
+      expect(RESUPPLY_TYPES.has('teahouse')).toBe(true);
+      expect(matchesWaypointFamily('teahouse', 'water')).toBe(true);
+      expect(matchesWaypointFamily('teahouse', 'resupply')).toBe(true);
+    });
+
+    it('turn-off counts as resupply but never as water', () => {
+      // The same split as town-access: the food is where the turn-off leads,
+      // but water down a side track must not shorten a dry stretch.
+      expect(isResupplyWaypoint('teahouse-access')).toBe(true);
+      expect(isWaterWaypoint('teahouse-access')).toBe(false);
+      expect(baseWaypointType('teahouse-access')).toBe('teahouse');
     });
   });
 

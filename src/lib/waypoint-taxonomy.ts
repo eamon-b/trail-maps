@@ -34,6 +34,7 @@ export const WAYPOINT_TYPES = [
   'food',
   'accommodation',
   'caravan-park',
+  'teahouse',
   'town-access',
   'resupply-access',
   'food-access',
@@ -41,6 +42,7 @@ export const WAYPOINT_TYPES = [
   'campsite-access',
   'accommodation-access',
   'caravan-park-access',
+  'teahouse-access',
   'trailhead',
   'road-crossing',
   'inlet-crossing',
@@ -69,6 +71,7 @@ export const WAYPOINT_TYPE_LABELS: Record<WaypointType, string> = {
   food: 'Food',
   accommodation: 'Accommodation',
   'caravan-park': 'Caravan park',
+  teahouse: 'Teahouse',
   'town-access': 'Town (turn-off)',
   'resupply-access': 'Resupply (turn-off)',
   'food-access': 'Food (turn-off)',
@@ -76,6 +79,7 @@ export const WAYPOINT_TYPE_LABELS: Record<WaypointType, string> = {
   'campsite-access': 'Campsite (turn-off)',
   'accommodation-access': 'Accommodation (turn-off)',
   'caravan-park-access': 'Caravan park (turn-off)',
+  'teahouse-access': 'Teahouse (turn-off)',
   trailhead: 'Trailhead',
   'road-crossing': 'Road crossing',
   'inlet-crossing': 'Inlet crossing',
@@ -163,8 +167,14 @@ export function waypointTypeLabel(type: string | undefined | null): string {
  *
  * `water-tank` is kept distinct from `water` because a tank is a built,
  * usually-reliable store while a `water` point may be a creek.
+ *
+ * `teahouse` is here too: on a teahouse trek (the Everest Three Passes) every
+ * lodge village sells boiled, filtered or bottled water, so it is a water stop
+ * as surely as a tank. It is the one type in both this family and the resupply
+ * family. Its turn-off, `teahouse-access`, is deliberately *not* water — the
+ * water is down the side track, for the reason `RESUPPLY_TYPES` gives.
  */
-export const WATER_TYPES: ReadonlySet<string> = new Set(['water', 'water-tank']);
+export const WATER_TYPES: ReadonlySet<string> = new Set(['water', 'water-tank', 'teahouse']);
 
 /**
  * Type strings from *other* people's GPX files that mean "you can get water
@@ -191,12 +201,16 @@ export const WATER_TYPE_ALIASES: ReadonlySet<string> = new Set([
  * Canonical types at which a hiker can obtain food supplies.
  *
  * `accommodation` and `caravan-park` are deliberately excluded — they are
- * shelter, and do not reliably mean food can be obtained.
+ * shelter, and do not reliably mean food can be obtained. `teahouse` is not:
+ * a teahouse is a lodge on a trek where every lodge feeds you and most villages
+ * have a shop, so it is curated as a teahouse precisely because food can be had
+ * there (it is a water stop as well — see `WATER_TYPES`).
  */
 export const RESUPPLY_TYPES: ReadonlySet<string> = new Set([
   'town',
   'food',
   'resupply',
+  'teahouse',
   // A turn-off to a shop is a place you can resupply — it is where your feet
   // leave the trail and the km your food has to reach. Leaving these out is
   // what had Te Araroa reading a 271.7 km carry from Queenstown to Riverton
@@ -211,6 +225,10 @@ export const RESUPPLY_TYPES: ReadonlySet<string> = new Set([
   'town-access',
   'food-access',
   'resupply-access',
+  // A turn-off to a teahouse village counts like one to a town: the food is
+  // there, and the turn-off is where your feet leave the route. It is *not*
+  // in `WATER_TYPES` — see the note above.
+  'teahouse-access',
 ]);
 
 /**

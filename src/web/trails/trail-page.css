@@ -173,6 +173,9 @@
 .waypoint-type.type-caravan-park {
   background: #c5e1a5;
 }
+.waypoint-type.type-teahouse {
+  background: #f48fb1;
+}
 .waypoint-type.type-trailhead {
   background: #ffe082;
 }

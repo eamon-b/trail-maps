@@ -1944,7 +1944,12 @@ export function buildTrail(gpx: ParsedGpxResult, options: BuildTrailOptions): Pr
   // consumer that keys by id (React list keys, elevation-profile markers,
   // comment lookups). The minter cannot catch this: it runs on the source list,
   // before the fan-out happens.
-  resolveDuplicateWaypointIds(enrichedWaypoints, config, waypointMaxDist, options.duplicateWaypointIds ?? 'throw');
+  resolveDuplicateWaypointIds(
+    enrichedWaypoints,
+    config,
+    waypointMaxDist,
+    options.duplicateWaypointIds ?? config.revisitedWaypointIds ?? 'throw'
+  );
 
   // Merge near-duplicate waypoints: some sources mark one physical feature with
   // two <wpt>s of the same name and type a few tens of metres apart, which shows
@@ -2252,7 +2257,8 @@ function resolveDuplicateWaypointIds(
             `at km ${first.totalDistance} and km ${wp.totalDistance}. The route passes this ` +
             `waypoint twice — lift the out-and-back section out with an "extractSpurs" entry ` +
             `in trail.json, or lower "waypointMaxDistance" (currently ${waypointMaxDist}m) so ` +
-            `the second pass falls outside the match threshold.`
+            `the second pass falls outside the match threshold. If the route really does ` +
+            `pass it twice, set "revisitedWaypointIds": "suffix".`
         );
       }
       // Imports cannot ask the user to edit a trail.json, so the later passes

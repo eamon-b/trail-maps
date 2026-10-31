@@ -26,6 +26,7 @@ export const MAP_GLYPH_NAMES = [
   'campsite',
   'hut',
   'bed',
+  'teahouse',
   'town',
   'resupply',
   'trailhead',
@@ -72,6 +73,14 @@ export const MAP_GLYPHS: Readonly<Record<MapGlyphName, string>> = {
     <rect fill="${INK}" x="12" y="52" width="72" height="15" rx="5"/>
     <rect fill="${INK}" x="27" y="40" width="21" height="12" rx="5"/>
     <rect fill="${INK}" x="73" y="52" width="11" height="26" rx="4"/>`,
+
+  // Teahouse: a steaming cup on a saucer — a lodge that is also a meal and a
+  // water stop, so neither the cabin nor the bed.
+  teahouse: `
+    <path ${STROKE} stroke-width="9" d="M33 31 C27 25 39 20 33 12 M53 31 C47 25 59 20 53 12"/>
+    <path fill="${INK}" d="M16 38 H70 V54 A22 22 0 0 1 48 76 H38 A22 22 0 0 1 16 54 Z"/>
+    <circle ${STROKE} stroke-width="9" cx="73" cy="52" r="10"/>
+    <rect fill="${INK}" x="10" y="78" width="72" height="9" rx="4"/>`,
 
   // Town: two houses either side of a steepled hall, spaced apart. Pitched
   // roofs, so it is a settlement rather than a bar chart.

@@ -775,7 +775,7 @@ export function migratePlanState(
  * Waypoint types you can spend a night at.
  *
  * The camp and shelter families plus `town` — the phone's `overnightWaypoints`
- * grouping (campsite/camp/campground, shelter/hut/accommodation/caravan-park)
+ * grouping (campsite/camp/campground, shelter/hut/accommodation/caravan-park/teahouse)
  * with the place a hiker most often actually sleeps added. `camp` and
  * `campground` are not types our classifier emits; they come from imported
  * GPX, and the phone already accepted them.
@@ -788,6 +788,8 @@ const OVERNIGHT_TYPES: ReadonlySet<string> = new Set([
   'hut',
   'accommodation',
   'caravan-park',
+  // A lodge on a teahouse trek: a bed and meals, the night's stop by design.
+  'teahouse',
 ]);
 
 /** Options for `overnightCandidates`. */

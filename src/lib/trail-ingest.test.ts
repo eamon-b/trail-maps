@@ -180,6 +180,18 @@ describe('buildTrail', () => {
     expect(suffixed.waypoints.map(w => w.id)).toEqual(['dup', 'dup_2', 'dup_3']);
   });
 
+  it('suffixes revisited waypoints when trail.json asks, and the caller can still insist on throwing', () => {
+    const collide = () => ['dup', 'dup', 'dup'];
+    const revisiting = { ...config(), revisitedWaypointIds: 'suffix' as const };
+
+    const suffixed = buildTrail(load('simple-trail'), { config: revisiting, mintWaypointIds: collide });
+    expect(suffixed.waypoints.map(w => w.id)).toEqual(['dup', 'dup_2', 'dup_3']);
+
+    expect(() =>
+      buildTrail(load('simple-trail'), { config: revisiting, mintWaypointIds: collide, duplicateWaypointIds: 'throw' })
+    ).toThrow(/revisitedWaypointIds/);
+  });
+
   it('lets the caller replace the waypoint list and post-process ids', () => {
     const afterWaypointIds = vi.fn();
     const trail = buildTrail(load('simple-trail'), {

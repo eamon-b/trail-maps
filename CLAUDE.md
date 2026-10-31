@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**Tracknotes** ([tracknotes.info](https://tracknotes.info)) is a static TypeScript web app (Vite, Leaflet) for long-distance hiking trails — Australia, plus Te Araroa (NZ), the CDT (US) and Shikoku (Japan) — with maps, elevation profiles, waypoints and trip planning. `mobile/` is the Tracknotes app, its Expo/React Native companion (its own notes: `mobile/CLAUDE.md`). Both are called Tracknotes in anything a user sees; "Trail Maps" is the retired name (the ids still carrying it: `docs/architecture/web-ui.md`). Trail data is processed at build time into JSON; the only servers are optional Cloudflare Workers in `workers/` (comments API, contour tiles). `@lib` maps to `src/lib/`.
+**Tracknotes** ([tracknotes.info](https://tracknotes.info)) is a static TypeScript web app (Vite, Leaflet) for long-distance hiking trails — Australia, plus Te Araroa (NZ), the CDT (US), Shikoku (Japan) and the Everest Three Passes (Nepal) — with maps, elevation profiles, waypoints and trip planning. `mobile/` is the Tracknotes app, its Expo/React Native companion (its own notes: `mobile/CLAUDE.md`). Both are called Tracknotes in anything a user sees; "Trail Maps" is the retired name (the ids still carrying it: `docs/architecture/web-ui.md`). Trail data is processed at build time into JSON; the only servers are optional Cloudflare Workers in `workers/` (comments API, contour tiles). `@lib` maps to `src/lib/`.
 
 ## Commands
 

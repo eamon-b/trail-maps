@@ -123,6 +123,41 @@ describe('getNextWaypointsByType', () => {
   });
 });
 
+describe('getNextWaypointsByType with teahouses', () => {
+  it('fills the shelter, town and water slots from one teahouse', () => {
+    const LODGES: DistanceWaypoint[] = [
+      { id: 'a', name: 'Trailhead', type: 'trailhead', totalDistance: 0 },
+      { id: 't', name: 'Lobuche', type: 'teahouse', totalDistance: 3 },
+      ...WAYPOINTS.slice(1),
+    ];
+    const next = getNextWaypointsByType(1, LODGES, TRACK, undefined, 4);
+    expect(next.shelter?.waypoint.name).toBe('Lobuche');
+    expect(next.town?.waypoint.name).toBe('Lobuche');
+    expect(next.water?.waypoint.name).toBe('Lobuche');
+    expect(next.campsite?.waypoint.name).toBe('Camp One');
+  });
+
+  it('counts a teahouse turn-off as the next town only', () => {
+    const LODGES: DistanceWaypoint[] = [
+      { id: 'a', name: 'Trailhead', type: 'trailhead', totalDistance: 0 },
+      { id: 't', name: 'Lodge turn-off', type: 'teahouse-access', totalDistance: 1.5 },
+      ...WAYPOINTS.slice(1),
+    ];
+    const next = getNextWaypointsByType(1, LODGES, TRACK, undefined, 4);
+    expect(next.town?.waypoint.name).toBe('Lodge turn-off');
+    expect(next.water?.waypoint.name).toBe('Spring');
+    expect(next.shelter?.waypoint.name).toBe('Old Hut');
+  });
+
+  it('ignores a type that names an Object.prototype member', () => {
+    const ODD: DistanceWaypoint[] = [
+      { id: 'x', name: 'Odd', type: 'constructor', totalDistance: 1.5 },
+      ...WAYPOINTS,
+    ];
+    expect(() => getNextWaypointsByType(1, ODD, TRACK, undefined, 4)).not.toThrow();
+  });
+});
+
 describe('formatEtaMinutes', () => {
   it('formats sub-hour and multi-hour ETAs', () => {
     expect(formatEtaMinutes(2)).toBe('~5 min');

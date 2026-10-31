@@ -41,6 +41,14 @@ describe('waypointGlyph / waypointFamily', () => {
     expect(waypointFamily('town-access')).toBe('town');
   });
 
+  it('draws a teahouse with its own glyph in the shelter family, turn-off included', () => {
+    expect(MAP_GLYPH_NAMES).toContain('teahouse');
+    expect(waypointGlyph('teahouse')).toBe('teahouse');
+    expect(waypointGlyph('tea-house')).toBe('teahouse');
+    expect(waypointGlyph('teahouse-access')).toBe('teahouse');
+    expect(waypointFamily('teahouse')).toBe('shelter');
+  });
+
   it('falls back to the generic point for unknown or missing types', () => {
     expect(waypointGlyph('something-new')).toBe(FALLBACK_GLYPH);
     expect(waypointGlyph(undefined)).toBe(FALLBACK_GLYPH);

@@ -157,7 +157,7 @@ A waypoint's **type** is the whole reason the guide can plan: it decides the
 icon, whether the point counts as water, and whether it counts as a place to
 buy food. The types the guide understands are `campsite`, `hut`, `water`,
 `water-tank`, `town`, `resupply`, `food`, `accommodation`, `caravan-park`,
-`trailhead`, `road-crossing`, `inlet-crossing`, `side-trip`, `mountain`,
+`teahouse`, `trailhead`, `road-crossing`, `inlet-crossing`, `side-trip`, `mountain`,
 `beach`, `endpoint`, `poi`, and `waypoint` for "not categorised".
 
 The type is decided by the first of these that produces an answer:
@@ -250,6 +250,13 @@ water/food filters. Trails built into the app are read-only.
   splits the walk into days.
 - **Accommodation and caravan parks** are shown but deliberately *not*
   counted as resupply — a bed is not a shop.
+- **Teahouses** — lodges on a teahouse trek such as the Everest Three Passes,
+  where every lodge village sells meals and boiled, filtered or bottled water —
+  count as all three: a water source, a resupply stop and a place to spend the
+  night. A `teahouse-access` turn-off counts as resupply, like `town-access`,
+  but never as water: the water is at the end of the side track, not on the
+  route. A teahouse is never guessed from a name (`lodge` stays accommodation);
+  give it `<type>teahouse</type>`.
 
 Common words other people's files use are understood as aliases here even
 though the guide never writes them itself: a waypoint typed `spring`,

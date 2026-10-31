@@ -19708,5 +19708,532 @@
       "lat": -43.190047,
       "lon": 147.95339
     }
+  ],
+  "three_passes": [
+    {
+      "id": "w_0340f3cc",
+      "name": "Gorak Shep",
+      "type": "teahouse",
+      "lat": 27.98068,
+      "lon": 86.82893
+    },
+    {
+      "id": "w_05442034",
+      "name": "Kyangjuma",
+      "type": "teahouse",
+      "lat": 27.82303,
+      "lon": 86.73111
+    },
+    {
+      "id": "w_07233ee1",
+      "name": "Lobuche",
+      "type": "teahouse",
+      "lat": 27.9481,
+      "lon": 86.81017
+    },
+    {
+      "id": "w_0d801c5a",
+      "name": "Khumjung",
+      "type": "teahouse",
+      "lat": 27.82362,
+      "lon": 86.7173
+    },
+    {
+      "id": "w_10326877",
+      "name": "Lamjura La",
+      "type": "gap",
+      "lat": 27.57838,
+      "lon": 86.49803
+    },
+    {
+      "id": "w_10342bc9",
+      "name": "Sanasa",
+      "type": "junction",
+      "lat": 27.82541,
+      "lon": 86.73042
+    },
+    {
+      "id": "w_109f9498",
+      "name": "Kharikhola",
+      "type": "teahouse",
+      "lat": 27.60345,
+      "lon": 86.70452
+    },
+    {
+      "id": "w_13e3ee48",
+      "name": "Thamo",
+      "type": "teahouse",
+      "lat": 27.82239,
+      "lon": 86.67832
+    },
+    {
+      "id": "w_173b5c31",
+      "name": "Sete",
+      "type": "teahouse",
+      "lat": 27.57735,
+      "lon": 86.44048
+    },
+    {
+      "id": "w_17b83ad2",
+      "name": "Phortse Tenga",
+      "type": "teahouse",
+      "lat": 27.8519,
+      "lon": 86.74468
+    },
+    {
+      "id": "w_1fe77d2c",
+      "name": "Kinja",
+      "type": "teahouse",
+      "lat": 27.58443,
+      "lon": 86.40994
+    },
+    {
+      "id": "w_2357c9af",
+      "name": "Hotel Everest View",
+      "type": "poi",
+      "lat": 27.81162,
+      "lon": 86.71825
+    },
+    {
+      "id": "w_25253fdd",
+      "name": "Junbesi",
+      "type": "teahouse",
+      "lat": 27.5822,
+      "lon": 86.54686
+    },
+    {
+      "id": "w_37961c7b",
+      "name": "Everest Base Camp",
+      "type": "poi",
+      "lat": 27.99966,
+      "lon": 86.84879
+    },
+    {
+      "id": "w_38aebeb1",
+      "name": "Kala Patthar",
+      "type": "mountain",
+      "lat": 27.9958,
+      "lon": 86.82844
+    },
+    {
+      "id": "w_3c157c0f",
+      "name": "Ama Dablam Base Camp",
+      "type": "poi",
+      "lat": 27.8757,
+      "lon": 86.83
+    },
+    {
+      "id": "w_3dc8c6a8",
+      "name": "Ringmu",
+      "type": "teahouse",
+      "lat": 27.59007,
+      "lon": 86.60795
+    },
+    {
+      "id": "w_3fd02fc6",
+      "name": "Kharte",
+      "type": "teahouse",
+      "lat": 27.62418,
+      "lon": 86.71809
+    },
+    {
+      "id": "w_4135a21a",
+      "name": "Renjo La",
+      "type": "gap",
+      "lat": 27.94737,
+      "lon": 86.6585
+    },
+    {
+      "id": "w_4354a86d",
+      "name": "Tengboche",
+      "type": "teahouse",
+      "lat": 27.83581,
+      "lon": 86.76461
+    },
+    {
+      "id": "w_47485be7",
+      "name": "Khunde",
+      "type": "teahouse",
+      "lat": 27.82331,
+      "lon": 86.70581
+    },
+    {
+      "id": "w_47f55f98",
+      "name": "Bupsa",
+      "type": "teahouse",
+      "lat": 27.614,
+      "lon": 86.71456
+    },
+    {
+      "id": "w_4b20fdf3",
+      "name": "Namche Bazaar",
+      "type": "town",
+      "lat": 27.80417,
+      "lon": 86.7098
+    },
+    {
+      "id": "w_4c17e543",
+      "name": "Monjo",
+      "type": "teahouse",
+      "lat": 27.77192,
+      "lon": 86.723
+    },
+    {
+      "id": "w_4d1bf2a2",
+      "name": "Thonak Tsho (fourth lake)",
+      "type": "poi",
+      "lat": 27.97825,
+      "lon": 86.6873
+    },
+    {
+      "id": "w_56348a78",
+      "name": "Chhukhung",
+      "type": "teahouse",
+      "lat": 27.90467,
+      "lon": 86.87137
+    },
+    {
+      "id": "w_5879674b",
+      "name": "Puiya",
+      "type": "teahouse",
+      "lat": 27.64347,
+      "lon": 86.72912
+    },
+    {
+      "id": "w_597dae88",
+      "name": "Phakding",
+      "type": "teahouse",
+      "lat": 27.74013,
+      "lon": 86.71269
+    },
+    {
+      "id": "w_5a0cc864",
+      "name": "Dzongla",
+      "type": "teahouse",
+      "lat": 27.93976,
+      "lon": 86.77382
+    },
+    {
+      "id": "w_5a9b1492",
+      "name": "Chheplung",
+      "type": "teahouse",
+      "lat": 27.70381,
+      "lon": 86.71777
+    },
+    {
+      "id": "w_5accf51a",
+      "name": "Pangboche",
+      "type": "teahouse",
+      "lat": 27.85578,
+      "lon": 86.79017
+    },
+    {
+      "id": "w_5c2aab6b",
+      "name": "Lukla",
+      "type": "town",
+      "lat": 27.68897,
+      "lon": 86.73067
+    },
+    {
+      "id": "w_5f6fec6f",
+      "name": "Thukla Pass Memorials",
+      "type": "poi",
+      "lat": 27.93111,
+      "lon": 86.80461
+    },
+    {
+      "id": "w_6764b995",
+      "name": "Nunthala",
+      "type": "teahouse",
+      "lat": 27.58822,
+      "lon": 86.64619
+    },
+    {
+      "id": "w_6b94ef59",
+      "name": "Lungden",
+      "type": "teahouse",
+      "lat": 27.90525,
+      "lon": 86.63688
+    },
+    {
+      "id": "w_6cdf08cd",
+      "name": "Phunki Thanga",
+      "type": "teahouse",
+      "lat": 27.83183,
+      "lon": 86.74643
+    },
+    {
+      "id": "w_6e221949",
+      "name": "Pheriche",
+      "type": "teahouse",
+      "lat": 27.89339,
+      "lon": 86.81999
+    },
+    {
+      "id": "w_72a8c096",
+      "name": "Lawudo Gompa",
+      "type": "poi",
+      "lat": 27.82716,
+      "lon": 86.68335
+    },
+    {
+      "id": "w_733f8033",
+      "name": "Jubing",
+      "type": "teahouse",
+      "lat": 27.59759,
+      "lon": 86.68618
+    },
+    {
+      "id": "w_73ac03c4",
+      "name": "Jiri",
+      "type": "town",
+      "lat": 27.63738,
+      "lon": 86.23107
+    },
+    {
+      "id": "w_788a1f37",
+      "name": "Ngozumpa Tsho (fifth lake)",
+      "type": "poi",
+      "lat": 27.98815,
+      "lon": 86.68714
+    },
+    {
+      "id": "w_78c25dad",
+      "name": "Taksindu",
+      "type": "teahouse",
+      "lat": 27.59324,
+      "lon": 86.62198
+    },
+    {
+      "id": "w_7b01c2d0",
+      "name": "Machhermo",
+      "type": "teahouse",
+      "lat": 27.90288,
+      "lon": 86.7156
+    },
+    {
+      "id": "w_7ea1eefb",
+      "name": "Deboche",
+      "type": "teahouse",
+      "lat": 27.83971,
+      "lon": 86.77041
+    },
+    {
+      "id": "w_873ea3a9",
+      "name": "Jorsalle",
+      "type": "teahouse",
+      "lat": 27.77855,
+      "lon": 86.72209
+    },
+    {
+      "id": "w_90c9e5e6",
+      "name": "Marulung",
+      "type": "teahouse",
+      "lat": 27.88822,
+      "lon": 86.63837
+    },
+    {
+      "id": "w_991e7ed4",
+      "name": "Cho La",
+      "type": "gap",
+      "lat": 27.96172,
+      "lon": 86.75164
+    },
+    {
+      "id": "w_9a761a0b",
+      "name": "Nangkartshang",
+      "type": "mountain",
+      "lat": 27.90548,
+      "lon": 86.83548
+    },
+    {
+      "id": "w_9f19fa4c",
+      "name": "Thodung",
+      "type": "poi",
+      "lat": 27.58966,
+      "lon": 86.34166
+    },
+    {
+      "id": "w_a1067d06",
+      "name": "Phortse",
+      "type": "teahouse",
+      "lat": 27.84635,
+      "lon": 86.74933
+    },
+    {
+      "id": "w_a1bc1feb",
+      "name": "Thame",
+      "type": "teahouse",
+      "lat": 27.83189,
+      "lon": 86.65048
+    },
+    {
+      "id": "w_a251dfc2",
+      "name": "Dughla",
+      "type": "teahouse",
+      "lat": 27.92371,
+      "lon": 86.80551
+    },
+    {
+      "id": "w_a2542129",
+      "name": "Gokyo Ri",
+      "type": "mountain",
+      "lat": 27.96154,
+      "lon": 86.68313
+    },
+    {
+      "id": "w_a57b62fa",
+      "name": "Shivalaya",
+      "type": "teahouse",
+      "lat": 27.60911,
+      "lon": 86.29534
+    },
+    {
+      "id": "w_a7ab2aa7",
+      "name": "Chaurikharka",
+      "type": "teahouse",
+      "lat": 27.6964,
+      "lon": 86.71914
+    },
+    {
+      "id": "w_a7b20c9d",
+      "name": "Thagnak",
+      "type": "teahouse",
+      "lat": 27.94075,
+      "lon": 86.72033
+    },
+    {
+      "id": "w_a81db744",
+      "name": "Ghat",
+      "type": "teahouse",
+      "lat": 27.71858,
+      "lon": 86.71596
+    },
+    {
+      "id": "w_aa091c4f",
+      "name": "Luza",
+      "type": "teahouse",
+      "lat": 27.89341,
+      "lon": 86.71913
+    },
+    {
+      "id": "w_b2c8110e",
+      "name": "Khari La",
+      "type": "gap",
+      "lat": 27.63283,
+      "lon": 86.71886
+    },
+    {
+      "id": "w_b54cdac0",
+      "name": "Dole",
+      "type": "teahouse",
+      "lat": 27.86662,
+      "lon": 86.73088
+    },
+    {
+      "id": "w_b60993ca",
+      "name": "Chutok La",
+      "type": "gap",
+      "lat": 27.65621,
+      "lon": 86.71291
+    },
+    {
+      "id": "w_b756b9dc",
+      "name": "Dakchu",
+      "type": "teahouse",
+      "lat": 27.57819,
+      "lon": 86.455
+    },
+    {
+      "id": "w_bda25c18",
+      "name": "Taksindu La",
+      "type": "gap",
+      "lat": 27.59225,
+      "lon": 86.61735
+    },
+    {
+      "id": "w_bebc1feb",
+      "name": "Deurali",
+      "type": "teahouse",
+      "lat": 27.58244,
+      "lon": 86.33046
+    },
+    {
+      "id": "w_bf3f71f2",
+      "name": "Dingboche",
+      "type": "teahouse",
+      "lat": 27.89352,
+      "lon": 86.83094
+    },
+    {
+      "id": "w_c2416674",
+      "name": "Bhandar",
+      "type": "teahouse",
+      "lat": 27.57573,
+      "lon": 86.35518
+    },
+    {
+      "id": "w_c2defc23",
+      "name": "Syangboche",
+      "type": "poi",
+      "lat": 27.81187,
+      "lon": 86.71086
+    },
+    {
+      "id": "w_d5484bd1",
+      "name": "Gokyo",
+      "type": "teahouse",
+      "lat": 27.95409,
+      "lon": 86.69459
+    },
+    {
+      "id": "w_d6144917",
+      "name": "Thubten Choling",
+      "type": "poi",
+      "lat": 27.60715,
+      "lon": 86.55019
+    },
+    {
+      "id": "w_d9b1508f",
+      "name": "Mong La",
+      "type": "teahouse",
+      "lat": 27.83946,
+      "lon": 86.73595
+    },
+    {
+      "id": "w_e4b7bd37",
+      "name": "Shomare",
+      "type": "teahouse",
+      "lat": 27.86774,
+      "lon": 86.80539
+    },
+    {
+      "id": "w_eb771df3",
+      "name": "Relama Tsho",
+      "type": "poi",
+      "lat": 27.9329,
+      "lon": 86.647
+    },
+    {
+      "id": "w_f827dcc1",
+      "name": "Chhukhung Ri",
+      "type": "mountain",
+      "lat": 27.92533,
+      "lon": 86.8792
+    },
+    {
+      "id": "w_f874a490",
+      "name": "Surke",
+      "type": "teahouse",
+      "lat": 27.67188,
+      "lon": 86.7195
+    },
+    {
+      "id": "w_fec991c7",
+      "name": "Kongma La",
+      "type": "gap",
+      "lat": 27.9297,
+      "lon": 86.83622
+    }
   ]
 }

@@ -1,0 +1,377 @@
+{
+  "generatedAt": "2026-10-31T06:05:16.829Z",
+  "dataYears": {
+    "start": 1994,
+    "end": 2023
+  },
+  "locations": [
+    {
+      "name": "Junbesi",
+      "lat": 27.58,
+      "lon": 86.55,
+      "elevation": 2730,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -2.4,
+          "avgTempMax": 7.1,
+          "avgPrecipitation": 47.1,
+          "avgRainyDays": 10.3
+        },
+        {
+          "month": 2,
+          "avgTempMin": -1.9,
+          "avgTempMax": 8.3,
+          "avgPrecipitation": 66.4,
+          "avgRainyDays": 12.9
+        },
+        {
+          "month": 3,
+          "avgTempMin": 0.9,
+          "avgTempMax": 11.3,
+          "avgPrecipitation": 82.9,
+          "avgRainyDays": 15.9
+        },
+        {
+          "month": 4,
+          "avgTempMin": 4.4,
+          "avgTempMax": 14.2,
+          "avgPrecipitation": 104.5,
+          "avgRainyDays": 18.2
+        },
+        {
+          "month": 5,
+          "avgTempMin": 8,
+          "avgTempMax": 15.9,
+          "avgPrecipitation": 264.2,
+          "avgRainyDays": 25.7
+        },
+        {
+          "month": 6,
+          "avgTempMin": 11.6,
+          "avgTempMax": 17.5,
+          "avgPrecipitation": 494.5,
+          "avgRainyDays": 28.8
+        },
+        {
+          "month": 7,
+          "avgTempMin": 13,
+          "avgTempMax": 17.3,
+          "avgPrecipitation": 768.3,
+          "avgRainyDays": 31
+        },
+        {
+          "month": 8,
+          "avgTempMin": 12.8,
+          "avgTempMax": 17.3,
+          "avgPrecipitation": 624.8,
+          "avgRainyDays": 30.8
+        },
+        {
+          "month": 9,
+          "avgTempMin": 11.2,
+          "avgTempMax": 16.4,
+          "avgPrecipitation": 444.2,
+          "avgRainyDays": 29.5
+        },
+        {
+          "month": 10,
+          "avgTempMin": 6.5,
+          "avgTempMax": 13.9,
+          "avgPrecipitation": 218.2,
+          "avgRainyDays": 26.9
+        },
+        {
+          "month": 11,
+          "avgTempMin": 3,
+          "avgTempMax": 11.2,
+          "avgPrecipitation": 67.4,
+          "avgRainyDays": 15.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": 0.5,
+          "avgTempMax": 8.8,
+          "avgPrecipitation": 41.1,
+          "avgRainyDays": 9.6
+        }
+      ]
+    },
+    {
+      "name": "Namche Bazaar",
+      "lat": 27.8,
+      "lon": 86.71,
+      "elevation": 3297,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -5.4,
+          "avgTempMax": 3.5,
+          "avgPrecipitation": 83.6,
+          "avgRainyDays": 7.1
+        },
+        {
+          "month": 2,
+          "avgTempMin": -5,
+          "avgTempMax": 3.9,
+          "avgPrecipitation": 102.8,
+          "avgRainyDays": 8
+        },
+        {
+          "month": 3,
+          "avgTempMin": -2.3,
+          "avgTempMax": 6.8,
+          "avgPrecipitation": 93.7,
+          "avgRainyDays": 10.2
+        },
+        {
+          "month": 4,
+          "avgTempMin": 1.6,
+          "avgTempMax": 10.2,
+          "avgPrecipitation": 109,
+          "avgRainyDays": 18.6
+        },
+        {
+          "month": 5,
+          "avgTempMin": 5.6,
+          "avgTempMax": 12.8,
+          "avgPrecipitation": 189.9,
+          "avgRainyDays": 24.5
+        },
+        {
+          "month": 6,
+          "avgTempMin": 9.8,
+          "avgTempMax": 15.5,
+          "avgPrecipitation": 308.7,
+          "avgRainyDays": 26.4
+        },
+        {
+          "month": 7,
+          "avgTempMin": 11.8,
+          "avgTempMax": 16.1,
+          "avgPrecipitation": 470.1,
+          "avgRainyDays": 30.7
+        },
+        {
+          "month": 8,
+          "avgTempMin": 11.5,
+          "avgTempMax": 15.9,
+          "avgPrecipitation": 360.6,
+          "avgRainyDays": 30.3
+        },
+        {
+          "month": 9,
+          "avgTempMin": 9.5,
+          "avgTempMax": 14.6,
+          "avgPrecipitation": 238.9,
+          "avgRainyDays": 25.1
+        },
+        {
+          "month": 10,
+          "avgTempMin": 3.9,
+          "avgTempMax": 11.2,
+          "avgPrecipitation": 111,
+          "avgRainyDays": 11.8
+        },
+        {
+          "month": 11,
+          "avgTempMin": 0.1,
+          "avgTempMax": 8.4,
+          "avgPrecipitation": 77.7,
+          "avgRainyDays": 6.6
+        },
+        {
+          "month": 12,
+          "avgTempMin": -2.1,
+          "avgTempMax": 6.2,
+          "avgPrecipitation": 65.5,
+          "avgRainyDays": 5.8
+        }
+      ]
+    },
+    {
+      "name": "Dingboche",
+      "lat": 27.89,
+      "lon": 86.83,
+      "elevation": 4300,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -11.5,
+          "avgTempMax": -2.5,
+          "avgPrecipitation": 27.1,
+          "avgRainyDays": 3.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": -11.3,
+          "avgTempMax": -2.5,
+          "avgPrecipitation": 34.7,
+          "avgRainyDays": 4.7
+        },
+        {
+          "month": 3,
+          "avgTempMin": -8.6,
+          "avgTempMax": 0.2,
+          "avgPrecipitation": 38.4,
+          "avgRainyDays": 7.5
+        },
+        {
+          "month": 4,
+          "avgTempMin": -4.9,
+          "avgTempMax": 3.8,
+          "avgPrecipitation": 56.1,
+          "avgRainyDays": 15.5
+        },
+        {
+          "month": 5,
+          "avgTempMin": -0.2,
+          "avgTempMax": 7.3,
+          "avgPrecipitation": 109.2,
+          "avgRainyDays": 21.2
+        },
+        {
+          "month": 6,
+          "avgTempMin": 4.6,
+          "avgTempMax": 10.5,
+          "avgPrecipitation": 210.9,
+          "avgRainyDays": 24.3
+        },
+        {
+          "month": 7,
+          "avgTempMin": 6.5,
+          "avgTempMax": 11,
+          "avgPrecipitation": 396.5,
+          "avgRainyDays": 30.2
+        },
+        {
+          "month": 8,
+          "avgTempMin": 6.2,
+          "avgTempMax": 11.1,
+          "avgPrecipitation": 307.6,
+          "avgRainyDays": 30
+        },
+        {
+          "month": 9,
+          "avgTempMin": 4.1,
+          "avgTempMax": 9.6,
+          "avgPrecipitation": 185.9,
+          "avgRainyDays": 23.7
+        },
+        {
+          "month": 10,
+          "avgTempMin": -1.9,
+          "avgTempMax": 5.7,
+          "avgPrecipitation": 54.8,
+          "avgRainyDays": 8.4
+        },
+        {
+          "month": 11,
+          "avgTempMin": -5.9,
+          "avgTempMax": 3.3,
+          "avgPrecipitation": 13.6,
+          "avgRainyDays": 2.7
+        },
+        {
+          "month": 12,
+          "avgTempMin": -7.9,
+          "avgTempMax": 1.3,
+          "avgPrecipitation": 15.5,
+          "avgRainyDays": 2.1
+        }
+      ]
+    },
+    {
+      "name": "Gorak Shep",
+      "lat": 27.98,
+      "lon": 86.83,
+      "elevation": 5147,
+      "monthly": [
+        {
+          "month": 1,
+          "avgTempMin": -18.5,
+          "avgTempMax": -9.6,
+          "avgPrecipitation": 24,
+          "avgRainyDays": 3.6
+        },
+        {
+          "month": 2,
+          "avgTempMin": -18.4,
+          "avgTempMax": -9.5,
+          "avgPrecipitation": 29,
+          "avgRainyDays": 3.9
+        },
+        {
+          "month": 3,
+          "avgTempMin": -15.8,
+          "avgTempMax": -6.8,
+          "avgPrecipitation": 20.9,
+          "avgRainyDays": 3.3
+        },
+        {
+          "month": 4,
+          "avgTempMin": -11.7,
+          "avgTempMax": -2.9,
+          "avgPrecipitation": 16,
+          "avgRainyDays": 4.1
+        },
+        {
+          "month": 5,
+          "avgTempMin": -6.1,
+          "avgTempMax": 1.5,
+          "avgPrecipitation": 42,
+          "avgRainyDays": 10
+        },
+        {
+          "month": 6,
+          "avgTempMin": -0.5,
+          "avgTempMax": 5.3,
+          "avgPrecipitation": 101,
+          "avgRainyDays": 18.2
+        },
+        {
+          "month": 7,
+          "avgTempMin": 1.6,
+          "avgTempMax": 5.6,
+          "avgPrecipitation": 209,
+          "avgRainyDays": 28.5
+        },
+        {
+          "month": 8,
+          "avgTempMin": 1.3,
+          "avgTempMax": 5.6,
+          "avgPrecipitation": 167.6,
+          "avgRainyDays": 27.9
+        },
+        {
+          "month": 9,
+          "avgTempMin": -1.2,
+          "avgTempMax": 4.1,
+          "avgPrecipitation": 95.3,
+          "avgRainyDays": 19.4
+        },
+        {
+          "month": 10,
+          "avgTempMin": -7.9,
+          "avgTempMax": -0.6,
+          "avgPrecipitation": 31.2,
+          "avgRainyDays": 4.1
+        },
+        {
+          "month": 11,
+          "avgTempMin": -12.7,
+          "avgTempMax": -3.6,
+          "avgPrecipitation": 7.7,
+          "avgRainyDays": 1.2
+        },
+        {
+          "month": 12,
+          "avgTempMin": -15,
+          "avgTempMax": -5.8,
+          "avgPrecipitation": 12.1,
+          "avgRainyDays": 1.6
+        }
+      ]
+    }
+  ]
+}

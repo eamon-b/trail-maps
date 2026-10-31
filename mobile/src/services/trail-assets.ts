@@ -76,6 +76,7 @@ export const TRAIL_DATA: Record<string, TrailJson> = {
   te_araroa: require('../../assets/trails/te_araroa.json'),
   overland: require('../../assets/trails/overland.json'),
   three_capes: require('../../assets/trails/three_capes.json'),
+  three_passes: require('../../assets/trails/three_passes.json'),
   south_coast_track: require('../../assets/trails/south_coast_track.json'),
   great_north_walk: require('../../assets/trails/great_north_walk.json'),
   six_foot_track: require('../../assets/trails/six_foot_track.json'),

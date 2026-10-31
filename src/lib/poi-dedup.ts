@@ -75,10 +75,12 @@ const DISTINGUISHING_WORDS = new Set(['old', 'new', 'upper', 'lower', 'north', '
  * Bibbulmun alone.
  */
 export const DUPLICATE_COMPATIBLE_TYPES: Readonly<Partial<Record<TrailPOICategory, readonly string[]>>> = {
-  camping: ['campsite', 'caravan-park', 'hut', 'shelter', 'camp'],
+  // OSM tags a Himalayan teahouse every which way: `tourism=alpine_hut`
+  // (camping) or, for the lodge's dining room, `amenity=restaurant`.
+  camping: ['campsite', 'caravan-park', 'hut', 'shelter', 'camp', 'teahouse'],
   water: ['water', 'water-tank', 'tank', 'spring', 'water-source'],
   resupply: ['resupply', 'food', 'shop'],
-  restaurant: ['food', 'resupply'],
+  restaurant: ['food', 'resupply', 'teahouse'],
   emergency: ['emergency', 'hospital'],
 };
 

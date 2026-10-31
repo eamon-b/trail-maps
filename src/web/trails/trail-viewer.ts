@@ -486,6 +486,7 @@ function getTypeClass(type?: string): string {
     'side-trip': 'type-side-trip',
     accommodation: 'type-accommodation',
     'caravan-park': 'type-caravan-park',
+    teahouse: 'type-teahouse',
     trailhead: 'type-trailhead',
     food: 'type-food',
     'road-crossing': 'type-road-crossing',

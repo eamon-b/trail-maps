@@ -58,6 +58,11 @@ const TYPE_TO_GLYPH: Record<string, MapGlyphName> = {
   hotel: 'bed',
   motel: 'bed',
 
+  // A lodge on a teahouse trek: bed, meals and water in one (its own glyph,
+  // because it is resupply and water as well as a bed).
+  teahouse: 'teahouse',
+  'tea-house': 'teahouse',
+
   // Towns and supplies
   town: 'town',
   resupply: 'resupply',
@@ -180,6 +185,7 @@ const GLYPH_FAMILY: Readonly<Record<MapGlyphName, GlyphFamily>> = {
   campsite: 'camp',
   hut: 'shelter',
   bed: 'shelter',
+  teahouse: 'shelter',
   town: 'town',
   resupply: 'town',
   restaurant: 'town',

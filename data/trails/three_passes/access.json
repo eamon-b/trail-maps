@@ -1,0 +1,217 @@
+{
+  "source": "Store kinds written by hand from the waypoint descriptions",
+  "attribution": "",
+  "fetchedAt": "",
+  "endpoint": "",
+  "minDistanceM": 150,
+  "places": {
+    "w_0340f3cc": {
+      "name": "Gorak Shep",
+      "store": "meals"
+    },
+    "w_05442034": {
+      "name": "Kyangjuma",
+      "store": "meals"
+    },
+    "w_07233ee1": {
+      "name": "Lobuche",
+      "store": "meals"
+    },
+    "w_0d801c5a": {
+      "name": "Khumjung",
+      "store": "meals"
+    },
+    "w_109f9498": {
+      "name": "Kharikhola",
+      "store": "limited"
+    },
+    "w_13e3ee48": {
+      "name": "Thamo",
+      "store": "meals"
+    },
+    "w_173b5c31": {
+      "name": "Sete",
+      "store": "meals"
+    },
+    "w_17b83ad2": {
+      "name": "Phortse Tenga",
+      "store": "meals"
+    },
+    "w_1fe77d2c": {
+      "name": "Kinja",
+      "store": "meals"
+    },
+    "w_25253fdd": {
+      "name": "Junbesi",
+      "store": "meals"
+    },
+    "w_3dc8c6a8": {
+      "name": "Ringmu",
+      "store": "meals"
+    },
+    "w_3fd02fc6": {
+      "name": "Kharte",
+      "store": "meals"
+    },
+    "w_4354a86d": {
+      "name": "Tengboche",
+      "store": "meals"
+    },
+    "w_47485be7": {
+      "name": "Khunde",
+      "store": "meals"
+    },
+    "w_47f55f98": {
+      "name": "Bupsa",
+      "store": "meals"
+    },
+    "w_4b20fdf3": {
+      "name": "Namche Bazaar",
+      "store": "full"
+    },
+    "w_4c17e543": {
+      "name": "Monjo",
+      "store": "meals"
+    },
+    "w_56348a78": {
+      "name": "Chhukhung",
+      "store": "meals"
+    },
+    "w_5879674b": {
+      "name": "Puiya",
+      "store": "meals"
+    },
+    "w_597dae88": {
+      "name": "Phakding",
+      "store": "meals"
+    },
+    "w_5a0cc864": {
+      "name": "Dzongla",
+      "store": "meals"
+    },
+    "w_5a9b1492": {
+      "name": "Chheplung",
+      "store": "meals"
+    },
+    "w_5accf51a": {
+      "name": "Pangboche",
+      "store": "meals"
+    },
+    "w_5c2aab6b": {
+      "name": "Lukla",
+      "store": "full"
+    },
+    "w_6764b995": {
+      "name": "Nunthala",
+      "store": "meals"
+    },
+    "w_6b94ef59": {
+      "name": "Lungden",
+      "store": "meals"
+    },
+    "w_6cdf08cd": {
+      "name": "Phunki Thanga",
+      "store": "meals"
+    },
+    "w_6e221949": {
+      "name": "Pheriche",
+      "store": "meals"
+    },
+    "w_733f8033": {
+      "name": "Jubing",
+      "store": "meals"
+    },
+    "w_73ac03c4": {
+      "name": "Jiri",
+      "store": "full"
+    },
+    "w_78c25dad": {
+      "name": "Taksindu",
+      "store": "meals"
+    },
+    "w_7b01c2d0": {
+      "name": "Machhermo",
+      "store": "meals"
+    },
+    "w_7ea1eefb": {
+      "name": "Deboche",
+      "store": "meals"
+    },
+    "w_873ea3a9": {
+      "name": "Jorsalle",
+      "store": "limited"
+    },
+    "w_90c9e5e6": {
+      "name": "Marulung",
+      "store": "meals"
+    },
+    "w_a1067d06": {
+      "name": "Phortse",
+      "store": "meals"
+    },
+    "w_a1bc1feb": {
+      "name": "Thame",
+      "store": "meals"
+    },
+    "w_a251dfc2": {
+      "name": "Dughla",
+      "store": "meals"
+    },
+    "w_a57b62fa": {
+      "name": "Shivalaya",
+      "store": "meals"
+    },
+    "w_a7ab2aa7": {
+      "name": "Chaurikharka",
+      "store": "meals"
+    },
+    "w_a7b20c9d": {
+      "name": "Thagnak",
+      "store": "meals"
+    },
+    "w_a81db744": {
+      "name": "Ghat",
+      "store": "meals"
+    },
+    "w_aa091c4f": {
+      "name": "Luza",
+      "store": "meals"
+    },
+    "w_b54cdac0": {
+      "name": "Dole",
+      "store": "meals"
+    },
+    "w_b756b9dc": {
+      "name": "Dakchu",
+      "store": "meals"
+    },
+    "w_bebc1feb": {
+      "name": "Deurali",
+      "store": "meals"
+    },
+    "w_bf3f71f2": {
+      "name": "Dingboche",
+      "store": "meals"
+    },
+    "w_c2416674": {
+      "name": "Bhandar",
+      "store": "meals"
+    },
+    "w_d5484bd1": {
+      "name": "Gokyo",
+      "store": "meals"
+    },
+    "w_d9b1508f": {
+      "name": "Mong La",
+      "store": "meals"
+    },
+    "w_e4b7bd37": {
+      "name": "Shomare",
+      "store": "meals"
+    },
+    "w_f874a490": {
+      "name": "Surke",
+      "store": "meals"
+    }
+  }
+}

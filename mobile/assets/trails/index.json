@@ -277,5 +277,17 @@
     "updatedAt": "2026-10-30T09:12:39.665Z",
     "md5": "0a7d1161103688ed890c4cdc19f89d2f",
     "bytes": 471381
+  },
+  {
+    "id": "three_passes",
+    "name": "Everest Three Passes from Jiri",
+    "shortName": "Three Passes",
+    "lengthKm": 215.4,
+    "country": "NP",
+    "states": [],
+    "dataVersion": "2026-10-31",
+    "updatedAt": "2026-10-31T06:09:19.232Z",
+    "md5": "a129e0164b99617274dcf93a7641be9b",
+    "bytes": 886385
   }
 ]

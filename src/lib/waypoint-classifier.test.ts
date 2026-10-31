@@ -68,6 +68,8 @@ describe('waypoint-classifier', () => {
 
       it('should handle various folder name variations', () => {
         expect(classifyWaypoint('X', { folderName: 'Official campsites' }).type).toBe('campsite');
+        expect(classifyWaypoint('X', { folderName: 'Teahouses' }).type).toBe('teahouse');
+        expect(classifyWaypoint('X', { folderName: 'Tea houses' }).type).toBe('teahouse');
         expect(classifyWaypoint('X', { folderName: 'Other campsites' }).type).toBe('campsite');
         expect(classifyWaypoint('X', { folderName: 'Huts' }).type).toBe('hut');
         expect(classifyWaypoint('X', { folderName: 'Huts & Shelters' }).type).toBe('hut');

@@ -162,8 +162,13 @@ export function tripAlongTrail(
  * will not end a day there either (`overnightWaypoints`). And a future
  * `water-access` must not read as the next water: the water is off the route,
  * and over-promising water is the dangerous direction to be wrong in.
+ *
+ * A `teahouse` feeds three buckets at once — on a teahouse trek the lodge is
+ * the night's shelter, the next meal and the next water — while its turn-off,
+ * like every other, is only the next town.
  */
-const TYPE_MAPPING: Record<string, keyof NextWaypointsByType> = {
+type NextWaypointKey = keyof NextWaypointsByType;
+const TYPE_MAPPING: Record<string, NextWaypointKey | readonly NextWaypointKey[]> = {
   campsite: 'campsite',
   camp: 'campsite',
   campground: 'campsite',
@@ -179,6 +184,8 @@ const TYPE_MAPPING: Record<string, keyof NextWaypointsByType> = {
   'resupply-access': 'town',
   shelter: 'shelter',
   hut: 'shelter',
+  teahouse: ['shelter', 'town', 'water'],
+  'teahouse-access': 'town',
 };
 
 /**
@@ -206,12 +213,18 @@ export function getNextWaypointsByType<W extends DistanceWaypoint>(
 
   const result: NextWaypointsByType<W> = {};
   for (const wd of distances) {
-    const key = TYPE_MAPPING[wd.waypoint.type];
-    if (!key || result[key]) continue;
-    if (key === 'town' && plannedIds && !(wd.waypoint.id && plannedIds.has(wd.waypoint.id))) {
-      continue;
+    // Own keys only: a type comes from user GPX, and `<type>constructor</type>`
+    // must not index the prototype.
+    if (!Object.prototype.hasOwnProperty.call(TYPE_MAPPING, wd.waypoint.type)) continue;
+    const mapped = TYPE_MAPPING[wd.waypoint.type];
+    const keys: readonly NextWaypointKey[] = typeof mapped === 'string' ? [mapped] : mapped;
+    for (const key of keys) {
+      if (result[key]) continue;
+      if (key === 'town' && plannedIds && !(wd.waypoint.id && plannedIds.has(wd.waypoint.id))) {
+        continue;
+      }
+      result[key] = wd;
     }
-    result[key] = wd;
   }
   return result;
 }

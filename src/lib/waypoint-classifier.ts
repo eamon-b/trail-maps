@@ -60,6 +60,8 @@ export const FOLDER_TYPE_MAP: Record<string, string> = {
   resupply: 'resupply',
   // Accommodation
   accommodation: 'accommodation',
+  teahouses: 'teahouse',
+  'tea houses': 'teahouse',
   // Transport/Access
   trailheads: 'trailhead',
   'caravan parks': 'caravan-park',

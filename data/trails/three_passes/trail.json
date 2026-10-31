@@ -1,0 +1,42 @@
+{
+  "id": "three_passes",
+  "name": "Everest Three Passes from Jiri",
+  "shortName": "Three Passes",
+  "region": "Solu Khumbu, Nepal",
+  "country": "NP",
+  "states": [],
+  "lengthKm": 215.4,
+  "gpxFile": "three-passes.gpx",
+  "description": "The old approach walk from the road head at Jiri over the Lamjura La and through Solu to the Dudh Koshi, joined to the Everest Three Passes circuit and walked anticlockwise for acclimatisation: up the Bhote Koshi past Thame, over the Renjo La to Gokyo, across the Ngozumpa glacier and over the Cho La, up the Khumbu to Gorak Shep (walked out and back from Lobuche, for Everest Base Camp and Kala Patthar), over the Kongma La to Chhukhung, and down the Imja valley past Tengboche and Namche to Lukla. Every village has lodges with meals and a bed; Jiri, Namche and Lukla are the only real shops. Alternatives: the Gokyo valley via Machhermo instead of Thame and the Renjo La, the Khunde high route from Namche to Thame, and the north-side return from Pangboche through Phortse. Hikers flying in start at Lukla, an hour above Chheplung. Glacier crossings move from year to year: follow the current cairns.",
+  "dataSource": {
+    "text": "Tracks routed over the OpenStreetMap footpath network and waypoints resolved to OpenStreetMap places, peaks and saddles (© OpenStreetMap contributors, ODbL). Elevation from SRTM 1-arcsec (NASA, public domain).",
+    "url": "https://www.openstreetmap.org/copyright",
+    "linkText": "OpenStreetMap contributors"
+  },
+  "trackClassification": {
+    "mainRoutePatterns": ["^Three Passes Trek$"],
+    "alternatePatterns": ["^Alternative: "],
+    "sideTripPatterns": ["^Side trip: "],
+    "fallbackToLongest": false,
+    "maxJunctionDistanceMeters": 150
+  },
+  "revisitedWaypointIds": "suffix",
+  "knownRetraces": [
+    {
+      "turnaroundKm": 157.9,
+      "lengthKm": 55.4,
+      "note": "Lobuche to Gorak Shep and back, for Everest Base Camp and Kala Patthar; the detector merges it with the walk back down the Dudh Koshi from Namche to Chheplung, which retraces the walk up"
+    }
+  ],
+  "direction": {
+    "default": "Anticlockwise",
+    "reversed": "Clockwise"
+  },
+  "climateLocations": [
+    { "name": "Junbesi", "lat": 27.58, "lon": 86.55 },
+    { "name": "Namche Bazaar", "lat": 27.8, "lon": 86.71 },
+    { "name": "Dingboche", "lat": 27.89, "lon": 86.83 },
+    { "name": "Gorak Shep", "lat": 27.98, "lon": 86.83 }
+  ],
+  "climateFile": "climate.json"
+}

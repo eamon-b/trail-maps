@@ -29,7 +29,7 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CONTOUR_HEALTH_TIMEOUT_MS = 2500;
 
 /**
- * The contour worker's tileset (workers/contour-tiles SOURCES): the Copernicus
+ * The contour worker's tileset (contours/worker SOURCES): the Copernicus
  * GLO-30 world archive, Australia included. The old `contours` path, which
  * builds before #228 request for Australian trails, is now an alias of it.
  */

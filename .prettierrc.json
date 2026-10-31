@@ -13,7 +13,7 @@
       }
     },
     {
-      "files": "workers/**",
+      "files": ["workers/**", "contours/worker/**"],
       "options": {
         "arrowParens": "always"
       }

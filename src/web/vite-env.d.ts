@@ -6,7 +6,7 @@
  * ships, so nothing secret may ever be added here.
  *
  * `VITE_API_BASE_URL` is the comments/plans API origin
- * (`https://api.contour-map-tiles.net`, or a local `wrangler dev` server).
+ * (`https://api.tracknotes.info`, or a local `wrangler dev` server).
  * Leaving it unset is a supported configuration: the planner then keeps plans
  * in `localStorage` alone and hides the Sync and Share buttons entirely.
  */

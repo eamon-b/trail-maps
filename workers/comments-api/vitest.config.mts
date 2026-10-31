@@ -27,7 +27,7 @@ export default defineConfig(async () => {
           },
           // Local R2 bucket backing the PHOTOS binding (wrangler.toml declares
           // the binding; this provisions its miniflare-local store for tests).
-          r2Buckets: { PHOTOS: 'aus-map-data' },
+          r2Buckets: { PHOTOS: 'tracknotes-data' },
         },
       }),
     ],

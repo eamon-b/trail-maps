@@ -29,7 +29,7 @@
  *
  * `--world-build` lists `contours/world-build/` (the world contour build's
  * batches and shards, streamed to R2 as insurance), all of which goes once
- * `world.pmtiles` is verified (runbook: docs/world-contours-remote-build.md).
+ * `world.pmtiles` is verified (runbook: contours/docs/world-contours-remote-build.md).
  * It refuses unless `contours/world.pmtiles` is newer than everything under
  * the prefix, and keeps what is younger than the grace.
  *
@@ -45,7 +45,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 
-const BUCKET = process.env.R2_BUCKET || 'aus-map-data';
+const BUCKET = process.env.R2_BUCKET || 'tracknotes-data';
 const RCLONE_REMOTE = process.env.RCLONE_REMOTE || 'r2';
 const DEFAULT_GRACE_DAYS = 7;
 const WORLD_BUILD_PREFIX = 'contours/world-build/';

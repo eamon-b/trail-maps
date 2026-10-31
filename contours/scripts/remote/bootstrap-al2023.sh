@@ -28,9 +28,9 @@
 set -euo pipefail
 
 NVME="${NVME:-/mnt/nvme}"
-REPO_URL="${REPO_URL:-https://github.com/eamon-b/trail-maps.git}"
+REPO_URL="${REPO_URL:-https://github.com/eamon-b/tracknotes.git}"
 REPO_REF="${REPO_REF:-main}"
-CHECKOUT_DIR="${CHECKOUT_DIR:-$NVME/trail-maps}"
+CHECKOUT_DIR="${CHECKOUT_DIR:-$NVME/tracknotes}"
 # Keep equal to TIPPECANOE_VERSION in scripts/tile-pipeline.ts (see bootstrap.sh).
 TIPPECANOE_REF="${TIPPECANOE_REF:-2.79.0}"
 

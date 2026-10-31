@@ -1,11 +1,11 @@
 /**
  * The contour worker's source → R2 archive mapping
- * (workers/contour-tiles/src/sources.ts), imported for real rather than copied.
+ * (contours/worker/src/sources.ts), imported for real rather than copied.
  */
 
 import { describe, it, expect } from 'vitest';
-import { archiveKeyForSource, DEFAULT_SOURCE, isKnownSource, SOURCES } from '../../workers/contour-tiles/src/sources';
-import { parseTilePath } from '../../workers/contour-tiles/src/tile-path';
+import { archiveKeyForSource, DEFAULT_SOURCE, isKnownSource, SOURCES } from '../../contours/worker/src/sources';
+import { parseTilePath } from '../../contours/worker/src/tile-path';
 
 const WORLD_KEY = 'contours/world.pmtiles';
 

@@ -21,8 +21,8 @@ Run from `workers/comments-api/` with wrangler authenticated:
 # location fields in the output)
 npx wrangler d1 info <database-name>
 
-# R2 bucket location
-npx wrangler r2 bucket info aus-map-data
+# R2 bucket location (user content: photos, community routes)
+npx wrangler r2 bucket info tracknotes-data
 ```
 
 Record the output and date below each time this is re-checked.
@@ -50,3 +50,4 @@ Summary:
 | 2026-08-19 | Claude (session) | `running_in_region: OC` | `location: OC` | Both in Oceania. `jurisdiction: null` — placement is observed, not contractually pinned, so the policy wording ("may be stored or replicated in other regions") stays. Re-check before each release. |
 | 2026-10-30 | Claude (session) | `running_in_region: OC` | `location: OC` | Both in Oceania. `jurisdiction: null`, read replication disabled. Policy wording stays. |
 | 2026-10-30 | Claude (session) | `running_in_region: OC` | `location: OC` | New database `tracknotes-comments` (`7ebd1642-…`, created with `--location oc`) for the Tracknotes rename, replacing `trail-maps-comments` once its data is copied across. `jurisdiction: null`, read replication disabled. Policy wording stays. |
+| 2026-10-31 | Claude (session) | `running_in_region: OC` | `location: OC` | New bucket `tracknotes-data` (created with `locationHint: oc`) takes the comments API's photos and community routes, with the app's trail data and offline packs; `aus-map-data` keeps only the public contour dataset. Neither bucket held any user content at the move. `jurisdiction: default`. Policy wording stays. |

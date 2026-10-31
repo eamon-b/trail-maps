@@ -9,7 +9,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          include: ['src/lib/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
+          include: [
+            'src/lib/**/*.{test,spec}.{js,ts}',
+            'scripts/**/*.{test,spec}.{js,ts}',
+            'contours/scripts/**/*.{test,spec}.{js,ts}',
+          ],
         },
       },
       {

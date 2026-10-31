@@ -1,7 +1,7 @@
 /**
  * Tests for the contour tile worker's input validation and security.
  *
- * The worker at workers/contour-tiles/src/index.ts uses parseTilePath()
+ * The worker at contours/worker/src/index.ts uses parseTilePath()
  * to parse tile paths, accepts only the sources in sources.ts, and enforces
  * MAX_ZOOM. CORS is configurable via env.ALLOWED_ORIGIN.
  */
@@ -10,8 +10,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 // The worker's own parser (a dependency-free module), not a copy of it.
-import { parseTilePath } from '../../workers/contour-tiles/src/tile-path';
-import { isKnownSource as isAllowedSource } from '../../workers/contour-tiles/src/sources';
+import { parseTilePath } from '../../contours/worker/src/tile-path';
+import { isKnownSource as isAllowedSource } from '../../contours/worker/src/sources';
 
 describe('parseTilePath', () => {
   it('parses valid contour tile path', () => {
@@ -76,7 +76,7 @@ describe('source validation', () => {
 
 describe('CORS configuration audit', () => {
   it('worker uses configurable CORS origin, not hardcoded wildcard', () => {
-    const workerSource = readFileSync(resolve(__dirname, '../../workers/contour-tiles/src/index.ts'), 'utf-8');
+    const workerSource = readFileSync(resolve(__dirname, '../../contours/worker/src/index.ts'), 'utf-8');
     // Should NOT have a hardcoded wildcard CORS constant
     const hasHardcodedWildcard = workerSource.includes("'Access-Control-Allow-Origin': '*'");
     expect(hasHardcodedWildcard).toBe(false);

@@ -33,20 +33,20 @@
  * Prerequisites: gdal (3.6+), tippecanoe; for --join also tile-join + pmtiles.
  *
  * Usage:
- *   npx tsx scripts/build-contours-world.ts --shard oceania --parallel 16 --purge-dem
- *   npx tsx scripts/build-contours-world.ts --shard oceania --fetch-dem
- *   npx tsx scripts/build-contours-world.ts --shard oceania --merge-only
- *   npx tsx scripts/build-contours-world.ts --shard oceania --cells-only  (stage tiers, no merge)
- *   npx tsx scripts/build-contours-world.ts --shard oceania --merge-only --batches-only  (tile batches, no join)
- *   npx tsx scripts/build-contours-world.ts --shard oceania --merge-only --batches-only --batch 2,3  (just those batches)
- *   npx tsx scripts/build-contours-world.ts --shard oceania --join-batches  (tile-join kept batches)
- *   npx tsx scripts/build-contours-world.ts --cell S26E132 --shard oceania  (child mode, no merge)
- *   npx tsx scripts/build-contours-world.ts --bbox 132 -26 134 -24 --shard oceania
- *   npx tsx scripts/build-contours-world.ts --join     (tile-join shards → world.pmtiles)
- *   npx tsx scripts/build-contours-world.ts --shard oceania --clean-work
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --parallel 16 --purge-dem
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --fetch-dem
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --merge-only
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --cells-only  (stage tiers, no merge)
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --merge-only --batches-only  (tile batches, no join)
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --merge-only --batches-only --batch 2,3  (just those batches)
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --join-batches  (tile-join kept batches)
+ *   npx tsx contours/scripts/build-contours-world.ts --cell S26E132 --shard oceania  (child mode, no merge)
+ *   npx tsx contours/scripts/build-contours-world.ts --bbox 132 -26 134 -24 --shard oceania
+ *   npx tsx contours/scripts/build-contours-world.ts --join     (tile-join shards → world.pmtiles)
+ *   npx tsx contours/scripts/build-contours-world.ts --shard oceania --clean-work
  *
- * Remote/detached driver: scripts/remote/run-shard.sh (see
- * docs/world-contours-remote-build.md for the full runbook).
+ * Remote/detached driver: contours/scripts/remote/run-shard.sh (see
+ * contours/docs/world-contours-remote-build.md for the full runbook).
  */
 
 import * as fs from 'fs';
@@ -76,8 +76,8 @@ import {
   checkDependencies,
   validateMbtilesArtifact,
   type ContourTier,
-} from './tile-pipeline.js';
-import { DEFAULT_DEM_DIR, demTilePath, tileListCachePath } from './fetch-dem-copernicus.js';
+} from '../../scripts/tile-pipeline.js';
+import { DEFAULT_DEM_DIR, demTilePath, tileListCachePath } from '../../scripts/fetch-dem-copernicus.js';
 import {
   bufferedDem1DegTiles,
   CELL_BUFFER_DEG,
@@ -90,7 +90,7 @@ import {
   worldCellFromId,
   worldShardNames,
   type WorldCell,
-} from './lib/world-grid.js';
+} from '../../scripts/lib/world-grid.js';
 
 // --- Constants ---
 
@@ -1117,7 +1117,7 @@ async function joinShards(outputDir: string, verbose: boolean): Promise<void> {
   if (shardFiles.length === 0) {
     throw new Error(
       `No world_*.mbtiles files found in ${outputDir} — build at least one shard first ` +
-        `(npx tsx scripts/build-contours-world.ts --shard <name>)`
+        `(npx tsx contours/scripts/build-contours-world.ts --shard <name>)`
     );
   }
 
@@ -1173,7 +1173,7 @@ async function joinShards(outputDir: string, verbose: boolean): Promise<void> {
 
 function usage(): void {
   console.error(
-    '\nUsage: npx tsx scripts/build-contours-world.ts ' +
+    '\nUsage: npx tsx contours/scripts/build-contours-world.ts ' +
       '(--shard NAME | --bbox W S E N | --cell ID | --join)\n' +
       '  [--parallel N] [--force] [--merge-only] [--cells-only] [--batches-only [--batch I,J]] [--join-batches]\n' +
       '  [--skip-smooth] [--verbose]\n' +
@@ -1356,7 +1356,7 @@ async function main(): Promise<void> {
       console.log(`  Work dir: ${workDir}`);
       console.log(`  Time:     ${staged} minutes`);
       console.log('\n  Merge it with:');
-      console.log(`    npx tsx scripts/build-contours-world.ts --shard ${selectionName(args)} --merge-only`);
+      console.log(`    npx tsx contours/scripts/build-contours-world.ts --shard ${selectionName(args)} --merge-only`);
       return;
     }
 
@@ -1377,7 +1377,7 @@ async function main(): Promise<void> {
       console.log(`  Work dir: ${workDir}`);
       console.log(`  Time:     ${staged} minutes`);
       console.log('\n  Join them with:');
-      console.log(`    npx tsx scripts/build-contours-world.ts --shard ${selectionName(args)} --join-batches`);
+      console.log(`    npx tsx contours/scripts/build-contours-world.ts --shard ${selectionName(args)} --join-batches`);
       return;
     }
     validateMbtilesArtifact(outputPath, CONTOUR_ZOOM_EXPECTATION);
@@ -1399,7 +1399,7 @@ async function main(): Promise<void> {
     console.log(`  Size:   ${formatBytes(fileSizeBytes(outputPath))}`);
     console.log(`  Time:   ${elapsed} minutes`);
     console.log('\n  Join the shards when they are all built:');
-    console.log('    npx tsx scripts/build-contours-world.ts --join');
+    console.log('    npx tsx contours/scripts/build-contours-world.ts --join');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`\nFatal error: ${message}`);

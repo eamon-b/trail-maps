@@ -8,7 +8,7 @@
 # upload-tiles.sh) covers rclone, wrangler and the manifest purge, with no
 # separate R2 key pair to create and revoke.
 #
-# Usage:  scripts/remote/rclone-from-token.sh [token-file]   (default ~/token)
+# Usage:  contours/scripts/remote/rclone-from-token.sh [token-file]   (default ~/token)
 #
 # Reads the token from a file the human put on the box (chmod 600); never
 # prints it or the derived secret. Revoke the token when the box is destroyed.

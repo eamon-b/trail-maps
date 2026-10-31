@@ -37,7 +37,7 @@ npx eas-cli@latest build --non-interactive --profile preview --platform android
   ```
 
 - The build bakes in the `env` block of `eas.json`'s `base` profile: the deployed comments/plans
-  API (`https://api.contour-map-tiles.net`), the contour tile server and the offline tile
+  API (`https://api.tracknotes.info`), the contour tile server and the offline tile
   bucket. A test build therefore talks to **production** data and syncs to the real account of
   whichever device installs it. To point a test build somewhere else, edit those values in
   `eas.json` before building — `.env.local` is only read by Metro, never by EAS.
@@ -117,15 +117,15 @@ be rolled forward without a reinstall. The detailed rationale is under "Deploy" 
    cd workers/comments-api && npm ci
    npx wrangler d1 migrations list DB --remote   # what would apply
    npm run migrate:remote && npm run deploy
-   curl https://api.contour-map-tiles.net/health              # {"ok":true}
+   curl https://api.tracknotes.info/health              # {"ok":true}
    ```
 
    `/health` answers even while a new route 404s, so also probe a route from each migration
    that added routes; each must answer 200, not 404:
 
    ```bash
-   curl -sf -o /dev/null https://api.contour-map-tiles.net/v1/community/routes          # 0005/0006
-   curl -sf -o /dev/null https://api.contour-map-tiles.net/v1/trails/heysen/waypoints   # 0007
+   curl -sf -o /dev/null https://api.tracknotes.info/v1/community/routes          # 0005/0006
+   curl -sf -o /dev/null https://api.tracknotes.info/v1/trails/heysen/waypoints   # 0007
    ```
 
    A route that needs a token answers 401 once deployed, and 404 before:
@@ -137,10 +137,11 @@ be rolled forward without a reinstall. The detailed rationale is under "Deploy" 
    Add a line here whenever a new migration adds routes. Deploy (from `main`) after every merge
    that changes `workers/comments-api/`, not only at release, then run these probes.
 
-2. **Site.** Vercel builds `main` on push. `VITE_API_BASE_URL=https://api.contour-map-tiles.net`
-   is set on the Vercel project (Production and Preview, added 2026-09-22); without it the
+2. **Site.** Vercel builds `main` on push. `VITE_API_BASE_URL=https://api.tracknotes.info`
+   is set on the Vercel project (Production and Preview, added 2026-09-22, moved from
+   `api.contour-map-tiles.net` 2026-10-31); without it the
    planner is local-only. To confirm a deploy carries it, fetch `my-plan.html`, follow its
-   `plan-viewer-*.js` asset and grep for `api.contour-map-tiles.net`.
+   `plan-viewer-*.js` asset and grep for `api.tracknotes.info`.
 
 3. **App, store build.** Release checklist gate (the rest of the store checklist is issue
    #31): before building, the comments API's remote migrations are all applied

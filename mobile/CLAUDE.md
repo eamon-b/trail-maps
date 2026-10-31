@@ -29,9 +29,9 @@ EAS profiles (`eas.json`): `base`, `development`, `development-device`, `preview
 `EXPO_PUBLIC_*` vars are inlined by Metro from `mobile/.env.local` — **restart Metro after changing them**. The `eas.json` env block applies only to EAS cloud builds, so each var must also be in `.env.local` for local dev. All are public URLs:
 
 ```
-EXPO_PUBLIC_API_BASE_URL=http://localhost:8787          # deployed: https://api.contour-map-tiles.net
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8787          # deployed: https://api.tracknotes.info
 EXPO_PUBLIC_CONTOUR_TILE_URL=https://tiles.contour-map-tiles.net   # unset: maps silently render without contours
-EXPO_PUBLIC_TILE_BASE_URL=https://data.contour-map-tiles.net       # unset: Offline Maps disables downloads
+EXPO_PUBLIC_TILE_BASE_URL=https://data.tracknotes.info       # unset: Offline Maps disables downloads
 ```
 
 ## Android emulator (local sessions)

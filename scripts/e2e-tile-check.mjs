@@ -5,11 +5,15 @@
  * Runs these independent checks against production infrastructure:
  *
  *   1. Worker /health     — the mobile app gates online contour injection
- *                           entirely on GET /health returning 200 with
- *                           `ok === true` (see
+ *                           entirely on GET /health reporting
+ *                           `sources.world.ok === true` (see
  *                           mobile/src/services/online-style-service.ts,
  *                           isContourServiceHealthy). If this probe fails, the
  *                           app silently ships maps with no contours at all.
+ *                           Checks 1-5 use the source the app requests
+ *                           (APP_SOURCE): they are the app's contract with the
+ *                           public contour dataset, which it uses like any
+ *                           other client.
  *                           Also asserts the archive advertises maxZoom 15, the
  *                           maxzoom the client declares for the contour source.
  *   2. Tile decode        — contour tiles fetched from the Cloudflare Worker
@@ -80,7 +84,7 @@ import { httpRangeReader, readPrefix, readZoomTiles } from './lib/http-mbtiles.m
 import { checkZ9Tiered } from './lib/mvt-contours.mjs';
 
 const CONTOUR_URL = (process.env.CONTOUR_TILE_URL || 'https://tiles.contour-map-tiles.net').replace(/\/$/, '');
-const TILE_BASE_URL = (process.env.TILE_BASE_URL || 'https://data.contour-map-tiles.net').replace(/\/$/, '');
+const TILE_BASE_URL = (process.env.TILE_BASE_URL || 'https://data.tracknotes.info').replace(/\/$/, '');
 
 // ---------------------------------------------------------------------------
 // Tile math + candidate tiles over high-relief Australian land (contours exist)
@@ -208,6 +212,12 @@ function decodeTileBody(raw, label) {
 // individual tile fetches may still succeed.
 // ---------------------------------------------------------------------------
 
+/**
+ * The contour source the app requests (online-style-service.ts CONTOUR_SOURCE).
+ * Checks 1-5 go through it, not the worker's top-level default or an alias.
+ */
+const APP_SOURCE = 'world';
+
 async function checkContourHealth() {
   console.log(`\n[1/5] Contour worker /health (mobile contour-injection gate)`);
   const url = `${CONTOUR_URL}/health`;
@@ -220,7 +230,9 @@ async function checkContourHealth() {
     return;
   }
 
-  if (res.status !== 200) {
+  // The top-level status describes the worker's default source only; the app
+  // reads its own source's entry and accepts a 503 that still carries a body.
+  if (res.status !== 200 && res.status !== 503) {
     failures.push(
       `/health → HTTP ${res.status} (expected 200) — the app treats anything else ` +
         'as unhealthy and drops contours entirely'
@@ -228,22 +240,23 @@ async function checkContourHealth() {
     return;
   }
 
-  let body;
+  let health;
   try {
-    body = await res.json();
+    health = await res.json();
   } catch (e) {
     failures.push(`/health body is not JSON: ${e.message}`);
     return;
   }
 
+  const body = health?.sources?.[APP_SOURCE];
   if (body?.ok !== true) {
     failures.push(
-      `/health returned ok=${JSON.stringify(body?.ok)} (expected true)` +
+      `/health sources.${APP_SOURCE}.ok=${JSON.stringify(body?.ok)} (expected true)` +
         (body?.error ? ` — worker error: ${body.error}` : '')
     );
     return;
   }
-  console.log(`      ✓ HTTP 200 with ok: true`);
+  console.log(`      ✓ HTTP ${res.status} with sources.${APP_SOURCE}.ok: true`);
 
   const archive = body.archive || {};
   if (Number.isFinite(archive.size)) {
@@ -287,7 +300,7 @@ async function findPopulatedTile() {
   // request gets a decompressed body with no header at all), so pinning the
   // accepted encoding is the only way to observe the gzip contract.
   for (const t of CANDIDATE_TILES) {
-    const url = `${CONTOUR_URL}/contours/${t.z}/${t.x}/${t.y}.pbf`;
+    const url = `${CONTOUR_URL}/${APP_SOURCE}/${t.z}/${t.x}/${t.y}.pbf`;
     let res;
     try {
       res = await fetch(url, { headers: { 'Accept-Encoding': 'gzip' } });
@@ -403,7 +416,7 @@ async function checkHighZoomTiles() {
   const [name, lat, lon] = LAND_POINTS[0]; // Kosciuszko
   for (const z of HIGH_ZOOMS) {
     const t = { name, ...lonLatToTile(lon, lat, z) };
-    const url = `${CONTOUR_URL}/contours/${t.z}/${t.x}/${t.y}.pbf`;
+    const url = `${CONTOUR_URL}/${APP_SOURCE}/${t.z}/${t.x}/${t.y}.pbf`;
     const label = `z${z} ${t.x}/${t.y} (${name})`;
 
     let res;

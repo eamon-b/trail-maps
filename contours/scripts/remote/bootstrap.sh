@@ -17,27 +17,27 @@
 # Usage:
 #   ./scripts/remote/bootstrap.sh
 #   REPO_REF=<branch-or-tag> ./scripts/remote/bootstrap.sh
-#   REPO_URL=https://github.com/eamon-b/trail-maps.git ./scripts/remote/bootstrap.sh
-#   CHECKOUT_DIR=/mnt/nvme/trail-maps ./scripts/remote/bootstrap.sh
+#   REPO_URL=https://github.com/eamon-b/tracknotes.git ./scripts/remote/bootstrap.sh
+#   CHECKOUT_DIR=/mnt/nvme/tracknotes ./scripts/remote/bootstrap.sh
 #   ./scripts/remote/bootstrap.sh --skip-clone     # tools only
 #
 # Environment overrides:
-#   REPO_URL      git remote to clone   (default git@github.com:eamon-b/trail-maps.git)
+#   REPO_URL      git remote to clone   (default git@github.com:eamon-b/tracknotes.git)
 #   REPO_REF      branch/tag to check out (default main)
-#   CHECKOUT_DIR  where to clone        (default $HOME/trail-maps)
+#   CHECKOUT_DIR  where to clone        (default $HOME/tracknotes)
 #   NODE_MAJOR    Node major version    (default 22)
 #   TIPPECANOE_REF  tippecanoe tag to build (default: the pinned release below)
 #
 # NOTE on the git remote: the default is SSH, which needs a key on the box
 # (ssh-keygen -t ed25519 && add the public key as a GitHub deploy key). For a
-# public repo the simpler path is REPO_URL=https://github.com/eamon-b/trail-maps.git
+# public repo the simpler path is REPO_URL=https://github.com/eamon-b/tracknotes.git
 # — no credentials on the build box at all. Never copy a personal token here.
 
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-git@github.com:eamon-b/trail-maps.git}"
+REPO_URL="${REPO_URL:-git@github.com:eamon-b/tracknotes.git}"
 REPO_REF="${REPO_REF:-main}"
-CHECKOUT_DIR="${CHECKOUT_DIR:-$HOME/trail-maps}"
+CHECKOUT_DIR="${CHECKOUT_DIR:-$HOME/tracknotes}"
 NODE_MAJOR="${NODE_MAJOR:-22}"
 # Pinned: the contour builds are verified against this release, and
 # checkDependencies() refuses any other for the world build. Keep it equal to
@@ -270,7 +270,7 @@ cat <<EOF
 
 Bootstrap complete.
 
-Next steps (see docs/world-contours-remote-build.md):
+Next steps (see contours/docs/world-contours-remote-build.md):
   cd $CHECKOUT_DIR
   ./scripts/remote/run-shard.sh oceania          # first shard — quality gate
   ./scripts/remote/status.sh                     # progress

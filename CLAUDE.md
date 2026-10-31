@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**Tracknotes** ([tracknotes.info](https://tracknotes.info)) is a static TypeScript web app (Vite, Leaflet) for long-distance hiking trails — Australia, plus Te Araroa (NZ), the CDT (US) and Shikoku (Japan) — with maps, elevation profiles, waypoints and trip planning. `mobile/` is the Tracknotes app, its Expo/React Native companion (its own notes: `mobile/CLAUDE.md`). Both are called Tracknotes in anything a user sees; "Trail Maps" is the retired name (the ids still carrying it: `docs/architecture/web-ui.md`). Trail data is processed at build time into JSON; the only servers are optional Cloudflare Workers in `workers/` (comments API, contour tiles). `@lib` maps to `src/lib/`.
+**Tracknotes** ([tracknotes.info](https://tracknotes.info)) is a static TypeScript web app (Vite, Leaflet) for long-distance hiking trails — Australia, plus Te Araroa (NZ), the CDT (US) and Shikoku (Japan) — with maps, elevation profiles, waypoints and trip planning. `mobile/` is the Tracknotes app, its Expo/React Native companion (its own notes: `mobile/CLAUDE.md`). Both are called Tracknotes in anything a user sees; "Trail Maps" is the retired name. Trail data is processed at build time into JSON; the only servers are optional Cloudflare Workers (the comments API in `workers/`, the contour tiles in `contours/worker/`). `contours/` is the public world-contours dataset the app uses like any other client (its own notes: `contours/README.md`). `@lib` maps to `src/lib/`.
 
 ## Commands
 
@@ -29,10 +29,10 @@ Read the note for the area you are changing before changing it, and update that 
 - `docs/architecture/build-scripts.md` — `scripts/`: trail builds, contours, POIs/access fetches, tile packs, publishing
 - `docs/architecture/web-ui.md` — `src/web/`: landing, trail viewer, plan page, upload/import, community, admin
 - `docs/architecture/trail-data.md` — `data/trails/<dir>/` files, waypoint-id registry, open-data trails, `public/data/generated/`
-- `docs/architecture/workers.md` — `workers/comments-api/`, `workers/contour-tiles/`
+- `docs/architecture/workers.md` — `workers/comments-api/`, `contours/worker/`
 - `docs/architecture/mobile.md` — Tracknotes architecture and source layout
 
-Runbooks: `docs/` (`gpx-import.md`, `trail-data-updates.md`, `mobile-test-build.md`, `world-contours-remote-build.md`). Plans: `plans/`. Read `docs/privacy-policy.md`, `docs/data-residency.md` and `docs/content-legal-posture.md` before changing what the comments API or community routes store.
+Runbooks: `docs/` (`gpx-import.md`, `trail-data-updates.md`, `mobile-test-build.md`) and `contours/docs/world-contours-remote-build.md`. Plans: `plans/`. Read `docs/privacy-policy.md`, `docs/data-residency.md` and `docs/content-legal-posture.md` before changing what the comments API or community routes store.
 
 ## Hard rules
 

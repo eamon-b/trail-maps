@@ -57,7 +57,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
 R2_BUCKET="${R2_BUCKET:-aus-map-data}"
@@ -172,7 +172,7 @@ fi
 
 if [ ! -f "$PMTILES_FILE" ]; then
   echo "Error: $PMTILES_FILE not found." >&2
-  echo "Run the join step first: npx tsx scripts/build-contours-world.ts --join" >&2
+  echo "Run the join step first: npx tsx contours/scripts/build-contours-world.ts --join" >&2
   exit 1
 fi
 
@@ -226,6 +226,6 @@ cat <<EOF
 Done: ${R2_BUCKET}/${OBJECT_KEY}
 
 Next: deploy the worker with the '${WORLD_SOURCE}' source
-  (cd workers/contour-tiles && npx wrangler deploy)
+  (cd contours/worker && npx wrangler deploy)
 then re-check /health and the Mt Sonder tile above.
 EOF

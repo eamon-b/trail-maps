@@ -124,7 +124,7 @@ const WRITE_BATCH = 64;
 /** Waits before each retry of a tile; one more attempt than entries. */
 const DEFAULT_RETRY_DELAYS_MS = [1_000, 3_000, 8_000];
 
-/** Worker source names (`workers/contour-tiles`). */
+/** Worker source names (`contours/worker`). */
 export type CorridorSource = 'base' | 'world';
 
 /** The worker source corridor packs take their contours from. */

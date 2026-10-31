@@ -7,7 +7,7 @@ served from R2 alongside (initially) the existing Australia archive.
 Status: live. The world archive was built in September 2026 and the worker serves it as the
 `world` source; all six rollout steps are done, and since #228 it is the only
 served contour archive (`contours` is an alias of it). Rebuild runbook:
-`docs/world-contours-remote-build.md`. The re-tiered rebuild
+`contours/docs/world-contours-remote-build.md`. The re-tiered rebuild
 (#135, 572 GB) replaced it on 2026-10-24.
 
 ## What exists today (baseline)
@@ -18,7 +18,7 @@ served contour archive (`contours` is an alias of it). Rebuild runbook:
   merge → `australia-contours.pmtiles` (11.9 GB, z9–15).
 - Cell IDs `E{lon}_S{latNorthEdge}` (positive degrees south) — Australia-only
   convention, kept as-is; the world build uses a new unambiguous scheme.
-- Worker `workers/contour-tiles` serves `/{source}/{z}/{x}/{y}.pbf` from
+- Worker `contours/worker` serves `/{source}/{z}/{x}/{y}.pbf` from
   `contours/australia.pmtiles`; the schema (layer `contour`, attrs
   `elevation` int-ish + `is_index` 0/1 as *string*, z9–15, 204 for empty) is a
   public API on contour-map-tiles.net — the world tileset must keep it.
@@ -88,7 +88,7 @@ pain (24 h, RAM-bound) at ~20× scale. Instead:
    `pmtiles convert` → `world.pmtiles`. tile-join must run with
    `--no-tile-size-limit` so re-encoded border tiles aren't dropped.
 
-### Build script: `scripts/build-contours-world.ts`
+### Build script: `contours/scripts/build-contours-world.ts`
 
 Same per-cell pipeline as Australia (buffered warp @ `CONTOUR_WARP_TR_DEG`
 cubicspline + `-tap`, gdal_contour −i 10, identical 4-tier split and
@@ -125,7 +125,7 @@ world archive must NOT fail health while only Australia is deployed — report
 per-source ok flags, overall ok if at least the default source is healthy.
 Keep the diff minimal: PR #25 touches this worker.
 
-### Quality experiments: `scripts/contour-experiment.ts`
+### Quality experiments: `contours/scripts/contour-experiment.ts`
 
 The issue explicitly wants settings experimentation before burning a week of
 remote compute. Harness: build the *same small bbox* (default: Mt Sonder,
@@ -151,9 +151,9 @@ remote build starts.
 
 ### Remote build
 
-`docs/world-contours-remote-build.md` + `scripts/remote/bootstrap.sh` (apt
+`contours/docs/world-contours-remote-build.md` + `contours/scripts/remote/bootstrap.sh` (apt
 GDAL ≥3.6, tippecanoe from source, Node 22, pmtiles CLI, rclone) +
-`scripts/remote/run-shard.sh` (setsid nohup + logging + bounded retry — the
+`contours/scripts/remote/run-shard.sh` (setsid nohup + logging + bounded retry — the
 laptop lessons: OOM killer kills silent background jobs, tippecanoe temp spill
 must not land on tmpfs, a killed merge leaves an invalid pmtiles because the
 header is written last).

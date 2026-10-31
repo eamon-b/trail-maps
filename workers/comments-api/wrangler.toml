@@ -2,13 +2,18 @@ name = "tracknotes-comments"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
 
-# Public hostname: https://api.contour-map-tiles.net (zone: contour-map-tiles.net).
+# Public hostname: https://api.tracknotes.info (zone: tracknotes.info).
 # Deploy with: npm run deploy (requires `wrangler login`).
 #
-# The custom domain is the only hostname: the workers.dev URL was retired
-# (issue #159) once no distributed build predated the custom domains
-# (2026-08-22), so every shipped build points at api.contour-map-tiles.net.
+# Custom domains are the only hostnames: the workers.dev URL was retired
+# (issue #159). api.contour-map-tiles.net, the old infrastructure name, is kept
+# only until the maintainer's phone runs a build that calls api.tracknotes.info
+# (#260); then delete its route here and deploy.
 workers_dev = false
+
+[[routes]]
+pattern = "api.tracknotes.info"
+custom_domain = true
 
 [[routes]]
 pattern = "api.contour-map-tiles.net"
@@ -19,11 +24,12 @@ binding = "DB"
 database_name = "tracknotes-comments"
 database_id = "7ebd1642-b752-4184-904e-54bfa48b658f"
 
-# Photo attachments live in R2. This is the same bucket the map tiles use; photos
-# go under the `comments/` prefix and are read publicly via PHOTOS_PUBLIC_BASE.
+# Photo attachments live in R2, in the app's own bucket (trail data and offline
+# packs too; the public contour dataset keeps `aus-map-data`). Photos go under
+# the `comments/` prefix and are read publicly via PHOTOS_PUBLIC_BASE.
 [[r2_buckets]]
 binding = "PHOTOS"
-bucket_name = "aus-map-data"
+bucket_name = "tracknotes-data"
 
 # Community-route maintenance (`runCommunityMaintenance` in src/community.ts):
 # retries de-attributions an account deletion left pending, re-runs AI
@@ -36,7 +42,10 @@ crons = ["*/15 * * * *"]
 # Public read base for R2 objects: the bucket's custom domain (the old
 # pub-….r2.dev URL still resolves but is rate-limited and uncached). The worker
 # returns full URLs built from this + the object key. Tests override it.
-PHOTOS_PUBLIC_BASE = "https://data.contour-map-tiles.net"
+# Comment photos store those full URLs in `comments.photo_urls_json`, so a
+# change here leaves already-attached photos on the old host: the bucket keeps
+# data.contour-map-tiles.net (the public contour dataset's address) as well.
+PHOTOS_PUBLIC_BASE = "https://data.tracknotes.info"
 
 # Origin of the deployed web site: the Vercel deploy at tracknotes.info (moved
 # from trail-maps.vercel.app). Share links are built as

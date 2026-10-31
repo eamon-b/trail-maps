@@ -17,7 +17,7 @@ package-lock.json
 src/lib/region-shapes.ts
 
 # Minified third-party bundles, served as-is.
-site/contour-tiles/vendor/
+contours/site/vendor/
 
 # Prettier formats code and JSON here (what the format-on-edit hook touches);
 # docs, page templates and stylesheets are laid out by hand.

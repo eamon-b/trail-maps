@@ -14,8 +14,8 @@ and the archive itself are served without it:
 
 | Hostname | Serves |
 | --- | --- |
-| `contour-map-tiles.net` | docs + live demo (Cloudflare Pages, `site/contour-tiles/`) |
-| `data.contour-map-tiles.net` | the R2 bucket directly — the PMTiles archive and offline tile packs |
+| `contour-map-tiles.net` | docs + live demo (Cloudflare Pages, `contours/site/`) |
+| `data.contour-map-tiles.net` | the R2 bucket directly — the PMTiles archives |
 | `tiles.contour-map-tiles.net` | this Worker: z/x/y tile endpoint |
 
 Clients that speak PMTiles should read the archive straight off
@@ -143,8 +143,12 @@ dependencies so the root suite tests it (`src/lib/contour-worker-sources.test.ts
 ## CORS
 
 `ALLOWED_ORIGIN` (optional `[vars]` entry in `wrangler.toml`) sets
-`Access-Control-Allow-Origin`; it defaults to a wildcard for dev. Preflights
-answer with `Access-Control-Max-Age: 86400`.
+`Access-Control-Allow-Origin`; it defaults to a wildcard. **Leave it unset in
+production:** the endpoint is public, so the demo on `contour-map-tiles.net` and
+anyone else's map fetch it from other origins, and a single origin would break
+them all (it takes one value, not a list). The phone is unaffected either way:
+MapLibre's native requests send no `Origin`. Preflights answer with
+`Access-Control-Max-Age: 86400`.
 
 CORS headers are attached **after** cache retrieval and are never stored in the
 cache entry. `caches.default` is keyed by URL only, so a stored ACAO would be

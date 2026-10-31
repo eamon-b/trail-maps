@@ -279,6 +279,10 @@ hanging a few extra fields off the waypoint that marks the turn-off:
 </gpx>
 ```
 
+The namespace URL opens a short page describing these fields
+(`public/xmlschemas/gpx-waypoint/1/index.html`); keep it in step with this
+section.
+
 - `offTrailKm` is how far the place is from the route, one way, in kilometres.
 - `accessMode` is how you cover that distance: `foot`, `hitch`, `shuttle`,
   `boat`, or `on-trail` for somewhere the route runs straight through.

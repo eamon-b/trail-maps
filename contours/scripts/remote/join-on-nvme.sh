@@ -10,9 +10,9 @@
 # (days per shard); on NVMe it is minutes. The cell work and tippecanoe tiling
 # are CPU-bound and stay on whatever box is cheap per core.
 #
-# Prerequisites on this box: scripts/remote/bootstrap.sh (tippecanoe, pmtiles,
+# Prerequisites on this box: contours/scripts/remote/bootstrap.sh (tippecanoe, pmtiles,
 # node, rclone) and an rclone remote for R2 — see the setup notes at the top of
-# scripts/remote/upload-world.sh. Everything below is resumable: rclone skips
+# contours/scripts/remote/upload-world.sh. Everything below is resumable: rclone skips
 # objects it already has, --join-batches only removes batches after success,
 # and a shard that already has world_<shard>.mbtiles is not re-joined.
 #
@@ -35,7 +35,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 RCLONE_REMOTE="${RCLONE_REMOTE:-r2}"
@@ -43,7 +43,7 @@ R2_BUCKET="${R2_BUCKET:-aus-map-data}"
 BUILD_PREFIX="${BUILD_PREFIX:-contours/world-build}"
 STAGE_DIR="${STAGE_DIR:-$PROJECT_ROOT/data/tiles/world-build}"
 OUTPUT_DIR="${OUTPUT_DIR:-$PROJECT_ROOT/public/data/tiles}"
-BUILD="npx tsx scripts/build-contours-world.ts"
+BUILD="npx tsx contours/scripts/build-contours-world.ts"
 
 PULL_ONLY=false
 UPLOAD=true
@@ -59,7 +59,7 @@ done
 log() { echo "[$(date -u +%FT%TZ)] $*"; }
 
 for c in rclone tile-join pmtiles node; do
-  command -v "$c" > /dev/null 2>&1 || { echo "Error: $c not found — run scripts/remote/bootstrap.sh first" >&2; exit 1; }
+  command -v "$c" > /dev/null 2>&1 || { echo "Error: $c not found — run contours/scripts/remote/bootstrap.sh first" >&2; exit 1; }
 done
 rclone listremotes | grep -qx "${RCLONE_REMOTE}:" || { echo "Error: no rclone remote \"${RCLONE_REMOTE}\" (see upload-world.sh)" >&2; exit 1; }
 
@@ -133,9 +133,9 @@ log "validation passed: $(du -h "$PM" | cut -f1)"
 
 # --- 6. Upload --------------------------------------------------------------
 if [ "$UPLOAD" = true ]; then
-  log "uploading via scripts/remote/upload-world.sh"
+  log "uploading via contours/scripts/remote/upload-world.sh"
   PMTILES_FILE="$PM" RCLONE_REMOTE="$RCLONE_REMOTE" R2_BUCKET="$R2_BUCKET" "$SCRIPT_DIR/upload-world.sh"
   log "done — deploy the worker with the world source next (runbook section 7)"
 else
-  log "done (--no-upload); upload with scripts/remote/upload-world.sh"
+  log "done (--no-upload); upload with contours/scripts/remote/upload-world.sh"
 fi

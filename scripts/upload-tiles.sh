@@ -13,7 +13,7 @@
 #   ./scripts/upload-tiles.sh --no-purge <...>   # Leave the edge cache alone (see purge_public_url)
 #
 # The script reads from public/data/tiles/ (the build output directory)
-# and uploads to the aus-map-data R2 bucket.
+# and uploads to the tracknotes-data R2 bucket.
 #
 # Per-trail uploads are manifest-driven: each trail directory must
 # contain a manifest.json (written by the tile build), whose files[] entries
@@ -22,12 +22,12 @@
 
 set -euo pipefail
 
-BUCKET="${R2_BUCKET:-aus-map-data}"
+BUCKET="${R2_BUCKET:-tracknotes-data}"
 TILES_DIR="${TILES_DIR:-public/data/tiles}"
 # Public URL of the same bucket, for checking what is already published.
-TILE_PUBLIC_URL="${TILE_PUBLIC_URL:-https://data.contour-map-tiles.net}"
+TILE_PUBLIC_URL="${TILE_PUBLIC_URL:-https://data.tracknotes.info}"
 # Zone of TILE_PUBLIC_URL, for purging republished manifests (not a secret).
-CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID:-f91f6188a42a5898ba760d129ae3ed74}"
+CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID:-6d82923521a33b69874327ded7b2b325}"
 
 require_command() {
   local command_name="$1"

@@ -17,18 +17,18 @@
 #            and the cell lane share the box rather than taking turns.
 #
 # Run it detached from the checkout on the NVMe volume:
-#   setsid nohup bash scripts/remote/drive-world.sh > logs/drive.log 2>&1 < /dev/null &
-#   SHARDS="oceania europe" CELL_PARALLEL=28 bash scripts/remote/drive-world.sh ...
+#   setsid nohup bash contours/scripts/remote/drive-world.sh > logs/drive.log 2>&1 < /dev/null &
+#   SHARDS="oceania europe" CELL_PARALLEL=28 bash contours/scripts/remote/drive-world.sh ...
 #
 # One line per event in logs/drive-events.log:
 #   FETCH-OK|FETCH-RETRY|FETCH-FAILED <shard>, CELLS-START|OK|RETRY|FAILED <shard>,
 #   CELL-LANE-DONE, MERGE-START|OK|RETRY|FAILED <shard>, MERGES-DONE, ALL-DONE
 # Markers in logs/markers/ make a re-run resume where it stopped.
-# scripts/remote/finish-world.sh takes over from MERGES-DONE.
+# contours/scripts/remote/finish-world.sh takes over from MERGES-DONE.
 
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/../../.."
 # shellcheck disable=SC1091
 [ -f /etc/profile.d/geo.sh ] && . /etc/profile.d/geo.sh
 

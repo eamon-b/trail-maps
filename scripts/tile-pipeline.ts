@@ -405,7 +405,7 @@ export function projectedEpsgFor(lonCenter: number, latCenter: number): number {
 
 /**
  * The felt/tippecanoe release the contour builds are verified against, and
- * the one `scripts/remote/bootstrap.sh` builds (`TIPPECANOE_REF`; a test
+ * the one `contours/scripts/remote/bootstrap.sh` builds (`TIPPECANOE_REF`; a test
  * keeps the two equal). The tier fix needs `$zoom` in `-j` feature filters
  * (tippecanoe 1.27.13) and tile-join `-R` (1.26.1), which every 2.x release
  * has; the pin is about everything else. 2.79.0 is felt's latest *release*
@@ -458,7 +458,7 @@ export function checkTippecanoeVersion(
   if (installed === TIPPECANOE_VERSION) return { status: 'ok' };
   const message =
     `tippecanoe ${installed} is installed; the contour builds are verified against ${TIPPECANOE_VERSION}` +
-    ' (scripts/remote/bootstrap.sh builds it)';
+    ' (contours/scripts/remote/bootstrap.sh builds it)';
   return requirePinned ? { status: 'fail', message } : { status: 'warn', message };
 }
 
@@ -539,7 +539,7 @@ export function checkDependencies(opts: {
       console.error(`\n${check.message}.`);
       if (requirePinned) {
         console.error(
-          `Build tippecanoe ${TIPPECANOE_VERSION} (scripts/remote/bootstrap.sh), or set TIPPECANOE_ANY_VERSION=1 to run anyway.`
+          `Build tippecanoe ${TIPPECANOE_VERSION} (contours/scripts/remote/bootstrap.sh), or set TIPPECANOE_ANY_VERSION=1 to run anyway.`
         );
       }
       process.exit(1);

@@ -14,16 +14,16 @@ The tooling:
 | --- | --- |
 | Grid + shard definitions | `scripts/lib/world-grid.ts` |
 | DEM fetcher (Copernicus GLO-30) | `scripts/fetch-dem-copernicus.ts` |
-| Build / merge / join | `scripts/build-contours-world.ts` |
-| Machine setup | `scripts/remote/bootstrap.sh` |
-| Shard driver (detached) | `scripts/remote/run-shard.sh` |
-| Progress summary | `scripts/remote/status.sh` |
-| R2 upload | `scripts/remote/upload-world.sh` |
-| Amazon Linux 2023 setup | `scripts/remote/bootstrap-al2023.sh` |
-| rclone `[r2]` from a Cloudflare token | `scripts/remote/rclone-from-token.sh` |
-| Unattended fetch + cells + merges | `scripts/remote/drive-world.sh` |
-| Unattended cleanup + join + validate + upload | `scripts/remote/finish-world.sh` |
-| Worker | `workers/contour-tiles/` |
+| Build / merge / join | `contours/scripts/build-contours-world.ts` |
+| Machine setup | `contours/scripts/remote/bootstrap.sh` |
+| Shard driver (detached) | `contours/scripts/remote/run-shard.sh` |
+| Progress summary | `contours/scripts/remote/status.sh` |
+| R2 upload | `contours/scripts/remote/upload-world.sh` |
+| Amazon Linux 2023 setup | `contours/scripts/remote/bootstrap-al2023.sh` |
+| rclone `[r2]` from a Cloudflare token | `contours/scripts/remote/rclone-from-token.sh` |
+| Unattended fetch + cells + merges | `contours/scripts/remote/drive-world.sh` |
+| Unattended cleanup + join + validate + upload | `contours/scripts/remote/finish-world.sh` |
+| Worker | `contours/worker/` |
 
 ---
 
@@ -39,18 +39,18 @@ step runs on the box; the laptop's uplink (~0.9 MB/s) moves nothing.
 2. **Human steps on the box** (an agent's shell refuses `mkfs`, and
    credentials are yours to place):
    - stripe the NVMe drives into `/mnt/nvme` (the commands are in the header
-     of `scripts/remote/bootstrap-al2023.sh`);
+     of `contours/scripts/remote/bootstrap-al2023.sh`);
    - put one Cloudflare API token at `~/token`: **Account → Workers R2
      Storage: Edit** and **Zone → Cache Purge** on `contour-map-tiles.net`.
      It covers rclone, wrangler and the manifest purge. Revoke it at the end.
 3. **Bootstrap** (~10 min): `bash bootstrap-al2023.sh` (curl it from `main`),
-   then `scripts/remote/rclone-from-token.sh`.
-4. **Start everything at once**, detached, from `/mnt/nvme/trail-maps`:
+   then `contours/scripts/remote/rclone-from-token.sh`.
+4. **Start everything at once**, detached, from `/mnt/nvme/tracknotes`:
 
    ```bash
    . /etc/profile.d/geo.sh
-   setsid nohup bash scripts/remote/drive-world.sh  > logs/drive.log  2>&1 < /dev/null &
-   setsid nohup bash scripts/remote/finish-world.sh > logs/finish.log 2>&1 < /dev/null &
+   setsid nohup bash contours/scripts/remote/drive-world.sh  > logs/drive.log  2>&1 < /dev/null &
+   setsid nohup bash contours/scripts/remote/finish-world.sh > logs/finish.log 2>&1 < /dev/null &
    ```
 
    `drive-world.sh` fetches every shard's DEM (retrying the Node HTTP crash),
@@ -127,16 +127,16 @@ neither. `run-shard.sh` refuses to start below 500 GB free (`MIN_FREE_DISK_GB`).
 ## 2. Before you rent anything: the settings decision gate
 
 The remote build is expensive; the quality settings must be chosen **first**,
-locally, with `scripts/contour-experiment.ts`:
+locally, with `contours/scripts/contour-experiment.ts`:
 
 ```bash
-npx tsx scripts/contour-experiment.ts            # builds the variant matrix
+npx tsx contours/scripts/contour-experiment.ts            # builds the variant matrix
 npx serve data/experiments/<run>                 # side-by-side compare page
 ```
 
 Eyeball the compare page (warp scale, resampling kernel, `--simplification`,
 `--minimum-detail`, `--simplify-only-low-zooms`, SRTM vs GLO-30) and bake the
-chosen bundle into the defaults of `scripts/build-contours-world.ts`, commit,
+chosen bundle into the defaults of `contours/scripts/build-contours-world.ts`, commit,
 and push — **before** provisioning. Changing your mind after two shards means
 rebuilding them.
 
@@ -182,10 +182,10 @@ ssh root@<box>
 fallocate -l 64G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
 
 # Put the checkout on the big NVMe volume, not a small root disk
-export CHECKOUT_DIR=/mnt/nvme/trail-maps
+export CHECKOUT_DIR=/mnt/nvme/tracknotes
 
-curl -fsSL https://raw.githubusercontent.com/eamon-b/trail-maps/main/scripts/remote/bootstrap.sh -o bootstrap.sh
-REPO_URL=https://github.com/eamon-b/trail-maps.git \
+curl -fsSL https://raw.githubusercontent.com/eamon-b/tracknotes/main/scripts/remote/bootstrap.sh -o bootstrap.sh
+REPO_URL=https://github.com/eamon-b/tracknotes.git \
 REPO_REF=main \
 bash bootstrap.sh
 ```
@@ -203,19 +203,19 @@ that block into the build notes for the record. Re-running it is safe.
 
 ### If the box is Amazon Linux 2023 (AWS's default image)
 
-`bootstrap.sh` is apt-only. Use `scripts/remote/bootstrap-al2023.sh` instead
+`bootstrap.sh` is apt-only. Use `contours/scripts/remote/bootstrap-al2023.sh` instead
 (the 2026-10 box): it installs the build tools with dnf, the geo stack
 (GDAL 3.13, sqlite, Node 22, rclone) from conda-forge into a micromamba env on
 the NVMe, builds tippecanoe 2.79.0 with the system compiler, and clones the
-repo to `/mnt/nvme/trail-maps`. It needs `/mnt/nvme` mounted first; the
+repo to `/mnt/nvme/tracknotes`. It needs `/mnt/nvme` mounted first; the
 commands to stripe the instance-store drives are in its header, and a human
 runs them (an agent's shell blocks `mkfs`).
 
 ```bash
 ssh -i <key>.pem ec2-user@<box>
-curl -fsSL https://raw.githubusercontent.com/eamon-b/trail-maps/main/scripts/remote/bootstrap-al2023.sh -o bootstrap-al2023.sh
+curl -fsSL https://raw.githubusercontent.com/eamon-b/tracknotes/main/scripts/remote/bootstrap-al2023.sh -o bootstrap-al2023.sh
 bash bootstrap-al2023.sh                     # ~10 min
-/mnt/nvme/trail-maps/scripts/remote/rclone-from-token.sh   # [r2] remote from ~/token
+/mnt/nvme/tracknotes/scripts/remote/rclone-from-token.sh   # [r2] remote from ~/token
 ```
 
 It writes `/etc/profile.d/geo.sh`, which only login shells read: **every**
@@ -265,7 +265,7 @@ delete the key/token when you decommission it.
 the live world archive on trails you know.
 
 ```bash
-cd /mnt/nvme/trail-maps
+cd /mnt/nvme/tracknotes
 ./scripts/remote/run-shard.sh oceania
 ```
 
@@ -329,10 +329,10 @@ The shard names come from `WORLD_SHARDS` in `scripts/lib/world-grid.ts`
 cached at `data/dem-glo30/.tileList.txt` those totals include ocean cells the
 build will skip, so they look far larger than the work actually queued.
 
-**Unattended:** `scripts/remote/drive-world.sh` replaces the per-shard
+**Unattended:** `contours/scripts/remote/drive-world.sh` replaces the per-shard
 commands below: it fetches every shard's DEM with retries, runs the cell
 phases one shard at a time on all but six cores (largest first), and merges
-up to six shards at once as their cells finish. `scripts/remote/finish-world.sh`
+up to six shards at once as their cells finish. `contours/scripts/remote/finish-world.sh`
 then joins, validates and uploads (section 0).
 
 Two or three shards can run concurrently on a 32-thread/128 GB box **if their
@@ -352,7 +352,7 @@ of 1.1 TB.
 ```bash
 # every world_*.mbtiles -> pmtiles-shards/*.pmtiles (all at once) -> tile-join
 # -> world.mbtiles -> pmtiles convert -> world.pmtiles (verify + zoom check)
-setsid nohup npx tsx scripts/build-contours-world.ts --join \
+setsid nohup npx tsx contours/scripts/build-contours-world.ts --join \
   > logs/world-join-$(date +%Y%m%d-%H%M%S).log 2>&1 &
 ```
 
@@ -404,7 +404,7 @@ then compares remote and local byte counts and prints the Worker URLs to check.
 
 **Credentials:** put one Cloudflare API token (R2 edit, plus cache purge for
 `upload-tiles.sh`) on the box as `~/token` and run
-`scripts/remote/rclone-from-token.sh` (section 7a). Nothing in this repo reads
+`contours/scripts/remote/rclone-from-token.sh` (section 7a). Nothing in this repo reads
 or stores credentials otherwise. Revoke the token when the box is destroyed.
 
 ---
@@ -422,7 +422,7 @@ shared host's eviction. On NVMe the same join takes minutes.
 On the build box, tile each shard into batches and stop before the join:
 
 ```bash
-npx tsx scripts/build-contours-world.ts --shard asia-east --merge-only --batches-only --clean-work
+npx tsx contours/scripts/build-contours-world.ts --shard asia-east --merge-only --batches-only --clean-work
 # leaves data/tiles/contours-world/asia-east/batch-NN.mbtiles + batch-NN.mbtiles.done
 # (--clean-work removes only the tiers here; a re-run reuses finished batches)
 ```
@@ -532,7 +532,7 @@ What we learned, beyond section 8:
   shard's cells and then its merge left the cores idle while both lanes
   merged (a merge is ~1.5 cores while reading its input). Splitting cells
   from merges (`--cells-only` lane + a merge pool, now
-  `scripts/remote/drive-world.sh`) took the load from 3 to ~75.
+  `contours/scripts/remote/drive-world.sh`) took the load from 3 to ~75.
 - **Batches of a shard merge in sequence**, so the biggest shard sets the end
   of the merge phase. `--batch` (with `--batches-only`) lets other processes
   pre-tile its last batches when cores free up; a merge in progress reuses
@@ -568,7 +568,7 @@ The Worker serves `/{source}/{z}/{x}/{y}.pbf`. Both its sources, `world` and
 the Worker itself changed.
 
 ```bash
-cd workers/contour-tiles && npx wrangler deploy
+cd contours/worker && npx wrangler deploy
 
 curl -s https://tiles.contour-map-tiles.net/health | jq .
 #   expect ok: true overall (the top level follows `world`), and world and
@@ -753,7 +753,7 @@ month; retiring it saved the 24 h build and the second pipeline, not storage.
 ## 11. After the build
 
 - Refresh the world archive's size and tile count on the docs site
-  (`site/contour-tiles/`, from `pmtiles show`).
+  (`contours/site/`, from `pmtiles show`).
 - Check the tiers are live: `npm run check:tiered` (the Mt Sonder z9 tile on
   both worker sources, which now read the same archive, and every pack's z9),
   and `npm run check:contours-alias` (the `contours` alias in `/health` and

@@ -20,12 +20,12 @@
  * Prerequisites: gdal (3.6+), tippecanoe + tile-join (2.17+ for .pmtiles output)
  *
  * Usage:
- *   npx tsx scripts/contour-experiment.ts --list
- *   npx tsx scripts/contour-experiment.ts
- *   npx tsx scripts/contour-experiment.ts --variants baseline,lanczos-2x
- *   npx tsx scripts/contour-experiment.ts --bbox 138.5 -33.9 138.7 -33.7
- *   npx tsx scripts/contour-experiment.ts --run mt-sonder-take2 --keep-work
- *   npx tsx scripts/contour-experiment.ts --dem-dir data/dem-glo30 --verbose
+ *   npx tsx contours/scripts/contour-experiment.ts --list
+ *   npx tsx contours/scripts/contour-experiment.ts
+ *   npx tsx contours/scripts/contour-experiment.ts --variants baseline,lanczos-2x
+ *   npx tsx contours/scripts/contour-experiment.ts --bbox 138.5 -33.9 138.7 -33.7
+ *   npx tsx contours/scripts/contour-experiment.ts --run mt-sonder-take2 --keep-work
+ *   npx tsx contours/scripts/contour-experiment.ts --dem-dir data/dem-glo30 --verbose
  */
 
 import * as fs from 'fs';
@@ -49,7 +49,7 @@ import {
   ensureDir,
   formatBytes,
   type ContourTier,
-} from './tile-pipeline.js';
+} from '../../scripts/tile-pipeline.js';
 
 // --- Constants ---
 
@@ -307,7 +307,7 @@ function parseArgs(): CliArgs {
 }
 
 function printUsage(): void {
-  console.log('Usage: npx tsx scripts/contour-experiment.ts [options]');
+  console.log('Usage: npx tsx contours/scripts/contour-experiment.ts [options]');
   console.log('  --bbox W S E N     Area to build (default: Mt Sonder, ' + DEFAULT_BBOX.join(' ') + ')');
   console.log('  --run <name>       Output dir name under data/experiments (default: date-based)');
   console.log('  --dem-dir <dir>    DEM cache for variants that do not override it (default: data/dem)');

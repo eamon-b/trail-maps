@@ -13,7 +13,7 @@ Deployed on Cloudflare Pages (project `aus-contour-tiles`), served at
 `contour-map-tiles.net` with `aus-contour-tiles.pages.dev` as the fallback:
 
 ```bash
-npx wrangler pages deploy site/contour-tiles --project-name aus-contour-tiles
+npx wrangler pages deploy contours/site --project-name aus-contour-tiles
 ```
 
 The three public hostnames on the `contour-map-tiles.net` zone:
@@ -21,7 +21,7 @@ The three public hostnames on the `contour-map-tiles.net` zone:
 | Hostname | Serves |
 | --- | --- |
 | `contour-map-tiles.net` | this page (Pages) |
-| `data.contour-map-tiles.net` | the R2 bucket — archive + offline tile packs |
+| `data.contour-map-tiles.net` | the R2 bucket — the archives (the app's offline packs are at `data.tracknotes.info`, bucket `tracknotes-data`) |
 | `tiles.contour-map-tiles.net` | the contour-tiles Worker (z/x/y endpoint) |
 
 Notes:

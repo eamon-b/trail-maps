@@ -39,7 +39,7 @@
  *   (`gpx_key`), kept for re-processing and never returned in any response.
  *   Deleting the account that shared it deletes it (the de-attribution).
  *
- * The bucket has no private area: all of `aus-map-data` is served at
+ * The bucket has no private area: all of `tracknotes-data` is served at
  * `PHOTOS_PUBLIC_BASE`. What keeps the private objects private is that their
  * keys are unguessable (128 random bits) and never leave the worker — an R2
  * custom domain serves objects by exact key and does not list a bucket.

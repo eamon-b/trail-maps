@@ -25,5 +25,5 @@
       "@lib/*": ["src/lib/*"]
     }
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "contours/scripts/**/*.ts"]
 }

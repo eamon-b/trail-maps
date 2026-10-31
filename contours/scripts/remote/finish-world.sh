@@ -4,7 +4,7 @@
 # is merging, free the intermediates, join the shards into world.pmtiles,
 # validate it, and upload it (the 2026-10 rebuild, #135).
 #
-#   setsid nohup bash scripts/remote/finish-world.sh > logs/finish.log 2>&1 < /dev/null &
+#   setsid nohup bash contours/scripts/remote/finish-world.sh > logs/finish.log 2>&1 < /dev/null &
 #
 # Start it any time after drive-world.sh; it waits. While it waits it converts
 # each merged shard to .pmtiles (what --join joins; it reuses a conversion
@@ -22,7 +22,7 @@
 
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/../../.."
 # shellcheck disable=SC1091
 [ -f /etc/profile.d/geo.sh ] && . /etc/profile.d/geo.sh
 
@@ -70,7 +70,7 @@ after=$(df -B1G --output=avail . | tail -1)
 ev "FINAL-CLEANUP freed $((after - before)) GB, $after GB free"
 
 ev "JOIN-START"
-if ! npx tsx scripts/build-contours-world.ts --join > logs/world-join.log 2>&1; then
+if ! npx tsx contours/scripts/build-contours-world.ts --join > logs/world-join.log 2>&1; then
   ev "JOIN-FAILED (tail: $(tail -1 logs/world-join.log | cut -c1-150))"; exit 1
 fi
 P=public/data/tiles/world.pmtiles

@@ -13,7 +13,7 @@ import { parseTilePath } from './tile-path';
 
 interface Env {
   TILES_BUCKET: R2Bucket;
-  ALLOWED_ORIGIN?: string; // e.g. 'https://tracknotes.info' — defaults to '*' for dev
+  ALLOWED_ORIGIN?: string; // unset (`*`) in production: the tile endpoint is public (README)
 }
 
 /** How long a browser may reuse a CORS preflight result. */

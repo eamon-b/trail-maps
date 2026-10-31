@@ -256,8 +256,8 @@ describe('tippecanoe version pin', () => {
     expect(checkTippecanoeVersion('2.82.0', true).status).toBe('fail');
   });
 
-  it('is the release scripts/remote/bootstrap.sh builds', () => {
-    const bootstrap = fs.readFileSync(path.join(__dirname, 'remote/bootstrap.sh'), 'utf8');
+  it('is the release contours/scripts/remote/bootstrap.sh builds', () => {
+    const bootstrap = fs.readFileSync(path.join(__dirname, '../contours/scripts/remote/bootstrap.sh'), 'utf8');
     const m = bootstrap.match(/^TIPPECANOE_REF="\$\{TIPPECANOE_REF:-([^}]+)\}"$/m);
     expect(m?.[1]).toBe(TIPPECANOE_VERSION);
   });

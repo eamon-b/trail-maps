@@ -9,7 +9,7 @@
  * `GET /v1/admin/waypoints` return. Modelled on `admin-community.ts`.
  */
 
-import type { AdminComment, AdminCommentReport, AdminSharedWaypoint } from '@lib/comments-api-types';
+import type { AdminComment, AdminCommentReport, AdminSharedWaypoint, ContentReview } from '@lib/comments-api-types';
 import { safeHttpUrl } from '@lib/poi-display';
 import { ApiError, NetworkError, getApiBase } from './api/client';
 import {
@@ -34,11 +34,15 @@ function $(id: string): HTMLElement {
 type DeletedBy = AdminComment['deletedBy'];
 
 /** Where a comment or waypoint stands, in words. */
-export function stateLabel(deletedBy: DeletedBy, deletedAt: string | null): string {
+export function stateLabel(
+  deletedBy: DeletedBy,
+  deletedAt: string | null,
+  review: ContentReview | null = null
+): string {
   if (deletedAt === null) return 'Live';
   switch (deletedBy) {
     case 'reports':
-      return 'Hidden by reports';
+      return review?.hid ? 'Hidden by the automated review' : 'Hidden by reports';
     case 'admin':
       return 'Deleted by an admin';
     case 'owner':
@@ -58,6 +62,39 @@ function reportsHtml(reports: readonly AdminCommentReport[]): string {
         )} · ${escapeHtml(r.createdAt)}</span></li>`
     )
     .join('')}</ul>`;
+}
+
+/**
+ * The automated review (worker `content-review.ts`), for the admin's eyes: what
+ * asked for it, the verdict and why. Empty when none was asked for.
+ */
+export function reviewHtml(review: ContentReview | null): string {
+  if (!review) return '';
+  const trigger =
+    review.trigger === 'screen'
+      ? `flagged by the screen${review.screenCategories?.length ? ` (${review.screenCategories.join(', ')})` : ''}`
+      : 'after a report';
+  let body: string;
+  if (review.status === 'pending') body = 'Pending';
+  else if (review.status === 'failed') body = `Failed (${escapeHtml(review.error ?? 'unknown')}) — reporters decide`;
+  else {
+    const confidence = review.confidence === undefined ? '' : ` · ${Math.round(review.confidence * 100)}%`;
+    const categories = review.categories?.length ? ` · ${review.categories.join(', ')}` : '';
+    body = `<strong>${escapeHtml(review.verdict ?? '')}</strong>${escapeHtml(confidence)}${escapeHtml(categories)}${
+      review.summary ? `: ${escapeHtml(review.summary)}` : ''
+    }`;
+  }
+  return `<dt>Review</dt><dd>${body} <span class="community-hint">— ${escapeHtml(trigger)}${
+    review.reviewedAt ? ` · ${escapeHtml(review.reviewedAt)}` : ''
+  }</span></dd>`;
+}
+
+/** Hidden provisionally, or the review wants a human: the row needs an admin. */
+function needsAttention(row: { deletedBy: DeletedBy; review: ContentReview | null }): boolean {
+  return (
+    row.deletedBy === 'reports' ||
+    (row.deletedBy === null && row.review?.verdict !== undefined && row.review.verdict !== 'keep')
+  );
 }
 
 function button(
@@ -113,8 +150,8 @@ export function commentRowHtml(comment: AdminComment): string {
     .map((u, i) => `<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">Photo ${i + 1}</a>`)
     .join(' · ');
   return `
-    <article class="admin-row${comment.deletedBy === 'reports' ? ' admin-row-attention' : ''}" data-row="${escapeHtml(id)}">
-      <h3>${escapeHtml(comment.displayName)} · ${escapeHtml(stateLabel(comment.deletedBy, comment.deletedAt))}${
+    <article class="admin-row${needsAttention(comment) ? ' admin-row-attention' : ''}" data-row="${escapeHtml(id)}">
+      <h3>${escapeHtml(comment.displayName)} · ${escapeHtml(stateLabel(comment.deletedBy, comment.deletedAt, comment.review))}${
         comment.userBanned && !comment.userDeleted ? ' · <span class="community-hint">author banned</span>' : ''
       }</h3>
       <p class="community-description">${comment.text ? escapeHtml(comment.text).replace(/\r?\n/g, '<br>') : '<em>(no text)</em>'}</p>
@@ -126,6 +163,7 @@ export function commentRowHtml(comment: AdminComment): string {
         <dt>Posted</dt><dd>${escapeHtml(comment.createdAt)} · author <code>${escapeHtml(comment.userId)}</code></dd>
         ${comment.restoredAt ? `<dt>Restored</dt><dd>${escapeHtml(comment.restoredAt)}</dd>` : ''}
         <dt>Reports</dt><dd>${escapeHtml(comment.reportCount)}${reportsHtml(comment.reports)}</dd>
+        ${reviewHtml(comment.review)}
       </dl>
       <div class="admin-row-actions">
         ${button('comment', id, 'restore', 'Restore', comment.deletedBy === 'reports', 'is-primary')}
@@ -140,9 +178,9 @@ export function waypointRowHtml(waypoint: AdminSharedWaypoint): string {
   const id = waypoint.id;
   const hidden = waypoint.deletedAt !== null;
   return `
-    <article class="admin-row${waypoint.deletedBy === 'reports' ? ' admin-row-attention' : ''}" data-row="${escapeHtml(id)}">
+    <article class="admin-row${needsAttention(waypoint) ? ' admin-row-attention' : ''}" data-row="${escapeHtml(id)}">
       <h3>${escapeHtml(waypoint.name)} <span class="community-hint">(${escapeHtml(waypoint.type)})</span> · ${escapeHtml(
-        stateLabel(waypoint.deletedBy, waypoint.deletedAt)
+        stateLabel(waypoint.deletedBy, waypoint.deletedAt, waypoint.review)
       )}${waypoint.userBanned && !waypoint.userDeleted ? ' · <span class="community-hint">owner banned</span>' : ''}</h3>
       ${waypoint.description ? `<p class="community-description">${escapeHtml(waypoint.description).replace(/\r?\n/g, '<br>')}</p>` : ''}
       <dl>
@@ -158,6 +196,7 @@ export function waypointRowHtml(waypoint: AdminSharedWaypoint): string {
         )}</code></dd>
         ${waypoint.restoredAt ? `<dt>Restored</dt><dd>${escapeHtml(waypoint.restoredAt)}</dd>` : ''}
         <dt>Reports</dt><dd>${escapeHtml(waypoint.reportCount)}${reportsHtml(waypoint.reports)}</dd>
+        ${reviewHtml(waypoint.review)}
       </dl>
       <div class="admin-row-actions">
         ${button('waypoint', id, 'restore', 'Restore', waypoint.deletedBy === 'reports' || waypoint.deletedBy === 'admin', 'is-primary')}
@@ -253,9 +292,9 @@ function init(): void {
     const hiddenCount =
       comments.filter(c => c.deletedBy === 'reports').length + waypoints.filter(w => w.deletedBy === 'reports').length;
     $('admin-identity').textContent =
-      `Linked as ${session.displayName || 'this account'} · ${comments.length} reported comment${
+      `Linked as ${session.displayName || 'this account'} · ${comments.length} reported or flagged comment${
         comments.length === 1 ? '' : 's'
-      } · ${waypoints.length} shared waypoint${waypoints.length === 1 ? '' : 's'} · ${hiddenCount} hidden by reports`;
+      } · ${waypoints.length} shared waypoint${waypoints.length === 1 ? '' : 's'} · ${hiddenCount} hidden by reports or the review`;
     commentsSection.hidden = false;
     waypointsSection.hidden = false;
     commentsList.innerHTML =

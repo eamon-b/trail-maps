@@ -61,7 +61,7 @@ export const USER_WAYPOINT_LIMITS = {
   maxKmFromTrail: 5,
   /** New shared waypoints per account per day (the worker's rate bucket). */
   sharesPerDay: 20,
-  /** Distinct reports that hide a shared waypoint. */
+  /** Distinct reports that hide a shared waypoint whatever the automated review said (one starts it). */
   reportsToHide: 3,
   /**
    * Beyond this many metres from the route a waypoint is a place you leave the

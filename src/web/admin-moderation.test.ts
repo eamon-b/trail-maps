@@ -49,6 +49,16 @@ const comment = {
   photoUrls: ['javascript:alert(1)', 'https://photos.example.test/a.jpg'],
   reportCount: 1,
   reports: [report],
+  review: {
+    status: 'done' as const,
+    trigger: 'report' as const,
+    verdict: 'remove' as const,
+    confidence: 0.95,
+    summary: `Summary ${XSS}`,
+    categories: ['spam'],
+    hid: true,
+    reviewedAt: '2026-10-03T00:00:00Z',
+  },
 };
 
 const waypoint = {
@@ -71,6 +81,7 @@ const waypoint = {
   restoredAt: null,
   reportCount: 1,
   reports: [report],
+  review: null,
 };
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -111,13 +122,31 @@ describe('admin-moderation.html', () => {
     const page = document.querySelector('.community-page')!;
     expect(page.querySelector('img')).toBeNull();
     const text = page.textContent ?? '';
-    for (const label of ['Author', 'Text', 'Reporter', 'Detail', 'Name', 'Description', 'Sharer']) {
+    for (const label of ['Author', 'Text', 'Reporter', 'Detail', 'Name', 'Description', 'Sharer', 'Summary']) {
       expect(text, label).toContain(`${label} ${XSS}`);
     }
     const links = [...document.querySelectorAll<HTMLAnchorElement>('#admin-comments a')].map(a => a.href);
     expect(links).toEqual(['https://photos.example.test/a.jpg']);
-    expect(text).toContain('Hidden by reports');
+    expect(text).toContain('Hidden by the automated review');
+    expect(text).toContain('remove · 95% · spam');
+    expect(text).toContain('after a report');
     expect(text).toContain('owner banned');
+  });
+
+  it('names who hid a row, and shows a review that failed or was screen-flagged', async () => {
+    const { stateLabel, reviewHtml } = await import('./admin-moderation');
+    expect(stateLabel('reports', '2026-10-03T00:00:00Z')).toBe('Hidden by reports');
+    expect(stateLabel('reports', '2026-10-03T00:00:00Z', { status: 'done', trigger: 'report', verdict: 'keep' })).toBe(
+      'Hidden by reports'
+    );
+    expect(stateLabel(null, null)).toBe('Live');
+    expect(reviewHtml(null)).toBe('');
+    expect(reviewHtml({ status: 'failed', trigger: 'report', error: 'RateLimitError 429' })).toContain(
+      'Failed (RateLimitError 429) — reporters decide'
+    );
+    expect(reviewHtml({ status: 'pending', trigger: 'screen', screenCategories: ['S10'] })).toContain(
+      'flagged by the screen (S10)'
+    );
   });
 
   it('offers no ban controls for a deleted account or an admin', async () => {

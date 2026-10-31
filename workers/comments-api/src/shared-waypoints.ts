@@ -6,8 +6,11 @@
  * `src/lib/user-waypoints.ts`, which the phone runs first, so the two refuse the
  * same things. Post-moderated like comments: anyone signed in may share, every
  * write is tombstoned rather than deleted so offline phones learn it is gone,
- * an owner or admin can delete, and `reportsToHide` distinct reporters hide one
- * (counting only accounts a day old, and only reports since an admin restore).
+ * an owner or admin can delete, the first report starts the automated review
+ * (`content-review.ts`, which hides a clearly bad one at once), and
+ * `reportsToHide` distinct reporters hide one whatever it said (counting only
+ * accounts a day old, and only reports since an admin restore). Every new or
+ * edited share is screened by Llama Guard, which may also start a review.
  * An owner who deleted their own waypoint (made it private) may share it again
  * under the same id; one hidden by an admin or by reports stays gone until an
  * admin restores it.
@@ -30,6 +33,7 @@ import { parseLimit, validateReportDetail, validateReportReason } from './valida
 import { resolveTrail } from './trails';
 import { USER_WAYPOINT_LIMITS, checkUserWaypointInput, isUserWaypointId } from '../../../src/lib/user-waypoints';
 import { parseAdminReports } from './comments';
+import { parseContentReview, reviewFlaggedSql, reviewOnReport, screenOnPost } from './content-review';
 import type {
   AdminSharedWaypointsResponse,
   SharedWaypoint,
@@ -56,6 +60,15 @@ interface SharedWaypointRow {
   deleted_at: string | null;
   deleted_by: 'owner' | 'admin' | 'reports' | null;
   restored_at: string | null;
+  /** The automated review (`content-review.ts`); an owner's edit resets it. */
+  review_status: string | null;
+  review_json: string | null;
+  review_requested_at: string | null;
+}
+
+/** The text the post-time screen reads. */
+function screenedText(row: Pick<SharedWaypointRow, 'name' | 'description'>): string {
+  return row.description ? `${row.name}\n${row.description}` : row.name;
 }
 
 function toSharedWaypoint(row: SharedWaypointRow, displayName: string, viewerId: string | null): SharedWaypoint {
@@ -154,13 +167,17 @@ export async function putSharedWaypoint(
       const revived = await env.DB.prepare(
         `UPDATE shared_waypoints
             SET name = ?, type = ?, lat = ?, lon = ?, description = ?,
-                updated_at = ?, deleted_at = NULL, deleted_by = NULL
+                updated_at = ?, deleted_at = NULL, deleted_by = NULL,
+                review_status = NULL, review_json = NULL, review_requested_at = NULL
           WHERE id = ? AND user_id = ? AND deleted_by = 'owner'
           RETURNING *`
       )
         .bind(value.name, value.type, value.lat, value.lon, value.description, writeStamp(), id, user.id)
         .first<SharedWaypointRow>();
-      if (revived) return json(toSharedWaypoint(revived, user.display_name, user.id), 200);
+      if (revived) {
+        ctx.waitUntil(screenOnPost(env, 'waypoint', id, screenedText(revived)));
+        return json(toSharedWaypoint(revived, user.display_name, user.id), 200);
+      }
       // Changed under us: answer from what is there now.
       const now = await readRow(env, id);
       if (!now || now.deleted_at !== null) {
@@ -191,13 +208,15 @@ export async function putSharedWaypoint(
     const updated = await env.DB.prepare(
       `UPDATE shared_waypoints
           SET name = ?, type = ?, lat = ?, lon = ?, description = ?,
-              updated_at = ?
+              updated_at = ?, review_status = NULL, review_json = NULL, review_requested_at = NULL
         WHERE id = ? AND user_id = ? AND deleted_at IS NULL
         RETURNING *`
     )
       .bind(value.name, value.type, value.lat, value.lon, value.description, writeStamp(), id, user.id)
       .first<SharedWaypointRow>();
     if (!updated) throw new HttpError(410, 'waypoint_deleted', 'This waypoint has been deleted');
+    // An edit is a new post to judge: the old review was of the old text.
+    ctx.waitUntil(screenOnPost(env, 'waypoint', id, screenedText(updated)));
     return json(toSharedWaypoint(updated, user.display_name, user.id), 200);
   }
 
@@ -230,6 +249,7 @@ export async function putSharedWaypoint(
     }
     return json(toSharedWaypoint(row, user.display_name, user.id), 200);
   }
+  ctx.waitUntil(screenOnPost(env, 'waypoint', id, screenedText(inserted)));
   return json(toSharedWaypoint(inserted, user.display_name, user.id), 201);
 }
 
@@ -336,6 +356,9 @@ export async function reportSharedWaypoint(
   )
     .bind(hideStamp, hideStamp, id, REPORTER_MIN_ACCOUNT_AGE_MS, USER_WAYPOINT_LIMITS.reportsToHide)
     .run();
+  // The first qualifying report asks the automated review, which hides a
+  // clearly bad waypoint without waiting for more reporters.
+  ctx.waitUntil(reviewOnReport(env, 'waypoint', id));
 
   return json({ reportId: inserted.id }, 201);
 }
@@ -420,7 +443,7 @@ export async function adminListSharedWaypoints(request: Request, env: Env, ctx: 
                FROM shared_waypoint_reports r JOIN users ru ON ru.id = r.user_id
               WHERE r.waypoint_id = w.id) AS reports_json
        FROM shared_waypoints w JOIN users u ON u.id = w.user_id
-      ORDER BY report_count DESC, w.created_at DESC
+      ORDER BY (w.deleted_by IS 'reports') DESC, ${reviewFlaggedSql('w')} DESC, report_count DESC, w.created_at DESC
       LIMIT ?`
   )
     .bind(limit)
@@ -446,6 +469,7 @@ export async function adminListSharedWaypoints(request: Request, env: Env, ctx: 
       restoredAt: row.restored_at,
       reportCount: row.report_count,
       reports: parseAdminReports(row.reports_json),
+      review: parseContentReview(row.review_json),
     })),
   };
   return json(payload);

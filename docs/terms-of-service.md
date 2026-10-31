@@ -81,7 +81,7 @@ Anyone can report a comment, shared waypoint or community route with the
 **Report** action. We may review, hide, remove or decline to publish any
 content, and may block a device or account from posting, at our discretion and
 without notice — including content hidden automatically after several reports
-or by the automated review of community routes.
+or by the automated review of comments, shared waypoints and community routes.
 
 To ask for something to be taken down (including a copyright complaint, or a
 land manager asking us to remove a sensitive site), use **Report** or email

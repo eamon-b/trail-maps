@@ -14,6 +14,10 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: './wrangler.toml' },
+        // No remote Cloudflare from tests: the `AI` binding (Llama Guard) is
+        // never called without an ANTHROPIC_API_KEY, and the screen tests
+        // inject a fake.
+        remoteBindings: false,
         miniflare: {
           // Test-only bindings: migrations array for the setup file, plus a
           // deterministic public base so photo-URL assertions don't depend on

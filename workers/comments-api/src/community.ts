@@ -462,7 +462,7 @@ function decodeGpx(raw: unknown): DecodedGpx | null {
  * in the same millisecond (or an isolate whose clock lags) must still leave
  * different stamps.
  */
-function stampAfter(previous: string): string {
+export function stampAfter(previous: string): string {
   const prev = Date.parse(previous);
   const now = Date.now();
   return new Date(Number.isFinite(prev) && now <= prev ? prev + 1 : now).toISOString();

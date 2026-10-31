@@ -131,7 +131,9 @@ display name the hiker chooses. There is no email, password or sign-up.
      stored or replicated in other regions and never promises residency
      (`docs/data-residency.md`). Two other disclosures leave Australia, and the
      policy names both: a community route's text and a sample of its
-     coordinates go to Anthropic's API for the automated review, and a route's
+     coordinates, and a reported or screen-flagged comment's or shared
+     waypoint's text with its reports, go to Anthropic's API for the automated
+     reviews, and a route's
      outline (never an identity) goes to the public Overpass instances named in
      the policy. An instance is added to the policy before it is added to the
      code (`OVERPASS_ENDPOINTS`, `INTERACTIVE_OVERPASS_ENDPOINTS`; #231).
@@ -161,11 +163,23 @@ display name the hiker chooses. There is no email, password or sign-up.
 4. **Moderation and takedown: post-moderation, report-driven.** Content is
    published when posted. Every comment, shared waypoint and community route
    has a Report action.
-   - Three distinct reporters, counting only accounts at least 24 hours old
-     and only reports since the last admin restore, hide a comment, a shared
-     waypoint or an unverified community route until an admin looks at it.
+   - One qualifying report (an account at least 24 hours old, not the
+     author, filed since the last admin restore) sends a comment or shared
+     waypoint to an automated review (Claude), which hides it at once only
+     when it is confident the post is clearly bad: spam, scams, abuse, hate,
+     sexual content, a private person's details, deliberately dangerous
+     falsehoods, vandalism (decided 2026-10-31). Every new comment and shared
+     waypoint is also screened by Llama Guard on Workers AI, whose flag only
+     starts that review. The review fails open, never re-hides a post an
+     admin restored, and is seen only by admins.
+   - Three distinct qualifying reporters hide a comment, a shared waypoint or
+     an unverified community route until an admin looks at it, whatever the
+     review said: the backstop when it is unsure, wrong or down.
    - Community routes also get an automated review on submission. It fails
      open, and only a confident reject hides an unverified route.
+   - Photos are not reviewed by any model. Cloudflare's CSAM Scanning Tool is
+     the intended check on them (`docs/architecture/workers.md`, "Comment and
+     waypoint review").
    - Admins can hide, restore, delete, and ban an account, with or without its
      content (`src/web/admin-moderation.html`).
    - Takedown requests (copyright complaints, land managers asking to remove a

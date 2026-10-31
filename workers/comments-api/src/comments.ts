@@ -19,6 +19,7 @@ import {
   validateWaterStatus,
 } from './validation';
 import { resolveTrail } from './trails';
+import { parseContentReview, reviewFlaggedSql, screenOnPost } from './content-review';
 import type { CommentTarget } from './validation';
 import type {
   AdminComment,
@@ -56,6 +57,10 @@ export interface CommentRow {
   photo_hashes_json: string | null;
   /** Last admin restore of a report hide; only reports after it count. */
   restored_at: string | null;
+  /** The automated review (`content-review.ts`): status, the review as JSON, when it was claimed. */
+  review_status: string | null;
+  review_json: string | null;
+  review_requested_at: string | null;
 }
 
 function toFeedComment(row: CommentRow, displayName: string): FeedComment {
@@ -172,6 +177,7 @@ export async function putComment(request: Request, env: Env, ctx: ExecutionConte
     return json(toFeedComment(row, user.display_name), 200);
   }
 
+  if (text !== null) ctx.waitUntil(screenOnPost(env, 'comment', id, text));
   return json(toFeedComment(inserted, user.display_name), 201);
 }
 
@@ -376,8 +382,9 @@ export function parseAdminReports(raw: string | null): AdminCommentReport[] {
 }
 
 /**
- * Every comment, newest first; with `?reported=1` only the reported ones, those
- * hidden by reports first, then by report count. Each carries its reports
+ * Every comment, newest first; with `?reported=1` only the reported or
+ * reviewed ones: those hidden by reports or the review first, then those the
+ * review would remove or wants a human for, then by report count. Each carries its reports
  * (reason and detail) and whether its author is banned, which is what the
  * moderation page (`src/web/admin-moderation.ts`) acts on.
  */
@@ -387,10 +394,14 @@ export async function getAdminComments(request: Request, env: Env, ctx: Executio
   const limit = parseLimit(url.searchParams.get('limit'), ADMIN_DEFAULT_LIMIT, ADMIN_MAX_LIMIT);
   const reportedOnly = url.searchParams.get('reported') === '1';
 
-  // Driven from the reports' own index, so it scales with what was reported.
-  const where = reportedOnly ? 'WHERE c.id IN (SELECT comment_id FROM comment_reports)' : '';
+  // Driven from the reports' own index and the reviewed rows' partial index
+  // (a post the screen flagged may have no report), so it scales with what
+  // was reported or reviewed.
+  const where = reportedOnly
+    ? 'WHERE c.id IN (SELECT comment_id FROM comment_reports) OR c.review_status IS NOT NULL'
+    : '';
   const order = reportedOnly
-    ? `(c.deleted_by IS 'reports') DESC, report_count DESC, c.created_at DESC, c.id DESC`
+    ? `(c.deleted_by IS 'reports') DESC, ${reviewFlaggedSql('c')} DESC, report_count DESC, c.created_at DESC, c.id DESC`
     : 'c.created_at DESC, c.id DESC';
   const { results } = await env.DB.prepare(
     `SELECT c.*, u.display_name AS display_name, u.is_banned AS user_banned,
@@ -441,6 +452,7 @@ export async function getAdminComments(request: Request, env: Env, ctx: Executio
       photoUrls: parsePhotoUrls(row.photo_urls_json) ?? [],
       reportCount: row.report_count,
       reports,
+      review: parseContentReview(row.review_json),
     };
   });
 

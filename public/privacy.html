@@ -148,6 +148,20 @@
   routes that are not walking routes. Anthropic processes this data to return
   the review; it is not used to identify you. The review's result is visible to
   you and to our admins, not to the public.</p>
+  <p><strong>Automated review of comments and shared waypoints.</strong> The
+  text of every new comment, and the name and description of every new or
+  edited shared waypoint, is checked by an automated safety filter (the Llama
+  Guard model, run by Cloudflare, which already stores our data). When that
+  filter flags a post, or when an established user reports it, the post is sent
+  to Anthropic's API (the Claude model) for a review: for a comment, its text,
+  its water status and the time you say you saw the water, how many photos it
+  has and the place it is on; for a shared waypoint, its name, type,
+  description and position; and, for either, the reasons and notes of the
+  reports filed against it. Your display name, your account and your photos are
+  not sent. A post the review finds clearly abusive, spam or otherwise harmful
+  is hidden at once until an admin looks at it. The review's result is visible
+  only to our admins. Anthropic processes this data to return the review; it is
+  not used to identify you.</p>
   <p><strong>Searching OpenStreetMap (points of interest).</strong> To find the
   shops, water, campsites and other places near a route, three features send
   the route&rsquo;s outline (a line of coordinates along it, never your name,
@@ -194,10 +208,13 @@
   <h2>Moderation and reporting</h2>
   <p>Every comment, every shared waypoint and every community route has a
   <strong>Report</strong> action. Reports are reviewed and content that is
-  abusive, unsafe, or spam is removed. A shared waypoint or an unverified
-  community route that several established users report is hidden
-  automatically until an admin looks at it. Repeat abuse may result in a device
-  being blocked from posting.</p>
+  abusive, unsafe, or spam is removed. A comment or shared waypoint that an
+  established user reports is sent to the automated review above, and hidden at
+  once if the review finds it clearly abusive, spam or harmful; one that several
+  established users report is hidden whatever the review found, as is an
+  unverified community route that several established users report. Hidden
+  content stays hidden until an admin looks at it. Repeat abuse may result in a
+  device being blocked from posting.</p>
 
   <h2>Deleting your data</h2>
   <p>Settings &rarr; <strong>Delete account</strong> (on the

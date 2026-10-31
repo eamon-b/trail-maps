@@ -5,12 +5,13 @@
  * posting). One report per (comment, reporter): a repeat submission replays the
  * original id so a retried outbox flush never creates duplicates.
  *
- * `COMMENT_REPORTS_TO_HIDE` distinct reporters hide a comment, as they hide a
- * shared waypoint: counting only accounts that were a day old when they
- * reported (`REPORTER_MIN_ACCOUNT_AGE_MS`), never the comment's own author, and
- * only reports filed since an admin last restored it (`restored_at`). A report
- * hide keeps the comment's photos, so an admin can restore it whole; an admin
- * or owner delete of it is final.
+ * The first qualifying report — from an account that was a day old when it
+ * reported (`REPORTER_MIN_ACCOUNT_AGE_MS`), never the comment's own author,
+ * filed since an admin last restored it (`restored_at`) — starts the automated
+ * review (`content-review.ts`), which hides a clearly bad comment at once.
+ * `COMMENT_REPORTS_TO_HIDE` such reporters hide it whatever the review said,
+ * as they hide a shared waypoint. Either hide keeps the comment's photos, so
+ * an admin can restore it whole; an admin or owner delete of it is final.
  */
 
 import { HttpError, json, readJson } from './http';
@@ -18,6 +19,7 @@ import type { Env } from './http';
 import { requireAdmin, requireUser } from './auth';
 import { RATE_BUCKETS, consumeRateLimit, refundRateLimit } from './rate-limit';
 import { REPORTER_MIN_ACCOUNT_AGE_MS } from './community';
+import { reviewOnReport } from './content-review';
 import { assertClientCommentId, parseLimit, validateReportDetail, validateReportReason } from './validation';
 import type {
   AdminReport,
@@ -99,12 +101,16 @@ export async function reportComment(request: Request, env: Env, ctx: ExecutionCo
   }
 
   await hideIfReported(env, id);
+  ctx.waitUntil(reviewOnReport(env, 'comment', id));
 
   const payload: ReportCommentResponse = { reportId: inserted.id };
   return json(payload, 201);
 }
 
-/** Distinct qualifying reporters that hide a comment (as for shared waypoints). */
+/**
+ * Distinct qualifying reporters that hide a comment (as for shared waypoints)
+ * without the review: the backstop when it is unsure, wrong or down.
+ */
 export const COMMENT_REPORTS_TO_HIDE = 3;
 
 /**

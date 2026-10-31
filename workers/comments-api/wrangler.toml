@@ -32,6 +32,13 @@ bucket_name = "aus-map-data"
 [triggers]
 crons = ["*/15 * * * *"]
 
+# Workers AI: the Llama Guard screen of every new comment and shared waypoint
+# (`src/content-review.ts`), and the AI Gateway URL the Anthropic calls take.
+[ai]
+binding = "AI"
+# Always remote (Workers AI has no local model); tests turn remote bindings off.
+remote = true
+
 [vars]
 # Public read base for R2 objects: the bucket's custom domain (the old
 # pub-….r2.dev URL still resolves but is rate-limited and uncached). The worker
@@ -56,7 +63,19 @@ SITE_BASE = "https://tracknotes.info"
 # Mirrors come and go: see docs/architecture/build-scripts.md (fetch-pois).
 OVERPASS_ENDPOINTS = "https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter,https://overpass.kumi.systems/api/interpreter"
 
+# The Cloudflare AI Gateway every model call goes through (Anthropic and Workers
+# AI): request logs, spend and rate limits. EMPTY = OFF (calls go straight to
+# the provider). Create the gateway first (dashboard: AI → AI Gateway), then
+# put its name here; an Authenticated Gateway (the auto-created `default` one
+# is) also needs the AI_GATEWAY_TOKEN secret below, or every review fails.
+# Steps: docs/architecture/workers.md ("Comment and waypoint review").
+AI_GATEWAY_ID = ""
+
 # Secrets (not in this file): set with `wrangler secret put <NAME>`.
-#   ANTHROPIC_API_KEY — the community-route AI review (src/community-review.ts).
-#     `wrangler secret put ANTHROPIC_API_KEY`. Optional: without it every review
-#     is recorded as `skipped` and routes stay Unverified until an admin looks.
+#   ANTHROPIC_API_KEY — the community-route AI review (src/community-review.ts)
+#     and the review of reported or screen-flagged comments and shared waypoints
+#     (src/content-review.ts). `wrangler secret put ANTHROPIC_API_KEY`.
+#     Optional: without it every route review is recorded as `skipped` and
+#     routes stay Unverified until an admin looks, and comments and waypoints
+#     are neither screened nor reviewed (three reports still hide one).
+#   AI_GATEWAY_TOKEN — only if the gateway is an Authenticated Gateway.

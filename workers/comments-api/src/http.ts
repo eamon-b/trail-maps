@@ -16,10 +16,22 @@ export interface Env {
   SITE_BASE: string;
   /**
    * Secret: Anthropic API key for the community-route AI review
-   * (`community-review.ts`). Optional — when unset the review is `skipped`
-   * and routes stay Unverified until an admin looks.
+   * (`community-review.ts`) and the review of reported or screen-flagged
+   * comments and shared waypoints (`content-review.ts`). Optional — when
+   * unset a route review is `skipped` (routes stay Unverified until an admin
+   * looks), and comments and waypoints are hidden only by reporters.
    */
   ANTHROPIC_API_KEY?: string;
+  /**
+   * Workers AI: the Llama Guard screen of new comments and shared waypoints
+   * (`content-review.ts`), and the AI Gateway URL the Anthropic calls go
+   * through. Optional — unbound in a test that does not stub it.
+   */
+  AI?: Ai;
+  /** Name of the AI Gateway every model call is routed through; unset = straight to the provider. */
+  AI_GATEWAY_ID?: string;
+  /** Secret: the gateway's token, when it is an Authenticated Gateway. */
+  AI_GATEWAY_TOKEN?: string;
   /**
    * Overpass instances the community-route POI enrichment asks, in order,
    * comma-separated (`community-pois.ts`). Empty or unset switches the

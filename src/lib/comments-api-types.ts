@@ -14,9 +14,10 @@ import type { PlanDocument } from './plan-types';
 export type WaterStatus = 'flowing' | 'low' | 'dry';
 
 /**
- * Who soft-deleted a comment. `reports` is a hide by enough distinct reporters
- * (`COMMENT_REPORTS_TO_HIDE` in the worker): provisional until an admin
- * restores it or deletes it.
+ * Who soft-deleted a comment. `reports` is a provisional hide, by enough
+ * distinct reporters (`COMMENT_REPORTS_TO_HIDE` in the worker) or by the
+ * automated review a report or the post-time screen started (`review` on the
+ * admin rows says which): it stands until an admin restores it or deletes it.
  */
 export type DeletedBy = 'owner' | 'admin' | 'reports';
 
@@ -209,6 +210,8 @@ export interface AdminSharedWaypoint extends SharedWaypoint {
   reportCount: number;
   /** Every report filed against it, newest first. */
   reports: AdminCommentReport[];
+  /** The automated review, or null when none was asked for. */
+  review: ContentReview | null;
 }
 
 /** GET /v1/admin/waypoints response. */
@@ -385,6 +388,35 @@ export interface AdminComment {
   reportCount: number;
   /** Every report filed against it, newest first. */
   reports: AdminCommentReport[];
+  /** The automated review, or null when none was asked for. */
+  review: ContentReview | null;
+}
+
+/**
+ * The model's answer on a reported or screen-flagged comment or shared
+ * waypoint: `remove` only for clearly bad or malicious content.
+ */
+export type ContentReviewVerdict = 'remove' | 'needs_human' | 'keep';
+
+/**
+ * The automated review of a comment or shared waypoint (`content-review.ts` in
+ * the worker), for admins only. `trigger` is what asked for it: a report, or
+ * the Llama Guard screen run on every new post (`screenCategories` are its
+ * hazard codes, S1-S13). `hid` is set when the review itself hid the item.
+ */
+export interface ContentReview {
+  status: 'pending' | 'done' | 'failed';
+  trigger: 'report' | 'screen';
+  screenCategories?: string[];
+  verdict?: ContentReviewVerdict;
+  confidence?: number;
+  summary?: string;
+  categories?: string[];
+  hid?: boolean;
+  model?: string;
+  reviewedAt?: string;
+  /** Why a `failed` review failed, for admins. */
+  error?: string;
 }
 
 /** One report, as the admin comment and waypoint listings carry it. */

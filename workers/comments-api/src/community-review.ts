@@ -284,7 +284,7 @@ export function parseReviewOutput(
 }
 
 /** A short, admin-readable name for why the call failed. */
-function describeError(err: unknown): string {
+export function describeError(err: unknown): string {
   if (err instanceof Anthropic.APIConnectionTimeoutError) return 'APIConnectionTimeoutError';
   if (err instanceof Anthropic.APIConnectionError) return 'APIConnectionError';
   if (err instanceof Anthropic.AuthenticationError) return 'AuthenticationError 401';
@@ -298,9 +298,38 @@ function describeError(err: unknown): string {
   return 'unknown_error';
 }
 
+/** The env a review reads: the key, and the AI Gateway it is routed through, if any. */
+export type ReviewEnv = Pick<Env, 'ANTHROPIC_API_KEY' | 'AI' | 'AI_GATEWAY_ID' | 'AI_GATEWAY_TOKEN'>;
+
 /** The SDK client, bounded so a review fits the `waitUntil` budget. */
-export function createReviewClient(apiKey: string): Anthropic {
-  return new Anthropic({ apiKey, timeout: REVIEW_TIMEOUT_MS, maxRetries: REVIEW_MAX_RETRIES });
+export function createReviewClient(apiKey: string, gateway: { baseURL?: string; token?: string } = {}): Anthropic {
+  return new Anthropic({
+    apiKey,
+    timeout: REVIEW_TIMEOUT_MS,
+    maxRetries: REVIEW_MAX_RETRIES,
+    ...(gateway.baseURL ? { baseURL: gateway.baseURL } : {}),
+    ...(gateway.baseURL && gateway.token
+      ? { defaultHeaders: { 'cf-aig-authorization': `Bearer ${gateway.token}` } }
+      : {}),
+  });
+}
+
+/**
+ * The client for a review: through the Cloudflare AI Gateway named by
+ * `AI_GATEWAY_ID` (logs, spend limits, rate limits) when the `AI` binding can
+ * give its URL, else straight to the API. A gateway that cannot be resolved is
+ * skipped rather than failing the review.
+ */
+export async function reviewClientFor(env: ReviewEnv & { ANTHROPIC_API_KEY: string }): Promise<Anthropic> {
+  let baseURL: string | undefined;
+  if (env.AI && env.AI_GATEWAY_ID) {
+    try {
+      baseURL = await env.AI.gateway(env.AI_GATEWAY_ID).getUrl('anthropic');
+    } catch (err) {
+      console.error(`AI Gateway ${env.AI_GATEWAY_ID} unavailable: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return createReviewClient(env.ANTHROPIC_API_KEY, { baseURL, token: env.AI_GATEWAY_TOKEN });
 }
 
 /**
@@ -309,7 +338,7 @@ export function createReviewClient(apiKey: string): Anthropic {
  */
 
 export async function runAiReview(
-  env: Pick<Env, 'ANTHROPIC_API_KEY'>,
+  env: ReviewEnv,
   input: ReviewInput,
   deps: { client?: ReviewClient; now?: () => Date } = {}
 ): Promise<CommunityAiReview> {
@@ -317,9 +346,9 @@ export async function runAiReview(
   if (!deps.client && !env.ANTHROPIC_API_KEY) {
     return { status: 'skipped', reviewedAt };
   }
-  const client: ReviewClient = deps.client ?? createReviewClient(env.ANTHROPIC_API_KEY as string);
-
   try {
+    const client: ReviewClient =
+      deps.client ?? (await reviewClientFor({ ...env, ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY as string }));
     const response = await client.beta.messages.create({
       model: REVIEW_MODEL,
       max_tokens: 4000,

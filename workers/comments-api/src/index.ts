@@ -9,6 +9,7 @@
 
 import { CORS_HEADERS, HttpError, errorResponse, json } from './http';
 import type { Env } from './http';
+import { rerunStaleContentReviews } from './content-review';
 import { deleteMe, getMe, registerDevice, updateMe } from './devices';
 import { getTrailDescriptions, upsertTrailDescription } from './descriptions';
 import { getAdminReports, reportComment } from './reports';
@@ -324,12 +325,18 @@ export default {
    * The Cron Trigger (`[triggers] crons` in wrangler.toml): retries the
    * community-route work that runs from `waitUntil` and may not have
    * finished — de-attributions after an account deletion, and AI reviews
-   * left `pending` — a bounded batch per run. It also deletes `rate_events`
+   * left `pending` — and the comment and shared-waypoint reviews left
+   * `pending` (`content-review.ts`), a bounded batch per run. It also deletes `rate_events`
    * rows past the longest window, so the address-keyed ones never outlive a
    * quiet spell.
    */
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runCommunityMaintenance(env));
+    ctx.waitUntil(
+      rerunStaleContentReviews(env).catch((err) =>
+        console.error(`Content review re-run failed: ${err instanceof Error ? err.message : String(err)}`)
+      )
+    );
     ctx.waitUntil(pruneStaleRateEvents(env, Date.now()));
   },
 };
